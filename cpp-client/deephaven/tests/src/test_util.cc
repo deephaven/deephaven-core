@@ -37,13 +37,14 @@ void GlobalEnvironmentForTests::Init(char **envp) {
   }
 }
 
-std::optional<std::string_view> GlobalEnvironmentForTests::GetEnv(std::string_view key) {
+std::string_view GlobalEnvironmentForTests::GetEnv(std::string_view key,
+    std::string_view default_value) {
   if (environment_ == nullptr) {
-    return {};
+    return default_value;
   }
   auto ip = environment_->find(key);
   if (ip == environment_->end()) {
-    return {};
+    return default_value;
   }
   return ip->second;
 }
@@ -149,15 +150,9 @@ TableMakerForTests TableMakerForTests::Create() {
 }
 
 Client TableMakerForTests::CreateClient(const ClientOptions &options) {
-  auto host = GlobalEnvironmentForTests::GetEnv("DH_HOST");
-  auto port = GlobalEnvironmentForTests::GetEnv("DH_PORT");
-  if (!host.has_value()) {
-    host = "localhost";
-  }
-  if (!port.has_value()) {
-    port = "10000";
-  }
-  auto connection_string = fmt::format("{}:{}", *host, *port);
+  auto host = GlobalEnvironmentForTests::GetEnv("DH_HOST", "localhost");
+  auto port = GlobalEnvironmentForTests::GetEnv("DH_PORT", "10000");
+  auto connection_string = fmt::format("{}:{}", host, port);
   fmt::print(std::cerr, "Connecting to {}\n", connection_string);
   auto client = Client::Connect(connection_string, options);
   return client;

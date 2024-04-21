@@ -37,14 +37,14 @@ public:
   static void Init(char **envp);
 
   /**
-   * Look up 'key' in the environment_ map. Returns a set optional if found, otherwise
-   * returns an unset optional.
+   * Look up 'key' in the environment_ map. Returns the associated value if found;
+   * otherwise returns the value contained in 'defaultValue'.
    *
    * @param key The key
-   * @return If found, an optional set to a string_view of the value. If not found,
-   *   an unset optional.
+   * @param default_value The value to return if the key is not found.
+   * @return The associated value if found, otherwise the value contained in 'defaultValue'.
    */
-  static std::optional<std::string_view> GetEnv(std::string_view key);
+  static std::string_view GetEnv(std::string_view key, std::string_view default_value);
 
   // This is a pointer, so we don't have to worry about global construction/destruction.
   // At global teardown time we will just leak memory.
