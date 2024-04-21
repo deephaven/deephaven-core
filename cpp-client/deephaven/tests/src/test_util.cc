@@ -15,6 +15,39 @@ using deephaven::client::utility::TableMaker;
 using deephaven::client::utility::ValueOrThrow;
 
 namespace deephaven::client::tests {
+std::map<std::string, std::string, std::less<>> *GlobalEnvironmentForTests::environment_ = nullptr;
+
+void GlobalEnvironmentForTests::Init(char **envp) {
+  if (environment_ != nullptr) {
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR("It's an error to call Init() twice"));
+  }
+  environment_ = new std::map<std::string, std::string, std::less<>>();
+
+  for (char **current = envp; *current != nullptr; ++current) {
+    std::string_view sv(*current);
+
+    // Find the equal sign and split the strings into keys and values.
+    auto pos = sv.find('=');
+    if (pos == std::string_view::npos) {
+      continue;
+    }
+    auto key = sv.substr(0, pos);
+    auto value = sv.substr(pos + 1);
+    environment_->try_emplace(std::string(key), value);
+  }
+}
+
+std::optional<std::string_view> GlobalEnvironmentForTests::GetEnv(std::string_view key) {
+  if (environment_ == nullptr) {
+    return {};
+  }
+  auto ip = environment_->find(key);
+  if (ip == environment_->end()) {
+    return {};
+  }
+  return ip->second;
+}
+
 ColumnNamesForTests::ColumnNamesForTests() : importDate_("ImportDate"), ticker_("Ticker"),
   open_("Open"), close_("Close"), volume_("Volume") {}
 ColumnNamesForTests::ColumnNamesForTests(ColumnNamesForTests &&other) noexcept = default;
@@ -116,11 +149,15 @@ TableMakerForTests TableMakerForTests::Create() {
 }
 
 Client TableMakerForTests::CreateClient(const ClientOptions &options) {
-  const char *hostptr = std::getenv("DH_HOST");
-  const char *portptr = std::getenv("DH_PORT");
-  std::string host = (hostptr == nullptr) ? "localhost" : hostptr;
-  std::string port = (portptr == nullptr) ? "10000" : portptr;
-  std::string connection_string(host + ":" + port);
+  auto host = GlobalEnvironmentForTests::GetEnv("DH_HOST");
+  auto port = GlobalEnvironmentForTests::GetEnv("DH_PORT");
+  if (!host.has_value()) {
+    host = "localhost";
+  }
+  if (!port.has_value()) {
+    port = "10000";
+  }
+  auto connection_string = fmt::format("{}:{}", *host, *port);
   fmt::print(std::cerr, "Connecting to {}\n", connection_string);
   auto client = Client::Connect(connection_string, options);
   return client;
