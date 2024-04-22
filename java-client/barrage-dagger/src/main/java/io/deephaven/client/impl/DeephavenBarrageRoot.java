@@ -15,14 +15,5 @@ import io.deephaven.client.impl.BarrageSubcomponent.DeephavenClientSubcomponentM
 @Component(modules = DeephavenClientSubcomponentModule.class)
 public interface DeephavenBarrageRoot {
 
-    /**
-     * Equivalent to {@code DaggerDeephavenBarrageRoot.create()}.
-     *
-     * @return the barrage root
-     */
-    static DeephavenBarrageRoot of() {
-        return DaggerDeephavenBarrageRoot.create();
-    }
-
     Builder factoryBuilder();
 }

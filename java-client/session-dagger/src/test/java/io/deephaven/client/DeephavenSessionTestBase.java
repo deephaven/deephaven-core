@@ -29,7 +29,7 @@ public abstract class DeephavenSessionTestBase extends DeephavenApiServerTestBas
         ManagedChannel channel = channelBuilder().build();
         register(channel);
         sessionScheduler = Executors.newScheduledThreadPool(2);
-        final SessionImpl clientSessionImpl = DeephavenSessionRoot.of()
+        final SessionImpl clientSessionImpl = DaggerDeephavenSessionRoot.create()
                 .factoryBuilder()
                 .managedChannel(channel)
                 .scheduler(sessionScheduler)

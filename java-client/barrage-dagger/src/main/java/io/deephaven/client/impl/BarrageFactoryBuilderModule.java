@@ -20,6 +20,6 @@ public interface BarrageFactoryBuilderModule {
      */
     @Provides
     static BarrageSessionFactoryBuilder providesFactoryBuilder() {
-        return DeephavenBarrageRoot.of().factoryBuilder();
+        return DaggerDeephavenBarrageRoot.create().factoryBuilder();
     }
 }

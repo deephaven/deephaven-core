@@ -8,7 +8,6 @@ import com.google.protobuf.ByteString;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoSet;
-import io.deephaven.auth.AuthenticationRequestHandler;
 import io.deephaven.auth.ServiceAuthWiring;
 import io.deephaven.auth.codegen.impl.ConsoleServiceAuthWiring;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
@@ -272,7 +271,7 @@ public abstract class FlightMessageRoundTripTest {
                 .build();
 
         clientScheduler = Executors.newSingleThreadScheduledExecutor();
-        FlightSessionFactory flightSessionFactory = DeephavenFlightRoot.of()
+        FlightSessionFactory flightSessionFactory = DaggerDeephavenFlightRoot.create()
                 .factoryBuilder()
                 .managedChannel(clientChannel)
                 .scheduler(clientScheduler)

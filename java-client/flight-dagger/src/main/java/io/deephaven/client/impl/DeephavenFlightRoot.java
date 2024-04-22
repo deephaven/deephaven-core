@@ -15,14 +15,5 @@ import io.deephaven.client.impl.FlightSubcomponent.FlightSubcomponentModule;
 @Component(modules = FlightSubcomponentModule.class)
 public interface DeephavenFlightRoot {
 
-    /**
-     * Equivalent to {@code DaggerDeephavenFlightRoot.create()}.
-     *
-     * @return the flight root
-     */
-    static DeephavenFlightRoot of() {
-        return DaggerDeephavenFlightRoot.create();
-    }
-
     Builder factoryBuilder();
 }

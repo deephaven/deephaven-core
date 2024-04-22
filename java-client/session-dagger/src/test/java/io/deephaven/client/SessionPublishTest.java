@@ -36,7 +36,7 @@ public class SessionPublishTest extends DeephavenSessionTestBase {
         // Create a second client with its own channel and session.
         final ManagedChannel channel2 = channelBuilder().build();
         register(channel2);
-        session2 = DeephavenSessionRoot.of()
+        session2 = DaggerDeephavenSessionRoot.create()
                 .factoryBuilder()
                 .managedChannel(channel2)
                 .scheduler(sessionScheduler)

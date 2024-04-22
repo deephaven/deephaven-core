@@ -3,7 +3,7 @@
 //
 package io.deephaven.client.examples;
 
-import io.deephaven.client.impl.DeephavenFlightRoot;
+import io.deephaven.client.impl.DaggerDeephavenFlightRoot;
 import io.deephaven.client.impl.FlightSession;
 import io.deephaven.client.impl.TableHandle;
 import io.deephaven.qst.table.TicketTable;
@@ -72,7 +72,7 @@ class DoPutSpray implements Callable<Void> {
 
     private FlightSession session(BufferAllocator bufferAllocator, ScheduledExecutorService scheduler,
             ManagedChannel sourceChannel) {
-        return DeephavenFlightRoot.of()
+        return DaggerDeephavenFlightRoot.create()
                 .factoryBuilder()
                 .managedChannel(sourceChannel)
                 .scheduler(scheduler)
