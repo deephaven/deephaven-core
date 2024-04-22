@@ -3,7 +3,7 @@
 //
 package io.deephaven.client.impl;
 
-import io.deephaven.annotations.BuildableStyle;
+import io.deephaven.annotations.CopyableStyle;
 import io.deephaven.ssl.config.SSLConfig;
 import io.deephaven.uri.DeephavenTarget;
 import org.immutables.value.Value.Default;
@@ -16,7 +16,7 @@ import java.util.Optional;
  * The client configuration.
  */
 @Immutable
-@BuildableStyle
+@CopyableStyle
 public abstract class ClientConfig {
 
     public static final int DEFAULT_MAX_INBOUND_MESSAGE_SIZE = 100 * 1024 * 1024;
@@ -59,25 +59,9 @@ public abstract class ClientConfig {
     }
 
     /**
-     * Returns {@code this} if {@code sslConfig} equals {@link #ssl()}, otherwise creates a new client config with
-     * {@link #ssl()} as {@code sslConfig}.
-     *
-     * @param sslConfig the new SSL config
-     * @return the client config
+     * Returns or creates a client config with {@link #ssl()} as {@code ssl}.
      */
-    public ClientConfig withSsl(SSLConfig sslConfig) {
-        if (sslConfig.equals(ssl().orElse(null))) {
-            return this;
-        }
-        final Builder builder = builder()
-                .target(target())
-                .ssl(sslConfig)
-                .putAllExtraHeaders(extraHeaders())
-                .maxInboundMessageSize(maxInboundMessageSize());
-        userAgent().ifPresent(builder::userAgent);
-        overrideAuthority().ifPresent(builder::overrideAuthority);
-        return builder.build();
-    }
+    public abstract ClientConfig withSsl(SSLConfig ssl);
 
     public interface Builder {
 
