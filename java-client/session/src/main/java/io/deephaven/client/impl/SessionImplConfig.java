@@ -7,6 +7,7 @@ import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.proto.DeephavenChannel;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
+import org.immutables.value.Value.Redacted;
 
 import javax.annotation.Nullable;
 import javax.inject.Named;
@@ -46,6 +47,7 @@ public abstract class SessionImplConfig {
     public abstract DeephavenChannel channel();
 
     @Default
+    @Redacted
     public String authenticationTypeAndValue() {
         return "Anonymous";
     }

@@ -3,9 +3,6 @@
 //
 package io.deephaven.server.barrage;
 
-import io.deephaven.appmode.ApplicationState;
-import io.deephaven.appmode.ApplicationState.Factory;
-import io.deephaven.appmode.ApplicationState.Listener;
 import io.deephaven.client.impl.BarrageSessionFactory;
 import io.deephaven.client.impl.ClientChannelFactory;
 import io.deephaven.client.impl.ClientConfig;
@@ -40,16 +37,7 @@ public final class BarrageSessionFactoryClient {
 
     /**
      * Creates a {@link BarrageSessionFactory}. If {@code clientConfig} does not specify {@link ClientConfig#ssl()} and
-     * the target is secure, a {@code clientConfig} with {@code sslConfig} will be used. Equivalent to
-     * 
-     * <pre>
-     * factoryBuilder
-     *         .managedChannel(clientChannelFactory.create(clientConfig))
-     *         .scheduler(scheduler)
-     *         .allocator(allocator)
-     *         .authenticationTypeAndValue(authenticationTypeAndValue)
-     *         .build()
-     * </pre>
+     * the target is secure, a {@code clientConfig} with {@code sslConfig} will be used.
      * 
      * @param clientConfig the client configuration
      * @param authenticationTypeAndValue the authentication type and value
