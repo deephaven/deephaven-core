@@ -3,11 +3,8 @@
 //
 package io.deephaven.server.barrage;
 
-import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
-import dagger.multibindings.IntoSet;
-import io.deephaven.appmode.ApplicationState;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 
@@ -37,9 +34,4 @@ public interface BarrageClientModule {
     static ScheduledExecutorService providesScheduler() {
         return Executors.newScheduledThreadPool(4);
     }
-
-    @Binds
-    @IntoSet
-    ApplicationState.Factory bindBarrageSessionFactoryClientApplication(
-            BarrageSessionFactoryClient.Application application);
 }

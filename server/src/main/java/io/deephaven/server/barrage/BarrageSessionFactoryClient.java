@@ -70,29 +70,4 @@ public final class BarrageSessionFactoryClient {
                 .authenticationTypeAndValue(authenticationTypeAndValue)
                 .build();
     }
-
-    /**
-     * Provides an application id as {@link BarrageSessionFactoryClient} class name. A
-     * {@link BarrageSessionFactoryClient} is set as the field name {@value INSTANCE}.
-     */
-    public static final class Application implements Factory {
-
-        public static final String INSTANCE = "instance";
-
-        private final BarrageSessionFactoryClient barrageSessionFactoryClient;
-
-        @Inject
-        public Application(BarrageSessionFactoryClient barrageSessionFactoryClient) {
-            this.barrageSessionFactoryClient = Objects.requireNonNull(barrageSessionFactoryClient);
-        }
-
-        @Override
-        public ApplicationState create(Listener appStateListener) {
-            final ApplicationState state =
-                    new ApplicationState(appStateListener, BarrageSessionFactoryClient.class.getName(),
-                            Application.class.getSimpleName());
-            state.setField(INSTANCE, barrageSessionFactoryClient);
-            return state;
-        }
-    }
 }
