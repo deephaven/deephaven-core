@@ -24,6 +24,35 @@
 #include "deephaven/dhcore/utility/utility.h"
 
 namespace deephaven::client::tests {
+/**
+ * Stores a static global map of environment variable key/value pairs.
+ * Initialized from the 'envp' variable passed in to main.
+ */
+class GlobalEnvironmentForTests {
+public:
+  /**
+   * Initialize the environment_ map from the envp array passed into main().
+   * @param envp The envp parameter that was passed by the OS into 'main'.
+   */
+  static void Init(char **envp);
+
+  /**
+   * Look up 'key' in the environment_ map. Returns the associated value if found;
+   * otherwise returns the value contained in 'defaultValue'.
+   *
+   * @param key The key
+   * @param default_value The value to return if the key is not found.
+   * @return The associated value if found, otherwise the value contained in 'defaultValue'.
+   */
+  static std::string_view GetEnv(std::string_view key, std::string_view default_value);
+
+  // This is a pointer, so we don't have to worry about global construction/destruction.
+  // At global teardown time we will just leak memory.
+  // Also, std::less<> gets us the transparent comparator, so we can do lookups
+  // directly with string_view.
+  static std::map<std::string, std::string, std::less<>> *environment_;
+};
+
 class ColumnNamesForTests {
 public:
   ColumnNamesForTests();
