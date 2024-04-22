@@ -30,6 +30,8 @@ set(ALL_FILES
     include/private/deephaven/client/impl/update_by_operation_impl.h
     include/private/deephaven/client/impl/util.h
 
+    src/arrowutil/arrow_client_table.cc
+    include/private/deephaven/client/arrowutil/arrow_client_table.h
     include/private/deephaven/client/arrowutil/arrow_column_source.h
     include/private/deephaven/client/arrowutil/arrow_value_converter.h
     include/private/deephaven/client/arrowutil/arrow_visitors.h

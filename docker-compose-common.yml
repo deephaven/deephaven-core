@@ -1,5 +1,3 @@
-version: "3.4"
-
 services:
   server:
     image: ${DEEPHAVEN_SERVER_IMAGE}
@@ -40,8 +38,8 @@ services:
           cpus: '4.0'
 
     # Allows the querying of this process jinfo/jmap
-    # docker-compose exec server jmap -heap 1
-    # docker-compose exec server jinfo 1
+    # docker compose exec server jmap -heap 1
+    # docker compose exec server jinfo 1
     #
     # Add NET_ADMIN to allow throttling network speeds
     # $ docker exec -it core_server_1 apt-get install iproute2

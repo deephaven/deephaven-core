@@ -28,10 +28,10 @@ public final class TrackedSeekableChannelsProviderPlugin implements SeekableChan
     @Override
     public SeekableChannelsProvider createProvider(@NotNull final URI uri, @Nullable final Object object) {
         if (!isCompatible(uri, object)) {
-            if (object != null) {
-                throw new IllegalArgumentException("Arguments not compatible, provided non null object");
-            }
             throw new IllegalArgumentException("Arguments not compatible, provided uri " + uri);
+        }
+        if (object != null) {
+            throw new IllegalArgumentException("Arguments not compatible, provided non null object");
         }
         return new TrackedSeekableChannelsProvider(TrackedFileHandleFactory.getInstance());
     }

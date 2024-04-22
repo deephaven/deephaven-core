@@ -147,7 +147,7 @@ std::string FormatDebugString(const char *func, const char *file, size_t line,
   ::deephaven::dhcore::utility::FormatDebugString( \
     DEEPHAVEN_PRETTY_FUNCTION, __FILE__, __LINE__, MESSAGE)
 
-[[nodiscard]] std::string demangle(const char* name);
+[[nodiscard]] std::string demangle(const char *name);
 
 template<typename DESTP, typename SRCP>
 DESTP VerboseCast(const DebugInfo &debug_info, SRCP ptr) {

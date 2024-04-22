@@ -400,23 +400,22 @@ class Session:
         Raises:
             DHError
         """
-        with self._r_lock:
-            ticket = ticket_pb2.Ticket(ticket=f's/{name}'.encode(encoding='ascii'))
+        ticket = ticket_pb2.Ticket(ticket=f's/{name}'.encode(encoding='ascii'))
 
-            faketable = Table(session=self, ticket=ticket)
+        faketable = Table(session=self, ticket=ticket)
 
-            try:
-                table_op = FetchTableOp()
-                return self.table_service.grpc_table_op(faketable, table_op)
-            except Exception as e:
-                if isinstance(e.__cause__, grpc.RpcError):
-                    if e.__cause__.code() == grpc.StatusCode.INVALID_ARGUMENT:
-                        raise DHError(f"no table by the name {name}") from None
-                raise e
-            finally:
-                # Explicitly close the table without releasing it (because it isn't ours)
-                faketable.ticket = None
-                faketable.schema = None
+        try:
+            table_op = FetchTableOp()
+            return self.table_service.grpc_table_op(faketable, table_op)
+        except Exception as e:
+            if isinstance(e.__cause__, grpc.RpcError):
+                if e.__cause__.code() == grpc.StatusCode.INVALID_ARGUMENT:
+                    raise DHError(f"no table by the name {name}") from None
+            raise e
+        finally:
+            # Explicitly close the table without releasing it (because it isn't ours)
+            faketable.ticket = None
+            faketable.schema = None
 
     def bind_table(self, name: str, table: Table) -> None:
         """Binds a table to the given name on the server so that it can be referenced by that name.
@@ -428,8 +427,7 @@ class Session:
         Raises:
             DHError
         """
-        with self._r_lock:
-            self.console_service.bind_table(table=table, variable_name=name)
+        self.console_service.bind_table(table=table, variable_name=name)
 
     def time_table(self, period: Union[int, str], start_time: Union[int, str] = None,
                    blink_table: bool = False) -> Table:
@@ -514,14 +512,16 @@ class Session:
         return Query(self, table)
 
     def input_table(self, schema: pa.Schema = None, init_table: Table = None,
-                    key_cols: Union[str, List[str]] = None) -> InputTable:
-        """Creates an InputTable from either Arrow schema or initial table. When key columns are
-        provided, the InputTable will be keyed, otherwise it will be append-only.
+                    key_cols: Union[str, List[str]] = None, blink_table: bool = False) -> InputTable:
+        """Creates an InputTable from either Arrow schema or initial table.  When blink_table is True, the InputTable
+        will be a blink table. When blink_table is False (default), the InputTable will be
+        keyed if key columns are provided, otherwise it will be append-only.
 
         Args:
             schema (pa.Schema): the schema for the InputTable
             init_table (Table): the initial table
             key_cols (Union[str, Sequence[str]): the name(s) of the key column(s)
+            blink_table (bool): whether the InputTable should be a blink table, default is False
 
         Returns:
             an InputTable
@@ -534,7 +534,10 @@ class Session:
         elif schema and init_table:
             raise ValueError("both arrow schema and init table are provided.")
 
-        table_op = CreateInputTableOp(schema=schema, init_table=init_table, key_cols=to_list(key_cols))
+        if blink_table and key_cols:
+            raise ValueError("key columns are not supported for blink input tables.")
+
+        table_op = CreateInputTableOp(schema=schema, init_table=init_table, key_cols=to_list(key_cols), blink=blink_table)
         input_table = self.table_service.grpc_table_op(None, table_op, table_class=InputTable)
         input_table.key_cols = key_cols
         return input_table

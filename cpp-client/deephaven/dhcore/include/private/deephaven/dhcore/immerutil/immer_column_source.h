@@ -10,7 +10,7 @@
 #include "deephaven/dhcore/types.h"
 #include "deephaven/dhcore/utility/utility.h"
 
-namespace deephaven::client::immerutil {
+namespace deephaven::dhcore::immerutil {
 namespace internal {
 struct ImmerColumnSourceImpls {
   using BooleanChunk = deephaven::dhcore::chunk::BooleanChunk;
@@ -93,7 +93,7 @@ struct ImmerColumnSourceImpls {
         }
       };
 
-      auto copy_nulls_outer = [&src_data, src_null_flags, &copy_nulls_inner](uint64_t src_begin,
+      auto copy_nulls_outer = [&src_data, &copy_nulls_inner](uint64_t src_begin,
           uint64_t src_end) {
         auto src_beginp = src_data.begin() + src_begin;
         auto src_endp = src_data.begin() + src_end;
@@ -107,7 +107,7 @@ struct ImmerColumnSourceImpls {
         }
       };
 
-      auto copy_nulls_outer = [&src_data, src_null_flags, &copy_nulls_inner](uint64_t src_begin,
+      auto copy_nulls_outer = [src_null_flags, &copy_nulls_inner](uint64_t src_begin,
           uint64_t src_end) {
         auto nulls_begin = src_null_flags->begin() + src_begin;
         auto nulls_end = src_null_flags->begin() + src_end;

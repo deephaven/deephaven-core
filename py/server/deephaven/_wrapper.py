@@ -12,6 +12,7 @@ import importlib
 import inspect
 import pkgutil
 import sys
+import threading
 from abc import ABC, abstractmethod
 from typing import Set, Union, Optional, Any, List
 
@@ -23,6 +24,7 @@ _has_all_wrappers_imported = False
 
 JLivePyObjectWrapper = jpy.get_type('io.deephaven.server.plugin.python.LivePyObjectWrapper')
 
+_recursive_import_lock = threading.Lock()
 
 def _recursive_import(package_path: str) -> None:
     """ Recursively import every module in a package. """
@@ -108,8 +110,10 @@ def _lookup_wrapped_class(j_obj: jpy.JType) -> List[JObjectWrapper]:
     # the Java objects returned by calling resolve()
     global _has_all_wrappers_imported
     if not _has_all_wrappers_imported:
-        _recursive_import(__package__.partition(".")[0])
-        _has_all_wrappers_imported = True
+        with _recursive_import_lock:
+            if not _has_all_wrappers_imported:
+                _recursive_import(__package__.partition(".")[0])
+                _has_all_wrappers_imported = True
 
     return [wc for wc in _di_wrapper_classes if wc.j_object_type.jclass.isInstance(j_obj)]
 

@@ -30,9 +30,9 @@ LOG="$OUT_DIR/start.log"
 rm -f $LOG
 
 if [ "$engine" = "mz" ]; then
-    docker-compose up -d mysql redpanda debezium loadgen materialized mzcli >> $LOG 2>&1
+    docker compose up -d mysql redpanda debezium loadgen materialized mzcli >> $LOG 2>&1
 elif [ "$engine" = "dh" ]; then
-    docker-compose up -d mysql redpanda debezium loadgen server grpc-proxy envoy web >> $LOG 2>&1
+    docker compose up -d mysql redpanda debezium loadgen server grpc-proxy envoy web >> $LOG 2>&1
 else
     echo "$0: Internal error, aborting." 1>&2
     exit 1
@@ -40,7 +40,7 @@ fi
 
 # fire and forget; will stop when compose stops.
 COMPOSE_LOG="${OUT_DIR}/docker-compose.log"
-(nohup docker-compose logs -f >& $COMPOSE_LOG < /dev/null &)
+(nohup docker compose logs -f >& $COMPOSE_LOG < /dev/null &)
 
 # avoid race with creation of log file above
 sleep 0.2

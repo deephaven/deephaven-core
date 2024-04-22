@@ -3,6 +3,7 @@
 //
 package io.deephaven.extensions.trackedfile;
 
+import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.util.file.FileHandle;
 import io.deephaven.engine.util.file.FileHandleFactory;
@@ -10,6 +11,7 @@ import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.engine.util.file.TrackedSeekableByteChannel;
 import io.deephaven.util.channel.Channels;
 import io.deephaven.util.channel.SeekableChannelContext;
+import io.deephaven.util.channel.BaseSeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -20,8 +22,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.stream.Stream;
 
 import static io.deephaven.extensions.trackedfile.TrackedSeekableChannelsProviderPlugin.FILE_URI_SCHEME;
 
@@ -38,20 +42,17 @@ final class TrackedSeekableChannelsProvider implements SeekableChannelsProvider 
 
     @Override
     public SeekableChannelContext makeContext() {
-        // No additional context required for local FS
-        return SeekableChannelContext.NULL;
+        return new BaseSeekableChannelContext();
     }
 
     @Override
-    public boolean isCompatibleWith(@Nullable SeekableChannelContext channelContext) {
-        // Context is not used, hence always compatible
-        return true;
+    public boolean isCompatibleWith(@Nullable final SeekableChannelContext channelContext) {
+        return channelContext instanceof BaseSeekableChannelContext;
     }
 
     @Override
     public SeekableByteChannel getReadChannel(@Nullable final SeekableChannelContext channelContext,
-            @NotNull final URI uri)
-            throws IOException {
+            @NotNull final URI uri) throws IOException {
         // context is unused here
         Assert.assertion(FILE_URI_SCHEME.equals(uri.getScheme()), "Expected a file uri, got " + uri);
         return new TrackedSeekableByteChannel(fileHandleFactory.readOnlyHandleCreator, new File(uri));
@@ -69,6 +70,20 @@ final class TrackedSeekableChannelsProvider implements SeekableChannelsProvider 
         // NB: I'm not sure this is actually the intended behavior; the "truncate-once" is per-handle, not per file.
         return new TrackedSeekableByteChannel(append ? fileHandleFactory.writeAppendCreateHandleCreator
                 : new TruncateOnceFileCreator(fileHandleFactory), filePath.toFile());
+    }
+
+    @Override
+    public Stream<URI> list(@NotNull final URI directory) throws IOException {
+        // Assuming that the URI is a file, not a directory. The caller should manage file vs. directory handling in
+        // the processor.
+        return Files.list(Path.of(directory)).map(path -> FileUtils.convertToURI(path, false));
+    }
+
+    @Override
+    public Stream<URI> walk(@NotNull final URI directory) throws IOException {
+        // Assuming that the URI is a file, not a directory. The caller should manage file vs. directory handling in
+        // the processor.
+        return Files.walk(Path.of(directory)).map(path -> FileUtils.convertToURI(path, false));
     }
 
     private static final class TruncateOnceFileCreator implements FileHandleFactory.FileToHandleFunction {

@@ -7,7 +7,7 @@ import java.util.function.BiFunction;
 
 public class HistogramState extends State {
 
-    public static char TYPE_TAG = 'H';
+    public static final char TYPE_TAG = 'H';
 
     private long rangeMin, rangeMax;
     private double rangeBucket;

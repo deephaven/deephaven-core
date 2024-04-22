@@ -3,6 +3,8 @@
 //
 package io.deephaven.extensions.s3;
 
+import io.deephaven.base.log.LogOutput;
+import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.configuration.Configuration;
 import org.immutables.value.Value;
 import org.immutables.value.Value.Check;
@@ -26,7 +28,7 @@ import java.util.Optional;
         strictBuilder = true,
         weakInterning = true,
         jdkOnly = true)
-public abstract class S3Instructions {
+public abstract class S3Instructions implements LogOutputAppendable {
 
     private final static int DEFAULT_MAX_CONCURRENT_REQUESTS = 50;
     private final static int DEFAULT_READ_AHEAD_COUNT = 1;
@@ -115,6 +117,11 @@ public abstract class S3Instructions {
     @Default
     public Credentials credentials() {
         return Credentials.defaultCredentials();
+    }
+
+    @Override
+    public LogOutput append(final LogOutput logOutput) {
+        return logOutput.append(toString());
     }
 
     /**

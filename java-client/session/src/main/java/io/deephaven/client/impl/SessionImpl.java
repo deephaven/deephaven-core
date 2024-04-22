@@ -111,6 +111,9 @@ public final class SessionImpl extends SessionBase {
     private final ExportTicketCreator exportTicketCreator;
     private final ScheduledFuture<?> pingJob;
 
+    /** Cache the close future, so we only close once. */
+    private CompletableFuture<Void> closeFuture;
+
     private SessionImpl(SessionImplConfig config, DeephavenChannel bearerChannel, Duration pingFrequency,
             BearerHandler bearerHandler) {
         this.config = Objects.requireNonNull(config);
@@ -304,10 +307,13 @@ public final class SessionImpl extends SessionBase {
     }
 
     @Override
-    public CompletableFuture<Void> closeFuture() {
-        pingJob.cancel(false);
-        HandshakeRequest handshakeRequest = HandshakeRequest.getDefaultInstance();
-        return UnaryGrpcFuture.ignoreResponse(handshakeRequest, channel().session()::closeSession);
+    public synchronized CompletableFuture<Void> closeFuture() {
+        if (closeFuture == null) {
+            pingJob.cancel(false);
+            HandshakeRequest handshakeRequest = HandshakeRequest.getDefaultInstance();
+            closeFuture = UnaryGrpcFuture.ignoreResponse(handshakeRequest, channel().session()::closeSession);
+        }
+        return closeFuture;
     }
 
     @Override
