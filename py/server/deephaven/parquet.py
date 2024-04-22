@@ -14,6 +14,7 @@ import jpy
 from deephaven import DHError
 from deephaven.column import Column
 from deephaven.dtypes import DType
+from deephaven.jcompat import j_array_list
 from deephaven.table import Table, PartitionedTable
 from deephaven.experimental import s3
 
@@ -23,7 +24,6 @@ _JCompressionCodecName = jpy.get_type("org.apache.parquet.hadoop.metadata.Compre
 _JParquetInstructions = jpy.get_type("io.deephaven.parquet.table.ParquetInstructions")
 _JParquetFileLayout = jpy.get_type("io.deephaven.parquet.table.ParquetInstructions$ParquetFileLayout")
 _JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
-_JArrayList = jpy.get_type('java.util.ArrayList')
 
 
 @dataclass
@@ -238,10 +238,7 @@ def _j_string_array(str_list: List[str]):
     return jpy.array("java.lang.String", str_list)
 
 def _j_list_of_array_of_string(str_seq_seq: Sequence[Sequence[str]]):
-    ret_list = _JArrayList(len(str_seq_seq))
-    for str_seq in str_seq_seq:
-        ret_list.add(jpy.array("java.lang.String", str_seq))
-    return ret_list
+    return j_array_list([jpy.array("java.lang.String", str_seq) for str_seq in str_seq_seq])
 
 def delete(path: str) -> None:
     """ Deletes a Parquet table on disk.
