@@ -605,7 +605,7 @@ public final class ParquetTableReadWriteTest {
         assertFalse(DataIndexer.hasDataIndex(fromDisk, "A", "B"));
 
         // Set multiple columns for indexing
-        final Collection<List<String>> indexColumns = Arrays.asList(Arrays.asList("A", "C"), List.of("C"));
+        final Collection<List<String>> indexColumns = List.of(List.of("A", "C"), List.of("C"));
         writeInstructions = ParquetInstructions.builder()
                 .addAllIndexColumns(indexColumns)
                 .build();

@@ -139,7 +139,7 @@ def _build_parquet_instructions(
         builder.setFileLayout(_j_file_layout(file_layout))
 
     if table_definition is not None and col_definitions is not None:
-        raise ValueError("Both table_definition and col_definitions cannot be specified.")
+        raise ValueError("table_definition and col_definitions cannot both be specified.")
 
     if table_definition is not None:
         builder.setTableDefinition(_j_table_definition(table_definition))

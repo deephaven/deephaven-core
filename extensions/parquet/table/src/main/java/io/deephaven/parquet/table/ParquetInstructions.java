@@ -16,7 +16,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -25,6 +24,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * This class provides instructions intended for read and write parquet operations (which take it as an optional
@@ -473,7 +473,10 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             this.baseNameForPartitionedParquetData = baseNameForPartitionedParquetData;
             this.fileLayout = fileLayout;
             this.tableDefinition = tableDefinition;
-            this.indexColumns = indexColumns == null ? null : Collections.unmodifiableCollection(indexColumns);
+            this.indexColumns = indexColumns == null ? null
+                    : indexColumns.stream()
+                            .map(List::copyOf)
+                            .collect(Collectors.toUnmodifiableList());
         }
 
         private String getOrDefault(final String columnName, final String defaultValue,
@@ -935,7 +938,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
          */
         public Builder addIndexColumns(final String... indexColumns) {
             initIndexColumns();
-            this.indexColumns.add(Collections.unmodifiableList(Arrays.asList(indexColumns)));
+            this.indexColumns.add(List.of(indexColumns));
             return this;
         }
 
@@ -951,7 +954,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         public Builder addAllIndexColumns(final Iterable<List<String>> indexColumns) {
             initIndexColumns();
             for (final List<String> indexColumnList : indexColumns) {
-                this.indexColumns.add(Collections.unmodifiableList(indexColumnList));
+                this.indexColumns.add(List.copyOf(indexColumnList));
             }
             return this;
         }

@@ -52,17 +52,11 @@ public class TableBackedDataIndex extends AbstractDataIndex {
     public TableBackedDataIndex(
             @NotNull final QueryTable sourceTable,
             @NotNull final String... keyColumnNames) {
-        this(sourceTable, List.of(keyColumnNames));
-    }
-
-    public TableBackedDataIndex(
-            @NotNull final QueryTable sourceTable,
-            @NotNull final List<String> keyColumnNames) {
-        this.keyColumnNames = keyColumnNames;
+        this.keyColumnNames = List.of(keyColumnNames);
 
         // Create an in-order reverse lookup map for the key column names.
         keyColumnNamesByIndexedColumn = Collections.unmodifiableMap(
-                keyColumnNames.stream().collect(Collectors.toMap(
+                Arrays.stream(keyColumnNames).collect(Collectors.toMap(
                         sourceTable::getColumnSource, Function.identity(), Assert::neverInvoked, LinkedHashMap::new)));
 
         isRefreshing = sourceTable.isRefreshing();
