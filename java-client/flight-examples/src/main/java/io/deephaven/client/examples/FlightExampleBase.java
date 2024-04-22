@@ -45,17 +45,13 @@ abstract class FlightExampleBase implements Callable<Void> {
             authenticationOptions.ifPresent(builder::authenticationTypeAndValue);
         }
         FlightSessionFactory flightSessionFactory = builder.build();
-        FlightSession flightSession = flightSessionFactory.newFlightSession();
-        try {
+        try (final FlightSession flightSession = flightSessionFactory.newFlightSession()) {
             try {
                 execute(flightSession);
             } finally {
-                flightSession.close();
+                flightSession.session().closeFuture().get(5, TimeUnit.SECONDS);
             }
-        } finally {
-            flightSession.session().closeFuture().get(5, TimeUnit.SECONDS);
         }
-
         scheduler.shutdownNow();
         managedChannel.shutdownNow();
         return null;

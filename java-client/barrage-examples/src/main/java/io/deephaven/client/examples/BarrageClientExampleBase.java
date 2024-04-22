@@ -64,17 +64,15 @@ abstract class BarrageClientExampleBase implements Callable<Void> {
             authenticationOptions.ifPresent(builder::authenticationTypeAndValue);
         }
         final BarrageSessionFactory barrageFactory = builder.build();
-        final BarrageSession deephavenSession = barrageFactory.newBarrageSession();
-        try {
-            try (final SafeCloseable ignored = executionContext.open()) {
+        try (
+                final BarrageSession deephavenSession = barrageFactory.newBarrageSession();
+                final SafeCloseable ignored = executionContext.open()) {
+            try {
                 execute(deephavenSession);
             } finally {
-                deephavenSession.close();
+                deephavenSession.session().closeFuture().get(5, TimeUnit.SECONDS);
             }
-        } finally {
-            deephavenSession.session().closeFuture().get(5, TimeUnit.SECONDS);
         }
-
         scheduler.shutdownNow();
         managedChannel.shutdownNow();
         return null;
