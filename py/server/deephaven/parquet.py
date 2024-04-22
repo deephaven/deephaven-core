@@ -147,7 +147,7 @@ def _build_parquet_instructions(
         builder.setTableDefinition(_JTableDefinition.of([col.j_column_definition for col in col_definitions]))
 
     if index_columns:
-        builder.setIndexColumns(_j_list_of_array_of_string(index_columns))
+        builder.addAllIndexColumns(_j_list_of_list_of_string(index_columns))
 
     if special_instructions is not None:
         builder.setSpecialInstructions(special_instructions.j_object)
@@ -234,11 +234,11 @@ def read(
     except Exception as e:
         raise DHError(e, "failed to read parquet data.") from e
 
-def _j_string_array(str_list: List[str]):
-    return jpy.array("java.lang.String", str_list)
+def _j_string_array(str_seq: Sequence[str]):
+    return jpy.array("java.lang.String", str_seq)
 
-def _j_list_of_array_of_string(str_seq_seq: Sequence[Sequence[str]]):
-    return j_array_list([jpy.array("java.lang.String", str_seq) for str_seq in str_seq_seq])
+def _j_list_of_list_of_string(str_seq_seq: Sequence[Sequence[str]]):
+    return j_array_list([j_array_list(str_seq) for str_seq in str_seq_seq])
 
 def delete(path: str) -> None:
     """ Deletes a Parquet table on disk.

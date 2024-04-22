@@ -152,7 +152,7 @@ public final class ParquetTableReadWriteTest {
 
     private static Table getTableFlat(int size, boolean includeSerializable, boolean includeBigDecimal) {
         ExecutionContext.getContext().getQueryLibrary().importClass(SomeSillyTest.class);
-        ArrayList<String> columns =
+        final Collection<String> columns =
                 new ArrayList<>(Arrays.asList("someStringColumn = i % 10 == 0?null:(`` + (i % 101))",
                         "nonNullString = `` + (i % 60)",
                         "nonNullPolyString = `` + (i % 600)",
@@ -598,17 +598,16 @@ public final class ParquetTableReadWriteTest {
 
         // Clear all indexing columns
         writeInstructions = ParquetInstructions.builder()
-                .addIndexColumns("A")
-                .setIndexColumns(Collections.emptyList())
+                .addAllIndexColumns(Collections.emptyList())
                 .build();
         writeTable(source, destFile.getPath(), writeInstructions);
         fromDisk = readTable(destFile.getPath());
         assertFalse(DataIndexer.hasDataIndex(fromDisk, "A", "B"));
 
         // Set multiple columns for indexing
-        final Collection<String[]> indexColumns = Arrays.asList(new String[] {"A", "C"}, new String[] {"C"});
+        final Collection<List<String>> indexColumns = Arrays.asList(Arrays.asList("A", "C"), List.of("C"));
         writeInstructions = ParquetInstructions.builder()
-                .setIndexColumns(indexColumns)
+                .addAllIndexColumns(indexColumns)
                 .build();
         writeTable(source, destFile.getPath(), writeInstructions);
         fromDisk = readTable(destFile.getPath());
@@ -1153,7 +1152,7 @@ public final class ParquetTableReadWriteTest {
 
         // Next test passing additional indexing columns
         final String indexColumn = "NPC5";
-        final Collection<String[]> indexColumns = Collections.singleton(new String[] {indexColumn});
+        final Collection<List<String>> indexColumns = Collections.singleton(List.of(indexColumn));
         final ParquetInstructions withIndexColumns = writeInstructions.withIndexColumns(indexColumns);
         {
             writeKeyValuePartitionedTable(inputData, parentDir.getPath(), withIndexColumns);

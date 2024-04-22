@@ -68,7 +68,7 @@ public class ParquetTableWriter {
         /**
          * Names of the indexing key columns
          */
-        final String[] indexColumnNames;
+        final List<String> indexColumnNames;
         /**
          * Parquet names of the indexing key columns
          */
@@ -85,7 +85,7 @@ public class ParquetTableWriter {
         final File destFile;
 
         IndexWritingInfo(
-                final String[] indexColumnNames,
+                final List<String> indexColumnNames,
                 final String[] parquetColumnNames,
                 final File destFileForMetadata,
                 final File destFile) {

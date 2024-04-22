@@ -84,7 +84,7 @@ import static io.deephaven.util.type.TypeUtils.getUnboxedTypeIfBoxed;
 public class ParquetTools {
 
     private static final int MAX_PARTITIONING_LEVELS_INFERENCE = 32;
-    private static final Collection<String[]> EMPTY_INDEXES = Collections.emptyList();
+    private static final Collection<List<String>> EMPTY_INDEXES = Collections.emptyList();
 
     private ParquetTools() {}
 
@@ -515,12 +515,12 @@ public class ParquetTools {
     /**
      * Helper function for building index column info for writing and deleting any backup index column files
      *
-     * @param indexColumns Names of index columns, stored as String[] for each index
+     * @param indexColumns Names of index columns, stored as String list for each index
      * @param parquetColumnNameArr Names of index columns for the parquet file, stored as String[] for each index
      * @param destFile The destination path for the main table containing these index columns
      */
     private static List<ParquetTableWriter.IndexWritingInfo> indexInfoBuilderHelper(
-            @NotNull final Collection<String[]> indexColumns,
+            @NotNull final Collection<List<String>> indexColumns,
             @NotNull final String[][] parquetColumnNameArr,
             @NotNull final File destFile) {
         Require.eq(indexColumns.size(), "indexColumns.size", parquetColumnNameArr.length,
@@ -528,7 +528,7 @@ public class ParquetTools {
         final int numIndexes = indexColumns.size();
         final List<ParquetTableWriter.IndexWritingInfo> indexInfoList = new ArrayList<>(numIndexes);
         int gci = 0;
-        for (final String[] indexColumnNames : indexColumns) {
+        for (final List<String> indexColumnNames : indexColumns) {
             final String[] parquetColumnNames = parquetColumnNameArr[gci];
             final String indexFileRelativePath = getRelativeIndexFilePath(destFile, parquetColumnNames);
             final File indexFile = new File(destFile.getParent(), indexFileRelativePath);
@@ -555,7 +555,7 @@ public class ParquetTools {
      * table. The generated parquet files will have names of the format provided by
      * {@link ParquetInstructions#baseNameForPartitionedParquetData()}. By default, any indexing columns present on the
      * source table will be written as sidecar tables. To write only a subset of the indexes or add additional indexes
-     * while writing, use {@link ParquetInstructions.Builder#setIndexColumns}.
+     * while writing, use {@link ParquetInstructions.Builder#addIndexColumns}.
      *
      * @param sourceTable The table to partition and write
      * @param destinationDir The path to destination root directory to store partitioned data in nested format.
@@ -566,7 +566,7 @@ public class ParquetTools {
             @NotNull final Table sourceTable,
             @NotNull final String destinationDir,
             @NotNull final ParquetInstructions writeInstructions) {
-        final Collection<String[]> indexColumns =
+        final Collection<List<String>> indexColumns =
                 writeInstructions.getIndexColumns().orElseGet(() -> indexedColumnNames(sourceTable));
         final TableDefinition definition = writeInstructions.getTableDefinition().orElse(sourceTable.getDefinition());
         final List<ColumnDefinition<?>> partitioningColumns = definition.getPartitioningColumns();
@@ -590,7 +590,7 @@ public class ParquetTools {
      * {@link Table#partitionBy(String...) partitionBy} on the required columns. The generated parquet files will have
      * names of the format provided by {@link ParquetInstructions#baseNameForPartitionedParquetData()}. By default, this
      * method does not write any indexes as sidecar tables to disk. To write such indexes, use
-     * {@link ParquetInstructions.Builder#setIndexColumns}.
+     * {@link ParquetInstructions.Builder#addIndexColumns}.
      *
      * @param partitionedTable The partitioned table to write
      * @param destinationDir The path to destination root directory to store partitioned data in nested format.
@@ -601,7 +601,7 @@ public class ParquetTools {
             @NotNull final PartitionedTable partitionedTable,
             @NotNull final String destinationDir,
             @NotNull final ParquetInstructions writeInstructions) {
-        final Collection<String[]> indexColumns = writeInstructions.getIndexColumns().orElse(EMPTY_INDEXES);
+        final Collection<List<String>> indexColumns = writeInstructions.getIndexColumns().orElse(EMPTY_INDEXES);
         final TableDefinition keyTableDefinition, leafDefinition;
         if (writeInstructions.getTableDefinition().isEmpty()) {
             keyTableDefinition = getKeyTableDefinition(partitionedTable.keyColumnNames(),
@@ -639,7 +639,7 @@ public class ParquetTools {
             @NotNull final TableDefinition leafDefinition,
             @NotNull final String destinationRoot,
             @NotNull final ParquetInstructions writeInstructions,
-            @NotNull final Collection<String[]> indexColumns,
+            @NotNull final Collection<List<String>> indexColumns,
             @NotNull final Optional<Table> sourceTable) {
         if (leafDefinition.numColumns() == 0) {
             throw new IllegalArgumentException("Cannot write a partitioned parquet table without any non-partitioning "
@@ -737,13 +737,13 @@ public class ParquetTools {
     @Nullable
     private static List<DataIndex> addIndexesToTables(
             @NotNull final Table[] tables,
-            @NotNull final Collection<String[]> indexColumns) {
+            @NotNull final Collection<List<String>> indexColumns) {
         if (indexColumns.isEmpty()) {
             return null;
         }
         final List<DataIndex> dataIndexes = new ArrayList<>(indexColumns.size() * tables.length);
         for (final Table table : tables) {
-            for (final String[] indexCols : indexColumns) {
+            for (final List<String> indexCols : indexColumns) {
                 dataIndexes.add(DataIndexer.getOrCreateDataIndex(table, indexCols));
             }
         }
@@ -813,7 +813,7 @@ public class ParquetTools {
             @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions writeInstructions,
             @NotNull final File[] destinations,
-            @NotNull final Collection<String[]> indexColumns,
+            @NotNull final Collection<List<String>> indexColumns,
             @Nullable final MessageType partitioningColumnsSchema,
             @Nullable final File metadataRootDir,
             @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache) {
@@ -868,7 +868,7 @@ public class ParquetTools {
 
                 // Shared parquet column names across all tables
                 final String[][] parquetColumnNameArr = indexColumns.stream()
-                        .map((String[] columns) -> Arrays.stream(columns)
+                        .map((Collection<String> columns) -> columns.stream()
                                 .map(writeInstructions::getParquetColumnNameFromColumnNameOrDefault)
                                 .toArray(String[]::new))
                         .toArray(String[][]::new);
@@ -946,15 +946,15 @@ public class ParquetTools {
     }
 
     /**
-     * Examine the source tables to retrieve the list of indexes as String[] arrays.
+     * Examine the source tables to retrieve the list of indexes as String lists.
      *
      * @param sources The tables from which to retrieve the indexes
-     * @return A {@link Collection} containing the indexes as String[] arrays
+     * @return A {@link Collection} containing the indexes as String lists
      * @implNote This only examines the first source table. The writing code will compute missing indexes for the other
      *           source tables.
      */
     @NotNull
-    private static Collection<String[]> indexedColumnNames(@NotNull final Table @NotNull [] sources) {
+    private static Collection<List<String>> indexedColumnNames(@NotNull final Table @NotNull [] sources) {
         if (sources.length == 0) {
             return EMPTY_INDEXES;
         }
@@ -963,13 +963,13 @@ public class ParquetTools {
     }
 
     /**
-     * Examine the source table to retrieve the list of indexes as String[] arrays.
+     * Examine the source table to retrieve the list of indexes as String lists.
      *
      * @param source The table from which to retrieve the indexes
-     * @return A {@link Collection} containing the indexes as String[] arrays.
+     * @return A {@link Collection} containing the indexes as String lists.
      */
     @NotNull
-    private static Collection<String[]> indexedColumnNames(@NotNull final Table source) {
+    private static Collection<List<String>> indexedColumnNames(@NotNull final Table source) {
         final DataIndexer dataIndexer = DataIndexer.existingOf(source.getRowSet());
         if (dataIndexer == null) {
             return EMPTY_INDEXES;
@@ -983,24 +983,24 @@ public class ParquetTools {
         final Map<ColumnSource<?>, String> columnToName = nameToColumn.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
 
-        final Collection<String[]> indexesToWrite = new ArrayList<>();
+        final Collection<List<String>> indexesToWrite = new ArrayList<>();
 
         // Build the list of indexes to write
         dataIndexes.forEach(di -> {
             final Map<ColumnSource<?>, String> keyColumnNamesByIndexedColumn = di.keyColumnNamesByIndexedColumn();
 
             // Re-map the index columns to their names in this table
-            final String[] keyColumnNames = keyColumnNamesByIndexedColumn.keySet().stream()
+            final List<String> keyColumnNames = keyColumnNamesByIndexedColumn.keySet().stream()
                     .map(columnToName::get)
                     .filter(Objects::nonNull)
-                    .toArray(String[]::new);
+                    .collect(Collectors.toUnmodifiableList());
 
             // Make sure all the columns actually exist in the table
-            if (keyColumnNames.length == keyColumnNamesByIndexedColumn.size()) {
+            if (keyColumnNames.size() == keyColumnNamesByIndexedColumn.size()) {
                 indexesToWrite.add(keyColumnNames);
             }
         });
-        return indexesToWrite;
+        return Collections.unmodifiableCollection(indexesToWrite);
     }
 
     /**
@@ -1023,7 +1023,7 @@ public class ParquetTools {
 
     /**
      * Write out tables to disk. Data indexes to write are determined by those already present on the first source or
-     * those provided through {@link ParquetInstructions.Builder#setIndexColumns}. The {@link TableDefinition} to use
+     * those provided through {@link ParquetInstructions.Builder#addIndexColumns}. The {@link TableDefinition} to use
      * for writing must be provided as part of {@link ParquetInstructions}.
      *
      * @param sources The tables to write
@@ -1036,7 +1036,7 @@ public class ParquetTools {
             @NotNull final Table[] sources,
             @NotNull final String[] destinations,
             @NotNull final ParquetInstructions writeInstructions) {
-        final Collection<String[]> indexColumns =
+        final Collection<List<String>> indexColumns =
                 writeInstructions.getIndexColumns().orElseGet(() -> indexedColumnNames(sources));
         final TableDefinition definition = writeInstructions.getTableDefinition().orElseThrow(
                 () -> new IllegalArgumentException("Table definition must be provided"));
