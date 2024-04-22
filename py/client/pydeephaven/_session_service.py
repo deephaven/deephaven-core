@@ -44,7 +44,7 @@ class SessionService:
             raise DHError("failed to release a ticket.") from e
 
 
-    def publish(self, source_ticket, result_ticket) -> None:
+    def publish(self, source_ticket: ticket_pb2.Ticket, result_ticket: ticket_pb2.Ticket) -> None:
         """Makes a copy from the source ticket and publishes it to the result ticket.
 
         Args:

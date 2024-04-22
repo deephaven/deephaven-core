@@ -90,23 +90,23 @@ class SharedTicket:
             ticket_bytes (bytes): the raw bytes for the ticket
         """
         self._ticket_bytes = ticket_bytes
-        self.api_ticket = ticket_pb2.Ticket(ticket=b'h' + self._ticket_bytes)
+        self.api_ticket = ticket_pb2.Ticket(ticket=self._ticket_bytes)
 
     @property
-    def bytes(self):
+    def bytes(self) -> bytes:
         """ The raw bytes for the ticket."""
         return self._ticket_bytes
 
     @classmethod
     def random_ticket(cls) -> SharedTicket:
-        """Generates a random shared ticket. To minimize the probability of collision, the ticket is made using a
+        """Generates a random shared ticket. To minimize the probability of collision, the ticket is made from a
         generated UUID.
 
         Returns:
             a SharedTicket object
         """
-        ticket_bytes = uuid4().int.to_bytes(16, byteorder='little', signed=False)
-        return cls(ticket_bytes=ticket_bytes)
+        bytes_ = uuid4().int.to_bytes(16, byteorder='little', signed=False)
+        return cls(ticket_bytes=b'h' + bytes_)
 
 
 class Session:
@@ -448,8 +448,9 @@ class Session:
             faketable.ticket = None
             faketable.schema = None
 
-    def publish_table(self, table: Table, shared_ticket: SharedTicket) -> None:
-        """Publishes a table with the given shared ticket for sharing with other sessions.
+    def publish_table(self, ticket: SharedTicket, table: Table) -> None:
+        """Publishes a table to the given shared ticket. The ticket can then be used by another session to fetch the
+        table.
 
         Note that, the shared ticket can be fetched by other sessions to access the table as long as the table is
         not released. When the table is released either through an explicit call of the close method on it, or
@@ -457,19 +458,19 @@ class Session:
         no longer be valid.
 
         Args:
+            ticket (SharedTicket): a SharedTicket object
             table (Table): a Table object
-            shared_ticket (SharedTicket): a SharedTicket object
 
         Raises:
             DHError
         """
-        return self._session_service.publish(table.ticket, shared_ticket.api_ticket)
+        self._session_service.publish(table.ticket, ticket.api_ticket)
 
     def fetch_table(self, ticket: SharedTicket) -> Table:
         """Fetches a table by ticket.
 
         Args:
-            ticket (Ticket): a ticket
+            ticket (SharedTicket): a ticket
 
         Returns:
             a Table object
@@ -477,16 +478,16 @@ class Session:
         Raises:
             DHError
         """
-        faketable = Table(session=self, ticket=ticket.api_ticket)
+        table = Table(session=self, ticket=ticket.api_ticket)
         try:
             table_op = FetchTableOp()
-            return self.table_service.grpc_table_op(faketable, table_op)
+            return self.table_service.grpc_table_op(table, table_op)
         except Exception as e:
             raise DHError("could not fetch table by ticket") from e
         finally:
             # Explicitly close the table without releasing it (because it isn't ours)
-            faketable.ticket = None
-            faketable.schema = None
+            table.ticket = None
+            table.schema = None
 
     def bind_table(self, name: str, table: Table) -> None:
         """Binds a table to the given name on the server so that it can be referenced by that name.

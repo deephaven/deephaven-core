@@ -22,10 +22,10 @@ class BarrageTestCase(BaseTestCase):
         super().setUpClass()
         env = {"START_OPTS": "-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler"}
         env.update(dict(os.environ))
-        cls.server_proc = subprocess.Popen(["/opt/deephaven/server/bin/start"], shell=True, env=env,
+        cls.server_proc = subprocess.Popen(["/opt/deephaven/server/bin/start"], shell=False, env=env,
                                             stdin=subprocess.PIPE,
                                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        cls.py_client_publish_table()
+        cls.ensure_server_running()
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -33,25 +33,35 @@ class BarrageTestCase(BaseTestCase):
         super().tearDownClass()
 
     @classmethod
-    def py_client_publish_table(cls):
-        from pydeephaven.session import Session, SharedTicket
+    def ensure_server_running(cls):
+        from pydeephaven.session import Session
 
-        for _ in range(10):
+        for _ in range(30):
             try:
-                pub_session = Session("localhost", 10000)
+                Session("localhost", 10000)
                 break
             except Exception as e:
                 time.sleep(1)
         else:
-            raise
-        cls.t = pub_session.empty_table(1000).update(["X = i", "Y = 2*i"])
-        cls.shared_ticket = SharedTicket.random_ticket()
-        pub_session.publish_table(cls.t, cls.shared_ticket)
-        cls.pub_session = pub_session
+            raise RuntimeError("Cannot connect to the server")
+
+    def setUp(self) -> None:
+        from pydeephaven.session import Session, SharedTicket
+
+        self.pub_session = Session("localhost", 10000)
+        self.t = self.pub_session.empty_table(1000).update(["X = i", "Y = 2*i"])
+        self.shared_ticket = SharedTicket.random_ticket()
+        self.pub_session.publish_table(self.shared_ticket, self.t)
+
+    def tearDown(self) -> None:
+        self.pub_session.close()
 
     def test_barrage_session(self):
         session = barrage_session(host="localhost", port=10000, auth_type="Anonymous")
         self.assertIsNotNone(session)
+
+        with self.assertRaises(DHError):
+            barrage_session(host="invalid", port=10000, auth_token="Anonymous")
 
         with self.assertRaises(DHError):
             barrage_session(host="localhost", port=10000, auth_type="Basic", auth_token="user:password")
@@ -66,11 +76,54 @@ class BarrageTestCase(BaseTestCase):
         t1 = t.update("Z = X + Y")
         self.assertEqual(t1.size, 1000)
 
+        with self.subTest("using barrage session as a context manager"):
+            with barrage_session(host="localhost", port=10000, auth_type="Anonymous") as cm:
+                t = cm.subscribe(ticket=self.shared_ticket.bytes)
+            t1 = t.update("Z = X + Y")
+            self.assertEqual(t1.size, 1000)
+
+        with self.subTest("Invalid ticket"):
+            with self.assertRaises(DHError) as cm:
+                session.subscribe(ticket=self.shared_ticket.bytes + b"1")
+
+        with self.subTest("Table is closed"):
+            self.t.close()
+            with self.assertRaises(DHError) as cm:
+                session.subscribe(ticket=self.shared_ticket.bytes)
+
+        with self.subTest("publishing session is gone"):
+            self.pub_session.close()
+            with self.assertRaises(DHError) as cm:
+                session.subscribe(ticket=self.shared_ticket.bytes)
+
+
     def test_snapshot(self):
         session = barrage_session(host="localhost", port=10000, auth_type="Anonymous")
         t = session.snapshot(self.shared_ticket.bytes)
         self.assertEqual(t.size, 1000)
         self.assertEqual(len(t.columns), 2)
+        t1 = t.update("Z = X + Y")
+        self.assertEqual(t1.size, 1000)
+
+        with self.subTest("using barrage session as a context manager"):
+            with barrage_session(host="localhost", port=10000, auth_type="Anonymous") as cm:
+                t = cm.snapshot(ticket=self.shared_ticket.bytes)
+            t1 = t.update("Z = X + Y")
+            self.assertEqual(t1.size, 1000)
+
+        with self.subTest("Invalid ticket"):
+            with self.assertRaises(DHError) as cm:
+                session.snapshot(ticket=self.shared_ticket.bytes + b"1")
+
+        with self.subTest("Table is closed"):
+            self.t.close()
+            with self.assertRaises(DHError) as cm:
+                session.snapshot(ticket=self.shared_ticket.bytes)
+
+        with self.subTest("publishing session is gone"):
+            self.pub_session.close()
+            with self.assertRaises(DHError) as cm:
+                session.snapshot(ticket=self.shared_ticket.bytes)
 
 
 if __name__ == "__main__":

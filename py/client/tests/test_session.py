@@ -345,7 +345,7 @@ t1 = empty_table(0) if t.size == 2 else None
         t = pub_session.empty_table(1000).update(["X = i", "Y = 2*i"])
         self.assertEqual(t.size, 1000)
         shared_ticket = SharedTicket.random_ticket()
-        pub_session.publish_table(t, shared_ticket)
+        pub_session.publish_table(shared_ticket, t)
 
         sub_session1 = Session()
         t1 = sub_session1.fetch_table(shared_ticket)
