@@ -14,12 +14,6 @@ import javax.annotation.Nullable;
 import javax.inject.Named;
 import java.util.concurrent.ScheduledExecutorService;
 
-/**
- * The flight subcomponent.
- *
- * @see SessionImplModule
- * @see FlightSessionModule
- */
 @Subcomponent(modules = {SessionImplModule.class, FlightSessionModule.class})
 public interface FlightSubcomponent extends FlightSessionFactory {
 

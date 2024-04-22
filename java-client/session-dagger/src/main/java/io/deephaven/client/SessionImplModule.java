@@ -17,9 +17,6 @@ import javax.annotation.Nullable;
 import javax.inject.Named;
 import java.util.concurrent.ScheduledExecutorService;
 
-/**
- * Provides {@link Channel}, {@link DeephavenChannel}, {@link SessionImplConfig}, and {@link SessionImpl}.
- */
 @Module
 public interface SessionImplModule {
 
@@ -29,9 +26,6 @@ public interface SessionImplModule {
     @Binds
     DeephavenChannel bindsDeephavenChannelImpl(DeephavenChannelImpl deephavenChannelImpl);
 
-    /**
-     * Delegates to {@link SessionImplConfig#of(DeephavenChannel, ScheduledExecutorService, String)}.
-     */
     @Provides
     static SessionImplConfig providesSessionImplConfig(
             DeephavenChannel channel,
@@ -40,12 +34,6 @@ public interface SessionImplModule {
         return SessionImplConfig.of(channel, scheduler, authenticationTypeAndValue);
     }
 
-    /**
-     * Creates a session. Equivalent to {@link SessionImplConfig#createSession()}.
-     *
-     * @param config the config
-     * @return the session
-     */
     @Provides
     static SessionImpl session(SessionImplConfig config) {
         try {

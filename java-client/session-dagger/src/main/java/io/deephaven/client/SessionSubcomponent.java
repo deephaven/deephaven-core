@@ -14,11 +14,6 @@ import javax.annotation.Nullable;
 import javax.inject.Named;
 import java.util.concurrent.ScheduledExecutorService;
 
-/**
- * The session subcomponent.
- *
- * @see SessionImplModule
- */
 @Subcomponent(modules = SessionImplModule.class)
 public interface SessionSubcomponent extends SessionFactory {
 

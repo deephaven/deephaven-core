@@ -15,17 +15,11 @@ import javax.inject.Singleton;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-/**
- * Provides a singleton {@link BufferAllocator}, a singleton {@link ScheduledExecutorService}, and binds
- * {@link BarrageSessionFactoryClient.Application}.
- */
 @Module
 public interface BarrageClientModule {
 
     /**
-     * Equivalent to {@code new RootAllocator()}.
-     *
-     * @see RootAllocator
+     * Equivalent to {@link RootAllocator#RootAllocator()}.
      */
     @Provides
     @Singleton
@@ -44,9 +38,6 @@ public interface BarrageClientModule {
         return Executors.newScheduledThreadPool(4);
     }
 
-    /**
-     * Binds {@link BarrageSessionFactoryClient.Application}.
-     */
     @Binds
     @IntoSet
     ApplicationState.Factory bindBarrageSessionFactoryClientApplication(

@@ -7,11 +7,6 @@ import dagger.Component;
 import io.deephaven.client.impl.BarrageSubcomponent.Builder;
 import io.deephaven.client.impl.BarrageSubcomponent.DeephavenClientSubcomponentModule;
 
-/**
- * Component for creating {@link BarrageSubcomponent}.
- *
- * @see DeephavenClientSubcomponentModule
- */
 @Component(modules = DeephavenClientSubcomponentModule.class)
 public interface DeephavenBarrageRoot {
 

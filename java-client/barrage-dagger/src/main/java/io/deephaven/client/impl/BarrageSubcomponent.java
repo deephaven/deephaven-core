@@ -14,13 +14,6 @@ import javax.annotation.Nullable;
 import javax.inject.Named;
 import java.util.concurrent.ScheduledExecutorService;
 
-/**
- * The barrage subcomponent.
- *
- * @see SessionImplModule
- * @see FlightSessionModule
- * @see BarrageSessionModule
- */
 @Subcomponent(modules = {SessionImplModule.class, FlightSessionModule.class, BarrageSessionModule.class})
 public interface BarrageSubcomponent extends BarrageSessionFactory {
 
