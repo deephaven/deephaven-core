@@ -166,15 +166,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
      */
     @Nullable
     public static DataIndex getDataIndex(@NotNull final Table table, final String... keyColumnNames) {
-        if (keyColumnNames.length == 0) {
-            return null;
-        }
-        final Table tableToUse = table.coalesce();
-        final DataIndexer indexer = DataIndexer.existingOf(tableToUse.getRowSet());
-        if (indexer == null) {
-            return null;
-        }
-        return indexer.getDataIndex(getColumnSources(tableToUse, keyColumnNames));
+        return getDataIndex(table, Arrays.asList(keyColumnNames));
     }
 
     /**
@@ -271,13 +263,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
     public static DataIndex getOrCreateDataIndex(
             @NotNull final Table table,
             @NotNull final String... keyColumnNames) {
-        if (keyColumnNames.length == 0) {
-            throw new IllegalArgumentException("Cannot create a DataIndex without any key columns");
-        }
-        final QueryTable tableToUse = (QueryTable) table.coalesce();
-        final DataIndexer dataIndexer = DataIndexer.of(tableToUse.getRowSet());
-        return dataIndexer.rootCache.computeIfAbsent(dataIndexer.pathFor(getColumnSources(tableToUse, keyColumnNames)),
-                () -> new TableBackedDataIndex(tableToUse, keyColumnNames));
+        return getOrCreateDataIndex(table, Arrays.asList(keyColumnNames));
     }
 
     /**
