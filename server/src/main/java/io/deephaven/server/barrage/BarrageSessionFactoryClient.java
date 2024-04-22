@@ -7,9 +7,9 @@ import io.deephaven.appmode.ApplicationState;
 import io.deephaven.appmode.ApplicationState.Factory;
 import io.deephaven.appmode.ApplicationState.Listener;
 import io.deephaven.client.impl.BarrageSessionFactory;
-import io.deephaven.client.impl.BarrageSessionFactoryBuilder;
 import io.deephaven.client.impl.ClientChannelFactory;
 import io.deephaven.client.impl.ClientConfig;
+import io.deephaven.client.impl.DaggerDeephavenBarrageRoot;
 import io.deephaven.ssl.config.SSLConfig;
 import org.apache.arrow.memory.BufferAllocator;
 
@@ -21,7 +21,6 @@ import java.util.concurrent.ScheduledExecutorService;
 
 public final class BarrageSessionFactoryClient {
 
-    private final BarrageSessionFactoryBuilder factoryBuilder;
     private final ScheduledExecutorService scheduler;
     private final BufferAllocator allocator;
     private final ClientChannelFactory clientChannelFactory;
@@ -29,12 +28,10 @@ public final class BarrageSessionFactoryClient {
 
     @Inject
     public BarrageSessionFactoryClient(
-            BarrageSessionFactoryBuilder factoryBuilder,
             ScheduledExecutorService scheduler,
             BufferAllocator allocator,
             @Named("client.sslConfig") SSLConfig sslConfig,
             ClientChannelFactory clientChannelFactory) {
-        this.factoryBuilder = Objects.requireNonNull(factoryBuilder);
         this.scheduler = Objects.requireNonNull(scheduler);
         this.allocator = Objects.requireNonNull(allocator);
         this.sslConfig = Objects.requireNonNull(sslConfig);
@@ -65,7 +62,8 @@ public final class BarrageSessionFactoryClient {
         } else {
             config = clientConfig;
         }
-        return factoryBuilder
+        return DaggerDeephavenBarrageRoot.create()
+                .factoryBuilder()
                 .managedChannel(clientChannelFactory.create(config))
                 .scheduler(scheduler)
                 .allocator(allocator)

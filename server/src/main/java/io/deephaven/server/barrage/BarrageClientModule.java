@@ -8,7 +8,6 @@ import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoSet;
 import io.deephaven.appmode.ApplicationState;
-import io.deephaven.client.impl.BarrageFactoryBuilderModule;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 
@@ -20,7 +19,7 @@ import java.util.concurrent.ScheduledExecutorService;
  * Provides a singleton {@link BufferAllocator}, a singleton {@link ScheduledExecutorService}, and binds
  * {@link BarrageSessionFactoryClient.Application}.
  */
-@Module(includes = BarrageFactoryBuilderModule.class)
+@Module
 public interface BarrageClientModule {
 
     /**
