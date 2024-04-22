@@ -46,7 +46,8 @@ class ParquetFileLayout(Enum):
     """ A single directory of parquet files. """
 
     KV_PARTITIONED = 3
-    """ A key-value directory partitioning of parquet files. """
+    """ A hierarchically partitioned directory layout of parquet files. Directory names are of the format "key=value" 
+     with keys derived from the partitioning columns. """
 
     METADATA_PARTITIONED = 4
     """
@@ -138,7 +139,7 @@ def _build_parquet_instructions(
         builder.setFileLayout(_j_file_layout(file_layout))
 
     if table_definition is not None and col_definitions is not None:
-        raise ValueError("Both table_definition and col_definitions cannot both be specified.")
+        raise ValueError("Both table_definition and col_definitions cannot be specified.")
 
     if table_definition is not None:
         builder.setTableDefinition(_j_table_definition(table_definition))
@@ -469,6 +470,7 @@ def batch_write(
     if col_definitions is not None:
         warn("col_definitions is deprecated and will be removed in a future release. Use table_definition "
              "instead.", DeprecationWarning, stacklevel=2)
+        #TODO(deephaven-core#5362): Remove col_definitions parameter
     elif table_definition is None:
         raise ValueError("Either table_definition or col_definitions must be specified.")
     try:

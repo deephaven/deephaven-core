@@ -692,13 +692,22 @@ class ParquetTestCase(BaseTestCase):
         table = empty_table(3).update(
             formulas=["a=i", "b=(double)(i/10.0)", "c=(double)(i*i)", "d=ii"]
         )
-        write(table, "data_from_dh.parquet", table_definition={
+        table_definition = {
             "a": dtypes.int32,
             "b": dtypes.double,
-            "c": dtypes.double
-        })
+            "c": dtypes.double,
+        }
+        write(table, "data_from_dh.parquet", table_definition=table_definition)
         from_disk = read("data_from_dh.parquet")
         self.assert_table_equals(from_disk, table.select(["a", "b", "c"]))
+
+        col_definitions = from_disk.columns
+        write(table, "data_from_dh.parquet", col_definitions=col_definitions)
+        from_disk = read("data_from_dh.parquet")
+        self.assert_table_equals(from_disk, table.select(["a", "b", "c"]))
+
+        with self.assertRaises(Exception):
+            write(table, "data_from_dh.parquet", table_definition=table_definition, col_definitions=col_definitions)
 
 if __name__ == '__main__':
     unittest.main()
