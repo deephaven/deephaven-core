@@ -25,13 +25,13 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import static io.deephaven.base.FileUtils.URI_SEPARATOR;
+
 /**
  * Extracts a key-value partitioned table layout from a stream of URIs.
  */
 public abstract class URIStreamKeyValuePartitionLayout<TLK extends TableLocationKey>
         extends KeyValuePartitionLayout<TLK, URI> {
-
-    private static final String URI_SEPARATOR = "/";
 
     protected final URI tableRootDirectory;
     private final Supplier<LocationTableBuilder> locationTableBuilderFactory;
@@ -96,7 +96,7 @@ public abstract class URIStreamKeyValuePartitionLayout<TLK extends TableLocation
             @NotNull final TIntObjectMap<ColumnNameInfo> partitionColInfo,
             final boolean registered) {
         final String relativePathString = relativePath.getPath();
-        // The following assumes that there is exactly one URI_SEPARATOR between each subdirectory in the path
+        // The following assumes that there is exactly one separator between each subdirectory in the path
         final String[] subDirs = relativePathString.split(URI_SEPARATOR);
         final int numPartitioningCol = subDirs.length - 1;
         if (registered) {

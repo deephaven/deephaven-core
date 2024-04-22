@@ -38,7 +38,9 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import static io.deephaven.base.FileUtils.DUPLICATE_SLASH_PATTERN;
+import static io.deephaven.base.FileUtils.REPEATED_URI_SEPARATOR;
+import static io.deephaven.base.FileUtils.REPEATED_URI_SEPARATOR_PATTERN;
+import static io.deephaven.base.FileUtils.URI_SEPARATOR;
 import static io.deephaven.extensions.s3.S3ChannelContext.handleS3Exception;
 import static io.deephaven.extensions.s3.S3SeekableChannelProviderPlugin.S3_URI_SCHEME;
 
@@ -208,8 +210,8 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
                         .filter(s3Object -> !s3Object.key().equals(directoryKey))
                         .map(s3Object -> {
                             String path = "/" + s3Object.key();
-                            if (path.contains("//")) {
-                                path = DUPLICATE_SLASH_PATTERN.matcher(path).replaceAll("/");
+                            if (path.contains(REPEATED_URI_SEPARATOR)) {
+                                path = REPEATED_URI_SEPARATOR_PATTERN.matcher(path).replaceAll(URI_SEPARATOR);
                             }
                             try {
                                 return new URI(S3_URI_SCHEME, directory.getUserInfo(), directory.getHost(),

@@ -5,7 +5,6 @@ package io.deephaven.parquet.table.location;
 
 import io.deephaven.engine.table.impl.locations.local.URITableLocationKey;
 import io.deephaven.parquet.table.ParquetInstructions;
-import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
 import io.deephaven.parquet.base.ParquetFileReader;
@@ -102,7 +101,7 @@ public class ParquetTableLocationKey extends URITableLocationKey {
      * </ol>
      *
      * Callers wishing to handle these cases more explicit may call
-     * {@link ParquetTools#getParquetFileReaderChecked(URI, ParquetInstructions)}.
+     * {@link ParquetFileReader#createChecked(URI, Object)}.
      *
      * @return true if the file reader exists or was successfully created
      */
@@ -111,7 +110,7 @@ public class ParquetTableLocationKey extends URITableLocationKey {
             return true;
         }
         try {
-            fileReader = ParquetTools.getParquetFileReaderChecked(uri, readInstructions);
+            fileReader = ParquetFileReader.createChecked(uri, readInstructions.getSpecialInstructions());
         } catch (IOException e) {
             return false;
         }
@@ -128,7 +127,7 @@ public class ParquetTableLocationKey extends URITableLocationKey {
         if (fileReader != null) {
             return fileReader;
         }
-        return fileReader = ParquetTools.getParquetFileReader(uri, readInstructions);
+        return fileReader = ParquetFileReader.create(uri, readInstructions.getSpecialInstructions());
     }
 
     /**
