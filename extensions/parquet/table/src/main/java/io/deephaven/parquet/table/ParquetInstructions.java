@@ -938,14 +938,19 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         /**
-         * Add a collection of index columns to persist. The write operation will store the index info as sidecar
-         * tables. This argument is used to narrow the set of indexes to write, or to be explicit about the expected set
-         * of indexes present on all sources. Indexes that are specified but missing will be computed on demand. To
-         * prevent the generation of index files, use an empty collection.
+         * Add a collection of index columns to persist. This operation would replace any existing index columns
+         * previously added to the builder. The provided collection should contain arrays of strings, where each array
+         * represents a group of columns to be indexed together.
+         * <p>
+         * The write operation will store the index info as sidecar tables. This argument is used to narrow the set of
+         * indexes to write, or to be explicit about the expected set of indexes present on all sources. Indexes that
+         * are specified but missing will be computed on demand. To prevent the generation of index files, use an empty
+         * collection.
          */
         public Builder setIndexColumns(final Iterable<String[]> indexColumns) {
             initIndexColumns();
             final Collection<String[]> indexColumnsCollection = this.indexColumns.get();
+            indexColumnsCollection.clear();
             indexColumns.forEach(indexColumnsCollection::add);
             return this;
         }

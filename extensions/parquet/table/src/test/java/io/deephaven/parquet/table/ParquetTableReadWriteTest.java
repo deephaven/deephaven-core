@@ -573,6 +573,51 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
+    public void parquetIndexingBuilderTest() {
+        final Table source = TableTools.emptyTable(1_000_000).updateView(
+                "A = (int)(ii%3)",
+                "B = (double)(ii%2)",
+                "C = ii");
+        DataIndexer.getOrCreateDataIndex(source, "A", "B");
+        final File destFile = new File(rootFile, "parquetIndexingBuilderTest.parquet");
+        writeTable(source, destFile.getPath());
+        Table fromDisk = readTable(destFile.getPath());
+        assertTableEquals(source, fromDisk);
+        verifyIndexingInfoExists(fromDisk, "A", "B");
+
+        // Set a single column for indexing
+        ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .addIndexColumns("A")
+                .build();
+        writeTable(source, destFile.getPath(), writeInstructions);
+        fromDisk = readTable(destFile.getPath());
+        assertTableEquals(source, fromDisk);
+        verifyIndexingInfoExists(fromDisk, "A");
+        assertFalse(DataIndexer.hasDataIndex(fromDisk, "A", "B"));
+        assertNull(DataIndexer.getDataIndex(fromDisk, "A", "B"));
+
+        // Clear all indexing columns
+        writeInstructions = ParquetInstructions.builder()
+                .addIndexColumns("A")
+                .setIndexColumns(Collections.emptyList())
+                .build();
+        writeTable(source, destFile.getPath(), writeInstructions);
+        fromDisk = readTable(destFile.getPath());
+        assertFalse(DataIndexer.hasDataIndex(fromDisk, "A", "B"));
+
+        // Set multiple columns for indexing
+        final Collection<String[]> indexColumns = Arrays.asList(new String[] {"A", "C"}, new String[] {"C"});
+        writeInstructions = ParquetInstructions.builder()
+                .setIndexColumns(indexColumns)
+                .build();
+        writeTable(source, destFile.getPath(), writeInstructions);
+        fromDisk = readTable(destFile.getPath());
+        assertTableEquals(source, fromDisk);
+        verifyIndexingInfoExists(fromDisk, "A", "C");
+        verifyIndexingInfoExists(fromDisk, "C");
+    }
+
+    @Test
     public void parquetWithIndexingDataAndMetadataTest() {
         final File parentDir = new File(rootFile, "tempDir");
         final int[] data = new int[500 * 4];
