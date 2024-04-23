@@ -106,29 +106,36 @@ set(ALL_FILES
 #
 
 add_library(dhcore SHARED ${ALL_FILES})
+add_library(dhcore_static STATIC ${ALL_FILES})
 
 # This is so deephaven::dhcore works both when using the installed CMake config
 # and when using this project as a CMake subdirectory of your own project.
 add_library(deephaven::dhcore ALIAS dhcore)
 
 set_property(TARGET dhcore PROPERTY POSITION_INDEPENDENT_CODE ON)
-
-if (LINUX)
-    target_compile_options(dhcore PRIVATE -Wall -Werror -Wno-deprecated-declarations)
-endif()
-
 if (WIN32)
   set_property(TARGET dhcore PROPERTY WINDOWS_EXPORT_ALL_SYMBOLS ON)
-  # /Wall is a bit too chatty so we stick with /W3
-  # /bigobj needed because ticking/immer_table_state.cc compiles to something too large apparently
-  target_compile_options(dhcore PRIVATE /W3 /bigobj)
-  target_compile_definitions(dhcore PRIVATE _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
 endif()
 
-target_include_directories(dhcore PRIVATE include/private)
-target_include_directories(dhcore PRIVATE third_party/date/include)
-target_include_directories(dhcore PRIVATE third_party/flatbuffers/include)
-target_include_directories(dhcore PRIVATE third_party/roaring/include)
-target_include_directories(dhcore PRIVATE flatbuf)
-target_include_directories(dhcore PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/public>)
-target_link_libraries(dhcore PUBLIC immer)
+foreach (whichlib dhcore dhcore_static)
+  if (LINUX)
+    target_compile_options(${whichlib} PRIVATE -Wall -Werror -Wno-deprecated-declarations)
+  endif()
+
+  if (WIN32)
+    # /Wall is a bit too chatty so we stick with /W3
+    # /bigobj needed because ticking/immer_table_state.cc compiles to something too large apparently
+    target_compile_options(${whichlib} PRIVATE /W3 /bigobj)
+
+    target_compile_definitions(${whichlib} PRIVATE _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
+  endif()
+
+  target_include_directories(${whichlib} PRIVATE include/private)
+  target_include_directories(${whichlib} PRIVATE third_party/date/include)
+  target_include_directories(${whichlib} PRIVATE third_party/flatbuffers/include)
+  target_include_directories(${whichlib} PRIVATE third_party/roaring/include)
+  target_include_directories(${whichlib} PRIVATE flatbuf)
+  target_include_directories(${whichlib} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/public>)
+
+  target_link_libraries(${whichlib} PUBLIC immer)
+endforeach()

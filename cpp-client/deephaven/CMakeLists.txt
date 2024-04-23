@@ -39,7 +39,7 @@ if(NOT DHCORE_ONLY)
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
         )
 
-    install(TARGETS dhclient dhcore dhclient_tests
+    install(TARGETS dhclient dhcore dhcore_static dhclient_tests
         EXPORT deephavenConfig
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}

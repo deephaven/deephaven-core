@@ -8,8 +8,11 @@ We have used the instructions in the past to build
 for older Ubuntu versions (20.04) and for some Fedora versions, but we don't regularly test
 on them anymore so we do not guarantee they are current for those platforms.
 
-Instructions for Linux are below. Instructions for Windows are at the end of
-the document.
+================================================================================
+Instructions for Linux are below. Instructions for Windows are in the section
+that follows.
+
+# Building the C++ client on Ubuntu 22.04
 
 1. Start with an Ubuntu 22.04 install
 
