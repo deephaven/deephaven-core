@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD 17)
 include(GNUInstallDirs)
 
 find_package(Arrow CONFIG REQUIRED)
-find_package(ArrowFlight CONFIG REQUIRED)
+find_package(ArrowFlight CONFIG REQUIRED HINTS ${Arrow_DIR})
 find_package(Immer REQUIRED)
 find_package(Protobuf CONFIG REQUIRED)
 find_package(gRPC CONFIG REQUIRED)
