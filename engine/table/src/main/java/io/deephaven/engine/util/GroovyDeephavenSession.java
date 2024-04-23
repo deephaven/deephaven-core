@@ -86,6 +86,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
     private static final String DEFAULT_SCRIPT_PATH = Configuration.getInstance()
             .getStringWithDefault("GroovyDeephavenSession.defaultScriptPath", ".");
+    private static final String DEFAULT_SCRIPT_PREFIX = "Script";
 
     private static final boolean INCLUDE_DEFAULT_IMPORTS_IN_LOADED_GROOVY =
             Configuration.getInstance()
@@ -135,7 +136,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
     private static class DeephavenGroovyShell extends GroovyShell {
         private final AtomicInteger counter = new AtomicInteger();
-        private volatile String scriptPrefix = "Script";
+        private volatile String scriptPrefix = DEFAULT_SCRIPT_PREFIX;
 
         DeephavenGroovyShell(
                 final GroovyClassLoader loader,
@@ -339,11 +340,10 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         final String lastCommand = fc.second;
         final String commandPrefix = fc.first;
 
-        final String newScriptPrefix = scriptName == null
-                ? groovyShell.scriptPrefix
+        final String currentScriptName = scriptName == null
+                ? DEFAULT_SCRIPT_PREFIX
                 : scriptName.replaceAll("[^0-9A-Za-z_]", "_").replaceAll("(^[0-9])", "_$1");
-        try (final SafeCloseable ignored = groovyShell.setScriptPrefix(newScriptPrefix)) {
-            final String currentScriptName = groovyShell.scriptPrefix;
+        try (final SafeCloseable ignored = groovyShell.setScriptPrefix(currentScriptName)) {
 
             updateClassloader(lastCommand);
 

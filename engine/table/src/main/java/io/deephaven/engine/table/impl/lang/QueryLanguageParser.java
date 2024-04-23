@@ -110,6 +110,7 @@ import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 import org.jpy.PyObject;
 
 import java.lang.reflect.Array;
@@ -189,62 +190,6 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
      *        imported.
      * @param variables A map of the names of scope variables to their types
      * @param variableTypeArguments A map of the names of scope variables to their type arguments
-     * @throws QueryLanguageParseException If any exception or error is encountered
-     */
-    @TestUseOnly
-    QueryLanguageParser(
-            String expression,
-            Collection<Package> packageImports,
-            Collection<Class<?>> classImports,
-            Collection<Class<?>> staticImports,
-            Map<String, Class<?>> variables,
-            Map<String, Class<?>[]> variableTypeArguments) throws QueryLanguageParseException {
-        this(expression, packageImports, classImports, staticImports, variables,
-                variableTypeArguments, null, null, true, null);
-    }
-
-    /**
-     * Create a QueryLanguageParser and parse the given {@code expression}. After construction, the
-     * {@link QueryLanguageParser.Result result} of parsing the {@code expression} is available with the
-     * {@link #getResult()}} method.
-     *
-     * @param expression The query language expression to parse
-     * @param packageImports Wildcard package imports
-     * @param classImports Individual class imports
-     * @param staticImports Wildcard static imports. All static variables and methods for the given classes are
-     *        imported.
-     * @param variables A map of the names of scope variables to their types
-     * @param variableTypeArguments A map of the names of scope variables to their type arguments
-     * @param queryScopeVariables A mutable map of the names of query scope variables to their values
-     * @param columnVariables A set of column variable names
-     * @throws QueryLanguageParseException If any exception or error is encountered
-     */
-    public QueryLanguageParser(
-            String expression,
-            Collection<Package> packageImports,
-            Collection<Class<?>> classImports,
-            Collection<Class<?>> staticImports,
-            Map<String, Class<?>> variables,
-            Map<String, Class<?>[]> variableTypeArguments,
-            @Nullable Map<String, Object> queryScopeVariables,
-            @Nullable Set<String> columnVariables,
-            @Nullable TimeLiteralReplacedExpression timeConversionResult) throws QueryLanguageParseException {
-        this(expression, packageImports, classImports, staticImports, variables,
-                variableTypeArguments, queryScopeVariables, columnVariables, true, timeConversionResult);
-    }
-
-    /**
-     * Create a QueryLanguageParser and parse the given {@code expression}. After construction, the
-     * {@link QueryLanguageParser.Result result} of parsing the {@code expression} is available with the
-     * {@link #getResult()}} method.
-     *
-     * @param expression The query language expression to parse
-     * @param packageImports Wildcard package imports
-     * @param classImports Individual class imports
-     * @param staticImports Wildcard static imports. All static variables and methods for the given classes are
-     *        imported.
-     * @param variables A map of the names of scope variables to their types
-     * @param variableTypeArguments A map of the names of scope variables to their type arguments
      * @param unboxArguments If true it will unbox the query scope arguments
      * @param queryScopeVariables A mutable map of the names of query scope variables to their values
      * @param columnVariables A set of column variable names
@@ -276,6 +221,33 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 timeConversionResult);
     }
 
+    /**
+     * Create a QueryLanguageParser and parse the given {@code expression}. After construction, the
+     * {@link QueryLanguageParser.Result result} of parsing the {@code expression} is available with the
+     * {@link #getResult()}} method.
+     *
+     * @param expression The query language expression to parse
+     * @param packageImports Wildcard package imports
+     * @param classImports Individual class imports
+     * @param staticImports Wildcard static imports. All static variables and methods for the given classes are
+     *        imported.
+     * @param variables A map of the names of scope variables to their types
+     * @param variableTypeArguments A map of the names of scope variables to their type arguments
+     * @throws QueryLanguageParseException If any exception or error is encountered
+     */
+    @TestUseOnly
+    QueryLanguageParser(
+            String expression,
+            Collection<Package> packageImports,
+            Collection<Class<?>> classImports,
+            Collection<Class<?>> staticImports,
+            Map<String, Class<?>> variables,
+            Map<String, Class<?>[]> variableTypeArguments) throws QueryLanguageParseException {
+        this(expression, packageImports, classImports, staticImports, variables,
+                variableTypeArguments, null, null, true, null);
+    }
+
+    @VisibleForTesting
     QueryLanguageParser(
             String expression,
             final Collection<Package> packageImports,
