@@ -112,12 +112,13 @@ add_library(dhcore_static STATIC ${ALL_FILES})
 # and when using this project as a CMake subdirectory of your own project.
 add_library(deephaven::dhcore ALIAS dhcore)
 
-set_property(TARGET dhcore PROPERTY POSITION_INDEPENDENT_CODE ON)
 if (WIN32)
   set_property(TARGET dhcore PROPERTY WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif()
 
 foreach (whichlib dhcore dhcore_static)
+  set_property(TARGET ${whichlib} PROPERTY POSITION_INDEPENDENT_CODE ON)
+
   if (LINUX)
     target_compile_options(${whichlib} PRIVATE -Wall -Werror -Wno-deprecated-declarations)
   endif()
