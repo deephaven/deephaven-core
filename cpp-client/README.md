@@ -8,7 +8,6 @@ We have used the instructions in the past to build
 for older Ubuntu versions (20.04) and for some Fedora versions, but we don't regularly test
 on them anymore so we do not guarantee they are current for those platforms.
 
-================================================================================
 Instructions for Linux are below. Instructions for Windows are in the section
 that follows.
 
