@@ -349,7 +349,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
 
             try {
                 ExecutionContext.getContext().getUpdateGraph().exclusiveLock()
-                        .doLockedInterruptibly(() -> groovyShell.evaluate(command));
+                        .doLockedInterruptibly(() -> groovyShell.evaluate(lastCommand));
             } catch (InterruptedException e) {
                 throw new CancellationException(e.getMessage() != null ? e.getMessage() : "Query interrupted",
                         maybeRewriteStackTrace(scriptName, currentScriptName, e, lastCommand, commandPrefix));
