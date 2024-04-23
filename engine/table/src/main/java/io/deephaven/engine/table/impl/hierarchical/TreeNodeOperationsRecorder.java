@@ -9,12 +9,12 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.engine.table.hierarchical.TreeTable.NodeOperationsRecorder;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -137,7 +137,14 @@ class TreeNodeOperationsRecorder extends BaseNodeOperationsRecorder<TreeTable.No
         }
 
         private Stream<? extends WhereFilter> whereFilters() {
-            return Stream.of(WhereFilter.fromInternal(filter)).peek(wf -> wf.init(getDefinition()));
+            final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor =
+                    QueryCompilerRequestProcessor.batch();
+            final WhereFilter[] filters = WhereFilter.fromInternal(filter);
+            for (final WhereFilter filter : filters) {
+                filter.init(getDefinition(), compilationProcessor);
+            }
+            compilationProcessor.compile();
+            return Stream.of(filters);
         }
     }
 }

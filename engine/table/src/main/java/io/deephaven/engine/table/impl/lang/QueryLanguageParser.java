@@ -94,6 +94,7 @@ import io.deephaven.engine.util.PyCallableWrapper.ConstantChunkArgument;
 import io.deephaven.engine.util.PyCallableWrapperJpyImpl;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.time.TimeLiteralReplacedExpression;
 import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.ByteVector;
@@ -109,6 +110,7 @@ import org.apache.commons.lang3.ClassUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.VisibleForTesting;
 import org.jpy.PyObject;
 
 import java.lang.reflect.Array;
@@ -188,61 +190,6 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
      *        imported.
      * @param variables A map of the names of scope variables to their types
      * @param variableTypeArguments A map of the names of scope variables to their type arguments
-     * @throws QueryLanguageParseException If any exception or error is encountered
-     */
-    @TestUseOnly
-    QueryLanguageParser(
-            String expression,
-            Collection<Package> packageImports,
-            Collection<Class<?>> classImports,
-            Collection<Class<?>> staticImports,
-            Map<String, Class<?>> variables,
-            Map<String, Class<?>[]> variableTypeArguments) throws QueryLanguageParseException {
-        this(expression, packageImports, classImports, staticImports, variables,
-                variableTypeArguments, null, null, true);
-    }
-
-    /**
-     * Create a QueryLanguageParser and parse the given {@code expression}. After construction, the
-     * {@link QueryLanguageParser.Result result} of parsing the {@code expression} is available with the
-     * {@link #getResult()}} method.
-     *
-     * @param expression The query language expression to parse
-     * @param packageImports Wildcard package imports
-     * @param classImports Individual class imports
-     * @param staticImports Wildcard static imports. All static variables and methods for the given classes are
-     *        imported.
-     * @param variables A map of the names of scope variables to their types
-     * @param variableTypeArguments A map of the names of scope variables to their type arguments
-     * @param queryScopeVariables A mutable map of the names of query scope variables to their values
-     * @param columnVariables A set of column variable names
-     * @throws QueryLanguageParseException If any exception or error is encountered
-     */
-    public QueryLanguageParser(
-            String expression,
-            Collection<Package> packageImports,
-            Collection<Class<?>> classImports,
-            Collection<Class<?>> staticImports,
-            Map<String, Class<?>> variables,
-            Map<String, Class<?>[]> variableTypeArguments,
-            @Nullable Map<String, Object> queryScopeVariables,
-            @Nullable Set<String> columnVariables) throws QueryLanguageParseException {
-        this(expression, packageImports, classImports, staticImports, variables,
-                variableTypeArguments, queryScopeVariables, columnVariables, true);
-    }
-
-    /**
-     * Create a QueryLanguageParser and parse the given {@code expression}. After construction, the
-     * {@link QueryLanguageParser.Result result} of parsing the {@code expression} is available with the
-     * {@link #getResult()}} method.
-     *
-     * @param expression The query language expression to parse
-     * @param packageImports Wildcard package imports
-     * @param classImports Individual class imports
-     * @param staticImports Wildcard static imports. All static variables and methods for the given classes are
-     *        imported.
-     * @param variables A map of the names of scope variables to their types
-     * @param variableTypeArguments A map of the names of scope variables to their type arguments
      * @param unboxArguments If true it will unbox the query scope arguments
      * @param queryScopeVariables A mutable map of the names of query scope variables to their values
      * @param columnVariables A set of column variable names
@@ -257,8 +204,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             Map<String, Class<?>[]> variableTypeArguments,
             @Nullable Map<String, Object> queryScopeVariables,
             @Nullable Set<String> columnVariables,
-            boolean unboxArguments)
-            throws QueryLanguageParseException {
+            boolean unboxArguments,
+            @Nullable TimeLiteralReplacedExpression timeConversionResult) throws QueryLanguageParseException {
         this(
                 expression,
                 packageImports,
@@ -270,9 +217,37 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 columnVariables,
                 unboxArguments,
                 false,
-                PyCallableWrapperJpyImpl.class.getName());
+                PyCallableWrapperJpyImpl.class.getName(),
+                timeConversionResult);
     }
 
+    /**
+     * Create a QueryLanguageParser and parse the given {@code expression}. After construction, the
+     * {@link QueryLanguageParser.Result result} of parsing the {@code expression} is available with the
+     * {@link #getResult()}} method.
+     *
+     * @param expression The query language expression to parse
+     * @param packageImports Wildcard package imports
+     * @param classImports Individual class imports
+     * @param staticImports Wildcard static imports. All static variables and methods for the given classes are
+     *        imported.
+     * @param variables A map of the names of scope variables to their types
+     * @param variableTypeArguments A map of the names of scope variables to their type arguments
+     * @throws QueryLanguageParseException If any exception or error is encountered
+     */
+    @TestUseOnly
+    QueryLanguageParser(
+            String expression,
+            Collection<Package> packageImports,
+            Collection<Class<?>> classImports,
+            Collection<Class<?>> staticImports,
+            Map<String, Class<?>> variables,
+            Map<String, Class<?>[]> variableTypeArguments) throws QueryLanguageParseException {
+        this(expression, packageImports, classImports, staticImports, variables,
+                variableTypeArguments, null, null, true, null);
+    }
+
+    @VisibleForTesting
     QueryLanguageParser(
             String expression,
             final Collection<Package> packageImports,
@@ -284,7 +259,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             @Nullable final Set<String> columnVariables,
             final boolean unboxArguments,
             final boolean verifyIdempotence,
-            @NotNull final String pyCallableWrapperImplName) throws QueryLanguageParseException {
+            @NotNull final String pyCallableWrapperImplName,
+            @Nullable final TimeLiteralReplacedExpression timeConversionResult) throws QueryLanguageParseException {
         this.packageImports = packageImports == null ? Collections.emptySet() : Set.copyOf(packageImports);
         this.classImports = classImports == null ? Collections.emptySet() : Set.copyOf(classImports);
         this.staticImports = staticImports == null ? Collections.emptySet() : Set.copyOf(staticImports);
@@ -346,7 +322,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                     final QueryLanguageParser validationQueryLanguageParser = new QueryLanguageParser(
                             printedSource, packageImports, classImports, staticImports, variables,
                             variableTypeArguments, queryScopeVariables, columnVariables, false, false,
-                            pyCallableWrapperImplName);
+                            pyCallableWrapperImplName, timeConversionResult);
 
                     final String reparsedSource = validationQueryLanguageParser.result.source;
                     Assert.equals(
@@ -364,7 +340,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             }
 
             result = new Result(type, printer.builder.toString(), variablesUsed, this.queryScopeVariables,
-                    isConstantValueExpression, formulaShiftColPair);
+                    isConstantValueExpression, formulaShiftColPair, timeConversionResult);
         } catch (Throwable e) {
             // need to catch it and make a new one because it contains unserializable variables...
             final StringBuilder exceptionMessageBuilder = new StringBuilder(1024)
@@ -3245,6 +3221,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         private final Map<String, Object> possibleParams;
         private final boolean isConstantValueExpression;
         private final Pair<String, Map<Long, List<MatchPair>>> formulaShiftColPair;
+        private final TimeLiteralReplacedExpression timeConversionResult;
 
         Result(
                 Class<?> type,
@@ -3252,13 +3229,15 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 HashSet<String> variablesUsed,
                 Map<String, Object> possibleParams,
                 boolean isConstantValueExpression,
-                Pair<String, Map<Long, List<MatchPair>>> formulaShiftColPair) {
+                Pair<String, Map<Long, List<MatchPair>>> formulaShiftColPair,
+                TimeLiteralReplacedExpression timeConversionResult) {
             this.type = Objects.requireNonNull(type, "type");
             this.source = source;
             this.variablesUsed = variablesUsed;
             this.possibleParams = possibleParams;
             this.isConstantValueExpression = isConstantValueExpression;
             this.formulaShiftColPair = formulaShiftColPair;
+            this.timeConversionResult = timeConversionResult;
         }
 
         public Class<?> getType() {
@@ -3283,6 +3262,10 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
         public Pair<String, Map<Long, List<MatchPair>>> getFormulaShiftColPair() {
             return formulaShiftColPair;
+        }
+
+        public TimeLiteralReplacedExpression getTimeConversionResult() {
+            return timeConversionResult;
         }
     }
 

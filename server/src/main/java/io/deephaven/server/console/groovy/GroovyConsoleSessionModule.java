@@ -36,7 +36,7 @@ public class GroovyConsoleSessionModule {
             final ScriptSession.Listener listener,
             final RunScripts runScripts) {
         try {
-            return new GroovyDeephavenSession(updateGraph, operationInitializer, lookup, listener, runScripts);
+            return GroovyDeephavenSession.of(updateGraph, operationInitializer, lookup, listener, runScripts);
         } catch (final IOException e) {
             throw new UncheckedIOException(e);
         }

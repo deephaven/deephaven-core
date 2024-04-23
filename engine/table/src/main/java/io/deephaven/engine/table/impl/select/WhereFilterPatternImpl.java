@@ -43,7 +43,7 @@ final class WhereFilterPatternImpl extends WhereFilterImpl {
     }
 
     @Override
-    public void init(TableDefinition tableDefinition) {
+    public void init(@NotNull final TableDefinition tableDefinition) {
         final String columnName = columnName();
         final ColumnDefinition<?> column = tableDefinition.getColumn(columnName);
         if (column == null) {
