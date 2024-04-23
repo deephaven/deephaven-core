@@ -10,7 +10,6 @@ import io.deephaven.util.QueryConstants;
 
 import java.time.*;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static io.deephaven.util.QueryConstants.*;
 
@@ -91,7 +90,8 @@ public class BusinessCalendar extends Calendar {
         }
     }
 
-    private final Map<LocalDate, CalendarDay<Instant>> cachedSchedules = new ConcurrentHashMap<>();
+    private final FastConcurrentCache<LocalDate, CalendarDay<Instant>> schedulesCache =
+            new FastConcurrentCache<>(this::computeCalendarDay);
     private final YearMonthSummaryCache<SummaryData> summaryCache =
             new YearMonthSummaryCache<>(this::computeMonthSummary, this::computeYearSummary);
     private final int yearCacheStart;
@@ -100,7 +100,7 @@ public class BusinessCalendar extends Calendar {
     @Override
     public void clearCache() {
         super.clearCache();
-        cachedSchedules.clear();
+        schedulesCache.clear();
         summaryCache.clear();
     }
 
@@ -346,7 +346,7 @@ public class BusinessCalendar extends Calendar {
                     + " lastValidDate=" + lastValidDate);
         }
 
-        return cachedSchedules.computeIfAbsent(date, this::computeCalendarDay);
+        return schedulesCache.get(date);
     }
 
     /**
