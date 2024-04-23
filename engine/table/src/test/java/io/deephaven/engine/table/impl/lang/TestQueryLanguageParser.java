@@ -14,6 +14,7 @@ import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser.QueryLanguageParseException;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.util.PyCallableWrapper;
+import io.deephaven.time.TimeLiteralReplacedExpression;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.type.TypeUtils;
@@ -3188,7 +3189,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
                         variables, variableParameterizedTypes, possibleParams, null,
                         true,
                         verifyIdempotence,
-                        PyCallableWrapperDummyImpl.class.getName()).getResult();
+                        PyCallableWrapperDummyImpl.class.getName(), null).getResult();
 
         assertEquals(resultType, result.getType());
         assertEquals(resultExpression, result.getConvertedExpression());

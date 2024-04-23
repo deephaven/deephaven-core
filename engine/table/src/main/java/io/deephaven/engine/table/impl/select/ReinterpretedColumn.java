@@ -171,7 +171,7 @@ public class ReinterpretedColumn<S, D> implements SelectColumn {
 
     @Override
     public Class<?> getReturnedComponentType() {
-        // we don't support reinterpretting column types with components
+        // we don't support reinterpreting column types with components
         return null;
     }
 

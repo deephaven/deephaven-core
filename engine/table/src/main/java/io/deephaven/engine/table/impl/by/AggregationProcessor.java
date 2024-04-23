@@ -279,12 +279,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             @NotNull final String... groupByColumnNames) {
         switch (type) {
             case NORMAL:
-                final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor =
-                        QueryCompilerRequestProcessor.batch();
-                final AggregationContext aggContext = new NormalConverter(
-                        table, requireStateChangeRecorder, compilationProcessor, groupByColumnNames).build();
-                compilationProcessor.compile();
-                return aggContext;
+                return new NormalConverter(table, requireStateChangeRecorder, groupByColumnNames).build();
             case ROLLUP_BASE:
                 return new RollupBaseConverter(table, requireStateChangeRecorder, groupByColumnNames).build();
             case ROLLUP_REAGGREGATED:
@@ -340,7 +335,7 @@ public class AggregationProcessor implements AggregationContextFactory {
             isBlink = this.table.isBlink();
         }
 
-        final AggregationContext build() {
+        AggregationContext build() {
             walkAllAggregations();
             transformers.add(new RowLookupAttributeSetter());
             return makeAggregationContext();
@@ -666,15 +661,21 @@ public class AggregationProcessor implements AggregationContextFactory {
      * {@link AggregationContext} for standard aggregations. Accumulates state by visiting each aggregation.
      */
     private final class NormalConverter extends Converter {
-        private final QueryCompilerRequestProcessor compilationProcessor;
+        private final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor;
 
         private NormalConverter(
                 @NotNull final Table table,
                 final boolean requireStateChangeRecorder,
-                @NotNull final QueryCompilerRequestProcessor compilationProcessor,
                 @NotNull final String... groupByColumnNames) {
             super(table, requireStateChangeRecorder, groupByColumnNames);
-            this.compilationProcessor = compilationProcessor;
+            this.compilationProcessor = QueryCompilerRequestProcessor.batch();
+        }
+
+        @Override
+        AggregationContext build() {
+            final AggregationContext resultContext = super.build();
+            compilationProcessor.compile();
+            return resultContext;
         }
 
         // -------------------------------------------------------------------------------------------------------------

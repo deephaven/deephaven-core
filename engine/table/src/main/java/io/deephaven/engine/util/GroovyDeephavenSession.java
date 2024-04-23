@@ -37,6 +37,7 @@ import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.time.calendar.StaticCalendarMethods;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.util.type.TypeUtils;
@@ -66,6 +67,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -128,12 +130,12 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     /** Contains imports to be applied to .groovy files loaded from the classpath */
     private final ImportCustomizer loadedGroovyScriptImports;
 
-    private final Set<String> dynamicClasses = new HashSet<>();
+    private final Set<String> dynamicClasses;
     private final Map<String, Object> bindingBackingMap;
 
     private static class DeephavenGroovyShell extends GroovyShell {
-        private int counter;
-        private String script = "Script";
+        private final AtomicInteger counter = new AtomicInteger();
+        private volatile String scriptPrefix = "Script";
 
         DeephavenGroovyShell(
                 final GroovyClassLoader loader,
@@ -143,12 +145,19 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         }
 
         @Override
-        protected synchronized String generateScriptName() {
-            return script + "_" + (++counter) + ".groovy";
+        protected String generateScriptName() {
+            return scriptPrefix + "_" + (counter.incrementAndGet()) + ".groovy";
         }
 
         private String getNextScriptClassName() {
-            return script + "_" + (counter + 1);
+            return scriptPrefix + "_" + (counter.get() + 1);
+        }
+
+        public SafeCloseable setScriptPrefix(final String newPrefix) {
+            scriptPrefix = newPrefix;
+            return () -> {
+                scriptPrefix = newPrefix;
+            };
         }
     }
 
@@ -215,12 +224,15 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         super(updateGraph, operationInitializer, objectTypeLookup, changeListener, classCacheDirectory,
                 groovyShell.getClassLoader());
 
+        this.scriptFinder = new ScriptFinder(DEFAULT_SCRIPT_PATH);
+
         this.consoleImports = consoleImports;
         this.loadedGroovyScriptImports = loadedGroovyScriptImports;
-        this.bindingBackingMap = bindingBackingMap;
-        this.groovyShell = groovyShell;
 
-        this.scriptFinder = new ScriptFinder(DEFAULT_SCRIPT_PATH);
+        this.dynamicClasses = new HashSet<>();
+        this.bindingBackingMap = bindingBackingMap;
+
+        this.groovyShell = groovyShell;
 
         groovyShell.setVariable("__groovySession", this);
         groovyShell.setVariable("DB_SCRIPT_PATH", DEFAULT_SCRIPT_PATH);
@@ -319,10 +331,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         }
     }
 
-    private void evaluateCommand(String command) {
-        groovyShell.evaluate(command);
-    }
-
     @Override
     protected void evaluate(String command, String scriptName) {
         grepScriptImports(removeComments(command));
@@ -331,27 +339,23 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         final String lastCommand = fc.second;
         final String commandPrefix = fc.first;
 
-        final String oldScriptName = groovyShell.script;
-
-        try {
-            if (scriptName != null) {
-                groovyShell.script = scriptName.replaceAll("[^0-9A-Za-z_]", "_").replaceAll("(^[0-9])", "_$1");
-            }
-            final String currentScriptName = groovyShell.script;
+        final String newScriptPrefix = scriptName == null
+                ? groovyShell.scriptPrefix
+                : scriptName.replaceAll("[^0-9A-Za-z_]", "_").replaceAll("(^[0-9])", "_$1");
+        try (final SafeCloseable ignored = groovyShell.setScriptPrefix(newScriptPrefix)) {
+            final String currentScriptName = groovyShell.scriptPrefix;
 
             updateClassloader(lastCommand);
 
             try {
                 ExecutionContext.getContext().getUpdateGraph().exclusiveLock()
-                        .doLockedInterruptibly(() -> evaluateCommand(lastCommand));
+                        .doLockedInterruptibly(() -> groovyShell.evaluate(command));
             } catch (InterruptedException e) {
                 throw new CancellationException(e.getMessage() != null ? e.getMessage() : "Query interrupted",
                         maybeRewriteStackTrace(scriptName, currentScriptName, e, lastCommand, commandPrefix));
             } catch (Exception e) {
                 throw wrapAndRewriteStackTrace(scriptName, currentScriptName, e, lastCommand, commandPrefix);
             }
-        } finally {
-            groovyShell.script = oldScriptName;
         }
     }
 

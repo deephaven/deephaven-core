@@ -32,7 +32,6 @@ import io.deephaven.engine.util.PyCallableWrapperJpyImpl;
 import io.deephaven.engine.util.caching.C14nUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.time.TimeLiteralReplacedExpression;
 import io.deephaven.util.CompletionStageFuture;
 import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.ObjectVector;
@@ -194,13 +193,10 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         }
 
         try {
-            final TimeLiteralReplacedExpression timeConversionResult =
-                    TimeLiteralReplacedExpression.convertExpression(formulaString);
             final QueryLanguageParser.Result result = FormulaAnalyzer.parseFormula(
-                    timeConversionResult, columnDefinitionMap, Collections.emptyMap(),
-                    compilationRequestProcessor.getQueryScopeVariables(), true);
-            analyzedFormula = FormulaAnalyzer.analyze(formulaString, columnDefinitionMap,
-                    timeConversionResult, result);
+                    formulaString, columnDefinitionMap, Collections.emptyMap(),
+                    compilationRequestProcessor.getQueryScopeVariables());
+            analyzedFormula = FormulaAnalyzer.analyze(formulaString, columnDefinitionMap, result);
             hasConstantValue = result.isConstantValueExpression();
             formulaShiftColPair = result.getFormulaShiftColPair();
 

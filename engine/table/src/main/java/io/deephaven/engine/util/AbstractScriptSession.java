@@ -95,8 +95,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
         this.classCacheDirectory = classCacheDirectory;
 
         queryScope = new ScriptSessionQueryScope();
-        final QueryCompiler compilerContext =
-                QueryCompilerImpl.create(classCacheDirectory, parentClassLoader);
+        final QueryCompiler compilerContext = QueryCompilerImpl.create(classCacheDirectory, parentClassLoader);
 
         executionContext = ExecutionContext.newBuilder()
                 .markSystemic()

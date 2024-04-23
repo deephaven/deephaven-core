@@ -281,7 +281,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                 case SELECT_REFRESHING: {
                     // We need to call newDestInstance because only newDestInstance has the knowledge to endow our
                     // created array with the proper componentType (in the case of Vectors).
-                    // TODO(kosak): use DeltaAwareColumnSource
+                    // TODO: use DeltaAwareColumnSource
                     WritableColumnSource<?> scs = sc.newDestInstance(targetDestinationCapacity);
                     WritableColumnSource<?> underlyingSource = null;
                     if (rowRedirection != null) {

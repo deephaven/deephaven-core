@@ -31,7 +31,6 @@ public class FormulaAnalyzer {
 
     public static Result analyze(final String rawFormulaString,
             final Map<String, ColumnDefinition<?>> columnDefinitionMap,
-            final TimeLiteralReplacedExpression timeConversionResult,
             final QueryLanguageParser.Result queryLanguageResult) throws Exception {
 
         log.debug().append("Expression (after language conversion) : ")
@@ -62,7 +61,7 @@ public class FormulaAnalyzer {
             returnedType = Boolean.class;
         }
         final String cookedFormulaString = queryLanguageResult.getConvertedExpression();
-        final String timeInstanceVariables = timeConversionResult.getInstanceVariablesString();
+        final String timeInstanceVariables = queryLanguageResult.getTimeConversionResult().getInstanceVariablesString();
         return new Result(returnedType,
                 usedColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
                 usedColumnArrays.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
@@ -74,7 +73,7 @@ public class FormulaAnalyzer {
     /**
      * Get the compiled formula for a given formula string.
      *
-     * @param timeConversionResult The formula preprocessed to extract time literals
+     * @param formulaString The raw formula string
      * @param availableColumns The columns available for use in the formula
      * @param columnRenames Outer to inner column name mapping
      * @param queryScopeVariables The query scope variables
@@ -82,17 +81,17 @@ public class FormulaAnalyzer {
      * @throws Exception If the formula cannot be parsed
      */
     public static QueryLanguageParser.Result parseFormula(
-            @NotNull final TimeLiteralReplacedExpression timeConversionResult,
+            @NotNull final String formulaString,
             @NotNull final Map<String, ColumnDefinition<?>> availableColumns,
             @NotNull final Map<String, String> columnRenames,
             @NotNull final Map<String, Object> queryScopeVariables) throws Exception {
-        return parseFormula(timeConversionResult, availableColumns, columnRenames, queryScopeVariables, true);
+        return parseFormula(formulaString, availableColumns, columnRenames, queryScopeVariables, true);
     }
 
     /**
      * Get the compiled formula for a given formula string.
      *
-     * @param timeConversionResult The formula preprocessed to extract time literals
+     * @param formulaString The raw formula string
      * @param availableColumns The columns available for use in the formula
      * @param columnRenames Outer to inner column name mapping
      * @param queryScopeVariables The query scope variables
@@ -101,11 +100,15 @@ public class FormulaAnalyzer {
      * @throws Exception If the formula cannot be parsed
      */
     public static QueryLanguageParser.Result parseFormula(
-            @NotNull final TimeLiteralReplacedExpression timeConversionResult,
+            @NotNull final String formulaString,
             @NotNull final Map<String, ColumnDefinition<?>> availableColumns,
             @NotNull final Map<String, String> columnRenames,
             @NotNull final Map<String, Object> queryScopeVariables,
             final boolean unboxArguments) throws Exception {
+
+        final TimeLiteralReplacedExpression timeConversionResult =
+                TimeLiteralReplacedExpression.convertExpression(formulaString);
+
         final Map<String, Class<?>> possibleVariables = new HashMap<>();
         possibleVariables.put("i", int.class);
         possibleVariables.put("ii", long.class);
@@ -204,7 +207,7 @@ public class FormulaAnalyzer {
         classImports.add(WritableColumnSource.class);
         return new QueryLanguageParser(timeConversionResult.getConvertedFormula(), queryLibrary.getPackageImports(),
                 classImports, queryLibrary.getStaticImports(), possibleVariables, possibleVariableParameterizedTypes,
-                queryScopeVariables, columnVariables, unboxArguments).getResult();
+                queryScopeVariables, columnVariables, unboxArguments, timeConversionResult).getResult();
     }
 
     public static class Result {

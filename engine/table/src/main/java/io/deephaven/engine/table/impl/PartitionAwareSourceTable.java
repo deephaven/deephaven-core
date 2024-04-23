@@ -139,13 +139,13 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
                 return null;
             }
 
-            final Set<String> newColumns = new HashSet<>();
+            final Set<String> partitioningDerivedColumnNames = new HashSet<>();
             for (final SelectColumn selectColumn : selectColumns) {
                 if (!((PartitionAwareSourceTable) table).isValidAgainstColumnPartitionTable(
-                        selectColumn.getColumns(), selectColumn.getColumnArrays(), newColumns)) {
+                        selectColumn.getColumns(), selectColumn.getColumnArrays(), partitioningDerivedColumnNames)) {
                     return null;
                 }
-                newColumns.add(selectColumn.getName());
+                partitioningDerivedColumnNames.add(selectColumn.getName());
             }
             return table.selectDistinct(selectColumns);
         }
@@ -290,15 +290,15 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
         SelectAndViewAnalyzer.initializeSelectColumns(
                 definition.getColumnNameMap(), selectColumns.toArray(SelectColumn[]::new));
 
-        final Set<String> newColumns = new HashSet<>();
+        final Set<String> partitioningDerivedColumnNames = new HashSet<>();
         for (final SelectColumn selectColumn : selectColumns) {
             if (!isValidAgainstColumnPartitionTable(
-                    selectColumn.getColumns(), selectColumn.getColumnArrays(), newColumns)) {
+                    selectColumn.getColumns(), selectColumn.getColumnArrays(), partitioningDerivedColumnNames)) {
                 // Be sure to invoke the super-class version of this method, rather than the array-based one that
                 // delegates to this method.
                 return super.selectDistinct(selectColumns);
             }
-            newColumns.add(selectColumn.getName());
+            partitioningDerivedColumnNames.add(selectColumn.getName());
         }
 
         // Ensure that the location table is available and populated with non-null, non-empty locations.
@@ -317,11 +317,12 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
     private boolean isValidAgainstColumnPartitionTable(
             @NotNull final Collection<String> columnNames,
             @NotNull final Collection<String> columnArrayNames,
-            @NotNull final Collection<String> newColumns) {
+            @NotNull final Collection<String> partitioningDerivedColumnNames) {
         if (!columnArrayNames.isEmpty()) {
             return false;
         }
         return columnNames.stream().allMatch(
-                columnName -> partitioningColumnDefinitions.containsKey(columnName) || newColumns.contains(columnName));
+                columnName -> partitioningColumnDefinitions.containsKey(columnName)
+                        || partitioningDerivedColumnNames.contains(columnName));
     }
 }

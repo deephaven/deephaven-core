@@ -15,6 +15,7 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.CompletionStageFuture;
 import io.deephaven.util.datastructures.CachingSupplier;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -43,6 +44,7 @@ public interface QueryCompilerRequestProcessor {
     /**
      * @return a CachingSupplier that supplies a snapshot of the current query scope variables
      */
+    @VisibleForTesting
     static CachingSupplier<Map<String, Object>> newQueryScopeVariableSupplier() {
         final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
         return new CachingSupplier<>(() -> Collections.unmodifiableMap(

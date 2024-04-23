@@ -5,6 +5,8 @@ package io.deephaven.engine.context;
 
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.FileUtils;
+import io.deephaven.base.log.LogOutput;
+import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.configuration.DataDir;
@@ -16,6 +18,7 @@ import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.OperationInitializerJobScheduler;
 import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.ByteUtils;
 import io.deephaven.util.CompletionStageFuture;
@@ -39,6 +42,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -47,7 +51,7 @@ import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class QueryCompilerImpl implements QueryCompiler {
+public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
 
     private static final Logger log = LoggerFactory.getLogger(QueryCompilerImpl.class);
     /**
@@ -71,6 +75,41 @@ public class QueryCompilerImpl implements QueryCompiler {
 
     private static boolean logEnabled = Configuration.getInstance().getBoolean("QueryCompiler.logEnabledDefault");
 
+    private static JavaCompiler compiler;
+    private static final AtomicReference<JavaFileManager> fileManagerCache = new AtomicReference<>();
+
+    private static void ensureJavaCompiler() {
+        synchronized (QueryCompilerImpl.class) {
+            if (compiler == null) {
+                compiler = ToolProvider.getSystemJavaCompiler();
+                if (compiler == null) {
+                    throw new UncheckedDeephavenException(
+                            "No Java compiler provided - are you using a JRE instead of a JDK?");
+                }
+            }
+        }
+    }
+
+    private static JavaFileManager acquireFileManager() {
+        JavaFileManager fileManager = fileManagerCache.getAndSet(null);
+        if (fileManager == null) {
+            fileManager = new SynchronizedJavaFileManager(compiler.getStandardFileManager(null, null, null));
+        }
+        return fileManager;
+    }
+
+    private static void releaseFileManager(@NotNull final JavaFileManager fileManager) {
+        // Reusing the file manager saves a lot of the time in the compilation process. However, we need to be careful
+        // to avoid keeping too many file handles open so we'll limit ourselves to just one outstanding file manager.
+        if (!fileManagerCache.compareAndSet(null, fileManager)) {
+            try {
+                fileManager.close();
+            } catch (final IOException err) {
+                throw new UncheckedIOException("Could not close JavaFileManager", err);
+            }
+        }
+    }
+
     public static final String FORMULA_CLASS_PREFIX = "io.deephaven.temp";
     public static final String DYNAMIC_CLASS_PREFIX = "io.deephaven.dynamic";
 
@@ -81,7 +120,7 @@ public class QueryCompilerImpl implements QueryCompiler {
     static QueryCompilerImpl createForUnitTests() {
         final Path queryCompilerDir = DataDir.get()
                 .resolve("io.deephaven.engine.context.QueryCompiler.createForUnitTests");
-        return new QueryCompilerImpl(queryCompilerDir.toFile());
+        return new QueryCompilerImpl(queryCompilerDir.toFile(), QueryCompilerImpl.class.getClassLoader(), false);
     }
 
     private final Map<String, CompletionStageFuture<Class<?>>> knownClasses = new HashMap<>();
@@ -92,17 +131,12 @@ public class QueryCompilerImpl implements QueryCompiler {
     private final Set<File> additionalClassLocations;
     private final WritableURLClassLoader ucl;
 
-    private QueryCompilerImpl(File classDestination) {
-        this(classDestination, null, false);
-    }
-
     private QueryCompilerImpl(
-            final File classDestination,
-            final ClassLoader parentClassLoader,
-            boolean isCacheDirectory) {
-        final ClassLoader parentClassLoaderToUse = parentClassLoader == null
-                ? QueryCompilerImpl.class.getClassLoader()
-                : parentClassLoader;
+            @NotNull final File classDestination,
+            @NotNull final ClassLoader parentClassLoader,
+            boolean classDestinationIsAlsoClassSource) {
+        ensureJavaCompiler();
+
         this.classDestination = classDestination;
         ensureDirectories(this.classDestination, () -> "Failed to create missing class destination directory " +
                 classDestination.getAbsolutePath());
@@ -114,11 +148,22 @@ public class QueryCompilerImpl implements QueryCompiler {
         } catch (MalformedURLException e) {
             throw new UncheckedDeephavenException(e);
         }
-        this.ucl = new WritableURLClassLoader(urls, parentClassLoaderToUse);
+        this.ucl = new WritableURLClassLoader(urls, parentClassLoader);
 
-        if (isCacheDirectory) {
+        if (classDestinationIsAlsoClassSource) {
             addClassSource(classDestination);
         }
+    }
+
+    @Override
+    public LogOutput append(LogOutput logOutput) {
+        return logOutput.append("QueryCompiler{classDestination=").append(classDestination.getAbsolutePath())
+                .append("}");
+    }
+
+    @Override
+    public String toString() {
+        return new LogOutputStringImpl().append(this).toString();
     }
 
     /**
@@ -192,12 +237,7 @@ public class QueryCompilerImpl implements QueryCompiler {
         fileOutStream.close();
     }
 
-    /**
-     * Compiles all requests.
-     *
-     * @param requests The compilation requests; these must be independent of each other
-     * @param resolvers The resolvers to use for delivering compilation results
-     */
+    @Override
     public void compile(
             @NotNull final QueryCompilerRequest[] requests,
             @NotNull final CompletionStageFuture.Resolver<Class<?>>[] resolvers) {
@@ -616,6 +656,14 @@ public class QueryCompilerImpl implements QueryCompiler {
         }
     }
 
+    private static String makeFinalCode(String className, String classBody, String packageName) {
+        final String joinedEscapedBody = createEscapedJoinedString(classBody);
+        classBody = classBody.replaceAll("\\$CLASSNAME\\$", className);
+        classBody = classBody.substring(0, classBody.lastIndexOf("}"));
+        classBody += "    public static String " + IDENTIFYING_FIELD_NAME + " = " + joinedEscapedBody + ";\n}";
+        return "package " + packageName + ";\n" + classBody;
+    }
+
     /**
      * Transform a string into the corresponding Java source code that compiles into that string. This involves escaping
      * special characters, surrounding it with quotes, and (if the string is larger than the max string length for Java
@@ -676,14 +724,6 @@ public class QueryCompilerImpl implements QueryCompiler {
             return 2;
         }
         return 3;
-    }
-
-    private static String makeFinalCode(String className, String classBody, String packageName) {
-        final String joinedEscapedBody = createEscapedJoinedString(classBody);
-        classBody = classBody.replaceAll("\\$CLASSNAME\\$", className);
-        classBody = classBody.substring(0, classBody.lastIndexOf("}"));
-        classBody += "    public static String " + IDENTIFYING_FIELD_NAME + " = " + joinedEscapedBody + ";\n}";
-        return "package " + packageName + ";\n" + classBody;
     }
 
     private static class JavaSourceFromString extends SimpleJavaFileObject {
@@ -759,16 +799,6 @@ public class QueryCompilerImpl implements QueryCompiler {
         }
     }
 
-    private static final JavaCompiler compiler;
-    private static final JavaFileManager fileManager;
-    static {
-        compiler = ToolProvider.getSystemJavaCompiler();
-        if (compiler == null) {
-            throw new UncheckedDeephavenException("No Java compiler provided - are you using a JRE instead of a JDK?");
-        }
-        fileManager = new SynchronizedJavaFileManager(compiler.getStandardFileManager(null, null, null));
-    }
-
     private void maybeCreateClasses(
             @NotNull final List<CompilationRequestAttempt> requests) {
         // Get the destination root directory (e.g. /tmp/workspace/cache/classes) and populate it with the package
@@ -816,16 +846,30 @@ public class QueryCompilerImpl implements QueryCompiler {
             jobScheduler = new OperationInitializerJobScheduler();
         }
 
+        final AtomicBoolean cleanupAlreadyRun = new AtomicBoolean();
+        final JavaFileManager fileManager = acquireFileManager();
         final AtomicReference<RuntimeException> exception = new AtomicReference<>();
         final CountDownLatch latch = new CountDownLatch(1);
         final Runnable cleanup = () -> {
-            try {
-                FileUtils.deleteRecursively(new File(tempDirAsString));
-            } catch (Exception e) {
-                // ignore errors here
+            if (!cleanupAlreadyRun.compareAndSet(false, true)) {
+                // onError could be run after cleanup if cleanup throws an exception
+                return;
             }
 
-            latch.countDown();
+            try {
+                try {
+                    FileUtils.deleteRecursively(new File(tempDirAsString));
+                } catch (Exception e) {
+                    // ignore errors here
+                }
+                try {
+                    releaseFileManager(fileManager);
+                } catch (Exception e) {
+                    // ignore errors here
+                }
+            } finally {
+                latch.countDown();
+            }
         };
 
         final Consumer<Exception> onError = err -> {
@@ -841,7 +885,8 @@ public class QueryCompilerImpl implements QueryCompiler {
                 0, numTasks, (context, jobId, nestedErrorConsumer) -> {
                     final int startInclusive = jobId * requestsPerTask;
                     final int endExclusive = Math.min(requests.size(), (jobId + 1) * requestsPerTask);
-                    doCreateClasses(requests, rootPathAsString, tempDirAsString, startInclusive, endExclusive);
+                    doCreateClasses(
+                            fileManager, requests, rootPathAsString, tempDirAsString, startInclusive, endExclusive);
                 }, cleanup, onError);
 
         try {
@@ -860,6 +905,7 @@ public class QueryCompilerImpl implements QueryCompiler {
     }
 
     private void doCreateClasses(
+            @NotNull final JavaFileManager fileManager,
             @NotNull final List<CompilationRequestAttempt> requests,
             @NotNull final String rootPathAsString,
             @NotNull final String tempDirAsString,
@@ -869,14 +915,15 @@ public class QueryCompilerImpl implements QueryCompiler {
         // If any of our requests fail to compile then the JavaCompiler will not write any class files at all. The
         // non-failing requests will be retried in a second pass that is expected to succeed. This enables us to
         // fulfill futures independent of each other; otherwise a single failure would taint all requests in a batch.
-        final boolean wantRetry = doCreateClassesSingleRound(requests, rootPathAsString, tempDirAsString,
+        final boolean wantRetry = doCreateClassesSingleRound(fileManager, requests, rootPathAsString, tempDirAsString,
                 startInclusive, endExclusive, toRetry);
         if (!wantRetry) {
             return;
         }
 
         final List<CompilationRequestAttempt> ignored = new ArrayList<>();
-        if (doCreateClassesSingleRound(toRetry, rootPathAsString, tempDirAsString, 0, toRetry.size(), ignored)) {
+        if (doCreateClassesSingleRound(fileManager, toRetry, rootPathAsString, tempDirAsString, 0, toRetry.size(),
+                ignored)) {
             // We only retried compilation units that did not fail on the first pass, so we should not have any failures
             // on the second pass.
             throw new IllegalStateException("Unexpected failure during second pass of compilation");
@@ -884,6 +931,7 @@ public class QueryCompilerImpl implements QueryCompiler {
     }
 
     private boolean doCreateClassesSingleRound(
+            @NotNull final JavaFileManager fileManager,
             @NotNull final List<CompilationRequestAttempt> requests,
             @NotNull final String rootPathAsString,
             @NotNull final String tempDirAsString,
@@ -996,8 +1044,8 @@ public class QueryCompilerImpl implements QueryCompiler {
         }
 
         // IntelliJ will bundle a very large class path into an empty jar with a Manifest that will define the full
-        // class path
-        // Look for this being used during compile time, so the full class path can be sent into the compile call
+        // class path. Look for this being used during compile time, so the full class path can be sent into the compile
+        // call.
         final String intellijClassPathJarRegex = ".*classpath[0-9]*\\.jar.*";
         if (javaClasspath.matches(intellijClassPathJarRegex)) {
             try {
@@ -1014,8 +1062,7 @@ public class QueryCompilerImpl implements QueryCompiler {
                         final String extendedClassPath = (String) attributes.get(classPathAttribute);
                         if (extendedClassPath != null) {
                             // Parses the files in the manifest description an changes their format to drop the "file:/"
-                            // and
-                            // use the default path separator
+                            // and use the default path separator
                             final String filePaths = Stream.of(extendedClassPath.split("file:/"))
                                     .map(String::trim)
                                     .filter(fileName -> !fileName.isEmpty())

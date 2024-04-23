@@ -13,7 +13,7 @@ import java.util.concurrent.ExecutionException;
 public interface QueryCompiler {
 
     /**
-     * Compile a class.
+     * Compile a class and wait for completion.
      *
      * @param request The compilation request
      */

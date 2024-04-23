@@ -87,11 +87,8 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
         }
 
         try {
-            final TimeLiteralReplacedExpression timeConversionResult =
-                    TimeLiteralReplacedExpression.convertExpression(formula);
-
             final QueryLanguageParser.Result result = FormulaAnalyzer.parseFormula(
-                    timeConversionResult, tableDefinition.getColumnNameMap(), outerToInnerNames,
+                    formula, tableDefinition.getColumnNameMap(), outerToInnerNames,
                     compilationProcessor.getQueryScopeVariables(), unboxArguments);
 
             formulaShiftColPair = result.getFormulaShiftColPair();
@@ -156,7 +153,7 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
                 final Class<?> resultType = result.getType();
                 checkReturnType(result, resultType);
 
-                generateFilterCode(tableDefinition, timeConversionResult, result, compilationProcessor);
+                generateFilterCode(tableDefinition, result.getTimeConversionResult(), result, compilationProcessor);
                 initialized = true;
             }
         } catch (Exception e) {

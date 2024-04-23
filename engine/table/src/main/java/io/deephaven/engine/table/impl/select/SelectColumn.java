@@ -88,6 +88,8 @@ public interface SelectColumn extends Selectable {
     /**
      * Initialize any internal column definitions from the provided initial. A compilation request consumer is provided
      * to allow for deferred compilation of expressions that belong to the same query.
+     * <p>
+     * Compilations must be resolved before using this {@code SelectColumn}.
      *
      * @param columnDefinitionMap the starting set of column definitions; valid for this call only
      * @param compilationRequestProcessor a consumer to submit compilation requests; valid for this call only
@@ -97,7 +99,6 @@ public interface SelectColumn extends Selectable {
      *          {@link QueryCompiler} usage needs to be resolved within initDef. Implementations must be idempotent.
      *          Implementations that want to hold on to the {@code columnDefinitionMap} must make a defensive copy.
      */
-    @SuppressWarnings("unused")
     default List<String> initDef(
             @NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap,
             @NotNull final QueryCompilerRequestProcessor compilationRequestProcessor) {
