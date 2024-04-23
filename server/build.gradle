@@ -20,7 +20,8 @@ dependencies {
     Classpaths.inheritJavaParser(project, 'implementation')
     implementation project(':open-api-lang-parser')
 
-    api(project(':java-client-barrage-dagger')) {
+    api(project(':java-client-barrage'))
+    api(project(':java-client-session-dagger')) {
         because 'downstream dagger compile, see deephaven-core#1722'
     }
     implementation 'org.hdrhistogram:HdrHistogram:2.1.12'

@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * The client configuration.
+ * The client configuration encapsulates the configuration to created a {@link io.grpc.ManagedChannel}.
  */
 @Immutable
 @CopyableStyle

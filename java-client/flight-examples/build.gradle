@@ -4,7 +4,7 @@ plugins {
 }
 
 dependencies {
-    implementation project(':java-client-flight-dagger')
+    implementation project(':java-client-flight')
     implementation project(':java-client-example-utilities')
 
     implementation "io.deephaven.barrage:barrage-format:0.6.0"

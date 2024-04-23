@@ -5,6 +5,8 @@ package io.deephaven.client.impl;
 
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.proto.DeephavenChannel;
+import io.deephaven.proto.DeephavenChannelImpl;
+import io.grpc.ManagedChannel;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Redacted;
@@ -13,8 +15,6 @@ import javax.annotation.Nullable;
 import javax.inject.Named;
 import java.time.Duration;
 import java.util.concurrent.ScheduledExecutorService;
-
-import static java.lang.Boolean.parseBoolean;
 
 @Immutable
 @BuildableStyle
@@ -42,6 +42,30 @@ public abstract class SessionImplConfig {
         return builder.build();
     }
 
+    /**
+     * A low level adapter from {@link SessionConfig} into {@link SessionImplConfig}. Most callers should prefer to use
+     * the higher-level options encapsulated in {@link SessionFactoryConfig}.
+     *
+     * @param sessionConfig the session config
+     * @param managedChannel the managed channel
+     * @param defaultScheduler the scheduler to use when {@link SessionConfig#scheduler()} is empty
+     * @return the session impl config
+     */
+    public static SessionImplConfig from(
+            SessionConfig sessionConfig,
+            ManagedChannel managedChannel,
+            ScheduledExecutorService defaultScheduler) {
+        final SessionImplConfig.Builder builder = SessionImplConfig.builder()
+                .executor(sessionConfig.scheduler().orElse(defaultScheduler))
+                .channel(new DeephavenChannelImpl(managedChannel))
+                .delegateToBatch(sessionConfig.delegateToBatch())
+                .mixinStacktrace(sessionConfig.mixinStacktrace())
+                .executeTimeout(sessionConfig.executeTimeout())
+                .closeTimeout(sessionConfig.closeTimeout());
+        sessionConfig.authenticationTypeAndValue().ifPresent(builder::authenticationTypeAndValue);
+        return builder.build();
+    }
+
     public abstract ScheduledExecutorService executor();
 
     public abstract DeephavenChannel channel();
@@ -60,8 +84,7 @@ public abstract class SessionImplConfig {
      */
     @Default
     public boolean delegateToBatch() {
-        final String property = System.getProperty(DEEPHAVEN_SESSION_BATCH);
-        return property == null || parseBoolean(property);
+        return SessionConfigHelper.delegateToBatch();
     }
 
     /**
@@ -73,7 +96,7 @@ public abstract class SessionImplConfig {
      */
     @Default
     public boolean mixinStacktrace() {
-        return Boolean.getBoolean(DEEPHAVEN_SESSION_BATCH_STACKTRACES);
+        return SessionConfigHelper.mixinStacktrace();
     }
 
     /**
@@ -84,7 +107,7 @@ public abstract class SessionImplConfig {
      */
     @Default
     public Duration executeTimeout() {
-        return Duration.parse(System.getProperty(DEEPHAVEN_SESSION_EXECUTE_TIMEOUT, "PT1m"));
+        return SessionConfigHelper.executeTimeout();
     }
 
     /**
@@ -95,7 +118,7 @@ public abstract class SessionImplConfig {
      */
     @Default
     public Duration closeTimeout() {
-        return Duration.parse(System.getProperty(DEEPHAVEN_SESSION_CLOSE_TIMEOUT, "PT5s"));
+        return SessionConfigHelper.closeTimeout();
     }
 
     /**

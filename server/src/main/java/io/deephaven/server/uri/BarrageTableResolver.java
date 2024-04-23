@@ -13,7 +13,7 @@ import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TicketTable;
-import io.deephaven.server.barrage.BarrageSessionFactoryClient;
+import io.deephaven.server.session.SessionFactoryCreator;
 import io.deephaven.uri.ApplicationUri;
 import io.deephaven.uri.DeephavenTarget;
 import io.deephaven.uri.DeephavenUri;
@@ -66,12 +66,12 @@ public final class BarrageTableResolver implements UriResolver {
         return UriResolversInstance.get().find(BarrageTableResolver.class).get();
     }
 
-    private final BarrageSessionFactoryClient sessionFactoryClient;
+    private final SessionFactoryCreator sessionFactoryCreator;
     private final Map<DeephavenTarget, BarrageSession> sessions;
 
     @Inject
-    public BarrageTableResolver(BarrageSessionFactoryClient sessionFactoryClient) {
-        this.sessionFactoryClient = Objects.requireNonNull(sessionFactoryClient);
+    public BarrageTableResolver(SessionFactoryCreator sessionFactoryCreator) {
+        this.sessionFactoryCreator = Objects.requireNonNull(sessionFactoryCreator);
         this.sessions = new ConcurrentHashMap<>();
     }
 
@@ -298,7 +298,7 @@ public final class BarrageTableResolver implements UriResolver {
 
     private BarrageSession newSession(ClientConfig config) {
         // TODO(deephaven-core#3421): DH URI / BarrageTableResolver authentication support
-        return sessionFactoryClient.factory(config, null).newBarrageSession();
+        return sessionFactoryCreator.barrageFactory(config).newBarrageSession();
     }
 
     static class RemoteResolver implements Visitor {

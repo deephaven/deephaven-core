@@ -226,7 +226,7 @@ public abstract class FlightMessageRoundTripTest {
 
     private ManagedChannel clientChannel;
     private ScheduledExecutorService clientScheduler;
-    private FlightSession clientSession;
+    private Session clientSession;
 
     @BeforeClass
     public static void setupOnce() throws IOException {
@@ -234,7 +234,7 @@ public abstract class FlightMessageRoundTripTest {
     }
 
     @Before
-    public void setup() throws IOException {
+    public void setup() throws IOException, InterruptedException {
         logBuffer = new LogBuffer(128);
         LogBufferGlobal.setInstance(logBuffer);
 
@@ -271,14 +271,9 @@ public abstract class FlightMessageRoundTripTest {
                 .build();
 
         clientScheduler = Executors.newSingleThreadScheduledExecutor();
-        FlightSessionFactory flightSessionFactory = DaggerDeephavenFlightRoot.create()
-                .factoryBuilder()
-                .managedChannel(clientChannel)
-                .scheduler(clientScheduler)
-                .allocator(new RootAllocator())
-                .build();
 
-        clientSession = flightSessionFactory.newFlightSession();
+        clientSession = SessionImpl
+                .create(SessionImplConfig.from(SessionConfig.builder().build(), clientChannel, clientScheduler));
     }
 
     private static final class TestAuthClientInterceptor implements ClientInterceptor {
@@ -836,10 +831,10 @@ public abstract class FlightMessageRoundTripTest {
 
         // export from query scope to our session; this transforms the table
         assertEquals(0, numTransforms.intValue());
-        try (final TableHandle handle = clientSession.session().execute(TicketTable.fromQueryScopeField(tableName))) {
+        try (final TableHandle handle = clientSession.execute(TicketTable.fromQueryScopeField(tableName))) {
             // place the transformed table into the scope; wait on the future to ensure the server-side operation
             // completes
-            clientSession.session().publish(resultTableName, handle).get();
+            clientSession.publish(resultTableName, handle).get();
         }
         assertEquals(1, numTransforms.intValue());
 
@@ -859,11 +854,11 @@ public abstract class FlightMessageRoundTripTest {
         ExecutionContext.getContext().getQueryScope().putParam(tableName, table);
 
         // export from query scope to our session; this transforms the table
-        try (final TableHandle handle = clientSession.session().execute(TicketTable.fromQueryScopeField(tableName))) {
+        try (final TableHandle handle = clientSession.execute(TicketTable.fromQueryScopeField(tableName))) {
             // verify that we can sort the table prior to the restriction
-            clientSession.session().publish(resultTableName, handle).get();
+            clientSession.publish(resultTableName, handle).get();
             // verify that we can publish as many times as we please
-            clientSession.session().publish(resultTableName, handle).get();
+            clientSession.publish(resultTableName, handle).get();
 
             component.authorizationProvider().getConsoleServiceAuthWiring().delegate =
                     new ConsoleServiceAuthWiring.AllowAll() {
@@ -875,7 +870,7 @@ public abstract class FlightMessageRoundTripTest {
                     };
 
             try {
-                clientSession.session().publish(resultTableName, handle).get();
+                clientSession.publish(resultTableName, handle).get();
                 fail("expected the publish to fail");
             } catch (final Exception e) {
                 // expect the authorization error details to propagate
@@ -892,7 +887,7 @@ public abstract class FlightMessageRoundTripTest {
         ExecutionContext.getContext().getQueryScope().putParam(tableName, table);
 
         // export from query scope to our session; this transforms the table
-        try (final TableHandle handle = clientSession.session().execute(TicketTable.fromQueryScopeField(tableName))) {
+        try (final TableHandle handle = clientSession.execute(TicketTable.fromQueryScopeField(tableName))) {
 
             // verify that we can sort the table prior to the restriction
             // noinspection EmptyTryBlock

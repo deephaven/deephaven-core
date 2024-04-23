@@ -18,7 +18,7 @@ import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.server.appmode.ApplicationInjector;
-import io.deephaven.server.barrage.BarrageSessionFactoryClient;
+import io.deephaven.server.session.SessionFactoryCreator;
 import io.deephaven.server.config.ServerConfig;
 import io.deephaven.server.log.LogInit;
 import io.deephaven.server.plugin.PluginRegistration;
@@ -100,7 +100,7 @@ public class DeephavenApiServer {
     private final Map<String, AuthenticationRequestHandler> authenticationHandlers;
     private final Provider<ExecutionContext> executionContextProvider;
     private final ServerConfig serverConfig;
-    private final BarrageSessionFactoryClient barrageSessionFactoryClient;
+    private final SessionFactoryCreator sessionFactoryCreator;
 
     @Inject
     public DeephavenApiServer(
@@ -117,7 +117,7 @@ public class DeephavenApiServer {
             final Map<String, AuthenticationRequestHandler> authenticationHandlers,
             final Provider<ExecutionContext> executionContextProvider,
             final ServerConfig serverConfig,
-            final BarrageSessionFactoryClient barrageSessionFactoryClient) {
+            final SessionFactoryCreator sessionFactoryCreator) {
         this.server = server;
         this.ug = ug;
         this.logInit = logInit;
@@ -131,7 +131,7 @@ public class DeephavenApiServer {
         this.authenticationHandlers = authenticationHandlers;
         this.executionContextProvider = executionContextProvider;
         this.serverConfig = serverConfig;
-        this.barrageSessionFactoryClient = barrageSessionFactoryClient;
+        this.sessionFactoryCreator = sessionFactoryCreator;
     }
 
     @VisibleForTesting
@@ -265,7 +265,7 @@ public class DeephavenApiServer {
 
     @InternalUseOnly
     @ScriptApi
-    public BarrageSessionFactoryClient barrageSessionFactoryClient() {
-        return barrageSessionFactoryClient;
+    public SessionFactoryCreator sessionFactoryCreator() {
+        return sessionFactoryCreator;
     }
 }
