@@ -16,7 +16,6 @@ import io.deephaven.function.Numeric;
 import io.deephaven.function.Sort;
 import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.thread.ThreadInitializationFactory;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.After;
 import org.junit.Assert;
