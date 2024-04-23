@@ -3,12 +3,17 @@
 //
 package io.deephaven.parquet.base;
 
+import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.util.channel.CachedChannelProvider;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import org.apache.parquet.format.*;
 import org.apache.parquet.format.ColumnOrder;
 import org.apache.parquet.format.Type;
 import org.apache.parquet.schema.*;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,6 +41,76 @@ public class ParquetFileReader {
      */
     private final URI rootURI;
     private final MessageType type;
+
+    /**
+     * Make a {@link ParquetFileReader} for the supplied {@link File}. Wraps {@link IOException} as
+     * {@link UncheckedDeephavenException}.
+     *
+     * @param parquetFile The parquet file or the parquet metadata file
+     * @param specialInstructions Optional read instructions to pass to {@link SeekableChannelsProvider} while creating
+     *        channels
+     * @return The new {@link ParquetFileReader}
+     */
+    public static ParquetFileReader create(
+            @NotNull final File parquetFile,
+            @Nullable final Object specialInstructions) {
+        try {
+            return createChecked(parquetFile, specialInstructions);
+        } catch (IOException e) {
+            throw new UncheckedDeephavenException("Failed to create Parquet file reader: " + parquetFile, e);
+        }
+    }
+
+    /**
+     * Make a {@link ParquetFileReader} for the supplied {@link URI}. Wraps {@link IOException} as
+     * {@link UncheckedDeephavenException}.
+     *
+     * @param parquetFileURI The URI for the parquet file or the parquet metadata file
+     * @param specialInstructions Optional read instructions to pass to {@link SeekableChannelsProvider} while creating
+     *        channels
+     * @return The new {@link ParquetFileReader}
+     */
+    public static ParquetFileReader create(
+            @NotNull final URI parquetFileURI,
+            @Nullable final Object specialInstructions) {
+        try {
+            return createChecked(parquetFileURI, specialInstructions);
+        } catch (IOException e) {
+            throw new UncheckedDeephavenException("Failed to create Parquet file reader: " + parquetFileURI, e);
+        }
+    }
+
+    /**
+     * Make a {@link ParquetFileReader} for the supplied {@link File}.
+     *
+     * @param parquetFile The parquet file or the parquet metadata file
+     * @param specialInstructions Optional read instructions to pass to {@link SeekableChannelsProvider} while creating
+     *        channels
+     * @return The new {@link ParquetFileReader}
+     * @throws IOException if an IO exception occurs
+     */
+    public static ParquetFileReader createChecked(
+            @NotNull final File parquetFile,
+            @Nullable final Object specialInstructions) throws IOException {
+        return createChecked(convertToURI(parquetFile, false), specialInstructions);
+    }
+
+    /**
+     * Make a {@link ParquetFileReader} for the supplied {@link URI}.
+     *
+     * @param parquetFileURI The URI for the parquet file or the parquet metadata file
+     * @param specialInstructions Optional read instructions to pass to {@link SeekableChannelsProvider} while creating
+     *        channels
+     * @return The new {@link ParquetFileReader}
+     * @throws IOException if an IO exception occurs
+     */
+    public static ParquetFileReader createChecked(
+            @NotNull final URI parquetFileURI,
+            @Nullable final Object specialInstructions) throws IOException {
+        final SeekableChannelsProvider provider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(
+                parquetFileURI, specialInstructions);
+        return new ParquetFileReader(parquetFileURI, new CachedChannelProvider(provider, 1 << 7));
+    }
 
     /**
      * Create a new ParquetFileReader for the provided source.

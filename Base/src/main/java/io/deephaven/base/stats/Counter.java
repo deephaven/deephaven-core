@@ -20,7 +20,7 @@ import java.util.function.LongFunction;
  */
 public class Counter extends Value {
 
-    public static char TYPE_TAG = 'C';
+    public static final char TYPE_TAG = 'C';
 
     public Counter(long now) {
         super(now);

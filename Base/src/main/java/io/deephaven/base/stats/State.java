@@ -20,7 +20,7 @@ import java.util.function.LongFunction;
  */
 public class State extends Value {
 
-    public static char TYPE_TAG = 'S';
+    public static final char TYPE_TAG = 'S';
 
     public State(long now) {
         super(now);

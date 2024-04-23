@@ -5,15 +5,31 @@ package io.deephaven.client.examples;
 
 import io.deephaven.client.impl.Session;
 import io.deephaven.client.impl.SessionFactory;
+import io.grpc.ManagedChannel;
+
+import java.util.concurrent.ScheduledExecutorService;
 
 abstract class SingleSessionExampleBase extends SessionExampleBase {
 
+    private volatile Session session;
+
     @Override
     protected void execute(SessionFactory sessionFactory) throws Exception {
-        try (final Session session = sessionFactory.newSession()) {
+        try (final Session ignored = (session = sessionFactory.newSession())) {
             execute(session);
+        } finally {
+            session = null;
         }
     }
 
     protected abstract void execute(Session session) throws Exception;
+
+    @Override
+    protected void onShutdown(ScheduledExecutorService scheduler, ManagedChannel managedChannel) {
+        final Session localSession = session;
+        if (localSession != null) {
+            localSession.close();
+        }
+        super.onShutdown(scheduler, managedChannel);
+    }
 }

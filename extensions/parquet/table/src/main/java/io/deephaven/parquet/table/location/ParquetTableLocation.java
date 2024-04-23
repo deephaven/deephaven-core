@@ -344,8 +344,9 @@ public class ParquetTableLocation extends AbstractTableLocation {
             @NotNull final URI parentFileURI,
             @NotNull final ParquetTableLocation.IndexFileMetadata indexFileMetaData,
             @NotNull final ParquetInstructions parquetInstructions) {
-        final Table indexTable =
-                ParquetTools.readSingleFileTable(indexFileMetaData.fileURI.toString(), parquetInstructions);
+        final Table indexTable = ParquetTools.readTable(indexFileMetaData.fileURI.toString(),
+                parquetInstructions.withTableDefinitionAndLayout(null,
+                        ParquetInstructions.ParquetFileLayout.SINGLE_FILE));
         if (indexFileMetaData.dataIndexInfo != null) {
             return indexTable;
         }

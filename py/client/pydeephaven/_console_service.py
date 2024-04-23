@@ -19,14 +19,16 @@ class ConsoleService:
         if self.console_id:
             return
 
-        try:
-            result_id = self.session.make_ticket()
-            response = self._grpc_console_stub.StartConsole(
-                console_pb2.StartConsoleRequest(result_id=result_id, session_type=self.session._session_type),
-                metadata=self.session.grpc_metadata)
-            self.console_id = response.result_id
-        except Exception as e:
-            raise DHError("failed to start a console.") from e
+        with self.session._r_lock:
+            if not self.console_id:
+                try:
+                    result_id = self.session.make_ticket()
+                    response = self._grpc_console_stub.StartConsole(
+                        console_pb2.StartConsoleRequest(result_id=result_id, session_type=self.session._session_type),
+                        metadata=self.session.grpc_metadata)
+                    self.console_id = response.result_id
+                except Exception as e:
+                    raise DHError("failed to start a console.") from e
 
     def run_script(self, server_script: str) -> Any:
         """Runs a Python script in the console."""

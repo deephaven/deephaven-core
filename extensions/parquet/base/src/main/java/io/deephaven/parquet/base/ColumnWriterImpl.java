@@ -143,11 +143,11 @@ final class ColumnWriterImpl implements ColumnWriter {
         final long currentChunkDictionaryPageOffset = bufferedOutput.position();
         final int uncompressedSize = dictionaryBuffer.remaining();
 
-        compressorAdapter.reset();
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (final WritableByteChannel channel = Channels.newChannel(compressorAdapter.compress(baos))) {
             channel.write(dictionaryBuffer);
         }
+        compressorAdapter.reset();
         final BytesInput compressedBytes = BytesInput.from(baos);
 
         final int compressedPageSize = (int) compressedBytes.size();
@@ -290,6 +290,7 @@ final class ColumnWriterImpl implements ColumnWriter {
         try (final WritableByteChannel channel = Channels.newChannel(compressorAdapter.compress(baos))) {
             channel.write(data);
         }
+        compressorAdapter.reset();
         final BytesInput compressedData = BytesInput.from(baos);
         final int compressedSize = (int) (compressedData.size() + repetitionLevels.size() + definitionLevels.size());
 
@@ -327,12 +328,11 @@ final class ColumnWriterImpl implements ColumnWriter {
                             uncompressedSize);
         }
 
-        compressorAdapter.reset();
-
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (final OutputStream cos = compressorAdapter.compress(baos)) {
             bytes.writeAllTo(cos);
         }
+        compressorAdapter.reset();
         final BytesInput compressedBytes = BytesInput.from(baos);
 
         final long compressedSize = compressedBytes.size();

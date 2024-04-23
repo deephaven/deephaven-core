@@ -400,23 +400,22 @@ class Session:
         Raises:
             DHError
         """
-        with self._r_lock:
-            ticket = ticket_pb2.Ticket(ticket=f's/{name}'.encode(encoding='ascii'))
+        ticket = ticket_pb2.Ticket(ticket=f's/{name}'.encode(encoding='ascii'))
 
-            faketable = Table(session=self, ticket=ticket)
+        faketable = Table(session=self, ticket=ticket)
 
-            try:
-                table_op = FetchTableOp()
-                return self.table_service.grpc_table_op(faketable, table_op)
-            except Exception as e:
-                if isinstance(e.__cause__, grpc.RpcError):
-                    if e.__cause__.code() == grpc.StatusCode.INVALID_ARGUMENT:
-                        raise DHError(f"no table by the name {name}") from None
-                raise e
-            finally:
-                # Explicitly close the table without releasing it (because it isn't ours)
-                faketable.ticket = None
-                faketable.schema = None
+        try:
+            table_op = FetchTableOp()
+            return self.table_service.grpc_table_op(faketable, table_op)
+        except Exception as e:
+            if isinstance(e.__cause__, grpc.RpcError):
+                if e.__cause__.code() == grpc.StatusCode.INVALID_ARGUMENT:
+                    raise DHError(f"no table by the name {name}") from None
+            raise e
+        finally:
+            # Explicitly close the table without releasing it (because it isn't ours)
+            faketable.ticket = None
+            faketable.schema = None
 
     def bind_table(self, name: str, table: Table) -> None:
         """Binds a table to the given name on the server so that it can be referenced by that name.
@@ -428,8 +427,7 @@ class Session:
         Raises:
             DHError
         """
-        with self._r_lock:
-            self.console_service.bind_table(table=table, variable_name=name)
+        self.console_service.bind_table(table=table, variable_name=name)
 
     def time_table(self, period: Union[int, str], start_time: Union[int, str] = None,
                    blink_table: bool = False) -> Table:

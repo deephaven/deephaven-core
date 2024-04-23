@@ -408,7 +408,7 @@ def test_udf(x: {np_type}) -> bool:
 
             with self.assertRaises(DHError) as cm:
                 t = empty_table(1).update("X = `1`").update("Y = test_udf(1, 1.0, X = `1`)")
-            self.assertRegex(str(cm.exception), "test_udf: Expected argument .* got boolean")
+            self.assertRegex(str(cm.exception), "test_udf: Expected argument .* got class java.lang.Boolean")
 
         with self.subTest("with keyword only params"):
             def test_udf(p1: int, p2: float, *, kw1: str) -> bool:
@@ -538,7 +538,7 @@ def test_udf(x: {np_type}) -> bool:
 
             with self.assertRaises(DHError) as cm:
                 t1 = t.update(["X1 = f6(X, Y=null)"])
-            self.assertRegex(str(cm.exception), "f6: Expected argument \(col2\) to be either .* got boolean")
+            self.assertRegex(str(cm.exception), "f6: Expected argument \(col2\) to be either .* got class java.lang.Boolean")
 
         with self.subTest("f7"):
             def f1(x: int) -> Optional[float]:

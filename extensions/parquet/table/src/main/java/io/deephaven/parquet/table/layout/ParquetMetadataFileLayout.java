@@ -9,7 +9,7 @@ import io.deephaven.base.Pair;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.util.PartitionParser;
-import io.deephaven.parquet.table.ParquetTools;
+import io.deephaven.parquet.table.ParquetSchemaReader;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.parquet.base.ParquetUtils;
@@ -99,23 +99,25 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
         if (!metadataFile.exists()) {
             throw new TableDataException(String.format("Parquet metadata file %s does not exist", metadataFile));
         }
-        final ParquetFileReader metadataFileReader = ParquetTools.getParquetFileReader(metadataFile, inputInstructions);
+        final ParquetFileReader metadataFileReader =
+                ParquetFileReader.create(metadataFile, inputInstructions.getSpecialInstructions());
 
         final ParquetMetadataConverter converter = new ParquetMetadataConverter();
         final ParquetMetadata metadataFileMetadata = convertMetadata(metadataFile, metadataFileReader, converter);
-        final Pair<List<ColumnDefinition<?>>, ParquetInstructions> leafSchemaInfo = ParquetTools.convertSchema(
+        final Pair<List<ColumnDefinition<?>>, ParquetInstructions> leafSchemaInfo = ParquetSchemaReader.convertSchema(
                 metadataFileReader.getSchema(),
                 metadataFileMetadata.getFileMetaData().getKeyValueMetaData(),
                 inputInstructions);
 
         if (commonMetadataFile != null && commonMetadataFile.exists()) {
             final ParquetFileReader commonMetadataFileReader =
-                    ParquetTools.getParquetFileReader(commonMetadataFile, inputInstructions);
-            final Pair<List<ColumnDefinition<?>>, ParquetInstructions> fullSchemaInfo = ParquetTools.convertSchema(
-                    commonMetadataFileReader.getSchema(),
-                    convertMetadata(commonMetadataFile, commonMetadataFileReader, converter).getFileMetaData()
-                            .getKeyValueMetaData(),
-                    leafSchemaInfo.getSecond());
+                    ParquetFileReader.create(commonMetadataFile, inputInstructions.getSpecialInstructions());
+            final Pair<List<ColumnDefinition<?>>, ParquetInstructions> fullSchemaInfo =
+                    ParquetSchemaReader.convertSchema(
+                            commonMetadataFileReader.getSchema(),
+                            convertMetadata(commonMetadataFile, commonMetadataFileReader, converter).getFileMetaData()
+                                    .getKeyValueMetaData(),
+                            leafSchemaInfo.getSecond());
             final List<ColumnDefinition<?>> adjustedColumnDefinitions = new ArrayList<>();
             final Map<String, ColumnDefinition<?>> leafDefinitionsMap =
                     leafSchemaInfo.getFirst().stream().collect(toMap(ColumnDefinition::getName, Function.identity()));

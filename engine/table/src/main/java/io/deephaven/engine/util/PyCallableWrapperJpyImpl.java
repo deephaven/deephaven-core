@@ -286,6 +286,7 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
         StringBuilder argTypesStr = new StringBuilder();
         for (int i = 0; i < argTypes.length; i++) {
             Class<?> argType = argTypes[i];
+            argType = argType == boolean.class ? Boolean.class : argType;
 
             // if there are more arguments than parameters, we'll need to consider the last parameter as a varargs
             // parameter. This is not ideal. We should look for a better way to handle this, i.e. a way to convey that
