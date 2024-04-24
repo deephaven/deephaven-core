@@ -80,14 +80,12 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
     }
 
     @Override
-    @GwtIncompatible
     public DrainableColumn getInputStream(final StreamReaderOptions options,
             @Nullable final RowSet subset) throws IOException {
         computePayload();
         return new VarListInputStream(options, subset);
     }
 
-    @GwtIncompatible
     private class VarListInputStream extends BaseChunkInputStream {
         private int cachedSize = -1;
         private final WritableIntChunk<ChunkPositions> myOffsets;

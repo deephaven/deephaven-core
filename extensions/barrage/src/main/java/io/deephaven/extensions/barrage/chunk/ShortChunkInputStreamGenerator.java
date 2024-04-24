@@ -7,7 +7,6 @@
 // @formatter:off
 package io.deephaven.extensions.barrage.chunk;
 
-import com.google.common.annotations.GwtIncompatible;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
@@ -65,12 +64,10 @@ public class ShortChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
     }
 
     @Override
-    @GwtIncompatible
     public DrainableColumn getInputStream(final StreamReaderOptions options, @Nullable final RowSet subset) {
         return new ShortChunkInputStream(options, subset);
     }
 
-    @GwtIncompatible
     private class ShortChunkInputStream extends BaseChunkInputStream {
         private ShortChunkInputStream(final StreamReaderOptions options, final RowSet subset) {
             super(chunk, options, subset);

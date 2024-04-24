@@ -228,14 +228,12 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
     }
 
     @Override
-    @GwtIncompatible
     public DrainableColumn getInputStream(final StreamReaderOptions options, @Nullable final RowSet subset)
             throws IOException {
         computePayload();
         return new ObjectChunkInputStream(options, subset);
     }
 
-    @GwtIncompatible
     private class ObjectChunkInputStream extends BaseChunkInputStream {
 
         private int cachedSize = -1;
@@ -282,11 +280,11 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             // payload
             final MutableLong numPayloadBytes = new MutableLong();
             subset.forAllRowKeyRanges((s, e) -> {
-                numPayloadBytes.add(byteStorage.getPayloadSize((int) s, (int) e));
+                numPayloadBytes.addAndGet(byteStorage.getPayloadSize((int) s, (int) e));
             });
             final long payloadExtended = numPayloadBytes.get() & REMAINDER_MOD_8_MASK;
             if (payloadExtended > 0) {
-                numPayloadBytes.add(8 - payloadExtended);
+                numPayloadBytes.addAndGet(8 - payloadExtended);
             }
             listener.noteLogicalBuffer(numPayloadBytes.get());
         }
@@ -296,27 +294,27 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             if (cachedSize == -1) {
                 MutableLong totalCachedSize = new MutableLong(0L);
                 if (sendValidityBuffer()) {
-                    totalCachedSize.add(getValidityMapSerializationSizeFor(subset.intSize(DEBUG_NAME)));
+                    totalCachedSize.addAndGet(getValidityMapSerializationSizeFor(subset.intSize(DEBUG_NAME)));
                 }
 
                 // there are n+1 offsets; it is not assumed first offset is zero
                 if (!subset.isEmpty() && subset.size() == byteStorage.offsets.size() - 1) {
-                    totalCachedSize.add(byteStorage.offsets.size() * (long) Integer.BYTES);
-                    totalCachedSize.add(byteStorage.size());
+                    totalCachedSize.addAndGet(byteStorage.offsets.size() * (long) Integer.BYTES);
+                    totalCachedSize.addAndGet(byteStorage.size());
                 } else {
-                    totalCachedSize.add(subset.isEmpty() ? 0 : Integer.BYTES); // account for the n+1 offset
+                    totalCachedSize.addAndGet(subset.isEmpty() ? 0 : Integer.BYTES); // account for the n+1 offset
                     subset.forAllRowKeyRanges((s, e) -> {
                         // account for offsets
-                        totalCachedSize.add((e - s + 1) * Integer.BYTES);
+                        totalCachedSize.addAndGet((e - s + 1) * Integer.BYTES);
 
                         // account for payload
-                        totalCachedSize.add(byteStorage.getPayloadSize((int) s, (int) e));
+                        totalCachedSize.addAndGet(byteStorage.getPayloadSize((int) s, (int) e));
                     });
                 }
 
                 if (!subset.isEmpty() && (subset.size() & 0x1) == 0) {
                     // then we must also align offset array
-                    totalCachedSize.add(Integer.BYTES);
+                    totalCachedSize.addAndGet(Integer.BYTES);
                 }
                 cachedSize = LongSizedDataStructure.intSize(DEBUG_NAME, totalCachedSize.get());
             }
@@ -365,8 +363,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             final MutableInt logicalSize = new MutableInt();
             subset.forAllRowKeys((idx) -> {
                 try {
-                    logicalSize.add(LongSizedDataStructure.intSize("int cast",
-                            byteStorage.getPayloadSize((int) idx, (int) idx)));
+                    logicalSize.addAndGet((int) byteStorage.getPayloadSize((int) idx, (int) idx));
                     dos.writeInt(logicalSize.get());
                 } catch (final IOException e) {
                     throw new UncheckedDeephavenException("couldn't drain data to OutputStream", e);
@@ -383,7 +380,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             final MutableLong payloadLen = new MutableLong();
             subset.forAllRowKeyRanges((s, e) -> {
                 try {
-                    payloadLen.add(byteStorage.writePayload(dos, (int) s, (int) e));
+                    payloadLen.addAndGet(byteStorage.writePayload(dos, (int) s, (int) e));
                 } catch (final IOException err) {
                     throw new UncheckedDeephavenException("couldn't drain data to OutputStream", err);
                 }

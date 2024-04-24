@@ -3,8 +3,6 @@
 //
 package io.deephaven.extensions.barrage.chunk;
 
-import com.google.common.base.Charsets;
-import com.google.common.annotations.GwtIncompatible;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
@@ -392,7 +390,6 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
      * @param subset if provided, is a position-space filter of source data
      * @return a single-use DrainableColumn ready to be drained via grpc
      */
-    @GwtIncompatible
     DrainableColumn getInputStream(final StreamReaderOptions options, @Nullable final RowSet subset) throws IOException;
 
     final class FieldNodeInfo {
