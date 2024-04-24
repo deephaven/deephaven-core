@@ -90,12 +90,18 @@ public class Calendar {
 
     /**
      * Enables a fast cache that improves access and computation times.
+     * <p>
+     * If the cache is already enabled, this method does nothing.
      *
      * @param start the start date
      * @param end   the end date
      * @param wait       whether to wait for the computation to finish
      */
     protected synchronized void enableFastCache(final LocalDate start, final LocalDate end, final boolean wait) {
+        if(fastCache) {
+            return;
+        }
+
         fastCache = true;
         summaryCache.enableFastCache(start, end, wait);
     }

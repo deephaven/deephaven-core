@@ -218,13 +218,14 @@ public class BusinessCalendar extends Calendar {
     }
 
     /**
-     /**
      * Enables a fast cache that improves access and computation times.
+     * <p>
+     * If the cache is already enabled, this method does nothing.
      *
      * @param wait       whether to wait for the computation to finish
      */
     public synchronized void enableFastCache(final boolean wait) {
-        if(schedulesCache.isFastCache() || summaryCache.isFastCache()){
+        if(isFastCache()){
             return;
         }
 

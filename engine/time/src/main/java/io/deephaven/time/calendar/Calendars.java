@@ -27,6 +27,8 @@ public class Calendars {
     private static final String BUSINESS_CALENDAR_PROP_INTERNAL = "Calendar.importPath";
     private static final String BUSINESS_CALENDAR_PROP_USER = "Calendar.userImportPath";
     private static String defaultName = Configuration.getInstance().getProperty("Calendar.default");
+    private static final boolean USE_FAST_CACHE = Configuration.getInstance().getBooleanWithDefault("Calendar.useFastCache", true);
+    private static final boolean WAIT_ON_FAST_CACHE = Configuration.getInstance().getBooleanWithDefault("Calendar.waitOnFastCache", false);
     private static final Map<String, BusinessCalendar> calMap = new TreeMap<>();
 
     /**
@@ -105,6 +107,11 @@ public class Calendars {
                 return;
             }
             throw new IllegalArgumentException("Multiple calendars have the same name: name='" + name + "'");
+        }
+
+        if(USE_FAST_CACHE) {
+            logger.info("Enabling fast cache for calendar: name=" + name + " waitOnFastCache=" + WAIT_ON_FAST_CACHE);
+                cal.enableFastCache(WAIT_ON_FAST_CACHE);
         }
 
         map.put(name, cal);
