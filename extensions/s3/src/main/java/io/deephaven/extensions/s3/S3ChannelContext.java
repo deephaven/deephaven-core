@@ -206,7 +206,6 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
     }
 
     private int cacheIndex(final long fragmentIndex) {
-        // TODO(deephaven-core#5061): Experiment with LRU caching
         return (int) (fragmentIndex % localCache.length);
     }
 
