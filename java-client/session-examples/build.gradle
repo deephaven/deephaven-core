@@ -4,7 +4,7 @@ plugins {
 }
 
 dependencies {
-    implementation project(':java-client-session-dagger')
+    implementation project(':java-client-session')
     implementation project(':java-client-example-utilities')
 
     Classpaths.inheritGrpcPlatform(project)

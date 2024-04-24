@@ -5,8 +5,6 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.api.literal.Literal;
 import io.deephaven.base.string.cache.CompressedString;
-import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -15,9 +13,10 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
+import io.deephaven.engine.table.impl.preview.DisplayWrapper;
 import io.deephaven.engine.table.impl.DependencyStreamProvider;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
-import io.deephaven.engine.table.impl.preview.DisplayWrapper;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.SafeCloseable;
@@ -155,7 +154,14 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
     }
 
     @Override
-    public synchronized void init(TableDefinition tableDefinition) {
+    public void init(@NotNull TableDefinition tableDefinition) {
+        init(tableDefinition, QueryCompilerRequestProcessor.immediate());
+    }
+
+    @Override
+    public synchronized void init(
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
         if (initialized) {
             return;
         }
@@ -169,12 +175,12 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
             return;
         }
         final List<Object> valueList = new ArrayList<>();
-        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
+        final Map<String, Object> queryScopeVariables = compilationProcessor.getQueryScopeVariables();
         final ColumnTypeConvertor convertor =
                 ColumnTypeConvertorFactory.getConvertor(column.getDataType(), column.getName());
         for (String strValue : strValues) {
-            if (queryScope != null && queryScope.hasParamName(strValue)) {
-                Object paramValue = queryScope.readParamValue(strValue);
+            if (queryScopeVariables.containsKey(strValue)) {
+                Object paramValue = queryScopeVariables.get(strValue);
                 if (paramValue != null && paramValue.getClass().isArray()) {
                     ArrayTypeUtils.ArrayAccessor<?> accessor = ArrayTypeUtils.getArrayAccessor(paramValue);
                     for (int ai = 0; ai < accessor.length(); ++ai) {

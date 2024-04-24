@@ -8,8 +8,6 @@ import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static io.deephaven.util.QueryConstants.NULL_LONG;
-
 // TODO: Move?
 
 /**

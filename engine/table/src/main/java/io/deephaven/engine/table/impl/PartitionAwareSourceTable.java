@@ -7,6 +7,7 @@ import io.deephaven.api.Selectable;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.util.TableTools;
@@ -131,16 +132,20 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
         @Override
         public Table selectDistinctInternal(Collection<? extends Selectable> columns) {
             final List<SelectColumn> selectColumns = Arrays.asList(SelectColumn.from(columns));
+            try {
+                SelectAndViewAnalyzer.initializeSelectColumns(table.getDefinition().getColumnNameMap(),
+                        selectColumns.toArray(SelectColumn[]::new));
+            } catch (Exception e) {
+                return null;
+            }
+
+            final Set<String> partitioningDerivedColumnNames = new HashSet<>();
             for (final SelectColumn selectColumn : selectColumns) {
-                try {
-                    selectColumn.initDef(getDefinition().getColumnNameMap());
-                } catch (Exception e) {
-                    return null;
-                }
                 if (!((PartitionAwareSourceTable) table).isValidAgainstColumnPartitionTable(
-                        selectColumn.getColumns(), selectColumn.getColumnArrays())) {
+                        selectColumn.getColumns(), selectColumn.getColumnArrays(), partitioningDerivedColumnNames)) {
                     return null;
                 }
+                partitioningDerivedColumnNames.add(selectColumn.getName());
             }
             return table.selectDistinct(selectColumns);
         }
@@ -253,10 +258,11 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
             return prepareReturnThis();
         }
 
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
         final List<WhereFilter> partitionFilters = new ArrayList<>();
         final List<WhereFilter> deferredFilters = new ArrayList<>();
         for (WhereFilter whereFilter : whereFilters) {
-            whereFilter.init(definition);
+            whereFilter.init(definition, compilationProcessor);
             if (!(whereFilter instanceof ReindexingFilter)
                     && isValidAgainstColumnPartitionTable(whereFilter.getColumns(), whereFilter.getColumnArrays())) {
                 partitionFilters.add(whereFilter);
@@ -264,6 +270,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
                 deferredFilters.add(whereFilter);
             }
         }
+        compilationProcessor.compile();
 
         final PartitionAwareSourceTable withPartitionsFiltered = partitionFilters.isEmpty()
                 ? this
@@ -280,13 +287,18 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
     @Override
     public final Table selectDistinct(@NotNull final Collection<? extends Selectable> columns) {
         final List<SelectColumn> selectColumns = Arrays.asList(SelectColumn.from(columns));
+        SelectAndViewAnalyzer.initializeSelectColumns(
+                definition.getColumnNameMap(), selectColumns.toArray(SelectColumn[]::new));
+
+        final Set<String> partitioningDerivedColumnNames = new HashSet<>();
         for (final SelectColumn selectColumn : selectColumns) {
-            selectColumn.initDef(definition.getColumnNameMap());
-            if (!isValidAgainstColumnPartitionTable(selectColumn.getColumns(), selectColumn.getColumnArrays())) {
+            if (!isValidAgainstColumnPartitionTable(
+                    selectColumn.getColumns(), selectColumn.getColumnArrays(), partitioningDerivedColumnNames)) {
                 // Be sure to invoke the super-class version of this method, rather than the array-based one that
                 // delegates to this method.
                 return super.selectDistinct(selectColumns);
             }
+            partitioningDerivedColumnNames.add(selectColumn.getName());
         }
 
         // Ensure that the location table is available and populated with non-null, non-empty locations.
@@ -299,9 +311,18 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
     private boolean isValidAgainstColumnPartitionTable(
             @NotNull final Collection<String> columnNames,
             @NotNull final Collection<String> columnArrayNames) {
+        return isValidAgainstColumnPartitionTable(columnNames, columnArrayNames, Collections.emptySet());
+    }
+
+    private boolean isValidAgainstColumnPartitionTable(
+            @NotNull final Collection<String> columnNames,
+            @NotNull final Collection<String> columnArrayNames,
+            @NotNull final Collection<String> partitioningDerivedColumnNames) {
         if (!columnArrayNames.isEmpty()) {
             return false;
         }
-        return columnNames.stream().allMatch(partitioningColumnDefinitions::containsKey);
+        return columnNames.stream().allMatch(
+                columnName -> partitioningColumnDefinitions.containsKey(columnName)
+                        || partitioningDerivedColumnNames.contains(columnName));
     }
 }

@@ -98,23 +98,6 @@ set(ALL_FILES
     third_party/date/include/date/date.h
 )
 
-add_library(dhcore_objlib OBJECT ${ALL_FILES})
-# In order to make a shared library suitable for Cython.
-set_property(TARGET dhcore_objlib PROPERTY POSITION_INDEPENDENT_CODE ON)
-
-target_compile_options(dhcore_objlib PRIVATE -Wall -Werror -Wno-deprecated-declarations)
-
-target_include_directories(dhcore_objlib PRIVATE include/private)
-target_include_directories(dhcore_objlib PRIVATE third_party/flatbuffers/include)
-target_include_directories(dhcore_objlib PRIVATE third_party/date/include)
-target_include_directories(dhcore_objlib PRIVATE third_party/roaring/include)
-target_include_directories(dhcore_objlib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/public>)
-
-# The flatbuf include directory is in its own part of the tree.
-target_include_directories(dhcore_objlib PRIVATE "./flatbuf")
-
-target_link_libraries(dhcore_objlib PUBLIC immer)
-
 #
 # shared and static libraries built from the same object files
 # https://stackoverflow.com/questions/2152077/is-it-possible-to-get-cmake-to-build-both-a-static-and-shared-library-at-the-sam
@@ -122,27 +105,38 @@ target_link_libraries(dhcore_objlib PUBLIC immer)
 # https://stackoverflow.com/questions/38832528/transitive-target-include-directories-on-object-libraries
 #
 
-get_property(object_link_libs TARGET dhcore_objlib PROPERTY LINK_LIBRARIES)
-
-add_library(dhcore SHARED $<TARGET_OBJECTS:dhcore_objlib>)
-# TODO: How to avoid repetition here for target_include_directories?
-target_include_directories(dhcore PRIVATE include/private)
-target_include_directories(dhcore PRIVATE third_party/date/include)
-target_include_directories(dhcore PRIVATE third_party/flatbuffers/include)
-target_include_directories(dhcore PRIVATE third_party/roaring/include)
-target_include_directories(dhcore PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/public>)
-target_link_libraries(dhcore PUBLIC ${object_link_libs})
-
-add_library(dhcore_static STATIC $<TARGET_OBJECTS:dhcore_objlib>)
-# TODO: How to avoid repetition here for target_include_directories?
-target_include_directories(dhcore_static PRIVATE include/private)
-target_include_directories(dhcore_static PRIVATE third_party/date/include)
-target_include_directories(dhcore_static PRIVATE third_party/flatbuffers/include)
-target_include_directories(dhcore_static PRIVATE third_party/roaring/include)
-target_include_directories(dhcore_static PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/public>)
-target_link_libraries(dhcore_static PUBLIC ${object_link_libs})
+add_library(dhcore SHARED ${ALL_FILES})
+add_library(dhcore_static STATIC ${ALL_FILES})
 
 # This is so deephaven::dhcore works both when using the installed CMake config
 # and when using this project as a CMake subdirectory of your own project.
 add_library(deephaven::dhcore ALIAS dhcore)
-add_library(deephaven::dhcore_static ALIAS dhcore_static)
+
+if (WIN32)
+  set_property(TARGET dhcore PROPERTY WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif()
+
+foreach (whichlib dhcore dhcore_static)
+  set_property(TARGET ${whichlib} PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+  if (LINUX)
+    target_compile_options(${whichlib} PRIVATE -Wall -Werror -Wno-deprecated-declarations)
+  endif()
+
+  if (WIN32)
+    # /Wall is a bit too chatty so we stick with /W3
+    # /bigobj needed because ticking/immer_table_state.cc compiles to something too large apparently
+    target_compile_options(${whichlib} PRIVATE /W3 /bigobj)
+
+    target_compile_definitions(${whichlib} PRIVATE _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
+  endif()
+
+  target_include_directories(${whichlib} PRIVATE include/private)
+  target_include_directories(${whichlib} PRIVATE third_party/date/include)
+  target_include_directories(${whichlib} PRIVATE third_party/flatbuffers/include)
+  target_include_directories(${whichlib} PRIVATE third_party/roaring/include)
+  target_include_directories(${whichlib} PRIVATE flatbuf)
+  target_include_directories(${whichlib} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/public>)
+
+  target_link_libraries(${whichlib} PUBLIC immer)
+endforeach()

@@ -11,6 +11,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.hashing.CharChunkHasher;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryCompilerRequest;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
@@ -19,6 +20,7 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MultiJoinModifiedSlotTracker;
 import io.deephaven.engine.table.impl.NaturalJoinModifiedSlotTracker;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.asofjoin.RightIncrementalAsOfJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.asofjoin.StaticAsOfJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.asofjoin.TypedAsOfJoinFactory;
@@ -566,12 +568,18 @@ public class TypedHasherFactory {
         final String javaString =
                 Arrays.stream(javaStrings).filter(s -> !s.startsWith("package ")).collect(Collectors.joining("\n"));
 
-        final Class<?> clazz = ExecutionContext.getContext().getQueryCompiler().compile(className, javaString,
-                "io.deephaven.engine.table.impl.by.typed." + hasherConfig.packageMiddle + ".gen");
+        final Class<?> clazz = ExecutionContext.getContext().getQueryCompiler().compile(QueryCompilerRequest.builder()
+                .description("TypedHasherFactory: " + className)
+                .className(className)
+                .classBody(javaString)
+                .packageNameRoot("io.deephaven.engine.table.impl.by.typed." + hasherConfig.packageMiddle + ".gen")
+                .build());
+
         if (!hasherConfig.baseClass.isAssignableFrom(clazz)) {
             throw new IllegalStateException("Generated class is not a " + hasherConfig.baseClass.getCanonicalName());
         }
 
+        // noinspection unchecked
         final Class<? extends T> castedClass = (Class<? extends T>) clazz;
 
         T retVal;

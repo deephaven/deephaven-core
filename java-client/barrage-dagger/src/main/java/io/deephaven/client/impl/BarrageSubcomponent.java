@@ -17,7 +17,11 @@ import java.util.concurrent.ScheduledExecutorService;
 @Subcomponent(modules = {SessionImplModule.class, FlightSessionModule.class, BarrageSessionModule.class})
 public interface BarrageSubcomponent extends BarrageSessionFactory {
 
+    @Override
     BarrageSession newBarrageSession();
+
+    @Override
+    ManagedChannel managedChannel();
 
     @Module(subcomponents = {BarrageSubcomponent.class})
     interface DeephavenClientSubcomponentModule {
@@ -25,7 +29,7 @@ public interface BarrageSubcomponent extends BarrageSessionFactory {
     }
 
     @Subcomponent.Builder
-    interface Builder extends BarrageSessionFactoryBuilder {
+    interface Builder {
         Builder managedChannel(@BindsInstance ManagedChannel channel);
 
         Builder scheduler(@BindsInstance ScheduledExecutorService scheduler);

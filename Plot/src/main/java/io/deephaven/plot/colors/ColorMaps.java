@@ -6,7 +6,7 @@ package io.deephaven.plot.colors;
 import io.deephaven.base.verify.Require;
 import io.deephaven.gui.color.Color;
 import io.deephaven.gui.color.Paint;
-import io.deephaven.plot.util.functions.SerializableClosure;
+import io.deephaven.plot.util.functions.HasClosure;
 import io.deephaven.plot.util.Range;
 import groovy.lang.Closure;
 
@@ -294,13 +294,13 @@ public class ColorMaps implements Serializable {
         for (final Map.Entry<Closure<Boolean>, COLOR> e : map.entrySet()) {
             final Closure<Boolean> closure = e.getKey();
             final COLOR color = e.getValue();
-            final SerializableClosure<Boolean> serializableClosure = new SerializableClosure<>(closure);
+            final HasClosure<Boolean> hasClosure = new HasClosure<>(closure);
             final SerializablePredicate<Double> predicate = new SerializablePredicate<Double>() {
                 private static final long serialVersionUID = 613420989214281949L;
 
                 @Override
                 public boolean test(Double aDouble) {
-                    return serializableClosure.getClosure().call(aDouble);
+                    return hasClosure.getClosure().call(aDouble);
                 }
             };
 

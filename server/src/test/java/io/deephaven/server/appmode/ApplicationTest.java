@@ -50,7 +50,7 @@ public class ApplicationTest {
 
     @Test
     public void app01() throws IOException {
-        session = new GroovyDeephavenSession(
+        session = GroovyDeephavenSession.of(
                 ExecutionContext.getContext().getUpdateGraph(),
                 ExecutionContext.getContext().getOperationInitializer(),
                 NoOp.INSTANCE, null,

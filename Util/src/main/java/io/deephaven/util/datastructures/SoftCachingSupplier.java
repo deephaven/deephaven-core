@@ -14,7 +14,7 @@ import java.util.function.Supplier;
  *
  * @param <OUTPUT_TYPE> the type of results supplied by this supplier
  */
-public final class LazyCachingSupplier<OUTPUT_TYPE> implements Supplier<OUTPUT_TYPE> {
+public final class SoftCachingSupplier<OUTPUT_TYPE> implements Supplier<OUTPUT_TYPE> {
 
     private final Supplier<OUTPUT_TYPE> internalSupplier;
 
@@ -25,7 +25,7 @@ public final class LazyCachingSupplier<OUTPUT_TYPE> implements Supplier<OUTPUT_T
      *
      * @param internalSupplier The {@link Supplier} to wrap. Must be safely repeatable and must not return {@code null}.
      */
-    public LazyCachingSupplier(@NotNull final Supplier<OUTPUT_TYPE> internalSupplier) {
+    public SoftCachingSupplier(@NotNull final Supplier<OUTPUT_TYPE> internalSupplier) {
         this.internalSupplier = internalSupplier;
     }
 

@@ -3,9 +3,9 @@
 //
 package io.deephaven.extensions.s3;
 
+import io.deephaven.annotations.CopyableStyle;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
-import org.immutables.value.Value;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
@@ -21,12 +21,7 @@ import java.util.Optional;
  * documented in this class may change in the future. As such, callers may wish to explicitly set the values.
  */
 @Immutable
-// Almost the same as BuildableStyle, but has copy-ability to support withReadAheadCount
-@Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE,
-        defaults = @Value.Immutable(copy = true),
-        strictBuilder = true,
-        weakInterning = true,
-        jdkOnly = true)
+@CopyableStyle
 public abstract class S3Instructions implements LogOutputAppendable {
 
     private final static int DEFAULT_MAX_CONCURRENT_REQUESTS = 50;

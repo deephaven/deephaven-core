@@ -59,7 +59,7 @@ public class TimeSeriesFilter
     }
 
     @Override
-    public void init(TableDefinition tableDefinition) {}
+    public void init(@NotNull final TableDefinition tableDefinition) {}
 
     @NotNull
     @Override

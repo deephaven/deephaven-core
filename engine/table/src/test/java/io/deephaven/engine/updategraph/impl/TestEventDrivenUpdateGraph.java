@@ -7,6 +7,7 @@ import io.deephaven.api.agg.Aggregation;
 import io.deephaven.configuration.DataDir;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryCompiler;
+import io.deephaven.engine.context.QueryCompilerImpl;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
@@ -102,7 +103,7 @@ public class TestEventDrivenUpdateGraph {
         final Path queryCompilerDir = DataDir.get()
                 .resolve("io.deephaven.engine.updategraph.impl.TestEventDrivenUpdateGraph.compilerForUnitTests");
 
-        return QueryCompiler.create(queryCompilerDir.toFile(), getClass().getClassLoader());
+        return QueryCompilerImpl.create(queryCompilerDir.toFile(), getClass().getClassLoader());
     }
 
     @Test

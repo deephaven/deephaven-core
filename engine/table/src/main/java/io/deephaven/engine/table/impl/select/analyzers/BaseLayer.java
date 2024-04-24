@@ -60,16 +60,6 @@ public class BaseLayer extends SelectAndViewAnalyzer {
     }
 
     @Override
-    public void updateColumnDefinitionsFromTopLayer(Map<String, ColumnDefinition<?>> columnDefinitions) {
-        for (Map.Entry<String, ColumnSource<?>> entry : sources.entrySet()) {
-            final String name = entry.getKey();
-            final ColumnSource<?> cs = entry.getValue();
-            final ColumnDefinition<?> cd = ColumnDefinition.fromGenericType(name, cs.getType(), cs.getComponentType());
-            columnDefinitions.put(name, cd);
-        }
-    }
-
-    @Override
     public void applyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper, JobScheduler jobScheduler,
             @Nullable LivenessNode liveResultOwner, SelectLayerCompletionHandler onCompletion) {
         // nothing to do at the base layer

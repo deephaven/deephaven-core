@@ -148,8 +148,7 @@ public abstract class DeephavenApiServerTestBase {
         scopeCloseable.close();
 
         try {
-            server.server().stopWithTimeout(5, TimeUnit.SECONDS);
-            server.server().join();
+            server.teardownForUnitTests();
         } finally {
             LogBufferGlobal.clear(logBuffer);
         }
