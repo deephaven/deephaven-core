@@ -218,7 +218,7 @@ def test_udf(col: Optional[{py_type}]) -> bool: # Optional enables auto DH null 
             self.assertEqual(5, t2.to_string(cols="Z").count("true"))
 
         with self.subTest("boolean"):
-            def test_udf(p1: np.bool_, p2=None) -> bool:
+            def test_udf(p1: np.bool_, p2=None) -> np.bool_:
                 return p1 == True
 
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? true : false"])  # no null
@@ -247,7 +247,7 @@ def test_udf(col: Optional[{py_type}]) -> bool: # Optional enables auto DH null 
             self.assertEqual(5, t1.to_string(cols="Z").count("false"))
 
         with self.subTest("np.datetime64"):
-            def test_udf(p1: np.datetime64, p2=None) -> bool:  # numpy supports NaT, NaT for null
+            def test_udf(p1: np.datetime64, p2=None) -> np.bool_:  # numpy supports NaT, NaT for null
                 return p1.dtype.type == np.datetime64 and np.isnat(p1)
 
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? now() : null"])
@@ -423,14 +423,14 @@ def test_udf(x: {np_type}) -> bool:
         t = new_table([int_col(c, [0, 1, 2, 3, 4, 5, 6]) for c in cols])
 
         with self.subTest("valid varargs typehint"):
-            def test_udf(p1: np.int32, *args: np.int64) -> int:
+            def test_udf(p1: np.int32, *args: np.int64) -> np.int64:
                 return sum(args)
 
             result = t.update(f"X = test_udf({','.join(cols)})")
             self.assertEqual(result.columns[4].data_type, dtypes.int64)
 
         with self.subTest("invalid varargs typehint"):
-            def test_udf(p1: np.int32, *args: np.int16) -> int:
+            def test_udf(p1: np.int32, *args: np.int16) -> np.int64:
                 return sum(args)
 
             with self.assertRaises(DHError) as cm:
@@ -507,7 +507,7 @@ def test_udf(x: {np_type}) -> bool:
             self.assertEqual(10, t.to_string().count("true"))
 
         with self.subTest("f5"):
-            def f5(col1, col2: np.ndarray[np.int32]) -> bool:
+            def f5(col1, col2: np.ndarray[np.int32]) -> np.bool_:
                 return np.nanmean(col2) == np.mean(col2)
 
             t = empty_table(10).update(["X = i % 3", "Y = i"]).group_by("X")
@@ -517,7 +517,7 @@ def test_udf(x: {np_type}) -> bool:
             self.assertRegex(str(cm.exception), "f5: Expected .* got null")
 
         with self.subTest("f51"):
-            def f51(col1, col2: Optional[np.ndarray[np.int32]]) -> bool:
+            def f51(col1, col2: Optional[np.ndarray[np.int32]]) -> np.bool_:
                 return np.nanmean(col2) == np.mean(col2)
 
             t = empty_table(10).update(["X = i % 3", "Y = i"]).group_by("X")
