@@ -65,6 +65,18 @@ public class TestYearMonthSummaryCache extends BaseArrayTestCase {
             assertEquals(fastCache ? 24 : 2, monthCount[0]);
             assertEquals(fastCache ? 2 :2, yearCount[0]);
 
+            if(fastCache) {
+                try {
+                    // check enabling the cache 2x
+                    final LocalDate start = LocalDate.of(2020, 12, 12);
+                    final LocalDate end = LocalDate.of(2023, 1, 7);
+                    cache.enableFastCache(start, end, true);
+                    fail("Expected IllegalStateException because the cache is already enabled");
+                } catch (IllegalStateException e) {
+                    // expected
+                }
+            }
+
             cache.clear();
 
             assertEquals("month202101", cache.getMonthSummary(202101));

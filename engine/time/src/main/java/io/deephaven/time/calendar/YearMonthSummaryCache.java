@@ -17,7 +17,7 @@ class YearMonthSummaryCache<T> {
 
     private final FastConcurrentCache<Integer, T> monthCache;
     private final FastConcurrentCache<Integer, T> yearCache;
-    private volatile boolean fastCache = false;
+    private volatile boolean fastCache = false; // synchronized
 
     /**
      * Creates a new cache.
@@ -35,7 +35,7 @@ class YearMonthSummaryCache<T> {
      *
      * @return whether the fast cache is enabled
      */
-    public boolean isFastCache() {
+    public synchronized boolean isFastCache() {
         return fastCache;
     }
 
