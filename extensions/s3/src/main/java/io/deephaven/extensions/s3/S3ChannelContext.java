@@ -3,6 +3,7 @@
 //
 package io.deephaven.extensions.s3;
 
+import io.deephaven.base.verify.Require;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.base.reference.CleanupReference;
@@ -24,9 +25,12 @@ import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 
 import java.io.IOException;
 import java.lang.ref.SoftReference;
+import java.net.URI;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
@@ -61,7 +65,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
      */
     private final S3RequestCache sharedCache;
 
-    private final Request[] localCache;
+    private final Map<Integer, Request> localCache;
 
     /**
      * The size of the object in bytes, stored in context to avoid fetching multiple times
@@ -77,7 +81,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
             @NotNull final S3RequestCache sharedCache) {
         this.client = Objects.requireNonNull(client);
         this.instructions = Objects.requireNonNull(instructions);
-        this.localCache = new Request[instructions.maxCacheSize()];
+        this.localCache = new HashMap<>(instructions.maxCacheSize());
         this.sharedCache = sharedCache;
         uri = null;
         size = UNINITIALIZED_SIZE;
@@ -122,7 +126,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
             final int impliedReadAhead = (int) (lastFragmentIx - firstFragmentIx);
             final int desiredReadAhead = instructions.readAheadCount();
             final long totalRemainingFragments = numFragments - firstFragmentIx - 1;
-            final int maxReadAhead = localCache.length - 1;
+            final int maxReadAhead = instructions.maxCacheSize() - 1;
             readAhead = Math.min(
                     Math.max(impliedReadAhead, desiredReadAhead),
                     (int) Math.min(maxReadAhead, totalRemainingFragments));
@@ -166,47 +170,46 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
     }
 
     private void cancelOutstanding() {
-        for (int i = 0; i < localCache.length; i++) {
-            if (localCache[i] != null) {
-                localCache[i].release();
-                localCache[i] = null;
-            }
+        for (final Request request : localCache.values()) {
+            request.release();
         }
+        localCache.clear();
     }
 
     // --------------------------------------------------------------------------------------------------
 
     private Request getRequest(final long fragmentIndex) {
         final int cacheIdx = cacheIndex(fragmentIndex);
-        Request request = localCache[cacheIdx];
-        if (request != null && request.isFragment(fragmentIndex)) {
-            return request;
+        final Request locallyCached = localCache.get(cacheIdx);
+        if (locallyCached != null && locallyCached.isFragment(fragmentIndex)) {
+            return locallyCached;
         }
-        request = sharedCache.getRequest(uri, fragmentIndex);
-        if (request != null) {
-            if (localCache[cacheIdx] != null) {
-                localCache[cacheIdx].release();
+        final Request sharedCacheRequest = sharedCache.getRequest(uri, fragmentIndex);
+        if (sharedCacheRequest != null) {
+            if (locallyCached != null) {
+                locallyCached.release();
             }
-            localCache[cacheIdx] = request;
+            localCache.put(cacheIdx, sharedCacheRequest);
         }
-        return request;
+        return sharedCacheRequest;
     }
 
     private Request getOrCreateRequest(final long fragmentIndex) {
         final int cacheIdx = cacheIndex(fragmentIndex);
-        final Request request = localCache[cacheIdx];
-        if (request != null && request.isFragment(fragmentIndex)) {
-            return request;
+        final Request locallyCached = localCache.get(cacheIdx);
+        if (locallyCached != null && locallyCached.isFragment(fragmentIndex)) {
+            return locallyCached;
         }
-        if (localCache[cacheIdx] != null) {
-            localCache[cacheIdx].release();
+        final Request sharedCacheRequest = sharedCache.getOrCreateRequest(uri, fragmentIndex, this);
+        if (locallyCached != null) {
+            locallyCached.release();
         }
-        localCache[cacheIdx] = sharedCache.getOrCreateRequest(uri, fragmentIndex, this);
-        return localCache[cacheIdx];
+        localCache.put(cacheIdx, sharedCacheRequest);
+        return sharedCacheRequest;
     }
 
     private int cacheIndex(final long fragmentIndex) {
-        return (int) (fragmentIndex % localCache.length);
+        return (int) (fragmentIndex % instructions.maxCacheSize());
     }
 
     private long fragmentIndex(final long pos) {
@@ -237,6 +240,36 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
             CleanupReference<ByteBuffer> {
 
         /**
+         * A unique identifier for a request, consisting of the URI and fragment index.
+         */
+        static final class ID {
+            private final URI uri;
+            private final long fragmentIndex;
+
+            ID(final S3Uri s3Uri, final long fragmentIndex) {
+                this.uri = Require.neqNull(s3Uri.uri(), "uri");
+                this.fragmentIndex = fragmentIndex;
+            }
+
+            @Override
+            public int hashCode() {
+                return Objects.hash(uri, fragmentIndex);
+            }
+
+            @Override
+            public boolean equals(Object obj) {
+                if (this == obj) {
+                    return true;
+                }
+                if (obj == null || getClass() != obj.getClass()) {
+                    return false;
+                }
+                final ID other = (ID) obj;
+                return fragmentIndex == other.fragmentIndex && uri.equals(other.uri);
+            }
+        }
+
+        /**
          * Field updater for refCount, so we can avoid creating an {@link AtomicInteger} for each instance.
          */
         private static final AtomicIntegerFieldUpdater<Request> REFCOUNT_UPDATER =
@@ -246,7 +279,8 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
         @SuppressWarnings("unused")
         private ByteBuffer bufferReference;
 
-        private final S3Uri uri;
+        private final S3Uri s3Uri;
+        private final ID id;
         private final S3Instructions instructions;
         private final S3AsyncClient client;
         private final long fragmentIndex;
@@ -281,13 +315,18 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
             REFCOUNT_UPDATER.set(this, 0);
             bufferReference = null;
             this.fragmentIndex = fragmentIndex;
-            this.uri = context.uri;
+            this.s3Uri = context.uri;
             this.instructions = context.instructions;
             this.client = context.client;
             this.from = from;
             this.to = to;
             sharedCache = context.sharedCache;
             createdAt = Instant.now();
+            id = new ID(s3Uri, fragmentIndex);
+        }
+
+        ID getId() {
+            return id;
         }
 
         /**
@@ -335,14 +374,6 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
 
         boolean isDone() {
             return consumerFuture.isDone();
-        }
-
-        public S3Uri getUri() {
-            return uri;
-        }
-
-        public long getFragmentIndex() {
-            return fragmentIndex;
         }
 
         @Override
@@ -459,25 +490,21 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
             return this.fragmentIndex == fragmentIndex;
         }
 
-        boolean isFragment(@NotNull final S3Uri uri, final long fragmentIndex) {
-            return this.fragmentIndex == fragmentIndex && this.uri.equals(uri);
-        }
-
         private int requestLength() {
             return (int) (to - from + 1);
         }
 
         private GetObjectRequest getObjectRequest() {
             return GetObjectRequest.builder()
-                    .bucket(uri.bucket().orElseThrow())
-                    .key(uri.key().orElseThrow())
+                    .bucket(s3Uri.bucket().orElseThrow())
+                    .key(s3Uri.key().orElseThrow())
                     .range("bytes=" + from + "-" + to)
                     .build();
         }
 
         private String requestStr() {
             return String.format("ix=%d [%d, %d]/%d %s/%s", fragmentIndex, from, to, requestLength(),
-                    uri.bucket().orElseThrow(), uri.key().orElseThrow());
+                    s3Uri.bucket().orElseThrow(), s3Uri.key().orElseThrow());
         }
 
         // --------------------------------------------------------------------------------------------------

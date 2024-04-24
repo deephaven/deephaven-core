@@ -3,42 +3,35 @@
 //
 package io.deephaven.extensions.s3;
 
-import io.deephaven.hash.KeyedIntObjectHashMap;
-import io.deephaven.hash.KeyedIntObjectKey;
+import io.deephaven.hash.KeyedObjectHashMap;
+import io.deephaven.hash.KeyedObjectKey;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.amazon.awssdk.services.s3.S3Uri;
 import io.deephaven.extensions.s3.S3ChannelContext.Request;
 
-import static java.lang.Math.floorMod;
-
 /**
- * This class uses a modulo-based mapping function with a {@link KeyedIntObjectHashMap} to cache {@link Request}
- * objects.
+ * This class uses a ({@link KeyedObjectHashMap}) to cache {@link Request} objects based on their URI and fragment
+ * index.
  */
 final class ModuloBasedRequestCache implements S3RequestCache {
 
-    private final class RequestIdKey extends KeyedIntObjectKey.BasicStrict<Request> {
-        @Override
-        public int getIntKey(@NotNull final Request request) {
-            return cacheIndex(request.getUri(), request.getFragmentIndex());
-        }
-    }
+    private final KeyedObjectHashMap<Request.ID, Request> requests;
 
-    private final int maxSize;
-    private final KeyedIntObjectHashMap<Request> requests;
-
-    ModuloBasedRequestCache(final int maxSize) {
-        this.maxSize = maxSize;
-        this.requests = new KeyedIntObjectHashMap<>(maxSize, new RequestIdKey());
+    ModuloBasedRequestCache() {
+        requests = new KeyedObjectHashMap<>(new KeyedObjectKey.Basic<>() {
+            @Override
+            public Request.ID getKey(@NotNull final Request request) {
+                return request.getId();
+            }
+        });
     }
 
     @Override
     @Nullable
     public Request getRequest(@NotNull final S3Uri uri, final long fragmentIndex) {
-        final long cacheIdx = cacheIndex(uri, fragmentIndex);
-        final Request request = requests.get(cacheIdx);
-        return request == null || !request.isFragment(uri, fragmentIndex) ? null : request.acquire();
+        final Request request = requests.get(new Request.ID(uri, fragmentIndex));
+        return request == null ? null : request.acquire();
     }
 
     @Override
@@ -46,9 +39,11 @@ final class ModuloBasedRequestCache implements S3RequestCache {
     public Request getOrCreateRequest(@NotNull final S3Uri uri, final long fragmentIndex,
             @NotNull final S3ChannelContext context) {
         // TODO Do you think the acquiring part should be done by the caller or here?
-        final int cacheIdx = cacheIndex(uri, fragmentIndex);
-        return requests.compute(cacheIdx, (key, existingRequest) -> {
-            if (existingRequest != null && existingRequest.isFragment(uri, fragmentIndex)) {
+        // I kept it here because acquire could potentially fail and the caller would have to call again in a loop,
+        // which
+        // felt unnecessary compared to a guaranteed acquire.
+        return requests.compute(new Request.ID(uri, fragmentIndex), (key, existingRequest) -> {
+            if (existingRequest != null) {
                 final Request acquired = existingRequest.acquire();
                 if (acquired != null) {
                     return acquired;
@@ -65,11 +60,6 @@ final class ModuloBasedRequestCache implements S3RequestCache {
 
     @Override
     public void remove(@NotNull final Request request) {
-        requests.remove(cacheIndex(request.getUri(), request.getFragmentIndex()), request);
-    }
-
-    private int cacheIndex(final S3Uri uri, final long fragmentIndex) {
-        // TODO(deephaven-core#5061): Experiment with LRU caching
-        return floorMod(uri.hashCode() + fragmentIndex, maxSize);
+        requests.removeValue(request);
     }
 }

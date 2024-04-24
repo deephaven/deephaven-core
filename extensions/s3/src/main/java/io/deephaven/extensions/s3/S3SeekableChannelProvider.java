@@ -81,7 +81,7 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
             if (existingClientData == null) {
                 // No existing client, create a new one
                 final S3AsyncClient newClient = buildClient(instructions);
-                final S3RequestCache newCache = new ModuloBasedRequestCache(instructions.maxCacheSize());
+                final S3RequestCache newCache = new ModuloBasedRequestCache();
                 return new ClientData(newClient, newCache);
             } else {
                 // Client exists, reconnect if necessary
