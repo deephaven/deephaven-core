@@ -4,9 +4,9 @@
 package io.deephaven.client.examples;
 
 import io.deephaven.client.impl.BarrageSession;
-import io.deephaven.client.impl.BarrageSessionFactory;
-import io.deephaven.client.impl.BarrageSubcomponent.Builder;
-import io.deephaven.client.impl.DaggerDeephavenBarrageRoot;
+import io.deephaven.client.impl.BarrageSessionFactoryConfig;
+import io.deephaven.client.impl.BarrageSessionFactoryConfig.Factory;
+import io.deephaven.client.impl.SessionConfig;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.util.SafeCloseable;
@@ -34,10 +34,14 @@ abstract class BarrageClientExampleBase implements Callable<Void> {
     public final Void call() throws Exception {
         final BufferAllocator bufferAllocator = new RootAllocator();
         final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
-        ManagedChannel managedChannel = ConnectOptions.open(connectOptions);
-
+        final Factory factory = BarrageSessionFactoryConfig.builder()
+                .clientConfig(ConnectOptions.options(connectOptions).config())
+                .allocator(bufferAllocator)
+                .scheduler(scheduler)
+                .build()
+                .factory();
         Runtime.getRuntime()
-                .addShutdownHook(new Thread(() -> onShutdown(scheduler, managedChannel)));
+                .addShutdownHook(new Thread(() -> onShutdown(scheduler, factory.managedChannel())));
 
         // Note that a DEFAULT update graph is required for engine operation. Users may wish to create additional update
         // graphs for their own purposes, but the DEFAULT must be created first.
@@ -54,29 +58,26 @@ abstract class BarrageClientExampleBase implements Callable<Void> {
                 .newQueryLibrary()
                 .setUpdateGraph(updateGraph)
                 .build();
+        try (
+                final BarrageSession deephavenSession = factory.newBarrageSession(sessionConfig());
+                final SafeCloseable ignored = executionContext.open()) {
+            try {
+                execute(deephavenSession);
+            } finally {
+                deephavenSession.session().closeFuture().get(5, TimeUnit.SECONDS);
+            }
+        }
+        scheduler.shutdownNow();
+        factory.managedChannel().shutdownNow();
+        return null;
+    }
 
-        final Builder builder = DaggerDeephavenBarrageRoot.create().factoryBuilder()
-                .managedChannel(managedChannel)
-                .scheduler(scheduler)
-                .allocator(bufferAllocator);
+    private SessionConfig sessionConfig() {
+        final SessionConfig.Builder builder = SessionConfig.builder();
         if (authenticationOptions != null) {
             authenticationOptions.ifPresent(builder::authenticationTypeAndValue);
         }
-        final BarrageSessionFactory barrageFactory = builder.build();
-        final BarrageSession deephavenSession = barrageFactory.newBarrageSession();
-        try {
-            try (final SafeCloseable ignored = executionContext.open()) {
-                execute(deephavenSession);
-            } finally {
-                deephavenSession.close();
-            }
-        } finally {
-            deephavenSession.session().closeFuture().get(5, TimeUnit.SECONDS);
-        }
-
-        scheduler.shutdownNow();
-        managedChannel.shutdownNow();
-        return null;
+        return builder.build();
     }
 
     private static void onShutdown(final ScheduledExecutorService scheduler,
