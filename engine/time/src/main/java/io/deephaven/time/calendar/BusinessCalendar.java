@@ -98,7 +98,7 @@ public class BusinessCalendar extends Calendar {
     private final int yearCacheEnd;
 
     @Override
-    public void clearCache() {
+    public synchronized void clearCache() {
         super.clearCache();
         schedulesCache.clear();
         summaryCache.clear();
@@ -215,6 +215,29 @@ public class BusinessCalendar extends Calendar {
         } else {
             return CalendarDay.toInstant(standardBusinessDay, date, timeZone());
         }
+    }
+
+    /**
+     /**
+     * Enables a fast cache that improves access and computation times.
+     *
+     * @param wait       whether to wait for the computation to finish
+     */
+    public synchronized void enableFastCache(final boolean wait) {
+        if(schedulesCache.isFastCache() || summaryCache.isFastCache()){
+            return;
+        }
+
+        super.enableFastCache(firstValidDate, lastValidDate, wait);
+        summaryCache.enableFastCache(firstValidDate, lastValidDate, wait);
+
+        final ArrayList<LocalDate> dates = new ArrayList<>();
+
+        for (LocalDate date=firstValidDate; !date.isAfter(lastValidDate); date=date.plusDays(1)) {
+            dates.add(date);
+        }
+
+        schedulesCache.enableFastCache(dates, wait);
     }
 
     // endregion

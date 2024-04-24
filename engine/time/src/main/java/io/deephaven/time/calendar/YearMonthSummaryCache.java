@@ -4,9 +4,8 @@
 package io.deephaven.time.calendar;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 /**
@@ -16,29 +15,111 @@ import java.util.function.Function;
  */
 class YearMonthSummaryCache<T> {
 
-    private final Map<Integer, T> yearCache = new ConcurrentHashMap<>();
-    private final Map<Integer, T> monthCache = new ConcurrentHashMap<>();
-
-    private final Function<Integer, T> computeMonthSummary;
-    private final Function<Integer, T> computeYearSummary;
+    private final FastConcurrentCache<Integer, T> monthCache;
+    private final FastConcurrentCache<Integer, T> yearCache;
+    private volatile boolean fastCache = false;
 
     /**
      * Creates a new cache.
      *
      * @param computeMonthSummary the function to compute a month summary
-     * @param computeYearSummary the function to compute a year summary
+     * @param computeYearSummary  the function to compute a year summary
      */
     YearMonthSummaryCache(Function<Integer, T> computeMonthSummary, Function<Integer, T> computeYearSummary) {
-        this.computeMonthSummary = computeMonthSummary;
-        this.computeYearSummary = computeYearSummary;
+        monthCache = new FastConcurrentCache<>(computeMonthSummary);
+        yearCache = new FastConcurrentCache<>(computeYearSummary);
+    }
+
+    /**
+     * Returns whether the fast cache is enabled.
+     *
+     * @return whether the fast cache is enabled
+     */
+    public boolean isFastCache() {
+        return fastCache;
+    }
+
+    /**
+     * Computes the summaries for the specified range and caches them.
+     * The map is changed from a ConcurrentHashMap to a HashMap for faster access.
+     * This results in faster cache access, but it limits the range of dates in the cache.
+     * <p>
+     * To enable the fast cache for a different range, clear the cache first.
+     *
+     * @param startYear  the start year (inclusive)
+     * @param startMonth the start month (inclusive)
+     * @param endYear    the end year (inclusive)
+     * @param endMonth   the end month (inclusive)
+     * @param wait       whether to wait for the computation to finish
+     *                   before returning
+     * @throws IllegalStateException if the fast cache is already enabled
+     */
+    synchronized void enableFastCache(final int startYear, final int startMonth, final int endYear, final int endMonth, final boolean wait) {
+
+        if (fastCache) {
+            throw new IllegalStateException("Fast cache is already enabled.  To change the range, clear the cache first.");
+        }
+
+        fastCache = true;
+
+        final ArrayList<Integer> yearMonths = new ArrayList<>();
+
+        for (int year = startYear; year <= endYear; year++) {
+            for (int month = (year == startYear ? startMonth : 1); month <= (year == endYear ? endMonth : 12); month++) {
+               yearMonths.add(year * 100 + month);
+            }
+        }
+
+        monthCache.enableFastCache(yearMonths, wait);
+
+        final ArrayList<Integer> years = new ArrayList<>();
+
+        for (int year = (startMonth == 1 ? startYear : startYear + 1); year <= (endMonth == 12 ? endYear : endYear - 1); year++) {
+            years.add(year);
+        }
+
+        yearCache.enableFastCache(years, wait);
+    }
+
+    /**
+     * Computes the summaries for the specified range and caches them.
+     * The map is changed from a ConcurrentHashMap to a HashMap for faster access.
+     * This results in faster cache access, but it limits the range of dates in the cache.
+     * <p>
+     * To enable the fast cache for a different range, clear the cache first.
+     *
+     * @param start the start date (inclusive)
+     * @param end   the end date (inclusive)
+     * @param wait  whether to wait for the computation to finish
+     *              before returning
+     * @throws IllegalStateException if the fast cache is already enabled
+     */
+    void enableFastCache(LocalDate start, LocalDate end, final boolean wait) {
+        // Ensure only full months are computed
+
+        // Skip the first month if the start date is not the first day of the month
+        if (start.getDayOfMonth() != 1) {
+            start = start.withDayOfMonth(1).plusMonths(1);
+        }
+
+        // Skip the last month if the end date is not the last day of the month
+
+        final LocalDate endPlus1 = end.plusDays(1);
+
+        if (end.getMonth() == endPlus1.getMonth()) {
+            end = end.withDayOfMonth(1).minusMonths(1);
+        }
+
+        enableFastCache(start.getYear(), start.getMonthValue(), end.getYear(), end.getMonthValue(), wait);
     }
 
     /**
      * Clears the cache.
      */
-    void clear() {
-        yearCache.clear();
+    synchronized void clear() {
+        fastCache = false;
         monthCache.clear();
+        yearCache.clear();
     }
 
     /**
@@ -48,13 +129,13 @@ class YearMonthSummaryCache<T> {
      * @return the month summary
      */
     T getMonthSummary(int yearMonth) {
-        return monthCache.computeIfAbsent(yearMonth, computeMonthSummary);
+        return monthCache.get(yearMonth);
     }
 
     /**
      * Gets the month summary for the specified year and month.
      *
-     * @param year the year
+     * @param year  the year
      * @param month the month
      * @return the month summary
      */
@@ -69,7 +150,7 @@ class YearMonthSummaryCache<T> {
      * @return the year summary
      */
     T getYearSummary(int year) {
-        return yearCache.computeIfAbsent(year, computeYearSummary);
+        return yearCache.get(year);
     }
 
     private class YearMonthSummaryIterator implements Iterator<T> {
@@ -159,14 +240,14 @@ class YearMonthSummaryCache<T> {
      * The iterator will return summaries in chronological order, and these summaries can be a mix of month and year
      * summaries. Dates not represented by complete summaries will be skipped (e.g. partial months).
      *
-     * @param start the start date
-     * @param end the end date
+     * @param start          the start date
+     * @param end            the end date
      * @param startInclusive whether the start date is inclusive
-     * @param endInclusive whether the end date is inclusive
+     * @param endInclusive   whether the end date is inclusive
      * @return the iterator
      */
     Iterator<T> iterator(final LocalDate start, final LocalDate end,
-            final boolean startInclusive, final boolean endInclusive) {
+                         final boolean startInclusive, final boolean endInclusive) {
         return new YearMonthSummaryIterator(startInclusive ? start : start.plusDays(1),
                 endInclusive ? end : end.minusDays(1));
     }
