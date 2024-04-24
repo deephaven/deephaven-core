@@ -164,11 +164,11 @@ class _ParsedReturnAnnotation:
             if self.none_allowed:
                 self.ret_converter = lambda x: bool(x) if x is not None else None
             else:
-                # Note this is not ideal because in the case of return type is bool, we should rely on JPY's conversion.
-                # The extra conversion however is least surprising for the users, and we should revisit
-                # when https://github.com/deephaven/deephaven-core/issues/5397 and/or
+                # Note this is not ideal because in the case where actual return is np.bool_ but type hint is bool,
+                # we raise a mystic error (PyObject can't be cast to Boolean). We need to revisit this when
+                # https://github.com/deephaven/deephaven-core/issues/5397 and/or
                 # https://github.com/deephaven/deephaven-core/issues/4068 is resolved.
-                self.ret_converter = bool
+                self.ret_converter = None if self.orig_type is bool else bool
         elif t == 'M':
             from deephaven.time import to_j_instant
             self.ret_converter = to_j_instant

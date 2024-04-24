@@ -184,8 +184,9 @@ foo = Foo()
             def fn4(col: int) -> bool:
                 return np.bool_(col)
 
-            t = empty_table(2).update("X = i").update(f"Y= fn4(X + 1)")
-            self.assertEqual(t.columns[1].data_type, dtypes.bool_)
+            with self.assertRaises(DHError) as cm:
+                 t = empty_table(2).update("X = i").update(f"Y= fn4(X + 1)")
+            self.assertIn("class org.jpy.PyObject cannot be cast to class java.lang.Boolean", str(cm.exception))
 
     def test_vectorization_off_on_return_type(self):
         def f1(x) -> List[str]:
@@ -319,6 +320,7 @@ def fn(col) -> Optional[{np_dtype}]:
             return [to_j_instant("2021-01-01T00:00:00Z")]
         t = empty_table(10).update(["X1 = udf()"])
         self.assertEqual(t.columns[0].data_type, dtypes.instant_array)
+
 
 if __name__ == '__main__':
     unittest.main()
