@@ -20,19 +20,19 @@ public class TestFastConcurrentCache extends BaseArrayTestCase {
         assertEquals("B", cache.get("b"));
         assertEquals("C", cache.get("c"));
 
-        try{
+        try {
             cache.get("d");
             fail("Expected exception");
         } catch (final RuntimeException e) {
-            //pass
+            // pass
         }
 
-        try{
+        try {
             // cache is already enabled
             cache.enableFastCache(List.of("a", "b", "c"), true);
             fail("Expected exception");
         } catch (final IllegalStateException e) {
-            //pass
+            // pass
         }
 
         cache.clear();

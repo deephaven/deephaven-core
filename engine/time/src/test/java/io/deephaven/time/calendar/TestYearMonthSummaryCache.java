@@ -32,12 +32,12 @@ public class TestYearMonthSummaryCache extends BaseArrayTestCase {
 
         final YearMonthSummaryCache<String> cache = new YearMonthSummaryCache<>(monthSummary, yearSummary);
 
-        for(boolean fastCache : new boolean[] {false, true}) {
+        for (boolean fastCache : new boolean[] {false, true}) {
             cache.clear();
             monthCount[0] = 0;
             yearCount[0] = 0;
 
-            if(fastCache) {
+            if (fastCache) {
                 final LocalDate start = LocalDate.of(2020, 12, 12);
                 final LocalDate end = LocalDate.of(2023, 1, 7);
                 cache.enableFastCache(start, end, true);
@@ -50,22 +50,22 @@ public class TestYearMonthSummaryCache extends BaseArrayTestCase {
             assertEquals(fastCache ? 2 : 0, yearCount[0]);
             assertEquals("year2021", cache.getYearSummary(2021));
             assertEquals(fastCache ? 24 : 1, monthCount[0]);
-            assertEquals(fastCache ? 2 :1, yearCount[0]);
+            assertEquals(fastCache ? 2 : 1, yearCount[0]);
             assertEquals("month202101", cache.getMonthSummary(202101));
             assertEquals(fastCache ? 24 : 1, monthCount[0]);
-            assertEquals(fastCache ? 2 :1, yearCount[0]);
+            assertEquals(fastCache ? 2 : 1, yearCount[0]);
             assertEquals("year2021", cache.getYearSummary(2021));
             assertEquals(fastCache ? 24 : 1, monthCount[0]);
-            assertEquals(fastCache ? 2 :1, yearCount[0]);
+            assertEquals(fastCache ? 2 : 1, yearCount[0]);
 
             assertEquals("month202102", cache.getMonthSummary(202102));
             assertEquals(fastCache ? 24 : 2, monthCount[0]);
-            assertEquals(fastCache ? 2 :1, yearCount[0]);
+            assertEquals(fastCache ? 2 : 1, yearCount[0]);
             assertEquals("year2022", cache.getYearSummary(2022));
             assertEquals(fastCache ? 24 : 2, monthCount[0]);
-            assertEquals(fastCache ? 2 :2, yearCount[0]);
+            assertEquals(fastCache ? 2 : 2, yearCount[0]);
 
-            if(fastCache) {
+            if (fastCache) {
                 try {
                     // check enabling the cache 2x
                     final LocalDate start = LocalDate.of(2020, 12, 12);
@@ -81,22 +81,22 @@ public class TestYearMonthSummaryCache extends BaseArrayTestCase {
 
             assertEquals("month202101", cache.getMonthSummary(202101));
             assertEquals(fastCache ? 25 : 3, monthCount[0]);
-            assertEquals(fastCache ? 2: 2, yearCount[0]);
+            assertEquals(fastCache ? 2 : 2, yearCount[0]);
             assertEquals("year2021", cache.getYearSummary(2021));
-            assertEquals(fastCache ? 25: 3, monthCount[0]);
-            assertEquals(fastCache ? 3: 3, yearCount[0]);
+            assertEquals(fastCache ? 25 : 3, monthCount[0]);
+            assertEquals(fastCache ? 3 : 3, yearCount[0]);
             assertEquals("month202101", cache.getMonthSummary(202101));
-            assertEquals(fastCache ? 25: 3, monthCount[0]);
+            assertEquals(fastCache ? 25 : 3, monthCount[0]);
             assertEquals(3, yearCount[0]);
             assertEquals("year2021", cache.getYearSummary(2021));
-            assertEquals(fastCache ? 25: 3, monthCount[0]);
+            assertEquals(fastCache ? 25 : 3, monthCount[0]);
             assertEquals(3, yearCount[0]);
 
             assertEquals("month202102", cache.getMonthSummary(202102));
-            assertEquals(fastCache ? 26: 4, monthCount[0]);
+            assertEquals(fastCache ? 26 : 4, monthCount[0]);
             assertEquals(3, yearCount[0]);
             assertEquals("year2022", cache.getYearSummary(2022));
-            assertEquals(fastCache ? 26: 4, monthCount[0]);
+            assertEquals(fastCache ? 26 : 4, monthCount[0]);
             assertEquals(4, yearCount[0]);
 
             assertEquals(cache.getMonthSummary(202101), cache.getMonthSummary(2021, 1));

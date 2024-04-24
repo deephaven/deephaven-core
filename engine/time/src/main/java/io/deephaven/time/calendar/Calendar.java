@@ -94,11 +94,11 @@ public class Calendar {
      * If the cache is already enabled, this method does nothing.
      *
      * @param start the start date
-     * @param end   the end date
-     * @param wait       whether to wait for the computation to finish
+     * @param end the end date
+     * @param wait whether to wait for the computation to finish
      */
     protected synchronized void enableFastCache(final LocalDate start, final LocalDate end, final boolean wait) {
-        if(fastCache) {
+        if (fastCache) {
             return;
         }
 
@@ -113,9 +113,9 @@ public class Calendar {
     /**
      * Creates a new calendar.
      *
-     * @param name        calendar name.
+     * @param name calendar name.
      * @param description calendar description.
-     * @param timeZone    calendar time zone.
+     * @param timeZone calendar time zone.
      * @throws RequirementFailure if {@code name} or {@code timeZone} is {@code null}
      */
     Calendar(final String name, final String description, final ZoneId timeZone) {
@@ -273,7 +273,7 @@ public class Calendar {
      *
      * @param date date
      * @return current day of the week, or {@link io.deephaven.util.QueryConstants#NULL_INT} if the input is
-     * {@code null}.
+     *         {@code null}.
      */
     public int dayOfWeekValue(final LocalDate date) {
         if (date == null) {
@@ -288,7 +288,7 @@ public class Calendar {
      *
      * @param date date
      * @return current day of the week, or {@link io.deephaven.util.QueryConstants#NULL_INT} if the input is
-     * {@code null}.
+     *         {@code null}.
      */
     public int dayOfWeekValue(final String date) {
         if (date == null) {
@@ -303,7 +303,7 @@ public class Calendar {
      *
      * @param time time
      * @return current day of the week, or {@link io.deephaven.util.QueryConstants#NULL_INT} if the input is
-     * {@code null}.
+     *         {@code null}.
      */
     public int dayOfWeekValue(final Instant time) {
         if (time == null) {
@@ -318,7 +318,7 @@ public class Calendar {
      *
      * @param time time
      * @return current day of the week, or {@link io.deephaven.util.QueryConstants#NULL_INT} if the input is
-     * {@code null}.
+     *         {@code null}.
      */
     public int dayOfWeekValue(final ZonedDateTime time) {
         if (time == null) {
@@ -339,7 +339,7 @@ public class Calendar {
      * @param date date
      * @param days number of days to add
      * @return {@code days} days after {@code date}, or {@code null} if any input is {@code null} or
-     * {@link io.deephaven.util.QueryConstants#NULL_INT}.
+     *         {@link io.deephaven.util.QueryConstants#NULL_INT}.
      */
     public LocalDate plusDays(final LocalDate date, final int days) {
         if (date == null || days == NULL_INT) {
@@ -355,7 +355,7 @@ public class Calendar {
      * @param date date
      * @param days number of days to add
      * @return {@code days} days after {@code date}, or {@code null} if any input is {@code null} or
-     * {@link io.deephaven.util.QueryConstants#NULL_INT}.
+     *         {@link io.deephaven.util.QueryConstants#NULL_INT}.
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public String plusDays(final String date, final int days) {
@@ -378,7 +378,7 @@ public class Calendar {
      * @param time time
      * @param days number of days to add
      * @return {@code days} days after {@code time}, or {@code null} if any input is {@code null} or
-     * {@link io.deephaven.util.QueryConstants#NULL_INT}.
+     *         {@link io.deephaven.util.QueryConstants#NULL_INT}.
      */
     public Instant plusDays(final Instant time, final int days) {
         if (time == null || days == NULL_INT) {
@@ -402,7 +402,7 @@ public class Calendar {
      * @param time time
      * @param days number of days to add
      * @return {@code days} days after {@code time}, or {@code null} if any input is {@code null} or
-     * {@link io.deephaven.util.QueryConstants#NULL_INT}.
+     *         {@link io.deephaven.util.QueryConstants#NULL_INT}.
      */
     public ZonedDateTime plusDays(final ZonedDateTime time, final int days) {
         if (time == null || days == NULL_INT) {
@@ -421,7 +421,7 @@ public class Calendar {
      * @param date date
      * @param days number of days to subtract
      * @return {@code days} days before {@code date}, or {@code null} if any input is {@code null} or
-     * {@link io.deephaven.util.QueryConstants#NULL_INT}.
+     *         {@link io.deephaven.util.QueryConstants#NULL_INT}.
      */
     public LocalDate minusDays(final LocalDate date, final int days) {
         if (date == null || days == NULL_INT) {
@@ -437,7 +437,7 @@ public class Calendar {
      * @param date date
      * @param days number of days to subtract
      * @return {@code days} days before {@code date}, or {@code null} if any input is {@code null} or
-     * {@link io.deephaven.util.QueryConstants#NULL_INT}.
+     *         {@link io.deephaven.util.QueryConstants#NULL_INT}.
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public String minusDays(final String date, final int days) {
@@ -460,7 +460,7 @@ public class Calendar {
      * @param time time
      * @param days number of days to subtract
      * @return {@code days} days before {@code time}, or {@code null} if any input is {@code null} or
-     * {@link io.deephaven.util.QueryConstants#NULL_INT}.
+     *         {@link io.deephaven.util.QueryConstants#NULL_INT}.
      */
     public Instant minusDays(final Instant time, final int days) {
         if (time == null || days == NULL_INT) {
@@ -484,7 +484,7 @@ public class Calendar {
      * @param time time
      * @param days number of days to subtract
      * @return {@code days} days before {@code time}, or {@code null} if any input is {@code null} or
-     * {@link io.deephaven.util.QueryConstants#NULL_INT}.
+     *         {@link io.deephaven.util.QueryConstants#NULL_INT}.
      */
     public ZonedDateTime minusDays(final ZonedDateTime time, final int days) {
         if (time == null || days == NULL_INT) {
@@ -499,7 +499,7 @@ public class Calendar {
      *
      * @param days number of days to add.
      * @return {@code days} days after the current date, or {@code null} if {@code days} is
-     * {@link io.deephaven.util.QueryConstants#NULL_INT}.
+     *         {@link io.deephaven.util.QueryConstants#NULL_INT}.
      */
     public LocalDate futureDate(final int days) {
         return plusDays(calendarDate(), days);
@@ -511,7 +511,7 @@ public class Calendar {
      *
      * @param days number of days to subtract.
      * @return {@code days} days before the current date, or {@code null} if {@code days} is
-     * {@link io.deephaven.util.QueryConstants#NULL_INT}.
+     *         {@link io.deephaven.util.QueryConstants#NULL_INT}.
      */
     public LocalDate pastDate(final int days) {
         return minusDays(calendarDate(), days);
@@ -522,8 +522,8 @@ public class Calendar {
     // region Ranges
 
     private void calendarDatesInternal(final ArrayList<LocalDate> result, final LocalDate start, final LocalDate end,
-                                       final boolean startInclusive,
-                                       final boolean endInclusive) {
+            final boolean startInclusive,
+            final boolean endInclusive) {
         for (LocalDate day = start; !day.isAfter(end); day = day.plusDays(1)) {
             final boolean skip = (!startInclusive && day.equals(start)) || (!endInclusive && day.equals(end));
 
@@ -536,14 +536,14 @@ public class Calendar {
     /**
      * Returns the dates in a given range.
      *
-     * @param start          start of a time range
-     * @param end            end of a time range
+     * @param start start of a time range
+     * @param end end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
      * @return dates between {@code start} and {@code end}, or {@code null} if any input is {@code null}.
      */
     public LocalDate[] calendarDates(final LocalDate start, final LocalDate end, final boolean startInclusive,
-                                     final boolean endInclusive) {
+            final boolean endInclusive) {
         if (start == null || end == null) {
             return null;
         }
@@ -558,7 +558,7 @@ public class Calendar {
         SummaryData summary = null;
 
         for (Iterator<SummaryData> it = summaryCache.iterator(start, end, startInclusive, endInclusive); it
-                .hasNext(); ) {
+                .hasNext();) {
             summary = it.next();
 
             if (summaryFirst == null) {
@@ -581,15 +581,15 @@ public class Calendar {
     /**
      * Returns the dates in a given range.
      *
-     * @param start          start of a time range
-     * @param end            end of a time range
+     * @param start start of a time range
+     * @param end end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
      * @return dates between {@code start} and {@code end}, or {@code null} if any input is {@code null}.
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public String[] calendarDates(final String start, final String end, final boolean startInclusive,
-                                  final boolean endInclusive) {
+            final boolean endInclusive) {
         if (start == null || end == null) {
             return null;
         }
@@ -603,15 +603,15 @@ public class Calendar {
     /**
      * Returns the dates in a given range.
      *
-     * @param start          start of a time range
-     * @param end            end of a time range
+     * @param start start of a time range
+     * @param end end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
      * @return dates between {@code start} and {@code end}, or {@code null} if any input is {@code null}.
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public LocalDate[] calendarDates(final ZonedDateTime start, final ZonedDateTime end, final boolean startInclusive,
-                                     final boolean endInclusive) {
+            final boolean endInclusive) {
         if (start == null || end == null) {
             return null;
         }
@@ -623,15 +623,15 @@ public class Calendar {
     /**
      * Returns the dates in a given range.
      *
-     * @param start          start of a time range
-     * @param end            end of a time range
+     * @param start start of a time range
+     * @param end end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
      * @return dates between {@code start} and {@code end}, or {@code null} if any input is {@code null}.
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public LocalDate[] calendarDates(final Instant start, final Instant end, final boolean startInclusive,
-                                     final boolean endInclusive) {
+            final boolean endInclusive) {
         if (start == null || end == null) {
             return null;
         }
@@ -644,9 +644,9 @@ public class Calendar {
      * Returns the dates in a given range.
      *
      * @param start start of a time range
-     * @param end   end of a time range
+     * @param end end of a time range
      * @return dates between {@code start} and {@code end}, including {@code start} and {@code end}, or {@code null} if
-     * any input is {@code null}.
+     *         any input is {@code null}.
      */
     public LocalDate[] calendarDates(final LocalDate start, final LocalDate end) {
         return calendarDates(start, end, true, true);
@@ -656,9 +656,9 @@ public class Calendar {
      * Returns the dates in a given range.
      *
      * @param start start of a time range
-     * @param end   end of a time range
+     * @param end end of a time range
      * @return dates between {@code start} and {@code end}, including {@code start} and {@code end}, or {@code null} if
-     * any input is {@code null}.
+     *         any input is {@code null}.
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public String[] calendarDates(final String start, final String end) {
@@ -669,9 +669,9 @@ public class Calendar {
      * Returns the dates in a given range.
      *
      * @param start start of a time range
-     * @param end   end of a time range
+     * @param end end of a time range
      * @return dates between {@code start} and {@code end}, including {@code start} and {@code end}, or {@code null} if
-     * any input is {@code null}.
+     *         any input is {@code null}.
      */
     public LocalDate[] calendarDates(final ZonedDateTime start, final ZonedDateTime end) {
         return calendarDates(start, end, true, true);
@@ -681,9 +681,9 @@ public class Calendar {
      * Returns the dates in a given range.
      *
      * @param start start of a time range
-     * @param end   end of a time range
+     * @param end end of a time range
      * @return dates between {@code start} and {@code end}, including {@code start} and {@code end}, or {@code null} if
-     * any input is {@code null}.
+     *         any input is {@code null}.
      */
     public LocalDate[] calendarDates(final Instant start, final Instant end) {
         return calendarDates(start, end, true, true);
@@ -692,15 +692,15 @@ public class Calendar {
     /**
      * Returns the number of dates in a given range.
      *
-     * @param start          start of a time range
-     * @param end            end of a time range
+     * @param start start of a time range
+     * @param end end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
      * @return number of dates between {@code start} and {@code end}, or
-     * {@link io.deephaven.util.QueryConstants#NULL_INT} if any input is {@code null}.
+     *         {@link io.deephaven.util.QueryConstants#NULL_INT} if any input is {@code null}.
      */
     public int numberCalendarDates(final LocalDate start, final LocalDate end, final boolean startInclusive,
-                                   final boolean endInclusive) {
+            final boolean endInclusive) {
         if (start == null || end == null) {
             return NULL_INT;
         }
@@ -721,16 +721,16 @@ public class Calendar {
     /**
      * Returns the number of dates in a given range.
      *
-     * @param start          start of a time range
-     * @param end            end of a time range
+     * @param start start of a time range
+     * @param end end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
      * @return number of dates between {@code start} and {@code end}, or
-     * {@link io.deephaven.util.QueryConstants#NULL_INT} if any input is {@code null}.
+     *         {@link io.deephaven.util.QueryConstants#NULL_INT} if any input is {@code null}.
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public int numberCalendarDates(final String start, final String end, final boolean startInclusive,
-                                   final boolean endInclusive) {
+            final boolean endInclusive) {
         if (start == null || end == null) {
             return NULL_INT;
         }
@@ -742,16 +742,16 @@ public class Calendar {
     /**
      * Returns the number of dates in a given range.
      *
-     * @param start          start of a time range
-     * @param end            end of a time range
+     * @param start start of a time range
+     * @param end end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
      * @return number of dates between {@code start} and {@code end}, or
-     * {@link io.deephaven.util.QueryConstants#NULL_INT} if any input is {@code null}.
+     *         {@link io.deephaven.util.QueryConstants#NULL_INT} if any input is {@code null}.
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public int numberCalendarDates(final ZonedDateTime start, final ZonedDateTime end, final boolean startInclusive,
-                                   final boolean endInclusive) {
+            final boolean endInclusive) {
         if (start == null || end == null) {
             return NULL_INT;
         }
@@ -763,16 +763,16 @@ public class Calendar {
     /**
      * Returns the number of dates in a given range.
      *
-     * @param start          start of a time range
-     * @param end            end of a time range
+     * @param start start of a time range
+     * @param end end of a time range
      * @param startInclusive true to include {@code start} in the result; false to exclude {@code start}
-     * @param endInclusive   true to include {@code end} in the result; false to exclude {@code end}
+     * @param endInclusive true to include {@code end} in the result; false to exclude {@code end}
      * @return number of dates between {@code start} and {@code end}, or
-     * {@link io.deephaven.util.QueryConstants#NULL_INT} if any input is {@code null}.
+     *         {@link io.deephaven.util.QueryConstants#NULL_INT} if any input is {@code null}.
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public int numberCalendarDates(final Instant start, final Instant end, final boolean startInclusive,
-                                   final boolean endInclusive) {
+            final boolean endInclusive) {
         if (start == null || end == null) {
             return NULL_INT;
         }
@@ -785,9 +785,9 @@ public class Calendar {
      * Returns the number of dates in a given range.
      *
      * @param start start of a time range
-     * @param end   end of a time range
+     * @param end end of a time range
      * @return number of dates between {@code start} and {@code end}, including {@code start} and {@code end}, or
-     * {@link io.deephaven.util.QueryConstants#NULL_INT} if any input is {@code null}.
+     *         {@link io.deephaven.util.QueryConstants#NULL_INT} if any input is {@code null}.
      */
     public int numberCalendarDates(final LocalDate start, final LocalDate end) {
         return numberCalendarDates(start, end, true, true);
@@ -797,9 +797,9 @@ public class Calendar {
      * Returns the number of dates in a given range.
      *
      * @param start start of a time range
-     * @param end   end of a time range
+     * @param end end of a time range
      * @return number of dates between {@code start} and {@code end}, including {@code start} and {@code end}, or
-     * {@link io.deephaven.util.QueryConstants#NULL_INT} if any input is {@code null}.
+     *         {@link io.deephaven.util.QueryConstants#NULL_INT} if any input is {@code null}.
      * @throws DateTimeUtils.DateTimeParseException if the string cannot be parsed
      */
     public int numberCalendarDates(final String start, final String end) {
@@ -810,9 +810,9 @@ public class Calendar {
      * Returns the number of dates in a given range.
      *
      * @param start start of a time range
-     * @param end   end of a time range
+     * @param end end of a time range
      * @return number of dates between {@code start} and {@code end}, including {@code start} and {@code end}, or
-     * {@link io.deephaven.util.QueryConstants#NULL_INT} if any input is {@code null}.
+     *         {@link io.deephaven.util.QueryConstants#NULL_INT} if any input is {@code null}.
      */
     public int numberCalendarDates(final ZonedDateTime start, final ZonedDateTime end) {
         return numberCalendarDates(start, end, true, true);
@@ -822,9 +822,9 @@ public class Calendar {
      * Returns the number of dates in a given range.
      *
      * @param start start of a time range
-     * @param end   end of a time range
+     * @param end end of a time range
      * @return number of dates between {@code start} and {@code end}, including {@code start} and {@code end}, or
-     * {@link io.deephaven.util.QueryConstants#NULL_INT} if any input is {@code null}.
+     *         {@link io.deephaven.util.QueryConstants#NULL_INT} if any input is {@code null}.
      */
     public int numberCalendarDates(final Instant start, final Instant end) {
         return numberCalendarDates(start, end, true, true);

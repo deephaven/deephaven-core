@@ -222,10 +222,10 @@ public class BusinessCalendar extends Calendar {
      * <p>
      * If the cache is already enabled, this method does nothing.
      *
-     * @param wait       whether to wait for the computation to finish
+     * @param wait whether to wait for the computation to finish
      */
     public synchronized void enableFastCache(final boolean wait) {
-        if(isFastCache()){
+        if (isFastCache()) {
             return;
         }
 
@@ -234,7 +234,7 @@ public class BusinessCalendar extends Calendar {
 
         final ArrayList<LocalDate> dates = new ArrayList<>();
 
-        for (LocalDate date=firstValidDate; !date.isAfter(lastValidDate); date=date.plusDays(1)) {
+        for (LocalDate date = firstValidDate; !date.isAfter(lastValidDate); date = date.plusDays(1)) {
             dates.add(date);
         }
 

@@ -8,14 +8,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 /**
- * A cache that is designed to be fast when accessed concurrently.  When created, the cache uses a ConcurrentHashMap to
- * store values.  When the fast cache is enabled, the cache is converted to a HashMap.  This is done because HashMap is
- * faster than {@link ConcurrentHashMap} when accessed concurrently.  The fast cache is immutable, so it is safe to
- * use the HashMap for optimal concurrent access.
+ * A cache that is designed to be fast when accessed concurrently. When created, the cache uses a ConcurrentHashMap to
+ * store values. When the fast cache is enabled, the cache is converted to a HashMap. This is done because HashMap is
+ * faster than {@link ConcurrentHashMap} when accessed concurrently. The fast cache is immutable, so it is safe to use
+ * the HashMap for optimal concurrent access.
  * <p>
- * The fast cache population happens on a separate thread.  This is done to avoid blocking the calling thread.  The
- * calling thread can wait for the fast cache to be populated by calling {@link #enableFastCache} with the wait parameter
- * set to true.  This will block the calling thread until the fast cache is populated.
+ * The fast cache population happens on a separate thread. This is done to avoid blocking the calling thread. The
+ * calling thread can wait for the fast cache to be populated by calling {@link #enableFastCache} with the wait
+ * parameter set to true. This will block the calling thread until the fast cache is populated.
  *
  * @param <K> the key type
  * @param <V> the value type
@@ -48,9 +48,8 @@ class FastConcurrentCache<K, V> {
     /**
      * Enables the fast cache.
      * <p>
-     * To enable the fast cache, a list of keys is provided.  The value for each key is computed and added to the
-     * cache.  If the cache is already enabled, an exception is thrown.  To regenerate the fast cache, clear the
-     * cache first.
+     * To enable the fast cache, a list of keys is provided. The value for each key is computed and added to the cache.
+     * If the cache is already enabled, an exception is thrown. To regenerate the fast cache, clear the cache first.
      *
      * @param keys the keys to compute and add to the cache
      * @param wait whether to wait for the cache to be generated
@@ -60,7 +59,8 @@ class FastConcurrentCache<K, V> {
 
         synchronized (this) {
             if (fastCache) {
-                throw new IllegalStateException("Fast cache is already enabled.  To change the range, clear the cache first.");
+                throw new IllegalStateException(
+                        "Fast cache is already enabled.  To change the range, clear the cache first.");
             }
 
             fastCacheFuture = CompletableFuture.runAsync(() -> {
@@ -108,8 +108,8 @@ class FastConcurrentCache<K, V> {
     }
 
     /**
-     * Gets the value for a key.  If the fast cache is enabled, the value is retrieved from the cache.  If the value is
-     * not found, an exception is thrown.  If the fast cache is not enabled, the value is computed and added to the
+     * Gets the value for a key. If the fast cache is enabled, the value is retrieved from the cache. If the value is
+     * not found, an exception is thrown. If the fast cache is not enabled, the value is computed and added to the
      * cache.
      *
      * @param key the key
@@ -121,7 +121,8 @@ class FastConcurrentCache<K, V> {
             final V v = cache.get(key);
 
             if (v == null) {
-                throw new IllegalArgumentException("No value found for " + key + ".  Fast cache is enabled so the value can not be computed.");
+                throw new IllegalArgumentException(
+                        "No value found for " + key + ".  Fast cache is enabled so the value can not be computed.");
             }
 
             return v;
