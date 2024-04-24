@@ -14,11 +14,11 @@ import io.deephaven.extensions.s3.S3ChannelContext.Request;
  * This class uses a ({@link KeyedObjectHashMap}) to cache {@link Request} objects based on their URI and fragment
  * index.
  */
-final class ModuloBasedRequestCache implements S3RequestCache {
+final class KeyedHashMapBasedRequestCache implements S3RequestCache {
 
     private final KeyedObjectHashMap<Request.ID, Request> requests;
 
-    ModuloBasedRequestCache() {
+    KeyedHashMapBasedRequestCache() {
         requests = new KeyedObjectHashMap<>(new KeyedObjectKey.Basic<>() {
             @Override
             public Request.ID getKey(@NotNull final Request request) {
