@@ -5,13 +5,10 @@
  for accessing resources on remote Deephaven servers."""
 
 from __future__ import annotations
-import threading
-from typing import Dict
 
 import jpy
 
-from deephaven import DHError, uri
-from deephaven._wrapper import JObjectWrapper
+from deephaven import DHError
 from deephaven.table import Table
 
 _JURI = jpy.get_type("java.net.URI")
@@ -29,6 +26,7 @@ _JDeephavenChannelImpl = jpy.get_type("io.deephaven.proto.DeephavenChannelImpl")
 _JSessionImpl = jpy.get_type("io.deephaven.client.impl.SessionImpl")
 _JExecutors = jpy.get_type("java.util.concurrent.Executors")
 _JRootAllocator = jpy.get_type("org.apache.arrow.memory.RootAllocator")
+_JDeephavenApiServer = jpy.get_type("io.deephaven.server.runner.DeephavenApiServer")
 
 class BarrageSession():
     """ A Deephaven Barrage session to a remote server."""
@@ -143,7 +141,7 @@ def barrage_session(host: str,
         auth = f"{auth_type} {auth_token}"
 
         try:
-            return _get_barrage_session_uri(j_client_config, auth)
+            return _get_barrage_session_via_api_server(j_client_config, auth)
         except:
             # fall back to the direct way when we don't have a fully initialized server, used for testing only
             # TODO: remove when we are done with restructuring the integrations tests wiring https://github.com/deephaven/deephaven-core/issues/5401
@@ -152,10 +150,9 @@ def barrage_session(host: str,
         raise DHError(e, "failed to get a barrage session to the target remote Deephaven server.") from e
 
 
-def _get_barrage_session_uri(client_config: jpy.JType, auth: str) -> BarrageSession:
-    j_barrage_session_factory_client = uri.resolve(
-        "dh:///app/io.deephaven.server.barrage.BarrageSessionFactoryClient/field/instance")
-    j_barrage_session_factory = j_barrage_session_factory_client.factory(client_config, auth)
+def _get_barrage_session_via_api_server(client_config: jpy.JType, auth: str) -> BarrageSession:
+    j_barrage_session_factory_creator = _JDeephavenApiServer.getInstance().sessionFactoryCreator()
+    j_barrage_session_factory = j_barrage_session_factory_creator.barrageFactory(client_config, auth)
     return BarrageSession(j_barrage_session_factory.newBarrageSession(), j_barrage_session_factory.managedChannel())
 
 
