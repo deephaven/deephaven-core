@@ -227,7 +227,7 @@ public class TableFactory {
      * @param ticket the ticket string
      * @return the ticket table
      * @see TicketTable#of(byte[])
-     * @deprecated prefer {@link #ticket(byte[])} or
+     * @deprecated prefer {@link #ticket(byte[])}
      */
     @Deprecated
     public static Table ticket(String ticket) {
