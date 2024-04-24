@@ -27,6 +27,7 @@ public class Calendar {
     private final String name;
     private final String description;
     private final ZoneId timeZone;
+    private boolean fastCache = false; // synchronized
 
     // region Cache
 
@@ -94,7 +95,8 @@ public class Calendar {
      * @param end   the end date
      * @param wait       whether to wait for the computation to finish
      */
-    protected void enableFastCache(final LocalDate start, final LocalDate end, final boolean wait) {
+    protected synchronized void enableFastCache(final LocalDate start, final LocalDate end, final boolean wait) {
+        fastCache = true;
         summaryCache.enableFastCache(start, end, wait);
     }
 
@@ -123,8 +125,18 @@ public class Calendar {
     /**
      * Clears the cache. This should not generally be used and is provided for benchmarking.
      */
-    public void clearCache() {
+    public synchronized void clearCache() {
+        fastCache = false;
         summaryCache.clear();
+    }
+
+    /**
+     * Returns whether the fast cache is enabled.
+     *
+     * @return whether the fast cache is enabled
+     */
+    public synchronized boolean isFastCache() {
+        return fastCache;
     }
 
     // endregion

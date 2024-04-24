@@ -1612,4 +1612,26 @@ public class TestBusinessCalendar extends TestCalendar {
         final int i4 = bCalendar.numberBusinessDates(start, end);
         assertEquals(i3, i4);
     }
+
+    public void testFastCache() {
+        final LocalDate start = LocalDate.of(2018, 2, 3);
+        final LocalDate end = LocalDate.of(2023, 2, 5);
+
+        bCalendar.clearCache();
+        assertFalse(bCalendar.isFastCache());
+        final LocalDate[] calDates = bCalendar.calendarDates(start, end);
+        final LocalDate[] busDates = bCalendar.businessDates(start, end);
+        final LocalDate[] nonBusDates = bCalendar.nonBusinessDates(start, end);
+
+        bCalendar.enableFastCache(true);
+        assertTrue(bCalendar.isFastCache());
+        final LocalDate[] calDates2 = bCalendar.calendarDates(start, end);
+        final LocalDate[] busDates2 = bCalendar.businessDates(start, end);
+        final LocalDate[] nonBusDates2 = bCalendar.nonBusinessDates(start, end);
+
+        assertEquals(calDates, calDates2);
+        assertEquals(busDates, busDates2);
+        assertEquals(nonBusDates, nonBusDates2);
+    }
+
 }
