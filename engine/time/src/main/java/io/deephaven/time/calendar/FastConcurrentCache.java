@@ -23,8 +23,9 @@ import java.util.function.Function;
 class FastConcurrentCache<K, V> {
 
     private final Function<K, V> valueComputer;
-    private volatile Map<K, V> cache = new ConcurrentHashMap<>();
-    private volatile boolean fastCache = false;
+    private final Map<K, V> concurrentCache = new ConcurrentHashMap<>();
+    private final Map<K, V> fastCache = new HashMap<>();
+    private volatile boolean isFastCache = false;
     private CompletableFuture<Void> fastCacheFuture = null;
 
     /**
@@ -42,7 +43,7 @@ class FastConcurrentCache<K, V> {
      * @return whether the fast cache is enabled
      */
     public boolean isFastCache() {
-        return fastCache;
+        return isFastCache;
     }
 
     /**
@@ -58,22 +59,21 @@ class FastConcurrentCache<K, V> {
     void enableFastCache(final List<K> keys, final boolean wait) {
 
         synchronized (this) {
-            if (fastCache) {
+            if (isFastCache || fastCacheFuture != null) {
                 throw new IllegalStateException(
                         "Fast cache is already enabled.  To change the range, clear the cache first.");
             }
 
             fastCacheFuture = CompletableFuture.runAsync(() -> {
-                final Map<K, V> c = new HashMap<>(cache);
+                fastCache.putAll(concurrentCache);
 
                 for (K key : keys) {
-                    if (!c.containsKey(key)) {
-                        c.put(key, valueComputer.apply(key));
+                    if (!fastCache.containsKey(key)) {
+                        fastCache.put(key, valueComputer.apply(key));
                     }
                 }
 
-                fastCache = true;
-                cache = c;
+                isFastCache = true;
                 synchronized (this) {
                     fastCacheFuture = null;
                 }
@@ -88,23 +88,21 @@ class FastConcurrentCache<K, V> {
     /**
      * Clears the cache and disables the fast cache.
      */
-    void clear() {
-        synchronized (this) {
-            if (fastCacheFuture != null) {
-                final boolean canceled = fastCacheFuture.cancel(true);
+    synchronized void clear() {
+        if (fastCacheFuture != null) {
+            final boolean canceled = fastCacheFuture.cancel(true);
 
-                if (!canceled) {
-                    throw new IllegalStateException("Failed to cancel fast cache computation");
-                }
+            if (!canceled) {
+                throw new IllegalStateException("Failed to cancel fast cache computation");
             }
         }
 
-        if (fastCache) {
-            fastCache = false;
-            cache = new ConcurrentHashMap<>();
-        } else {
-            cache.clear();
+        if (isFastCache) {
+            isFastCache = false;
         }
+
+        fastCache.clear();
+        concurrentCache.clear();
     }
 
     /**
@@ -117,8 +115,8 @@ class FastConcurrentCache<K, V> {
      * @throws IllegalArgumentException if the value is not found
      */
     public V get(K key) {
-        if (fastCache) {
-            final V v = cache.get(key);
+        if (isFastCache) {
+            final V v = fastCache.get(key);
 
             if (v == null) {
                 throw new IllegalArgumentException(
@@ -127,7 +125,7 @@ class FastConcurrentCache<K, V> {
 
             return v;
         } else {
-            return cache.computeIfAbsent(key, valueComputer);
+            return concurrentCache.computeIfAbsent(key, valueComputer);
         }
     }
 }

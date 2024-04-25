@@ -30,7 +30,9 @@ public class CalendarDay<T extends Comparable<T> & Temporal> {
      */
     public static final CalendarDay<LocalTime> HOLIDAY = new CalendarDay<>();
 
-    private final List<TimeRange<T>> businessTimeRanges;
+    private final TimeRange<T>[] businessTimeRanges;
+    private final List<TimeRange<T>> businessTimeRangesList;
+    private volatile long businessNanos = -1;
 
     /**
      * Creates a CalendarDay instance.
@@ -63,7 +65,8 @@ public class CalendarDay<T extends Comparable<T> & Temporal> {
             }
         }
 
-        this.businessTimeRanges = List.of(ranges);
+        this.businessTimeRanges = ranges;
+        this.businessTimeRangesList = List.of(ranges);
     }
 
     /**
@@ -80,7 +83,7 @@ public class CalendarDay<T extends Comparable<T> & Temporal> {
      * @return business time ranges for the day
      */
     public List<TimeRange<T>> businessTimeRanges() {
-        return businessTimeRanges;
+        return businessTimeRangesList;
     }
 
     /**
@@ -89,7 +92,7 @@ public class CalendarDay<T extends Comparable<T> & Temporal> {
      * @return start of the business day, or {@code null} for a holiday schedule
      */
     public T businessStart() {
-        return !businessTimeRanges.isEmpty() ? businessTimeRanges.get(0).start() : null;
+        return businessTimeRanges.length > 0 ? businessTimeRanges[0].start() : null;
     }
 
     /**
@@ -98,7 +101,7 @@ public class CalendarDay<T extends Comparable<T> & Temporal> {
      * @return end of the business day, or {@code null} for a holiday schedule
      */
     public T businessEnd() {
-        return !businessTimeRanges.isEmpty() ? businessTimeRanges.get(businessTimeRanges.size() - 1).end() : null;
+        return businessTimeRanges.length > 0 ? businessTimeRanges[businessTimeRanges.length - 1].end() : null;
     }
 
     /**
@@ -107,7 +110,7 @@ public class CalendarDay<T extends Comparable<T> & Temporal> {
      * @return is the end of the business day inclusive?
      */
     public boolean isInclusiveEnd() {
-        return businessTimeRanges.isEmpty() || businessTimeRanges.get(businessTimeRanges.size() - 1).isInclusiveEnd();
+        return businessTimeRanges.length == 0 || businessTimeRanges[businessTimeRanges.length - 1].isInclusiveEnd();
     }
 
     /**
@@ -117,7 +120,11 @@ public class CalendarDay<T extends Comparable<T> & Temporal> {
      * @return length of the day in nanoseconds
      */
     public long businessNanos() {
-        return businessTimeRanges.stream().map(TimeRange::nanos).reduce(0L, Long::sum);
+        if (businessNanos < 0) {
+            businessNanos = Arrays.stream(businessTimeRanges).map(TimeRange::nanos).reduce(0L, Long::sum);
+        }
+
+        return businessNanos;
     }
 
     /**
@@ -239,18 +246,18 @@ public class CalendarDay<T extends Comparable<T> & Temporal> {
         if (!(o instanceof CalendarDay))
             return false;
         CalendarDay<?> that = (CalendarDay<?>) o;
-        return Objects.equals(businessTimeRanges, that.businessTimeRanges);
+        return businessNanos == that.businessNanos && Arrays.equals(businessTimeRanges, that.businessTimeRanges);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(businessTimeRanges);
+        return Arrays.hashCode(businessTimeRanges);
     }
 
     @Override
     public String toString() {
         return "CalendarDay{" +
-                "businessTimeRanges=" + Arrays.toString(businessTimeRanges.toArray()) +
+                "businessTimeRanges=" + Arrays.toString(businessTimeRanges) +
                 '}';
     }
 
