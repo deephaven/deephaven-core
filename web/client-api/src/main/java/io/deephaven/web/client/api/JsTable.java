@@ -1526,8 +1526,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * @param yCols The names of the Y columns to downsample.
      * @return A promise that resolves to the downsampled table.
      */
-    @JsMethod
-    public Promise<JsTable> downsample(@JsNullable LongWrapper[] zoomRange, int pixelCount, String xCol,
+    public Promise<JsTable> downsample(LongWrapper[] zoomRange, int pixelCount, String xCol,
             String[] yCols) {
         JsLog.info("downsample", zoomRange, pixelCount, xCol, yCols);
         final String fetchSummary = "downsample(" + Arrays.toString(zoomRange) + ", " + pixelCount + ", " + xCol + ", "
