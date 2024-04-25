@@ -20,7 +20,7 @@ class BarrageTestCase(BaseTestCase):
     @classmethod
     def setUpClass(cls) -> None:
         super().setUpClass()
-        env = {"START_OPTS": "-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler"}
+        env = {"START_OPTS": "-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler -Ddeephaven.cacheDir=/cache/tmp"}
         env.update(dict(os.environ))
         cls.server_proc = subprocess.Popen(["/opt/deephaven/server/bin/start"], shell=False, env=env,
                                             stdin=subprocess.PIPE,
@@ -79,8 +79,8 @@ class BarrageTestCase(BaseTestCase):
         with self.subTest("using barrage session as a context manager"):
             with barrage_session(host="localhost", port=10000, auth_type="Anonymous") as cm:
                 t = cm.subscribe(ticket=self.shared_ticket.bytes)
-            t1 = t.update("Z = X + Y")
-            self.assertEqual(t1.size, 1000)
+            with self.assertRaises(DHError):
+                t1 = t.update("Z = X + Y")
 
         with self.subTest("Invalid ticket"):
             with self.assertRaises(DHError) as cm:
@@ -96,6 +96,7 @@ class BarrageTestCase(BaseTestCase):
             with self.assertRaises(DHError) as cm:
                 session.subscribe(ticket=self.shared_ticket.bytes)
 
+        session.close()
 
     def test_snapshot(self):
         session = barrage_session(host="localhost", port=10000, auth_type="Anonymous")
@@ -124,6 +125,8 @@ class BarrageTestCase(BaseTestCase):
             self.pub_session.close()
             with self.assertRaises(DHError) as cm:
                 session.snapshot(ticket=self.shared_ticket.bytes)
+
+        session.close()
 
 
 if __name__ == "__main__":

@@ -31,11 +31,12 @@ public class BarrageSession extends FlightSession implements BarrageSubscription
         return new BarrageSession(session, client);
     }
 
+    // TODO (called in the Python server API) to be removed in the future if we can make JPY capable of selecting the
+    // right factory method to use when the same method is present in the class hierarchy multiple times
     public static BarrageSession create(
             SessionImpl session, BufferAllocator incomingAllocator, ManagedChannel channel) {
-        final FlightClient client = FlightGrpcUtilsExtension.createFlightClientWithSharedChannel(
-                incomingAllocator, channel, Collections.singletonList(new SessionMiddleware(session)));
-        return new BarrageSession(session, client);
+
+        return BarrageSession.of(session, incomingAllocator, channel);
     }
 
     protected BarrageSession(
