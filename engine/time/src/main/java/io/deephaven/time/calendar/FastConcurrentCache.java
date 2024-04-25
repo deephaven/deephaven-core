@@ -23,7 +23,7 @@ import java.util.function.Function;
 class FastConcurrentCache<K, V> {
 
     private final Function<K, V> valueComputer;
-    private Map<K, V> cache = new ConcurrentHashMap<>();
+    private volatile Map<K, V> cache = new ConcurrentHashMap<>();
     private volatile boolean fastCache = false;
     private CompletableFuture<Void> fastCacheFuture = null;
 
