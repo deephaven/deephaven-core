@@ -448,6 +448,18 @@ class Session:
             faketable.ticket = None
             faketable.schema = None
 
+    def bind_table(self, name: str, table: Table) -> None:
+        """Binds a table to the given name on the server so that it can be referenced by that name.
+
+        Args:
+            name (str): name for the table
+            table (Table): a Table object
+
+        Raises:
+            DHError
+        """
+        self.console_service.bind_table(table=table, variable_name=name)
+
     def publish_table(self, ticket: SharedTicket, table: Table) -> None:
         """Publishes a table to the given shared ticket. The ticket can then be used by another session to fetch the
         table.
@@ -488,18 +500,6 @@ class Session:
             # Explicitly close the table without releasing it (because it isn't ours)
             table.ticket = None
             table.schema = None
-
-    def bind_table(self, name: str, table: Table) -> None:
-        """Binds a table to the given name on the server so that it can be referenced by that name.
-
-        Args:
-            name (str): name for the table
-            table (Table): a Table object
-
-        Raises:
-            DHError
-        """
-        self.console_service.bind_table(table=table, variable_name=name)
 
     def time_table(self, period: Union[int, str], start_time: Union[int, str] = None,
                    blink_table: bool = False) -> Table:
