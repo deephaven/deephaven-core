@@ -82,8 +82,7 @@ class BarrageSession():
             DHError
         """
         try:
-            j_table_handle = self.j_session.of(_JTableSpec.ticket(ticket))
-            j_barrage_subscription = self.j_barrage_session.subscribe(j_table_handle,
+            j_barrage_subscription = self.j_barrage_session.subscribe(_JTableSpec.ticket(ticket),
                                                                       _JBarrageTableResolver.SUB_OPTIONS)
             return Table(j_barrage_subscription.entireTable().get())
         except Exception as e:
@@ -105,8 +104,7 @@ class BarrageSession():
             DHError
         """
         try:
-            j_table_handle = self.j_session.of(_JTableSpec.ticket(ticket))
-            j_barrage_snapshot = self.j_barrage_session.snapshot(j_table_handle, _JBarrageTableResolver.SNAP_OPTIONS)
+            j_barrage_snapshot = self.j_barrage_session.snapshot(_JTableSpec.ticket(ticket), _JBarrageTableResolver.SNAP_OPTIONS)
             return Table(j_barrage_snapshot.entireTable().get())
         except Exception as e:
             raise DHError(e, "failed to take a snapshot of the remote table with the provided ticket.") from e
