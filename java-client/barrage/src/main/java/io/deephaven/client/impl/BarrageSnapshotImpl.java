@@ -162,7 +162,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
                     .append(t).endl();
 
             // this error will always be propagated to our CheckForCompletion#onError callback
-            resultTable.handleBarrageError(new TableDataException("Barrage subscription error", t));
+            resultTable.handleBarrageError(new TableDataException("Barrage snapshot error", t));
             cleanup();
         }
 
