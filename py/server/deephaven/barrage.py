@@ -50,7 +50,7 @@ class BarrageSession():
             self.j_barrage_session.close()
             if self.j_managed_channel:
                 self.j_managed_channel.shutdownNow()
-                self.j_managed_channel.awaitTermination(5, _JTimeUnit.SECONDS)
+                self.j_managed_channel.awaitTermination(10, _JTimeUnit.SECONDS)
         except Exception as e:
             raise DHError(e, "failed to close the barrage session.") from e
 
@@ -190,7 +190,7 @@ def _get_barrage_session_direct(client_config: jpy.JType, auth: str) -> BarrageS
         # if the connection to the host can't be established, we should clean up the resources
         j_session_config.executor().shutdownNow()
         j_channel.shutdownNow()
-        j_channel.awaitTermination(5, _JTimeUnit.SECONDS)
+        j_channel.awaitTermination(10, _JTimeUnit.SECONDS)
         raise
 
     j_barrage_session = _JBarrageSession.create(j_session, _JRootAllocator(), j_channel)
