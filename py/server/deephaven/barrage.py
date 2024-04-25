@@ -34,6 +34,15 @@ class BarrageSession():
     """ A Deephaven Barrage session to a remote server."""
 
     def __init__(self, j_barrage_session: jpy.JType, j_managed_channel: jpy.JType = None):
+        """ Initializes a Barrage session.
+
+        when BarrageSession is created via the barrage_session() factory function, j_managed_channel is always provided,
+        and when BarrageSession.close() is called, it will shut down the channel as well as close the j_barrage_session..
+
+        when BarrageSession is initialized directly and j_managed_channel is None, when BarrageSession.close() is called,
+        it will only close the j_barrage_session, it is the responsibility of the user to shut down the associated
+        channel if needed.
+        """
         self.j_barrage_session = j_barrage_session
         self.j_session = j_barrage_session.session()
         self.j_managed_channel = j_managed_channel
@@ -45,7 +54,10 @@ class BarrageSession():
         self.close()
 
     def close(self) -> None:
-        """ Closes the session."""
+        """ Closes the barrage session.
+
+        If the BarrageSession is initialized with a managed channel, the channel will be shut down as well.
+        """
         try:
             self.j_barrage_session.close()
             if self.j_managed_channel:

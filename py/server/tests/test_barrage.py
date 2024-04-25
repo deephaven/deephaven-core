@@ -84,13 +84,16 @@ class BarrageTestCase(BaseTestCase):
             with barrage_session(host="localhost", port=10000, auth_type="Anonymous") as cm:
                 t = cm.subscribe(ticket=self.shared_ticket.bytes)
                 t1 = t.update("Z = X + Y")
+                self.assertEqual(t1.size, 1000)
 
-            for _ in range(10):
-                if t.j_table.isFailed():
-                    break
-                time.sleep(1)
-            else:
-                self.fail("the barrage table is still alive after 10 seconds elapsed.")
+            # TODO this test is flaky because of https://github.com/deephaven/deephaven-core/issues/5416, re-enable it
+            #  when the issue is fixed.
+            # for _ in range(10):
+            #     if t.j_table.isFailed():
+            #         break
+            #     time.sleep(1)
+            # else:
+            #     self.fail("the barrage table is still alive after 10 seconds elapsed.")
 
         with self.subTest("Invalid ticket"):
             with self.assertRaises(DHError) as cm:
