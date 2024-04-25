@@ -57,7 +57,8 @@ class BarrageSession():
     def subscribe(self, ticket: bytes) -> Table:
         """ Subscribes to a published remote table with the given ticket.
 
-        Note, if the remote table is closed or its owner session is closed, the ticket becomes invalid.
+        Note, if the remote table is closed or its owner session is closed, the ticket becomes invalid. If the same
+        ticket is subscribed to multiple times, multiple subscriptions will be created.
 
         Args:
             ticket (bytes): the bytes of the ticket
@@ -79,7 +80,8 @@ class BarrageSession():
     def snapshot(self, ticket: bytes) -> Table:
         """ Returns a snapshot of a published remote table with the given ticket.
 
-        Note, if the remote table is closed or its owner session is closed, the ticket becomes invalid.
+        Note, if the remote table is closed or its owner session is closed, the ticket becomes invalid. If the same
+        ticket is snapshot multiple times, multiple snapshots will be created.
 
         Args:
             ticket (bytes): the bytes of the ticket

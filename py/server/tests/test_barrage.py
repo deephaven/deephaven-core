@@ -77,12 +77,15 @@ class BarrageTestCase(BaseTestCase):
         self.assertEqual(sp.size, 1000)
         t1 = t.update("Z = X + Y")
         self.assertEqual(t1.size, 1000)
+        t2 = session.subscribe(ticket=self.shared_ticket.bytes)
+        self.assertEqual(t.size, 1000)
 
         with self.subTest("using barrage session as a context manager"):
             with barrage_session(host="localhost", port=10000, auth_type="Anonymous") as cm:
                 t = cm.subscribe(ticket=self.shared_ticket.bytes)
-            with self.assertRaises(DHError):
                 t1 = t.update("Z = X + Y")
+            with self.assertRaises(DHError):
+                t.update("Z = X + Y")
 
         with self.subTest("Invalid ticket"):
             with self.assertRaises(DHError) as cm:
@@ -107,6 +110,7 @@ class BarrageTestCase(BaseTestCase):
         self.assertEqual(len(t.columns), 2)
         t1 = t.update("Z = X + Y")
         self.assertEqual(t1.size, 1000)
+        t2 = session.snapshot(self.shared_ticket.bytes)
 
         with self.subTest("using barrage session as a context manager"):
             with barrage_session(host="localhost", port=10000, auth_type="Anonymous") as cm:
