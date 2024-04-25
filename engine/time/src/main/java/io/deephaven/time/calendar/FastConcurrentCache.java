@@ -25,8 +25,9 @@ class FastConcurrentCache<K, V> {
     private final Function<K, V> valueComputer;
     private final Map<K, V> concurrentCache = new ConcurrentHashMap<>();
     private final Map<K, V> fastCache = new HashMap<>();
-    private volatile boolean isFastCache = false;
-    private CompletableFuture<Void> fastCacheFuture = null;
+    private boolean isFastCacheEnabled = false; // synchronized
+    private volatile boolean isFastCacheActive = false;
+    private CompletableFuture<Void> fastCacheFuture = null; // synchronized
 
     /**
      * Creates a new cache.
@@ -42,8 +43,8 @@ class FastConcurrentCache<K, V> {
      *
      * @return whether the fast cache is enabled
      */
-    public boolean isFastCache() {
-        return isFastCache;
+    public synchronized boolean isFastCache() {
+        return isFastCacheEnabled;
     }
 
     /**
@@ -56,29 +57,25 @@ class FastConcurrentCache<K, V> {
      * @param wait whether to wait for the cache to be generated
      * @throws IllegalStateException if the fast cache is already enabled
      */
-    void enableFastCache(final List<K> keys, final boolean wait) {
+    synchronized void enableFastCache(final List<K> keys, final boolean wait) {
+        if (isFastCacheEnabled) {
+            throw new IllegalStateException(
+                    "Fast cache is already enabled.  To change the range, clear the cache first.");
+        }
 
-        synchronized (this) {
-            if (isFastCache || fastCacheFuture != null) {
-                throw new IllegalStateException(
-                        "Fast cache is already enabled.  To change the range, clear the cache first.");
+        isFastCacheEnabled = true;
+
+        fastCacheFuture = CompletableFuture.runAsync(() -> {
+            fastCache.putAll(concurrentCache);
+
+            for (K key : keys) {
+                if (!fastCache.containsKey(key)) {
+                    fastCache.put(key, valueComputer.apply(key));
+                }
             }
 
-            fastCacheFuture = CompletableFuture.runAsync(() -> {
-                fastCache.putAll(concurrentCache);
-
-                for (K key : keys) {
-                    if (!fastCache.containsKey(key)) {
-                        fastCache.put(key, valueComputer.apply(key));
-                    }
-                }
-
-                isFastCache = true;
-                synchronized (this) {
-                    fastCacheFuture = null;
-                }
-            });
-        }
+            isFastCacheActive = true;
+        });
 
         if (wait) {
             fastCacheFuture.join();
@@ -90,17 +87,16 @@ class FastConcurrentCache<K, V> {
      */
     synchronized void clear() {
         if (fastCacheFuture != null) {
-            final boolean canceled = fastCacheFuture.cancel(true);
-
-            if (!canceled) {
+            if (!fastCacheFuture.isDone() && !fastCacheFuture.cancel(true)) {
                 throw new IllegalStateException("Failed to cancel fast cache computation");
             }
         }
 
-        if (isFastCache) {
-            isFastCache = false;
+        if (isFastCacheActive) {
+            isFastCacheActive = false;
         }
 
+        isFastCacheEnabled = false;
         fastCache.clear();
         concurrentCache.clear();
     }
@@ -115,7 +111,7 @@ class FastConcurrentCache<K, V> {
      * @throws IllegalArgumentException if the value is not found
      */
     public V get(K key) {
-        if (isFastCache) {
+        if (isFastCacheActive) {
             final V v = fastCache.get(key);
 
             if (v == null) {
