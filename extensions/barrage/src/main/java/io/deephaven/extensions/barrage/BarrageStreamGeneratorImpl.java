@@ -130,8 +130,8 @@ public class BarrageStreamGeneratorImpl implements
     }
 
     public static class ModColumnData {
-        public final RowSetGenerator rowsModified;
-        public final ChunkListInputStreamGenerator data;
+        private final RowSetGenerator rowsModified;
+        private final ChunkListInputStreamGenerator data;
 
         ModColumnData(final BarrageMessage.ModColumnData col) throws IOException {
             rowsModified = new RowSetGenerator(col.rowsModified);
@@ -139,23 +139,21 @@ public class BarrageStreamGeneratorImpl implements
         }
     }
 
-    public final BarrageMessage message;
-    public final BarragePerformanceLog.WriteMetricsConsumer writeConsumer;
+    private final BarrageMessage message;
+    private final BarragePerformanceLog.WriteMetricsConsumer writeConsumer;
 
-    public final long firstSeq;
-    public final long lastSeq;
-    public final long step;
+    private final long firstSeq;
+    private final long lastSeq;
 
-    public final boolean isSnapshot;
+    private final boolean isSnapshot;
 
-    public final RowSetGenerator rowsAdded;
-    public final RowSetGenerator rowsIncluded;
-    public final RowSetGenerator rowsRemoved;
-    public final RowSetShiftDataGenerator shifted;
+    private final RowSetGenerator rowsAdded;
+    private final RowSetGenerator rowsIncluded;
+    private final RowSetGenerator rowsRemoved;
+    private final RowSetShiftDataGenerator shifted;
 
-    public final ChunkListInputStreamGenerator[] addColumnData;
-    public int addGeneratorCount = 0;
-    public final ModColumnData[] modColumnData;
+    private final ChunkListInputStreamGenerator[] addColumnData;
+    private final ModColumnData[] modColumnData;
 
     /**
      * Create a barrage stream generator that can slice and dice the barrage message for delivery to clients.
@@ -170,7 +168,6 @@ public class BarrageStreamGeneratorImpl implements
         try {
             firstSeq = message.firstSeq;
             lastSeq = message.lastSeq;
-            step = message.step;
             isSnapshot = message.isSnapshot;
 
             rowsAdded = new RowSetGenerator(message.rowsAdded);
@@ -183,7 +180,6 @@ public class BarrageStreamGeneratorImpl implements
                 BarrageMessage.AddColumnData columnData = message.addColumnData[i];
                 addColumnData[i] = new ChunkListInputStreamGenerator(columnData.type, columnData.componentType,
                         columnData.data, columnData.chunkType);
-                addGeneratorCount = Math.max(addGeneratorCount, addColumnData[i].generators().size());
             }
 
             modColumnData = new ModColumnData[message.modColumnData.length];
@@ -257,19 +253,19 @@ public class BarrageStreamGeneratorImpl implements
         return getSubView(options, isInitialSnapshot, null, false, null, null);
     }
 
-    public static class SubView implements View {
-        public final BarrageStreamGeneratorImpl generator;
-        public final BarrageSubscriptionOptions options;
-        public final boolean isInitialSnapshot;
-        public final RowSet viewport;
-        public final boolean reverseViewport;
-        public final RowSet keyspaceViewport;
-        public final BitSet subscribedColumns;
-        public final long numAddRows;
-        public final long numModRows;
-        public final RowSet addRowOffsets;
-        public final RowSet addRowKeys;
-        public final RowSet[] modRowOffsets;
+    public static final class SubView implements View {
+        private final BarrageStreamGeneratorImpl generator;
+        private final BarrageSubscriptionOptions options;
+        private final boolean isInitialSnapshot;
+        private final RowSet viewport;
+        private final boolean reverseViewport;
+        private final RowSet keyspaceViewport;
+        private final BitSet subscribedColumns;
+        private final long numAddRows;
+        private final long numModRows;
+        private final RowSet addRowOffsets;
+        private final RowSet addRowKeys;
+        private final RowSet[] modRowOffsets;
 
         public SubView(final BarrageStreamGeneratorImpl generator,
                 final BarrageSubscriptionOptions options,
@@ -430,16 +426,15 @@ public class BarrageStreamGeneratorImpl implements
         return getSnapshotView(options, null, false, null, null);
     }
 
-    public static class SnapshotView implements View {
-        public final BarrageStreamGeneratorImpl generator;
-        public final BarrageSnapshotOptions options;
-        public final RowSet viewport;
-        public final boolean reverseViewport;
-        public final RowSet keyspaceViewport;
-        public final BitSet subscribedColumns;
-        public final long numAddRows;
-        public final RowSet addRowKeys;
-        public final RowSet addRowOffsets;
+    public static final class SnapshotView implements View {
+        private final BarrageStreamGeneratorImpl generator;
+        private final BarrageSnapshotOptions options;
+        private final RowSet viewport;
+        private final boolean reverseViewport;
+        private final BitSet subscribedColumns;
+        private final long numAddRows;
+        private final RowSet addRowKeys;
+        private final RowSet addRowOffsets;
 
         public SnapshotView(final BarrageStreamGeneratorImpl generator,
                 final BarrageSnapshotOptions options,
@@ -452,7 +447,6 @@ public class BarrageStreamGeneratorImpl implements
             this.viewport = viewport;
             this.reverseViewport = reverseViewport;
 
-            this.keyspaceViewport = keyspaceViewport;
             this.subscribedColumns = subscribedColumns;
 
             // precompute add row offsets
@@ -509,7 +503,7 @@ public class BarrageStreamGeneratorImpl implements
         }
 
         @Override
-        public final StreamReaderOptions options() {
+        public StreamReaderOptions options() {
             return options;
         }
 
@@ -524,8 +518,8 @@ public class BarrageStreamGeneratorImpl implements
         }
     }
 
-    public static class SchemaView implements View {
-        final byte[] msgBytes;
+    public static final class SchemaView implements View {
+        private final byte[] msgBytes;
 
         public SchemaView(final ByteBuffer buffer) {
             this.msgBytes = Flight.FlightData.newBuilder()
@@ -1127,7 +1121,7 @@ public class BarrageStreamGeneratorImpl implements
     }
 
     public static class RowSetGenerator extends ByteArrayGenerator implements SafeCloseable {
-        public final RowSet original;
+        private final RowSet original;
 
         public RowSetGenerator(final RowSet rowSet) throws IOException {
             this.original = rowSet.copy();
@@ -1201,11 +1195,7 @@ public class BarrageStreamGeneratorImpl implements
     }
 
     public static class RowSetShiftDataGenerator extends ByteArrayGenerator {
-        public final RowSetShiftData original;
-
         public RowSetShiftDataGenerator(final RowSetShiftData shifted) throws IOException {
-            this.original = shifted;
-
             final RowSetBuilderSequential sRangeBuilder = RowSetFactory.builderSequential();
             final RowSetBuilderSequential eRangeBuilder = RowSetFactory.builderSequential();
             final RowSetBuilderSequential destBuilder = RowSetFactory.builderSequential();
