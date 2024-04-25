@@ -7,6 +7,7 @@ import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.proto.DeephavenChannel;
 import io.deephaven.qst.table.TableSpec;
+import io.deephaven.util.annotations.InternalUseOnly;
 import io.grpc.ManagedChannel;
 import org.apache.arrow.flight.FlightClient;
 import org.apache.arrow.flight.FlightGrpcUtilsExtension;
