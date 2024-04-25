@@ -16,6 +16,7 @@ _JTimeUnit = jpy.get_type("java.util.concurrent.TimeUnit")
 _JClientConfig = jpy.get_type("io.deephaven.client.impl.ClientConfig")
 _JSSLConfig = jpy.get_type("io.deephaven.ssl.config.SSLConfig")
 _JSessionImplConfig = jpy.get_type("io.deephaven.client.impl.SessionImplConfig")
+_JSessionConfig = jpy.get_type("io.deephaven.client.impl.SessionConfig")
 _JTrustCustom = jpy.get_type("io.deephaven.ssl.config.TrustCustom")
 _JDeephavenTarget = jpy.get_type("io.deephaven.uri.DeephavenTarget")
 _JBarrageSession = jpy.get_type("io.deephaven.client.impl.BarrageSession")
@@ -27,6 +28,7 @@ _JSessionImpl = jpy.get_type("io.deephaven.client.impl.SessionImpl")
 _JExecutors = jpy.get_type("java.util.concurrent.Executors")
 _JRootAllocator = jpy.get_type("org.apache.arrow.memory.RootAllocator")
 _JDeephavenApiServer = jpy.get_type("io.deephaven.server.runner.DeephavenApiServer")
+
 
 class BarrageSession():
     """ A Deephaven Barrage session to a remote server."""
@@ -95,6 +97,7 @@ class BarrageSession():
         except Exception as e:
             raise DHError(e, "failed to take a snapshot of the remote table with the provided ticket.") from e
 
+
 def barrage_session(host: str,
                     port: int = 10000,
                     auth_type: str = "Anonymous",
@@ -144,7 +147,8 @@ def barrage_session(host: str,
             return _get_barrage_session_via_api_server(j_client_config, auth)
         except:
             # fall back to the direct way when we don't have a fully initialized server, used for testing only
-            # TODO: remove when we are done with restructuring the integrations tests wiring https://github.com/deephaven/deephaven-core/issues/5401
+            # TODO: remove when we are done with restructuring the integrations tests wiring
+            #  https://github.com/deephaven/deephaven-core/issues/5401
             return _get_barrage_session_direct(j_client_config, auth)
     except Exception as e:
         raise DHError(e, "failed to get a barrage session to the target remote Deephaven server.") from e
@@ -152,9 +156,16 @@ def barrage_session(host: str,
 
 def _get_barrage_session_via_api_server(client_config: jpy.JType, auth: str) -> BarrageSession:
     j_barrage_session_factory_creator = _JDeephavenApiServer.getInstance().sessionFactoryCreator()
-    j_barrage_session_factory = j_barrage_session_factory_creator.barrageFactory(client_config, auth)
-    return BarrageSession(j_barrage_session_factory.newBarrageSession(), j_barrage_session_factory.managedChannel())
-
+    j_barrage_session_factory = j_barrage_session_factory_creator.barrageFactory(client_config)
+    j_managed_channel = j_barrage_session_factory.managedChannel()
+    if auth:
+        j_session_config = (_JSessionConfig.builder()
+                            .authenticationTypeAndValue(auth)
+                            .build())
+        j_barrage_session = j_barrage_session_factory.newBarrageSession(j_session_config)
+    else:
+        j_barrage_session = j_barrage_session_factory.newBarrageSession()
+    return BarrageSession(j_barrage_session, j_managed_channel)
 
 def _get_barrage_session_direct(client_config: jpy.JType, auth: str) -> BarrageSession:
     """Note, this is used for testing only. This way of constructing a Barrage session is less efficient because it does
@@ -162,7 +173,8 @@ def _get_barrage_session_direct(client_config: jpy.JType, auth: str) -> BarrageS
     context it provides a singleton executor, allocator, outbound SSL configuration, and the ability for the server to
     hook in additional channel building options.
 
-    TODO: remove when we are done with restructuring the integrations tests wiring https://github.com/deephaven/deephaven-core/issues/5401.
+    TODO: remove when we are done with restructuring the integrations tests wiring
+    https://github.com/deephaven/deephaven-core/issues/5401.
     """
     j_channel = _JChannelHelper.channel(client_config)
     j_dh_channel = _JDeephavenChannelImpl(j_channel)
@@ -181,7 +193,7 @@ def _get_barrage_session_direct(client_config: jpy.JType, auth: str) -> BarrageS
         j_channel.awaitTermination(5, _JTimeUnit.SECONDS)
         raise
 
-    j_barrage_session =_JBarrageSession.create(j_session, _JRootAllocator(), j_channel)
+    j_barrage_session = _JBarrageSession.create(j_session, _JRootAllocator(), j_channel)
     return BarrageSession(j_barrage_session, j_channel)
 
 
