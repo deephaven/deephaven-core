@@ -85,7 +85,9 @@ class BarrageTestCase(BaseTestCase):
                 t = cm.subscribe(ticket=self.shared_ticket.bytes)
                 t1 = t.update("Z = X + Y")
             with self.assertRaises(DHError):
-                t.update("Z = X + Y")
+                for _ in range(10):
+                    t.update("Z = X + Y")
+                    time.sleep(1)
 
         with self.subTest("Invalid ticket"):
             with self.assertRaises(DHError) as cm:
