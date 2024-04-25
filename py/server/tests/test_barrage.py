@@ -20,6 +20,8 @@ class BarrageTestCase(BaseTestCase):
     @classmethod
     def setUpClass(cls) -> None:
         super().setUpClass()
+        # the cacheDir env var is required to avoid a problem when the same cache dir is used by two server instances,
+        # in which case the later server instance will wipe out the cache dir of the earlier server instance.
         env = {"START_OPTS": "-DAuthHandlers=io.deephaven.auth.AnonymousAuthenticationHandler -Ddeephaven.cacheDir=/cache/tmp"}
         env.update(dict(os.environ))
         cls.server_proc = subprocess.Popen(["/opt/deephaven/server/bin/start"], shell=False, env=env,
