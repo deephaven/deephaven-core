@@ -15,6 +15,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
@@ -161,7 +162,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
                     .append(t).endl();
 
             // this error will always be propagated to our CheckForCompletion#onError callback
-            resultTable.handleBarrageError(t);
+            resultTable.handleBarrageError(new TableDataException("Barrage subscription error", t));
             cleanup();
         }
 
