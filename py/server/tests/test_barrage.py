@@ -84,10 +84,13 @@ class BarrageTestCase(BaseTestCase):
             with barrage_session(host="localhost", port=10000, auth_type="Anonymous") as cm:
                 t = cm.subscribe(ticket=self.shared_ticket.bytes)
                 t1 = t.update("Z = X + Y")
-            with self.assertRaises(DHError):
-                for _ in range(10):
-                    t.update("Z = X + Y")
-                    time.sleep(1)
+
+            for _ in range(10):
+                if t.j_table.isFailed():
+                    break
+                time.sleep(1)
+            else:
+                self.fail("the barrage table is still alive after 10 seconds elapsed.")
 
         with self.subTest("Invalid ticket"):
             with self.assertRaises(DHError) as cm:
