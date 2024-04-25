@@ -16,8 +16,8 @@ import jsinterop.annotations.JsType;
 @JsType(namespace = "dh.plot")
 public class Downsample {
     /**
-     * Downsamples a table so that the data can be used for a time-series line plot.
-     * The downsampled table should have the same visual fidelity as the original table, but with fewer rows.
+     * Downsamples a table so that the data can be used for a time-series line plot. The downsampled table should have
+     * the same visual fidelity as the original table, but with fewer rows.
      *
      * @param table The table to downsample.
      * @param xCol The name of the X column to downsample. Must be an Instant or long.
