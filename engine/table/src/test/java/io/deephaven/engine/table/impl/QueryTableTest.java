@@ -51,6 +51,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.io.File;
@@ -82,6 +83,31 @@ import static org.junit.Assert.assertArrayEquals;
  */
 @Category(OutOfBandTest.class)
 public class QueryTableTest extends QueryTableTestBase {
+
+    @Test
+    public void testUngroupWithNullSecondColumn() {
+        final QueryTable qt = testRefreshingTable(
+                col("C1", new int[]{1,2,3}, new int[0], null),
+                col("C2", new int[]{3,2,1}, new int[0], null));
+
+        final Table ug = qt.ungroup(false, "C1", "C2");
+        setExpectError(false);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSet mods = i(0, 2);
+            addToTable(qt, mods,
+                    col("C1", null,
+                            new int[]{4, 5, 6}),
+                    col("C2", null,
+                            new int[]{6, 5, 4}));
+            qt.notifyListeners(i(), i(), mods);
+        });
+        final QueryTable expected = testTable(
+                col("C1", 4, 5, 6),
+                col("C2", 6, 5, 4));
+        assertTableEquals(expected, ug);
+    }
+
     public void testStupidCast() {
         QueryTable table = testRefreshingTable(i(2, 4, 6).toTracking());
         // noinspection UnusedAssignment
