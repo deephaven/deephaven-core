@@ -169,7 +169,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                 }
             });
             resultTable.handleBarrageError(new TableDataException(
-                    "Barrage subscription error " + logName + " TableSpecSummary:" + label, t));
+                    String.format("Barrage subscription error %s (%s)", logName, label), t));
             cleanup();
         }
 
@@ -195,14 +195,13 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
         try {
             switch (ticket[0]) {
                 case 'a':
-                    return String.format("ticketTable(%s)", ApplicationTicketHelper.toReadableString(ticket));
+                    return ApplicationTicketHelper.toReadableString(ticket);
                 case 's':
-                    return String.format("ticketTable(%s)", ScopeTicketHelper.toReadableString(ticket));
+                    return ScopeTicketHelper.toReadableString(ticket);
                 case 'e':
-                    return String.format("ticketTable(%s)",
-                            ExportTicketHelper.toReadableString(ByteBuffer.wrap(ticket), "TicketTable"));
+                    return ExportTicketHelper.toReadableString(ByteBuffer.wrap(ticket), "TicketTable");
                 case 'h':
-                    return String.format("ticketTable(%s)", SharedTicketHelper.toReadableString(ticket));
+                    return SharedTicketHelper.toReadableString(ticket);
                 default:
                     break;
             }
