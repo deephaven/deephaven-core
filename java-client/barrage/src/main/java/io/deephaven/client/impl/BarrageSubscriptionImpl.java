@@ -203,6 +203,8 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                             ExportTicketHelper.toReadableString(ByteBuffer.wrap(ticket), "TicketTable"));
                 case 'h':
                     return String.format("ticketTable(%s)", SharedTicketHelper.toReadableString(ticket));
+                default:
+                    break;
             }
         } catch (Exception err) {
             // ignore - let's just return the hex representation
