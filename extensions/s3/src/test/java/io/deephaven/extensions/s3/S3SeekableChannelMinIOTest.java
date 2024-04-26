@@ -3,28 +3,26 @@
 //
 package io.deephaven.extensions.s3;
 
-
 import io.deephaven.extensions.s3.S3Instructions.Builder;
 import io.deephaven.extensions.s3.SingletonContainers.MinIO;
 import io.deephaven.stats.util.OSUtil;
-import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
+import org.junit.BeforeClass;
 import software.amazon.awssdk.services.s3.S3Client;
 
-@Tag("testcontainers")
-public class S3SeekableChannelMinIOTest extends S3SeekableChannelTestBase {
+import static org.junit.Assert.assertFalse;
 
-    @BeforeAll
-    static void initContainer() {
+public class S3SeekableChannelMinIOTest extends S3ParquetTests {
+
+    @BeforeClass
+    public static void initContainer() {
         // TODO(deephaven-core#5116): MinIO testcontainers does not work on OS X
-        Assumptions.assumeFalse(OSUtil.runningMacOS(), "OSUtil.runningMacOS()");
+        assertFalse("OSUtil.runningMacOS()", OSUtil.runningMacOS());
         // ensure container is started so container startup time isn't associated with a specific test
         MinIO.init();
     }
 
     @Override
-    public Builder s3Instructions(Builder builder) {
+    public Builder s3Instructions(final Builder builder) {
         return MinIO.s3Instructions(builder);
     }
 

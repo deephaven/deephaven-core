@@ -3,18 +3,15 @@
 //
 package io.deephaven.extensions.s3;
 
-
 import io.deephaven.extensions.s3.S3Instructions.Builder;
 import io.deephaven.extensions.s3.SingletonContainers.LocalStack;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
+import org.junit.BeforeClass;
 import software.amazon.awssdk.services.s3.S3Client;
 
-@Tag("testcontainers")
-public class S3SeekableChannelLocalStackTest extends S3SeekableChannelTestBase {
+public class S3SeekableChannelLocalStackTest extends S3ParquetTests {
 
-    @BeforeAll
-    static void initContainer() {
+    @BeforeClass
+    public static void initContainer() {
         // ensure container is started so container startup time isn't associated with a specific test
         LocalStack.init();
     }
