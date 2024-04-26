@@ -44,7 +44,8 @@ public class SharedTicketHelper {
      */
     public static String toReadableString(final byte[] ticket) {
         if (ticket.length < 2 || ticket[0] != TICKET_PREFIX) {
-            throw new RuntimeException("Shared ticket does not conform to expected format");
+            throw new IllegalArgumentException(String.format(
+                    "Shared ticket does not conform to expected format; found '0x%s'", Hex.encodeHexString(ticket)));
         }
         return String.format("%s/0x%s", FLIGHT_DESCRIPTOR_ROUTE,
                 Hex.encodeHexString(ByteBuffer.wrap(ticket, 1, ticket.length - 1)));

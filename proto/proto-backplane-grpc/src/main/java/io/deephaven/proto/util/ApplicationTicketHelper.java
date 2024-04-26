@@ -3,6 +3,8 @@
 //
 package io.deephaven.proto.util;
 
+import org.apache.commons.codec.binary.Hex;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CharsetDecoder;
@@ -52,14 +54,17 @@ public class ApplicationTicketHelper {
         try {
             ticketAsString = decoder.decode(ByteBuffer.wrap(ticket)).toString();
         } catch (CharacterCodingException e) {
-            throw new RuntimeException("Failed to decode application scope ticket: " + e.getMessage(), e);
+            throw new IllegalArgumentException(String.format(
+                    "Failed to decode application field ticket; found '0x%s'", Hex.encodeHexString(ticket)), e);
         }
 
         final int endOfRoute = ticketAsString.indexOf('/');
         final int endOfAppId = ticketAsString.indexOf('/', endOfRoute + 1);
         final int endOfFieldSegment = ticketAsString.indexOf('/', endOfAppId + 1);
-        if (endOfAppId == -1 || endOfFieldSegment == -1) {
-            throw new RuntimeException("Application ticket does not conform to expected format");
+        if (endOfFieldSegment == -1) {
+            throw new IllegalArgumentException(String.format(
+                    "Application field ticket does not conform to expected format; found '0x%s'",
+                    Hex.encodeHexString(ticket)));
         }
         final String appId = ticketAsString.substring(endOfRoute + 1, endOfAppId);
         final String fieldName = ticketAsString.substring(endOfFieldSegment + 1);

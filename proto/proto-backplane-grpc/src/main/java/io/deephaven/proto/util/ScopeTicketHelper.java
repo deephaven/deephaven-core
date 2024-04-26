@@ -3,6 +3,8 @@
 //
 package io.deephaven.proto.util;
 
+import org.apache.commons.codec.binary.Hex;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CharsetDecoder;
@@ -42,19 +44,20 @@ public class ScopeTicketHelper {
      * @return the human-readable description
      */
     public static String toReadableString(final byte[] ticket) {
+        if (ticket.length < 3 || ticket[0] != TICKET_PREFIX || ticket[1] != '/') {
+            throw new IllegalArgumentException(String.format(
+                    "QueryScope ticket does not conform to expected format; found '0x%s", Hex.encodeHexString(ticket)));
+        }
+
         final String ticketAsString;
         final CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
         try {
             ticketAsString = decoder.decode(ByteBuffer.wrap(ticket)).toString();
         } catch (CharacterCodingException e) {
-            throw new RuntimeException("Failed to decode query scope ticket: " + e.getMessage(), e);
+            throw new IllegalArgumentException(String.format(
+                    "Failed to decode query scope ticket; found '0x%s'", Hex.encodeHexString(ticket)), e);
         }
-
-        final int endOfRoute = ticketAsString.indexOf('/');
-        if (endOfRoute == -1) {
-            throw new RuntimeException("QueryScope ticket does not conform to expected format");
-        }
-        final String fieldName = ticketAsString.substring(endOfRoute + 1);
+        final String fieldName = ticketAsString.substring(2);
 
         return String.format("%s/%s", FLIGHT_DESCRIPTOR_ROUTE, fieldName);
     }

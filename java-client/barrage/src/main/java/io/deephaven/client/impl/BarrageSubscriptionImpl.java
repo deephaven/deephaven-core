@@ -169,7 +169,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                 }
             });
             resultTable.handleBarrageError(new TableDataException(
-                    String.format("Barrage subscription error %s (%s)", logName, label), t));
+                    String.format("Barrage subscription error for %s (%s)", logName, label), t));
             cleanup();
         }
 

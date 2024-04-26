@@ -171,7 +171,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
             });
             // this error will always be propagated to our CheckForCompletion#onError callback
             resultTable.handleBarrageError(new TableDataException(
-                    String.format("Barrage snapshot error %s (%s)", logName, label), t));
+                    String.format("Barrage snapshot error for %s (%s)", logName, label), t));
             cleanup();
         }
 
