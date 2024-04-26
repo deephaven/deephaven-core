@@ -27,6 +27,12 @@ import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.extensions.barrage.util.*;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.proto.util.ApplicationTicketHelper;
+import io.deephaven.proto.util.ExportTicketHelper;
+import io.deephaven.proto.util.ScopeTicketHelper;
+import io.deephaven.proto.util.SharedTicketHelper;
+import io.deephaven.qst.table.TableLabelVisitor;
+import io.deephaven.qst.table.TicketTable;
 import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.grpc.CallOptions;
@@ -39,6 +45,7 @@ import io.grpc.stub.ClientCalls;
 import io.grpc.stub.ClientResponseObserver;
 import org.apache.arrow.flight.impl.Flight.FlightData;
 import org.apache.arrow.flight.impl.FlightServiceGrpc;
+import org.apache.commons.codec.binary.Hex;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -155,7 +162,14 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                     .append(": Error detected in subscription: ")
                     .append(t).endl();
 
-            resultTable.handleBarrageError(new TableDataException("Barrage subscription error", t));
+            final String label = tableHandle.export().table().walk(new TableLabelVisitor() {
+                @Override
+                public String visit(TicketTable ticketTable) {
+                    return nameForTableTicket(ticketTable);
+                }
+            });
+            resultTable.handleBarrageError(new TableDataException(
+                    "Barrage subscription error " + logName + " TableSpecSummary:" + label, t));
             cleanup();
         }
 
@@ -169,6 +183,32 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             resultTable.handleBarrageError(new RequestCancelledException("Barrage subscription closed by server"));
             cleanup();
         }
+    }
+
+    static String nameForTableTicket(TicketTable table) {
+        byte[] ticket = table.ticket();
+        if (ticket.length == 0) {
+            return "ticketTable(EMPTY)";
+        }
+
+        // We'll try our best to decode the ticket, but it's not guaranteed to be a well-known ticket route.
+        try {
+            switch (ticket[0]) {
+                case 'a':
+                    return String.format("ticketTable(%s)", ApplicationTicketHelper.toReadableString(ticket));
+                case 's':
+                    return String.format("ticketTable(%s)", ScopeTicketHelper.toReadableString(ticket));
+                case 'e':
+                    return String.format("ticketTable(%s)",
+                            ExportTicketHelper.toReadableString(ByteBuffer.wrap(ticket), "TicketTable"));
+                case 'h':
+                    return String.format("ticketTable(%s)", SharedTicketHelper.toReadableString(ticket));
+            }
+        } catch (Exception err) {
+            // ignore - let's just return the hex representation
+        }
+
+        return "ticketTable(0x" + Hex.encodeHexString(ticket) + ")";
     }
 
     @Override

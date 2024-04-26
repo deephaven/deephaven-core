@@ -22,6 +22,8 @@ import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.extensions.barrage.util.*;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.qst.table.TableLabelVisitor;
+import io.deephaven.qst.table.TicketTable;
 import io.grpc.CallOptions;
 import io.grpc.ClientCall;
 import io.grpc.Context;
@@ -161,8 +163,15 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
                     .append(": Error detected in snapshot: ")
                     .append(t).endl();
 
+            final String label = tableHandle.export().table().walk(new TableLabelVisitor() {
+                @Override
+                public String visit(TicketTable ticketTable) {
+                    return BarrageSubscriptionImpl.nameForTableTicket(ticketTable);
+                }
+            });
             // this error will always be propagated to our CheckForCompletion#onError callback
-            resultTable.handleBarrageError(new TableDataException("Barrage snapshot error", t));
+            resultTable.handleBarrageError(new TableDataException(
+                    "Barrage snapshot error " + logName + " TableSpecSummary:" + label, t));
             cleanup();
         }
 

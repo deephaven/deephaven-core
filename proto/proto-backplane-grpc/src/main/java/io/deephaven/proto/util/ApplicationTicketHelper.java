@@ -3,6 +3,9 @@
 //
 package io.deephaven.proto.util;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CharsetDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
@@ -35,5 +38,32 @@ public class ApplicationTicketHelper {
      */
     public static byte[] applicationFieldToBytes(String applicationId, String fieldName) {
         return (TICKET_PREFIX + "/" + applicationId + "/f/" + fieldName).getBytes(StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Convenience method to decode the application ticket bytes into a human-readable description.
+     *
+     * @param ticket the ticket bytes
+     * @return the human-readable description
+     */
+    public static String toReadableString(final byte[] ticket) {
+        final String ticketAsString;
+        final CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
+        try {
+            ticketAsString = decoder.decode(ByteBuffer.wrap(ticket)).toString();
+        } catch (CharacterCodingException e) {
+            throw new RuntimeException("Failed to decode application scope ticket: " + e.getMessage(), e);
+        }
+
+        final int endOfRoute = ticketAsString.indexOf('/');
+        final int endOfAppId = ticketAsString.indexOf('/', endOfRoute + 1);
+        final int endOfFieldSegment = ticketAsString.indexOf('/', endOfAppId + 1);
+        if (endOfAppId == -1 || endOfFieldSegment == -1) {
+            throw new RuntimeException("Application ticket does not conform to expected format");
+        }
+        final String appId = ticketAsString.substring(endOfRoute + 1, endOfAppId);
+        final String fieldName = ticketAsString.substring(endOfFieldSegment + 1);
+
+        return String.format("%s/%s/%s/%s", FLIGHT_DESCRIPTOR_ROUTE, appId, FIELD_PATH_SEGMENT, fieldName);
     }
 }

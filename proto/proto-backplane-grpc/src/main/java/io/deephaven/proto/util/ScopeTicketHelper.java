@@ -3,6 +3,9 @@
 //
 package io.deephaven.proto.util;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CharsetDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
@@ -30,5 +33,29 @@ public class ScopeTicketHelper {
      */
     public static byte[] nameToBytes(String variableName) {
         return (TICKET_PREFIX + "/" + variableName).getBytes(StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Convenience method to decode the application ticket bytes into a human-readable description.
+     *
+     * @param ticket the ticket bytes
+     * @return the human-readable description
+     */
+    public static String toReadableString(final byte[] ticket) {
+        final String ticketAsString;
+        final CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
+        try {
+            ticketAsString = decoder.decode(ByteBuffer.wrap(ticket)).toString();
+        } catch (CharacterCodingException e) {
+            throw new RuntimeException("Failed to decode query scope ticket: " + e.getMessage(), e);
+        }
+
+        final int endOfRoute = ticketAsString.indexOf('/');
+        if (endOfRoute == -1) {
+            throw new RuntimeException("QueryScope ticket does not conform to expected format");
+        }
+        final String fieldName = ticketAsString.substring(endOfRoute + 1);
+
+        return String.format("%s/%s", FLIGHT_DESCRIPTOR_ROUTE, fieldName);
     }
 }
