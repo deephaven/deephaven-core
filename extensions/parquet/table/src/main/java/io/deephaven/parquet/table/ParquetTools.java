@@ -386,7 +386,8 @@ public class ParquetTools {
      *         indexing column {@code "IndexingColName"}, the method will return
      *         {@code ".dh_metadata/indexes/IndexingColName/index_IndexingColName_table.parquet"} on unix systems.
      */
-    private static String getRelativeIndexFilePath(@NotNull final File tableDest, @NotNull final String[] columnNames) {
+    @VisibleForTesting
+    static String getRelativeIndexFilePath(@NotNull final File tableDest, @NotNull final String... columnNames) {
         final String columns = String.join(",", columnNames);
         return String.format(".dh_metadata%sindexes%s%s%sindex_%s_%s", File.separator, File.separator, columns,
                 File.separator, columns, tableDest.getName());
