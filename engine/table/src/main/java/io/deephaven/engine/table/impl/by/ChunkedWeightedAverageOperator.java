@@ -142,8 +142,8 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
             MutableInt normalOut,
             MutableDouble sumOfWeightsOut,
             MutableDouble weightedSumOut) {
-        long nans = 0;
-        long normal = 0;
+        int nans = 0;
+        int normal = 0;
         double sumOfWeights = 0.0;
         double weightedSum = 0.0;
 
@@ -185,8 +185,8 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
 
         sumChunks(doubleValues, weightValues, start, length, nanOut, normalOut, sumOfWeightsOut, weightedSumOut);
 
-        final long newNans = nanOut.intValue();
-        final long newNormal = normalOut.intValue();
+        final int newNans = nanOut.intValue();
+        final int newNormal = normalOut.intValue();
         final double newSumOfWeights = sumOfWeightsOut.doubleValue();
         final double newWeightedSum = weightedSumOut.doubleValue();
 

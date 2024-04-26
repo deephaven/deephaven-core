@@ -11,6 +11,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.ProbeContext;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 import static io.deephaven.engine.table.impl.util.TypedHasherUtil.*;
@@ -117,7 +118,7 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
                 final long entriesAdded = numEntries - oldEntries;
                 // if we actually added anything, then take away from the "equity" we've built up rehashing, otherwise
                 // don't penalize this build call with additional rehashing
-                bc.rehashCredits.subtract(entriesAdded);
+                bc.rehashCredits.subtract(Math.toIntExact(entriesAdded));
 
                 bc.resetSharedContexts();
             }

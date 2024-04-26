@@ -2616,10 +2616,10 @@ public class ShiftedColumnOperationTest {
             while (okIt.hasMore()) {
                 sharedContext.reset();
                 final RowSequence chunkOk = okIt.getNextRowSequenceWithLength(chunkSize);
-                final long invertStart = invertCount.longValue();
+                final int invertStart = invertCount.intValue();
                 final LongChunk<? extends Values> ck1 = scs.getChunk(gc, chunkOk).asLongChunk();
                 final LongChunk<? extends Values> ck2 = s2cs.getChunk(gc2, chunkOk).asLongChunk();
-                final long invertEnd = invertCount.longValue();
+                final int invertEnd = invertCount.intValue();
                 Assert.assertEquals(1, invertEnd - invertStart);
                 chunkOk.fillRowKeyChunk(expect);
                 for (int ii = 0; ii < expect.size(); ++ii) {

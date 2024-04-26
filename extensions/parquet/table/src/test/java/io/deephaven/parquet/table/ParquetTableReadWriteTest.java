@@ -3265,7 +3265,7 @@ public final class ParquetTableReadWriteTest {
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        assertEquals(nullCount.longValue(), statistics.getNumNulls());
         if (!itemCount.getValue().equals(nullCount.getValue())) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             assertEquals(min.getValue() == 1, statistics.genericGetMin());
@@ -3304,7 +3304,7 @@ public final class ParquetTableReadWriteTest {
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        assertEquals(nullCount.longValue(), statistics.getNumNulls());
         if (!itemCount.getValue().equals(nullCount.getValue())) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             assertEquals(min.getValue() == 1, statistics.genericGetMin());
@@ -3335,7 +3335,7 @@ public final class ParquetTableReadWriteTest {
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        assertEquals(nullCount.longValue(), statistics.getNumNulls());
         if (!itemCount.getValue().equals(nullCount.getValue())) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             assertEquals(min.getValue(), statistics.genericGetMin());
@@ -3374,7 +3374,7 @@ public final class ParquetTableReadWriteTest {
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        assertEquals(nullCount.longValue(), statistics.getNumNulls());
         if (!itemCount.getValue().equals(nullCount.getValue())) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             assertEquals(min.getValue(), statistics.genericGetMin());
@@ -3413,7 +3413,7 @@ public final class ParquetTableReadWriteTest {
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        assertEquals(nullCount.longValue(), statistics.getNumNulls());
         if (!itemCount.getValue().equals(nullCount.getValue())) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             assertEquals(min.getValue(), statistics.genericGetMin());
@@ -3444,7 +3444,7 @@ public final class ParquetTableReadWriteTest {
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        assertEquals(nullCount.longValue(), statistics.getNumNulls());
         if (!itemCount.getValue().equals(nullCount.getValue())) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             assertEquals(min.getValue(), statistics.genericGetMin());
@@ -3483,7 +3483,7 @@ public final class ParquetTableReadWriteTest {
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        assertEquals(nullCount.longValue(), statistics.getNumNulls());
         if (!itemCount.getValue().equals(nullCount.getValue())) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             assertEquals(min.getValue(), statistics.genericGetMin());
@@ -3522,7 +3522,7 @@ public final class ParquetTableReadWriteTest {
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        assertEquals(nullCount.longValue(), statistics.getNumNulls());
         if (!itemCount.getValue().equals(nullCount.getValue())) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             assertEquals(min.getValue(), statistics.genericGetMin());
@@ -3553,7 +3553,7 @@ public final class ParquetTableReadWriteTest {
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        assertEquals(nullCount.longValue(), statistics.getNumNulls());
         if (!itemCount.getValue().equals(nullCount.getValue())) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             assertEquals(min.getValue(), statistics.genericGetMin());
@@ -3592,7 +3592,7 @@ public final class ParquetTableReadWriteTest {
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        assertEquals(nullCount.longValue(), statistics.getNumNulls());
         if (!itemCount.getValue().equals(nullCount.getValue())) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             assertEquals(min.getValue(), statistics.genericGetMin());
@@ -3631,7 +3631,7 @@ public final class ParquetTableReadWriteTest {
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        assertEquals(nullCount.longValue(), statistics.getNumNulls());
         if (!itemCount.getValue().equals(nullCount.getValue())) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             assertEquals(min.getValue(), statistics.genericGetMin());
@@ -3662,7 +3662,7 @@ public final class ParquetTableReadWriteTest {
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        assertEquals(nullCount.longValue(), statistics.getNumNulls());
         if (!itemCount.getValue().equals(nullCount.getValue())) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             assertEquals(min.getValue(), statistics.genericGetMin());
@@ -3701,7 +3701,7 @@ public final class ParquetTableReadWriteTest {
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        assertEquals(nullCount.longValue(), statistics.getNumNulls());
         if (!itemCount.getValue().equals(nullCount.getValue())) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             assertEquals(min.getValue(), statistics.genericGetMin());
@@ -3740,7 +3740,7 @@ public final class ParquetTableReadWriteTest {
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        assertEquals(nullCount.longValue(), statistics.getNumNulls());
         if (!itemCount.getValue().equals(nullCount.getValue())) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             assertEquals(min.getValue(), statistics.genericGetMin());
@@ -3771,7 +3771,7 @@ public final class ParquetTableReadWriteTest {
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        assertEquals(nullCount.longValue(), statistics.getNumNulls());
         if (!itemCount.getValue().equals(nullCount.getValue())) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             assertEquals(min.getValue(), statistics.genericGetMin());
@@ -3810,7 +3810,7 @@ public final class ParquetTableReadWriteTest {
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        assertEquals(nullCount.longValue(), statistics.getNumNulls());
         if (!itemCount.getValue().equals(nullCount.getValue())) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             assertEquals(min.getValue(), statistics.genericGetMin());
@@ -3849,7 +3849,7 @@ public final class ParquetTableReadWriteTest {
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        assertEquals(nullCount.longValue(), statistics.getNumNulls());
         if (!itemCount.getValue().equals(nullCount.getValue())) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             assertEquals(min.getValue(), statistics.genericGetMin());
@@ -3880,7 +3880,7 @@ public final class ParquetTableReadWriteTest {
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        assertEquals(nullCount.longValue(), statistics.getNumNulls());
         if (!itemCount.getValue().equals(nullCount.getValue())) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             // Use FloatComparisons.compare() to handle -0.0f == 0.0f properly
@@ -3920,7 +3920,7 @@ public final class ParquetTableReadWriteTest {
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        assertEquals(nullCount.longValue(), statistics.getNumNulls());
         if (!itemCount.getValue().equals(nullCount.getValue())) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             // Use FloatComparisons.compare() to handle -0.0f == 0.0f properly
@@ -3960,7 +3960,7 @@ public final class ParquetTableReadWriteTest {
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        assertEquals(nullCount.longValue(), statistics.getNumNulls());
         if (!itemCount.getValue().equals(nullCount.getValue())) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             // Use FloatComparisons.compare() to handle -0.0f == 0.0f properly
@@ -3992,7 +3992,7 @@ public final class ParquetTableReadWriteTest {
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        assertEquals(nullCount.longValue(), statistics.getNumNulls());
         if (!itemCount.getValue().equals(nullCount.getValue())) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             // Use DoubleComparisons.compare() to handle -0.0f == 0.0f properly
@@ -4032,7 +4032,7 @@ public final class ParquetTableReadWriteTest {
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        assertEquals(nullCount.longValue(), statistics.getNumNulls());
         if (!itemCount.getValue().equals(nullCount.getValue())) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             // Use DoubleComparisons.compare() to handle -0.0f == 0.0f properly
@@ -4072,7 +4072,7 @@ public final class ParquetTableReadWriteTest {
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        assertEquals(nullCount.longValue(), statistics.getNumNulls());
         if (!itemCount.getValue().equals(nullCount.getValue())) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             // Use DoubleComparisons.compare() to handle -0.0f == 0.0f properly
@@ -4105,7 +4105,7 @@ public final class ParquetTableReadWriteTest {
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        assertEquals(nullCount.longValue(), statistics.getNumNulls());
         if (!itemCount.getValue().equals(nullCount.getValue())) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             assertEquals(Binary.fromString(min.getValue()), statistics.genericGetMin());
@@ -4144,7 +4144,7 @@ public final class ParquetTableReadWriteTest {
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        assertEquals(nullCount.longValue(), statistics.getNumNulls());
         if (!itemCount.getValue().equals(nullCount.getValue())) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             assertEquals(Binary.fromString(min.getValue()), statistics.genericGetMin());
@@ -4183,7 +4183,7 @@ public final class ParquetTableReadWriteTest {
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        assertEquals(nullCount.longValue(), statistics.getNumNulls());
         if (!itemCount.getValue().equals(nullCount.getValue())) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             assertEquals(Binary.fromString(min.getValue()), statistics.genericGetMin());
@@ -4216,7 +4216,7 @@ public final class ParquetTableReadWriteTest {
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        assertEquals(nullCount.longValue(), statistics.getNumNulls());
         if (!itemCount.getValue().equals(nullCount.getValue())) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             assertEquals(min.getValue(), statistics.genericGetMin());
@@ -4256,7 +4256,7 @@ public final class ParquetTableReadWriteTest {
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        assertEquals(nullCount.longValue(), statistics.getNumNulls());
         if (!itemCount.getValue().equals(nullCount.getValue())) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             assertEquals(min.getValue(), statistics.genericGetMin());
@@ -4296,7 +4296,7 @@ public final class ParquetTableReadWriteTest {
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        assertEquals(nullCount.longValue(), statistics.getNumNulls());
         if (!itemCount.getValue().equals(nullCount.getValue())) {
             // There are some non-null values, so min and max should be non-null and equal to observed
             // values.
@@ -4329,7 +4329,7 @@ public final class ParquetTableReadWriteTest {
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        assertEquals(nullCount.longValue(), statistics.getNumNulls());
         if (!itemCount.getValue().equals(nullCount.getValue())) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             assertEquals(Binary.fromConstantByteArray(min.getValue().unscaledValue().toByteArray()),
@@ -4363,7 +4363,7 @@ public final class ParquetTableReadWriteTest {
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
+        assertEquals(nullCount.longValue(), statistics.getNumNulls());
         if (!itemCount.getValue().equals(nullCount.getValue())) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             assertEquals(Binary.fromConstantByteArray(min.getValue().toByteArray()), statistics.genericGetMin());

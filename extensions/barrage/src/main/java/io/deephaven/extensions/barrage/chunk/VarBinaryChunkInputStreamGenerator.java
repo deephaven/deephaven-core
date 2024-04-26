@@ -361,7 +361,8 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             final MutableInt logicalSize = new MutableInt();
             subset.forAllRowKeys((idx) -> {
                 try {
-                    logicalSize.add(byteStorage.getPayloadSize((int) idx, (int) idx));
+                    logicalSize.add(LongSizedDataStructure.intSize("int cast",
+                            byteStorage.getPayloadSize((int) idx, (int) idx)));
                     dos.writeInt(logicalSize.intValue());
                 } catch (final IOException e) {
                     throw new UncheckedDeephavenException("couldn't drain data to OutputStream", e);

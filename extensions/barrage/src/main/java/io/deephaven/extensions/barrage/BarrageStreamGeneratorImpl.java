@@ -610,7 +610,7 @@ public class BarrageStreamGeneratorImpl implements
 
     @FunctionalInterface
     private interface ColumnVisitor {
-        long visit(final View view, final long startRange, final int targetBatchSize,
+        int visit(final View view, final long startRange, final int targetBatchSize,
                 final Consumer<InputStream> addStream,
                 final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
                 final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException;
@@ -659,7 +659,7 @@ public class BarrageStreamGeneratorImpl implements
 
         final FlatBufferBuilder header = new FlatBufferBuilder();
 
-        final long numRows;
+        final int numRows;
         final int nodesOffset;
         final int buffersOffset;
         try (final SizedChunk<Values> nodeOffsets = new SizedChunk<>(ChunkType.Object);
@@ -856,11 +856,11 @@ public class BarrageStreamGeneratorImpl implements
         return low;
     }
 
-    private long appendAddColumns(final View view, final long startRange, final int targetBatchSize,
+    private int appendAddColumns(final View view, final long startRange, final int targetBatchSize,
             final Consumer<InputStream> addStream, final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
             final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException {
         if (addColumnData.length == 0) {
-            return view.addRowOffsets().size();
+            return view.addRowOffsets().intSize();
         }
 
         // find the generator for the initial position-space key
@@ -918,11 +918,11 @@ public class BarrageStreamGeneratorImpl implements
                     addStream.accept(drainableColumn);
                 }
             }
-            return myAddedOffsets.size();
+            return myAddedOffsets.intSize();
         }
     }
 
-    private long appendModColumns(final View view, final long startRange, final int targetBatchSize,
+    private int appendModColumns(final View view, final long startRange, final int targetBatchSize,
             final Consumer<InputStream> addStream,
             final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
             final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException {
@@ -1027,7 +1027,7 @@ public class BarrageStreamGeneratorImpl implements
                 myModOffsets.close();
             }
         }
-        return numRows;
+        return Math.toIntExact(numRows);
     }
 
     private ByteBuffer getSubscriptionMetadata(final SubView view) throws IOException {

@@ -287,7 +287,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
                 final long entriesAdded = numEntries - oldEntries;
                 // if we actually added anything, then take away from the "equity" we've built up rehashing, otherwise
                 // don't penalize this build call with additional rehashing
-                bc.rehashCredits.subtract(entriesAdded);
+                bc.rehashCredits.subtract((int) entriesAdded);
 
                 bc.resetSharedContexts();
             }

@@ -26,7 +26,7 @@ import io.deephaven.engine.table.impl.sources.immutable.ImmutableDoubleArraySour
 import java.lang.Object;
 import java.lang.Override;
 import java.util.Arrays;
-import org.apache.commons.lang3.mutable.MutableLong;
+import org.apache.commons.lang3.mutable.MutableInt;
 
 final class StaticAsOfJoinHasherDouble extends StaticAsOfJoinStateManagerTypedBase {
     private final ImmutableDoubleArraySource mainKeySource0;
@@ -99,7 +99,7 @@ final class StaticAsOfJoinHasherDouble extends StaticAsOfJoinStateManagerTypedBa
     }
 
     protected void decorateLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            IntegerArraySource hashSlots, MutableLong hashSlotOffset,
+            IntegerArraySource hashSlots, MutableInt hashSlotOffset,
             RowSetBuilderRandom foundBuilder) {
         final DoubleChunk<Values> keyChunk0 = sourceKeyChunks[0].asDoubleChunk();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();

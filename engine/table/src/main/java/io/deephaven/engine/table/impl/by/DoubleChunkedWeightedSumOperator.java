@@ -132,8 +132,8 @@ class DoubleChunkedWeightedSumOperator implements IterativeChunkedAggregationOpe
             MutableInt nansOut,
             MutableInt normalOut,
             MutableDouble weightedSumOut) {
-        long nans = 0;
-        long normal = 0;
+        int nans = 0;
+        int normal = 0;
         double weightedSum = 0.0;
 
         for (int ii = 0; ii < length; ++ii) {
@@ -171,8 +171,8 @@ class DoubleChunkedWeightedSumOperator implements IterativeChunkedAggregationOpe
 
         sumChunks(doubleValues, weightValues, start, length, nanOut, normalOut, weightedSumOut);
 
-        final long newNans = nanOut.intValue();
-        final long newNormal = normalOut.intValue();
+        final int newNans = nanOut.intValue();
+        final int newNormal = normalOut.intValue();
         final double newWeightedSum = weightedSumOut.doubleValue();
 
         final long totalNans;
