@@ -4,7 +4,9 @@
 package io.deephaven.parquet.table;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
+import io.deephaven.api.SortColumn;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
@@ -24,6 +26,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
 import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
 import io.deephaven.engine.table.impl.select.FunctionalColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
@@ -39,6 +42,7 @@ import io.deephaven.extensions.s3.Credentials;
 import io.deephaven.extensions.s3.S3Instructions;
 import io.deephaven.parquet.base.InvalidParquetFileException;
 import io.deephaven.parquet.base.NullStatistics;
+import io.deephaven.parquet.table.location.ParquetTableLocation;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.parquet.table.pagestore.ColumnChunkPageStore;
 import io.deephaven.parquet.table.transfer.StringDictionary;
@@ -394,6 +398,63 @@ public final class ParquetTableReadWriteTest {
         verifyIndexingInfoExists(fromDisk, "someBigInt");
         verifyIndexingInfoExists(fromDisk, "someInt", "someBigInt");
         verifyIndexingInfoExists(fromDisk, "someBigInt", "someInt");
+    }
+
+    @Test
+    public void testSortingMetadata() {
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofInt("someInt"),
+                ColumnDefinition.ofString("someString"));
+        final Table testTable =
+                ((QueryTable) TableTools.emptyTable(10).select("someInt = i", "someString  = `foo`")
+                        .where("i % 2 == 0").groupBy("someString").ungroup("someInt")
+                        .sortDescending("someInt"))
+                        .withDefinitionUnsafe(definition);
+
+        DataIndexer.getOrCreateDataIndex(testTable, "someString");
+        DataIndexer.getOrCreateDataIndex(testTable, "someInt", "someString");
+
+        final File dest = new File(rootFile, "ParquetTest_sortingMetadata_test.parquet");
+        writeTable(testTable, dest);
+
+        final Table fromDisk = checkSingleTable(testTable, dest);
+
+        // Validate the indexes and lookup functions.
+        verifyIndexingInfoExists(fromDisk, "someString");
+        verifyIndexingInfoExists(fromDisk, "someInt", "someString");
+        verifyIndexingInfoExists(fromDisk, "someString", "someInt");
+
+        final ParquetTableLocation tableLocation = new ParquetTableLocation(
+                StandaloneTableKey.getInstance(),
+                new ParquetTableLocationKey(
+                        convertToURI(dest, false),
+                        0, Map.of(), EMPTY),
+                EMPTY);
+        assertEquals(tableLocation.getSortedColumns(), List.of(SortColumn.desc(ColumnName.of("someInt"))));
+
+        final ParquetTableLocation index1Location = new ParquetTableLocation(
+                StandaloneTableKey.getInstance(),
+                new ParquetTableLocationKey(
+                        convertToURI(new File(rootFile,
+                                ParquetTools.getRelativeIndexFilePath(dest, "someString")), false),
+                        0, Map.of(), EMPTY),
+                EMPTY);
+        assertEquals(index1Location.getSortedColumns(), List.of(SortColumn.asc(ColumnName.of("someString"))));
+        final Table index1Table = DataIndexer.getDataIndex(fromDisk, "someString").table();
+        assertTableEquals(index1Table, index1Table.sort("someString"));
+
+        final ParquetTableLocation index2Location = new ParquetTableLocation(
+                StandaloneTableKey.getInstance(),
+                new ParquetTableLocationKey(
+                        convertToURI(new File(rootFile,
+                                ParquetTools.getRelativeIndexFilePath(dest, "someInt", "someString")), false),
+                        0, Map.of(), EMPTY),
+                EMPTY);
+        assertEquals(index2Location.getSortedColumns(), List.of(
+                SortColumn.asc(ColumnName.of("someInt")),
+                SortColumn.asc(ColumnName.of("someString"))));
+        final Table index2Table = DataIndexer.getDataIndex(fromDisk, "someInt", "someString").table();
+        assertTableEquals(index2Table, index2Table.sort("someInt", "someString"));
     }
 
     private static void verifyIndexingInfoExists(final Table table, final String... columnNames) {
