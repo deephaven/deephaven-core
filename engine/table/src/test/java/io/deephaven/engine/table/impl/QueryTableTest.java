@@ -85,8 +85,8 @@ public class QueryTableTest extends QueryTableTestBase {
 
     public void testUngroupWithNullSecondColumn() {
         final QueryTable qt = testRefreshingTable(
-                col("C1", new int[]{1,2,3}, new int[0], null),
-                col("C2", new int[]{3,2,1}, new int[0], null));
+                col("C1", new int[] {1, 2, 3}, new int[0], null),
+                col("C2", new int[] {3, 2, 1}, new int[0], null));
 
         final Table ug = qt.ungroup(false, "C1", "C2");
         setExpectError(false);
@@ -95,9 +95,9 @@ public class QueryTableTest extends QueryTableTestBase {
             final RowSet mods = i(0, 2);
             addToTable(qt, mods,
                     col("C1", null,
-                            new int[]{4, 5, 6}),
+                            new int[] {4, 5, 6}),
                     col("C2", null,
-                            new int[]{6, 5, 4}));
+                            new int[] {6, 5, 4}));
             qt.notifyListeners(i(), i(), mods);
         });
         final QueryTable expected = testTable(
