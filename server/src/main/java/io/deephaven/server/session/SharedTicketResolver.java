@@ -110,7 +110,7 @@ public class SharedTicketResolver extends TicketResolverBase {
         final SessionState.ExportObject<T> sharedVar = (SessionState.ExportObject<T>) sharedVariables.get(sharedId);
         if (sharedVar == null) {
             return SessionState.wrapAsFailedExport(Exceptions.statusRuntimeException(Code.NOT_FOUND, String.format(
-                    "Could not resolve '%s': no shared ticket exists with id '%s'", logId, sharedId)));
+                    "Could not resolve '%s': no shared ticket exists with id '%s'", logId, toHexString(sharedId))));
         }
 
         // we need to wrap this in a new export object to hand off to the new session and defer checking permissions
