@@ -3031,7 +3031,9 @@ public class QueryTable extends BaseTable<QueryTable> {
                 RowSet.Iterator iterator = rowSet.iterator();
                 for (int i = 0; i < rowSet.size(); i++) {
                     long k = iterator.nextLong();
-                    Assert.assertion(sizes[i] == Array.getLength(arrayColumn.get(k)),
+                    final Object array = arrayColumn.get(k);
+                    final int size = array == null ? 0 : Array.getLength(array);
+                    Assert.assertion(sizes[i] == size,
                             "sizes[i] == Array.getLength(arrayColumn.get(k))",
                             referenceColumn, "referenceColumn", name, "name", k, "row");
                 }
@@ -3156,7 +3158,9 @@ public class QueryTable extends BaseTable<QueryTable> {
             } else {
                 RowSet.Iterator iterator = rowSet.iterator();
                 for (int i = 0; i < rowSet.size(); i++) {
-                    Assert.assertion(sizes[i] == Array.getLength(arrayColumn.get(iterator.nextLong())),
+                    final Object array = arrayColumn.get(iterator.nextLong());
+                    final int size = array == null ? 0 : Array.getLength(array);
+                    Assert.assertion(sizes[i] == size,
                             "sizes[i] == Array.getLength(arrayColumn.get(i))",
                             referenceColumn, "referenceColumn", name, "name", i, "row");
                 }
