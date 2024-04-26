@@ -31,8 +31,8 @@ import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
 import io.deephaven.parquet.table.metadata.DataIndexInfo;
 import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
+import io.deephaven.parquet.table.metadata.SortColumnInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
-import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.format.RowGroup;
@@ -57,7 +57,6 @@ public class ParquetTableLocation extends AbstractTableLocation {
     private static final String IMPLEMENTATION_NAME = ParquetColumnLocation.class.getSimpleName();
 
     private final ParquetInstructions readInstructions;
-    private final List<SortColumn> sortingColumns;
     private final ParquetFileReader parquetFileReader;
     private final int[] rowGroupIndices;
 
@@ -69,6 +68,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
     private final Map<String, GroupingColumnInfo> groupingColumns;
     private final List<DataIndexInfo> dataIndexes;
     private final Map<String, ColumnTypeInfo> columnTypes;
+    private final List<SortColumn> sortingColumns;
 
     private final String version;
 
@@ -116,7 +116,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
         groupingColumns = tableInfo.groupingColumnMap();
         dataIndexes = tableInfo.dataIndexes();
         columnTypes = tableInfo.columnTypeMap();
-        sortingColumns = tableInfo.sortingColumns();
+        sortingColumns = SortColumnInfo.sortColumns(tableInfo.sortingColumns());
 
         if (!FILE_URI_SCHEME.equals(tableLocationKey.getURI().getScheme())) {
             // We do not have the last modified time for non-file URIs
