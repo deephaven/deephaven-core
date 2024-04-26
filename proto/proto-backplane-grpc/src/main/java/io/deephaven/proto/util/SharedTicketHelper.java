@@ -37,7 +37,7 @@ public class SharedTicketHelper {
     }
 
     /**
-     * Convenience method to decode the application ticket bytes into a human-readable description.
+     * Convenience method to decode the shared ticket bytes into a human-readable description.
      *
      * @param ticket the ticket bytes
      * @return the human-readable description
