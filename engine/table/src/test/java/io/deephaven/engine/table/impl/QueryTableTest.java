@@ -51,7 +51,6 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
-import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.io.File;
@@ -84,7 +83,6 @@ import static org.junit.Assert.assertArrayEquals;
 @Category(OutOfBandTest.class)
 public class QueryTableTest extends QueryTableTestBase {
 
-    @Test
     public void testUngroupWithNullSecondColumn() {
         final QueryTable qt = testRefreshingTable(
                 col("C1", new int[]{1,2,3}, new int[0], null),
