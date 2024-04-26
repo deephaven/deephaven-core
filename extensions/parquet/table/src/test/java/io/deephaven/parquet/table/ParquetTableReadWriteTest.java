@@ -440,6 +440,8 @@ public final class ParquetTableReadWriteTest {
                         0, Map.of(), EMPTY),
                 EMPTY);
         assertEquals(index1Location.getSortedColumns(), List.of(SortColumn.asc(ColumnName.of("someString"))));
+        final Table index1Table = DataIndexer.getDataIndex(fromDisk, "someString").table();
+        assertTableEquals(index1Table, index1Table.sort("someString"));
 
         final ParquetTableLocation index2Location = new ParquetTableLocation(
                 StandaloneTableKey.getInstance(),
@@ -451,6 +453,8 @@ public final class ParquetTableReadWriteTest {
         assertEquals(index2Location.getSortedColumns(), List.of(
                 SortColumn.asc(ColumnName.of("someInt")),
                 SortColumn.asc(ColumnName.of("someString"))));
+        final Table index2Table = DataIndexer.getDataIndex(fromDisk, "someInt", "someString").table();
+        assertTableEquals(index2Table, index2Table.sort("someInt", "someString"));
     }
 
     private static void verifyIndexingInfoExists(final Table table, final String... columnNames) {
