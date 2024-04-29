@@ -6,6 +6,7 @@ package io.deephaven.server.runner;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.auth.AuthenticationException;
 import io.deephaven.proto.DeephavenChannel;
+import io.deephaven.proto.backplane.grpc.CloseSessionResponse;
 import io.deephaven.proto.backplane.grpc.HandshakeRequest;
 import io.deephaven.proto.backplane.grpc.HandshakeResponse;
 import io.deephaven.server.session.SessionState;
@@ -48,5 +49,9 @@ public abstract class DeephavenApiServerSingleAuthenticatedBase extends Deephave
 
     public DeephavenChannel channel() {
         return channel;
+    }
+
+    public CloseSessionResponse closeSession() {
+        return channel.sessionBlocking().closeSession(HandshakeRequest.getDefaultInstance());
     }
 }

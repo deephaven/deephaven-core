@@ -7,7 +7,6 @@ import dagger.BindsInstance;
 import dagger.Component;
 import io.deephaven.client.ClientDefaultsModule;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
@@ -41,7 +40,6 @@ import javax.inject.Singleton;
 import java.io.PrintStream;
 import java.time.Duration;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Manages a single instance of {@link DeephavenApiServer}.
@@ -55,6 +53,7 @@ public abstract class DeephavenApiServerTestBase {
             LogModule.class,
             NoConsoleSessionModule.class,
             ServerBuilderInProcessModule.class,
+            RpcServerStateInterceptor.Module.class,
             ExecutionContextUnitTestModule.class,
             ClientDefaultsModule.class,
             ObfuscatingErrorTransformerModule.class,
@@ -106,6 +105,9 @@ public abstract class DeephavenApiServerTestBase {
 
     @Inject
     Provider<ManagedChannelBuilder<?>> managedChannelBuilderProvider;
+
+    @Inject
+    RpcServerStateInterceptor serverStateInterceptor;
 
     @Before
     public void setUp() throws Exception {
@@ -176,6 +178,10 @@ public abstract class DeephavenApiServerTestBase {
 
     public ExecutionContext getExecutionContext() {
         return executionContext;
+    }
+
+    public RpcServerStateInterceptor serverStateInterceptor() {
+        return serverStateInterceptor;
     }
 
     /**

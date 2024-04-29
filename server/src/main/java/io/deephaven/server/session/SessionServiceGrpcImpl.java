@@ -15,6 +15,7 @@ import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.backplane.grpc.*;
+import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.function.ThrowingRunnable;
@@ -36,9 +37,11 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.io.Closeable;
 import java.lang.Object;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImplBase {
@@ -315,6 +318,14 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
         private static final Status authenticationDetailsInvalid =
                 Status.UNAUTHENTICATED.withDescription("Authentication details invalid");
 
+        // We can't use just io.grpc.MethodDescriptor (unless we chose provide and inject the named method descriptors),
+        // some of our methods are overridden from stock gRPC; for example,
+        // io.deephaven.server.object.ObjectServiceGrpcBinding.bindService.
+        // The goal should be to migrate all of the existing RPC Session close management logic to here if possible.
+        private static final Set<String> CLOSE_RPC_ON_SESSION_CLOSE = Set.of(
+                ConsoleServiceGrpc.getSubscribeToLogsMethod().getFullMethodName(),
+                ObjectServiceGrpc.getMessageStreamMethod().getFullMethodName());
+
         @Inject
         public SessionServiceInterceptor(
                 final SessionService service,
@@ -363,33 +374,63 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
 
             final MutableObject<SessionServiceCallListener<ReqT, RespT>> listener = new MutableObject<>();
             rpcWrapper(serverCall, context, finalSession, errorTransformer, () -> listener.setValue(
-                    new SessionServiceCallListener<>(serverCallHandler.startCall(serverCall, metadata), serverCall,
-                            context, finalSession, errorTransformer)));
+                    listener(serverCall, metadata, serverCallHandler, context, finalSession)));
             if (listener.getValue() == null) {
                 return new ServerCall.Listener<>() {};
             }
             return listener.getValue();
         }
+
+        private <ReqT, RespT> @NotNull SessionServiceCallListener<ReqT, RespT> listener(
+                InterceptedCall<ReqT, RespT> serverCall,
+                Metadata metadata,
+                ServerCallHandler<ReqT, RespT> serverCallHandler,
+                Context context,
+                SessionState session) {
+            return new SessionServiceCallListener<>(
+                    serverCallHandler.startCall(serverCall, metadata),
+                    serverCall,
+                    context,
+                    session,
+                    errorTransformer,
+                    CLOSE_RPC_ON_SESSION_CLOSE.contains(serverCall.getMethodDescriptor().getFullMethodName()));
+        }
     }
 
     private static class SessionServiceCallListener<ReqT, RespT> extends
-            ForwardingServerCallListener.SimpleForwardingServerCallListener<ReqT> {
+            ForwardingServerCallListener.SimpleForwardingServerCallListener<ReqT> implements Closeable {
         private final ServerCall<ReqT, RespT> call;
         private final Context context;
         private final SessionState session;
         private final SessionService.ErrorTransformer errorTransformer;
+        private final boolean autoCloseOnSessionClose;
 
-        public SessionServiceCallListener(
+        SessionServiceCallListener(
                 ServerCall.Listener<ReqT> delegate,
                 ServerCall<ReqT, RespT> call,
                 Context context,
                 SessionState session,
-                SessionService.ErrorTransformer errorTransformer) {
+                SessionService.ErrorTransformer errorTransformer,
+                boolean autoCloseOnSessionClose) {
             super(delegate);
             this.call = call;
             this.context = context;
             this.session = session;
             this.errorTransformer = errorTransformer;
+            this.autoCloseOnSessionClose = autoCloseOnSessionClose;
+            if (autoCloseOnSessionClose && session != null) {
+                session.addOnCloseCallback(this);
+            }
+        }
+
+        @Override
+        public void close() {
+            // session.addOnCloseCallback
+            try {
+                call.close(Status.CANCELLED.withDescription("Session closed"), new Metadata());
+            } catch (Exception e) {
+                // ignored
+            }
         }
 
         @Override
@@ -405,11 +446,17 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
         @Override
         public void onCancel() {
             rpcWrapper(call, context, session, errorTransformer, super::onCancel);
+            if (autoCloseOnSessionClose && session != null) {
+                session.removeOnCloseCallback(this);
+            }
         }
 
         @Override
         public void onComplete() {
             rpcWrapper(call, context, session, errorTransformer, super::onComplete);
+            if (autoCloseOnSessionClose && session != null) {
+                session.removeOnCloseCallback(this);
+            }
         }
 
         @Override
