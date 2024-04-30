@@ -10,6 +10,7 @@ import dagger.multibindings.StringKey;
 import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
+import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.GroovyDeephavenSession;
 import io.deephaven.engine.util.GroovyDeephavenSession.RunScripts;
 import io.deephaven.engine.util.ScriptSession;
@@ -36,6 +37,8 @@ public class GroovyConsoleSessionModule {
             final ScriptSession.Listener listener,
             final RunScripts runScripts) {
         try {
+            // create the script cache (or clear previous sessions)
+            AbstractScriptSession.createScriptCache();
             return GroovyDeephavenSession.of(updateGraph, operationInitializer, lookup, listener, runScripts);
         } catch (final IOException e) {
             throw new UncheckedIOException(e);

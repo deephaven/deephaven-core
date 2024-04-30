@@ -177,9 +177,6 @@ public class DeephavenApiServer {
         log.info().append("Configuring logging...").endl();
         logInit.run();
 
-        log.info().append("Creating/Clearing Script Cache...").endl();
-        AbstractScriptSession.createScriptCache();
-
         for (BusinessCalendar calendar : calendars.get()) {
             Calendars.addCalendar(calendar);
         }
