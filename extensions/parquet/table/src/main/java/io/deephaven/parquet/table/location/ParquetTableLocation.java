@@ -243,8 +243,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
         return !fileURI.getScheme().equals(FILE_URI_SCHEME) || Files.exists(Path.of(fileURI));
     }
 
-    @Nullable
     @Override
+    @Nullable
     public BasicDataIndex loadDataIndex(@NotNull final String... columns) {
         if (tableInfo == null) {
             return null;

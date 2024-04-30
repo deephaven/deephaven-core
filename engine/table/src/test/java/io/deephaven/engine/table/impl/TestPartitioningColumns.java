@@ -235,7 +235,8 @@ public class TestPartitioningColumns {
         }
 
         @Override
-        protected @Nullable BasicDataIndex loadDataIndex(@NotNull final String... columns) {
+        @Nullable
+        public BasicDataIndex loadDataIndex(@NotNull final String... columns) {
             throw new UnsupportedOperationException();
         }
     }
