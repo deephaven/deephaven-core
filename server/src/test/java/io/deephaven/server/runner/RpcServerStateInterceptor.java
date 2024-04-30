@@ -118,8 +118,8 @@ public final class RpcServerStateInterceptor implements ServerInterceptor {
             if (!startCall.await(timeout.toNanos(), TimeUnit.NANOSECONDS)) {
                 throw new TimeoutException();
             }
-            // We could be more a bit more efficient here and have the testing client pass in the MethodDescriptor. This
-            // does slightly increase the complexity for the testing client though.
+            // We could be more a bit more efficient here and have the testing client pass in the MethodDescriptor, but
+            // that would increase the complexity for the testing client.
             if (methodDescriptor.getType().clientSendsOneMessage()) {
                 // In the case where we know the client only sends one message, we're going to wait for the server to
                 // finish the client half-close handling. This matches the GRPC implementation in

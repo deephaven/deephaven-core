@@ -322,7 +322,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
         // some of our methods are overridden from stock gRPC; for example,
         // io.deephaven.server.object.ObjectServiceGrpcBinding.bindService.
         // The goal should be to migrate all of the existing RPC Session close management logic to here if possible.
-        private static final Set<String> CLOSE_RPC_ON_SESSION_CLOSE = Set.of(
+        private static final Set<String> CANCEL_RPC_ON_SESSION_CLOSE = Set.of(
                 ConsoleServiceGrpc.getSubscribeToLogsMethod().getFullMethodName(),
                 ObjectServiceGrpc.getMessageStreamMethod().getFullMethodName());
 
@@ -393,7 +393,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                     context,
                     session,
                     errorTransformer,
-                    CLOSE_RPC_ON_SESSION_CLOSE.contains(serverCall.getMethodDescriptor().getFullMethodName()));
+                    CANCEL_RPC_ON_SESSION_CLOSE.contains(serverCall.getMethodDescriptor().getFullMethodName()));
         }
     }
 
@@ -403,7 +403,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
         private final Context context;
         private final SessionState session;
         private final SessionService.ErrorTransformer errorTransformer;
-        private final boolean autoCloseOnSessionClose;
+        private final boolean autoCancelOnSessionClose;
 
         SessionServiceCallListener(
                 ServerCall.Listener<ReqT> delegate,
@@ -411,14 +411,14 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                 Context context,
                 SessionState session,
                 SessionService.ErrorTransformer errorTransformer,
-                boolean autoCloseOnSessionClose) {
+                boolean autoCancelOnSessionClose) {
             super(delegate);
             this.call = call;
             this.context = context;
             this.session = session;
             this.errorTransformer = errorTransformer;
-            this.autoCloseOnSessionClose = autoCloseOnSessionClose;
-            if (autoCloseOnSessionClose && session != null) {
+            this.autoCancelOnSessionClose = autoCancelOnSessionClose;
+            if (autoCancelOnSessionClose && session != null) {
                 session.addOnCloseCallback(this);
             }
         }
@@ -446,7 +446,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
         @Override
         public void onCancel() {
             rpcWrapper(call, context, session, errorTransformer, super::onCancel);
-            if (autoCloseOnSessionClose && session != null) {
+            if (autoCancelOnSessionClose && session != null) {
                 session.removeOnCloseCallback(this);
             }
         }
@@ -454,7 +454,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
         @Override
         public void onComplete() {
             rpcWrapper(call, context, session, errorTransformer, super::onComplete);
-            if (autoCloseOnSessionClose && session != null) {
+            if (autoCancelOnSessionClose && session != null) {
                 session.removeOnCloseCallback(this);
             }
         }

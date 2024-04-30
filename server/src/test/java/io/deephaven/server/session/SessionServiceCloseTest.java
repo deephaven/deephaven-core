@@ -157,26 +157,24 @@ public class SessionServiceCloseTest extends DeephavenApiServerSingleAuthenticat
 
         public void doTest(Class<? extends Throwable> exceptionType, String message)
                 throws InterruptedException, TimeoutException {
-            sendAndWaitForServerInvokeFinished(Duration.ofSeconds(3));
-            closeSession();
-            awaitOnDone(Duration.ofSeconds(3));
+            sendImplCloseSessionAndWait();
             assertError(exceptionType, message);
         }
 
         public void doTestToCompleted() throws InterruptedException, TimeoutException {
-            sendAndWaitForServerInvokeFinished(Duration.ofSeconds(3));
-            closeSession();
-            awaitOnDone(Duration.ofSeconds(3));
+            sendImplCloseSessionAndWait();
             assertCompleted();
         }
 
-        abstract void sendImpl(ClientInterceptor clientInterceptor) throws InterruptedException, TimeoutException;
-
-        final void sendAndWaitForServerInvokeFinished(Duration duration) throws InterruptedException, TimeoutException {
+        private void sendImplCloseSessionAndWait() throws InterruptedException, TimeoutException {
             final RpcServerState serverState = serverStateInterceptor().newRpcServerState();
             sendImpl(serverState.clientInterceptor());
-            serverState.awaitServerInvokeFinished(duration);
+            serverState.awaitServerInvokeFinished(Duration.ofSeconds(3));
+            closeSession();
+            awaitOnDone(Duration.ofSeconds(3));
         }
+
+        abstract void sendImpl(ClientInterceptor clientInterceptor) throws InterruptedException, TimeoutException;
 
         @Override
         public final void beforeStart(ClientCallStreamObserver<ReqT> requestStream) {
