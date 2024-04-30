@@ -10,11 +10,11 @@ import dagger.multibindings.StringKey;
 import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
-import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.PythonEvaluatorJpy;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.integrations.python.PythonDeephavenSession;
 import io.deephaven.plugin.type.ObjectTypeLookup;
+import io.deephaven.server.console.ScriptSessionCacheInit;
 import io.deephaven.util.thread.ThreadInitializationFactory;
 
 import javax.inject.Named;
@@ -37,10 +37,9 @@ public class PythonConsoleSessionModule {
             final OperationInitializer operationInitializer,
             final ObjectTypeLookup lookup,
             final ScriptSession.Listener listener,
-            final PythonEvaluatorJpy pythonEvaluator) {
+            final PythonEvaluatorJpy pythonEvaluator,
+            final ScriptSessionCacheInit ignored) {
         try {
-            // create the script cache (or clear previous sessions)
-            AbstractScriptSession.createScriptCache();
             return new PythonDeephavenSession(
                     updateGraph, operationInitializer, threadInitializationFactory, lookup, listener,
                     true, pythonEvaluator);

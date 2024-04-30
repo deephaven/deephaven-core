@@ -10,7 +10,6 @@ import dagger.multibindings.StringKey;
 import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
-import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.NoLanguageDeephavenSession;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.server.console.groovy.InitScriptsModule;
@@ -29,9 +28,8 @@ public class NoConsoleSessionModule {
     @Provides
     NoLanguageDeephavenSession bindNoLanguageSession(
             @Named(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME) final UpdateGraph updateGraph,
-            final OperationInitializer operationInitializer) {
-        // create the script cache (or clear previous sessions)
-        AbstractScriptSession.createScriptCache();
+            final OperationInitializer operationInitializer,
+            final ScriptSessionCacheInit ignored) {
         return new NoLanguageDeephavenSession(updateGraph, operationInitializer);
     }
 }
