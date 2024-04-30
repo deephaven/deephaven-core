@@ -15,7 +15,6 @@ import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.regioned.*;
 import io.deephaven.generic.region.*;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 public final class TableBackedColumnLocation
         extends AbstractColumnLocation
@@ -37,12 +36,6 @@ public final class TableBackedColumnLocation
     @Override
     public boolean exists() {
         return columnSource != null;
-    }
-
-    @Override
-    public <METADATA_TYPE> @Nullable METADATA_TYPE getMetadata(
-            @NotNull final ColumnDefinition<?> columnDefinition) {
-        return null;
     }
 
     @Override

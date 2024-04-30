@@ -183,12 +183,6 @@ public class TestPartitioningColumns {
                     throw new UnsupportedOperationException();
                 }
 
-                @Nullable
-                @Override
-                public <METADATA_TYPE> METADATA_TYPE getMetadata(@NotNull final ColumnDefinition<?> columnDefinition) {
-                    throw new UnsupportedOperationException();
-                }
-
                 @Override
                 public ColumnRegionChar<Values> makeColumnRegionChar(
                         @NotNull final ColumnDefinition<?> columnDefinition) {
