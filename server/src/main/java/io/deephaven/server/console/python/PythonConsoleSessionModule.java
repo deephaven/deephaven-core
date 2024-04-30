@@ -14,6 +14,7 @@ import io.deephaven.engine.util.PythonEvaluatorJpy;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.integrations.python.PythonDeephavenSession;
 import io.deephaven.plugin.type.ObjectTypeLookup;
+import io.deephaven.server.console.ScriptSessionCacheInit;
 import io.deephaven.util.thread.ThreadInitializationFactory;
 
 import javax.inject.Named;
@@ -36,7 +37,8 @@ public class PythonConsoleSessionModule {
             final OperationInitializer operationInitializer,
             final ObjectTypeLookup lookup,
             final ScriptSession.Listener listener,
-            final PythonEvaluatorJpy pythonEvaluator) {
+            final PythonEvaluatorJpy pythonEvaluator,
+            final ScriptSessionCacheInit ignored) {
         try {
             return new PythonDeephavenSession(
                     updateGraph, operationInitializer, threadInitializationFactory, lookup, listener,

@@ -814,13 +814,13 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
         final String tempDirAsString;
         try {
             rootPathAsString = getClassDestination().getAbsolutePath();
-            final Path tempPath =
-                    Files.createTempDirectory(Paths.get(rootPathAsString), "temporaryCompilationDirectory");
-            tempDirAsString = tempPath.toFile().getAbsolutePath();
-
             for (final CompilationRequestAttempt request : requests) {
                 request.ensureDirectories(rootPathAsString);
             }
+
+            final Path tempPath =
+                    Files.createTempDirectory(Paths.get(rootPathAsString), "temporaryCompilationDirectory");
+            tempDirAsString = tempPath.toFile().getAbsolutePath();
         } catch (IOException ioe) {
             Exception err = new UncheckedIOException(ioe);
             for (final CompilationRequestAttempt request : requests) {
