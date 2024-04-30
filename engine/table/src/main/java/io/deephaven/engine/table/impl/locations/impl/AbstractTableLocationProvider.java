@@ -198,7 +198,7 @@ public abstract class AbstractTableLocationProvider
         // See JavaDoc on tableLocations for background.
         // The intent is to create a TableLocation exactly once to replace the TableLocationKey placeholder that was
         // added in handleTableLocationKey.
-        while (!(current instanceof TableLocation)) {
+        if (!(current instanceof TableLocation)) {
             final TableLocationKey immutableKey = (TableLocationKey) current;
             // noinspection SynchronizationOnLocalVariableOrMethodParameter
             synchronized (immutableKey) {
