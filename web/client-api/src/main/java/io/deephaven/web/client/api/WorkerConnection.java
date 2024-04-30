@@ -1399,7 +1399,7 @@ public class WorkerConnection {
                         }
                     }
                 }
-            } else {
+            } else if (state.isRunning()) {
                 List<TableSubscriptionRequest> vps = new ArrayList<>();
                 state.forActiveSubscriptions((table, subscription) -> {
                     assert table.isActive(state) : "Inactive table has a viewport still attached";
