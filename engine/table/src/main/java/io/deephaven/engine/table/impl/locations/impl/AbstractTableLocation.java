@@ -12,6 +12,7 @@ import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
+import io.deephaven.util.annotations.InternalUseOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -223,7 +224,10 @@ public abstract class AbstractTableLocation
      *
      * @param columns The columns to load an index for
      * @return The data index, or {@code null} if none exists
+     * @apiNote This method is {@code public} for use in delegating implementations, and should not be called directly
+     *          otherwise.
      */
+    @InternalUseOnly
     @Nullable
-    protected abstract BasicDataIndex loadDataIndex(@NotNull String... columns);
+    public abstract BasicDataIndex loadDataIndex(@NotNull String... columns);
 }
