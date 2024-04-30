@@ -89,7 +89,7 @@ public final class TableBackedTableLocation extends AbstractTableLocation {
 
     @Override
     @Nullable
-    protected BasicDataIndex loadDataIndex(@NotNull final String... columns) {
+    public BasicDataIndex loadDataIndex(@NotNull final String... columns) {
         return null;
     }
 }
