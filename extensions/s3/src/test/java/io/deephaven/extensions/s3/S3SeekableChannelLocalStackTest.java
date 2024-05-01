@@ -5,10 +5,10 @@ package io.deephaven.extensions.s3;
 
 
 import io.deephaven.extensions.s3.S3Instructions.Builder;
-import io.deephaven.extensions.s3.SingletonContainers.LocalStack;
+import io.deephaven.extensions.s3.testlib.SingletonContainers.LocalStack;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
-import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 @Tag("testcontainers")
 public class S3SeekableChannelLocalStackTest extends S3SeekableChannelTestBase {
@@ -25,7 +25,7 @@ public class S3SeekableChannelLocalStackTest extends S3SeekableChannelTestBase {
     }
 
     @Override
-    public S3Client s3Client() {
-        return LocalStack.s3Client();
+    public S3AsyncClient s3AsyncClient() {
+        return LocalStack.s3AsyncClient();
     }
 }
