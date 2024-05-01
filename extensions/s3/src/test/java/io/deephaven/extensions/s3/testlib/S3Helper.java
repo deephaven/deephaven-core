@@ -15,7 +15,6 @@ import software.amazon.awssdk.transfer.s3.model.CompletedDirectoryUpload;
 import software.amazon.awssdk.transfer.s3.model.DirectoryUpload;
 import software.amazon.awssdk.transfer.s3.model.UploadDirectoryRequest;
 
-import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -32,9 +31,9 @@ public final class S3Helper {
             Path dir,
             String bucket,
             String prefix,
-            Duration timeout) throws URISyntaxException, ExecutionException, InterruptedException, TimeoutException {
+            Duration timeout) throws ExecutionException, InterruptedException, TimeoutException {
         try (final S3TransferManager manager = S3TransferManager.builder().s3Client(s3AsyncClient).build()) {
-            uploadDirectory(manager, resourceDir, bucket, prefix, timeout);
+            uploadDirectory(manager, dir, bucket, prefix, timeout);
         }
     }
 
