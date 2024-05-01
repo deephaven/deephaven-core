@@ -140,9 +140,12 @@ final class TypeAdapter
     // the column through unchanged, in which case Calcite is happy to create the plan.
     // See https://github.com/deephaven/deephaven-core/issues/5443 for more context.
 
-    static class SqlTodoType {}
+    static class SqlTodoType {
+    }
 
-    static class SqlTodoArrayType extends SqlTodoType {}
+    static class SqlTodoArrayType extends SqlTodoType {
+    }
 
-    static class SqlTodoCustomType extends SqlTodoType {}
+    static class SqlTodoCustomType extends SqlTodoType {
+    }
 }
