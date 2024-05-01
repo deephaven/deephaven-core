@@ -165,6 +165,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
             return;
         }
         filterLocationKeys(locationKeys)
+                .parallelStream()
                 .forEach(lk -> columnSourceManager.addLocation(locationProvider.getTableLocation(lk)));
     }
 

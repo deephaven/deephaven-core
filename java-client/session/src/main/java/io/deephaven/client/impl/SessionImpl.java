@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -60,6 +61,13 @@ import java.util.function.Function;
 public final class SessionImpl extends SessionBase {
     private static final Logger log = LoggerFactory.getLogger(SessionImpl.class);
 
+    /**
+     * Creates a session. Closing the session does <b>not</b> close the underlying channel.
+     *
+     * @param config the config
+     * @return the session
+     * @throws InterruptedException if the thread is interrupted
+     */
     public static SessionImpl create(SessionImplConfig config) throws InterruptedException {
         final Authentication authentication =
                 Authentication.authenticate(config.channel(), config.authenticationTypeAndValue());
@@ -303,6 +311,8 @@ public final class SessionImpl extends SessionBase {
             log.warn("Timed out waiting for session close");
         } catch (ExecutionException e) {
             log.error("Exception waiting for session close", e);
+        } catch (CancellationException e) {
+            log.warn("Close cancelled", e);
         }
     }
 

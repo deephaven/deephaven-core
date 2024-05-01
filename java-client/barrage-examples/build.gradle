@@ -4,7 +4,7 @@ plugins {
 }
 
 dependencies {
-    implementation project(':java-client-barrage-dagger')
+    implementation project(':java-client-barrage')
     implementation project(':java-client-example-utilities')
 
     Classpaths.inheritJUnitPlatform(project)

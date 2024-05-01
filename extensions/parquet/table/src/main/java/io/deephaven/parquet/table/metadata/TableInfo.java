@@ -10,8 +10,9 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import io.deephaven.annotations.BuildableStyle;
-import io.deephaven.api.SortColumn;
-import org.immutables.value.Value;
+import org.immutables.value.Value.Check;
+import org.immutables.value.Value.Default;
+import org.immutables.value.Value.Immutable;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -23,7 +24,7 @@ import java.util.stream.Collectors;
 /**
  * Representation class for per-table information stored in key-value metadata for Deephaven-written Parquet files.
  */
-@Value.Immutable
+@Immutable
 @BuildableStyle
 @JsonSerialize(as = ImmutableTableInfo.class)
 @JsonDeserialize(as = ImmutableTableInfo.class)
@@ -59,7 +60,7 @@ public abstract class TableInfo {
     /**
      * @return The Deephaven release version used to write the parquet file
      */
-    @Value.Default
+    @Default
     public String version() {
         final String version = TableInfo.class.getPackage().getImplementationVersion();
         // noinspection ReplaceNullCheck
@@ -86,10 +87,13 @@ public abstract class TableInfo {
      */
     public abstract List<ColumnTypeInfo> columnTypes();
 
-    public abstract List<SortColumn> sortingColumns();
+    /**
+     * @return List of {@link SortColumnInfo sort columns} representing the sort order of the table. Note that these are
+     *         ordered by precedence, representing a multi-column sort.
+     */
+    public abstract List<SortColumnInfo> sortingColumns();
 
-
-    @Value.Check
+    @Check
     final void checkVersion() {
         if (version().isEmpty()) {
             throw new IllegalArgumentException("Empty version");
@@ -110,11 +114,11 @@ public abstract class TableInfo {
 
         Builder addAllGroupingColumns(Iterable<? extends GroupingColumnInfo> groupingColumns);
 
-        Builder addDataIndexes(DataIndexInfo info);
+        Builder addDataIndexes(DataIndexInfo dataIndex);
 
-        Builder addDataIndexes(DataIndexInfo... infos);
+        Builder addDataIndexes(DataIndexInfo... dataIndexes);
 
-        Builder addAllDataIndexes(Iterable<? extends DataIndexInfo> infos);
+        Builder addAllDataIndexes(Iterable<? extends DataIndexInfo> dataIndexes);
 
         Builder addColumnTypes(ColumnTypeInfo columnType);
 
@@ -122,11 +126,11 @@ public abstract class TableInfo {
 
         Builder addAllColumnTypes(Iterable<? extends ColumnTypeInfo> columnTypes);
 
-        Builder addSortingColumns(SortColumn sortPair);
+        Builder addSortingColumns(SortColumnInfo sortColumns);
 
-        Builder addSortingColumns(SortColumn... sortPairs);
+        Builder addSortingColumns(SortColumnInfo... sortColumns);
 
-        Builder addAllSortingColumns(Iterable<? extends SortColumn> sortPairs);
+        Builder addAllSortingColumns(Iterable<? extends SortColumnInfo> sortColumns);
 
         TableInfo build();
     }

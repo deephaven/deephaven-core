@@ -45,7 +45,7 @@ def test_udf(x {th}, y {th}) -> bool:
                         tbl = empty_table(100).update([x_formula, y_formula]).group_by("X")
 
                         func_str = f"""
-def test_udf(x {th}, y {th}) -> bool:
+def test_udf(x {th}, y {th}) -> np.bool_:
     j_array_type = _J_TYPE_J_ARRAY_TYPE_MAP[{j_dtype!r}].j_type
     return (isinstance(x, int) and isinstance(y, j_array_type) and np.any(np.array(y) == {null_name}))
                             """
@@ -80,7 +80,7 @@ def test_udf(x {th}, y {th}) -> bool:
                     tbl = empty_table(100).update([x_formula, y_formula]).group_by("X")
 
                     func_str = f"""
-def test_udf(x, y: np.ndarray[{np_dtype}]) -> bool:
+def test_udf(x, y: np.ndarray[{np_dtype}]) -> np.bool_:
     return (isinstance(x, int) and isinstance(y, np.ndarray) and y.dtype.type == {np_dtype} and np.nanmean(
     y) == np.mean( y))
                             """
@@ -95,7 +95,7 @@ def test_udf(x, y: np.ndarray[{np_dtype}]) -> bool:
                     tbl = empty_table(100).update([x_formula, y_formula]).group_by("X")
 
                     func_str = f"""
-def test_udf(x, y: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> bool:
+def test_udf(x, y: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> np.bool_:
     return (isinstance(x, int) and isinstance(y, np.ndarray) and y.dtype.type == 
     {_J_TYPE_NP_DTYPE_MAP[j_dtype]} and np.nanmean(y) == np.mean( y))
                             """
@@ -257,7 +257,7 @@ def test_udf(x, y: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> bool:
 
 
         with self.subTest("boolean"):
-            def test_udf(p1: np.ndarray[np.bool_], p2=None, tp: bool = True) -> bool:
+            def test_udf(p1: np.ndarray[np.bool_], p2=None, tp: bool = True) -> np.bool_:
                 z = dh_null_to_nan(p1, type_promotion=tp)
                 return z.dtype.type == np.float64 and np.any(np.isnan(z))
 

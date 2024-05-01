@@ -3,9 +3,12 @@
 //
 package io.deephaven.engine.context;
 
+import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.CompletionStageFuture;
 import io.deephaven.util.SafeCloseable;
 import org.junit.After;
 import org.junit.Before;
@@ -18,8 +21,8 @@ import java.lang.reflect.Method;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 public class TestQueryCompiler {
     private final static int NUM_THREADS = 500;
@@ -68,7 +71,8 @@ public class TestQueryCompiler {
         executionContextClosable = ExecutionContext.newBuilder()
                 .captureQueryLibrary()
                 .captureQueryScope()
-                .setQueryCompiler(QueryCompiler.create(folder.newFolder(), TestQueryCompiler.class.getClassLoader()))
+                .setQueryCompiler(QueryCompilerImpl.create(
+                        folder.newFolder(), TestQueryCompiler.class.getClassLoader()))
                 .build()
                 .open();
     }
@@ -165,7 +169,7 @@ public class TestQueryCompiler {
         }
     }
 
-    private void compile(boolean printDetails, final String className) throws Exception {
+    private void compile(boolean printDetails, final String className) {
         final long startMillis;
         if (printDetails) {
             startMillis = System.currentTimeMillis();
@@ -173,8 +177,13 @@ public class TestQueryCompiler {
         } else {
             startMillis = 0;
         }
-        ExecutionContext.getContext().getQueryCompiler()
-                .compile(className, CLASS_CODE, "io.deephaven.temp");
+        ExecutionContext.getContext().getQueryCompiler().compile(
+                QueryCompilerRequest.builder()
+                        .description("Test Compile")
+                        .className(className)
+                        .classBody(CLASS_CODE)
+                        .packageNameRoot("io.deephaven.temp")
+                        .build());
         if (printDetails) {
             final long endMillis = System.currentTimeMillis();
             System.out.println(printMillis(endMillis) + ": Thread 0 ending compile: (" + (endMillis - startMillis)
@@ -201,8 +210,14 @@ public class TestQueryCompiler {
                 "}");
 
         StringBuilder codeLog = new StringBuilder();
-        final Class<?> clazz1 = ExecutionContext.getContext().getQueryCompiler()
-                .compile("Test", program1Text, "com.deephaven.test", codeLog, Collections.emptyMap());
+        final Class<?> clazz1 = ExecutionContext.getContext().getQueryCompiler().compile(
+                QueryCompilerRequest.builder()
+                        .description("Test Compile")
+                        .className("Test")
+                        .classBody(program1Text)
+                        .packageNameRoot("com.deephaven.test")
+                        .codeLog(codeLog)
+                        .build());
         final Method m1 = clazz1.getMethod("main", String[].class);
         Object[] args1 = new Object[] {new String[] {"hello", "there"}};
         m1.invoke(null, args1);
@@ -224,21 +239,75 @@ public class TestQueryCompiler {
             Thread t = new Thread(() -> {
                 StringBuilder codeLog = new StringBuilder();
                 try {
-                    final Class<?> clazz1 = ExecutionContext.getContext().getQueryCompiler()
-                            .compile("Test", program1Text, "com.deephaven.test", codeLog,
-                                    Collections.emptyMap());
+                    final Class<?> clazz1 = ExecutionContext.getContext().getQueryCompiler().compile(
+                            QueryCompilerRequest.builder()
+                                    .description("Test Compile")
+                                    .className("Test")
+                                    .classBody(program1Text)
+                                    .packageNameRoot("com.deephaven.test")
+                                    .codeLog(codeLog)
+                                    .build());
                     final Method m1 = clazz1.getMethod("main", String[].class);
                     Object[] args1 = new Object[] {new String[] {"hello", "there"}};
                     m1.invoke(null, args1);
                 } catch (Exception e) {
-                    throw new RuntimeException(e);
+                    throw new UncheckedDeephavenException(e);
                 }
             });
             t.start();
             threads.add(t);
         }
-        for (int i = 0; i < threads.size(); ++i) {
-            threads.get(i).join();
+        for (final Thread thread : threads) {
+            thread.join();
         }
+    }
+
+    @Test
+    public void testMultiCompileWithFailure() throws ExecutionException, InterruptedException {
+        final String goodProgram = String.join(
+                "\n",
+                "public class GoodTest {",
+                "   public static void main (String [] args) {",
+                "   }",
+                "}");
+        final String badProgram = String.join(
+                "\n",
+                "public class BadTest {",
+                "   public static void main (String [] args) {",
+                "   }",
+                "}}");
+
+        QueryCompilerRequest[] requests = new QueryCompilerRequest[] {
+                QueryCompilerRequest.builder()
+                        .description("Test Bad Compile")
+                        .className("BadTest")
+                        .classBody(badProgram)
+                        .packageNameRoot("com.deephaven.test")
+                        .build(),
+                QueryCompilerRequest.builder()
+                        .description("Test Good Compile")
+                        .className("GoodTest")
+                        .classBody(goodProgram)
+                        .packageNameRoot("com.deephaven.test")
+                        .build(),
+        };
+
+        // noinspection unchecked
+        CompletionStageFuture.Resolver<Class<?>>[] resolvers =
+                (CompletionStageFuture.Resolver<Class<?>>[]) new CompletionStageFuture.Resolver[] {
+                        CompletionStageFuture.make(),
+                        CompletionStageFuture.make(),
+                };
+
+        try {
+            ExecutionContext.getContext().getQueryCompiler().compile(requests, resolvers);
+            // noinspection DataFlowIssue
+            throw Assert.statementNeverExecuted();
+        } catch (Exception ignored) {
+        }
+
+        Assert.eqTrue(resolvers[0].getFuture().isDone(), "resolvers[0].getFuture().isDone()");
+        Assert.eqTrue(resolvers[1].getFuture().isDone(), "resolvers[0].getFuture().isDone()");
+        Assert.neqNull(resolvers[1].getFuture().get(), "resolvers[1].getFuture().get()");
     }
 }

@@ -1167,12 +1167,17 @@ public class QueryTable extends BaseTable<QueryTable> {
         final DataIndexer dataIndexer = DataIndexer.existingOf(rowSet);
         final int numFilters = filters.length;
         final BitSet priorityFilterIndexes = new BitSet(numFilters);
+
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcesor = QueryCompilerRequestProcessor.batch();
+        // Initialize our filters immediately so we can examine the columns they use. Note that filter
+        // initialization is safe to invoke repeatedly.
+        for (final WhereFilter filter : filters) {
+            filter.init(getDefinition(), compilationProcesor);
+        }
+        compilationProcesor.compile();
+
         for (int fi = 0; fi < numFilters; ++fi) {
             final WhereFilter filter = filters[fi];
-
-            // Initialize our filters immediately so we can examine the columns they use. Note that filter
-            // initialization is safe to invoke repeatedly.
-            filter.init(getDefinition());
 
             // Simple filters against indexed columns get priority
             if (dataIndexer != null
@@ -1246,21 +1251,19 @@ public class QueryTable extends BaseTable<QueryTable> {
                         return result;
                     }
 
-                    {
-                        final List<WhereFilter> whereFilters = new LinkedList<>();
-                        final List<io.deephaven.base.Pair<String, Map<Long, List<MatchPair>>>> shiftColPairs =
-                                new LinkedList<>();
-                        for (final WhereFilter filter : filters) {
-                            if (filter instanceof AbstractConditionFilter
-                                    && ((AbstractConditionFilter) filter).hasConstantArrayAccess()) {
-                                shiftColPairs.add(((AbstractConditionFilter) filter).getFormulaShiftColPair());
-                            } else {
-                                whereFilters.add(filter);
-                            }
+                    final List<WhereFilter> whereFilters = new LinkedList<>();
+                    final List<io.deephaven.base.Pair<String, Map<Long, List<MatchPair>>>> shiftColPairs =
+                            new LinkedList<>();
+                    for (final WhereFilter filter : filters) {
+                        if (filter instanceof AbstractConditionFilter
+                                && ((AbstractConditionFilter) filter).hasConstantArrayAccess()) {
+                            shiftColPairs.add(((AbstractConditionFilter) filter).getFormulaShiftColPair());
+                        } else {
+                            whereFilters.add(filter);
                         }
-                        if (!shiftColPairs.isEmpty()) {
-                            return (QueryTable) ShiftedColumnsFactory.where(this, shiftColPairs, whereFilters);
-                        }
+                    }
+                    if (!shiftColPairs.isEmpty()) {
+                        return (QueryTable) ShiftedColumnsFactory.where(this, shiftColPairs, whereFilters);
                     }
 
                     return memoizeResult(MemoizedOperationKey.filter(filters), () -> {
@@ -3028,7 +3031,9 @@ public class QueryTable extends BaseTable<QueryTable> {
                 RowSet.Iterator iterator = rowSet.iterator();
                 for (int i = 0; i < rowSet.size(); i++) {
                     long k = iterator.nextLong();
-                    Assert.assertion(sizes[i] == Array.getLength(arrayColumn.get(k)),
+                    final Object array = arrayColumn.get(k);
+                    final int size = array == null ? 0 : Array.getLength(array);
+                    Assert.assertion(sizes[i] == size,
                             "sizes[i] == Array.getLength(arrayColumn.get(k))",
                             referenceColumn, "referenceColumn", name, "name", k, "row");
                 }
@@ -3153,7 +3158,9 @@ public class QueryTable extends BaseTable<QueryTable> {
             } else {
                 RowSet.Iterator iterator = rowSet.iterator();
                 for (int i = 0; i < rowSet.size(); i++) {
-                    Assert.assertion(sizes[i] == Array.getLength(arrayColumn.get(iterator.nextLong())),
+                    final Object array = arrayColumn.get(iterator.nextLong());
+                    final int size = array == null ? 0 : Array.getLength(array);
+                    Assert.assertion(sizes[i] == size,
                             "sizes[i] == Array.getLength(arrayColumn.get(i))",
                             referenceColumn, "referenceColumn", name, "name", i, "row");
                 }

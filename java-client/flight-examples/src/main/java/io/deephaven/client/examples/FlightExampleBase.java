@@ -3,10 +3,10 @@
 //
 package io.deephaven.client.examples;
 
-import io.deephaven.client.impl.DaggerDeephavenFlightRoot;
 import io.deephaven.client.impl.FlightSession;
-import io.deephaven.client.impl.FlightSessionFactory;
-import io.deephaven.client.impl.FlightSubcomponent.Builder;
+import io.deephaven.client.impl.FlightSessionFactoryConfig;
+import io.deephaven.client.impl.FlightSessionFactoryConfig.Factory;
+import io.deephaven.client.impl.SessionConfig;
 import io.grpc.ManagedChannel;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
@@ -32,32 +32,33 @@ abstract class FlightExampleBase implements Callable<Void> {
     @Override
     public final Void call() throws Exception {
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
-        ManagedChannel managedChannel = ConnectOptions.open(connectOptions);
-        Runtime.getRuntime()
-                .addShutdownHook(new Thread(() -> onShutdown(scheduler, managedChannel)));
-
-        final Builder builder = DaggerDeephavenFlightRoot.create().factoryBuilder()
-                .managedChannel(managedChannel)
+        final Factory factory = FlightSessionFactoryConfig.builder()
+                .clientConfig(ConnectOptions.options(connectOptions).config())
+                .allocator(bufferAllocator)
                 .scheduler(scheduler)
-                .allocator(bufferAllocator);
-        if (authenticationOptions != null) {
-            authenticationOptions.ifPresent(builder::authenticationTypeAndValue);
-        }
-        FlightSessionFactory flightSessionFactory = builder.build();
-        FlightSession flightSession = flightSessionFactory.newFlightSession();
-        try {
+                .build()
+                .factory();
+        Runtime.getRuntime()
+                .addShutdownHook(new Thread(() -> onShutdown(scheduler, factory.managedChannel())));
+
+        try (final FlightSession flightSession = factory.newFlightSession(sessionConfig())) {
             try {
                 execute(flightSession);
             } finally {
-                flightSession.close();
+                flightSession.session().closeFuture().get(5, TimeUnit.SECONDS);
             }
-        } finally {
-            flightSession.session().closeFuture().get(5, TimeUnit.SECONDS);
         }
-
         scheduler.shutdownNow();
-        managedChannel.shutdownNow();
+        factory.managedChannel().shutdownNow();
         return null;
+    }
+
+    private SessionConfig sessionConfig() {
+        final SessionConfig.Builder builder = SessionConfig.builder();
+        if (authenticationOptions != null) {
+            authenticationOptions.ifPresent(builder::authenticationTypeAndValue);
+        }
+        return builder.build();
     }
 
     private static void onShutdown(ScheduledExecutorService scheduler,

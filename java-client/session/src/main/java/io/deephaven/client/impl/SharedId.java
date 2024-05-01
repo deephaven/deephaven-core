@@ -3,7 +3,6 @@
 //
 package io.deephaven.client.impl;
 
-import com.google.protobuf.ByteString;
 import io.deephaven.proto.util.ByteHelper;
 import io.deephaven.proto.util.SharedTicketHelper;
 

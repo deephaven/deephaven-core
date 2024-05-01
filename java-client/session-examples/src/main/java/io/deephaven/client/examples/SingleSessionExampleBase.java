@@ -15,8 +15,9 @@ abstract class SingleSessionExampleBase extends SessionExampleBase {
 
     @Override
     protected void execute(SessionFactory sessionFactory) throws Exception {
-        try (final Session ignored = (session = sessionFactory.newSession())) {
-            execute(session);
+        final Session localSession;
+        try (final Session ignored = (session = localSession = sessionFactory.newSession())) {
+            execute(localSession);
         } finally {
             session = null;
         }

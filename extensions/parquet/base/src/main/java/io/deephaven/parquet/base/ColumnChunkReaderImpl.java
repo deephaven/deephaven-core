@@ -9,7 +9,7 @@ import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.parquet.compress.CompressorAdapter;
 import io.deephaven.parquet.compress.DeephavenCompressorAdapterFactory;
 import io.deephaven.util.channel.SeekableChannelContext.ContextHolder;
-import io.deephaven.util.datastructures.LazyCachingFunction;
+import io.deephaven.util.datastructures.SoftCachingFunction;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.ColumnDescriptor;
@@ -71,7 +71,7 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
             decompressor = CompressorAdapter.PASSTHRU;
         }
         this.fieldTypes = fieldTypes;
-        this.dictionarySupplier = new LazyCachingFunction<>(this::getDictionary);
+        this.dictionarySupplier = new SoftCachingFunction<>(this::getDictionary);
         this.nullMaterializerFactory = PageMaterializer.factoryForType(path.getPrimitiveType().getPrimitiveTypeName());
         this.numRows = numRows;
         this.version = version;

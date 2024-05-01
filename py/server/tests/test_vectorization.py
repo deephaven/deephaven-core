@@ -307,7 +307,7 @@ def test_udf(col1, col2: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> np.ndar
 
     def test_1d_str_bool_datetime_array(self):
         with self.subTest("str"):
-            def f1(p1: np.ndarray[str]) -> bool:
+            def f1(p1: np.ndarray[str]) -> np.bool_:
                 return (p1 == 'None').any()
 
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? `deephaven`: null"]).group_by("X").update("Y = Y.toArray()")
@@ -318,7 +318,7 @@ def test_udf(col1, col2: np.ndarray[{_J_TYPE_NP_DTYPE_MAP[j_dtype]}]) -> np.ndar
             _udf.vectorized_count = 0
 
         with self.subTest("datetime"):
-            def f2(p1: np.ndarray[np.datetime64]) -> bool:
+            def f2(p1: np.ndarray[np.datetime64]) -> np.bool_:
                 return np.isnat(p1).any()
 
             t = empty_table(10).update(["X = i % 3", "Y = i % 2 == 0? now() : null"]).group_by("X").update("Y = Y.toArray()")

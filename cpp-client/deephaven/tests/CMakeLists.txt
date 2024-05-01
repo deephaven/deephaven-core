@@ -37,7 +37,14 @@ add_executable(dhclient_tests
         include/private/deephaven/third_party/catch.hpp
 )
 
-target_compile_options(dhclient_tests PRIVATE -Wall -Werror)
+if (LINUX)
+    target_compile_options(dhclient_tests PRIVATE -Wall -Werror -Wno-deprecated-declarations)
+endif()
+
+if (WIN32)
+    target_compile_options(dhclient_tests PRIVATE /W3)
+endif()
+
 target_include_directories(dhclient_tests PRIVATE include/private)
 
 target_link_libraries(dhclient_tests deephaven::client)
