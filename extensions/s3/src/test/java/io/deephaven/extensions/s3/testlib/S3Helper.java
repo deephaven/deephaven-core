@@ -16,7 +16,6 @@ import software.amazon.awssdk.transfer.s3.model.DirectoryUpload;
 import software.amazon.awssdk.transfer.s3.model.UploadDirectoryRequest;
 
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -30,7 +29,7 @@ import java.util.stream.Collectors;
 public final class S3Helper {
     public static void uploadDirectory(
             S3AsyncClient s3AsyncClient,
-            URL resourceDir,
+            Path dir,
             String bucket,
             String prefix,
             Duration timeout) throws URISyntaxException, ExecutionException, InterruptedException, TimeoutException {
@@ -41,11 +40,10 @@ public final class S3Helper {
 
     public static void uploadDirectory(
             S3TransferManager transferManager,
-            URL resourceDir,
+            Path dir,
             String bucket,
             String prefix,
-            Duration timeout) throws URISyntaxException, ExecutionException, InterruptedException, TimeoutException {
-        final Path dir = Path.of(resourceDir.toURI());
+            Duration timeout) throws ExecutionException, InterruptedException, TimeoutException {
         // Not a way to get a list of the uploaded files, even when using a TransferListener.
         final DirectoryUpload directoryUpload = transferManager.uploadDirectory(UploadDirectoryRequest.builder()
                 .source(dir)

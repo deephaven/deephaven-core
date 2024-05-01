@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -118,7 +119,7 @@ public abstract class S3SeekableChannelTestBase {
             throws URISyntaxException, ExecutionException, InterruptedException, TimeoutException {
         S3Helper.uploadDirectory(
                 asyncClient,
-                S3SeekableChannelTestBase.class.getResource(resourceDir),
+                Path.of(S3SeekableChannelTestBase.class.getResource(resourceDir).toURI()),
                 bucket,
                 null,
                 Duration.ofSeconds(5));
