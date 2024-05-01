@@ -10,6 +10,8 @@ import org.jetbrains.annotations.Nullable;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.regex.Pattern;
@@ -59,19 +61,23 @@ public class FileUtils {
     }
 
     public static void deleteRecursively(File file) {
-        if (!file.exists()) {
+        if (!Files.exists(file.toPath(), LinkOption.NOFOLLOW_LINKS)) {
             return;
         }
         if (file.isDirectory()) {
-            File f[] = file.listFiles();
+            final File[] files = file.listFiles();
 
-            if (f != null) {
-                for (File file1 : f) {
-                    deleteRecursively(file1);
+            if (files != null) {
+                for (final File child : files) {
+                    deleteRecursively(child);
                 }
             }
         }
-        Assert.assertion(file.delete(), "file.delete()", file.getAbsolutePath(), "file");
+        try {
+            Files.deleteIfExists(file.toPath());
+        } catch (IOException e) {
+            throw new UncheckedIOException("Could not delete file: " + file.getAbsolutePath(), e);
+        }
     }
 
     /**
