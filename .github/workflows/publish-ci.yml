@@ -73,8 +73,7 @@ jobs:
           ORG_GRADLE_PROJECT_signingRequired: true
 
       - name: Upload Artifacts
-        # DO NOT MERGE
-        #if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
+        if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         uses: actions/upload-artifact@v4
         with:
           name: artifacts
