@@ -166,7 +166,14 @@ def testPyClientTicking = project.tasks.register('testPyClientTicking') {
     }
 }
 
-assemble.dependsOn cpythonBuilds.values()
+def syncWheels = tasks.register('syncWheels', Sync) {
+    cpythonBuilds.values().each { cpythonBuild ->
+        from cpythonBuild.get().outputs
+    }
+    into layout.buildDirectory.dir('wheel')
+}
+
+assemble.dependsOn syncWheels
 
 check.dependsOn testPyClientTicking
 
