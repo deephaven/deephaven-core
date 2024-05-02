@@ -11,6 +11,7 @@ import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.parquet.base.ParquetUtils;
 import io.deephaven.util.annotations.VisibleForTesting;
+import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -219,6 +220,12 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
     public abstract Optional<Collection<List<String>>> getIndexColumns();
 
     /**
+     * @return a {@link SeekableChannelsProvider} that can be used to open channels for reading parquet files. This is
+     *         an internal method and should not be used by clients.
+     */
+    public abstract Optional<SeekableChannelsProvider> getChannelsProvider();
+
+    /**
      * Creates a new {@link ParquetInstructions} object with the same properties as the current object but definition
      * set as the provided {@link TableDefinition}.
      */
@@ -237,6 +244,13 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
      */
     @VisibleForTesting
     abstract ParquetInstructions withIndexColumns(final Collection<List<String>> indexColumns);
+
+    /**
+     * Creates a new {@link ParquetInstructions} object with the same properties as the current object but with the
+     * provided {@link SeekableChannelsProvider}.
+     */
+    @VisibleForTesting
+    public abstract ParquetInstructions withChannelsProvider(final SeekableChannelsProvider channelsProvider);
 
     /**
      * @return the base name for partitioned parquet data. Check
@@ -350,6 +364,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         @Override
+        public Optional<SeekableChannelsProvider> getChannelsProvider() {
+            return Optional.empty();
+        }
+
+        @Override
         public ParquetInstructions withTableDefinition(@Nullable final TableDefinition tableDefinition) {
             return withTableDefinitionAndLayout(tableDefinition, null);
         }
@@ -361,7 +380,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return new ReadOnly(null, null, getCompressionCodecName(), getMaximumDictionaryKeys(),
                     getMaximumDictionarySize(), isLegacyParquet(), getTargetPageSize(), isRefreshing(),
                     getSpecialInstructions(), generateMetadataFiles(), baseNameForPartitionedParquetData(),
-                    fileLayout, tableDefinition, null);
+                    fileLayout, tableDefinition, null, null);
         }
 
         @Override
@@ -369,7 +388,15 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return new ReadOnly(null, null, getCompressionCodecName(), getMaximumDictionaryKeys(),
                     getMaximumDictionarySize(), isLegacyParquet(), getTargetPageSize(), isRefreshing(),
                     getSpecialInstructions(), generateMetadataFiles(), baseNameForPartitionedParquetData(),
-                    null, null, indexColumns);
+                    null, null, indexColumns, null);
+        }
+
+        @Override
+        public ParquetInstructions withChannelsProvider(final SeekableChannelsProvider useChannelsProvider) {
+            return new ReadOnly(null, null, getCompressionCodecName(), getMaximumDictionaryKeys(),
+                    getMaximumDictionarySize(), isLegacyParquet(), getTargetPageSize(), isRefreshing(),
+                    getSpecialInstructions(), generateMetadataFiles(), baseNameForPartitionedParquetData(),
+                    null, null, null, useChannelsProvider);
         }
     };
 
@@ -444,6 +471,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private final ParquetFileLayout fileLayout;
         private final TableDefinition tableDefinition;
         private final Collection<List<String>> indexColumns;
+        private final SeekableChannelsProvider channelsProvider;
 
         private ReadOnly(
                 final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructions,
@@ -459,7 +487,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                 final String baseNameForPartitionedParquetData,
                 final ParquetFileLayout fileLayout,
                 final TableDefinition tableDefinition,
-                final Collection<List<String>> indexColumns) {
+                final Collection<List<String>> indexColumns,
+                final SeekableChannelsProvider channelsProvider) {
             this.columnNameToInstructions = columnNameToInstructions;
             this.parquetColumnNameToInstructions = parquetColumnNameToColumnName;
             this.compressionCodecName = compressionCodecName;
@@ -477,6 +506,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                     : indexColumns.stream()
                             .map(List::copyOf)
                             .collect(Collectors.toUnmodifiableList());
+            this.channelsProvider = channelsProvider;
         }
 
         private String getOrDefault(final String columnName, final String defaultValue,
@@ -597,6 +627,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         @Override
+        public Optional<SeekableChannelsProvider> getChannelsProvider() {
+            return Optional.ofNullable(channelsProvider);
+        }
+
+        @Override
         public ParquetInstructions withTableDefinition(@Nullable final TableDefinition useDefinition) {
             return withTableDefinitionAndLayout(useDefinition, getFileLayout().orElse(null));
         }
@@ -609,7 +644,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                     getCompressionCodecName(), getMaximumDictionaryKeys(), getMaximumDictionarySize(),
                     isLegacyParquet(), getTargetPageSize(), isRefreshing(), getSpecialInstructions(),
                     generateMetadataFiles(), baseNameForPartitionedParquetData(), useLayout, useDefinition,
-                    indexColumns);
+                    indexColumns, channelsProvider);
         }
 
         @Override
@@ -618,7 +653,16 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                     getCompressionCodecName(), getMaximumDictionaryKeys(), getMaximumDictionarySize(),
                     isLegacyParquet(), getTargetPageSize(), isRefreshing(), getSpecialInstructions(),
                     generateMetadataFiles(), baseNameForPartitionedParquetData(), fileLayout,
-                    tableDefinition, useIndexColumns);
+                    tableDefinition, useIndexColumns, channelsProvider);
+        }
+
+        @Override
+        public ParquetInstructions withChannelsProvider(final SeekableChannelsProvider useChannelsProvider) {
+            return new ReadOnly(columnNameToInstructions, parquetColumnNameToInstructions,
+                    getCompressionCodecName(), getMaximumDictionaryKeys(), getMaximumDictionarySize(),
+                    isLegacyParquet(), getTargetPageSize(), isRefreshing(), getSpecialInstructions(),
+                    generateMetadataFiles(), baseNameForPartitionedParquetData(), fileLayout,
+                    tableDefinition, indexColumns, useChannelsProvider);
         }
 
         KeyedObjectHashMap<String, ColumnInstructions> copyColumnNameToInstructions() {
@@ -677,14 +721,10 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private ParquetFileLayout fileLayout;
         private TableDefinition tableDefinition;
         private Collection<List<String>> indexColumns;
+        private SeekableChannelsProvider channelsProvider;
 
         public Builder() {}
 
-        /**
-         * Creates a new {@link ParquetInstructions} object by only copying the column name to instructions mapping and
-         * parquet column name to instructions mapping from the given {@link ParquetInstructions} object. For copying
-         * all properties, use something like {@link ParquetInstructions#withTableDefinition}.
-         */
         public Builder(final ParquetInstructions parquetInstructions) {
             if (parquetInstructions == EMPTY) {
                 return;
@@ -692,6 +732,19 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             final ReadOnly readOnlyParquetInstructions = (ReadOnly) parquetInstructions;
             columnNameToInstructions = readOnlyParquetInstructions.copyColumnNameToInstructions();
             parquetColumnNameToInstructions = readOnlyParquetInstructions.copyParquetColumnNameToInstructions();
+            compressionCodecName = readOnlyParquetInstructions.getCompressionCodecName();
+            maximumDictionaryKeys = readOnlyParquetInstructions.getMaximumDictionaryKeys();
+            maximumDictionarySize = readOnlyParquetInstructions.getMaximumDictionarySize();
+            isLegacyParquet = readOnlyParquetInstructions.isLegacyParquet();
+            targetPageSize = readOnlyParquetInstructions.getTargetPageSize();
+            isRefreshing = readOnlyParquetInstructions.isRefreshing();
+            specialInstructions = readOnlyParquetInstructions.getSpecialInstructions();
+            generateMetadataFiles = readOnlyParquetInstructions.generateMetadataFiles();
+            baseNameForPartitionedParquetData = readOnlyParquetInstructions.baseNameForPartitionedParquetData();
+            fileLayout = readOnlyParquetInstructions.getFileLayout().orElse(null);
+            tableDefinition = readOnlyParquetInstructions.getTableDefinition().orElse(null);
+            indexColumns = readOnlyParquetInstructions.getIndexColumns().orElse(null);
+            channelsProvider = readOnlyParquetInstructions.getChannelsProvider().orElse(null);
         }
 
         private void newColumnNameToInstructionsMap() {
@@ -968,7 +1021,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return new ReadOnly(columnNameToInstructionsOut, parquetColumnNameToColumnNameOut, compressionCodecName,
                     maximumDictionaryKeys, maximumDictionarySize, isLegacyParquet, targetPageSize, isRefreshing,
                     specialInstructions, generateMetadataFiles, baseNameForPartitionedParquetData, fileLayout,
-                    tableDefinition, indexColumns);
+                    tableDefinition, indexColumns, channelsProvider);
         }
     }
 

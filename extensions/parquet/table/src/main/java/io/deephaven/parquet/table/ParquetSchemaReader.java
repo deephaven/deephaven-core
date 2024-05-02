@@ -34,9 +34,9 @@ import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -45,7 +45,9 @@ import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
+import static io.deephaven.base.FileUtils.convertToURI;
 import static io.deephaven.parquet.base.ParquetUtils.METADATA_KEY;
+import static io.deephaven.parquet.table.ParquetTools.ensureChannelsProvider;
 
 public class ParquetSchemaReader {
     @FunctionalInterface
@@ -111,8 +113,10 @@ public class ParquetSchemaReader {
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final ColumnDefinitionConsumer consumer,
             @NotNull final BiFunction<String, Set<String>, String> legalizeColumnNameFunc) throws IOException {
+        final URI parquetFileUri = convertToURI(filePath, false);
+        final ParquetInstructions useInstructions = ensureChannelsProvider(parquetFileUri, readInstructions);
         final ParquetFileReader parquetFileReader =
-                ParquetFileReader.createChecked(new File(filePath), readInstructions.getSpecialInstructions());
+                ParquetFileReader.createChecked(parquetFileUri, useInstructions.getChannelsProvider().orElseThrow());
         final ParquetMetadata parquetMetadata =
                 new ParquetMetadataConverter().fromParquetMetadata(parquetFileReader.fileMetaData);
         return readParquetSchema(parquetFileReader.getSchema(), parquetMetadata.getFileMetaData().getKeyValueMetaData(),

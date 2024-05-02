@@ -22,6 +22,8 @@ import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.parquet.base.ParquetMetadataFileWriter;
 import io.deephaven.parquet.base.NullParquetMetadataFileWriter;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.channel.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import io.deephaven.util.channel.SeekableChannelsProviderPlugin;
 import io.deephaven.vector.*;
 import io.deephaven.engine.table.*;
@@ -137,30 +139,31 @@ public class ParquetTools {
             @NotNull final ParquetInstructions readInstructions) {
         final boolean isDirectory = !isParquetFile(source);
         final URI sourceURI = convertToURI(source, isDirectory);
-        if (readInstructions.getFileLayout().isPresent()) {
-            switch (readInstructions.getFileLayout().get()) {
+        final ParquetInstructions useInstructions = ensureChannelsProvider(sourceURI, readInstructions);
+        if (useInstructions.getFileLayout().isPresent()) {
+            switch (useInstructions.getFileLayout().get()) {
                 case SINGLE_FILE:
-                    return readSingleFileTable(sourceURI, readInstructions);
+                    return readSingleFileTable(sourceURI, useInstructions);
                 case FLAT_PARTITIONED:
-                    return readFlatPartitionedTable(sourceURI, readInstructions);
+                    return readFlatPartitionedTable(sourceURI, useInstructions);
                 case KV_PARTITIONED:
-                    return readKeyValuePartitionedTable(sourceURI, readInstructions);
+                    return readKeyValuePartitionedTable(sourceURI, useInstructions);
                 case METADATA_PARTITIONED:
-                    return readPartitionedTableWithMetadata(sourceURI, readInstructions);
+                    return readPartitionedTableWithMetadata(sourceURI, useInstructions);
             }
         }
         if (FILE_URI_SCHEME.equals(sourceURI.getScheme())) {
-            return readTableFromFileUri(sourceURI, readInstructions);
+            return readTableFromFileUri(sourceURI, useInstructions);
         }
         if (source.endsWith(METADATA_FILE_URI_SUFFIX) || source.endsWith(COMMON_METADATA_FILE_URI_SUFFIX)) {
             throw new UncheckedDeephavenException("We currently do not support reading parquet metadata files " +
                     "from non local storage");
         }
         if (!isDirectory) {
-            return readSingleFileTable(sourceURI, readInstructions);
+            return readSingleFileTable(sourceURI, useInstructions);
         }
         // Both flat partitioned and key-value partitioned data can be read under key-value partitioned layout
-        return readKeyValuePartitionedTable(sourceURI, readInstructions);
+        return readKeyValuePartitionedTable(sourceURI, useInstructions);
     }
 
     /**
@@ -324,6 +327,17 @@ public class ParquetTools {
             @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions writeInstructions) {
         writeTable(sourceTable, destination, ensureTableDefinition(writeInstructions, definition, true));
+    }
+
+    public static ParquetInstructions ensureChannelsProvider(
+            @NotNull final URI parquetFileURI,
+            @NotNull final ParquetInstructions instructions) {
+        if (instructions.getChannelsProvider().isEmpty()) {
+            final SeekableChannelsProvider provider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(
+                    parquetFileURI, instructions.getSpecialInstructions());
+            return instructions.withChannelsProvider(provider);
+        }
+        return instructions;
     }
 
     private static ParquetInstructions ensureTableDefinition(
@@ -1203,10 +1217,12 @@ public class ParquetTools {
         final TableDefinition tableDefinition = readInstructions.getTableDefinition().orElseThrow(
                 () -> new IllegalArgumentException("Table definition must be provided"));
         verifyFileLayout(readInstructions, ParquetFileLayout.SINGLE_FILE);
+        // TODO (deephaven-core#5362): Remove this when removing all deprecated methods
+        final ParquetInstructions useInstructions = ensureChannelsProvider(tableLocationKey.getURI(), readInstructions);
         final TableLocationProvider locationProvider = new PollingTableLocationProvider<>(
                 StandaloneTableKey.getInstance(),
                 new KnownLocationKeyFinder<>(tableLocationKey),
-                new ParquetTableLocationFactory(readInstructions),
+                new ParquetTableLocationFactory(useInstructions),
                 null);
         return new SimpleSourceTable(tableDefinition.getWritable(),
                 "Read single parquet file from " + tableLocationKey.getURI(),
@@ -1378,18 +1394,21 @@ public class ParquetTools {
     }
 
     private static Pair<TableDefinition, ParquetInstructions> infer(
-            KnownLocationKeyFinder<ParquetTableLocationKey> inferenceKeys,
-            ParquetInstructions readInstructions) {
+            final KnownLocationKeyFinder<ParquetTableLocationKey> inferenceKeys,
+            final ParquetInstructions readInstructions) {
         // TODO(deephaven-core#877): Support schema merge when discovering multiple parquet files
         final ParquetTableLocationKey lastKey = inferenceKeys.getLastKey().orElse(null);
         if (lastKey == null) {
             throw new IllegalArgumentException(
                     "Unable to infer schema for a partitioned parquet table when there are no initial parquet files");
         }
+        final ParquetInstructions useInstructions = ensureChannelsProvider(lastKey.getURI(), readInstructions);
+        final SeekableChannelsProvider channelsProvider = useInstructions.getChannelsProvider().orElseThrow();
+        lastKey.setChannelsProvider(channelsProvider);
         final Pair<List<ColumnDefinition<?>>, ParquetInstructions> schemaInfo = ParquetSchemaReader.convertSchema(
                 lastKey.getFileReader().getSchema(),
                 lastKey.getMetadata().getFileMetaData().getKeyValueMetaData(),
-                readInstructions);
+                useInstructions);
         final Set<String> partitionKeys = lastKey.getPartitionKeys();
         final List<ColumnDefinition<?>> allColumns =
                 new ArrayList<>(partitionKeys.size() + schemaInfo.getFirst().size());
@@ -1467,6 +1486,8 @@ public class ParquetTools {
             throw new UnsupportedOperationException("Detected table definition inside read instructions, reading " +
                     "metadata files with custom table definition is currently not supported");
         }
+        // TODO (deephaven-core#5362): Remove this when removing all deprecated methods
+        final ParquetInstructions useInstructions = ensureChannelsProvider(sourceURI, readInstructions);
         final File sourceFile = new File(sourceURI);
         final String fileName = sourceFile.getName();
         final File directory;
@@ -1475,7 +1496,7 @@ public class ParquetTools {
         } else {
             directory = sourceFile;
         }
-        final ParquetMetadataFileLayout layout = new ParquetMetadataFileLayout(directory, readInstructions);
+        final ParquetMetadataFileLayout layout = new ParquetMetadataFileLayout(directory, useInstructions);
         return readTable(layout,
                 ensureTableDefinition(layout.getInstructions(), layout.getTableDefinition(), true));
     }
@@ -1525,16 +1546,18 @@ public class ParquetTools {
             @NotNull final URI directoryUri,
             @NotNull final ParquetInstructions readInstructions) {
         verifyFileLayout(readInstructions, ParquetFileLayout.KV_PARTITIONED);
-        if (readInstructions.getTableDefinition().isEmpty()) {
+        // TODO (deephaven-core#5362): Remove this when removing all deprecated methods
+        final ParquetInstructions useInstructions = ensureChannelsProvider(directoryUri, readInstructions);
+        if (useInstructions.getTableDefinition().isEmpty()) {
             return readTable(new ParquetKeyValuePartitionedLayout(directoryUri,
-                    MAX_PARTITIONING_LEVELS_INFERENCE, readInstructions), readInstructions);
+                    MAX_PARTITIONING_LEVELS_INFERENCE, useInstructions), useInstructions);
         }
-        final TableDefinition tableDefinition = readInstructions.getTableDefinition().get();
+        final TableDefinition tableDefinition = useInstructions.getTableDefinition().get();
         if (tableDefinition.getColumnStream().noneMatch(ColumnDefinition::isPartitioning)) {
             throw new IllegalArgumentException("No partitioning columns");
         }
         return readTable(new ParquetKeyValuePartitionedLayout(directoryUri, tableDefinition,
-                readInstructions), readInstructions);
+                useInstructions), useInstructions);
     }
 
     /**
@@ -1593,7 +1616,8 @@ public class ParquetTools {
             @NotNull final URI sourceURI,
             @NotNull final ParquetInstructions readInstructions) {
         verifyFileLayout(readInstructions, ParquetFileLayout.FLAT_PARTITIONED);
-        return readTable(new ParquetFlatPartitionedLayout(sourceURI, readInstructions), readInstructions);
+        final ParquetInstructions useInstructions = ensureChannelsProvider(sourceURI, readInstructions);
+        return readTable(new ParquetFlatPartitionedLayout(sourceURI, useInstructions), useInstructions);
     }
 
     /**
@@ -1661,15 +1685,17 @@ public class ParquetTools {
             @NotNull final URI parquetFileURI,
             @NotNull final ParquetInstructions readInstructions) {
         verifyFileLayout(readInstructions, ParquetFileLayout.SINGLE_FILE);
-        if (readInstructions.getTableDefinition().isPresent()) {
-            return readTable(new ParquetTableLocationKey(parquetFileURI, 0, null, readInstructions),
-                    readInstructions);
+        // TODO (deephaven-core#5362): Remove this when removing all deprecated methods
+        final ParquetInstructions useInstructions = ensureChannelsProvider(parquetFileURI, readInstructions);
+        if (useInstructions.getTableDefinition().isPresent()) {
+            return readTable(new ParquetTableLocationKey(parquetFileURI, 0, null, useInstructions),
+                    useInstructions);
         }
         // Infer the table definition
         final TableLocationKeyFinder<ParquetTableLocationKey> singleFileLayout =
-                new ParquetSingleFileLayout(parquetFileURI, readInstructions);
+                new ParquetSingleFileLayout(parquetFileURI, useInstructions);
         final KnownLocationKeyFinder<ParquetTableLocationKey> inferenceKeys = toKnownKeys(singleFileLayout);
-        final Pair<TableDefinition, ParquetInstructions> inference = infer(inferenceKeys, readInstructions);
+        final Pair<TableDefinition, ParquetInstructions> inference = infer(inferenceKeys, useInstructions);
         final TableDefinition inferredTableDefinition = inference.getFirst();
         final ParquetInstructions inferredInstructions = inference.getSecond();
         return readTable(inferenceKeys.getFirstKey().orElseThrow(),
@@ -1722,12 +1748,14 @@ public class ParquetTools {
             @NotNull final File source,
             @NotNull final ParquetInstructions readInstructionsIn,
             @Nullable final MutableObject<ParquetInstructions> mutableInstructionsOut) {
+        final URI parquetFileUri = convertToURI(source, false);
+        final ParquetInstructions useInstructions = ensureChannelsProvider(parquetFileUri, readInstructionsIn);
         final ParquetTableLocationKey tableLocationKey =
-                new ParquetTableLocationKey(source, 0, null, readInstructionsIn);
+                new ParquetTableLocationKey(parquetFileUri, 0, null, useInstructions);
         final Pair<List<ColumnDefinition<?>>, ParquetInstructions> schemaInfo = ParquetSchemaReader.convertSchema(
                 tableLocationKey.getFileReader().getSchema(),
                 tableLocationKey.getMetadata().getFileMetaData().getKeyValueMetaData(),
-                readInstructionsIn);
+                useInstructions);
         final TableDefinition def = TableDefinition.of(schemaInfo.getFirst());
         final ParquetInstructions instructionsOut = ensureTableDefinition(schemaInfo.getSecond(), def, true);
         if (mutableInstructionsOut != null) {

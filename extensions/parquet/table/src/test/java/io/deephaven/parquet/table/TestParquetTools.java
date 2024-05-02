@@ -20,6 +20,8 @@ import io.deephaven.parquet.base.InvalidParquetFileException;
 import io.deephaven.parquet.table.layout.ParquetKeyValuePartitionedLayout;
 import io.deephaven.stringset.HashStringSet;
 import io.deephaven.stringset.StringSet;
+import io.deephaven.util.channel.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import io.deephaven.vector.*;
 import junit.framework.TestCase;
 import org.junit.*;
@@ -27,6 +29,7 @@ import org.junit.*;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Proxy;
+import java.net.URI;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -352,9 +355,13 @@ public class TestParquetTools {
         allColumns.addAll(table1.getDefinition().getColumns());
         final TableDefinition partitionedDefinition = TableDefinition.of(allColumns);
 
+        final URI testRootUri = testRootFile.toURI();
+        final SeekableChannelsProvider provider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(
+                testRootUri, null);
+        final ParquetInstructions instructions = ParquetInstructions.EMPTY.withChannelsProvider(provider);
         final Table result = ParquetTools.readPartitionedTableInferSchema(
-                new ParquetKeyValuePartitionedLayout(testRootFile, 2, ParquetInstructions.EMPTY),
-                ParquetInstructions.EMPTY);
+                new ParquetKeyValuePartitionedLayout(testRootFile, 2, instructions),
+                instructions);
         TestCase.assertEquals(partitionedDefinition, result.getDefinition());
         final Table expected = TableTools.merge(
                 table1.updateView("Date=`2021-07-20`", "Num=100"),

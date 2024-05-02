@@ -46,6 +46,11 @@ final class S3SeekableByteChannel implements SeekableByteChannel, CachedChannelP
         this.position = INIT_POSITION;
     }
 
+    S3SeekableByteChannel(final S3Uri uri, final long size) {
+        this(uri);
+        this.size = size;
+    }
+
     /**
      * @param channelContext The {@link SeekableChannelContext} object used to cache read-ahead buffers for efficiently
      *        reading from S3. An appropriate channel context should be set before the read and should be cleared after

@@ -43,6 +43,8 @@ import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.channel.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import io.deephaven.vector.IntVector;
 import io.deephaven.vector.ObjectVector;
 import junit.framework.ComparisonFailure;
@@ -58,6 +60,7 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.URI;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -3889,9 +3892,13 @@ public class QueryTableAggregationTest {
                     t3.updateView("Date=`2021-07-21`", "Num=300"),
                     t4.updateView("Date=`2021-07-21`", "Num=400")).moveColumnsUp("Date", "Num");
 
-            final Table loaded = ParquetTools.readPartitionedTableInferSchema(
-                    new ParquetKeyValuePartitionedLayout(testRootFile, 2, ParquetInstructions.EMPTY),
-                    ParquetInstructions.EMPTY);
+            final URI testRootUri = testRootFile.toURI();
+            final SeekableChannelsProvider provider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(
+                    testRootUri, null);
+            final ParquetInstructions instructions = ParquetInstructions.EMPTY.withChannelsProvider(provider);
+            final Table loaded = ParquetTools.readTable(
+                    new ParquetKeyValuePartitionedLayout(testRootFile, 2, instructions),
+                    instructions);
 
             // verify the sources are identical
             assertTableEquals(merged, loaded);

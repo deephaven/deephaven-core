@@ -8,6 +8,8 @@ import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
 import io.deephaven.parquet.base.ParquetFileReader;
+import io.deephaven.util.channel.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import org.apache.parquet.format.RowGroup;
@@ -36,6 +38,7 @@ public class ParquetTableLocationKey extends URITableLocationKey {
     private ParquetMetadata metadata;
     private int[] rowGroupIndices;
     private final ParquetInstructions readInstructions;
+    private SeekableChannelsProvider channelsProvider;
 
     /**
      * Construct a new ParquetTableLocationKey for the supplied {@code file} and {@code partitions}.
@@ -52,6 +55,7 @@ public class ParquetTableLocationKey extends URITableLocationKey {
             @NotNull final ParquetInstructions readInstructions) {
         super(validateParquetFile(file), order, partitions);
         this.readInstructions = readInstructions;
+        this.channelsProvider = readInstructions.getChannelsProvider().orElse(null);
     }
 
     /**
@@ -69,6 +73,7 @@ public class ParquetTableLocationKey extends URITableLocationKey {
             @NotNull final ParquetInstructions readInstructions) {
         super(validateParquetFile(parquetFileUri), order, partitions);
         this.readInstructions = readInstructions;
+        this.channelsProvider = readInstructions.getChannelsProvider().orElse(null);
     }
 
     private static URI validateParquetFile(@NotNull final File file) {
@@ -88,33 +93,21 @@ public class ParquetTableLocationKey extends URITableLocationKey {
     }
 
     /**
-     * Returns {@code true} if a previous {@link ParquetFileReader} has been created, or if one was successfully created
-     * on-demand.
-     *
-     * <p>
-     * When {@code false}, this may mean that the file:
-     * <ol>
-     * <li>does not exist, or is otherwise inaccessible</li>
-     * <li>is in the process of being written, and is not yet a valid parquet file</li>
-     * <li>is _not_ a parquet file</li>
-     * <li>is a corrupt parquet file</li>
-     * </ol>
-     *
-     * Callers wishing to handle these cases more explicit may call
-     * {@link ParquetFileReader#createChecked(URI, Object)}.
-     *
-     * @return true if the file reader exists or was successfully created
+     * Set the {@link SeekableChannelsProvider} that will be used to read the file associated with this location key.
+     * This method should be used if a common provider is to be used for multiple location keys. If not set, a new
+     * provider will be created on demand.
      */
-    public synchronized boolean verifyFileReader() {
-        if (fileReader != null) {
-            return true;
+    public final void setChannelsProvider(final SeekableChannelsProvider channelsProvider) {
+        if (channelsProvider == null) {
+            throw new IllegalArgumentException("Channels provider cannot be set as null");
         }
-        try {
-            fileReader = ParquetFileReader.createChecked(uri, readInstructions.getSpecialInstructions());
-        } catch (IOException e) {
-            return false;
+        if (this.channelsProvider != null && channelsProvider != this.channelsProvider) {
+            throw new IllegalStateException("Channels provider already set to a different value");
         }
-        return true;
+        // TODO (@Ryan) The above can also be a breaking change beacuse if the user does not set the channels provider,
+        // then a new one will be created on calling getFileReader. And then ParquetTableLocationFactory might also try
+        // to set a channel provider, which can lead to this crash.
+        this.channelsProvider = channelsProvider;
     }
 
     /**
@@ -127,7 +120,14 @@ public class ParquetTableLocationKey extends URITableLocationKey {
         if (fileReader != null) {
             return fileReader;
         }
-        return fileReader = ParquetFileReader.create(uri, readInstructions.getSpecialInstructions());
+        if (channelsProvider == null) {
+            // TODO (Discuss with Ryan) I need to do this to not make it a breaking change. But this means that the
+            // channels provider will be null if the user does not set it, and would therefore create a new provider
+            // every time
+            channelsProvider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(
+                    uri, readInstructions.getSpecialInstructions());
+        }
+        return fileReader = ParquetFileReader.create(uri, channelsProvider);
     }
 
     /**

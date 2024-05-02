@@ -66,6 +66,10 @@ public class ParquetKeyValuePartitionedLayout
                 (uri, partitions) -> new ParquetTableLocationKey(uri, 0, partitions, readInstructions),
                 Math.toIntExact(tableDefinition.getColumnStream().filter(ColumnDefinition::isPartitioning).count()));
         this.readInstructions = readInstructions;
+        if (readInstructions.getChannelsProvider().isEmpty()) {
+            throw new IllegalArgumentException("ParquetInstructions must have a SeekableChannelsProvider");
+            // TODO (@Ryan) this can be a breaking change
+        }
     }
 
     public ParquetKeyValuePartitionedLayout(
@@ -84,6 +88,10 @@ public class ParquetKeyValuePartitionedLayout
                 (uri, partitions) -> new ParquetTableLocationKey(uri, 0, partitions, readInstructions),
                 maxPartitioningLevels);
         this.readInstructions = readInstructions;
+        if (readInstructions.getChannelsProvider().isEmpty()) {
+            throw new IllegalArgumentException("ParquetInstructions must have a SeekableChannelsProvider");
+            // TODO (@Ryan) this can be a breaking change
+        }
     }
 
     @Override
@@ -95,11 +103,9 @@ public class ParquetKeyValuePartitionedLayout
         } else {
             uriFilter = uri -> uri.getPath().endsWith(ParquetUtils.PARQUET_FILE_EXTENSION);
         }
-        try (final SeekableChannelsProvider provider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(
-                tableRootDirectory, readInstructions.getSpecialInstructions());
-                final Stream<URI> uriStream = provider.walk(tableRootDirectory)) {
-            final Stream<URI> filteredStream = uriStream.filter(uriFilter);
-            findKeys(filteredStream, locationKeyObserver);
+        final SeekableChannelsProvider provider = readInstructions.getChannelsProvider().orElseThrow();
+        try (final Stream<URI> filteredUriStream = provider.walk(tableRootDirectory).filter(uriFilter)) {
+            findKeys(filteredUriStream, locationKeyObserver);
         } catch (final IOException e) {
             throw new TableDataException("Error finding parquet locations under " + tableRootDirectory, e);
         }

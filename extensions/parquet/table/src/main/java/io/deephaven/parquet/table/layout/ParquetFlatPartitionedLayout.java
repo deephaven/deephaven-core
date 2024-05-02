@@ -42,7 +42,10 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
     /**
      * @param tableRootDirectory The directory to search for .parquet files.
      * @param readInstructions the instructions for customizations while reading
+     *
+     * @deprecated Use {@link #ParquetFlatPartitionedLayout(URI, ParquetInstructions)} instead.
      */
+    @Deprecated
     public ParquetFlatPartitionedLayout(@NotNull final File tableRootDirectory,
             @NotNull final ParquetInstructions readInstructions) {
         this(FileUtils.convertToURI(tableRootDirectory, true), readInstructions);
@@ -57,6 +60,10 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
         this.tableRootDirectory = tableRootDirectoryURI;
         this.cache = Collections.synchronizedMap(new HashMap<>());
         this.readInstructions = readInstructions;
+        if (readInstructions.getChannelsProvider().isEmpty()) {
+            throw new IllegalArgumentException("ParquetInstructions must have a SeekableChannelsProvider");
+            // TODO (@Ryan) this can be a breaking change
+        }
     }
 
     public String toString() {
@@ -74,9 +81,8 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
         } else {
             uriFilter = uri -> uri.getPath().endsWith(ParquetUtils.PARQUET_FILE_EXTENSION);
         }
-        try (final SeekableChannelsProvider provider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(
-                tableRootDirectory, readInstructions.getSpecialInstructions());
-                final Stream<URI> stream = provider.list(tableRootDirectory)) {
+        final SeekableChannelsProvider provider = readInstructions.getChannelsProvider().orElseThrow();
+        try (final Stream<URI> stream = provider.list(tableRootDirectory)) {
             stream.filter(uriFilter).forEach(uri -> {
                 cache.compute(uri, (key, existingLocationKey) -> {
                     if (existingLocationKey != null) {
@@ -84,9 +90,6 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
                         return existingLocationKey;
                     }
                     final ParquetTableLocationKey newLocationKey = locationKey(uri, readInstructions);
-                    if (!newLocationKey.verifyFileReader()) {
-                        return null;
-                    }
                     locationKeyObserver.accept(newLocationKey);
                     return newLocationKey;
                 });

@@ -47,15 +47,14 @@ public class ParquetFileReader {
      * {@link UncheckedDeephavenException}.
      *
      * @param parquetFile The parquet file or the parquet metadata file
-     * @param specialInstructions Optional read instructions to pass to {@link SeekableChannelsProvider} while creating
-     *        channels
+     * @param channelsProvider The {@link SeekableChannelsProvider} to use for reading the file
      * @return The new {@link ParquetFileReader}
      */
     public static ParquetFileReader create(
             @NotNull final File parquetFile,
-            @Nullable final Object specialInstructions) {
+            final SeekableChannelsProvider channelsProvider) {
         try {
-            return createChecked(parquetFile, specialInstructions);
+            return createChecked(parquetFile, channelsProvider);
         } catch (IOException e) {
             throw new UncheckedDeephavenException("Failed to create Parquet file reader: " + parquetFile, e);
         }
@@ -66,15 +65,14 @@ public class ParquetFileReader {
      * {@link UncheckedDeephavenException}.
      *
      * @param parquetFileURI The URI for the parquet file or the parquet metadata file
-     * @param specialInstructions Optional read instructions to pass to {@link SeekableChannelsProvider} while creating
-     *        channels
+     * @param channelsProvider The {@link SeekableChannelsProvider} to use for reading the file
      * @return The new {@link ParquetFileReader}
      */
     public static ParquetFileReader create(
             @NotNull final URI parquetFileURI,
-            @Nullable final Object specialInstructions) {
+            @Nullable final SeekableChannelsProvider channelsProvider) {
         try {
-            return createChecked(parquetFileURI, specialInstructions);
+            return createChecked(parquetFileURI, channelsProvider);
         } catch (IOException e) {
             throw new UncheckedDeephavenException("Failed to create Parquet file reader: " + parquetFileURI, e);
         }
@@ -84,32 +82,28 @@ public class ParquetFileReader {
      * Make a {@link ParquetFileReader} for the supplied {@link File}.
      *
      * @param parquetFile The parquet file or the parquet metadata file
-     * @param specialInstructions Optional read instructions to pass to {@link SeekableChannelsProvider} while creating
-     *        channels
+     * @param channelsProvider The {@link SeekableChannelsProvider} to use for reading the file
      * @return The new {@link ParquetFileReader}
      * @throws IOException if an IO exception occurs
      */
     public static ParquetFileReader createChecked(
             @NotNull final File parquetFile,
-            @Nullable final Object specialInstructions) throws IOException {
-        return createChecked(convertToURI(parquetFile, false), specialInstructions);
+            final SeekableChannelsProvider channelsProvider) throws IOException {
+        return createChecked(convertToURI(parquetFile, false), channelsProvider);
     }
 
     /**
      * Make a {@link ParquetFileReader} for the supplied {@link URI}.
      *
      * @param parquetFileURI The URI for the parquet file or the parquet metadata file
-     * @param specialInstructions Optional read instructions to pass to {@link SeekableChannelsProvider} while creating
-     *        channels
+     * @param channelsProvider The {@link SeekableChannelsProvider} to use for reading the file
      * @return The new {@link ParquetFileReader}
      * @throws IOException if an IO exception occurs
      */
     public static ParquetFileReader createChecked(
             @NotNull final URI parquetFileURI,
-            @Nullable final Object specialInstructions) throws IOException {
-        final SeekableChannelsProvider provider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(
-                parquetFileURI, specialInstructions);
-        return new ParquetFileReader(parquetFileURI, new CachedChannelProvider(provider, 1 << 7));
+            final SeekableChannelsProvider channelsProvider) throws IOException {
+        return new ParquetFileReader(parquetFileURI, new CachedChannelProvider(channelsProvider, 1 << 7));
     }
 
     /**
@@ -117,7 +111,10 @@ public class ParquetFileReader {
      *
      * @param source The source path or URI for the parquet file or the parquet metadata file
      * @param channelsProvider The {@link SeekableChannelsProvider} to use for reading the file
+     *
+     * @deprecated: Use {@link #createChecked(URI, SeekableChannelsProvider)} instead
      */
+    @Deprecated
     public ParquetFileReader(final String source, final SeekableChannelsProvider channelsProvider)
             throws IOException {
         this(convertToURI(source, false), channelsProvider);
@@ -128,7 +125,10 @@ public class ParquetFileReader {
      *
      * @param parquetFileURI The URI for the parquet file or the parquet metadata file
      * @param channelsProvider The {@link SeekableChannelsProvider} to use for reading the file
+     *
+     * @deprecated: Use {@link #createChecked(URI, SeekableChannelsProvider)} instead
      */
+    @Deprecated
     public ParquetFileReader(final URI parquetFileURI, final SeekableChannelsProvider channelsProvider)
             throws IOException {
         this.channelsProvider = channelsProvider;

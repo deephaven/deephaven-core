@@ -79,13 +79,17 @@ public class ParquetTableLocation extends AbstractTableLocation {
             @NotNull final ParquetInstructions readInstructions) {
         super(tableKey, tableLocationKey, false);
         this.readInstructions = readInstructions;
+        if (readInstructions.getChannelsProvider().isPresent()) {
+            tableLocationKey.setChannelsProvider(readInstructions.getChannelsProvider().orElseThrow());
+        }
         final ParquetMetadata parquetMetadata;
         // noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (tableLocationKey) {
+            // Following will create a new ParquetFileReader and read the file metadata if it does not exist
             parquetFileReader = tableLocationKey.getFileReader();
-            parquetMetadata = tableLocationKey.getMetadata();
-            rowGroupIndices = tableLocationKey.getRowGroupIndices();
         }
+        parquetMetadata = tableLocationKey.getMetadata();
+        rowGroupIndices = tableLocationKey.getRowGroupIndices();
 
         final int rowGroupCount = rowGroupIndices.length;
         rowGroups = IntStream.of(rowGroupIndices)
