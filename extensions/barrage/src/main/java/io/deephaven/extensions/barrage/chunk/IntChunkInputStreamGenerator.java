@@ -9,12 +9,15 @@ package io.deephaven.extensions.barrage.chunk;
 
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.pools.PoolableChunk;
 import io.deephaven.engine.rowset.RowSet;
 import com.google.common.io.LittleEndianDataOutputStream;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
+import io.deephaven.function.ToIntFunction;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.WritableIntChunk;
@@ -27,6 +30,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Iterator;
 import java.util.PrimitiveIterator;
+import java.util.function.Function;
 
 import static io.deephaven.util.QueryConstants.*;
 
@@ -40,6 +44,20 @@ public class IntChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<
         for (int i = 0; i < inChunk.size(); ++i) {
             final Integer value = inChunk.get(i);
             outChunk.set(i, TypeUtils.unbox(value));
+        }
+        if (inChunk instanceof PoolableChunk) {
+            ((PoolableChunk) inChunk).close();
+        }
+        return new IntChunkInputStreamGenerator(outChunk, Integer.BYTES, rowOffset);
+    }
+
+    public static <T> IntChunkInputStreamGenerator convertWithTransform(
+            final ObjectChunk<T, Values> inChunk, final long rowOffset, final ToIntFunction<T> transform) {
+        // This code path is utilized for LocalDate and LocalTime
+        WritableIntChunk<Values> outChunk = WritableIntChunk.makeWritableChunk(inChunk.size());
+        for (int i = 0; i < inChunk.size(); ++i) {
+            T value = inChunk.get(i);
+            outChunk.set(i, value == null ? QueryConstants.NULL_INT : transform.applyAsInt(value));
         }
         if (inChunk instanceof PoolableChunk) {
             ((PoolableChunk) inChunk).close();
@@ -175,6 +193,38 @@ public class IntChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<
         return extractChunkFromInputStreamWithConversion(
                 elementSize, options, IntConversion.IDENTITY, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
                 totalRows);
+    }
+
+    static <T> WritableObjectChunk<T, Values> extractChunkFromInputStreamWithTransform(
+            final int elementSize,
+            final StreamReaderOptions options,
+            final Function<Integer, T> transform,
+            final Iterator<FieldNodeInfo> fieldNodeIter,
+            final PrimitiveIterator.OfLong bufferInfoIter,
+            final DataInput is,
+            final WritableChunk<Values> outChunk,
+            final int outOffset,
+            final int totalRows) throws IOException {
+
+        try (final WritableIntChunk<Values> inner = extractChunkFromInputStream(
+                elementSize, options, fieldNodeIter, bufferInfoIter, is, null, 0, 0).asWritableIntChunk()) {
+
+            final WritableObjectChunk<T, Values> chunk;
+            if (outChunk != null) {
+                chunk = outChunk.asWritableObjectChunk();
+            } else {
+                final int numRows = Math.max(totalRows, inner.size());
+                chunk = WritableObjectChunk.makeWritableChunk(numRows);
+                chunk.setSize(numRows);
+            }
+
+            for (int ii = 0; ii < inner.size(); ++ii) {
+                int value = inner.get(ii);
+                chunk.set(outOffset + ii, value == NULL_INT ? null : transform.apply(value));
+            }
+
+            return chunk;
+        }
     }
 
     static WritableChunk<Values> extractChunkFromInputStreamWithConversion(

@@ -87,11 +87,6 @@ public class BarrageUtil {
             Configuration.getInstance().getLongForClassWithDefault(BarrageUtil.class,
                     "maxSnapshotCellCount", Long.MAX_VALUE);
 
-    // year is 4 bytes, month is 1 byte, day is 1 byte
-    public static final ArrowType.FixedSizeBinary LOCAL_DATE_TYPE = new ArrowType.FixedSizeBinary(6);
-    // hour, minute, second are each one byte, nano is 4 bytes
-    public static final ArrowType.FixedSizeBinary LOCAL_TIME_TYPE = new ArrowType.FixedSizeBinary(7);
-
     /**
      * Note that arrow's wire format states that Timestamps without timezones are not UTC -- that they are no timezone
      * at all. It's very important that we mark these times as UTC.
@@ -119,7 +114,9 @@ public class BarrageUtil {
             BigInteger.class,
             String.class,
             Instant.class,
-            Boolean.class));
+            Boolean.class,
+            LocalDate.class,
+            LocalTime.class));
 
     public static ByteString schemaBytesFromTable(@NotNull final Table table) {
         return schemaBytesFromTableDefinition(table.getDefinition(), table.getAttributes(), table.isFlat());
@@ -657,10 +654,10 @@ public class BarrageUtil {
                     return Types.MinorType.LIST.getType();
                 }
                 if (type == LocalDate.class) {
-                    return LOCAL_DATE_TYPE;
+                    return Types.MinorType.DATEDAY.getType();
                 }
                 if (type == LocalTime.class) {
-                    return LOCAL_TIME_TYPE;
+                    return Types.MinorType.TIMENANO.getType();
                 }
                 if (type == BigDecimal.class
                         || type == BigInteger.class) {

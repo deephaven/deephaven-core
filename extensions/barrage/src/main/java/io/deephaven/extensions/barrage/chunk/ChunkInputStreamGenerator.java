@@ -4,9 +4,11 @@
 package io.deephaven.extensions.barrage.chunk;
 
 import com.google.common.base.Charsets;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.pools.PoolableChunk;
 import io.deephaven.engine.rowset.RowSet;
@@ -27,6 +29,8 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -143,6 +147,26 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                 }
                 if (type == Short.class) {
                     return ShortChunkInputStreamGenerator.convertBoxed(chunk.asObjectChunk(), rowOffset);
+                }
+                if (type == LocalDate.class) {
+                    return IntChunkInputStreamGenerator.<LocalDate>convertWithTransform(chunk.asObjectChunk(),
+                            rowOffset, date -> {
+                                final long epochDay = date.toEpochDay();
+                                if (epochDay < 0 || epochDay > Integer.MAX_VALUE) {
+                                    throw new IllegalArgumentException("Date out of range: " + date);
+                                }
+                                return (int) epochDay;
+                            });
+                }
+                if (type == LocalTime.class) {
+                    return LongChunkInputStreamGenerator.<LocalTime>convertWithTransform(chunk.asObjectChunk(),
+                            rowOffset, date -> {
+                                final long nanoOfDay = date.toNanoOfDay();
+                                if (nanoOfDay < 0) {
+                                    throw new IllegalArgumentException("Time out of range: " + date);
+                                }
+                                return nanoOfDay;
+                            });
                 }
                 // TODO (core#936): support column conversion modes
 
@@ -296,6 +320,18 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                 if (type == Short.class) {
                     return FixedWidthChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
                             Short.BYTES, options, io -> TypeUtils.box(io.readShort()),
+                            fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
+                }
+                if (type == LocalDate.class) {
+                    return IntChunkInputStreamGenerator.extractChunkFromInputStreamWithTransform(
+                            Integer.BYTES, options,
+                            LocalDate::ofEpochDay,
+                            fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
+                }
+                if (type == LocalTime.class) {
+                    return LongChunkInputStreamGenerator.extractChunkFromInputStreamWithTransform(
+                            Long.BYTES, options,
+                            LocalTime::ofNanoOfDay,
                             fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
                 }
                 if (type == String.class ||
