@@ -289,7 +289,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
         // --------------------------------------------------------------------------------------------------
 
         @Override
-        public void accept(ByteBuffer byteBuffer, Throwable throwable) { // sdk-async-response + sdk-scheduledExecutor
+        public void accept(ByteBuffer byteBuffer, Throwable throwable) {
             if (log.isDebugEnabled()) {
                 final Instant completedAt = Instant.now();
                 if (byteBuffer != null) {
@@ -305,7 +305,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
         // --------------------------------------------------------------------------------------------------
 
         @Override
-        public CompletableFuture<ByteBuffer> prepare() { // sdk-scheduled executor
+        public CompletableFuture<ByteBuffer> prepare() {
             final CompletableFuture<ByteBuffer> future = new CompletableFuture<>();
             producerFuture = future;
             return future;
@@ -317,7 +317,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
         }
 
         @Override
-        public void onStream(SdkPublisher<ByteBuffer> publisher) { // Event loop
+        public void onStream(SdkPublisher<ByteBuffer> publisher) {
             publisher.subscribe(new Sub());
         }
 
@@ -370,7 +370,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
             private ByteBuffer bufferView;
             private Subscription subscription;
 
-            Sub() { // Event loop
+            Sub() {
                 localProducer = producerFuture;
                 if (!bufferReference.acquireIfAvailable()) {
                     bufferView = null;
@@ -388,7 +388,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
             // ---------------------------------------------------- -------------------------
 
             @Override
-            public void onSubscribe(Subscription s) { // Event loop
+            public void onSubscribe(Subscription s) {
                 if (bufferView == null) {
                     s.cancel();
                     return;
@@ -402,7 +402,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
             }
 
             @Override
-            public void onNext(ByteBuffer byteBuffer) { // Event loop
+            public void onNext(ByteBuffer byteBuffer) {
                 if (!bufferReference.acquireIfAvailable()) {
                     bufferView = null;
                     localProducer.completeExceptionally(new IllegalStateException(
@@ -418,13 +418,13 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
             }
 
             @Override
-            public void onError(Throwable t) { // event loop
+            public void onError(Throwable t) {
                 bufferView = null;
                 localProducer.completeExceptionally(t);
             }
 
             @Override
-            public void onComplete() { // Event loop
+            public void onComplete() {
                 if (!bufferReference.acquireIfAvailable()) {
                     bufferView = null;
                     localProducer.completeExceptionally(new IllegalStateException(

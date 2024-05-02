@@ -9,47 +9,118 @@ import java.time.Duration;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-public class S3InstructionsTest {
+class S3InstructionsTest {
 
     @Test
     void defaults() {
-        final S3Instructions instructions = S3Instructions.builder().regionName("some-region").build();
-        assertThat(instructions.regionName()).isEqualTo("some-region");
-        assertThat(instructions.maxConcurrentRequests()).isEqualTo(50);
+        final S3Instructions instructions = S3Instructions.builder()
+                .asyncClientFactory(DeephavenS3AsyncClientFactory.builder()
+                        .regionName("some-region")
+                        .build())
+                .build();
+        assertThat(instructions.readTimeout()).isEqualTo(Duration.ofSeconds(2));
         assertThat(instructions.readAheadCount()).isEqualTo(1);
         assertThat(instructions.fragmentSize()).isEqualTo(5 * (1 << 20));
         assertThat(instructions.maxCacheSize()).isEqualTo(32);
-        assertThat(instructions.connectionTimeout()).isEqualTo(Duration.ofSeconds(2));
-        assertThat(instructions.readTimeout()).isEqualTo(Duration.ofSeconds(2));
-        assertThat(instructions.credentials()).isEqualTo(Credentials.defaultCredentials());
-        assertThat(instructions.endpointOverride()).isEmpty();
+
+        final DeephavenS3AsyncClientFactory asyncClientFactory =
+                (DeephavenS3AsyncClientFactory) instructions.asyncClientFactory();
+        assertThat(asyncClientFactory.regionName()).isEqualTo("some-region");
+        assertThat(asyncClientFactory.readTimeout()).isEqualTo(Duration.ofSeconds(2));
+        assertThat(asyncClientFactory.maxConcurrentRequests()).isEqualTo(50);
+        assertThat(asyncClientFactory.connectionTimeout()).isEqualTo(Duration.ofSeconds(2));
+        assertThat(asyncClientFactory.credentials()).isEqualTo(Credentials.defaultCredentials());
+        assertThat(asyncClientFactory.endpointOverride()).isEmpty();
     }
 
     @Test
     void missingRegion() {
         try {
-            S3Instructions.builder().build();
+            S3Instructions.builder()
+                    .asyncClientFactory(DeephavenS3AsyncClientFactory.builder().build())
+                    .build();
         } catch (IllegalStateException e) {
-            assertThat(e).hasMessageContaining("regionName");
+            assertThat(e).hasMessageContaining("region");
         }
     }
 
     @Test
-    void minMaxConcurrentRequests() {
+    void missingAsyncClientFactory() {
+        try {
+            S3Instructions.builder().build();
+        } catch (IllegalStateException e) {
+            assertThat(e).hasMessageContaining("asyncClientFactory");
+        }
+    }
+
+    @Test
+    void basicAsyncClientFactory() {
+        final S3Instructions input = S3Instructions.builder()
+                .asyncClientFactory(() -> null)
+                .build();
+        assertThat(input.asyncClientFactory().create()).isNull();
+    }
+
+    @Test
+    void basicAsyncClientFactoryWithReadTimeout() {
         assertThat(S3Instructions.builder()
-                .regionName("some-region")
-                .maxConcurrentRequests(1)
+                .asyncClientFactory(() -> null)
+                .readTimeout(Duration.ofSeconds(6))
                 .build()
-                .maxConcurrentRequests())
+                .readTimeout())
+                .isEqualTo(Duration.ofSeconds(6));
+    }
+
+    @Test
+    void readTimeout() {
+        assertThat(S3Instructions.builder()
+                .asyncClientFactory(DeephavenS3AsyncClientFactory.builder()
+                        .regionName("some-region")
+                        .readTimeout(Duration.ofSeconds(6))
+                        .build())
+                .build()
+                .readTimeout())
+                .isEqualTo(Duration.ofSeconds(6));
+    }
+
+    @Test
+    void inconsistentReadTimeout() {
+        try {
+            S3Instructions.builder()
+                    .asyncClientFactory(DeephavenS3AsyncClientFactory.builder()
+                            .regionName("some-region")
+                            .readTimeout(Duration.ofSeconds(6))
+                            .build())
+                    .readTimeout(Duration.ofSeconds(7))
+                    .build();
+        } catch (IllegalArgumentException e) {
+            assertThat(e).hasMessageContaining("readTimeout");
+        }
+    }
+
+
+
+    @Test
+    void minMaxConcurrentRequests() {
+        final S3Instructions input = S3Instructions.builder()
+                .asyncClientFactory(DeephavenS3AsyncClientFactory.builder()
+                        .regionName("some-region")
+                        .maxConcurrentRequests(1)
+                        .build())
+                .build();
+        assertThat(((DeephavenS3AsyncClientFactory) input.asyncClientFactory()).maxConcurrentRequests())
                 .isEqualTo(1);
+
     }
 
     @Test
     void tooSmallMaxConcurrentRequests() {
         try {
             S3Instructions.builder()
-                    .regionName("some-region")
-                    .maxConcurrentRequests(0)
+                    .asyncClientFactory(DeephavenS3AsyncClientFactory.builder()
+                            .regionName("some-region")
+                            .maxConcurrentRequests(0)
+                            .build())
                     .build();
         } catch (IllegalArgumentException e) {
             assertThat(e).hasMessageContaining("maxConcurrentRequests");
@@ -59,7 +130,9 @@ public class S3InstructionsTest {
     @Test
     void minReadAheadCount() {
         assertThat(S3Instructions.builder()
-                .regionName("some-region")
+                .asyncClientFactory(DeephavenS3AsyncClientFactory.builder()
+                        .regionName("some-region")
+                        .build())
                 .readAheadCount(0)
                 .build()
                 .readAheadCount())
@@ -70,7 +143,9 @@ public class S3InstructionsTest {
     void tooSmallReadAheadCount() {
         try {
             S3Instructions.builder()
-                    .regionName("some-region")
+                    .asyncClientFactory(DeephavenS3AsyncClientFactory.builder()
+                            .regionName("some-region")
+                            .build())
                     .readAheadCount(-1)
                     .build();
         } catch (IllegalArgumentException e) {
@@ -81,7 +156,9 @@ public class S3InstructionsTest {
     @Test
     void minFragmentSize() {
         assertThat(S3Instructions.builder()
-                .regionName("some-region")
+                .asyncClientFactory(DeephavenS3AsyncClientFactory.builder()
+                        .regionName("some-region")
+                        .build())
                 .fragmentSize(8 * (1 << 10))
                 .build()
                 .fragmentSize())
@@ -92,7 +169,9 @@ public class S3InstructionsTest {
     void tooSmallFragmentSize() {
         try {
             S3Instructions.builder()
-                    .regionName("some-region")
+                    .asyncClientFactory(DeephavenS3AsyncClientFactory.builder()
+                            .regionName("some-region")
+                            .build())
                     .fragmentSize(8 * (1 << 10) - 1)
                     .build();
         } catch (IllegalArgumentException e) {
@@ -103,7 +182,9 @@ public class S3InstructionsTest {
     @Test
     void maxFragmentSize() {
         assertThat(S3Instructions.builder()
-                .regionName("some-region")
+                .asyncClientFactory(DeephavenS3AsyncClientFactory.builder()
+                        .regionName("some-region")
+                        .build())
                 .fragmentSize(S3Instructions.MAX_FRAGMENT_SIZE)
                 .build()
                 .fragmentSize())
@@ -114,7 +195,9 @@ public class S3InstructionsTest {
     void tooBigFragmentSize() {
         try {
             S3Instructions.builder()
-                    .regionName("some-region")
+                    .asyncClientFactory(DeephavenS3AsyncClientFactory.builder()
+                            .regionName("some-region")
+                            .build())
                     .fragmentSize(S3Instructions.MAX_FRAGMENT_SIZE + 1)
                     .build();
         } catch (IllegalArgumentException e) {
@@ -125,7 +208,9 @@ public class S3InstructionsTest {
     @Test
     void minMaxCacheSize() {
         assertThat(S3Instructions.builder()
-                .regionName("some-region")
+                .asyncClientFactory(DeephavenS3AsyncClientFactory.builder()
+                        .regionName("some-region")
+                        .build())
                 .readAheadCount(99)
                 .maxCacheSize(100)
                 .build()
@@ -137,7 +222,9 @@ public class S3InstructionsTest {
     void tooSmallCacheSize() {
         try {
             S3Instructions.builder()
-                    .regionName("some-region")
+                    .asyncClientFactory(DeephavenS3AsyncClientFactory.builder()
+                            .regionName("some-region")
+                            .build())
                     .readAheadCount(99)
                     .maxCacheSize(99)
                     .build();
@@ -148,11 +235,13 @@ public class S3InstructionsTest {
 
     @Test
     void basicCredentials() {
-        assertThat(S3Instructions.builder()
-                .regionName("some-region")
-                .credentials(Credentials.basic("foo", "bar"))
-                .build()
-                .credentials())
+        final S3Instructions input = S3Instructions.builder()
+                .asyncClientFactory(DeephavenS3AsyncClientFactory.builder()
+                        .regionName("some-region")
+                        .credentials(Credentials.basic("foo", "bar"))
+                        .build())
+                .build();
+        assertThat(((DeephavenS3AsyncClientFactory) input.asyncClientFactory()).credentials())
                 .isEqualTo(Credentials.basic("foo", "bar"));
     }
 
@@ -160,8 +249,10 @@ public class S3InstructionsTest {
     void badCredentials() {
         try {
             S3Instructions.builder()
-                    .regionName("some-region")
-                    .credentials(new Credentials() {})
+                    .asyncClientFactory(DeephavenS3AsyncClientFactory.builder()
+                            .regionName("some-region")
+                            .credentials(new Credentials() {})
+                            .build())
                     .build();
         } catch (IllegalArgumentException e) {
             assertThat(e).hasMessageContaining("credentials");

@@ -4,6 +4,7 @@
 package io.deephaven.extensions.s3.testlib;
 
 import io.deephaven.extensions.s3.Credentials;
+import io.deephaven.extensions.s3.DeephavenS3AsyncClientFactory;
 import io.deephaven.extensions.s3.S3Instructions.Builder;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.MinIOContainer;
@@ -38,9 +39,11 @@ public final class SingletonContainers {
 
         public static Builder s3Instructions(Builder builder) {
             return builder
-                    .endpointOverride(LOCALSTACK_S3.getEndpoint())
-                    .regionName(LOCALSTACK_S3.getRegion())
-                    .credentials(Credentials.basic(LOCALSTACK_S3.getAccessKey(), LOCALSTACK_S3.getSecretKey()));
+                    .asyncClientFactory(DeephavenS3AsyncClientFactory.builder()
+                            .endpointOverride(LOCALSTACK_S3.getEndpoint())
+                            .regionName(LOCALSTACK_S3.getRegion())
+                            .credentials(Credentials.basic(LOCALSTACK_S3.getAccessKey(), LOCALSTACK_S3.getSecretKey()))
+                            .build());
         }
 
         public static S3AsyncClient s3AsyncClient() {
@@ -71,9 +74,11 @@ public final class SingletonContainers {
 
         public static Builder s3Instructions(Builder builder) {
             return builder
-                    .endpointOverride(URI.create(MINIO.getS3URL()))
-                    .regionName(Region.AWS_GLOBAL.id())
-                    .credentials(Credentials.basic(MINIO.getUserName(), MINIO.getPassword()));
+                    .asyncClientFactory(DeephavenS3AsyncClientFactory.builder()
+                            .endpointOverride(URI.create(MINIO.getS3URL()))
+                            .regionName(Region.AWS_GLOBAL.id())
+                            .credentials(Credentials.basic(MINIO.getUserName(), MINIO.getPassword()))
+                            .build());
         }
 
         public static S3AsyncClient s3AsyncClient() {

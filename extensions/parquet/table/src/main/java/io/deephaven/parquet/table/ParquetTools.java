@@ -329,6 +329,8 @@ public class ParquetTools {
         writeTable(sourceTable, destination, ensureTableDefinition(writeInstructions, definition, true));
     }
 
+    // TODO This is kept public here for the review. I can move it somewhere else like ParquetUtils if this design
+    // is okay.
     public static ParquetInstructions ensureChannelsProvider(
             @NotNull final URI parquetFileURI,
             @NotNull final ParquetInstructions instructions) {

@@ -7,15 +7,13 @@ import io.deephaven.annotations.CopyableStyle;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.configuration.Configuration;
+import org.immutables.value.Value;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Lazy;
-import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 
-import java.net.URI;
 import java.time.Duration;
-import java.util.Optional;
 
 /**
  * This class provides instructions intended for reading from and writing to S3-compatible APIs. The default values
@@ -25,9 +23,7 @@ import java.util.Optional;
 @CopyableStyle
 public abstract class S3Instructions implements LogOutputAppendable {
 
-    private final static int DEFAULT_MAX_CONCURRENT_REQUESTS = 50;
     private final static int DEFAULT_READ_AHEAD_COUNT = 1;
-
     private final static String MAX_FRAGMENT_SIZE_CONFIG_PARAM = "S3.maxFragmentSize";
     final static int MAX_FRAGMENT_SIZE =
             Configuration.getInstance().getIntegerWithDefault(MAX_FRAGMENT_SIZE_CONFIG_PARAM, 5 << 20); // 5 MiB
@@ -35,24 +31,35 @@ public abstract class S3Instructions implements LogOutputAppendable {
     private final static int SINGLE_USE_FRAGMENT_SIZE_DEFAULT = Math.min(65536, MAX_FRAGMENT_SIZE); // 64 KiB
     private final static int MIN_FRAGMENT_SIZE = 8 << 10; // 8 KiB
     private final static int DEFAULT_MAX_CACHE_SIZE = 32;
-    private final static Duration DEFAULT_CONNECTION_TIMEOUT = Duration.ofSeconds(2);
-    private final static Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(2);
+    private final static Duration DEFAULT_READ_TIMEOUT = DeephavenS3AsyncClientFactory.DEFAULT_READ_TIMEOUT;
 
     public static Builder builder() {
         return ImmutableS3Instructions.builder();
     }
 
-    /**
-     * The region name to use when reading or writing to S3.
-     */
-    public abstract String regionName();
+    // TODO(Ryan) Right now readTimeout is duplicated between S3Instructions and DeephavenS3AsyncClientFactory.
+    // readTimeout is used both inside the client and in outside code.
+    // I moved regionName inside and regionName is a manadatory parameter. But that would mean all users would now have
+    // to make a client and supply a regionName.
+    // Also, readTImeout would also need to be set in the client builder.
+    // TODO(malhotras) Fix and test the python code based on what we decide here
 
     /**
-     * The maximum number of concurrent requests to make to S3, defaults to {@value #DEFAULT_MAX_CONCURRENT_REQUESTS}.
+     * Check {@link DeephavenS3AsyncClientFactory#readTimeout()}
      */
-    @Default
-    public int maxConcurrentRequests() {
-        return DEFAULT_MAX_CONCURRENT_REQUESTS;
+    @Value.Default
+    Duration readTimeout() {
+        if (asyncClientFactory() instanceof DeephavenS3AsyncClientFactory) {
+            return ((DeephavenS3AsyncClientFactory) asyncClientFactory()).readTimeout();
+        }
+        return DEFAULT_READ_TIMEOUT;
+    }
+
+    @Value.Default
+    public S3AsyncClientFactory asyncClientFactory() {
+        return DeephavenS3AsyncClientFactory.builder()
+                .readTimeout(readTimeout())
+                .build();
     }
 
     /**
@@ -87,68 +94,21 @@ public abstract class S3Instructions implements LogOutputAppendable {
         return Math.max(1 + readAheadCount(), DEFAULT_MAX_CACHE_SIZE);
     }
 
-    /**
-     * The amount of time to wait when initially establishing a connection before giving up and timing out, defaults to
-     * 2 seconds.
-     */
-    @Default
-    public Duration connectionTimeout() {
-        return DEFAULT_CONNECTION_TIMEOUT;
-    }
-
-    /**
-     * The amount of time to wait when reading a fragment before giving up and timing out, defaults to 2 seconds. The
-     * implementation may choose to internally retry the request multiple times, so long as the total time does not
-     * exceed this timeout.
-     */
-    @Default
-    public Duration readTimeout() {
-        return DEFAULT_READ_TIMEOUT;
-    }
-
-    /**
-     * The credentials to use when reading or writing to S3. By default, uses {@link Credentials#defaultCredentials()}.
-     */
-    @Default
-    public Credentials credentials() {
-        return Credentials.defaultCredentials();
-    }
-
     @Override
     public LogOutput append(final LogOutput logOutput) {
         return logOutput.append(toString());
     }
 
-    /**
-     * The endpoint to connect to. Callers connecting to AWS do not typically need to set this; it is most useful when
-     * connecting to non-AWS, S3-compatible APIs.
-     *
-     * @see <a href="https://docs.aws.amazon.com/general/latest/gr/s3.html">Amazon Simple Storage Service endpoints</a>
-     */
-    public abstract Optional<URI> endpointOverride();
-
     public interface Builder {
-        Builder regionName(String regionName);
+        Builder asyncClientFactory(S3AsyncClientFactory asyncClientFactory);
 
-        Builder maxConcurrentRequests(int maxConcurrentRequests);
+        Builder readTimeout(Duration readTimeout);
 
         Builder readAheadCount(int readAheadCount);
 
         Builder fragmentSize(int fragmentSize);
 
         Builder maxCacheSize(int maxCacheSize);
-
-        Builder connectionTimeout(Duration connectionTimeout);
-
-        Builder readTimeout(Duration connectionTimeout);
-
-        Builder credentials(Credentials credentials);
-
-        Builder endpointOverride(URI endpointOverride);
-
-        default Builder endpointOverride(String endpointOverride) {
-            return endpointOverride(URI.create(endpointOverride));
-        }
 
         S3Instructions build();
     }
@@ -165,13 +125,6 @@ public abstract class S3Instructions implements LogOutputAppendable {
         return withReadAheadCount(readAheadCount)
                 .withFragmentSize(Math.min(SINGLE_USE_FRAGMENT_SIZE_DEFAULT, fragmentSize()))
                 .withMaxCacheSize(readAheadCount + 1);
-    }
-
-    @Check
-    final void boundsCheckMaxConcurrentRequests() {
-        if (maxConcurrentRequests() < 1) {
-            throw new IllegalArgumentException("maxConcurrentRequests(=" + maxConcurrentRequests() + ") must be >= 1");
-        }
     }
 
     @Check
@@ -202,15 +155,13 @@ public abstract class S3Instructions implements LogOutputAppendable {
     }
 
     @Check
-    final void awsSdkV2Credentials() {
-        if (!(credentials() instanceof AwsSdkV2Credentials)) {
+    final void consistencyCheckReadTimeout() {
+        if (asyncClientFactory() instanceof DeephavenS3AsyncClientFactory &&
+                readTimeout() != ((DeephavenS3AsyncClientFactory) asyncClientFactory()).readTimeout()) {
             throw new IllegalArgumentException(
-                    "credentials() must be created via provided io.deephaven.extensions.s3.Credentials methods");
+                    "readTimeout(=" + readTimeout() + ") must match asyncClientFactory.readTimeout(=" +
+                            ((DeephavenS3AsyncClientFactory) asyncClientFactory()).readTimeout() + ")");
         }
-    }
-
-    final AwsCredentialsProvider awsV2CredentialsProvider() {
-        return ((AwsSdkV2Credentials) credentials()).awsV2CredentialsProvider();
     }
 
     // If necessary, we _could_ plumb support for "S3-compatible" services which don't support virtual-host style

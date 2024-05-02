@@ -39,6 +39,7 @@ import io.deephaven.engine.util.BigDecimalUtils;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.extensions.s3.Credentials;
+import io.deephaven.extensions.s3.DeephavenS3AsyncClientFactory;
 import io.deephaven.extensions.s3.S3Instructions;
 import io.deephaven.parquet.base.InvalidParquetFileException;
 import io.deephaven.parquet.base.NullStatistics;
@@ -1423,13 +1424,15 @@ public final class ParquetTableReadWriteTest {
     public void readSampleParquetFilesFromDeephavenS3Bucket() {
         Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
         final S3Instructions s3Instructions = S3Instructions.builder()
-                .regionName("us-east-1")
+                .asyncClientFactory(DeephavenS3AsyncClientFactory.builder()
+                        .regionName("us-east-1")
+                        .readTimeout(Duration.ofSeconds(60))
+                        .maxConcurrentRequests(50)
+                        .credentials(Credentials.defaultCredentials())
+                        .build())
                 .readAheadCount(1)
                 .fragmentSize(5 * 1024 * 1024)
-                .maxConcurrentRequests(50)
                 .maxCacheSize(32)
-                .readTimeout(Duration.ofSeconds(60))
-                .credentials(Credentials.defaultCredentials())
                 .build();
         final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
                 .setSpecialInstructions(s3Instructions)
@@ -1461,14 +1464,16 @@ public final class ParquetTableReadWriteTest {
     public void readSampleParquetFilesFromPublicS3() {
         Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
         final S3Instructions s3Instructions = S3Instructions.builder()
-                .regionName("us-east-2")
+                .asyncClientFactory(DeephavenS3AsyncClientFactory.builder()
+                        .regionName("us-east-2")
+                        .readTimeout(Duration.ofSeconds(60))
+                        .credentials(Credentials.anonymous())
+                        .maxConcurrentRequests(50)
+                        .connectionTimeout(Duration.ofSeconds(1))
+                        .build())
                 .readAheadCount(1)
                 .fragmentSize(5 * 1024 * 1024)
-                .maxConcurrentRequests(50)
                 .maxCacheSize(32)
-                .connectionTimeout(Duration.ofSeconds(1))
-                .readTimeout(Duration.ofSeconds(60))
-                .credentials(Credentials.anonymous())
                 .build();
         final TableDefinition tableDefinition = TableDefinition.of(
                 ColumnDefinition.ofString("hash"),
@@ -1502,13 +1507,16 @@ public final class ParquetTableReadWriteTest {
     public void readFlatPartitionedParquetFromS3() {
         Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
         final S3Instructions s3Instructions = S3Instructions.builder()
-                .regionName("us-east-1")
+                .asyncClientFactory(DeephavenS3AsyncClientFactory.builder()
+                        .regionName("us-east-1")
+                        .readTimeout(Duration.ofSeconds(60))
+                        .credentials(Credentials.defaultCredentials())
+                        .maxConcurrentRequests(50)
+                        .connectionTimeout(Duration.ofSeconds(1))
+                        .build())
                 .readAheadCount(1)
                 .fragmentSize(5 * 1024 * 1024)
-                .maxConcurrentRequests(50)
                 .maxCacheSize(32)
-                .readTimeout(Duration.ofSeconds(60))
-                .credentials(Credentials.defaultCredentials())
                 .build();
         final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
                 .setSpecialInstructions(s3Instructions)
@@ -1524,13 +1532,16 @@ public final class ParquetTableReadWriteTest {
     public void readFlatPartitionedDataAsKeyValuePartitionedParquetFromS3() {
         Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
         final S3Instructions s3Instructions = S3Instructions.builder()
-                .regionName("us-east-1")
+                .asyncClientFactory(DeephavenS3AsyncClientFactory.builder()
+                        .regionName("us-east-1")
+                        .readTimeout(Duration.ofSeconds(60))
+                        .credentials(Credentials.defaultCredentials())
+                        .maxConcurrentRequests(50)
+                        .connectionTimeout(Duration.ofSeconds(1))
+                        .build())
                 .readAheadCount(1)
                 .fragmentSize(5 * 1024 * 1024)
-                .maxConcurrentRequests(50)
                 .maxCacheSize(32)
-                .readTimeout(Duration.ofSeconds(60))
-                .credentials(Credentials.defaultCredentials())
                 .build();
         final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
                 .setSpecialInstructions(s3Instructions)
@@ -1546,13 +1557,16 @@ public final class ParquetTableReadWriteTest {
     public void readKeyValuePartitionedParquetFromS3() {
         Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
         final S3Instructions s3Instructions = S3Instructions.builder()
-                .regionName("us-east-1")
+                .asyncClientFactory(DeephavenS3AsyncClientFactory.builder()
+                        .regionName("us-east-1")
+                        .readTimeout(Duration.ofSeconds(60))
+                        .credentials(Credentials.defaultCredentials())
+                        .maxConcurrentRequests(50)
+                        .connectionTimeout(Duration.ofSeconds(1))
+                        .build())
                 .readAheadCount(1)
                 .fragmentSize(5 * 1024 * 1024)
-                .maxConcurrentRequests(50)
                 .maxCacheSize(32)
-                .readTimeout(Duration.ofSeconds(60))
-                .credentials(Credentials.defaultCredentials())
                 .build();
         final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
                 .setSpecialInstructions(s3Instructions)
@@ -1577,13 +1591,16 @@ public final class ParquetTableReadWriteTest {
     public void readKeyValuePartitionedParquetFromPublicS3() {
         Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
         final S3Instructions s3Instructions = S3Instructions.builder()
-                .regionName("us-east-1")
+                .asyncClientFactory(DeephavenS3AsyncClientFactory.builder()
+                        .regionName("us-east-1")
+                        .readTimeout(Duration.ofSeconds(60))
+                        .credentials(Credentials.anonymous())
+                        .maxConcurrentRequests(50)
+                        .connectionTimeout(Duration.ofSeconds(1))
+                        .build())
                 .readAheadCount(1)
                 .fragmentSize(5 * 1024 * 1024)
-                .maxConcurrentRequests(50)
                 .maxCacheSize(32)
-                .readTimeout(Duration.ofSeconds(60))
-                .credentials(Credentials.anonymous())
                 .build();
         final TableDefinition ookla_table_definition = TableDefinition.of(
                 ColumnDefinition.ofInt("quarter").withPartitioning(),
