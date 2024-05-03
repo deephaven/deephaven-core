@@ -54,19 +54,19 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     private static final Logger log = LoggerFactory.getLogger(S3SeekableChannelProvider.class);
 
     private final S3AsyncClient s3AsyncClient;
-    private final S3Instructions instructions;
+    private final S3Instructions s3Instructions;
 
     /**
      * A shared cache for S3 requests. This cache is shared across all S3 channels created by this provider.
      */
     private final S3RequestCache sharedCache;
 
-    S3SeekableChannelProvider(@NotNull final S3Instructions instructions) {
+    S3SeekableChannelProvider(@NotNull final S3Instructions s3Instructions) {
         // TODO(deephaven-core#5062): Add support for async client recovery and auto-close
         // TODO(deephaven-core#5063): Add support for caching clients for re-use
-        this.s3AsyncClient = buildClient(instructions);
+        this.s3AsyncClient = buildClient(s3Instructions);
         this.sharedCache = new S3RequestCache();
-        this.instructions = instructions;
+        this.s3Instructions = s3Instructions;
     }
 
     private static S3AsyncClient buildClient(@NotNull final S3Instructions s3Instructions) {
@@ -110,12 +110,12 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
     @Override
     public SeekableChannelContext makeContext() {
-        return new S3ChannelContext(s3AsyncClient, instructions, sharedCache);
+        return new S3ChannelContext(s3AsyncClient, s3Instructions, sharedCache);
     }
 
     @Override
     public SeekableChannelContext makeSingleUseContext() {
-        return new S3ChannelContext(s3AsyncClient, instructions.singleUse(), sharedCache);
+        return new S3ChannelContext(s3AsyncClient, s3Instructions.singleUse(), sharedCache);
     }
 
     @Override
@@ -197,14 +197,14 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
                     // Add a delimiter to the request if we don't want to fetch all files recursively
                     requestBuilder.delimiter("/");
                 }
-                final long readTimeoutNanos = instructions.readTimeout().toNanos();
+                final long readTimeoutNanos = s3Instructions.readTimeout().toNanos();
                 final ListObjectsV2Request request = requestBuilder.continuationToken(continuationToken).build();
                 final ListObjectsV2Response response;
                 try {
                     response = s3AsyncClient.listObjectsV2(request).get(readTimeoutNanos, TimeUnit.NANOSECONDS);
                 } catch (final InterruptedException | ExecutionException | TimeoutException | CancellationException e) {
                     throw handleS3Exception(e, String.format("fetching list of files in directory %s", directory),
-                            instructions);
+                            s3Instructions);
                 }
                 currentBatchIt = response.contents().stream()
                         .filter(s3Object -> !s3Object.key().equals(directoryKey))
@@ -232,6 +232,7 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
     @Override
     public void close() {
-        // Do nothing since we are using a shared client and cache
+        s3AsyncClient.close();
+        sharedCache.clear();
     }
 }

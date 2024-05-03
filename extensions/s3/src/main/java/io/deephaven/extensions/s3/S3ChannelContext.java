@@ -263,12 +263,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
             }
         }
 
-        /**
-         * Field updater for refCount, so we can avoid creating an {@link AtomicInteger} for each instance.
-         */
-        private static final AtomicIntegerFieldUpdater<Request> REFCOUNT_UPDATER =
-                AtomicIntegerFieldUpdater.newUpdater(Request.class, "refCount");
-        private volatile int refCount;
+        private int refCount;
 
         @SuppressWarnings("unused")
         private ByteBuffer bufferReference;
@@ -306,7 +301,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
         private Request(final long fragmentIndex, @NotNull final S3ChannelContext context,
                 @NotNull final ByteBuffer buffer, final long from, final long to) {
             super(buffer, CleanupReferenceProcessorInstance.DEFAULT.getReferenceQueue());
-            REFCOUNT_UPDATER.set(this, 0);
+            refCount = 0;
             bufferReference = null;
             this.fragmentIndex = fragmentIndex;
             this.s3Uri = context.uri;
@@ -335,7 +330,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
                 return null;
             }
             synchronized (this) {
-                if (REFCOUNT_UPDATER.incrementAndGet(this) == 1) {
+                if (refCount++ == 0) {
                     bufferReference = buffer;
                 }
             }
@@ -349,7 +344,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
         // TODO Move the release method lower in file after the fill method. Kept it here for ease of review.
         void release() {
             synchronized (this) {
-                if (REFCOUNT_UPDATER.decrementAndGet(this) == 0) {
+                if (--refCount == 0) {
                     bufferReference = null;
                 }
             }

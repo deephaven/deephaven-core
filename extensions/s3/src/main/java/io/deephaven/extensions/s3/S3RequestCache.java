@@ -65,4 +65,11 @@ final class S3RequestCache {
     void remove(@NotNull final Request request) {
         requests.remove(request.getId(), request);
     }
+
+    /**
+     * Clear the cache.
+     */
+    void clear() {
+        requests.clear();
+    }
 }
