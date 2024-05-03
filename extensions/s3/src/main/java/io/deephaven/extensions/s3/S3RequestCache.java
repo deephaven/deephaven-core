@@ -6,7 +6,6 @@ package io.deephaven.extensions.s3;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import software.amazon.awssdk.services.s3.S3Uri;
 import io.deephaven.extensions.s3.S3ChannelContext.Request;
 
@@ -27,27 +26,6 @@ final class S3RequestCache {
         public Request.ID getKey(@NotNull final S3ChannelContext.Request request) {
             return request.getId();
         }
-    }
-
-    /**
-     * {@link Request#acquire() Acquire} a request for the given URI and fragment index, if it exists in the cache.
-     *
-     * @param uri the URI
-     * @param fragmentIndex the fragment index
-     * @return the request, or {@code null} if not found
-     */
-    @Nullable
-    Request getRequest(@NotNull final S3Uri uri, final long fragmentIndex) {
-        final Request request = requests.get(new Request.ID(uri, fragmentIndex));
-        if (request == null) {
-            return null;
-        }
-        final Request acquired = request.acquire();
-        if (acquired == null) {
-            remove(request);
-            return null;
-        }
-        return acquired;
     }
 
     /**
