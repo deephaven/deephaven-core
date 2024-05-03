@@ -5,6 +5,8 @@ package io.deephaven.extensions.s3;
 
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.s3.S3Uri;
 import io.deephaven.extensions.s3.S3ChannelContext.Request;
@@ -14,6 +16,8 @@ import io.deephaven.extensions.s3.S3ChannelContext.Request;
  * index. This cache can be used concurrently.
  */
 final class S3RequestCache {
+
+    private static final Logger log = LoggerFactory.getLogger(S3RequestCache.class);
 
     private final int fragmentSize;
     private final KeyedObjectHashMap<Request.ID, Request> requests;
@@ -67,6 +71,9 @@ final class S3RequestCache {
             // Kept it here for now because caller doesn't know whether request is new or not. So should call init or
             // not. Maybe we can make init more idempotent and the context would call it always.
             newRequest.init();
+            if (log.isDebugEnabled()) {
+                log.debug().append("Adding new request to cache: ").append(newRequest.requestStr()).endl();
+            }
             return newRequest;
         });
     }
@@ -75,6 +82,9 @@ final class S3RequestCache {
      * Remove this request from the cache, if present.
      */
     void remove(@NotNull final Request request) {
+        if (log.isDebugEnabled()) {
+            log.debug().append("Clearing request from cache: ").append(request.requestStr()).endl();
+        }
         requests.remove(request.getId(), request);
     }
 

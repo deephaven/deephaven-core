@@ -493,7 +493,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
                     .build();
         }
 
-        private String requestStr() {
+        String requestStr() {
             return String.format("ix=%d [%d, %d]/%d %s/%s", fragmentIndex, from, to, requestLength(),
                     s3Uri.bucket().orElseThrow(), s3Uri.key().orElseThrow());
         }
