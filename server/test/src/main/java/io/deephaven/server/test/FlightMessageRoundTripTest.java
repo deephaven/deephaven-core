@@ -38,8 +38,10 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.util.BarrageChunkAppendingMarshaller;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
+import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.plugin.Registration;
 import io.deephaven.proto.backplane.grpc.SortTableRequest;
 import io.deephaven.proto.backplane.grpc.WrappedAuthenticationRequest;
@@ -94,6 +96,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.Consumer;
 
 import static io.deephaven.client.impl.BarrageSubscriptionImpl.makeRequestInternal;
 import static org.junit.Assert.*;
@@ -637,6 +640,16 @@ public abstract class FlightMessageRoundTripTest {
                 .update("B = new Boolean[][] {null, new Boolean[] {false, null, true}}"));
     }
 
+    private static final Logger log = LoggerFactory.getLogger(FlightMessageRoundTripTest.class);
+
+    @Test
+    public void testLocalDateTimeCol() throws Exception {
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("LD = java.time.LocalDate.ofEpochDay(ii)"),
+                recordBatch -> {
+                    log.error().append("" + recordBatch.getFieldVectors()).endl();
+                });
+    }
+
     @Test
     public void testFlightInfo() {
         final String staticTableName = "flightInfoTest";
@@ -958,7 +971,14 @@ public abstract class FlightMessageRoundTripTest {
 
     private static int nextTicket = 1;
 
+
     private void assertRoundTripDataEqual(Table deephavenTable) throws Exception {
+        assertRoundTripDataEqual(deephavenTable, recordBatch -> {
+        });
+    }
+
+    private void assertRoundTripDataEqual(Table deephavenTable, Consumer<VectorSchemaRoot> recordBlockTester)
+            throws Exception {
         // bind the table in the session
         Flight.Ticket dhTableTicket = FlightExportTicketHelper.exportIdToFlightTicket(nextTicket++);
         currentSession.newExport(dhTableTicket, "test").submit(() -> deephavenTable);
@@ -976,6 +996,7 @@ public abstract class FlightMessageRoundTripTest {
 
             // send the body of the table
             while (stream.next()) {
+                recordBlockTester.accept(root);
                 putStream.putNext();
             }
         }

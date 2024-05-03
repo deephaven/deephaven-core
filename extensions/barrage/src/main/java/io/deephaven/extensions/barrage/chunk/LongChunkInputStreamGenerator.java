@@ -7,6 +7,7 @@
 // @formatter:off
 package io.deephaven.extensions.barrage.chunk;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
@@ -17,7 +18,6 @@ import com.google.common.io.LittleEndianDataOutputStream;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.function.ToLongFunction;
-import io.deephaven.util.QueryConstants;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
@@ -31,6 +31,7 @@ import java.io.OutputStream;
 import java.util.Iterator;
 import java.util.PrimitiveIterator;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 
 import static io.deephaven.util.QueryConstants.*;
 
@@ -39,26 +40,19 @@ public class LongChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
 
     public static LongChunkInputStreamGenerator convertBoxed(
             final ObjectChunk<Long, Values> inChunk, final long rowOffset) {
-        // This code path is utilized for arrays and vectors of DateTimes, which cannot be reinterpreted.
-        WritableLongChunk<Values> outChunk = WritableLongChunk.makeWritableChunk(inChunk.size());
-        for (int i = 0; i < inChunk.size(); ++i) {
-            final Long value = inChunk.get(i);
-            outChunk.set(i, TypeUtils.unbox(value));
-        }
-        if (inChunk instanceof PoolableChunk) {
-            ((PoolableChunk) inChunk).close();
-        }
-        return new LongChunkInputStreamGenerator(outChunk, Long.BYTES, rowOffset);
+        return convertWithTransform(inChunk, rowOffset, TypeUtils::unbox);
     }
 
     public static <T> LongChunkInputStreamGenerator convertWithTransform(
             final ObjectChunk<T, Values> inChunk, final long rowOffset, final ToLongFunction<T> transform) {
-        // This code path is utilized for LocalDate and LocalTime
+        // This code path is utilized for arrays and vectors of DateTimes, LocalDate, and LocalTime, which cannot be
+        // reinterpreted.
         WritableLongChunk<Values> outChunk = WritableLongChunk.makeWritableChunk(inChunk.size());
         for (int i = 0; i < inChunk.size(); ++i) {
             T value = inChunk.get(i);
-            outChunk.set(i, value == null ? QueryConstants.NULL_LONG : transform.applyAsLong(value));
+            outChunk.set(i, transform.applyAsLong(value));
         }
+        // inChunk is a transfer of ownership to us, but we've converted what we need, so we must close it now
         if (inChunk instanceof PoolableChunk) {
             ((PoolableChunk) inChunk).close();
         }
@@ -181,7 +175,7 @@ public class LongChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
         LongConversion IDENTITY = (long a) -> a;
     }
 
-    static WritableChunk<Values> extractChunkFromInputStream(
+    static WritableLongChunk<Values> extractChunkFromInputStream(
             final int elementSize,
             final StreamReaderOptions options,
             final Iterator<FieldNodeInfo> fieldNodeIter,
@@ -207,27 +201,29 @@ public class LongChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
             final int totalRows) throws IOException {
 
         try (final WritableLongChunk<Values> inner = extractChunkFromInputStream(
-                elementSize, options, fieldNodeIter, bufferInfoIter, is, null, 0, 0).asWritableLongChunk()) {
+                elementSize, options, fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
 
-            final WritableObjectChunk<T, Values> chunk;
-            if (outChunk != null) {
-                chunk = outChunk.asWritableObjectChunk();
-            } else {
-                final int numRows = Math.max(totalRows, inner.size());
-                chunk = WritableObjectChunk.makeWritableChunk(numRows);
-                chunk.setSize(numRows);
+            final WritableObjectChunk<T, Values> chunk = castOrCreateChunk(
+                    outChunk,
+                    Math.max(totalRows, inner.size()),
+                    WritableObjectChunk::makeWritableChunk,
+                    WritableChunk::asWritableObjectChunk);
+
+            if (outChunk == null) {
+                // if we're not given an output chunk then we better be writing at the front of the new one
+                Assert.eqZero(outOffset, "outOffset");
             }
 
             for (int ii = 0; ii < inner.size(); ++ii) {
                 long value = inner.get(ii);
-                chunk.set(outOffset + ii, value == NULL_LONG ? null : transform.apply(value));
+                chunk.set(outOffset + ii, transform.apply(value));
             }
 
             return chunk;
         }
     }
 
-    static WritableChunk<Values> extractChunkFromInputStreamWithConversion(
+    static WritableLongChunk<Values> extractChunkFromInputStreamWithConversion(
             final int elementSize,
             final StreamReaderOptions options,
             final LongConversion conversion,
@@ -242,14 +238,11 @@ public class LongChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
         final long validityBuffer = bufferInfoIter.nextLong();
         final long payloadBuffer = bufferInfoIter.nextLong();
 
-        final WritableLongChunk<Values> chunk;
-        if (outChunk != null) {
-            chunk = outChunk.asWritableLongChunk();
-        } else {
-            final int numRows = Math.max(totalRows, nodeInfo.numElements);
-            chunk = WritableLongChunk.makeWritableChunk(numRows);
-            chunk.setSize(numRows);
-        }
+        final WritableLongChunk<Values> chunk = castOrCreateChunk(
+                outChunk,
+                Math.max(totalRows, nodeInfo.numElements),
+                WritableLongChunk::makeWritableChunk,
+                WritableChunk::asWritableLongChunk);
 
         if (nodeInfo.numElements == 0) {
             return chunk;
@@ -292,6 +285,19 @@ public class LongChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
         }
 
         return chunk;
+    }
+
+    private static <T extends WritableChunk<Values>> T castOrCreateChunk(
+            final WritableChunk<Values> outChunk,
+            final int numRows,
+            final IntFunction<T> chunkFactory,
+            final Function<WritableChunk<Values>, T> castFunction) {
+        if (outChunk != null) {
+            return castFunction.apply(outChunk);
+        }
+        final T newChunk = chunkFactory.apply(numRows);
+        newChunk.setSize(numRows);
+        return newChunk;
     }
 
     private static void useDeephavenNulls(

@@ -103,7 +103,6 @@ class ArrowTestCase(BaseTestCase):
                 pa.array([2 ** 16 - 1, 0]),
             ]
 
-    @unittest.skip("Not correctly converted by DH, marked as unsupported now.")
     def test_arrow_types_time(self):
         pa_types = [
             pa.time64('ns'),

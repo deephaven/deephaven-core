@@ -4,11 +4,9 @@
 package io.deephaven.extensions.barrage.chunk;
 
 import com.google.common.base.Charsets;
-import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
-import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.pools.PoolableChunk;
 import io.deephaven.engine.rowset.RowSet;
@@ -16,6 +14,7 @@ import io.deephaven.extensions.barrage.ColumnConversionMode;
 import io.deephaven.extensions.barrage.util.DefensiveDrainable;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
@@ -24,6 +23,7 @@ import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.Vector;
 import org.jetbrains.annotations.Nullable;
 
+import javax.management.Query;
 import java.io.DataInput;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -44,6 +44,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
             final Class<?> componentType,
             final Chunk<Values> chunk,
             final long rowOffset) {
+        // TODO (deephaven-core#5453): pass in ArrowType to enable ser/deser of single java class in multiple formats
         switch (chunkType) {
             case Boolean:
                 throw new UnsupportedOperationException("Booleans are reinterpreted as bytes");
@@ -149,18 +150,28 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                     return ShortChunkInputStreamGenerator.convertBoxed(chunk.asObjectChunk(), rowOffset);
                 }
                 if (type == LocalDate.class) {
-                    return IntChunkInputStreamGenerator.<LocalDate>convertWithTransform(chunk.asObjectChunk(),
+                    final long msPerDay = 24 * 60 * 60 * 1000L;
+                    final long minDate = QueryConstants.MIN_LONG / msPerDay;
+                    final long maxDate = QueryConstants.MAX_LONG / msPerDay;
+                    return LongChunkInputStreamGenerator.<LocalDate>convertWithTransform(chunk.asObjectChunk(),
                             rowOffset, date -> {
-                                final long epochDay = date.toEpochDay();
-                                if (epochDay < 0 || epochDay > Integer.MAX_VALUE) {
-                                    throw new IllegalArgumentException("Date out of range: " + date);
+                                if (date == null) {
+                                    return QueryConstants.NULL_LONG;
                                 }
-                                return (int) epochDay;
+                                final long epochDay = date.toEpochDay();
+                                if (epochDay < minDate || epochDay > maxDate) {
+                                    throw new IllegalArgumentException("Date out of range: " + date + " (" + epochDay
+                                            + " not in [" + minDate + ", " + maxDate + "])");
+                                }
+                                return epochDay * msPerDay;
                             });
                 }
                 if (type == LocalTime.class) {
                     return LongChunkInputStreamGenerator.<LocalTime>convertWithTransform(chunk.asObjectChunk(),
                             rowOffset, date -> {
+                                if (date == null) {
+                                    return QueryConstants.NULL_LONG;
+                                }
                                 final long nanoOfDay = date.toNanoOfDay();
                                 if (nanoOfDay < 0) {
                                     throw new IllegalArgumentException("Time out of range: " + date);
@@ -197,6 +208,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
             final PrimitiveIterator.OfLong bufferInfoIter,
             final DataInput is,
             final WritableChunk<Values> outChunk, final int outOffset, final int totalRows) throws IOException {
+        // TODO (deephaven-core#5453): pass in ArrowType to enable ser/deser of single java class in multiple formats
         switch (chunkType) {
             case Boolean:
                 throw new UnsupportedOperationException("Booleans are reinterpreted as bytes");
@@ -323,15 +335,16 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                             fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
                 }
                 if (type == LocalDate.class) {
-                    return IntChunkInputStreamGenerator.extractChunkFromInputStreamWithTransform(
-                            Integer.BYTES, options,
-                            LocalDate::ofEpochDay,
+                    final long msPerDay = 24 * 60 * 60 * 1000L;
+                    return LongChunkInputStreamGenerator.extractChunkFromInputStreamWithTransform(
+                            Long.BYTES, options,
+                            value -> value == QueryConstants.NULL_LONG ? null : LocalDate.ofEpochDay(value / msPerDay),
                             fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
                 }
                 if (type == LocalTime.class) {
                     return LongChunkInputStreamGenerator.extractChunkFromInputStreamWithTransform(
                             Long.BYTES, options,
-                            LocalTime::ofNanoOfDay,
+                            value -> value == QueryConstants.NULL_LONG ? null : LocalTime.ofNanoOfDay(value),
                             fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
                 }
                 if (type == String.class ||
