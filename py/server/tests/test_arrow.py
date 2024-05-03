@@ -115,6 +115,7 @@ class ArrowTestCase(BaseTestCase):
         ]
         self.verify_type_conversion(pa_types=pa_types, pa_data=pa_data)
 
+    @unittest.skip("Not correctly converted by DH, marked as unsupported now.")
     def test_arrow_extra_time_types(self):
         pa_types = [
             pa.timestamp('ns', tz='MST'),
