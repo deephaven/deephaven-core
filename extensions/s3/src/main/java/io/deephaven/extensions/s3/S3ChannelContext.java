@@ -25,7 +25,6 @@ import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 
 import java.io.IOException;
 import java.lang.ref.SoftReference;
-import java.net.URI;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
@@ -151,8 +150,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
     }
 
     private void reset() {
-        // Cancel all outstanding requests
-        cancelOutstanding();
+        releaseOutstanding();
         // Reset the internal state
         uri = null;
         size = UNINITIALIZED_SIZE;
@@ -160,7 +158,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
     }
 
     /**
-     * Close the context, cancelling all outstanding requests and releasing all resources associated with it.
+     * Close the context, releasing all outstanding requests and resources associated with it.
      */
     @Override
     public void close() {
@@ -168,10 +166,14 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
         if (log.isDebugEnabled()) {
             log.debug().append("Closing context: ").append(ctxStr()).endl();
         }
-        cancelOutstanding();
+        releaseOutstanding();
     }
 
-    private void cancelOutstanding() {
+    /**
+     * Release all outstanding requests associated with this context. Eventually, the request will be canceled when the
+     * objects are garbage collected.
+     */
+    private void releaseOutstanding() {
         for (final Request request : localCache.values()) {
             request.release();
         }
@@ -235,11 +237,11 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
          * A unique identifier for a request, consisting of the URI and fragment index.
          */
         static final class ID {
-            private final URI uri;
+            private final S3Uri uri;
             private final long fragmentIndex;
 
             ID(final S3Uri s3Uri, final long fragmentIndex) {
-                this.uri = Require.neqNull(s3Uri.uri(), "uri");
+                this.uri = Require.neqNull(s3Uri, "s3Uri");
                 this.fragmentIndex = fragmentIndex;
             }
 
