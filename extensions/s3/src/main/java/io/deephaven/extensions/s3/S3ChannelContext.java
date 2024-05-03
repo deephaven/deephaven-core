@@ -36,8 +36,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiConsumer;
 
 /**
@@ -82,6 +80,10 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
         this.instructions = Objects.requireNonNull(instructions);
         this.localCache = new HashMap<>(instructions.maxCacheSize());
         this.sharedCache = sharedCache;
+        if (sharedCache.getFragmentSize() != instructions.fragmentSize()) {
+            throw new IllegalArgumentException("Fragment size mismatch between shared cache and instructions, "
+                    + sharedCache.getFragmentSize() + " != " + instructions.fragmentSize());
+        }
         uri = null;
         size = UNINITIALIZED_SIZE;
         numFragments = UNINITIALIZED_NUM_FRAGMENTS;
@@ -506,13 +508,14 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
 
             Sub() {
                 localProducer = producerFuture;
-                if (Request.super.get() == null) {
+                final ByteBuffer buffer = Request.super.get();
+                if (buffer == null) {
                     bufferView = null;
                     localProducer.completeExceptionally(new IllegalStateException(
                             String.format("Failed to acquire buffer for new subscriber, %s", requestStr())));
                     return;
                 }
-                bufferView = Request.super.get().duplicate();
+                bufferView = buffer.duplicate();
             }
 
             // ---------------------------------------------------- -------------------------
@@ -532,7 +535,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
             }
 
             @Override
-            public void onNext(ByteBuffer byteBuffer) {
+            public void onNext(final ByteBuffer byteBuffer) {
                 if (Request.super.get() == null) {
                     bufferView = null;
                     localProducer.completeExceptionally(new IllegalStateException(

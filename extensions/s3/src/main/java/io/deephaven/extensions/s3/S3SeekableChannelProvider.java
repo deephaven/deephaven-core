@@ -65,7 +65,7 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
         // TODO(deephaven-core#5062): Add support for async client recovery and auto-close
         // TODO(deephaven-core#5063): Add support for caching clients for re-use
         this.s3AsyncClient = buildClient(s3Instructions);
-        this.sharedCache = new S3RequestCache();
+        this.sharedCache = new S3RequestCache(s3Instructions.fragmentSize());
         this.s3Instructions = s3Instructions;
     }
 

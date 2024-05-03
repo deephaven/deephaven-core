@@ -15,9 +15,14 @@ import io.deephaven.extensions.s3.S3ChannelContext.Request;
  */
 final class S3RequestCache {
 
+    private final int fragmentSize;
     private final KeyedObjectHashMap<Request.ID, Request> requests;
 
-    S3RequestCache() {
+    /**
+     * Create a new cache to hold fragments of the given size.
+     */
+    S3RequestCache(final int fragmentSize) {
+        this.fragmentSize = fragmentSize;
         requests = new KeyedObjectHashMap<>(new REQUEST_KEY());
     }
 
@@ -26,6 +31,13 @@ final class S3RequestCache {
         public Request.ID getKey(@NotNull final S3ChannelContext.Request request) {
             return request.getId();
         }
+    }
+
+    /**
+     * Return the size of fragments stored in this cache.
+     */
+    int getFragmentSize() {
+        return fragmentSize;
     }
 
     /**
