@@ -28,12 +28,10 @@ import java.net.URISyntaxException;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -55,58 +53,20 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
     private static final Logger log = LoggerFactory.getLogger(S3SeekableChannelProvider.class);
 
-    /**
-     * Cache of shared {@link S3AsyncClient} objects and request caches, keyed by the S3 instructions.
-     */
-    private static final Map<S3Instructions, ClientData> SHARED_CLIENT_DATA = new ConcurrentHashMap<>();
-
-    private static class ClientData { // TODO better name
-        private final S3AsyncClient client;
-        private final S3RequestCache requestCache;
-
-        ClientData(final S3AsyncClient client, final S3RequestCache requestCache) {
-            this.client = client;
-            this.requestCache = requestCache;
-        }
-    }
-
-    // Local references of the shared client and request cache
-    private final S3AsyncClient sharedAsyncClient;
-    private final S3RequestCache sharedCache;
-
+    private final S3AsyncClient s3AsyncClient;
     private final S3Instructions instructions;
 
-    S3SeekableChannelProvider(@NotNull final S3Instructions instructions) {
-        final ClientData clientData = SHARED_CLIENT_DATA.compute(instructions, (key, existingClientData) -> {
-            if (existingClientData == null) {
-                // No existing client, create a new one
-                final S3AsyncClient newClient = buildClient(instructions);
-                final S3RequestCache newCache = new KeyedHashMapBasedRequestCache();
-                return new ClientData(newClient, newCache);
-            } else {
-                // Client exists, reconnect if necessary
-                if (isConnectionOpen(existingClientData.client)) {
-                    return existingClientData;
-                }
-                final S3AsyncClient newClient = buildClient(instructions);
-                return new ClientData(newClient, existingClientData.requestCache);
-            }
-        });
-        this.instructions = instructions;
-        this.sharedAsyncClient = clientData.client;
-        this.sharedCache = clientData.requestCache;
-    }
-
     /**
-     * Check if the connection is open by making a light-weight request and catching any exceptions.
+     * A shared cache for S3 requests. This cache is shared across all S3 channels created by this provider.
      */
-    private static boolean isConnectionOpen(@NotNull final S3AsyncClient client) {
-        try {
-            client.listBuckets().get();
-        } catch (final InterruptedException | ExecutionException | RuntimeException e) {
-            return false;
-        }
-        return true;
+    private final S3RequestCache sharedCache;
+
+    S3SeekableChannelProvider(@NotNull final S3Instructions instructions) {
+        // TODO(deephaven-core#5062): Add support for async client recovery and auto-close
+        // TODO(deephaven-core#5063): Add support for caching clients for re-use
+        this.s3AsyncClient = buildClient(instructions);
+        this.sharedCache = new S3RequestCache();
+        this.instructions = instructions;
     }
 
     private static S3AsyncClient buildClient(@NotNull final S3Instructions s3Instructions) {
@@ -137,7 +97,7 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     @Override
     public SeekableByteChannel getReadChannel(@NotNull final SeekableChannelContext channelContext,
             @NotNull final URI uri) {
-        final S3Uri s3Uri = sharedAsyncClient.utilities().parseUri(uri);
+        final S3Uri s3Uri = s3AsyncClient.utilities().parseUri(uri);
         // context is unused here, will be set before reading from the channel
         return new S3SeekableByteChannel(s3Uri);
     }
@@ -150,12 +110,12 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
     @Override
     public SeekableChannelContext makeContext() {
-        return new S3ChannelContext(sharedAsyncClient, instructions, sharedCache);
+        return new S3ChannelContext(s3AsyncClient, instructions, sharedCache);
     }
 
     @Override
     public SeekableChannelContext makeSingleUseContext() {
-        return new S3ChannelContext(sharedAsyncClient, instructions.singleUse(), sharedCache);
+        return new S3ChannelContext(s3AsyncClient, instructions.singleUse(), sharedCache);
     }
 
     @Override
@@ -194,7 +154,7 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
             private String continuationToken;
 
             {
-                final S3Uri s3DirectoryURI = sharedAsyncClient.utilities().parseUri(directory);
+                final S3Uri s3DirectoryURI = s3AsyncClient.utilities().parseUri(directory);
                 bucketName = s3DirectoryURI.bucket().orElseThrow();
                 directoryKey = s3DirectoryURI.key().orElseThrow();
             }
@@ -241,7 +201,7 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
                 final ListObjectsV2Request request = requestBuilder.continuationToken(continuationToken).build();
                 final ListObjectsV2Response response;
                 try {
-                    response = sharedAsyncClient.listObjectsV2(request).get(readTimeoutNanos, TimeUnit.NANOSECONDS);
+                    response = s3AsyncClient.listObjectsV2(request).get(readTimeoutNanos, TimeUnit.NANOSECONDS);
                 } catch (final InterruptedException | ExecutionException | TimeoutException | CancellationException e) {
                     throw handleS3Exception(e, String.format("fetching list of files in directory %s", directory),
                             instructions);

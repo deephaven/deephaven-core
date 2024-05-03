@@ -138,7 +138,9 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
         // blocking
         int filled = firstRequest.fill(position, dest);
         for (int i = 0; dest.hasRemaining(); ++i) {
-            final Request request = getRequest(firstFragmentIx + i + 1);
+            // Since we have already created requests for read ahead fragments, we can retrieve them from the local
+            // cache
+            final Request request = getRequestFromLocalCache(firstFragmentIx + i + 1);
             if (request == null || !request.isDone()) {
                 break;
             }
@@ -178,20 +180,10 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
 
     // --------------------------------------------------------------------------------------------------
 
-    private Request getRequest(final long fragmentIndex) {
+    private Request getRequestFromLocalCache(final long fragmentIndex) {
         final int cacheIdx = cacheIndex(fragmentIndex);
-        final Request locallyCached = localCache.get(cacheIdx);
-        if (locallyCached != null && locallyCached.isFragment(fragmentIndex)) {
-            return locallyCached;
-        }
-        final Request sharedCacheRequest = sharedCache.getRequest(uri, fragmentIndex);
-        if (sharedCacheRequest != null) {
-            if (locallyCached != null) {
-                locallyCached.release();
-            }
-            localCache.put(cacheIdx, sharedCacheRequest);
-        }
-        return sharedCacheRequest;
+        final Request request = localCache.get(cacheIdx);
+        return request == null || !request.isFragment(fragmentIndex) ? null : request;
     }
 
     private Request getOrCreateRequest(final long fragmentIndex) {

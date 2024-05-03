@@ -3,15 +3,32 @@
 //
 package io.deephaven.extensions.s3;
 
+import io.deephaven.hash.KeyedObjectHashMap;
+import io.deephaven.hash.KeyedObjectKey;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import software.amazon.awssdk.services.s3.S3Uri;
 import io.deephaven.extensions.s3.S3ChannelContext.Request;
 
 /**
- * A cache for S3 requests, which can be used concurrently.
+ * This class uses a ({@link KeyedObjectHashMap}) to cache {@link Request} objects based on their URI and fragment
+ * index. This cache can be used concurrently.
  */
-interface S3RequestCache {
+final class S3RequestCache {
+
+    private final KeyedObjectHashMap<Request.ID, Request> requests;
+
+    S3RequestCache() {
+        requests = new KeyedObjectHashMap<>(new REQUEST_KEY());
+    }
+
+    private static final class REQUEST_KEY extends KeyedObjectKey.Basic<Request.ID, Request> {
+        @Override
+        public Request.ID getKey(@NotNull final S3ChannelContext.Request request) {
+            return request.getId();
+        }
+    }
+
     /**
      * {@link Request#acquire() Acquire} a request for the given URI and fragment index, if it exists in the cache.
      *
@@ -20,7 +37,18 @@ interface S3RequestCache {
      * @return the request, or {@code null} if not found
      */
     @Nullable
-    Request getRequest(@NotNull final S3Uri uri, final long fragmentIndex);
+    Request getRequest(@NotNull final S3Uri uri, final long fragmentIndex) {
+        final Request request = requests.get(new Request.ID(uri, fragmentIndex));
+        if (request == null) {
+            return null;
+        }
+        final Request acquired = request.acquire();
+        if (acquired == null) {
+            remove(request);
+            return null;
+        }
+        return acquired;
+    }
 
     /**
      * {@link Request#acquire() Acquire} a request for the given URI and fragment index, creating it if it does not
@@ -33,10 +61,30 @@ interface S3RequestCache {
      */
     @NotNull
     Request getOrCreateRequest(@NotNull final S3Uri uri, final long fragmentIndex,
-            @NotNull final S3ChannelContext context);
+            @NotNull final S3ChannelContext context) {
+        // TODO Do you think the acquiring part should be done by the caller or here?
+        // I kept it here because acquire could potentially fail and the caller would have to call again in a loop,
+        // which felt unnecessary compared to a guaranteed acquire.
+        return requests.compute(new Request.ID(uri, fragmentIndex), (key, existingRequest) -> {
+            if (existingRequest != null) {
+                final Request acquired = existingRequest.acquire();
+                if (acquired != null) {
+                    return acquired;
+                }
+            }
+            final Request newRequest = Request.createAndAcquire(fragmentIndex, context);
+            // TODO Do you think the init part should be done by the context, inside createAndAcquire or here?
+            // Kept it here for now because caller doesn't know whether request is new or not. So should call init or
+            // not. Maybe we can make init more idempotent and the context would call it always.
+            newRequest.init();
+            return newRequest;
+        });
+    }
 
     /**
      * Remove this request from the cache, if present.
      */
-    void remove(@NotNull final Request request);
+    void remove(@NotNull final Request request) {
+        requests.remove(request.getId(), request);
+    }
 }
