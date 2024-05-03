@@ -5,7 +5,6 @@ package io.deephaven.client.impl;
 
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.qst.table.TableSpec;
 import org.jetbrains.annotations.Nullable;

@@ -81,6 +81,11 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
         this(CaseSensitivity.MatchCase, matchType, columnName, null, values);
     }
 
+    /**
+     * @deprecated this method is non-obvious in using IgnoreCase by default. Use
+     *             {@link MatchFilter#MatchFilter(MatchType, String, Object...)} instead.
+     */
+    @Deprecated(forRemoval = true)
     public MatchFilter(
             @NotNull final String columnName,
             @NotNull final Object... values) {
@@ -501,10 +506,12 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
 
     @Override
     public String toString() {
-        if (strValues == null) {
-            return columnName + (invertMatch ? " not" : "") + " in " + Arrays.toString(values);
-        }
-        return columnName + (invertMatch ? " not" : "") + " in " + Arrays.toString(strValues);
+        return strValues == null ? toString(values) : toString(strValues);
+    }
+
+    private String toString(Object[] x) {
+        return columnName + (caseInsensitive ? " icase" : "") + (invertMatch ? " not" : "") + " in "
+                + Arrays.toString(x);
     }
 
     @Override

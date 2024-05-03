@@ -34,6 +34,7 @@ dependencies {
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
+    testImplementation 'software.amazon.awssdk:s3-transfer-manager'
     testImplementation "org.testcontainers:testcontainers:1.19.4"
     testImplementation "org.testcontainers:junit-jupiter:1.19.4"
     testImplementation "org.testcontainers:localstack:1.19.4"

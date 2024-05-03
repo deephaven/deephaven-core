@@ -117,13 +117,13 @@ final class TypeAdapter
     @Override
     public RelDataType visit(ArrayType<?, ?> arrayType) {
         // SQLTODO(array-type)
-        throw new UnsupportedOperationException("SQLTODO(array-type)");
+        return typeFactory.createJavaType(SqlTodoArrayType.class);
     }
 
     @Override
     public RelDataType visit(CustomType<?> customType) {
         // SQLTODO(custom-type)
-        throw new UnsupportedOperationException("SQLTODO(custom-type)");
+        return typeFactory.createJavaType(SqlTodoCustomType.class);
     }
 
     private RelDataType create(SqlTypeName typeName) {
@@ -132,5 +132,20 @@ final class TypeAdapter
 
     private RelDataType nullable(RelDataType relDataType) {
         return typeFactory.createTypeWithNullability(relDataType, true);
+    }
+
+    // We currently need our type parsing to always succeed; right now, we implicitly inherit the user's scope, and if
+    // they happen to have a table with column of CustomType or ArrayType, we need to have that not immediately fail.
+    // Firstly, the user might not even be referencing that table / column. Secondly, the user might just be passing
+    // the column through unchanged, in which case Calcite is happy to create the plan.
+    // See https://github.com/deephaven/deephaven-core/issues/5443 for more context.
+
+    static class SqlTodoType {
+    }
+
+    static class SqlTodoArrayType extends SqlTodoType {
+    }
+
+    static class SqlTodoCustomType extends SqlTodoType {
     }
 }

@@ -289,13 +289,13 @@ class Classpaths {
 
     static void inheritParquetHadoop(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
         Configuration config = p.configurations.getByName(configName)
-        addDependency(config, 'org.apache.parquet', 'parquet-hadoop', '1.13.0')
+        addDependency(config, 'org.apache.parquet', 'parquet-hadoop', '1.13.1')
     }
 
     /** configName controls only the Configuration's classpath, all transitive dependencies are runtimeOnly */
     static void inheritParquetHadoopConfiguration(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
         Configuration config = p.configurations.getByName(configName)
-        addDependency(config, 'org.apache.hadoop', 'hadoop-common', '3.3.3') {
+        addDependency(config, 'org.apache.hadoop', 'hadoop-common', '3.4.0') {
             it.setTransitive(false)
             // Do not take any extra dependencies of this project transitively. We just want a few classes for
             // configuration and compression codecs. For any additional required dependencies, add them separately, as
@@ -304,10 +304,10 @@ class Classpaths {
         }
 
         Configuration runtimeOnly = p.configurations.getByName(JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME)
-        addDependency(runtimeOnly, 'com.fasterxml.woodstox', 'woodstox-core', '6.4.0') {
+        addDependency(runtimeOnly, 'com.fasterxml.woodstox', 'woodstox-core', '6.6.2') {
             it.because('hadoop-common required dependency for Configuration')
         }
-        addDependency(runtimeOnly, 'org.apache.hadoop.thirdparty', 'hadoop-shaded-guava', '1.1.1') {
+        addDependency(runtimeOnly, 'org.apache.hadoop.thirdparty', 'hadoop-shaded-guava', '1.2.0') {
             it.because('hadoop-common required dependency for Configuration')
         }
         addDependency(runtimeOnly, 'commons-collections', 'commons-collections', '3.2.2') {

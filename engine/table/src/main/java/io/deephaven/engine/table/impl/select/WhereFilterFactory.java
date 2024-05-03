@@ -319,24 +319,24 @@ public class WhereFilterFactory {
             try {
                 return DoubleRangeFilter.makeRange(colName, quickFilter);
             } catch (NumberFormatException ignored) {
-                return new MatchFilter(colName, typeData.doubleVal);
+                return new MatchFilter(MatchType.Regular, colName, typeData.doubleVal);
             }
         } else if (colClass == Float.class || colClass == float.class && (!Float.isNaN(typeData.floatVal))) {
             try {
                 return FloatRangeFilter.makeRange(colName, quickFilter);
             } catch (NumberFormatException ignored) {
-                return new MatchFilter(colName, typeData.floatVal);
+                return new MatchFilter(MatchType.Regular, colName, typeData.floatVal);
             }
         } else if ((colClass == Integer.class || colClass == int.class) && typeData.isInt) {
-            return new MatchFilter(colName, typeData.intVal);
+            return new MatchFilter(MatchType.Regular, colName, typeData.intVal);
         } else if ((colClass == long.class || colClass == Long.class) && typeData.isLong) {
-            return new MatchFilter(colName, typeData.longVal);
+            return new MatchFilter(MatchType.Regular, colName, typeData.longVal);
         } else if ((colClass == short.class || colClass == Short.class) && typeData.isShort) {
-            return new MatchFilter(colName, typeData.shortVal);
+            return new MatchFilter(MatchType.Regular, colName, typeData.shortVal);
         } else if ((colClass == byte.class || colClass == Byte.class) && typeData.isByte) {
-            return new MatchFilter(colName, typeData.byteVal);
+            return new MatchFilter(MatchType.Regular, colName, typeData.byteVal);
         } else if (colClass == BigInteger.class && typeData.isBigInt) {
-            return new MatchFilter(colName, typeData.bigIntVal);
+            return new MatchFilter(MatchType.Regular, colName, typeData.bigIntVal);
         } else if (colClass == BigDecimal.class && typeData.isBigDecimal) {
             return ComparableRangeFilter.makeBigDecimalRange(colName, quickFilter);
         } else if (filterMode != QuickFilterMode.NUMERIC) {
@@ -347,11 +347,11 @@ public class WhereFilterFactory {
                         Mode.FIND,
                         false), false);
             } else if ((colClass == boolean.class || colClass == Boolean.class) && typeData.isBool) {
-                return new MatchFilter(colName, Boolean.parseBoolean(quickFilter));
+                return new MatchFilter(MatchType.Regular, colName, Boolean.parseBoolean(quickFilter));
             } else if (colClass == Instant.class && typeData.dateLower != null && typeData.dateUpper != null) {
                 return new InstantRangeFilter(colName, typeData.dateLower, typeData.dateUpper, true, false);
             } else if ((colClass == char.class || colClass == Character.class) && typeData.isChar) {
-                return new MatchFilter(colName, typeData.charVal);
+                return new MatchFilter(MatchType.Regular, colName, typeData.charVal);
             }
         }
         return null;
