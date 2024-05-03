@@ -107,7 +107,10 @@ public class ParquetSchemaReader {
      * @param consumer A ColumnDefinitionConsumer whose accept method would be called for each column in the file
      * @return Parquet read instructions, either the ones supplied or a new object based on the supplied with necessary
      *         transformations added.
+     *
+     * @deprecated Unused method
      */
+    @Deprecated
     public static ParquetInstructions readParquetSchema(
             @NotNull final String filePath,
             @NotNull final ParquetInstructions readInstructions,
