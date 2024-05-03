@@ -26,6 +26,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.client.impl.*;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
@@ -74,6 +75,9 @@ import org.apache.arrow.flight.grpc.CredentialCallOption;
 import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.memory.ArrowBuf;
 import org.apache.arrow.memory.RootAllocator;
+import org.apache.arrow.vector.DateMilliVector;
+import org.apache.arrow.vector.FieldVector;
+import org.apache.arrow.vector.TimeNanoVector;
 import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.complex.ListVector;
 import org.apache.arrow.vector.types.pojo.ArrowType;
@@ -94,6 +98,8 @@ import javax.inject.Singleton;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
@@ -640,13 +646,32 @@ public abstract class FlightMessageRoundTripTest {
                 .update("B = new Boolean[][] {null, new Boolean[] {false, null, true}}"));
     }
 
-    private static final Logger log = LoggerFactory.getLogger(FlightMessageRoundTripTest.class);
+    @Test
+    public void testLocalDateCol() throws Exception {
+        final Table source = TableTools.emptyTable(10).update("LD = java.time.LocalDate.ofEpochDay(ii)");
+        final ColumnSource<LocalDate> ld = source.getColumnSource("LD");
+        assertRoundTripDataEqual(source,
+                recordBatch -> {
+                    final FieldVector fv = recordBatch.getFieldVectors().get(0);
+                    final DateMilliVector dmv = (DateMilliVector) fv;
+                    for (int ii = 0; ii < source.intSize(); ++ii) {
+                        Assert.equals(ld.get(ii), "ld.get(ii)", dmv.getObject(ii).toLocalDate(),
+                                "dmv.getObject(ii).toLocalDate()");
+                    }
+                });
+    }
 
     @Test
-    public void testLocalDateTimeCol() throws Exception {
-        assertRoundTripDataEqual(TableTools.emptyTable(10).update("LD = java.time.LocalDate.ofEpochDay(ii)"),
+    public void testLocalTimeCol() throws Exception {
+        final Table source = TableTools.emptyTable(10).update("LT = java.time.LocalTime.ofSecondOfDay(ii * 60 * 60)");
+        final ColumnSource<LocalTime> lt = source.getColumnSource("LT");
+        assertRoundTripDataEqual(source,
                 recordBatch -> {
-                    log.error().append("" + recordBatch.getFieldVectors()).endl();
+                    final FieldVector fv = recordBatch.getFieldVectors().get(0);
+                    final TimeNanoVector tnv = (TimeNanoVector) fv;
+                    for (int ii = 0; ii < source.intSize(); ++ii) {
+                        Assert.eq(lt.get(ii).toNanoOfDay(), "lt.get(ii).toNanoOfDay()", tnv.get(ii), "tnv.get(ii)");
+                    }
                 });
     }
 

@@ -23,7 +23,6 @@ import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.Vector;
 import org.jetbrains.annotations.Nullable;
 
-import javax.management.Query;
 import java.io.DataInput;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -37,6 +36,9 @@ import java.util.Iterator;
 import java.util.PrimitiveIterator;
 
 public interface ChunkInputStreamGenerator extends SafeCloseable {
+    long MS_PER_DAY = 24 * 60 * 60 * 1000L;
+    long MIN_LOCAL_DATE_VALUE = QueryConstants.MIN_LONG / MS_PER_DAY;
+    long MAX_LOCAL_DATE_VALUE = QueryConstants.MAX_LONG / MS_PER_DAY;
 
     static <T> ChunkInputStreamGenerator makeInputStreamGenerator(
             final ChunkType chunkType,
@@ -150,31 +152,28 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                     return ShortChunkInputStreamGenerator.convertBoxed(chunk.asObjectChunk(), rowOffset);
                 }
                 if (type == LocalDate.class) {
-                    final long msPerDay = 24 * 60 * 60 * 1000L;
-                    final long minDate = QueryConstants.MIN_LONG / msPerDay;
-                    final long maxDate = QueryConstants.MAX_LONG / msPerDay;
                     return LongChunkInputStreamGenerator.<LocalDate>convertWithTransform(chunk.asObjectChunk(),
                             rowOffset, date -> {
                                 if (date == null) {
                                     return QueryConstants.NULL_LONG;
                                 }
                                 final long epochDay = date.toEpochDay();
-                                if (epochDay < minDate || epochDay > maxDate) {
+                                if (epochDay < MIN_LOCAL_DATE_VALUE || epochDay > MAX_LOCAL_DATE_VALUE) {
                                     throw new IllegalArgumentException("Date out of range: " + date + " (" + epochDay
-                                            + " not in [" + minDate + ", " + maxDate + "])");
+                                            + " not in [" + MIN_LOCAL_DATE_VALUE + ", " + MAX_LOCAL_DATE_VALUE + "])");
                                 }
-                                return epochDay * msPerDay;
+                                return epochDay * MS_PER_DAY;
                             });
                 }
                 if (type == LocalTime.class) {
                     return LongChunkInputStreamGenerator.<LocalTime>convertWithTransform(chunk.asObjectChunk(),
-                            rowOffset, date -> {
-                                if (date == null) {
+                            rowOffset, time -> {
+                                if (time == null) {
                                     return QueryConstants.NULL_LONG;
                                 }
-                                final long nanoOfDay = date.toNanoOfDay();
+                                final long nanoOfDay = time.toNanoOfDay();
                                 if (nanoOfDay < 0) {
-                                    throw new IllegalArgumentException("Time out of range: " + date);
+                                    throw new IllegalArgumentException("Time out of range: " + time);
                                 }
                                 return nanoOfDay;
                             });
@@ -335,10 +334,11 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                             fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
                 }
                 if (type == LocalDate.class) {
-                    final long msPerDay = 24 * 60 * 60 * 1000L;
                     return LongChunkInputStreamGenerator.extractChunkFromInputStreamWithTransform(
                             Long.BYTES, options,
-                            value -> value == QueryConstants.NULL_LONG ? null : LocalDate.ofEpochDay(value / msPerDay),
+                            value -> value == QueryConstants.NULL_LONG
+                                    ? null
+                                    : LocalDate.ofEpochDay(value / MS_PER_DAY),
                             fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
                 }
                 if (type == LocalTime.class) {
@@ -392,14 +392,6 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
         public FieldNodeInfo(final org.apache.arrow.flatbuf.FieldNode node) {
             this(LongSizedDataStructure.intSize("FieldNodeInfo", node.length()),
                     LongSizedDataStructure.intSize("FieldNodeInfo", node.nullCount()));
-        }
-    }
-
-    final class BufferInfo {
-        public final long length;
-
-        public BufferInfo(final long length) {
-            this.length = length;
         }
     }
 

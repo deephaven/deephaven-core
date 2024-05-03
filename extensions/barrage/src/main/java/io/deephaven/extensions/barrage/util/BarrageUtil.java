@@ -654,7 +654,7 @@ public class BarrageUtil {
                     return Types.MinorType.LIST.getType();
                 }
                 if (type == LocalDate.class) {
-                    return Types.MinorType.DATEDAY.getType();
+                    return Types.MinorType.DATEMILLI.getType();
                 }
                 if (type == LocalTime.class) {
                     return Types.MinorType.TIMENANO.getType();
