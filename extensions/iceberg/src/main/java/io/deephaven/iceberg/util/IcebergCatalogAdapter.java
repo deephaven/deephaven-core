@@ -9,6 +9,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.PartitionAwareSourceTable;
 import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocationProvider;
 import io.deephaven.engine.table.impl.locations.impl.PollingTableLocationProvider;
 import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
@@ -41,6 +42,8 @@ public class IcebergCatalogAdapter {
     private final FileIO fileIO;
     private final IcebergInstructions instructions;
 
+    private final WeakHashMap<PartitionAwareSourceTable, AbstractTableLocationProvider> tableLocationProviders;
+
     /**
      * Construct an IcebergCatalogAdapter given a set of configurable instructions.
      */
@@ -61,6 +64,7 @@ public class IcebergCatalogAdapter {
         this.catalog = catalog;
         this.fileIO = fileIO;
         this.instructions = instructions;
+        tableLocationProviders = new WeakHashMap<>();
     }
 
     static TableDefinition fromSchema(
@@ -232,15 +236,24 @@ public class IcebergCatalogAdapter {
             description = "Read static iceberg table with " + keyFinder;
         }
 
-        return new PartitionAwareSourceTable(
+        final AbstractTableLocationProvider locationProvider = new PollingTableLocationProvider<>(
+                StandaloneTableKey.getInstance(),
+                keyFinder,
+                new IcebergTableLocationFactory(),
+                refreshService);
+
+        final PartitionAwareSourceTable result = new PartitionAwareSourceTable(
                 tableDef,
                 description,
                 RegionedTableComponentFactoryImpl.INSTANCE,
-                new PollingTableLocationProvider<>(
-                        StandaloneTableKey.getInstance(),
-                        keyFinder,
-                        new IcebergTableLocationFactory(),
-                        refreshService),
+                locationProvider,
                 updateSourceRegistrar);
+
+        if (isRefreshing) {
+            // Store a weak reference to the location provider.
+            tableLocationProviders.put(result, locationProvider);
+        }
+
+        return result;
     }
 }
