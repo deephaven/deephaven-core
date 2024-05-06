@@ -22,8 +22,6 @@ import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.parquet.base.ParquetMetadataFileWriter;
 import io.deephaven.parquet.base.NullParquetMetadataFileWriter;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.channel.SeekableChannelsProvider;
-import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import io.deephaven.util.channel.SeekableChannelsProviderPlugin;
 import io.deephaven.vector.*;
 import io.deephaven.engine.table.*;
@@ -1250,8 +1248,7 @@ public class ParquetTools {
             @NotNull final ParquetTableLocationKey tableLocationKey,
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final TableDefinition tableDefinition) {
-        return readTable(tableLocationKey,
-                ensureTableDefinition(readInstructions, tableDefinition, true));
+        return readTable(tableLocationKey, ensureTableDefinition(readInstructions, tableDefinition, true));
     }
 
     /**
