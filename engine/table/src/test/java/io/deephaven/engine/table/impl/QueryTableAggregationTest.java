@@ -3892,13 +3892,9 @@ public class QueryTableAggregationTest {
                     t3.updateView("Date=`2021-07-21`", "Num=300"),
                     t4.updateView("Date=`2021-07-21`", "Num=400")).moveColumnsUp("Date", "Num");
 
-            final URI testRootUri = testRootFile.toURI();
-            final SeekableChannelsProvider provider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(
-                    testRootUri, null);
-            final ParquetInstructions instructions = ParquetInstructions.EMPTY.withChannelsProvider(provider);
-            final Table loaded = ParquetTools.readTable(
-                    new ParquetKeyValuePartitionedLayout(testRootFile, 2, instructions),
-                    instructions);
+            final Table loaded = ParquetTools.readPartitionedTableInferSchema(
+                    new ParquetKeyValuePartitionedLayout(testRootFile, 2, ParquetInstructions.EMPTY),
+                    ParquetInstructions.EMPTY);
 
             // verify the sources are identical
             assertTableEquals(merged, loaded);

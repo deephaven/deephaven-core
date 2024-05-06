@@ -6,6 +6,7 @@ package io.deephaven.parquet.table.layout;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
+import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.jetbrains.annotations.NotNull;
 
 import java.net.URI;
@@ -17,6 +18,7 @@ import java.util.function.Consumer;
 public final class ParquetSingleFileLayout implements TableLocationKeyFinder<ParquetTableLocationKey> {
     private final URI parquetFileUri;
     private final ParquetInstructions readInstructions;
+    private final SeekableChannelsProvider channelsProvider;
 
     /**
      * @param parquetFileUri URI of single parquet file to find
@@ -26,6 +28,8 @@ public final class ParquetSingleFileLayout implements TableLocationKeyFinder<Par
             @NotNull final ParquetInstructions readInstructions) {
         this.parquetFileUri = parquetFileUri;
         this.readInstructions = readInstructions;
+        this.channelsProvider =
+                readInstructions.getChannelsProvider(parquetFileUri, readInstructions.getSpecialInstructions());
     }
 
     public String toString() {
@@ -34,6 +38,7 @@ public final class ParquetSingleFileLayout implements TableLocationKeyFinder<Par
 
     @Override
     public void findKeys(@NotNull final Consumer<ParquetTableLocationKey> locationKeyObserver) {
-        locationKeyObserver.accept(new ParquetTableLocationKey(parquetFileUri, 0, null, readInstructions));
+        locationKeyObserver
+                .accept(new ParquetTableLocationKey(parquetFileUri, 0, null, readInstructions, channelsProvider));
     }
 }

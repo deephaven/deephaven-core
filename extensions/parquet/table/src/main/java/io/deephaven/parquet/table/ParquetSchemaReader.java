@@ -47,7 +47,6 @@ import java.util.function.Supplier;
 
 import static io.deephaven.base.FileUtils.convertToURI;
 import static io.deephaven.parquet.base.ParquetUtils.METADATA_KEY;
-import static io.deephaven.parquet.table.ParquetTools.ensureChannelsProvider;
 
 public class ParquetSchemaReader {
     @FunctionalInterface
@@ -117,9 +116,9 @@ public class ParquetSchemaReader {
             @NotNull final ColumnDefinitionConsumer consumer,
             @NotNull final BiFunction<String, Set<String>, String> legalizeColumnNameFunc) throws IOException {
         final URI parquetFileUri = convertToURI(filePath, false);
-        final ParquetInstructions useInstructions = ensureChannelsProvider(parquetFileUri, readInstructions);
         final ParquetFileReader parquetFileReader =
-                ParquetFileReader.createChecked(parquetFileUri, useInstructions.getChannelsProvider().orElseThrow());
+                ParquetFileReader.createChecked(parquetFileUri, readInstructions.getChannelsProvider(parquetFileUri,
+                        readInstructions.getSpecialInstructions()));
         final ParquetMetadata parquetMetadata =
                 new ParquetMetadataConverter().fromParquetMetadata(parquetFileReader.fileMetaData);
         return readParquetSchema(parquetFileReader.getSchema(), parquetMetadata.getFileMetaData().getKeyValueMetaData(),

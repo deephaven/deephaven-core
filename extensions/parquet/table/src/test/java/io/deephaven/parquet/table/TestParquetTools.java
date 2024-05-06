@@ -355,13 +355,9 @@ public class TestParquetTools {
         allColumns.addAll(table1.getDefinition().getColumns());
         final TableDefinition partitionedDefinition = TableDefinition.of(allColumns);
 
-        final URI testRootUri = testRootFile.toURI();
-        final SeekableChannelsProvider provider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(
-                testRootUri, null);
-        final ParquetInstructions instructions = ParquetInstructions.EMPTY.withChannelsProvider(provider);
         final Table result = ParquetTools.readPartitionedTableInferSchema(
-                new ParquetKeyValuePartitionedLayout(testRootFile, 2, instructions),
-                instructions);
+                new ParquetKeyValuePartitionedLayout(testRootFile, 2, ParquetInstructions.EMPTY),
+                ParquetInstructions.EMPTY);
         TestCase.assertEquals(partitionedDefinition, result.getDefinition());
         final Table expected = TableTools.merge(
                 table1.updateView("Date=`2021-07-20`", "Num=100"),

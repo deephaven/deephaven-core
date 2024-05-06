@@ -64,6 +64,10 @@ public class FileKeyValuePartitionLayout<TLK extends TableLocationKey>
             @NotNull final BiFunction<Path, Map<String, Comparable<?>>, TLK> keyFactory,
             final int maxPartitioningLevels) {
         super(keyFactory);
+        // TODO This can be an issue because table location keys are being generated for us here. So they would
+        // internally
+        // make a different provider for each location key. I know that enterprise uses this constructor.
+        // Should I just break the constructor of ParquetTableLocationKey and force add a channels provider?
         this.tableRootDirectory = tableRootDirectory;
         this.pathFilter = pathFilter;
         this.locationTableBuilderFactory = locationTableBuilderFactory;

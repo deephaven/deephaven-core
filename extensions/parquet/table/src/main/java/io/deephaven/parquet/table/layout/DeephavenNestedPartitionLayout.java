@@ -9,6 +9,7 @@ import io.deephaven.engine.table.impl.locations.local.URITableLocationKey;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.util.annotations.VisibleForTesting;
+import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -23,6 +24,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+
+import static io.deephaven.base.FileUtils.convertToURI;
 
 /**
  * {@link TableLocationKeyFinder} that will traverse a directory hierarchy laid out in Deephaven's "nested-partitioned"
@@ -47,13 +50,15 @@ public abstract class DeephavenNestedPartitionLayout<TLK extends URITableLocatio
             @NotNull final String columnPartitionKey,
             @Nullable final Predicate<String> internalPartitionValueFilter,
             @NotNull final ParquetInstructions readInstructions) {
+        final SeekableChannelsProvider seekableChannelsProvider = readInstructions.getChannelsProvider(
+                convertToURI(tableRootDirectory, true), readInstructions.getSpecialInstructions());
         return new DeephavenNestedPartitionLayout<>(tableRootDirectory, tableName,
                 columnPartitionKey, internalPartitionValueFilter) {
             @Override
             protected ParquetTableLocationKey makeKey(@NotNull Path tableLeafDirectory,
                     @NotNull Map<String, Comparable<?>> partitions) {
                 return new ParquetTableLocationKey(tableLeafDirectory.resolve(PARQUET_FILE_NAME).toFile(), 0,
-                        partitions, readInstructions);
+                        partitions, readInstructions, seekableChannelsProvider);
             }
         };
     }

@@ -139,31 +139,30 @@ public class ParquetTools {
             @NotNull final ParquetInstructions readInstructions) {
         final boolean isDirectory = !isParquetFile(source);
         final URI sourceURI = convertToURI(source, isDirectory);
-        final ParquetInstructions useInstructions = ensureChannelsProvider(sourceURI, readInstructions);
-        if (useInstructions.getFileLayout().isPresent()) {
-            switch (useInstructions.getFileLayout().get()) {
+        if (readInstructions.getFileLayout().isPresent()) {
+            switch (readInstructions.getFileLayout().get()) {
                 case SINGLE_FILE:
-                    return readSingleFileTable(sourceURI, useInstructions);
+                    return readSingleFileTable(sourceURI, readInstructions);
                 case FLAT_PARTITIONED:
-                    return readFlatPartitionedTable(sourceURI, useInstructions);
+                    return readFlatPartitionedTable(sourceURI, readInstructions);
                 case KV_PARTITIONED:
-                    return readKeyValuePartitionedTable(sourceURI, useInstructions);
+                    return readKeyValuePartitionedTable(sourceURI, readInstructions);
                 case METADATA_PARTITIONED:
-                    return readPartitionedTableWithMetadata(sourceURI, useInstructions);
+                    return readPartitionedTableWithMetadata(sourceURI, readInstructions);
             }
         }
         if (FILE_URI_SCHEME.equals(sourceURI.getScheme())) {
-            return readTableFromFileUri(sourceURI, useInstructions);
+            return readTableFromFileUri(sourceURI, readInstructions);
         }
         if (source.endsWith(METADATA_FILE_URI_SUFFIX) || source.endsWith(COMMON_METADATA_FILE_URI_SUFFIX)) {
             throw new UncheckedDeephavenException("We currently do not support reading parquet metadata files " +
                     "from non local storage");
         }
         if (!isDirectory) {
-            return readSingleFileTable(sourceURI, useInstructions);
+            return readSingleFileTable(sourceURI, readInstructions);
         }
         // Both flat partitioned and key-value partitioned data can be read under key-value partitioned layout
-        return readKeyValuePartitionedTable(sourceURI, useInstructions);
+        return readKeyValuePartitionedTable(sourceURI, readInstructions);
     }
 
     /**
@@ -327,19 +326,6 @@ public class ParquetTools {
             @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions writeInstructions) {
         writeTable(sourceTable, destination, ensureTableDefinition(writeInstructions, definition, true));
-    }
-
-    // TODO This is kept public here for the review. I can move it somewhere else like ParquetUtils if this design
-    // is okay.
-    public static ParquetInstructions ensureChannelsProvider(
-            @NotNull final URI parquetFileURI,
-            @NotNull final ParquetInstructions instructions) {
-        if (instructions.getChannelsProvider().isEmpty()) {
-            final SeekableChannelsProvider provider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(
-                    parquetFileURI, instructions.getSpecialInstructions());
-            return instructions.withChannelsProvider(provider);
-        }
-        return instructions;
     }
 
     private static ParquetInstructions ensureTableDefinition(
@@ -1244,7 +1230,7 @@ public class ParquetTools {
     public static Table readSingleFileTable(
             @NotNull final ParquetTableLocationKey tableLocationKey,
             @NotNull final ParquetInstructions readInstructions) {
-        return readTable(tableLocationKey, ensureChannelsProvider(tableLocationKey.getURI(), readInstructions));
+        return readTable(tableLocationKey, readInstructions);
     }
 
     /**
@@ -1265,8 +1251,7 @@ public class ParquetTools {
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final TableDefinition tableDefinition) {
         return readTable(tableLocationKey,
-                ensureChannelsProvider(tableLocationKey.getURI(),
-                        ensureTableDefinition(readInstructions, tableDefinition, true)));
+                ensureTableDefinition(readInstructions, tableDefinition, true));
     }
 
     /**
@@ -1404,13 +1389,10 @@ public class ParquetTools {
             throw new IllegalArgumentException(
                     "Unable to infer schema for a partitioned parquet table when there are no initial parquet files");
         }
-        final ParquetInstructions useInstructions = ensureChannelsProvider(lastKey.getURI(), readInstructions);
-        final SeekableChannelsProvider channelsProvider = useInstructions.getChannelsProvider().orElseThrow();
-        lastKey.setChannelsProvider(channelsProvider);
         final Pair<List<ColumnDefinition<?>>, ParquetInstructions> schemaInfo = ParquetSchemaReader.convertSchema(
                 lastKey.getFileReader().getSchema(),
                 lastKey.getMetadata().getFileMetaData().getKeyValueMetaData(),
-                useInstructions);
+                readInstructions);
         final Set<String> partitionKeys = lastKey.getPartitionKeys();
         final List<ColumnDefinition<?>> allColumns =
                 new ArrayList<>(partitionKeys.size() + schemaInfo.getFirst().size());
@@ -1457,8 +1439,7 @@ public class ParquetTools {
     public static Table readPartitionedTableWithMetadata(
             @NotNull final File directory,
             @NotNull final ParquetInstructions readInstructions) {
-        final URI directoryUri = convertToURI(directory, true);
-        return readPartitionedTableWithMetadata(directoryUri, ensureChannelsProvider(directoryUri, readInstructions));
+        return readPartitionedTableWithMetadata(convertToURI(directory, true), readInstructions);
     }
 
     /**
@@ -1475,8 +1456,7 @@ public class ParquetTools {
     public static Table readPartitionedTableWithMetadata(
             @NotNull final String directory,
             @NotNull final ParquetInstructions readInstructions) {
-        final URI directoryUri = convertToURI(directory, true);
-        return readPartitionedTableWithMetadata(directoryUri, ensureChannelsProvider(directoryUri, readInstructions));
+        return readPartitionedTableWithMetadata(convertToURI(directory, true), readInstructions);
     }
 
     private static Table readPartitionedTableWithMetadata(
@@ -1530,8 +1510,7 @@ public class ParquetTools {
     public static Table readKeyValuePartitionedTable(
             @NotNull final File directory,
             @NotNull final ParquetInstructions readInstructions) {
-        final URI directoryUri = convertToURI(directory, true);
-        return readKeyValuePartitionedTable(directoryUri, ensureChannelsProvider(directoryUri, readInstructions));
+        return readKeyValuePartitionedTable(convertToURI(directory, true), readInstructions);
     }
 
     /**
@@ -1578,9 +1557,8 @@ public class ParquetTools {
             @NotNull final File directory,
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final TableDefinition tableDefinition) {
-        final URI directoryUri = convertToURI(directory, true);
-        return readKeyValuePartitionedTable(directoryUri,
-                ensureChannelsProvider(directoryUri, ensureTableDefinition(readInstructions, tableDefinition, true)));
+        return readKeyValuePartitionedTable(convertToURI(directory, true),
+                ensureTableDefinition(readInstructions, tableDefinition, true));
     }
 
     /**
@@ -1601,8 +1579,7 @@ public class ParquetTools {
     public static Table readFlatPartitionedTable(
             @NotNull final File directory,
             @NotNull final ParquetInstructions readInstructions) {
-        final URI directoryUri = convertToURI(directory, true);
-        return readFlatPartitionedTable(directoryUri, ensureChannelsProvider(directoryUri, readInstructions));
+        return readFlatPartitionedTable(convertToURI(directory, true), readInstructions);
     }
 
     /**
@@ -1639,9 +1616,8 @@ public class ParquetTools {
             @NotNull final File directory,
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final TableDefinition tableDefinition) {
-        final URI directoryUri = convertToURI(directory, true);
-        return readFlatPartitionedTable(directoryUri,
-                ensureChannelsProvider(directoryUri, ensureTableDefinition(readInstructions, tableDefinition, true)));
+        return readFlatPartitionedTable(convertToURI(directory, true),
+                ensureTableDefinition(readInstructions, tableDefinition, true));
     }
 
     /**
@@ -1661,8 +1637,7 @@ public class ParquetTools {
     public static Table readSingleFileTable(
             @NotNull final File file,
             @NotNull final ParquetInstructions readInstructions) {
-        final URI parquetFileUri = convertToURI(file, false);
-        return readSingleFileTable(parquetFileUri, ensureChannelsProvider(parquetFileUri, readInstructions));
+        return readSingleFileTable(convertToURI(file, false), readInstructions);
     }
 
     /**
@@ -1682,8 +1657,7 @@ public class ParquetTools {
     public static Table readSingleFileTable(
             @NotNull final String source,
             @NotNull final ParquetInstructions readInstructions) {
-        final URI parquetFileUri = convertToURI(source, false);
-        return readSingleFileTable(parquetFileUri, ensureChannelsProvider(parquetFileUri, readInstructions));
+        return readSingleFileTable(convertToURI(source, false), readInstructions);
     }
 
     private static Table readSingleFileTable(
@@ -1721,9 +1695,8 @@ public class ParquetTools {
             @NotNull final File file,
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final TableDefinition tableDefinition) {
-        final URI parquetFileUri = convertToURI(file, false);
-        return readSingleFileTable(parquetFileUri,
-                ensureChannelsProvider(parquetFileUri, ensureTableDefinition(readInstructions, tableDefinition, true)));
+        return readSingleFileTable(convertToURI(file, false),
+                ensureTableDefinition(readInstructions, tableDefinition, true));
     }
 
     /**
@@ -1743,9 +1716,8 @@ public class ParquetTools {
             @NotNull final String source,
             @NotNull final ParquetInstructions readInstructions,
             @NotNull final TableDefinition tableDefinition) {
-        final URI parquetFileUri = convertToURI(source, false);
-        return readSingleFileTable(parquetFileUri,
-                ensureChannelsProvider(parquetFileUri, ensureTableDefinition(readInstructions, tableDefinition, true)));
+        return readSingleFileTable(convertToURI(source, false),
+                ensureTableDefinition(readInstructions, tableDefinition, true));
     }
 
     @VisibleForTesting
@@ -1753,14 +1725,12 @@ public class ParquetTools {
             @NotNull final File source,
             @NotNull final ParquetInstructions readInstructionsIn,
             @Nullable final MutableObject<ParquetInstructions> mutableInstructionsOut) {
-        final URI parquetFileUri = convertToURI(source, false);
-        final ParquetInstructions useInstructions = ensureChannelsProvider(parquetFileUri, readInstructionsIn);
         final ParquetTableLocationKey tableLocationKey =
-                new ParquetTableLocationKey(parquetFileUri, 0, null, useInstructions);
+                new ParquetTableLocationKey(source, 0, null, readInstructionsIn);
         final Pair<List<ColumnDefinition<?>>, ParquetInstructions> schemaInfo = ParquetSchemaReader.convertSchema(
                 tableLocationKey.getFileReader().getSchema(),
                 tableLocationKey.getMetadata().getFileMetaData().getKeyValueMetaData(),
-                useInstructions);
+                readInstructionsIn);
         final TableDefinition def = TableDefinition.of(schemaInfo.getFirst());
         final ParquetInstructions instructionsOut = ensureTableDefinition(schemaInfo.getSecond(), def, true);
         if (mutableInstructionsOut != null) {

@@ -62,7 +62,7 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     private final Map<URI, Long> uriToFileSize;
 
     S3SeekableChannelProvider(@NotNull final S3Instructions s3Instructions) {
-        this.s3AsyncClient = s3Instructions.asyncClientFactory().create();
+        this.s3AsyncClient = S3AsyncClientFactory.getAsyncClient(s3Instructions);
         this.s3Instructions = s3Instructions;
         this.uriToFileSize = new HashMap<>();
     }

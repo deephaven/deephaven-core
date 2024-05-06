@@ -91,7 +91,7 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
             }
         }
         this.parquetFileMetadataList = new ArrayList<>(destinations.length);
-        this.channelsProvider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(
+        this.channelsProvider = SeekableChannelsProviderLoader.getInstance().createProvider(
                 convertToURI(metadataRootDirAbsPathString, true), null);
         this.partitioningColumnsSchema = partitioningColumnsSchema;
 

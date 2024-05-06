@@ -40,8 +40,12 @@ public class ParquetTableLocationKey extends URITableLocationKey {
     private final ParquetInstructions readInstructions;
     private SeekableChannelsProvider channelsProvider;
 
+    // TODO Comment this and test at end
     /**
      * Construct a new ParquetTableLocationKey for the supplied {@code file} and {@code partitions}.
+     * <p>
+     * This constructor will create a new {@link SeekableChannelsProvider} for reading the file. If you have multiple
+     * location keys that should share a provider, use the other constructor and set the provider manually.
      *
      * @param file The parquet file that backs the keyed location. Will be adjusted to an absolute path.
      * @param order Explicit ordering index, taking precedence over other fields
@@ -55,11 +59,36 @@ public class ParquetTableLocationKey extends URITableLocationKey {
             @NotNull final ParquetInstructions readInstructions) {
         super(validateParquetFile(file), order, partitions);
         this.readInstructions = readInstructions;
-        this.channelsProvider = readInstructions.getChannelsProvider().orElse(null);
+        this.channelsProvider = readInstructions.getChannelsProvider(getURI(),
+                readInstructions.getSpecialInstructions());
     }
 
     /**
+     * Construct a new ParquetTableLocationKey for the supplied {@code file} and {@code partitions}.
+     *
+     * @param file The parquet file that backs the keyed location. Will be adjusted to an absolute path.
+     * @param order Explicit ordering index, taking precedence over other fields
+     * @param partitions The table partitions enclosing the table location keyed by {@code this}. Note that if this
+     *        parameter is {@code null}, the location will be a member of no partitions. An ordered copy of the map will
+     *        be made, so the calling code is free to mutate the map after this call
+     * @param readInstructions the instructions for customizations while reading
+     * @param channelsProvider the provider for reading the file
+     */
+    public ParquetTableLocationKey(@NotNull final File file, final int order,
+            @Nullable final Map<String, Comparable<?>> partitions,
+            @NotNull final ParquetInstructions readInstructions,
+            @NotNull final SeekableChannelsProvider channelsProvider) {
+        super(validateParquetFile(file), order, partitions);
+        this.readInstructions = readInstructions;
+        this.channelsProvider = channelsProvider;
+    }
+
+    // TODO Comment this and test at end
+    /**
      * Construct a new ParquetTableLocationKey for the supplied {@code parquetFileUri} and {@code partitions}.
+     * <p>
+     * This constructor will create a new {@link SeekableChannelsProvider} for reading the file. If you have multiple
+     * location keys that should share a provider, use the other constructor and set the provider manually.
      *
      * @param parquetFileUri The parquet file that backs the keyed location. Will be adjusted to an absolute path.
      * @param order Explicit ordering index, taking precedence over other fields
@@ -71,9 +100,28 @@ public class ParquetTableLocationKey extends URITableLocationKey {
     public ParquetTableLocationKey(@NotNull final URI parquetFileUri, final int order,
             @Nullable final Map<String, Comparable<?>> partitions,
             @NotNull final ParquetInstructions readInstructions) {
+        this(parquetFileUri, order, partitions, readInstructions,
+                readInstructions.getChannelsProvider(parquetFileUri, readInstructions.getSpecialInstructions()));
+    }
+
+    /**
+     * Construct a new ParquetTableLocationKey for the supplied {@code parquetFileUri} and {@code partitions}.
+     *
+     * @param parquetFileUri The parquet file that backs the keyed location. Will be adjusted to an absolute path.
+     * @param order Explicit ordering index, taking precedence over other fields
+     * @param partitions The table partitions enclosing the table location keyed by {@code this}. Note that if this
+     *        parameter is {@code null}, the location will be a member of no partitions. An ordered copy of the map will
+     *        be made, so the calling code is free to mutate the map after this call
+     * @param readInstructions the instructions for customizations while reading
+     * @param channelsProvider the provider for reading the file
+     */
+    public ParquetTableLocationKey(@NotNull final URI parquetFileUri, final int order,
+            @Nullable final Map<String, Comparable<?>> partitions,
+            @NotNull final ParquetInstructions readInstructions,
+            @NotNull final SeekableChannelsProvider channelsProvider) {
         super(validateParquetFile(parquetFileUri), order, partitions);
         this.readInstructions = readInstructions;
-        this.channelsProvider = readInstructions.getChannelsProvider().orElse(null);
+        this.channelsProvider = channelsProvider;
     }
 
     private static URI validateParquetFile(@NotNull final File file) {
@@ -82,7 +130,8 @@ public class ParquetTableLocationKey extends URITableLocationKey {
 
     private static URI validateParquetFile(@NotNull final URI parquetFileUri) {
         if (!parquetFileUri.getRawPath().endsWith(PARQUET_FILE_EXTENSION)) {
-            throw new IllegalArgumentException("Parquet file must end in " + PARQUET_FILE_EXTENSION);
+            throw new IllegalArgumentException("Parquet file must end in " + PARQUET_FILE_EXTENSION + ", found: "
+                    + parquetFileUri.getRawPath());
         }
         return parquetFileUri;
     }
@@ -124,7 +173,7 @@ public class ParquetTableLocationKey extends URITableLocationKey {
             // TODO (Discuss with Ryan) I need to do this to not make it a breaking change. But this means that the
             // channels provider will be null if the user does not set it, and would therefore create a new provider
             // every time
-            channelsProvider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(
+            channelsProvider = SeekableChannelsProviderLoader.getInstance().createProvider(
                     uri, readInstructions.getSpecialInstructions());
         }
         return fileReader = ParquetFileReader.create(uri, channelsProvider);

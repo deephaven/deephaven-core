@@ -15,7 +15,7 @@ import java.util.ServiceLoader;
  * A service loader class for loading {@link SeekableChannelsProviderPlugin} implementations at runtime and provide
  * {@link SeekableChannelsProvider} implementations for different URI schemes, e.g., S3.
  */
-public final class SeekableChannelsProviderLoader {
+public final class SeekableChannelsProviderLoader implements SeekableChannelsProviderFactory {
 
     private static volatile SeekableChannelsProviderLoader instance;
 
@@ -42,13 +42,14 @@ public final class SeekableChannelsProviderLoader {
      * read files from S3.
      *
      * @param uri The URI
-     * @param object An optional object to pass to the {@link SeekableChannelsProviderPlugin} implementations.
+     * @param specialInstructions An optional object to pass special instructions to the provider.
      * @return A {@link SeekableChannelsProvider} for the given URI.
      */
-    public SeekableChannelsProvider fromServiceLoader(@NotNull final URI uri, @Nullable final Object object) {
+    @Override
+    public SeekableChannelsProvider createProvider(@NotNull final URI uri, @Nullable final Object specialInstructions) {
         for (final SeekableChannelsProviderPlugin plugin : providers) {
-            if (plugin.isCompatible(uri, object)) {
-                return plugin.createProvider(uri, object);
+            if (plugin.isCompatible(uri, specialInstructions)) {
+                return plugin.createProvider(uri, specialInstructions);
             }
         }
         throw new UnsupportedOperationException("No plugin found for uri: " + uri);
