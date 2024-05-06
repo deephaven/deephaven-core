@@ -58,6 +58,16 @@ public interface SelectColumn extends Selectable {
     }
 
     /**
+     * Produce a {@link #isStateless() stateless} SelectColumn from {@code selectable}.
+     * 
+     * @param selectable The {@link Selectable} to adapt and mark as stateless
+     * @return The resulting SelectColumn
+     */
+    static SelectColumn ofStateless(@NotNull final Selectable selectable) {
+        return new StatelessSelectColumn(of(selectable));
+    }
+
+    /**
      * Convenient static final instance of a zero length Array of SelectColumns for use in toArray calls.
      */
     SelectColumn[] ZERO_LENGTH_SELECT_COLUMN_ARRAY = new SelectColumn[0];
