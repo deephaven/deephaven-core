@@ -7,6 +7,7 @@ import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.proto.DeephavenChannel;
 import io.deephaven.qst.table.TableSpec;
+import io.deephaven.util.annotations.InternalUseOnly;
 import io.grpc.ManagedChannel;
 import org.apache.arrow.flight.FlightClient;
 import org.apache.arrow.flight.FlightGrpcUtilsExtension;
@@ -29,6 +30,18 @@ public class BarrageSession extends FlightSession implements BarrageSubscription
         final FlightClient client = FlightGrpcUtilsExtension.createFlightClientWithSharedChannel(
                 incomingAllocator, channel, Collections.singletonList(new SessionMiddleware(session)));
         return new BarrageSession(session, client);
+    }
+
+    /**
+     * @apiNote This method exists to be called by the Python API. It will be removed in the future if we can make JPY
+     *          capable of selecting the right factory method to use when the same method is present in the class
+     *          hierarchy multiple times.
+     * @see #of(SessionImpl, BufferAllocator, ManagedChannel)
+     */
+    @InternalUseOnly
+    public static BarrageSession create(
+            SessionImpl session, BufferAllocator incomingAllocator, ManagedChannel channel) {
+        return BarrageSession.of(session, incomingAllocator, channel);
     }
 
     protected BarrageSession(

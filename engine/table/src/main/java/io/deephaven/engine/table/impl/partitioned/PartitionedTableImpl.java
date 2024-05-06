@@ -22,6 +22,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.MatchFilter;
+import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.sources.UnionSourceManager;
@@ -458,7 +459,7 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
         final List<MatchFilter> filters = new ArrayList<>(numKeys);
         final String[] keyColumnNames = keyColumnNames().toArray(String[]::new);
         for (int kci = 0; kci < numKeys; ++kci) {
-            filters.add(new MatchFilter(keyColumnNames[kci], keyColumnValues[kci]));
+            filters.add(new MatchFilter(MatchType.Regular, keyColumnNames[kci], keyColumnValues[kci]));
         }
         return LivenessScopeStack.computeEnclosed(() -> {
             final Table[] matchingConstituents = filter(filters).snapshotConstituents();

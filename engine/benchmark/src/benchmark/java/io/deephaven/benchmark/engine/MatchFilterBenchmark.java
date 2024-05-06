@@ -6,6 +6,7 @@ package io.deephaven.benchmark.engine;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.select.*;
@@ -115,7 +116,7 @@ public class MatchFilterBenchmark {
                 values.add(ii);
             }
         }
-        matchFilter = new MatchFilter(filterCol, values.toArray());
+        matchFilter = new MatchFilter(MatchType.Regular, filterCol, values.toArray());
     }
 
     @TearDown(Level.Trial)

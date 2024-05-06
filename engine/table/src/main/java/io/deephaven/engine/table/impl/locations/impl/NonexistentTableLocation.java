@@ -61,7 +61,7 @@ public final class NonexistentTableLocation extends AbstractTableLocation {
 
     @Override
     @Nullable
-    protected BasicDataIndex loadDataIndex(@NotNull final String... columns) {
+    public BasicDataIndex loadDataIndex(@NotNull final String... columns) {
         throw new UnsupportedOperationException();
     }
 }

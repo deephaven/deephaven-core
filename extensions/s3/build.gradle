@@ -25,14 +25,16 @@ dependencies {
     Classpaths.inheritAutoService(project)
     Classpaths.inheritImmutables(project)
 
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)
 
-    testImplementation project(':engine-table')
-    testImplementation project(':engine-test-utils')
-    testImplementation project(':extensions-parquet-table')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
+    testImplementation 'software.amazon.awssdk:s3-transfer-manager'
     testImplementation "org.testcontainers:testcontainers:1.19.4"
+    testImplementation "org.testcontainers:junit-jupiter:1.19.4"
     testImplementation "org.testcontainers:localstack:1.19.4"
     testImplementation "org.testcontainers:minio:1.19.4"
 
@@ -41,9 +43,16 @@ dependencies {
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 }
 
-TestTools.addEngineOutOfBandTest(project)
+test {
+    useJUnitPlatform {
+        excludeTags("testcontainers")
+    }
+}
 
-testOutOfBand {
+tasks.register('testOutOfBand', Test) {
+    useJUnitPlatform {
+        includeTags("testcontainers")
+    }
     systemProperty 'testcontainers.localstack.image', project.property('testcontainers.localstack.image')
     systemProperty 'testcontainers.minio.image', project.property('testcontainers.minio.image')
 }
