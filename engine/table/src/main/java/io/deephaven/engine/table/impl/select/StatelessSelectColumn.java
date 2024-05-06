@@ -12,6 +12,7 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
+import org.checkerframework.checker.units.qual.N;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -30,18 +31,21 @@ class StatelessSelectColumn implements SelectColumn {
     }
 
     @Override
-    public List<String> initInputs(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
+    public List<String> initInputs(
+            @NotNull final TrackingRowSet rowSet,
+            @NotNull final Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
         return inner.initInputs(rowSet, columnsOfInterest);
     }
 
     @Override
-    public List<String> initDef(@NotNull Map<String, ColumnDefinition<?>> columnDefinitionMap) {
+    public List<String> initDef(@NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap) {
         return inner.initDef(columnDefinitionMap);
     }
 
     @Override
-    public List<String> initDef(@NotNull Map<String, ColumnDefinition<?>> columnDefinitionMap,
-            @NotNull QueryCompilerRequestProcessor compilationRequestProcessor) {
+    public List<String> initDef(
+            @NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap,
+            @NotNull final QueryCompilerRequestProcessor compilationRequestProcessor) {
         return inner.initDef(columnDefinitionMap, compilationRequestProcessor);
     }
 
@@ -66,12 +70,14 @@ class StatelessSelectColumn implements SelectColumn {
     }
 
     @Override
-    public @NotNull ColumnSource<?> getDataView() {
+    @NotNull
+    public ColumnSource<?> getDataView() {
         return inner.getDataView();
     }
 
     @Override
-    public @NotNull ColumnSource<?> getLazyView() {
+    @NotNull
+    public ColumnSource<?> getLazyView() {
         return inner.getLazyView();
     }
 
@@ -86,12 +92,12 @@ class StatelessSelectColumn implements SelectColumn {
     }
 
     @Override
-    public WritableColumnSource<?> newDestInstance(long size) {
+    public WritableColumnSource<?> newDestInstance(final long size) {
         return inner.newDestInstance(size);
     }
 
     @Override
-    public WritableColumnSource<?> newFlatDestInstance(long size) {
+    public WritableColumnSource<?> newFlatDestInstance(final long size) {
         return inner.newFlatDestInstance(size);
     }
 
@@ -101,7 +107,7 @@ class StatelessSelectColumn implements SelectColumn {
     }
 
     @Override
-    public void validateSafeForRefresh(BaseTable<?> sourceTable) {
+    public void validateSafeForRefresh(@NotNull final BaseTable<?> sourceTable) {
         inner.validateSafeForRefresh(sourceTable);
     }
 
