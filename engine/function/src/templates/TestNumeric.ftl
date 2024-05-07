@@ -577,6 +577,7 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(Double.NEGATIVE_INFINITY, sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, Float.NEGATIVE_INFINITY, 6})));
         assertEquals(Double.NEGATIVE_INFINITY, sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY})));
         assertEquals(Double.NaN, sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY})));
+        assertEquals(Double.NaN, sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, Float.NaN, 6})));
     <#else>
         assertEquals(NULL_LONG, sum((${pt.vector}) null));
         assertEquals(NULL_LONG, sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{})));
@@ -596,6 +597,7 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(Double.NEGATIVE_INFINITY, sum(new ${pt.primitive}[]{4, Float.NEGATIVE_INFINITY, 6}));
         assertEquals(Double.NEGATIVE_INFINITY, sum(new ${pt.primitive}[]{4, Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY}));
         assertEquals(Double.NaN, sum(new ${pt.primitive}[]{4, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY}));
+        assertEquals(Double.NaN, sum(new ${pt.primitive}[]{4, Float.NaN, 6}));
     <#else>
         assertEquals(NULL_LONG, sum((${pt.primitive}[]) null));
         assertEquals(NULL_LONG, sum(new ${pt.primitive}[]{}));
