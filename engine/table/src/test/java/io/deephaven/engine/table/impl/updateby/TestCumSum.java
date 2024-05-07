@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
+import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
@@ -45,6 +46,21 @@ public class TestCumSum extends BaseUpdateByTest {
     @Test
     public void testStaticZeroKey() {
         final QueryTable t = createTestTable(100000, false, false, false, 0x31313131).t;
+
+        t.setRefreshing(false);
+
+        final Table summed = t.updateBy(UpdateByOperation.CumSum());
+        for (String col : t.getDefinition().getColumnNamesArray()) {
+            assertWithCumSum(DataAccessHelpers.getColumn(t, col).getDirect(),
+                    DataAccessHelpers.getColumn(summed, col).getDirect(),
+                    DataAccessHelpers.getColumn(summed, col).getType());
+        }
+    }
+
+    @Test
+    public void testStaticZeroKeyAllNulls() {
+        final QueryTable t = createTestTableAllNull(100000, false, false, false, 0x31313131,
+                CollectionUtil.ZERO_LENGTH_STRING_ARRAY, new TestDataGenerator[0]).t;
 
         t.setRefreshing(false);
 
