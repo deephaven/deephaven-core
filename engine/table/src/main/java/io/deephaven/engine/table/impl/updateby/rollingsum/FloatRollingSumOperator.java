@@ -30,11 +30,11 @@ public class FloatRollingSumOperator extends BaseDoubleUpdateByOperator {
                     0,
                     Double::sum, // tree function
                     (a, b) -> { // value function
-                        if (a == NULL_FLOAT && b == NULL_FLOAT) {
+                        if (a == NULL_DOUBLE && b == NULL_DOUBLE) {
                             return 0; // identity val
-                        } else if (a == NULL_FLOAT) {
+                        } else if (a == NULL_DOUBLE) {
                             return b;
-                        } else if (b == NULL_FLOAT) {
+                        } else if (b == NULL_DOUBLE) {
                             return a;
                         }
                         return a + b;
@@ -57,11 +57,13 @@ public class FloatRollingSumOperator extends BaseDoubleUpdateByOperator {
             aggSum.ensureRemaining(count);
 
             for (int ii = 0; ii < count; ii++) {
-                float val = floatInfluencerValuesChunk.get(pos + ii);
-                aggSum.addUnsafe(val);
+                final float val = floatInfluencerValuesChunk.get(pos + ii);
 
                 if (val == NULL_FLOAT) {
                     nullCount++;
+                    aggSum.addUnsafe(NULL_DOUBLE);
+                } else {
+                    aggSum.addUnsafe(val);
                 }
             }
         }
@@ -82,7 +84,7 @@ public class FloatRollingSumOperator extends BaseDoubleUpdateByOperator {
         @Override
         public void writeToOutputChunk(int outIdx) {
             if (aggSum.size() == nullCount) {
-                outputValues.set(outIdx, NULL_FLOAT);
+                outputValues.set(outIdx, NULL_DOUBLE);
             } else {
                 outputValues.set(outIdx, aggSum.evaluate());
             }

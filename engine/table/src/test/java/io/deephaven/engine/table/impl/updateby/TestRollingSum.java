@@ -1193,20 +1193,20 @@ public class TestRollingSum extends BaseUpdateByTest {
         return result;
     }
 
-    private float[] rollingSum(float[] values, int prevTicks, int postTicks) {
+    private double[] rollingSum(float[] values, int prevTicks, int postTicks) {
         if (values == null) {
             return null;
         }
 
         if (values.length == 0) {
-            return new float[0];
+            return new double[0];
         }
 
-        float[] result = new float[values.length];
+        double[] result = new double[values.length];
 
 
         for (int i = 0; i < values.length; i++) {
-            result[i] = NULL_FLOAT;
+            result[i] = NULL_DOUBLE;
 
             // set the head and the tail
             final int head = Math.max(0, i - prevTicks + 1);
@@ -1215,7 +1215,7 @@ public class TestRollingSum extends BaseUpdateByTest {
             // compute everything in this window
             for (int computeIdx = head; computeIdx <= tail; computeIdx++) {
                 if (!isNull(values[computeIdx])) {
-                    if (result[i] == NULL_FLOAT) {
+                    if (result[i] == NULL_DOUBLE) {
                         result[i] = values[computeIdx];
                     } else {
                         result[i] += values[computeIdx];
@@ -1534,22 +1534,22 @@ public class TestRollingSum extends BaseUpdateByTest {
         return result;
     }
 
-    private float[] rollingSumTime(float[] values, long[] timestamps, long prevNanos, long postNanos) {
+    private double[] rollingSumTime(float[] values, long[] timestamps, long prevNanos, long postNanos) {
         if (values == null) {
             return null;
         }
 
         if (values.length == 0) {
-            return new float[0];
+            return new double[0];
         }
 
-        float[] result = new float[values.length];
+        double[] result = new double[values.length];
 
         int head = 0;
         int tail = 0;
 
         for (int i = 0; i < values.length; i++) {
-            result[i] = NULL_FLOAT;
+            result[i] = NULL_DOUBLE;
 
             // check the current timestamp. skip if NULL
             if (timestamps[i] == NULL_LONG) {
@@ -1572,7 +1572,7 @@ public class TestRollingSum extends BaseUpdateByTest {
             // compute everything in this window
             for (int computeIdx = head; computeIdx < tail; computeIdx++) {
                 if (!isNull(values[computeIdx])) {
-                    if (result[i] == NULL_FLOAT) {
+                    if (result[i] == NULL_DOUBLE) {
                         result[i] = values[computeIdx];
                     } else {
                         result[i] += values[computeIdx];
@@ -1756,7 +1756,7 @@ public class TestRollingSum extends BaseUpdateByTest {
         } else if (expected instanceof long[]) {
             assertArrayEquals(rollingSum((long[]) expected, prevTicks, postTicks), (long[]) actual);
         } else if (expected instanceof float[]) {
-            assertArrayEquals(rollingSum((float[]) expected, prevTicks, postTicks), (float[]) actual, deltaF);
+            assertArrayEquals(rollingSum((float[]) expected, prevTicks, postTicks), (double[]) actual, deltaF);
         } else if (expected instanceof double[]) {
             assertArrayEquals(rollingSum((double[]) expected, prevTicks, postTicks), (double[]) actual, deltaD);
         } else if (expected instanceof Boolean[]) {
@@ -1785,7 +1785,7 @@ public class TestRollingSum extends BaseUpdateByTest {
         } else if (expected instanceof long[]) {
             assertArrayEquals(rollingSumTime((long[]) expected, timestamps, prevTime, postTime), (long[]) actual);
         } else if (expected instanceof float[]) {
-            assertArrayEquals(rollingSumTime((float[]) expected, timestamps, prevTime, postTime), (float[]) actual,
+            assertArrayEquals(rollingSumTime((float[]) expected, timestamps, prevTime, postTime), (double[]) actual,
                     deltaF);
         } else if (expected instanceof double[]) {
             assertArrayEquals(rollingSumTime((double[]) expected, timestamps, prevTime, postTime), (double[]) actual,

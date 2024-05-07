@@ -12,6 +12,7 @@ import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 
 public class FloatCumProdOperator extends BaseDoubleUpdateByOperator {
@@ -37,7 +38,7 @@ public class FloatCumProdOperator extends BaseDoubleUpdateByOperator {
             final float val = floatValueChunk.get(pos);
 
             if (val != NULL_FLOAT) {
-                curVal = curVal == NULL_FLOAT ? val : curVal * val;
+                curVal = curVal == NULL_DOUBLE ? val : curVal * val;
             }
         }
     }

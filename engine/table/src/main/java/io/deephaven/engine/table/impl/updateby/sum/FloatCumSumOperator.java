@@ -12,6 +12,7 @@ import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 
 public class FloatCumSumOperator extends BaseDoubleUpdateByOperator {
@@ -33,12 +34,10 @@ public class FloatCumSumOperator extends BaseDoubleUpdateByOperator {
             Assert.eq(count, "push count", 1);
 
             // read the value from the values chunk
-            final float currentVal = floatValueChunk.get(pos);
+            final float val = floatValueChunk.get(pos);
 
-            if (curVal == NULL_FLOAT) {
-                curVal = currentVal;
-            } else if (currentVal != NULL_FLOAT) {
-                curVal += currentVal;
+            if (val != NULL_FLOAT) {
+                curVal = curVal == NULL_DOUBLE ? val : curVal + val;
             }
         }
     }

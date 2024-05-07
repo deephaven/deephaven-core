@@ -211,91 +211,7 @@ public class TestCumSum extends BaseUpdateByTest {
      */
     // endregion
 
-    private long[] cumsum(byte[] values) {
-        if (values == null) {
-            return null;
-        }
-
-        if (values.length == 0) {
-            return new long[0];
-        }
-
-        long[] result = new long[values.length];
-        result[0] = isNull(values[0]) ? NULL_LONG : values[0];
-
-        for (int i = 1; i < values.length; i++) {
-            final boolean curValNull = isNull(values[i]);
-            if (isNull(result[i - 1])) {
-                result[i] = curValNull ? NULL_LONG : values[i];
-            } else {
-                if (curValNull) {
-                    result[i] = result[i - 1];
-                } else {
-                    result[i] = result[i - 1] + values[i];
-                }
-            }
-        }
-
-        return result;
-    }
-
-    private long[] cumsum(short[] values) {
-        if (values == null) {
-            return null;
-        }
-
-        if (values.length == 0) {
-            return new long[0];
-        }
-
-        long[] result = new long[values.length];
-        result[0] = isNull(values[0]) ? NULL_LONG : values[0];
-
-        for (int i = 1; i < values.length; i++) {
-            final boolean curValNull = isNull(values[i]);
-            if (isNull(result[i - 1])) {
-                result[i] = curValNull ? NULL_LONG : values[i];
-            } else {
-                if (curValNull) {
-                    result[i] = result[i - 1];
-                } else {
-                    result[i] = result[i - 1] + values[i];
-                }
-            }
-        }
-
-        return result;
-    }
-
-    private long[] cumsum(int[] values) {
-        if (values == null) {
-            return null;
-        }
-
-        if (values.length == 0) {
-            return new long[0];
-        }
-
-        long[] result = new long[values.length];
-        result[0] = isNull(values[0]) ? NULL_LONG : values[0];
-
-        for (int i = 1; i < values.length; i++) {
-            final boolean curValNull = isNull(values[i]);
-            if (isNull(result[i - 1])) {
-                result[i] = curValNull ? NULL_LONG : values[i];
-            } else {
-                if (curValNull) {
-                    result[i] = result[i - 1];
-                } else {
-                    result[i] = result[i - 1] + values[i];
-                }
-            }
-        }
-
-        return result;
-    }
-
-    private long[] cumsum(Boolean[] values) {
+    private long[] boolean_cumsum(Boolean[] values) {
         if (values == null) {
             return null;
         }
@@ -323,7 +239,7 @@ public class TestCumSum extends BaseUpdateByTest {
         return result;
     }
 
-    public static Object[] cumSum(Object[] values, final boolean isBD) {
+    public static Object[] big_cumSum(Object[] values, final boolean isBD) {
         if (values == null) {
             return null;
         }
@@ -353,11 +269,11 @@ public class TestCumSum extends BaseUpdateByTest {
 
     final void assertWithCumSum(@NotNull final Object expected, @NotNull final Object actual, Class type) {
         if (expected instanceof byte[]) {
-            assertArrayEquals(cumsum((byte[]) expected), (long[]) actual);
+            assertArrayEquals(Numeric.cumsum((byte[]) expected), (long[]) actual);
         } else if (expected instanceof short[]) {
-            assertArrayEquals(cumsum((short[]) expected), (long[]) actual);
+            assertArrayEquals(Numeric.cumsum((short[]) expected), (long[]) actual);
         } else if (expected instanceof int[]) {
-            assertArrayEquals(cumsum((int[]) expected), (long[]) actual);
+            assertArrayEquals(Numeric.cumsum((int[]) expected), (long[]) actual);
         } else if (expected instanceof long[]) {
             assertArrayEquals(Numeric.cumsum((long[]) expected), (long[]) actual);
         } else if (expected instanceof float[]) {
@@ -365,9 +281,9 @@ public class TestCumSum extends BaseUpdateByTest {
         } else if (expected instanceof double[]) {
             assertArrayEquals(Numeric.cumsum((double[]) expected), (double[]) actual, .001d);
         } else if (expected instanceof Boolean[]) {
-            assertArrayEquals(cumsum((Boolean[]) expected), (long[]) actual);
+            assertArrayEquals(boolean_cumsum((Boolean[]) expected), (long[]) actual);
         } else {
-            assertArrayEquals(cumSum((Object[]) expected, type == BigDecimal.class), (Object[]) actual);
+            assertArrayEquals(big_cumSum((Object[]) expected, type == BigDecimal.class), (Object[]) actual);
         }
     }
 }
