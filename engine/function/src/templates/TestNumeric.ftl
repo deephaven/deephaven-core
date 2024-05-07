@@ -567,36 +567,41 @@ public class TestNumeric extends BaseArrayTestCase {
 
     public void test${pt.boxed}Sum1() {
         assertTrue(Math.abs(15 - sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, 5, 6}))) == 0.0);
-        assertTrue(Math.abs(0 - sum(new ${pt.vectorDirect}())) == 0.0);
-        assertTrue(Math.abs(0 - sum(new ${pt.vectorDirect}(${pt.null}))) == 0.0);
         assertTrue(Math.abs(20 - sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{5, ${pt.null}, 15}))) == 0.0);
     <#if pt.valueType.isFloat >
         assertEquals(NULL_DOUBLE, sum((${pt.vector}) null));
+        assertEquals(NULL_DOUBLE, sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{})));
+        assertEquals(NULL_DOUBLE, sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, ${pt.null}})));
         assertEquals(Double.POSITIVE_INFINITY, sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, Float.POSITIVE_INFINITY, 6})));
         assertEquals(Double.POSITIVE_INFINITY, sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY})));
         assertEquals(Double.NEGATIVE_INFINITY, sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, Float.NEGATIVE_INFINITY, 6})));
         assertEquals(Double.NEGATIVE_INFINITY, sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY})));
         assertEquals(Double.NaN, sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY})));
+        assertEquals(Double.NaN, sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, Float.NaN, 6})));
     <#else>
         assertEquals(NULL_LONG, sum((${pt.vector}) null));
+        assertEquals(NULL_LONG, sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{})));
+        assertEquals(NULL_LONG, sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, ${pt.null}})));
     </#if>
-
     }
 
     public void test${pt.boxed}Sum2() {
         assertTrue(Math.abs(15 - sum(new ${pt.primitive}[]{4, 5, 6})) == 0.0);
-        assertTrue(Math.abs(0 - sum(new ${pt.primitive}[]{})) == 0.0);
-        assertTrue(Math.abs(0 - sum(new ${pt.primitive}[]{${pt.null}})) == 0.0);
         assertTrue(Math.abs(20 - sum(new ${pt.primitive}[]{5, ${pt.null}, 15})) == 0.0);
     <#if pt.valueType.isFloat >
         assertEquals(NULL_DOUBLE, sum((${pt.primitive}[]) null));
+        assertEquals(NULL_DOUBLE, sum(new ${pt.primitive}[]{}));
+        assertEquals(NULL_DOUBLE, sum(new ${pt.primitive}[]{${pt.null}, ${pt.null}}));
         assertEquals(Double.POSITIVE_INFINITY, sum(new ${pt.primitive}[]{4, Float.POSITIVE_INFINITY, 6}));
         assertEquals(Double.POSITIVE_INFINITY, sum(new ${pt.primitive}[]{4, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY}));
         assertEquals(Double.NEGATIVE_INFINITY, sum(new ${pt.primitive}[]{4, Float.NEGATIVE_INFINITY, 6}));
         assertEquals(Double.NEGATIVE_INFINITY, sum(new ${pt.primitive}[]{4, Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY}));
         assertEquals(Double.NaN, sum(new ${pt.primitive}[]{4, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY}));
+        assertEquals(Double.NaN, sum(new ${pt.primitive}[]{4, Float.NaN, 6}));
     <#else>
         assertEquals(NULL_LONG, sum((${pt.primitive}[]) null));
+        assertEquals(NULL_LONG, sum(new ${pt.primitive}[]{}));
+        assertEquals(NULL_LONG, sum(new ${pt.primitive}[]{${pt.null}, ${pt.null}}));
     </#if>
     }
 
