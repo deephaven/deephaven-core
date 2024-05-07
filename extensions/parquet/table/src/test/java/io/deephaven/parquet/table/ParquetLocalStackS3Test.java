@@ -1,19 +1,18 @@
 //
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.extensions.s3;
+package io.deephaven.parquet.table;
 
 import io.deephaven.extensions.s3.S3Instructions.Builder;
 import io.deephaven.extensions.s3.testlib.SingletonContainers.LocalStack;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
+import io.deephaven.extensions.s3.testlib.SingletonContainers;
+import org.junit.BeforeClass;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
-@Tag("testcontainers")
-public class S3SeekableChannelLocalStackTest extends S3SeekableChannelCommonTests {
+public class ParquetLocalStackS3Test extends ParquetS3TestBase {
 
-    @BeforeAll
-    static void initContainer() {
+    @BeforeClass
+    public static void initContainer() {
         // ensure container is started so container startup time isn't associated with a specific test
         LocalStack.init();
     }
@@ -25,6 +24,6 @@ public class S3SeekableChannelLocalStackTest extends S3SeekableChannelCommonTest
 
     @Override
     public S3AsyncClient s3AsyncClient() {
-        return LocalStack.s3AsyncClient();
+        return SingletonContainers.LocalStack.s3AsyncClient();
     }
 }

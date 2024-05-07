@@ -577,7 +577,6 @@ class ParquetTestCase(BaseTestCase):
         # Fails because we don't have the right credentials
         with self.assertRaises(Exception):
             read("s3://dh-s3-parquet-test1/multiColFile.parquet", special_instructions=s3_instructions).select()
-        # TODO(deephaven-core#5064): Add support for local S3 testing
 
     def verify_index_files(self, index_dir_path, expected_num_index_files=1):
         self.assertTrue(os.path.exists(index_dir_path))

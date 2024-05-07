@@ -3,28 +3,29 @@
 //
 package io.deephaven.extensions.s3;
 
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class CredentialsTest {
 
     @Test
-    public void defaultCredentials() {
+    void defaultCredentials() {
         isCredentials(Credentials.defaultCredentials());
     }
 
     @Test
-    public void basic() {
+    void basic() {
         isCredentials(Credentials.basic("accessKeyId", "secretAccessKey"));
     }
 
     @Test
-    public void anonymous() {
+    void anonymous() {
         isCredentials(Credentials.anonymous());
     }
 
-    private static void isCredentials(final Credentials c) {
+    private void isCredentials(Credentials c) {
         assertThat(c).isInstanceOf(AwsSdkV2Credentials.class);
     }
 }

@@ -1,23 +1,23 @@
 //
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.extensions.s3;
+package io.deephaven.parquet.table;
 
 import io.deephaven.extensions.s3.S3Instructions.Builder;
 import io.deephaven.extensions.s3.testlib.SingletonContainers.MinIO;
+import io.deephaven.extensions.s3.testlib.SingletonContainers;
 import io.deephaven.stats.util.OSUtil;
-import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
+import org.junit.BeforeClass;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
-@Tag("testcontainers")
-public class S3SeekableChannelMinIOTest extends S3SeekableChannelCommonTests {
+import static org.junit.Assert.assertFalse;
 
-    @BeforeAll
-    static void initContainer() {
+public class ParquetMinIOS3Test extends ParquetS3TestBase {
+
+    @BeforeClass
+    public static void initContainer() {
         // TODO(deephaven-core#5116): MinIO testcontainers does not work on OS X
-        Assumptions.assumeFalse(OSUtil.runningMacOS(), "OSUtil.runningMacOS()");
+        assertFalse("OSUtil.runningMacOS()", OSUtil.runningMacOS());
         // ensure container is started so container startup time isn't associated with a specific test
         MinIO.init();
     }
@@ -29,6 +29,6 @@ public class S3SeekableChannelMinIOTest extends S3SeekableChannelCommonTests {
 
     @Override
     public S3AsyncClient s3AsyncClient() {
-        return MinIO.s3AsyncClient();
+        return SingletonContainers.MinIO.s3AsyncClient();
     }
 }

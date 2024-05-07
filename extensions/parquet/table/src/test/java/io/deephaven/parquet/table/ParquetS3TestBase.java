@@ -1,7 +1,7 @@
 //
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.extensions.s3;
+package io.deephaven.parquet.table;
 
 import io.deephaven.base.FileUtils;
 import io.deephaven.engine.table.ColumnDefinition;
@@ -10,18 +10,24 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.parquet.table.ParquetInstructions;
-import io.deephaven.parquet.table.ParquetTools;
+import io.deephaven.extensions.s3.Credentials;
+import io.deephaven.extensions.s3.S3Instructions;
+import io.deephaven.extensions.s3.S3SeekableChannelTestBase;
+import io.deephaven.extensions.s3.testlib.S3Helper;
+import io.deephaven.test.types.OutOfBandTest;
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import software.amazon.awssdk.core.sync.RequestBody;
+import org.junit.experimental.categories.Category;
+import software.amazon.awssdk.core.async.AsyncRequestBody;
 
 import java.io.File;
 import java.net.URI;
 import java.time.Duration;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.merge;
@@ -29,9 +35,10 @@ import static io.deephaven.parquet.table.ParquetTools.writeKeyValuePartitionedTa
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-abstract class S3ParquetTests extends S3SeekableChannelTestBase {
+@Category(OutOfBandTest.class)
+abstract class ParquetS3TestBase extends S3SeekableChannelTestBase {
 
-    private static final File rootDir = new File(S3ParquetTests.class.getName() + "_root");
+    private static final File rootDir = new File(ParquetS3TestBase.class.getName() + "_root");
 
     // The following tests are disabled by default, as they are verifying against a remote system
     private static final boolean ENABLE_REMOTE_S3_TESTING = false;
@@ -40,7 +47,7 @@ abstract class S3ParquetTests extends S3SeekableChannelTestBase {
     public final EngineCleanup framework = new EngineCleanup();
 
     @Before
-    public void setUp() {
+    public void setUp() throws ExecutionException, InterruptedException, TimeoutException {
         super.setUp();
         if (rootDir.exists()) {
             FileUtils.deleteRecursively(rootDir);
@@ -50,13 +57,18 @@ abstract class S3ParquetTests extends S3SeekableChannelTestBase {
     }
 
     @After
-    public void tearDown() {
+    public void tearDown() throws ExecutionException, InterruptedException, TimeoutException {
         super.tearDown();
         FileUtils.deleteRecursively(rootDir);
     }
 
+    private void uploadDirectory(final File directory)
+            throws ExecutionException, InterruptedException, TimeoutException {
+        S3Helper.uploadDirectory(asyncClient, directory.toPath(), bucket, directory.getName(), Duration.ofSeconds(5));
+    }
+
     @Test
-    public final void readSingleParquetFile() {
+    public final void readSingleParquetFile() throws ExecutionException, InterruptedException, TimeoutException {
         final Table table = TableTools.emptyTable(500_000).update(
                 "someIntColumn = (int) i",
                 "someDoubleColumn = (double) i",
@@ -65,7 +77,7 @@ abstract class S3ParquetTests extends S3SeekableChannelTestBase {
                 "someCharColumn = (char) (i % 26 + 'a')");
         final File dest = new File(rootDir, "table.parquet");
         ParquetTools.writeTable(table, dest.getAbsolutePath());
-        putObject("table.parquet", RequestBody.fromFile(dest));
+        putObject("table.parquet", AsyncRequestBody.fromFile(dest));
 
         final URI uri = uri("table.parquet");
         final ParquetInstructions readInstructions = ParquetInstructions.builder()
@@ -81,7 +93,8 @@ abstract class S3ParquetTests extends S3SeekableChannelTestBase {
     }
 
     @Test
-    public final void readFlatPartitionedParquetData() {
+    public final void readFlatPartitionedParquetData()
+            throws ExecutionException, InterruptedException, TimeoutException {
         final Table table = TableTools.emptyTable(100_000).select(
                 "someIntColumn = (int) i",
                 "someDoubleColumn = (double) i",
@@ -94,7 +107,7 @@ abstract class S3ParquetTests extends S3SeekableChannelTestBase {
             final File dest = new File(destDir, "table" + i + ".parquet");
             ParquetTools.writeTable(table, dest.getAbsolutePath());
         }
-        putDirectory(destDir);
+        uploadDirectory(destDir);
         final URI uri = uri(destDirName);
         final ParquetInstructions readInstructions = ParquetInstructions.builder()
                 .setSpecialInstructions(s3Instructions(
@@ -116,7 +129,8 @@ abstract class S3ParquetTests extends S3SeekableChannelTestBase {
     }
 
     @Test
-    public void readKeyValuePartitionedParquetData() {
+    public void readKeyValuePartitionedParquetData()
+            throws ExecutionException, InterruptedException, TimeoutException {
         final TableDefinition definition = TableDefinition.of(
                 ColumnDefinition.ofInt("PC1").withPartitioning(),
                 ColumnDefinition.ofInt("PC2").withPartitioning(),
@@ -134,7 +148,7 @@ abstract class S3ParquetTests extends S3SeekableChannelTestBase {
                 .setBaseNameForPartitionedParquetData("data")
                 .build();
         writeKeyValuePartitionedTable(table, destDir.getPath(), writeInstructions);
-        putDirectory(destDir);
+        uploadDirectory(destDir);
         final URI uri = uri(destDirName);
         final ParquetInstructions readInstructions = ParquetInstructions.builder()
                 .setSpecialInstructions(s3Instructions(
@@ -156,8 +170,8 @@ abstract class S3ParquetTests extends S3SeekableChannelTestBase {
         Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_REMOTE_S3_TESTING);
         final S3Instructions s3Instructions = S3Instructions.builder()
                 .regionName("us-east-2")
-                .readAheadCount(1)
-                .fragmentSize(5 * 1024 * 1024)
+                .readAheadCount(8)
+                .fragmentSize(65535)
                 .maxConcurrentRequests(50)
                 .maxCacheSize(32)
                 .connectionTimeout(Duration.ofSeconds(1))
@@ -197,8 +211,8 @@ abstract class S3ParquetTests extends S3SeekableChannelTestBase {
         Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_REMOTE_S3_TESTING);
         final S3Instructions s3Instructions = S3Instructions.builder()
                 .regionName("us-east-1")
-                .readAheadCount(1)
-                .fragmentSize(5 * 1024 * 1024)
+                .readAheadCount(8)
+                .fragmentSize(65535)
                 .maxConcurrentRequests(50)
                 .maxCacheSize(32)
                 .readTimeout(Duration.ofSeconds(60))

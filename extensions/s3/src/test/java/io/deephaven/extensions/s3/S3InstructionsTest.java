@@ -3,16 +3,16 @@
 //
 package io.deephaven.extensions.s3;
 
-import java.time.Duration;
+import org.junit.jupiter.api.Test;
 
-import org.junit.Test;
+import java.time.Duration;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 public class S3InstructionsTest {
 
     @Test
-    public void defaults() {
+    void defaults() {
         final S3Instructions instructions = S3Instructions.builder().regionName("some-region").build();
         assertThat(instructions.regionName()).isEqualTo("some-region");
         assertThat(instructions.maxConcurrentRequests()).isEqualTo(50);
@@ -26,7 +26,7 @@ public class S3InstructionsTest {
     }
 
     @Test
-    public void missingRegion() {
+    void missingRegion() {
         try {
             S3Instructions.builder().build();
         } catch (IllegalStateException e) {
@@ -35,7 +35,7 @@ public class S3InstructionsTest {
     }
 
     @Test
-    public void minMaxConcurrentRequests() {
+    void minMaxConcurrentRequests() {
         assertThat(S3Instructions.builder()
                 .regionName("some-region")
                 .maxConcurrentRequests(1)
@@ -45,7 +45,7 @@ public class S3InstructionsTest {
     }
 
     @Test
-    public void tooSmallMaxConcurrentRequests() {
+    void tooSmallMaxConcurrentRequests() {
         try {
             S3Instructions.builder()
                     .regionName("some-region")
@@ -57,7 +57,7 @@ public class S3InstructionsTest {
     }
 
     @Test
-    public void minReadAheadCount() {
+    void minReadAheadCount() {
         assertThat(S3Instructions.builder()
                 .regionName("some-region")
                 .readAheadCount(0)
@@ -67,7 +67,7 @@ public class S3InstructionsTest {
     }
 
     @Test
-    public void tooSmallReadAheadCount() {
+    void tooSmallReadAheadCount() {
         try {
             S3Instructions.builder()
                     .regionName("some-region")
@@ -79,7 +79,7 @@ public class S3InstructionsTest {
     }
 
     @Test
-    public void minFragmentSize() {
+    void minFragmentSize() {
         assertThat(S3Instructions.builder()
                 .regionName("some-region")
                 .fragmentSize(8 * (1 << 10))
@@ -89,7 +89,7 @@ public class S3InstructionsTest {
     }
 
     @Test
-    public void tooSmallFragmentSize() {
+    void tooSmallFragmentSize() {
         try {
             S3Instructions.builder()
                     .regionName("some-region")
@@ -101,7 +101,7 @@ public class S3InstructionsTest {
     }
 
     @Test
-    public void maxFragmentSize() {
+    void maxFragmentSize() {
         assertThat(S3Instructions.builder()
                 .regionName("some-region")
                 .fragmentSize(S3Instructions.MAX_FRAGMENT_SIZE)
@@ -111,7 +111,7 @@ public class S3InstructionsTest {
     }
 
     @Test
-    public void tooBigFragmentSize() {
+    void tooBigFragmentSize() {
         try {
             S3Instructions.builder()
                     .regionName("some-region")
@@ -123,7 +123,7 @@ public class S3InstructionsTest {
     }
 
     @Test
-    public void minMaxCacheSize() {
+    void minMaxCacheSize() {
         assertThat(S3Instructions.builder()
                 .regionName("some-region")
                 .readAheadCount(99)
@@ -134,7 +134,7 @@ public class S3InstructionsTest {
     }
 
     @Test
-    public void tooSmallCacheSize() {
+    void tooSmallCacheSize() {
         try {
             S3Instructions.builder()
                     .regionName("some-region")
@@ -147,7 +147,7 @@ public class S3InstructionsTest {
     }
 
     @Test
-    public void basicCredentials() {
+    void basicCredentials() {
         assertThat(S3Instructions.builder()
                 .regionName("some-region")
                 .credentials(Credentials.basic("foo", "bar"))
@@ -157,7 +157,7 @@ public class S3InstructionsTest {
     }
 
     @Test
-    public void badCredentials() {
+    void badCredentials() {
         try {
             S3Instructions.builder()
                     .regionName("some-region")
