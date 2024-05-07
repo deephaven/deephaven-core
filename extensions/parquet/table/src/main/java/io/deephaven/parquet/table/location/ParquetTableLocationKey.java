@@ -39,7 +39,6 @@ public class ParquetTableLocationKey extends URITableLocationKey {
     private final ParquetInstructions readInstructions;
     private SeekableChannelsProvider channelsProvider;
 
-    // TODO Comment this and test at end
     /**
      * Construct a new ParquetTableLocationKey for the supplied {@code file} and {@code partitions}.
      * <p>
@@ -82,7 +81,6 @@ public class ParquetTableLocationKey extends URITableLocationKey {
         this.channelsProvider = channelsProvider;
     }
 
-    // TODO Comment this and test at end
     /**
      * Construct a new ParquetTableLocationKey for the supplied {@code parquetFileUri} and {@code partitions}.
      * <p>
