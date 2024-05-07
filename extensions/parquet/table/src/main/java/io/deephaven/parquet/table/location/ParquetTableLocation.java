@@ -82,11 +82,12 @@ public class ParquetTableLocation extends AbstractTableLocation {
         final ParquetMetadata parquetMetadata;
         // noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (tableLocationKey) {
-            // Following will create a new ParquetFileReader and read the file metadata if it does not exist
+            // Following methods are internally synchronized, we synchronize them together here to minimize lock/unlock
+            // calls
             parquetFileReader = tableLocationKey.getFileReader();
+            parquetMetadata = tableLocationKey.getMetadata();
+            rowGroupIndices = tableLocationKey.getRowGroupIndices();
         }
-        parquetMetadata = tableLocationKey.getMetadata();
-        rowGroupIndices = tableLocationKey.getRowGroupIndices();
 
         final int rowGroupCount = rowGroupIndices.length;
         rowGroups = IntStream.of(rowGroupIndices)

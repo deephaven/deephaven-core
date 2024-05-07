@@ -54,7 +54,7 @@ class S3AsyncClientFactory {
         instructions.endpointOverride().ifPresent(builder::endpointOverride);
         final S3AsyncClient ret = builder.build();
         if (log.isDebugEnabled()) {
-            log.debug().append("Creating S3AsyncClient for region: ").append(instructions.regionName()).endl();
+            log.debug().append("Building S3AsyncClient with instructions: ").append(instructions).endl();
         }
         return ret;
     }
@@ -84,14 +84,14 @@ class S3AsyncClientFactory {
         }
 
         @Override
-        public boolean equals(Object o) {
-            if (this == o) {
+        public boolean equals(final Object other) {
+            if (this == other) {
                 return true;
             }
-            if (o == null || getClass() != o.getClass()) {
+            if (other == null || getClass() != other.getClass()) {
                 return false;
             }
-            final HttpClientConfig that = (HttpClientConfig) o;
+            final HttpClientConfig that = (HttpClientConfig) other;
             return maxConcurrentRequests == that.maxConcurrentRequests
                     && connectionTimeout.equals(that.connectionTimeout);
         }
@@ -109,7 +109,8 @@ class S3AsyncClientFactory {
     /**
      * The following executor will be used to complete the futures returned by the async client. This is a shared
      * executor across all clients with fixed number of threads. This pattern is inspired by the default executor used
-     * by the SDK ({@code SdkAsyncHttpClient#resolveAsyncFutureCompletionExecutor}).
+     * by the SDK
+     * ({@code software.amazon.awssdk.core.client.builder.SdkDefaultClientBuilder#resolveAsyncFutureCompletionExecutor})
      *
      */
     private static Executor ensureAsyncFutureCompletionExecutor() {
@@ -117,7 +118,7 @@ class S3AsyncClientFactory {
             synchronized (S3AsyncClientFactory.class) {
                 if (futureCompletionExecutor == null) {
                     futureCompletionExecutor = Executors.newFixedThreadPool(NUM_PROCESSORS, new ThreadFactoryBuilder()
-                            .threadNamePrefix("aws-async-future-completion").build());
+                            .threadNamePrefix("s3-async-future-completion").build());
                 }
             }
         }
@@ -127,7 +128,8 @@ class S3AsyncClientFactory {
     /**
      * The following executor will be used to schedule tasks for the async client, such as timeouts and retries. This is
      * a shared executor across all clients with fixed number of threads. This pattern is inspired by the default
-     * executor used by the SDK ({@code ClientOverrideConfiguration#resolveScheduledExecutorService}).
+     * executor used by the SDK
+     * ({@code software.amazon.awssdk.core.client.builder.SdkDefaultClientBuilder#resolveScheduledExecutorService}).
      */
     private static ScheduledExecutorService ensureScheduledExecutor() {
         final int NUM_SCHEDULED_EXECUTOR_THREADS = 5;
@@ -135,7 +137,7 @@ class S3AsyncClientFactory {
             synchronized (S3AsyncClientFactory.class) {
                 if (scheduledExecutor == null) {
                     scheduledExecutor = Executors.newScheduledThreadPool(NUM_SCHEDULED_EXECUTOR_THREADS,
-                            new ThreadFactoryBuilder().threadNamePrefix("aws-scheduled-executor").build());
+                            new ThreadFactoryBuilder().threadNamePrefix("s3-scheduled-executor").build());
                 }
             }
         }

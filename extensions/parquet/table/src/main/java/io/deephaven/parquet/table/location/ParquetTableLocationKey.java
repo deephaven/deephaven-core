@@ -9,6 +9,7 @@ import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
 import io.deephaven.parquet.base.ParquetFileReader;
 import io.deephaven.util.channel.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import org.apache.parquet.format.RowGroup;
@@ -57,7 +58,7 @@ public class ParquetTableLocationKey extends URITableLocationKey {
             @NotNull final ParquetInstructions readInstructions) {
         super(validateParquetFile(file), order, partitions);
         this.readInstructions = readInstructions;
-        this.channelsProvider = readInstructions.getChannelsProvider(getURI(),
+        this.channelsProvider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(getURI(),
                 readInstructions.getSpecialInstructions());
     }
 
@@ -98,7 +99,8 @@ public class ParquetTableLocationKey extends URITableLocationKey {
             @Nullable final Map<String, Comparable<?>> partitions,
             @NotNull final ParquetInstructions readInstructions) {
         this(parquetFileUri, order, partitions, readInstructions,
-                readInstructions.getChannelsProvider(parquetFileUri, readInstructions.getSpecialInstructions()));
+                SeekableChannelsProviderLoader.getInstance().fromServiceLoader(parquetFileUri,
+                        readInstructions.getSpecialInstructions()));
     }
 
     /**

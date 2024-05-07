@@ -15,7 +15,7 @@ import java.util.ServiceLoader;
  * A service loader class for loading {@link SeekableChannelsProviderPlugin} implementations at runtime and provide
  * {@link SeekableChannelsProvider} implementations for different URI schemes, e.g., S3.
  */
-public final class SeekableChannelsProviderLoader implements SeekableChannelsProviderFactory {
+public final class SeekableChannelsProviderLoader {
 
     private static volatile SeekableChannelsProviderLoader instance;
 
@@ -37,16 +37,16 @@ public final class SeekableChannelsProviderLoader implements SeekableChannelsPro
     }
 
     /**
-     * Create a new {@link SeekableChannelsProvider} based on given URI and object using the plugins loaded by the
-     * {@link ServiceLoader}. For example, for a "S3" URI, we will create a {@link SeekableChannelsProvider} which can
-     * read files from S3.
+     * Create a new {@link SeekableChannelsProvider} compatible for reading from and writing to the given URI, using the
+     * plugins loaded by the {@link ServiceLoader}. For example, for a "S3" URI, we will create a
+     * {@link SeekableChannelsProvider} which can read files from S3.
      *
      * @param uri The URI
      * @param specialInstructions An optional object to pass special instructions to the provider.
      * @return A {@link SeekableChannelsProvider} for the given URI.
      */
-    @Override
-    public SeekableChannelsProvider createProvider(@NotNull final URI uri, @Nullable final Object specialInstructions) {
+    public SeekableChannelsProvider fromServiceLoader(@NotNull final URI uri,
+            @Nullable final Object specialInstructions) {
         for (final SeekableChannelsProviderPlugin plugin : providers) {
             if (plugin.isCompatible(uri, specialInstructions)) {
                 return plugin.createProvider(uri, specialInstructions);

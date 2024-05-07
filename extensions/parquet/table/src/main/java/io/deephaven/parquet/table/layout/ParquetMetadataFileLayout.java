@@ -17,6 +17,7 @@ import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.base.ParquetFileReader;
 import io.deephaven.util.channel.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import io.deephaven.util.type.TypeUtils;
@@ -99,8 +100,9 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
         }
         this.metadataFile = metadataFile;
         this.commonMetadataFile = commonMetadataFile;
-        channelsProvider = inputInstructions.getChannelsProvider(convertToURI(metadataFile, false),
-                inputInstructions.getSpecialInstructions());
+        channelsProvider =
+                SeekableChannelsProviderLoader.getInstance().fromServiceLoader(convertToURI(metadataFile, false),
+                        inputInstructions.getSpecialInstructions());
         if (!metadataFile.exists()) {
             throw new TableDataException(String.format("Parquet metadata file %s does not exist", metadataFile));
         }

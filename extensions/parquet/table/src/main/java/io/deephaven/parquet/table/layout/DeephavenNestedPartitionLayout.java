@@ -10,6 +10,7 @@ import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.channel.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -50,8 +51,9 @@ public abstract class DeephavenNestedPartitionLayout<TLK extends URITableLocatio
             @NotNull final String columnPartitionKey,
             @Nullable final Predicate<String> internalPartitionValueFilter,
             @NotNull final ParquetInstructions readInstructions) {
-        final SeekableChannelsProvider channelsProvider = readInstructions.getChannelsProvider(
-                convertToURI(tableRootDirectory, true), readInstructions.getSpecialInstructions());
+        final SeekableChannelsProvider channelsProvider =
+                SeekableChannelsProviderLoader.getInstance().fromServiceLoader(convertToURI(tableRootDirectory, true),
+                        readInstructions.getSpecialInstructions());
         return new DeephavenNestedPartitionLayout<>(tableRootDirectory, tableName,
                 columnPartitionKey, internalPartitionValueFilter) {
             @Override

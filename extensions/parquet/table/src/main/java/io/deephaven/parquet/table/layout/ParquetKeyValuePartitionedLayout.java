@@ -16,9 +16,9 @@ import io.deephaven.parquet.base.ParquetUtils;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.util.channel.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
@@ -50,18 +50,12 @@ public class ParquetKeyValuePartitionedLayout
     private final SeekableChannelsProvider channelsProvider;
 
     public ParquetKeyValuePartitionedLayout(
-            @NotNull final File tableRootDirectory,
-            @NotNull final TableDefinition tableDefinition,
-            @NotNull final ParquetInstructions readInstructions) {
-        this(convertToURI(tableRootDirectory, true), tableDefinition, readInstructions);
-    }
-
-    public ParquetKeyValuePartitionedLayout(
             @NotNull final URI tableRootDirectory,
             @NotNull final TableDefinition tableDefinition,
             @NotNull final ParquetInstructions readInstructions) {
         this(tableRootDirectory, tableDefinition, readInstructions,
-                readInstructions.getChannelsProvider(tableRootDirectory, readInstructions.getSpecialInstructions()));
+                SeekableChannelsProviderLoader.getInstance().fromServiceLoader(tableRootDirectory,
+                        readInstructions.getSpecialInstructions()));
     }
 
     private ParquetKeyValuePartitionedLayout(
@@ -78,18 +72,12 @@ public class ParquetKeyValuePartitionedLayout
     }
 
     public ParquetKeyValuePartitionedLayout(
-            @NotNull final File tableRootDirectory,
-            final int maxPartitioningLevels,
-            @NotNull final ParquetInstructions readInstructions) {
-        this(convertToURI(tableRootDirectory, true), maxPartitioningLevels, readInstructions);
-    }
-
-    public ParquetKeyValuePartitionedLayout(
             @NotNull final URI tableRootDirectory,
             final int maxPartitioningLevels,
             @NotNull final ParquetInstructions readInstructions) {
         this(tableRootDirectory, maxPartitioningLevels, readInstructions,
-                readInstructions.getChannelsProvider(tableRootDirectory, readInstructions.getSpecialInstructions()));
+                SeekableChannelsProviderLoader.getInstance().fromServiceLoader(tableRootDirectory,
+                        readInstructions.getSpecialInstructions()));
     }
 
     private ParquetKeyValuePartitionedLayout(

@@ -36,7 +36,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -45,7 +44,6 @@ import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
-import static io.deephaven.base.FileUtils.convertToURI;
 import static io.deephaven.parquet.base.ParquetUtils.METADATA_KEY;
 
 public class ParquetSchemaReader {
@@ -94,35 +92,6 @@ public class ParquetSchemaReader {
             codecType = null;
             codecComponentType = null;
         }
-    }
-
-    /**
-     * Obtain schema information from a parquet file
-     *
-     * @param filePath Location for input parquet file
-     * @param readInstructions Parquet read instructions specifying transformations like column mappings and codecs.
-     *        Note a new read instructions based on this one may be returned by this method to provide necessary
-     *        transformations, eg, replacing unsupported characters like ' ' (space) in column names.
-     * @param consumer A ColumnDefinitionConsumer whose accept method would be called for each column in the file
-     * @return Parquet read instructions, either the ones supplied or a new object based on the supplied with necessary
-     *         transformations added.
-     *
-     * @deprecated Unused method
-     */
-    @Deprecated
-    public static ParquetInstructions readParquetSchema(
-            @NotNull final String filePath,
-            @NotNull final ParquetInstructions readInstructions,
-            @NotNull final ColumnDefinitionConsumer consumer,
-            @NotNull final BiFunction<String, Set<String>, String> legalizeColumnNameFunc) throws IOException {
-        final URI parquetFileUri = convertToURI(filePath, false);
-        final ParquetFileReader parquetFileReader =
-                ParquetFileReader.createChecked(parquetFileUri, readInstructions.getChannelsProvider(parquetFileUri,
-                        readInstructions.getSpecialInstructions()));
-        final ParquetMetadata parquetMetadata =
-                new ParquetMetadataConverter().fromParquetMetadata(parquetFileReader.fileMetaData);
-        return readParquetSchema(parquetFileReader.getSchema(), parquetMetadata.getFileMetaData().getKeyValueMetaData(),
-                readInstructions, consumer, legalizeColumnNameFunc);
     }
 
     public static Optional<TableInfo> parseMetadata(@NotNull final Map<String, String> keyValueMetadata) {

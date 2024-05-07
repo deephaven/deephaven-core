@@ -11,9 +11,6 @@ import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.parquet.base.ParquetUtils;
 import io.deephaven.util.annotations.VisibleForTesting;
-import io.deephaven.util.channel.SeekableChannelsProvider;
-import io.deephaven.util.channel.SeekableChannelsProviderFactory;
-import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -102,9 +99,6 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
     private static volatile int defaultTargetPageSize = DEFAULT_TARGET_PAGE_SIZE;
 
     private static final boolean DEFAULT_IS_REFRESHING = false;
-
-    private static final SeekableChannelsProviderFactory DEFAULT_CHANNELS_PROVIDER_FACTORY =
-            SeekableChannelsProviderLoader.getInstance();
 
     /**
      * Set the default target page size (in bytes) used to section rows of data into pages during column writing. This
@@ -224,15 +218,6 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
     public abstract Optional<TableDefinition> getTableDefinition();
 
     public abstract Optional<Collection<List<String>>> getIndexColumns();
-
-    /**
-     * @return a {@link SeekableChannelsProvider} compatible for reading and writing to the given parquet file URI.
-     *
-     * @param parquetFileURI the URI of the parquet file
-     * @param specialInstructions An optional object to pass special instructions to the provider
-     */
-    public abstract SeekableChannelsProvider getChannelsProvider(URI parquetFileURI,
-            @Nullable Object specialInstructions);
 
     /**
      * Creates a new {@link ParquetInstructions} object with the same properties as the current object but definition
@@ -366,16 +351,6 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         @Override
-        public SeekableChannelsProvider getChannelsProvider(final URI parquetFileURI,
-                @Nullable final Object specialInstructions) {
-            return DEFAULT_CHANNELS_PROVIDER_FACTORY.createProvider(parquetFileURI, specialInstructions);
-        }
-
-        private SeekableChannelsProviderFactory getChannelsProviderFactory() {
-            return DEFAULT_CHANNELS_PROVIDER_FACTORY;
-        }
-
-        @Override
         public ParquetInstructions withTableDefinition(@Nullable final TableDefinition tableDefinition) {
             return withTableDefinitionAndLayout(tableDefinition, null);
         }
@@ -387,7 +362,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return new ReadOnly(null, null, getCompressionCodecName(), getMaximumDictionaryKeys(),
                     getMaximumDictionarySize(), isLegacyParquet(), getTargetPageSize(), isRefreshing(),
                     getSpecialInstructions(), generateMetadataFiles(), baseNameForPartitionedParquetData(),
-                    fileLayout, tableDefinition, null, getChannelsProviderFactory());
+                    fileLayout, tableDefinition, null);
         }
 
         @Override
@@ -395,7 +370,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return new ReadOnly(null, null, getCompressionCodecName(), getMaximumDictionaryKeys(),
                     getMaximumDictionarySize(), isLegacyParquet(), getTargetPageSize(), isRefreshing(),
                     getSpecialInstructions(), generateMetadataFiles(), baseNameForPartitionedParquetData(),
-                    null, null, indexColumns, getChannelsProviderFactory());
+                    null, null, indexColumns);
         }
     };
 
@@ -470,7 +445,6 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private final ParquetFileLayout fileLayout;
         private final TableDefinition tableDefinition;
         private final Collection<List<String>> indexColumns;
-        private final SeekableChannelsProviderFactory channelsProviderFactory;
 
         private ReadOnly(
                 final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructions,
@@ -486,8 +460,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                 final String baseNameForPartitionedParquetData,
                 final ParquetFileLayout fileLayout,
                 final TableDefinition tableDefinition,
-                final Collection<List<String>> indexColumns,
-                final SeekableChannelsProviderFactory channelsProviderFactory) {
+                final Collection<List<String>> indexColumns) {
             this.columnNameToInstructions = columnNameToInstructions;
             this.parquetColumnNameToInstructions = parquetColumnNameToColumnName;
             this.compressionCodecName = compressionCodecName;
@@ -505,7 +478,6 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                     : indexColumns.stream()
                             .map(List::copyOf)
                             .collect(Collectors.toUnmodifiableList());
-            this.channelsProviderFactory = Require.neqNull(channelsProviderFactory, "channelsProviderFactory");
         }
 
         private String getOrDefault(final String columnName, final String defaultValue,
@@ -626,16 +598,6 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         @Override
-        public SeekableChannelsProvider getChannelsProvider(final URI parquetFileURI,
-                @Nullable final Object specialInstructions) {
-            return channelsProviderFactory.createProvider(parquetFileURI, specialInstructions);
-        }
-
-        private SeekableChannelsProviderFactory getChannelsProviderFactory() {
-            return channelsProviderFactory;
-        }
-
-        @Override
         public ParquetInstructions withTableDefinition(@Nullable final TableDefinition useDefinition) {
             return withTableDefinitionAndLayout(useDefinition, getFileLayout().orElse(null));
         }
@@ -648,7 +610,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                     getCompressionCodecName(), getMaximumDictionaryKeys(), getMaximumDictionarySize(),
                     isLegacyParquet(), getTargetPageSize(), isRefreshing(), getSpecialInstructions(),
                     generateMetadataFiles(), baseNameForPartitionedParquetData(), useLayout, useDefinition,
-                    indexColumns, channelsProviderFactory);
+                    indexColumns);
         }
 
         @Override
@@ -657,7 +619,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                     getCompressionCodecName(), getMaximumDictionaryKeys(), getMaximumDictionarySize(),
                     isLegacyParquet(), getTargetPageSize(), isRefreshing(), getSpecialInstructions(),
                     generateMetadataFiles(), baseNameForPartitionedParquetData(), fileLayout,
-                    tableDefinition, useIndexColumns, channelsProviderFactory);
+                    tableDefinition, useIndexColumns);
         }
 
         KeyedObjectHashMap<String, ColumnInstructions> copyColumnNameToInstructions() {
@@ -716,7 +678,6 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private ParquetFileLayout fileLayout;
         private TableDefinition tableDefinition;
         private Collection<List<String>> indexColumns;
-        private SeekableChannelsProviderFactory channelsProviderFactory = DEFAULT_CHANNELS_PROVIDER_FACTORY;
 
         /**
          * For each additional field added, make sure to update the copy constructor builder
@@ -744,7 +705,6 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             fileLayout = readOnlyParquetInstructions.getFileLayout().orElse(null);
             tableDefinition = readOnlyParquetInstructions.getTableDefinition().orElse(null);
             indexColumns = readOnlyParquetInstructions.getIndexColumns().orElse(null);
-            channelsProviderFactory = readOnlyParquetInstructions.getChannelsProviderFactory();
         }
 
         private void newColumnNameToInstructionsMap() {
@@ -1012,12 +972,6 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return this;
         }
 
-        public Builder setChannelsProviderFactory(
-                @NotNull final SeekableChannelsProviderFactory channelsProviderFactory) {
-            this.channelsProviderFactory = channelsProviderFactory;
-            return this;
-        }
-
         public ParquetInstructions build() {
             final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructionsOut = columnNameToInstructions;
             columnNameToInstructions = null;
@@ -1027,7 +981,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return new ReadOnly(columnNameToInstructionsOut, parquetColumnNameToColumnNameOut, compressionCodecName,
                     maximumDictionaryKeys, maximumDictionarySize, isLegacyParquet, targetPageSize, isRefreshing,
                     specialInstructions, generateMetadataFiles, baseNameForPartitionedParquetData, fileLayout,
-                    tableDefinition, indexColumns, channelsProviderFactory);
+                    tableDefinition, indexColumns);
         }
     }
 
