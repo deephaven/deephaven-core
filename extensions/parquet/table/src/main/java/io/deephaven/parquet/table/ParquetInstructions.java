@@ -25,7 +25,6 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.net.URI;
 
 /**
  * This class provides instructions intended for read and write parquet operations (which take it as an optional

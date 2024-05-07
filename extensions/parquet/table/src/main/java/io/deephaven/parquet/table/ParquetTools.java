@@ -1716,8 +1716,9 @@ public class ParquetTools {
             @NotNull final File source,
             @NotNull final ParquetInstructions readInstructionsIn,
             @Nullable final MutableObject<ParquetInstructions> mutableInstructionsOut) {
+        final URI sourceURI = convertToURI(source, false);
         final ParquetTableLocationKey tableLocationKey =
-                new ParquetTableLocationKey(source, 0, null, readInstructionsIn);
+                new ParquetTableLocationKey(sourceURI, 0, null, readInstructionsIn);
         final Pair<List<ColumnDefinition<?>>, ParquetInstructions> schemaInfo = ParquetSchemaReader.convertSchema(
                 tableLocationKey.getFileReader().getSchema(),
                 tableLocationKey.getMetadata().getFileMetaData().getKeyValueMetaData(),

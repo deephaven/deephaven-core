@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import java.net.URI;
+
 import static io.deephaven.base.FileUtils.convertToURI;
 
 /**
@@ -59,8 +61,8 @@ public abstract class DeephavenNestedPartitionLayout<TLK extends URITableLocatio
             @Override
             protected ParquetTableLocationKey makeKey(@NotNull Path tableLeafDirectory,
                     @NotNull Map<String, Comparable<?>> partitions) {
-                return new ParquetTableLocationKey(tableLeafDirectory.resolve(PARQUET_FILE_NAME).toFile(), 0,
-                        partitions, readInstructions, channelsProvider);
+                final URI fileURI = convertToURI(tableLeafDirectory.resolve(PARQUET_FILE_NAME), false);
+                return new ParquetTableLocationKey(fileURI, 0, partitions, readInstructions, channelsProvider);
             }
         };
     }

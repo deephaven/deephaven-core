@@ -85,7 +85,7 @@ public class ParquetFileReader {
     private ParquetFileReader(
             @NotNull final URI parquetFileURI,
             @NotNull final SeekableChannelsProvider provider) throws IOException {
-        this.channelsProvider = new CachedChannelProvider(provider, 1 << 7);
+        this.channelsProvider = CachedChannelProvider.create(provider, 1 << 7);
         if (!parquetFileURI.getRawPath().endsWith(".parquet") && FILE_URI_SCHEME.equals(parquetFileURI.getScheme())) {
             // Construct a new file URI for the parent directory
             rootURI = convertToURI(new File(parquetFileURI).getParentFile(), true);

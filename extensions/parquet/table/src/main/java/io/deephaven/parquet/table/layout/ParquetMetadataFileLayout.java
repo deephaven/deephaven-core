@@ -30,6 +30,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -207,8 +208,8 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
                     partitions.put(partitionKey, partitionValue);
                 }
             }
-            final File partitionFile = new File(directory, relativePathString);
-            final ParquetTableLocationKey tlk = new ParquetTableLocationKey(partitionFile,
+            final URI partitionFileURI = convertToURI(new File(directory, relativePathString), false);
+            final ParquetTableLocationKey tlk = new ParquetTableLocationKey(partitionFileURI,
                     partitionOrder.getAndIncrement(), partitions, inputInstructions, channelsProvider);
             tlk.setFileReader(metadataFileReader);
             tlk.setMetadata(getParquetMetadataForFile(relativePathString, metadataFileMetadata));
