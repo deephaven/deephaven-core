@@ -403,7 +403,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
     }
 
     @Override
-    public void init(TableDefinition tableDefinition) {}
+    public void init(@NotNull final TableDefinition tableDefinition) {}
 
     @NotNull
     @Override

@@ -1,10 +1,17 @@
-# Building the C++ client from a base Ubuntu 20.04 or 22.04 image
+# Building the C++ client on Ubuntu 20.04 / 22.04 and Windows 10 / 11.
 
-These instructions show how to install and run the Deephaven C++ client, its dependencies,
-and its unit tests. We have tested these instructions in Ubuntu 22.04 with the default
-C++ compiler and tool suite (cmake etc).  We have used the instructions in the past to build
+These instructions show how to install and run the Deephaven C++ client, its
+dependencies, its unit tests on Linux and Windows. We have tested these instructions in Ubuntu 22.04 with the default
+C++ compiler and tool suite (cmake etc). We have also tested these instructions
+on Windows 10 and 11 with Visual Studio Community Edition.
+We have used the instructions in the past to build
 for older Ubuntu versions (20.04) and for some Fedora versions, but we don't regularly test
-on them anymore so we do notguarantee they are current for those platforms.
+on them anymore so we do not guarantee they are current for those platforms.
+
+Instructions for Linux are below. Instructions for Windows are in the section
+that follows.
+
+# Building the C++ client on Ubuntu 22.04
 
 1. Start with an Ubuntu 22.04 install
 
@@ -197,3 +204,84 @@ Notes
       run the `build-cpp-protos.sh` script.
       This should generate up-to-date versions of the C++ stubs
       according to the proto sources on the same clone.
+
+# Building the C++ client on Windows 10 / Windows 11
+
+1. Get Deephaven running by following the instructions here:
+
+   https://deephaven.io/core/docs/how-to-guides/launch-build/
+
+2. Install Visual Studio 2022 Community Edition (or Professional, or Enterprise)
+   from here:
+
+   https://visualstudio.microsoft.com/downloads/
+
+   When the installer runs, select the workload "Desktop development with C++"
+
+3. Use your preferred version of git, or install Git from here:
+
+   https://git-scm.com/download/win
+
+4. We will do the actual build process inside a Visual Studio developer
+   command prompt. Run the developer command prompt by navigating here:
+
+   Start -> V -> Visual Studio 2022 -> Developer Command Prompt for VS 2022
+
+5. Make a 'dhsrc' directory that will hold the two repositories: the vcpkg
+   package manager and Deephaven Core. Then make a 'dhinstall' directory that
+   will hold the libraries and executables that are the result of this
+   build process.
+   ```
+   mkdir %HOMEDRIVE%%HOMEPATH%\dhsrc
+   mkdir %HOMEDRIVE%%HOMEPATH%\dhinstall
+   ```
+
+6. Use git to clone the two repositories mentioned above.
+   If you are using Git for Windows, you can run the "Git Bash Shell"
+   and type these commands into it:
+   ```
+   cd $HOME/dhsrc
+   git clone https://github.com/microsoft/vcpkg.git
+   git clone https://github.com/deephaven/deephaven-core.git
+   ```
+
+7. Come back to the Visual Studio developer command prompt and do the
+   one-time installation steps for vcpkg. Do not forget to set VCPKG_ROOT,
+   as our build scripts rely on it being set correctly.
+   ```
+   cd /d %HOMEDRIVE%%HOMEPATH%\dhsrc\vcpkg
+   .\bootstrap-vcpkg.bat
+   set VCPKG_ROOT=%HOMEDRIVE%%HOMEPATH%\dhsrc\vcpkg
+   ```
+
+8. Change to the Deephaven core directory and build/install the dependent
+   packages. On my computer this process took about 20 minutes.
+   ```
+   cd /d %HOMEDRIVE%%HOMEPATH%\dhsrc\deephaven-core\cpp-client\deephaven
+   %VCPKG_ROOT%\vcpkg.exe install --triplet x64-windows
+    ```
+
+9. Now configure the build for Deephaven Core:
+   ``` 
+   cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake -DCMAKE_INSTALL_PREFIX=%HOMEDRIVE%%HOMEPATH%/dhinstall -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON
+   ```
+   
+10. Finally, build and install Deephaven Core:
+    ```
+    cmake --build build --target install
+    ```
+
+11. Run the tests.
+    First, make sure Deephaven is running. If your Deephaven instance
+    is running somewhere other than the default location of localhost:10000,
+    then set these environment variables appropriately:
+    ```
+    set DH_HOST=...
+    set DH_PORT=...
+    ```
+
+    then run the tests executable:
+    ```
+    cd /d %HOMEDRIVE%%HOMEPATH%\dhinstall\bin
+    .\dhclient_tests.exe
+    ```

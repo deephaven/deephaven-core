@@ -3,11 +3,13 @@
 #
 """This module implements the Session class which provides methods to connect to and interact with the Deephaven
 server."""
+from __future__ import annotations
 
 import base64
 import os
 import threading
-from typing import Dict, List, Union, Tuple, Any
+from typing import Dict, List, Union, Tuple
+from uuid import uuid4
 
 import grpc
 import pyarrow as pa
@@ -76,6 +78,35 @@ class _DhClientAuthHandler(ClientAuthHandler):
 
     def get_token(self):
         return self._token
+
+
+class SharedTicket:
+    """ A SharedTicket object represents a ticket that can be shared with other sessions. """
+
+    def __init__(self, ticket_bytes: bytes):
+        """Initializes a SharedTicket object
+
+        Args:
+            ticket_bytes (bytes): the raw bytes for the ticket
+        """
+        self._ticket_bytes = ticket_bytes
+        self.api_ticket = ticket_pb2.Ticket(ticket=self._ticket_bytes)
+
+    @property
+    def bytes(self) -> bytes:
+        """ The raw bytes for the ticket."""
+        return self._ticket_bytes
+
+    @classmethod
+    def random_ticket(cls) -> SharedTicket:
+        """Generates a random shared ticket. To minimize the probability of collision, the ticket is made from a
+        generated UUID.
+
+        Returns:
+            a SharedTicket object
+        """
+        bytes_ = uuid4().int.to_bytes(16, byteorder='little', signed=False)
+        return cls(ticket_bytes=b'h' + bytes_)
 
 
 class Session:
@@ -400,23 +431,22 @@ class Session:
         Raises:
             DHError
         """
-        with self._r_lock:
-            ticket = ticket_pb2.Ticket(ticket=f's/{name}'.encode(encoding='ascii'))
+        ticket = ticket_pb2.Ticket(ticket=f's/{name}'.encode(encoding='ascii'))
 
-            faketable = Table(session=self, ticket=ticket)
+        faketable = Table(session=self, ticket=ticket)
 
-            try:
-                table_op = FetchTableOp()
-                return self.table_service.grpc_table_op(faketable, table_op)
-            except Exception as e:
-                if isinstance(e.__cause__, grpc.RpcError):
-                    if e.__cause__.code() == grpc.StatusCode.INVALID_ARGUMENT:
-                        raise DHError(f"no table by the name {name}") from None
-                raise e
-            finally:
-                # Explicitly close the table without releasing it (because it isn't ours)
-                faketable.ticket = None
-                faketable.schema = None
+        try:
+            table_op = FetchTableOp()
+            return self.table_service.grpc_table_op(faketable, table_op)
+        except Exception as e:
+            if isinstance(e.__cause__, grpc.RpcError):
+                if e.__cause__.code() == grpc.StatusCode.INVALID_ARGUMENT:
+                    raise DHError(f"no table by the name {name}") from None
+            raise e
+        finally:
+            # Explicitly close the table without releasing it (because it isn't ours)
+            faketable.ticket = None
+            faketable.schema = None
 
     def bind_table(self, name: str, table: Table) -> None:
         """Binds a table to the given name on the server so that it can be referenced by that name.
@@ -428,8 +458,48 @@ class Session:
         Raises:
             DHError
         """
-        with self._r_lock:
-            self.console_service.bind_table(table=table, variable_name=name)
+        self.console_service.bind_table(table=table, variable_name=name)
+
+    def publish_table(self, ticket: SharedTicket, table: Table) -> None:
+        """Publishes a table to the given shared ticket. The ticket can then be used by another session to fetch the
+        table.
+
+        Note that, the shared ticket can be fetched by other sessions to access the table as long as the table is
+        not released. When the table is released either through an explicit call of the close method on it, or
+        implicitly through garbage collection, or through the closing of the publishing session, the shared ticket will
+        no longer be valid.
+
+        Args:
+            ticket (SharedTicket): a SharedTicket object
+            table (Table): a Table object
+
+        Raises:
+            DHError
+        """
+        self._session_service.publish(table.ticket, ticket.api_ticket)
+
+    def fetch_table(self, ticket: SharedTicket) -> Table:
+        """Fetches a table by ticket.
+
+        Args:
+            ticket (SharedTicket): a ticket
+
+        Returns:
+            a Table object
+
+        Raises:
+            DHError
+        """
+        table = Table(session=self, ticket=ticket.api_ticket)
+        try:
+            table_op = FetchTableOp()
+            return self.table_service.grpc_table_op(table, table_op)
+        except Exception as e:
+            raise DHError("could not fetch table by ticket") from e
+        finally:
+            # Explicitly close the table without releasing it (because it isn't ours)
+            table.ticket = None
+            table.schema = None
 
     def time_table(self, period: Union[int, str], start_time: Union[int, str] = None,
                    blink_table: bool = False) -> Table:

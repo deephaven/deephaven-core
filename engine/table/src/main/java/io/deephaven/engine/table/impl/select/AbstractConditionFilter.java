@@ -3,35 +3,29 @@
 //
 package io.deephaven.engine.table.impl.select;
 
-import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.Pair;
-import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
+import io.deephaven.engine.table.impl.select.codegen.FormulaAnalyzer;
 import io.deephaven.engine.table.impl.select.python.ArgumentsChunked;
 import io.deephaven.engine.table.impl.select.python.DeephavenCompatibleFunction;
 import io.deephaven.engine.util.PyCallableWrapperJpyImpl;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.time.TimeLiteralReplacedExpression;
-import io.deephaven.vector.ObjectVector;
 import org.jetbrains.annotations.NotNull;
 import org.jpy.PyObject;
 
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.net.MalformedURLException;
 import java.util.*;
-import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import static io.deephaven.engine.table.impl.select.DhFormulaColumn.COLUMN_SUFFIX;
@@ -80,89 +74,23 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
     }
 
     @Override
-    public synchronized void init(TableDefinition tableDefinition) {
+    public void init(@NotNull TableDefinition tableDefinition) {
+        init(tableDefinition, QueryCompilerRequestProcessor.immediate());
+    }
+
+    @Override
+    public synchronized void init(
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
         if (initialized) {
             return;
         }
 
-        final Map<String, Class<?>> possibleVariables = new HashMap<>();
-        possibleVariables.put("i", int.class);
-        possibleVariables.put("ii", long.class);
-        possibleVariables.put("k", long.class);
-
-        final Map<String, Class<?>[]> possibleVariableParameterizedTypes = new HashMap<>();
-
         try {
-            final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
-            final Map<String, Object> queryScopeVariables = queryScope.toMap(
-                    (name, value) -> NameValidator.isValidQueryParameterName(name));
-            for (Map.Entry<String, Object> param : queryScopeVariables.entrySet()) {
-                possibleVariables.put(param.getKey(), QueryScopeParamTypeUtil.getDeclaredClass(param.getValue()));
-                Type declaredType = QueryScopeParamTypeUtil.getDeclaredType(param.getValue());
-                if (declaredType instanceof ParameterizedType) {
-                    ParameterizedType pt = (ParameterizedType) declaredType;
-                    Class<?>[] paramTypes = Arrays.stream(pt.getActualTypeArguments())
-                            .map(QueryScopeParamTypeUtil::classFromType)
-                            .toArray(Class<?>[]::new);
-                    possibleVariableParameterizedTypes.put(param.getKey(), paramTypes);
-                }
-            }
+            final QueryLanguageParser.Result result = FormulaAnalyzer.parseFormula(
+                    formula, tableDefinition.getColumnNameMap(), outerToInnerNames,
+                    compilationProcessor.getQueryScopeVariables(), unboxArguments);
 
-            final Set<String> columnVariables = new HashSet<>();
-            columnVariables.add("i");
-            columnVariables.add("ii");
-            columnVariables.add("k");
-
-            final BiConsumer<String, ColumnDefinition<?>> createColumnMappings = (columnName, column) -> {
-                final Class<?> vectorType = DhFormulaColumn.getVectorType(column.getDataType());
-
-                columnVariables.add(columnName);
-                if (possibleVariables.put(columnName, column.getDataType()) != null) {
-                    possibleVariableParameterizedTypes.remove(columnName);
-                }
-                columnVariables.add(columnName + COLUMN_SUFFIX);
-                if (possibleVariables.put(columnName + COLUMN_SUFFIX, vectorType) != null) {
-                    possibleVariableParameterizedTypes.remove(columnName + COLUMN_SUFFIX);
-                }
-
-                final Class<?> compType = column.getComponentType();
-                if (compType != null && !compType.isPrimitive()) {
-                    possibleVariableParameterizedTypes.put(columnName, new Class[] {compType});
-                }
-                if (vectorType == ObjectVector.class) {
-                    possibleVariableParameterizedTypes.put(columnName + COLUMN_SUFFIX,
-                            new Class[] {column.getDataType()});
-                }
-            };
-
-            // By default all columns are available to the formula
-            for (final ColumnDefinition<?> column : tableDefinition.getColumns()) {
-                createColumnMappings.accept(column.getName(), column);
-            }
-            // Overwrite any existing column mapping using the provided renames.
-            for (final Map.Entry<String, String> entry : outerToInnerNames.entrySet()) {
-                final String columnName = entry.getKey();
-                final ColumnDefinition<?> column = tableDefinition.getColumn(entry.getValue());
-                createColumnMappings.accept(columnName, column);
-            }
-
-            log.debug("Expression (before) : " + formula);
-
-            final TimeLiteralReplacedExpression timeConversionResult =
-                    TimeLiteralReplacedExpression.convertExpression(formula);
-
-            log.debug("Expression (after time conversion) : " + timeConversionResult.getConvertedFormula());
-
-            possibleVariables.putAll(timeConversionResult.getNewVariables());
-
-            final QueryLanguageParser.Result result = new QueryLanguageParser(
-                    timeConversionResult.getConvertedFormula(),
-                    ExecutionContext.getContext().getQueryLibrary().getPackageImports(),
-                    ExecutionContext.getContext().getQueryLibrary().getClassImports(),
-                    ExecutionContext.getContext().getQueryLibrary().getStaticImports(),
-                    possibleVariables, possibleVariableParameterizedTypes, queryScopeVariables, columnVariables,
-                    unboxArguments)
-                    .getResult();
             formulaShiftColPair = result.getFormulaShiftColPair();
             if (formulaShiftColPair != null) {
                 log.debug("Formula (after shift conversion) : " + formulaShiftColPair.getFirst());
@@ -225,7 +153,7 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
                 final Class<?> resultType = result.getType();
                 checkReturnType(result, resultType);
 
-                generateFilterCode(tableDefinition, timeConversionResult, result);
+                generateFilterCode(tableDefinition, result.getTimeConversionResult(), result, compilationProcessor);
                 initialized = true;
             }
         } catch (Exception e) {
@@ -270,15 +198,19 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
             checkReturnType(result, pyCallableWrapper.getSignature().getReturnType());
 
             for (String variable : result.getVariablesUsed()) {
-                if (variable.equals("i")) {
-                    usesI = true;
-                    usedColumns.add("i");
-                } else if (variable.equals("ii")) {
-                    usesII = true;
-                    usedColumns.add("ii");
-                } else if (variable.equals("k")) {
-                    usesK = true;
-                    usedColumns.add("k");
+                switch (variable) {
+                    case "i":
+                        usesI = true;
+                        usedColumns.add("i");
+                        break;
+                    case "ii":
+                        usesII = true;
+                        usedColumns.add("ii");
+                        break;
+                    case "k":
+                        usesK = true;
+                        usedColumns.add("k");
+                        break;
                 }
             }
             ArgumentsChunked argumentsChunked = pyCallableWrapper.buildArgumentsChunked(usedColumns);
@@ -303,9 +235,12 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
         }
     }
 
-    protected abstract void generateFilterCode(TableDefinition tableDefinition,
-            TimeLiteralReplacedExpression timeConversionResult,
-            QueryLanguageParser.Result result) throws MalformedURLException, ClassNotFoundException;
+    protected abstract void generateFilterCode(
+            @NotNull TableDefinition tableDefinition,
+            @NotNull TimeLiteralReplacedExpression timeConversionResult,
+            @NotNull QueryLanguageParser.Result result,
+            @NotNull QueryCompilerRequestProcessor compilationProcessor)
+            throws MalformedURLException, ClassNotFoundException;
 
     @NotNull
     @Override

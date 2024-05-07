@@ -11,8 +11,6 @@ dependencies {
     Classpaths.inheritGrpcPlatform(project, 'api')
     api 'io.grpc:grpc-api'
 
-    implementation project(':proto:proto-backplane-grpc')
-
     Classpaths.inheritDagger(project)
 
     Classpaths.inheritSlf4j(project, 'slf4j-api', 'implementation')

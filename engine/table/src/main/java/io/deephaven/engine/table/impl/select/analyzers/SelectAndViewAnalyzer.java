@@ -12,6 +12,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.MatchPair;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
@@ -47,11 +48,20 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
     public static void initializeSelectColumns(
             final Map<String, ColumnDefinition<?>> parentColumnMap,
             final SelectColumn[] selectColumns) {
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
+        initializeSelectColumns(parentColumnMap, selectColumns, compilationProcessor);
+        compilationProcessor.compile();
+    }
+
+    public static void initializeSelectColumns(
+            final Map<String, ColumnDefinition<?>> parentColumnMap,
+            final SelectColumn[] selectColumns,
+            final QueryCompilerRequestProcessor compilationProcessor) {
         final Map<String, ColumnDefinition<?>> targetColumnMap = new HashMap<>(parentColumnMap);
         for (SelectColumn column : selectColumns) {
-            column.initDef(targetColumnMap);
-            final ColumnDefinition<?> columnDefinition =
-                    ColumnDefinition.fromGenericType(column.getName(), column.getReturnedType());
+            column.initDef(targetColumnMap, compilationProcessor);
+            final ColumnDefinition<?> columnDefinition = ColumnDefinition.fromGenericType(
+                    column.getName(), column.getReturnedType(), column.getReturnedComponentType());
             targetColumnMap.put(column.getName(), columnDefinition);
         }
     }
@@ -89,6 +99,48 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
             rowRedirection = null;
         }
 
+        List<SelectColumn> processedCols = new LinkedList<>();
+        List<SelectColumn> remainingCols = null;
+        FormulaColumn shiftColumn = null;
+        boolean shiftColumnHasPositiveOffset = false;
+
+        final HashSet<String> resultColumns = new HashSet<>();
+
+        // First pass to initialize all columns and to compile formulas in one batch.
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
+        for (Map.Entry<String, ColumnSource<?>> entry : columnSources.entrySet()) {
+            final String name = entry.getKey();
+            final ColumnSource<?> cs = entry.getValue();
+            final ColumnDefinition<?> cd = ColumnDefinition.fromGenericType(name, cs.getType(), cs.getComponentType());
+            columnDefinitions.put(name, cd);
+        }
+
+        for (final SelectColumn sc : selectColumns) {
+            if (remainingCols != null) {
+                remainingCols.add(sc);
+                continue;
+            }
+
+            sc.initDef(columnDefinitions, compilationProcessor);
+            final ColumnDefinition<?> cd = ColumnDefinition.fromGenericType(
+                    sc.getName(), sc.getReturnedType(), sc.getReturnedComponentType());
+            columnDefinitions.put(sc.getName(), cd);
+
+            if (useShiftedColumns && hasConstantArrayAccess(sc)) {
+                remainingCols = new LinkedList<>();
+                shiftColumn = sc instanceof FormulaColumn
+                        ? (FormulaColumn) sc
+                        : (FormulaColumn) ((SwitchColumn) sc).getRealColumn();
+                shiftColumnHasPositiveOffset = hasPositiveOffsetConstantArrayAccess(sc);
+                continue;
+            }
+
+            processedCols.add(sc);
+        }
+
+        compilationProcessor.compile();
+
+        // Second pass builds the analyzer and destination columns
         final TrackingRowSet originalRowSet = rowSet;
         boolean flatResult = rowSet.isFlat();
         // if we preserve a column, we set this to false
@@ -98,21 +150,9 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                 && mode == Mode.SELECT_STATIC;
         int numberOfInternallyFlattenedColumns = 0;
 
-        List<SelectColumn> processedCols = new LinkedList<>();
-        List<SelectColumn> remainingCols = null;
-        FormulaColumn shiftColumn = null;
-        boolean shiftColumnHasPositiveOffset = false;
-
-        final HashSet<String> resultColumns = new HashSet<>();
         final HashMap<String, ColumnSource<?>> resultAlias = new HashMap<>();
-        for (final SelectColumn sc : selectColumns) {
-            if (remainingCols != null) {
-                remainingCols.add(sc);
-                continue;
-            }
+        for (final SelectColumn sc : processedCols) {
 
-            analyzer.updateColumnDefinitionsFromTopLayer(columnDefinitions);
-            sc.initDef(columnDefinitions);
             sc.initInputs(rowSet, analyzer.getAllColumnSources());
 
             // When flattening the result, intermediate columns generate results in position space. When we discover
@@ -138,12 +178,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
             final ModifiedColumnSet mcsBuilder = new ModifiedColumnSet(parentMcs);
 
             if (useShiftedColumns && hasConstantArrayAccess(sc)) {
-                remainingCols = new LinkedList<>();
-                shiftColumn = sc instanceof FormulaColumn
-                        ? (FormulaColumn) sc
-                        : (FormulaColumn) ((SwitchColumn) sc).getRealColumn();
-                shiftColumnHasPositiveOffset = hasPositiveOffsetConstantArrayAccess(sc);
-                continue;
+                // we use the first shifted column to split between processed columns and remaining columns
+                throw new IllegalStateException("Found ShiftedColumn in processed column list");
             }
 
             // shifted columns appear to not be safe for refresh, so we do not validate them until they are rewritten
@@ -151,8 +187,6 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
             if (sourceTable.isRefreshing()) {
                 sc.validateSafeForRefresh(sourceTable);
             }
-
-            processedCols.add(sc);
 
             if (hasConstantValue(sc)) {
                 final WritableColumnSource<?> constViewSource =
@@ -177,8 +211,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                 if (!sourceIsNew) {
                     if (numberOfInternallyFlattenedColumns > 0) {
                         // we must preserve this column, but have already created an analyzer for the internally
-                        // flattened
-                        // column, therefore must start over without permitting internal flattening
+                        // flattened column, therefore must start over without permitting internal flattening
                         return create(sourceTable, mode, columnSources, originalRowSet, parentMcs, publishTheseSources,
                                 useShiftedColumns, false, selectColumns);
                     } else {
@@ -248,7 +281,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                 case SELECT_REFRESHING: {
                     // We need to call newDestInstance because only newDestInstance has the knowledge to endow our
                     // created array with the proper componentType (in the case of Vectors).
-                    // TODO(kosak): use DeltaAwareColumnSource
+                    // TODO: use DeltaAwareColumnSource
                     WritableColumnSource<?> scs = sc.newDestInstance(targetDestinationCapacity);
                     WritableColumnSource<?> underlyingSource = null;
                     if (rowRedirection != null) {
@@ -265,6 +298,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
                     throw new UnsupportedOperationException("Unsupported case " + mode);
             }
         }
+
         return new SelectAndViewAnalyzerWrapper(analyzer, shiftColumn, shiftColumnHasPositiveOffset, remainingCols,
                 processedCols);
     }
@@ -522,8 +556,6 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
 
     public abstract SelectAndViewAnalyzer getInner();
 
-    public abstract void updateColumnDefinitionsFromTopLayer(Map<String, ColumnDefinition<?>> columnDefinitions);
-
     public abstract void startTrackingPrev();
 
     /**
@@ -562,8 +594,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
     abstract public boolean allowCrossColumnParallelization();
 
     /**
-     * A class that handles the completion of one select column. The handlers are chained together so that when a column
-     * completes all of the downstream dependencies may execute.
+     * A class that handles the completion of one select column. The handlers are chained together; all downstream
+     * dependencies may execute when a column completes.
      */
     public static abstract class SelectLayerCompletionHandler {
         /**
@@ -591,7 +623,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
          * Create the final completion handler, which has no next handler.
          *
          * @param requiredColumns the columns required for this handler to fire
-         * @param completedColumns the set of completed columns, shared with all of the other handlers
+         * @param completedColumns the set of completed columns, shared with all the other handlers
          */
         public SelectLayerCompletionHandler(BitSet requiredColumns, BitSet completedColumns) {
             this.requiredColumns = requiredColumns;
@@ -601,9 +633,9 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
 
         /**
          * Called when a single column is completed.
-         *
+         * <p>
          * If we are ready, then we call {@link #onAllRequiredColumnsCompleted()}.
-         *
+         * <p>
          * We may not be ready, but other columns downstream of us may be ready, so they are also notified (the
          * nextHandler).
          *
@@ -639,7 +671,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         }
 
         /**
-         * Called when all of the required columns are completed.
+         * Called when all required columns are completed.
          */
         protected abstract void onAllRequiredColumnsCompleted();
     }

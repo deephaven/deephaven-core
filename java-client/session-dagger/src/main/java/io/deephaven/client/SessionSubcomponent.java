@@ -12,13 +12,16 @@ import io.grpc.ManagedChannel;
 
 import javax.annotation.Nullable;
 import javax.inject.Named;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 
 @Subcomponent(modules = SessionImplModule.class)
 public interface SessionSubcomponent extends SessionFactory {
 
+    @Override
     SessionImpl newSession();
+
+    @Override
+    ManagedChannel managedChannel();
 
     @Module(subcomponents = SessionSubcomponent.class)
     interface SessionFactorySubcomponentModule {

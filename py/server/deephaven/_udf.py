@@ -118,9 +118,9 @@ class _ParsedParam:
                 f"instead.")
 
     def _setup_datetime_arg_converter(self, effective_type):
-        if effective_type == datetime:
+        if effective_type is datetime:
             self.arg_converter = to_datetime
-        elif effective_type == pd.Timestamp:
+        elif effective_type is pd.Timestamp:
             if "N" in self.encoded_types:
                 self.arg_converter = to_pd_timestamp
             else:
@@ -153,18 +153,22 @@ class _ParsedReturnAnnotation:
                 null_value = _PRIMITIVE_DTYPE_NULL_MAP.get(dtypes.from_np_dtype(np.dtype(t)))
                 self.ret_converter = partial(lambda nv, x: nv if x is None else int(x), null_value)
             else:
-                self.ret_converter = int
+                self.ret_converter = int if self.orig_type is not int else None
         elif t in _NUMPY_FLOATING_TYPE_CODES:
             if self.none_allowed:
                 null_value = _PRIMITIVE_DTYPE_NULL_MAP.get(dtypes.from_np_dtype(np.dtype(t)))
                 self.ret_converter = partial(lambda nv, x: nv if x is None else float(x), null_value)
             else:
-                self.ret_converter = float
+                self.ret_converter = float if self.orig_type is not float else None
         elif t == '?':
             if self.none_allowed:
                 self.ret_converter = lambda x: bool(x) if x is not None else None
             else:
-                self.ret_converter = bool
+                # Note this is not ideal because in the case where actual return is np.bool_ but type hint is bool,
+                # we raise a mystic error (PyObject can't be cast to Boolean). We need to revisit this when
+                # https://github.com/deephaven/deephaven-core/issues/5397 and/or
+                # https://github.com/deephaven/deephaven-core/issues/4068 is resolved.
+                self.ret_converter = None if self.orig_type is bool else bool
         elif t == 'M':
             from deephaven.time import to_j_instant
             self.ret_converter = to_j_instant
@@ -221,7 +225,7 @@ def _encode_param_type(t: type) -> str:
     if t is type(None):
         return "N"
 
-    if t == typing.Any or t == object or t == jpy.JType:
+    if t is typing.Any or t is object or t is jpy.JType:
         return "O"
 
     # find the component type if it is numpy ndarray
@@ -247,7 +251,7 @@ def _np_dtype_char(t: Union[type, str]) -> str:
 
     try:
         np_dtype = np.dtype(t)
-        if np_dtype.char == "O" and t != object: # np.dtype() returns np.dtype('O') for unrecognized types
+        if np_dtype.char == "O" and t is not object: # np.dtype() returns np.dtype('O') for unrecognized types
             return "X"
         return np_dtype.char
     except TypeError:
@@ -260,7 +264,7 @@ def _component_np_dtype_char(t: type) -> Optional[str]:
     component_type = _py_sequence_component_type(t)
 
     if not component_type:
-        if t == bytes or t == bytearray:
+        if t is bytes or t is bytearray:
             return "b"
 
     if not component_type:
@@ -300,7 +304,7 @@ def _np_ndarray_component_type(t: type) -> Optional[type]:
     # component type
     component_type = None
     if (3, 9) > sys.version_info >= (3, 8):
-        if isinstance(t, np._typing._generic_alias._GenericAlias) and t.__origin__ == np.ndarray:
+        if isinstance(t, np._typing._generic_alias._GenericAlias) and t.__origin__ is np.ndarray:
             component_type = t.__args__[1].__args__[0]
     # Py3.9+, np.ndarray as a generic alias is only supported in Python 3.9+, also npt.NDArray is still available but a
     # specific alias (e.g. npt.NDArray[np.int64]) now is an instance of typing.GenericAlias.
@@ -309,7 +313,7 @@ def _np_ndarray_component_type(t: type) -> Optional[type]:
     # when np.ndarray is used, the 1st argument is the component type
     if not component_type and sys.version_info >= (3, 9):
         import types
-        if isinstance(t, types.GenericAlias) and t.__origin__ == np.ndarray:  # novermin
+        if isinstance(t, types.GenericAlias) and t.__origin__ is np.ndarray:  # novermin
             nargs = len(t.__args__)
             if nargs == 1:
                 component_type = t.__args__[0]
@@ -328,7 +332,7 @@ def _is_union_type(t: type) -> bool:
         if isinstance(t, types.UnionType):  # novermin
             return True
 
-    return isinstance(t, _GenericAlias) and t.__origin__ == Union
+    return isinstance(t, _GenericAlias) and t.__origin__ is Union
 
 
 def _parse_param(name: str, annotation: Union[type, dtypes.DType]) -> _ParsedParam:
@@ -382,10 +386,10 @@ def _parse_return_annotation(annotation: Any) -> _ParsedReturnAnnotation:
     pra.orig_type = t
     if _is_union_type(annotation) and len(annotation.__args__) == 2:
         # if the annotation is a Union of two types, we'll use the non-None type
-        if annotation.__args__[1] == type(None):  # noqa: E721
+        if annotation.__args__[1] is type(None):  # noqa: E721
             pra.none_allowed = True
             t = annotation.__args__[0]
-        elif annotation.__args__[0] == type(None):  # noqa: E721
+        elif annotation.__args__[0] is type(None):  # noqa: E721
             pra.none_allowed = True
             t = annotation.__args__[1]
 

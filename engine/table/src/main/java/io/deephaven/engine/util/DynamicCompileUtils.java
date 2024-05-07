@@ -4,7 +4,8 @@
 package io.deephaven.engine.util;
 
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.QueryCompiler;
+import io.deephaven.engine.context.QueryCompilerImpl;
+import io.deephaven.engine.context.QueryCompilerRequest;
 
 import java.util.*;
 import java.util.function.Supplier;
@@ -20,7 +21,7 @@ public class DynamicCompileUtils {
 
     public static <T> Supplier<T> compileSimpleStatement(final Class<? extends T> resultType, final String code,
             final String... imports) {
-        final List<Class> importClasses = new ArrayList<>();
+        final List<Class<?>> importClasses = new ArrayList<>();
         for (final String importString : imports) {
             try {
                 importClasses.add(Class.forName(importString));
@@ -33,14 +34,14 @@ public class DynamicCompileUtils {
     }
 
     public static <T> Supplier<T> compileSimpleFunction(final Class<? extends T> resultType, final String code,
-            final Collection<Class> imports, final Collection<Class> staticImports) {
+            final Collection<Class<?>> imports, final Collection<Class<?>> staticImports) {
         final StringBuilder classBody = new StringBuilder();
 
         classBody.append("import ").append(resultType.getName()).append(";\n");
-        for (final Class im : imports) {
+        for (final Class<?> im : imports) {
             classBody.append("import ").append(im.getName()).append(";\n");
         }
-        for (final Class sim : staticImports) {
+        for (final Class<?> sim : staticImports) {
             classBody.append("import static ").append(sim.getName()).append(".*;\n");
         }
 
@@ -52,8 +53,13 @@ public class DynamicCompileUtils {
         classBody.append("  }\n");
         classBody.append("}\n");
 
-        final Class<?> partitionClass = ExecutionContext.getContext().getQueryCompiler()
-                .compile("Function", classBody.toString(), QueryCompiler.FORMULA_PREFIX);
+        final Class<?> partitionClass = ExecutionContext.getContext().getQueryCompiler().compile(
+                QueryCompilerRequest.builder()
+                        .description("Simple Function: " + code)
+                        .className("Function")
+                        .classBody(classBody.toString())
+                        .packageNameRoot(QueryCompilerImpl.FORMULA_CLASS_PREFIX)
+                        .build());
 
         try {
             // noinspection unchecked
@@ -63,7 +69,7 @@ public class DynamicCompileUtils {
         }
     }
 
-    public static Class getClassThroughCompilation(final String object) {
+    public static Class<?> getClassThroughCompilation(final String object) {
         final StringBuilder classBody = new StringBuilder();
         classBody.append("public class $CLASSNAME$ implements ").append(Supplier.class.getCanonicalName())
                 .append("<Class>{ \n");
@@ -71,12 +77,17 @@ public class DynamicCompileUtils {
         classBody.append("  public Class get() { return ").append(object).append(".class; }\n");
         classBody.append("}\n");
 
-        final Class<?> partitionClass = ExecutionContext.getContext().getQueryCompiler()
-                .compile("Function", classBody.toString(), QueryCompiler.FORMULA_PREFIX);
+        final Class<?> partitionClass = ExecutionContext.getContext().getQueryCompiler().compile(
+                QueryCompilerRequest.builder()
+                        .description("Formula: return " + object + ".class")
+                        .className("Function")
+                        .classBody(classBody.toString())
+                        .packageNameRoot(QueryCompilerImpl.FORMULA_CLASS_PREFIX)
+                        .build());
 
         try {
             // noinspection unchecked
-            return ((Supplier<Class>) partitionClass.newInstance()).get();
+            return ((Supplier<Class<?>>) partitionClass.newInstance()).get();
         } catch (InstantiationException | IllegalAccessException e) {
             throw new RuntimeException("Could not instantiate function.", e);
         }

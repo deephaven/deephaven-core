@@ -8,7 +8,6 @@ import dagger.Module;
 import dagger.Provides;
 import io.deephaven.client.impl.SessionImpl;
 import io.deephaven.client.impl.SessionImplConfig;
-import io.deephaven.client.impl.SessionImplConfig.Builder;
 import io.deephaven.proto.DeephavenChannel;
 import io.deephaven.proto.DeephavenChannelImpl;
 import io.grpc.Channel;
@@ -28,18 +27,19 @@ public interface SessionImplModule {
     DeephavenChannel bindsDeephavenChannelImpl(DeephavenChannelImpl deephavenChannelImpl);
 
     @Provides
-    static SessionImpl session(DeephavenChannel channel, ScheduledExecutorService scheduler,
+    static SessionImplConfig providesSessionImplConfig(
+            DeephavenChannel channel,
+            ScheduledExecutorService scheduler,
             @Nullable @Named("authenticationTypeAndValue") String authenticationTypeAndValue) {
-        final Builder builder = SessionImplConfig.builder()
-                .executor(scheduler)
-                .channel(channel);
-        if (authenticationTypeAndValue != null) {
-            builder.authenticationTypeAndValue(authenticationTypeAndValue);
-        }
-        final SessionImplConfig config = builder.build();
+        return SessionImplConfig.of(channel, scheduler, authenticationTypeAndValue);
+    }
+
+    @Provides
+    static SessionImpl session(SessionImplConfig config) {
         try {
             return config.createSession();
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             throw new RuntimeException(e);
         }
     }

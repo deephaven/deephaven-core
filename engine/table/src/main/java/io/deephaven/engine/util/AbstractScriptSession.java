@@ -41,6 +41,14 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
     private static final Path CLASS_CACHE_LOCATION = CacheDir.get().resolve("script-session-classes");
 
+    protected static File newClassCacheLocation() {
+        // TODO(deephaven-core#1713): Introduce instance-id concept
+        final UUID scriptCacheId = UuidCreator.getRandomBased();
+        final File directory = CLASS_CACHE_LOCATION.resolve(UuidCreator.toString(scriptCacheId)).toFile();
+        createOrClearDirectory(directory);
+        return directory;
+    }
+
     public static void createScriptCache() {
         final File classCacheDirectory = CLASS_CACHE_LOCATION.toFile();
         createOrClearDirectory(classCacheDirectory);
@@ -58,7 +66,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
     private final ObjectTypeLookup objectTypeLookup;
     private final Listener changeListener;
-    private final File classCacheDirectory;
+    protected final File classCacheDirectory;
     private final ScriptSessionQueryScope queryScope;
 
     protected final ExecutionContext executionContext;
@@ -66,21 +74,28 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     private S lastSnapshot;
 
     protected AbstractScriptSession(
-            UpdateGraph updateGraph,
+            final UpdateGraph updateGraph,
             final OperationInitializer operationInitializer,
-            ObjectTypeLookup objectTypeLookup,
-            @Nullable Listener changeListener) {
+            final ObjectTypeLookup objectTypeLookup,
+            @Nullable final Listener changeListener) {
+        this(updateGraph, operationInitializer, objectTypeLookup, changeListener, newClassCacheLocation(),
+                Thread.currentThread().getContextClassLoader());
+    }
+
+    protected AbstractScriptSession(
+            final UpdateGraph updateGraph,
+            final OperationInitializer operationInitializer,
+            final ObjectTypeLookup objectTypeLookup,
+            @Nullable final Listener changeListener,
+            @NotNull final File classCacheDirectory,
+            @NotNull final ClassLoader parentClassLoader) {
         this.objectTypeLookup = objectTypeLookup;
         this.changeListener = changeListener;
 
-        // TODO(deephaven-core#1713): Introduce instance-id concept
-        final UUID scriptCacheId = UuidCreator.getRandomBased();
-        classCacheDirectory = CLASS_CACHE_LOCATION.resolve(UuidCreator.toString(scriptCacheId)).toFile();
-        createOrClearDirectory(classCacheDirectory);
+        this.classCacheDirectory = classCacheDirectory;
 
         queryScope = new ScriptSessionQueryScope();
-        final QueryCompiler compilerContext =
-                QueryCompiler.create(classCacheDirectory, Thread.currentThread().getContextClassLoader());
+        final QueryCompiler compilerContext = QueryCompilerImpl.create(classCacheDirectory, parentClassLoader);
 
         executionContext = ExecutionContext.newBuilder()
                 .markSystemic()
