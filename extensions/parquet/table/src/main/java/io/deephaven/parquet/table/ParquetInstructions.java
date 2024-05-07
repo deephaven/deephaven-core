@@ -609,12 +609,12 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
         @Override
         public ParquetInstructions withTableDefinition(@Nullable final TableDefinition useDefinition) {
-            return withTableDefinitionAndLayout(useDefinition, getFileLayout().orElse(null));
+            return withTableDefinitionAndLayout(useDefinition, fileLayout);
         }
 
         @Override
         public ParquetInstructions withLayout(@Nullable final ParquetFileLayout useLayout) {
-            return withTableDefinitionAndLayout(tableDefinition, getFileLayout().orElse(null));
+            return withTableDefinitionAndLayout(tableDefinition, useLayout);
         }
 
         @Override

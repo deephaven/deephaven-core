@@ -153,7 +153,7 @@ public class ParquetTools {
             return readTableFromFileUri(sourceURI, readInstructions);
         }
         if (source.endsWith(METADATA_FILE_URI_SUFFIX) || source.endsWith(COMMON_METADATA_FILE_URI_SUFFIX)) {
-            throw new UncheckedDeephavenException("We currently do not support reading parquet metadata files " +
+            throw new UnsupportedOperationException("We currently do not support reading parquet metadata files " +
                     "from non local storage");
         }
         if (!isDirectory) {

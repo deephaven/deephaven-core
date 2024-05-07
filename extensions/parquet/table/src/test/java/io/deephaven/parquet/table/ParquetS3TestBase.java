@@ -16,6 +16,7 @@ import io.deephaven.extensions.s3.S3SeekableChannelTestBase;
 import io.deephaven.extensions.s3.testlib.S3Helper;
 import io.deephaven.test.types.OutOfBandTest;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Rule;
@@ -166,14 +167,60 @@ abstract class ParquetS3TestBase extends S3SeekableChannelTestBase {
     }
 
     @Test
+    public void readMetadataPartitionedParquetData()
+            throws ExecutionException, InterruptedException, TimeoutException {
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofInt("PC1").withPartitioning(),
+                ColumnDefinition.ofInt("PC2").withPartitioning(),
+                ColumnDefinition.ofInt("someIntColumn"),
+                ColumnDefinition.ofString("someStringColumn"));
+        final Table table = ((QueryTable) TableTools.emptyTable(500_000)
+                .updateView("PC1 = (int)(ii%3)",
+                        "PC2 = (int)(ii%2)",
+                        "someIntColumn = (int) i",
+                        "someStringColumn = String.valueOf(i)"))
+                .withDefinitionUnsafe(definition);
+        final String destDirName = "keyValuePartitionedDataDir";
+        final File destDir = new File(rootDir, destDirName);
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setBaseNameForPartitionedParquetData("data")
+                .setGenerateMetadataFiles(true)
+                .build();
+        writeKeyValuePartitionedTable(table, destDir.getPath(), writeInstructions);
+        assertTrue(new File(destDir, "_metadata").exists());
+        assertTrue(new File(destDir, "_common_metadata").exists());
+        uploadDirectory(destDir);
+        final URI metadataFileURI = uri(destDirName + "/_metadata");
+        final ParquetInstructions readInstructions = ParquetInstructions.builder()
+                .setSpecialInstructions(s3Instructions(
+                        S3Instructions.builder()
+                                .fragmentSize(65535)
+                                .readAheadCount(8)
+                                .readTimeout(Duration.ofSeconds(10)))
+                        .build())
+                .setTableDefinition(definition)
+                .build();
+        try {
+            ParquetTools.readTable(metadataFileURI.toString(), readInstructions);
+            Assert.fail("Exception expected for unsupported metadata file read from S3");
+        } catch (UnsupportedOperationException e) {
+        }
+        final URI directoryURI = uri(destDirName);
+        try {
+            ParquetTools.readTable(directoryURI.toString(),
+                    readInstructions.withLayout(ParquetInstructions.ParquetFileLayout.METADATA_PARTITIONED));
+            Assert.fail("Exception expected for unsupported metadata file read from S3");
+        } catch (UnsupportedOperationException e) {
+        }
+    }
+
+    @Test
     public void readSampleParquetFilesFromPublicS3() {
         Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_REMOTE_S3_TESTING);
         final S3Instructions s3Instructions = S3Instructions.builder()
                 .regionName("us-east-2")
                 .readAheadCount(8)
                 .fragmentSize(65535)
-                .maxConcurrentRequests(50)
-                .maxCacheSize(32)
                 .connectionTimeout(Duration.ofSeconds(1))
                 .readTimeout(Duration.ofSeconds(60))
                 .credentials(Credentials.anonymous())
@@ -213,8 +260,6 @@ abstract class ParquetS3TestBase extends S3SeekableChannelTestBase {
                 .regionName("us-east-1")
                 .readAheadCount(8)
                 .fragmentSize(65535)
-                .maxConcurrentRequests(50)
-                .maxCacheSize(32)
                 .readTimeout(Duration.ofSeconds(60))
                 .credentials(Credentials.anonymous())
                 .build();
