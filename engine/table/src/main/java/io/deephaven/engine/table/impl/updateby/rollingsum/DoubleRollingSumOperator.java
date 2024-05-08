@@ -19,6 +19,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 public class DoubleRollingSumOperator extends BaseDoubleUpdateByOperator {
     private static final int BUFFER_INITIAL_SIZE = 64;
@@ -60,11 +61,13 @@ public class DoubleRollingSumOperator extends BaseDoubleUpdateByOperator {
             aggSum.ensureRemaining(count);
 
             for (int ii = 0; ii < count; ii++) {
-                double val = doubleInfluencerValuesChunk.get(pos + ii);
-                aggSum.addUnsafe(val);
+                final double val = doubleInfluencerValuesChunk.get(pos + ii);
 
                 if (val == NULL_DOUBLE) {
                     nullCount++;
+                    aggSum.addUnsafe(NULL_DOUBLE);
+                } else {
+                    aggSum.addUnsafe(val);
                 }
             }
         }

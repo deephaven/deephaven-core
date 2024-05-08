@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.api.updateby.UpdateByControl;
+import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
@@ -14,6 +15,7 @@ import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.function.Numeric;
 import io.deephaven.test.types.OutOfBandTest;
 import org.jetbrains.annotations.NotNull;
@@ -42,6 +44,21 @@ public class TestCumProd extends BaseUpdateByTest {
     @Test
     public void testStaticZeroKey() {
         final QueryTable t = createTestTable(1000, false, false, false, 0xABCD1234).t;
+        final Table result = t.updateBy(UpdateByOperation.CumProd());
+        for (String col : t.getDefinition().getColumnNamesArray()) {
+            if ("boolCol".equals(col)) {
+                continue;
+            }
+            assertWithCumProd(DataAccessHelpers.getColumn(t, col).getDirect(),
+                    DataAccessHelpers.getColumn(result, col).getDirect(),
+                    DataAccessHelpers.getColumn(result, col).getType());
+        }
+    }
+
+    @Test
+    public void testStaticZeroKeyAllNulls() {
+        final QueryTable t = createTestTableAllNull(100000, false, false, false, 0x31313131,
+                CollectionUtil.ZERO_LENGTH_STRING_ARRAY, new TestDataGenerator[0]).t;
         final Table result = t.updateBy(UpdateByOperation.CumProd());
         for (String col : t.getDefinition().getColumnNamesArray()) {
             if ("boolCol".equals(col)) {
