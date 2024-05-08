@@ -3,7 +3,6 @@
 //
 package io.deephaven.base;
 
-import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import org.jetbrains.annotations.Nullable;
 

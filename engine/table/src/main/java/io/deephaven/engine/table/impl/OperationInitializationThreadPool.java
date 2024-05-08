@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.chunk.util.pools.MultiChunkPool;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.util.thread.NamingThreadFactory;
@@ -17,6 +16,8 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import static io.deephaven.util.thread.ThreadHelpers.getOrComputeThreadCountProperty;
+
 /**
  * Implementation of OperationInitializer that delegates to a pool of threads.
  */
@@ -25,17 +26,8 @@ public class OperationInitializationThreadPool implements OperationInitializer {
     /**
      * The number of threads that will be used for parallel initialization in this process
      */
-    public static final int NUM_THREADS;
-
-    static {
-        final int numThreads =
-                Configuration.getInstance().getIntegerWithDefault("OperationInitializationThreadPool.threads", -1);
-        if (numThreads <= 0) {
-            NUM_THREADS = Runtime.getRuntime().availableProcessors();
-        } else {
-            NUM_THREADS = numThreads;
-        }
-    }
+    private static final int NUM_THREADS =
+            getOrComputeThreadCountProperty("OperationInitializationThreadPool.threads", -1);
     private final ThreadLocal<Boolean> isInitializationThread = ThreadLocal.withInitial(() -> false);
 
     private final ThreadPoolExecutor executorService;
