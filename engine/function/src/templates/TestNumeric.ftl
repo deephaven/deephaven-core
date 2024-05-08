@@ -567,36 +567,41 @@ public class TestNumeric extends BaseArrayTestCase {
 
     public void test${pt.boxed}Sum1() {
         assertTrue(Math.abs(15 - sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, 5, 6}))) == 0.0);
-        assertTrue(Math.abs(0 - sum(new ${pt.vectorDirect}())) == 0.0);
-        assertTrue(Math.abs(0 - sum(new ${pt.vectorDirect}(${pt.null}))) == 0.0);
         assertTrue(Math.abs(20 - sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{5, ${pt.null}, 15}))) == 0.0);
     <#if pt.valueType.isFloat >
         assertEquals(NULL_DOUBLE, sum((${pt.vector}) null));
+        assertEquals(NULL_DOUBLE, sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{})));
+        assertEquals(NULL_DOUBLE, sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, ${pt.null}})));
         assertEquals(Double.POSITIVE_INFINITY, sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, Float.POSITIVE_INFINITY, 6})));
         assertEquals(Double.POSITIVE_INFINITY, sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY})));
         assertEquals(Double.NEGATIVE_INFINITY, sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, Float.NEGATIVE_INFINITY, 6})));
         assertEquals(Double.NEGATIVE_INFINITY, sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY})));
         assertEquals(Double.NaN, sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY})));
+        assertEquals(Double.NaN, sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{4, Float.NaN, 6})));
     <#else>
         assertEquals(NULL_LONG, sum((${pt.vector}) null));
+        assertEquals(NULL_LONG, sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{})));
+        assertEquals(NULL_LONG, sum(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, ${pt.null}})));
     </#if>
-
     }
 
     public void test${pt.boxed}Sum2() {
         assertTrue(Math.abs(15 - sum(new ${pt.primitive}[]{4, 5, 6})) == 0.0);
-        assertTrue(Math.abs(0 - sum(new ${pt.primitive}[]{})) == 0.0);
-        assertTrue(Math.abs(0 - sum(new ${pt.primitive}[]{${pt.null}})) == 0.0);
         assertTrue(Math.abs(20 - sum(new ${pt.primitive}[]{5, ${pt.null}, 15})) == 0.0);
     <#if pt.valueType.isFloat >
         assertEquals(NULL_DOUBLE, sum((${pt.primitive}[]) null));
+        assertEquals(NULL_DOUBLE, sum(new ${pt.primitive}[]{}));
+        assertEquals(NULL_DOUBLE, sum(new ${pt.primitive}[]{${pt.null}, ${pt.null}}));
         assertEquals(Double.POSITIVE_INFINITY, sum(new ${pt.primitive}[]{4, Float.POSITIVE_INFINITY, 6}));
         assertEquals(Double.POSITIVE_INFINITY, sum(new ${pt.primitive}[]{4, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY}));
         assertEquals(Double.NEGATIVE_INFINITY, sum(new ${pt.primitive}[]{4, Float.NEGATIVE_INFINITY, 6}));
         assertEquals(Double.NEGATIVE_INFINITY, sum(new ${pt.primitive}[]{4, Float.NEGATIVE_INFINITY, Float.NEGATIVE_INFINITY}));
         assertEquals(Double.NaN, sum(new ${pt.primitive}[]{4, Float.POSITIVE_INFINITY, Float.NEGATIVE_INFINITY}));
+        assertEquals(Double.NaN, sum(new ${pt.primitive}[]{4, Float.NaN, 6}));
     <#else>
         assertEquals(NULL_LONG, sum((${pt.primitive}[]) null));
+        assertEquals(NULL_LONG, sum(new ${pt.primitive}[]{}));
+        assertEquals(NULL_LONG, sum(new ${pt.primitive}[]{${pt.null}, ${pt.null}}));
     </#if>
     }
 
@@ -800,6 +805,7 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(new double[]{1, 3, 6, 10, 15}, cumsum(new ${pt.primitive}[]{1, 2, 3, 4, 5}));
         assertEquals(new double[]{1, 3, 6, 6, 11}, cumsum(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5}));
         assertEquals(new double[]{NULL_DOUBLE, 2, 5, 9, 14}, cumsum(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5}));
+        assertEquals(new double[]{NULL_DOUBLE, NULL_DOUBLE, 2, 5, 9, 14}, cumsum(new ${pt.primitive}[]{${pt.null}, ${pt.null}, 2, 3, 4, 5}));
         assertEquals(new double[0], cumsum(new ${pt.primitive}[0]));
         assertEquals(new double[0], cumsum(new ${pt.boxed}[0]));
         assertEquals(null, cumsum((${pt.primitive}[]) null));
@@ -807,6 +813,7 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(new double[]{1, 3, 6, 10, 15}, cumsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3, 4, 5})));
         assertEquals(new double[]{1, 3, 6, 6, 11}, cumsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5})));
         assertEquals(new double[]{NULL_DOUBLE, 2, 5, 9, 14}, cumsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5})));
+        assertEquals(new double[]{NULL_DOUBLE, NULL_DOUBLE, 2, 5, 9, 14}, cumsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, ${pt.null}, 2, 3, 4, 5})));
         assertEquals(new double[0], cumsum(new ${pt.vectorDirect}()));
         assertEquals(null, cumsum((${pt.vector}) null));
 
@@ -827,6 +834,7 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(new long[]{1, 3, 6, 10, 15}, cumsum(new ${pt.primitive}[]{1, 2, 3, 4, 5}));
         assertEquals(new long[]{1, 3, 6, 6, 11}, cumsum(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5}));
         assertEquals(new long[]{NULL_LONG, 2, 5, 9, 14}, cumsum(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5}));
+        assertEquals(new long[]{NULL_LONG, NULL_LONG, 2, 5, 9, 14}, cumsum(new ${pt.primitive}[]{${pt.null}, ${pt.null}, 2, 3, 4, 5}));
         assertEquals(new long[0], cumsum(new ${pt.primitive}[0]));
         assertEquals(new long[0], cumsum(new ${pt.boxed}[0]));
         assertEquals(null, cumsum((${pt.primitive}[]) null));
@@ -834,6 +842,7 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(new long[]{1, 3, 6, 10, 15}, cumsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3, 4, 5})));
         assertEquals(new long[]{1, 3, 6, 6, 11}, cumsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5})));
         assertEquals(new long[]{NULL_LONG, 2, 5, 9, 14}, cumsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5})));
+        assertEquals(new long[]{NULL_LONG, NULL_LONG, 2, 5, 9, 14}, cumsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, ${pt.null}, 2, 3, 4, 5})));
         assertEquals(new long[0], cumsum(new ${pt.vectorDirect}()));
         assertEquals(null, cumsum((${pt.vector}) null));
 
@@ -847,6 +856,7 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(new double[]{1, 2, 6, 24, 120}, cumprod(new ${pt.primitive}[]{1, 2, 3, 4, 5}));
         assertEquals(new double[]{1, 2, 6, 6, 30}, cumprod(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5}));
         assertEquals(new double[]{NULL_DOUBLE, 2, 6, 24, 120}, cumprod(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5}));
+        assertEquals(new double[]{NULL_DOUBLE, NULL_DOUBLE, 2, 6, 24, 120}, cumprod(new ${pt.primitive}[]{${pt.null}, ${pt.null}, 2, 3, 4, 5}));
         assertEquals(new double[0], cumprod(new ${pt.primitive}[0]));
         assertEquals(new double[0], cumprod(new ${pt.boxed}[0]));
         assertEquals(null, cumprod((${pt.primitive}[]) null));
@@ -855,6 +865,7 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(new double[]{1, 2, 6, 24, 120}, cumprod(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3, 4, 5})));
         assertEquals(new double[]{1, 2, 6, 6, 30}, cumprod(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, 2, 3, ${pt.null}, 5})));
         assertEquals(new double[]{NULL_DOUBLE, 2, 6, 24, 120}, cumprod(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, 2, 3, 4, 5})));
+        assertEquals(new double[]{NULL_DOUBLE, NULL_DOUBLE, 2, 6, 24, 120}, cumprod(new ${pt.vectorDirect}(new ${pt.primitive}[]{${pt.null}, ${pt.null}, 2, 3, 4, 5})));
         assertEquals(new double[0], cumprod(new ${pt.vectorDirect}()));
         assertEquals(null, cumprod((${pt.vector}) null));
         assertEquals(new double[]{1, Double.NaN, Double.NaN, Double.NaN, Double.NaN}, cumprod(new ${pt.vectorDirect}(new ${pt.primitive}[]{1, Float.NaN, 3, 4, 5})));

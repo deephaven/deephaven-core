@@ -1488,6 +1488,7 @@ public class Numeric {
         }
 
         double sum = 0;
+        long nullCount = 0;
 
         try ( final ${pt.vectorIterator} vi = values.iterator() ) {
             while ( vi.hasNext() ) {
@@ -1499,8 +1500,14 @@ public class Numeric {
 
                 if (!isNull(c)) {
                     sum += c;
+                } else {
+                    nullCount++;
                 }
             }
+        }
+
+        if (nullCount == values.size()) {
+            return NULL_DOUBLE;
         }
 
         return sum;
@@ -1512,6 +1519,7 @@ public class Numeric {
         }
 
         long sum = 0;
+        long nullCount = 0;
 
         try ( final ${pt.vectorIterator} vi = values.iterator() ) {
             while ( vi.hasNext() ) {
@@ -1519,8 +1527,14 @@ public class Numeric {
 
                 if (!isNull(c)) {
                     sum += c;
+                } else {
+                    nullCount++;
                 }
             }
+        }
+
+        if (nullCount == values.size()) {
+            return NULL_LONG;
         }
 
         return sum;
@@ -1920,10 +1934,10 @@ public class Numeric {
                 if (isNaN(v) || isNaN(result[i - 1])) {
                     Arrays.fill(result, i, n, Double.NaN);
                     return result;
-                } else if (isNull(result[i - 1])) {
-                    result[i] = v;
                 } else if (isNull(v)) {
                     result[i] = result[i - 1];
+                } else if (isNull(result[i - 1])) {
+                    result[i] = v;
                 } else {
                     result[i] = result[i - 1] + v;
                 }
@@ -1955,10 +1969,10 @@ public class Numeric {
             while (vi.hasNext()) {
                 final ${pt.primitive} v = vi.${pt.iteratorNext}();
 
-                if (isNull(result[i - 1])) {
-                    result[i] = v;
-                } else if (isNull(v)) {
+                if (isNull(v)) {
                     result[i] = result[i - 1];
+                } else if (isNull(result[i - 1])) {
+                    result[i] = v;
                 } else {
                     result[i] = result[i - 1] + v;
                 }
@@ -2041,10 +2055,10 @@ public class Numeric {
                 if (isNaN(v) || isNaN(result[i - 1])) {
                     Arrays.fill(result, i, n, Double.NaN);
                     return result;
-                } else if (isNull(result[i - 1])) {
-                    result[i] = v;
                 } else if (isNull(v)) {
                     result[i] = result[i - 1];
+                } else if (isNull(result[i - 1])) {
+                    result[i] = v;
                 } else {
                     result[i] = result[i - 1] * v;
                 }
@@ -2076,10 +2090,10 @@ public class Numeric {
             while (vi.hasNext()) {
                 final ${pt.primitive} v = vi.${pt.iteratorNext}();
 
-                if (isNull(result[i - 1])) {
-                    result[i] = v;
-                } else if (isNull(v)) {
+                if (isNull(v)) {
                     result[i] = result[i - 1];
+                } else if (isNull(result[i - 1])) {
+                    result[i] = v;
                 } else {
                     result[i] = result[i - 1] * v;
                 }
