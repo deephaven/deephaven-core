@@ -71,7 +71,7 @@ public abstract class S3SeekableChannelTestBase {
             final ByteBuffer buffer = ByteBuffer.allocate(1);
             try (
                     final SeekableChannelsProvider providerImpl = providerImpl(uri);
-                    final SeekableChannelsProvider provider = new CachedChannelProvider(providerImpl, 32);
+                    final SeekableChannelsProvider provider = CachedChannelProvider.create(providerImpl, 32);
                     final SeekableChannelContext context = provider.makeContext();
                     final SeekableByteChannel readChannel = provider.getReadChannel(context, uri)) {
                 assertThat(readChannel.read(buffer)).isEqualTo(-1);
@@ -81,7 +81,7 @@ public abstract class S3SeekableChannelTestBase {
             final URI uri = uri("hello/world.txt");
             try (
                     final SeekableChannelsProvider providerImpl = providerImpl(uri);
-                    final SeekableChannelsProvider provider = new CachedChannelProvider(providerImpl, 32);
+                    final SeekableChannelsProvider provider = CachedChannelProvider.create(providerImpl, 32);
                     final SeekableChannelContext context = provider.makeContext();
                     final SeekableByteChannel readChannel = provider.getReadChannel(context, uri)) {
                 final ByteBuffer bytes = readAll(readChannel, 32);
@@ -103,7 +103,7 @@ public abstract class S3SeekableChannelTestBase {
         final ByteBuffer buffer = ByteBuffer.allocate(1);
         try (
                 final SeekableChannelsProvider providerImpl = providerImpl(uri);
-                final SeekableChannelsProvider provider = new CachedChannelProvider(providerImpl, 32);
+                final SeekableChannelsProvider provider = CachedChannelProvider.create(providerImpl, 32);
                 final SeekableChannelContext context = provider.makeContext();
                 final SeekableByteChannel readChannel = provider.getReadChannel(context, uri)) {
             for (long p = 0; p < numBytes; ++p) {
