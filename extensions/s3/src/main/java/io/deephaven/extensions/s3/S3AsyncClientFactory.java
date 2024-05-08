@@ -3,6 +3,7 @@
 //
 package io.deephaven.extensions.s3;
 
+import io.deephaven.configuration.Configuration;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -23,10 +24,15 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+import static io.deephaven.util.thread.ThreadHelpers.getNumThreadsFromConfig;
+
 class S3AsyncClientFactory {
 
+    private static final int NUM_FUTURE_COMPLETION_THREADS = getNumThreadsFromConfig("S3.numFutureCompletionThreads");
+    private static final int NUM_SCHEDULED_EXECUTOR_THREADS =
+            Configuration.getInstance().getIntegerWithDefault("S3.numScheduledExecutorThreads", 5);
+
     private static final Logger log = LoggerFactory.getLogger(S3AsyncClientFactory.class);
-    private static final int NUM_PROCESSORS = Runtime.getRuntime().availableProcessors();
     private static final Map<HttpClientConfig, SdkAsyncHttpClient> httpClientCache = new ConcurrentHashMap<>();
 
     private static volatile Executor futureCompletionExecutor;
@@ -117,8 +123,8 @@ class S3AsyncClientFactory {
         if (futureCompletionExecutor == null) {
             synchronized (S3AsyncClientFactory.class) {
                 if (futureCompletionExecutor == null) {
-                    futureCompletionExecutor = Executors.newFixedThreadPool(NUM_PROCESSORS, new ThreadFactoryBuilder()
-                            .threadNamePrefix("s3-async-future-completion").build());
+                    futureCompletionExecutor = Executors.newFixedThreadPool(NUM_FUTURE_COMPLETION_THREADS,
+                            new ThreadFactoryBuilder().threadNamePrefix("s3-async-future-completion").build());
                 }
             }
         }
@@ -132,7 +138,6 @@ class S3AsyncClientFactory {
      * ({@code software.amazon.awssdk.core.client.builder.SdkDefaultClientBuilder#resolveScheduledExecutorService}).
      */
     private static ScheduledExecutorService ensureScheduledExecutor() {
-        final int NUM_SCHEDULED_EXECUTOR_THREADS = 5;
         if (scheduledExecutor == null) {
             synchronized (S3AsyncClientFactory.class) {
                 if (scheduledExecutor == null) {
