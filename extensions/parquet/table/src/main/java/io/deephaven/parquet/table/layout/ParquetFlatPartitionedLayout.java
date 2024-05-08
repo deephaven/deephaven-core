@@ -3,7 +3,6 @@
 //
 package io.deephaven.parquet.table.layout;
 
-import io.deephaven.base.FileUtils;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.parquet.base.ParquetUtils;
@@ -30,23 +29,10 @@ import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
  */
 public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinder<ParquetTableLocationKey> {
 
-    private static ParquetTableLocationKey locationKey(@NotNull final URI uri,
-            @NotNull final ParquetInstructions readInstructions) {
-        return new ParquetTableLocationKey(uri, 0, null, readInstructions);
-    }
-
     private final URI tableRootDirectory;
     private final Map<URI, ParquetTableLocationKey> cache;
     private final ParquetInstructions readInstructions;
-
-    /**
-     * @param tableRootDirectory The directory to search for .parquet files.
-     * @param readInstructions the instructions for customizations while reading
-     */
-    public ParquetFlatPartitionedLayout(@NotNull final File tableRootDirectory,
-            @NotNull final ParquetInstructions readInstructions) {
-        this(FileUtils.convertToURI(tableRootDirectory, true), readInstructions);
-    }
+    private final SeekableChannelsProvider channelsProvider;
 
     /**
      * @param tableRootDirectoryURI The directory URI to search for .parquet files.
@@ -57,6 +43,8 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
         this.tableRootDirectory = tableRootDirectoryURI;
         this.cache = Collections.synchronizedMap(new HashMap<>());
         this.readInstructions = readInstructions;
+        this.channelsProvider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(tableRootDirectory,
+                readInstructions.getSpecialInstructions());
     }
 
     public String toString() {
@@ -74,19 +62,14 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
         } else {
             uriFilter = uri -> uri.getPath().endsWith(ParquetUtils.PARQUET_FILE_EXTENSION);
         }
-        try (final SeekableChannelsProvider provider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(
-                tableRootDirectory, readInstructions.getSpecialInstructions());
-                final Stream<URI> stream = provider.list(tableRootDirectory)) {
+        try (final Stream<URI> stream = channelsProvider.list(tableRootDirectory)) {
             stream.filter(uriFilter).forEach(uri -> {
                 cache.compute(uri, (key, existingLocationKey) -> {
                     if (existingLocationKey != null) {
                         locationKeyObserver.accept(existingLocationKey);
                         return existingLocationKey;
                     }
-                    final ParquetTableLocationKey newLocationKey = locationKey(uri, readInstructions);
-                    if (!newLocationKey.verifyFileReader()) {
-                        return null;
-                    }
+                    final ParquetTableLocationKey newLocationKey = locationKey(uri);
                     locationKeyObserver.accept(newLocationKey);
                     return newLocationKey;
                 });
@@ -94,5 +77,9 @@ public final class ParquetFlatPartitionedLayout implements TableLocationKeyFinde
         } catch (final IOException e) {
             throw new TableDataException("Error finding parquet locations under " + tableRootDirectory, e);
         }
+    }
+
+    private ParquetTableLocationKey locationKey(@NotNull final URI uri) {
+        return new ParquetTableLocationKey(uri, 0, null, readInstructions, channelsProvider);
     }
 }

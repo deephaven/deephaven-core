@@ -5,29 +5,29 @@ package io.deephaven.extensions.s3;
 
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.base.verify.Require;
+import io.deephaven.hash.KeyedObjectHashMap;
+import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.channel.Channels;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.jetbrains.annotations.NotNull;
-import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
-import software.amazon.awssdk.core.retry.RetryMode;
-import software.amazon.awssdk.http.crt.AwsCrtAsyncHttpClient;
-import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
-import software.amazon.awssdk.services.s3.S3AsyncClientBuilder;
 import software.amazon.awssdk.services.s3.S3Uri;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.ref.SoftReference;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Spliterator;
 import java.util.Spliterators;
@@ -35,6 +35,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -61,37 +62,18 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
      */
     private final S3RequestCache sharedCache;
 
-    S3SeekableChannelProvider(@NotNull final S3Instructions s3Instructions) {
-        // TODO(deephaven-core#5062): Add support for async client recovery and auto-close
-        // TODO(deephaven-core#5063): Add support for caching clients for re-use
-        this.s3AsyncClient = buildClient(s3Instructions);
-        this.sharedCache = new S3RequestCache(s3Instructions.fragmentSize());
-        this.s3Instructions = s3Instructions;
-    }
+    @SuppressWarnings("rawtypes")
+    private static final AtomicReferenceFieldUpdater<S3SeekableChannelProvider, SoftReference> FILE_SIZE_CACHE_REF_UPDATER =
+            AtomicReferenceFieldUpdater.newUpdater(S3SeekableChannelProvider.class, SoftReference.class,
+                    "fileSizeCacheRef");
 
-    private static S3AsyncClient buildClient(@NotNull final S3Instructions s3Instructions) {
-        final S3AsyncClientBuilder builder = S3AsyncClient.builder()
-                .httpClient(AwsCrtAsyncHttpClient.builder()
-                        .maxConcurrency(s3Instructions.maxConcurrentRequests())
-                        .connectionTimeout(s3Instructions.connectionTimeout())
-                        .build())
-                .overrideConfiguration(ClientOverrideConfiguration.builder()
-                        // If we find that the STANDARD retry policy does not work well in all situations, we might
-                        // try experimenting with ADAPTIVE retry policy, potentially with fast fail.
-                        // .retryPolicy(RetryPolicy.builder(RetryMode.ADAPTIVE).fastFailRateLimiting(true).build())
-                        .retryPolicy(RetryMode.STANDARD)
-                        .apiCallAttemptTimeout(s3Instructions.readTimeout().dividedBy(3))
-                        .apiCallTimeout(s3Instructions.readTimeout())
-                        // Adding a metrics publisher may be useful for debugging, but it's very verbose.
-                        // .addMetricPublisher(LoggingMetricPublisher.create(Level.INFO, Format.PRETTY))
-                        .build())
-                .region(Region.of(s3Instructions.regionName()))
-                .credentialsProvider(s3Instructions.awsV2CredentialsProvider());
-        s3Instructions.endpointOverride().ifPresent(builder::endpointOverride);
-        if (log.isDebugEnabled()) {
-            log.debug().append("Building client with instructions: ").append(s3Instructions).endl();
-        }
-        return builder.build();
+    private volatile SoftReference<Map<URI, FileSizeInfo>> fileSizeCacheRef;
+
+    S3SeekableChannelProvider(@NotNull final S3Instructions s3Instructions) {
+        this.s3AsyncClient = S3AsyncClientFactory.getAsyncClient(s3Instructions);
+        this.s3Instructions = s3Instructions;
+        this.sharedCache = new S3RequestCache(s3Instructions.fragmentSize());
+        this.fileSizeCacheRef = new SoftReference<>(new KeyedObjectHashMap<>(FileSizeInfo.URI_MATCH_KEY));
     }
 
     @Override
@@ -99,11 +81,15 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
             @NotNull final URI uri) {
         final S3Uri s3Uri = s3AsyncClient.utilities().parseUri(uri);
         // context is unused here, will be set before reading from the channel
+        final Map<URI, FileSizeInfo> fileSizeCache = fileSizeCacheRef.get();
+        if (fileSizeCache != null && fileSizeCache.containsKey(uri)) {
+            return new S3SeekableByteChannel(s3Uri, fileSizeCache.get(uri).size);
+        }
         return new S3SeekableByteChannel(s3Uri);
     }
 
     @Override
-    public InputStream getInputStream(SeekableByteChannel channel) {
+    public InputStream getInputStream(final SeekableByteChannel channel) {
         // S3SeekableByteChannel is internally buffered, no need to re-buffer
         return Channels.newInputStreamNoClose(channel);
     }
@@ -213,14 +199,17 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
                             if (path.contains(REPEATED_URI_SEPARATOR)) {
                                 path = REPEATED_URI_SEPARATOR_PATTERN.matcher(path).replaceAll(URI_SEPARATOR);
                             }
+                            final URI uri;
                             try {
-                                return new URI(S3_URI_SCHEME, directory.getUserInfo(), directory.getHost(),
+                                uri = new URI(S3_URI_SCHEME, directory.getUserInfo(), directory.getHost(),
                                         directory.getPort(), path, null, null);
                             } catch (final URISyntaxException e) {
                                 throw new UncheckedDeephavenException("Failed to create URI for S3 object with key: "
                                         + s3Object.key() + " and bucket " + bucketName + " inside directory "
                                         + directory, e);
                             }
+                            updateFileSizeCache(getFileSizeCache(), uri, s3Object.size());
+                            return uri;
                         }).iterator();
                 // The following token is null when the last batch is fetched.
                 continuationToken = response.nextContinuationToken();
@@ -228,6 +217,56 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
         };
         return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iterator,
                 Spliterator.ORDERED | Spliterator.DISTINCT | Spliterator.NONNULL), false);
+    }
+
+    /**
+     * Get a strong reference to the file size cache, creating it if necessary.
+     */
+    private Map<URI, FileSizeInfo> getFileSizeCache() {
+        SoftReference<Map<URI, FileSizeInfo>> cacheRef;
+        Map<URI, FileSizeInfo> cache;
+        while ((cache = (cacheRef = fileSizeCacheRef).get()) == null) {
+            if (FILE_SIZE_CACHE_REF_UPDATER.compareAndSet(this, cacheRef,
+                    new SoftReference<>(cache = new KeyedObjectHashMap<>(FileSizeInfo.URI_MATCH_KEY)))) {
+                return cache;
+            }
+        }
+        return cache;
+    }
+
+    /**
+     * Update the given file size cache with the given URI and size.
+     */
+    private static void updateFileSizeCache(
+            @NotNull final Map<URI, FileSizeInfo> fileSizeCache,
+            @NotNull final URI uri,
+            final long size) {
+        fileSizeCache.compute(uri, (key, existingInfo) -> {
+            if (existingInfo == null) {
+                return new FileSizeInfo(uri, size);
+            } else if (existingInfo.size != size) {
+                throw new IllegalStateException("Existing size " + existingInfo.size + " does not match "
+                        + " the new size " + size + " for key " + key);
+            }
+            return existingInfo;
+        });
+    }
+
+    private static final class FileSizeInfo {
+        private final URI uri;
+        private final long size;
+
+        FileSizeInfo(@NotNull final URI uri, final long size) {
+            this.uri = Require.neqNull(uri, "uri");
+            this.size = size;
+        }
+
+        private static final KeyedObjectKey<URI, FileSizeInfo> URI_MATCH_KEY = new KeyedObjectKey.Basic<>() {
+            @Override
+            public URI getKey(@NotNull final FileSizeInfo value) {
+                return value.uri;
+            }
+        };
     }
 
     @Override
