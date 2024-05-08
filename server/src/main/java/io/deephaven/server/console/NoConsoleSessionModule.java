@@ -28,8 +28,7 @@ public class NoConsoleSessionModule {
     @Provides
     NoLanguageDeephavenSession bindNoLanguageSession(
             @Named(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME) final UpdateGraph updateGraph,
-            final OperationInitializer operationInitializer,
-            final ScriptSessionCacheInit ignored) {
+            final OperationInitializer operationInitializer) {
         return new NoLanguageDeephavenSession(updateGraph, operationInitializer);
     }
 }
