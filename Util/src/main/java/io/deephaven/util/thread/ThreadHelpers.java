@@ -6,8 +6,17 @@ package io.deephaven.util.thread;
 import io.deephaven.configuration.Configuration;
 
 public class ThreadHelpers {
-    public static int getNumThreadsFromConfig(final String configKey) {
-        final int numThreads = Configuration.getInstance().getIntegerWithDefault(configKey, -1);
+    /**
+     * Get the number of threads to use for a given configuration key, defaulting to the number of available processors
+     * if the configuration key is set to a non-positive value, or the configuration key is not set and the provided
+     * default is non-positive.
+     *
+     * @param configKey The configuration key to look up
+     * @param defaultValue The default value to use if the configuration key is not set
+     * @return The number of threads to use
+     */
+    public static int getOrComputeThreadCountProperty(final String configKey, final int defaultValue) {
+        final int numThreads = Configuration.getInstance().getIntegerWithDefault(configKey, defaultValue);
         if (numThreads <= 0) {
             return Runtime.getRuntime().availableProcessors();
         } else {

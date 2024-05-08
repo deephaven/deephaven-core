@@ -16,7 +16,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import static io.deephaven.util.thread.ThreadHelpers.getNumThreadsFromConfig;
+import static io.deephaven.util.thread.ThreadHelpers.getOrComputeThreadCountProperty;
 
 /**
  * Implementation of OperationInitializer that delegates to a pool of threads.
@@ -26,8 +26,9 @@ public class OperationInitializationThreadPool implements OperationInitializer {
     /**
      * The number of threads that will be used for parallel initialization in this process
      */
-    private static final int NUM_THREADS = getNumThreadsFromConfig("OperationInitializationThreadPool.threads");
-    private static final ThreadLocal<Boolean> isInitializationThread = ThreadLocal.withInitial(() -> false);
+    private static final int NUM_THREADS =
+            getOrComputeThreadCountProperty("OperationInitializationThreadPool.threads", -1);
+    private final ThreadLocal<Boolean> isInitializationThread = ThreadLocal.withInitial(() -> false);
 
     private final ThreadPoolExecutor executorService;
 

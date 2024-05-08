@@ -3,7 +3,6 @@
 //
 package io.deephaven.extensions.s3;
 
-import io.deephaven.configuration.Configuration;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -24,13 +23,14 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-import static io.deephaven.util.thread.ThreadHelpers.getNumThreadsFromConfig;
+import static io.deephaven.util.thread.ThreadHelpers.getOrComputeThreadCountProperty;
 
 class S3AsyncClientFactory {
 
-    private static final int NUM_FUTURE_COMPLETION_THREADS = getNumThreadsFromConfig("S3.numFutureCompletionThreads");
+    private static final int NUM_FUTURE_COMPLETION_THREADS =
+            getOrComputeThreadCountProperty("S3.numFutureCompletionThreads", -1);
     private static final int NUM_SCHEDULED_EXECUTOR_THREADS =
-            Configuration.getInstance().getIntegerWithDefault("S3.numScheduledExecutorThreads", 5);
+            getOrComputeThreadCountProperty("S3.numScheduledExecutorThreads", 5);
 
     private static final Logger log = LoggerFactory.getLogger(S3AsyncClientFactory.class);
     private static final Map<HttpClientConfig, SdkAsyncHttpClient> httpClientCache = new ConcurrentHashMap<>();

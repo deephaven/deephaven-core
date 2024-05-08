@@ -27,14 +27,15 @@ import java.net.URISyntaxException;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -62,46 +63,16 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     private final S3AsyncClient s3AsyncClient;
     private final S3Instructions s3Instructions;
 
-    private SoftReference<KeyedObjectHashMap<URI, FileSizeInfo>> uriToFileSizeSoftRef;
+    @SuppressWarnings("rawtypes")
+    private static final AtomicReferenceFieldUpdater<S3SeekableChannelProvider, SoftReference> FILE_SIZE_CACHE_REF_UPDATER =
+            AtomicReferenceFieldUpdater.newUpdater(S3SeekableChannelProvider.class, SoftReference.class,
+                    "fileSizeCacheRef");
 
-    private static final class FileSizeInfo {
-        private final URI uri;
-        private final long size;
-
-        FileSizeInfo(@NotNull final URI uri, final long size) {
-            this.uri = Require.neqNull(uri, "uri");
-            this.size = size;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(uri, size);
-        }
-
-        @Override
-        public boolean equals(final Object other) {
-            if (this == other) {
-                return true;
-            }
-            if (other == null || getClass() != other.getClass()) {
-                return false;
-            }
-            final FileSizeInfo that = (FileSizeInfo) other;
-            return size == that.size && uri.equals(that.uri);
-        }
-    }
-
-    private static final KeyedObjectKey<URI, FileSizeInfo> URI_MATCH_KEY = new KeyedObjectKey.Basic<>() {
-        @Override
-        public URI getKey(@NotNull final FileSizeInfo value) {
-            return value.uri;
-        }
-    };
+    private volatile SoftReference<Map<URI, FileSizeInfo>> fileSizeCacheRef;
 
     S3SeekableChannelProvider(@NotNull final S3Instructions s3Instructions) {
         this.s3AsyncClient = S3AsyncClientFactory.getAsyncClient(s3Instructions);
         this.s3Instructions = s3Instructions;
-        this.uriToFileSizeSoftRef = new SoftReference<>(new KeyedObjectHashMap<>(URI_MATCH_KEY));
     }
 
     @Override
@@ -109,9 +80,9 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
             @NotNull final URI uri) {
         final S3Uri s3Uri = s3AsyncClient.utilities().parseUri(uri);
         // context is unused here, will be set before reading from the channel
-        final KeyedObjectHashMap<URI, FileSizeInfo> uriToFileSize = uriToFileSizeSoftRef.get();
-        if (uriToFileSize != null && uriToFileSize.containsKey(uri)) {
-            return new S3SeekableByteChannel(s3Uri, uriToFileSize.get(uri).size);
+        final Map<URI, FileSizeInfo> fileSizeCache = fileSizeCacheRef.get();
+        if (fileSizeCache != null && fileSizeCache.containsKey(uri)) {
+            return new S3SeekableByteChannel(s3Uri, fileSizeCache.get(uri).size);
         }
         return new S3SeekableByteChannel(s3Uri);
     }
@@ -236,7 +207,7 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
                                         + s3Object.key() + " and bucket " + bucketName + " inside directory "
                                         + directory, e);
                             }
-                            updateFileSizeCache(uri, s3Object.size());
+                            updateFileSizeCache(getFileSizeCache(), uri, s3Object.size());
                             return uri;
                         }).iterator();
                 // The following token is null when the last batch is fetched.
@@ -248,25 +219,53 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     }
 
     /**
-     * Update the file size cache with the given URI and size.
+     * Get a strong reference to the file size cache, creating it if necessary.
      */
-    private void updateFileSizeCache(@NotNull final URI uri, final long size) {
-        KeyedObjectHashMap<URI, FileSizeInfo> uriToFileSize = uriToFileSizeSoftRef.get();
-        if (uriToFileSize != null) {
-            uriToFileSize.compute(uri, (key, existingInfo) -> {
-                if (existingInfo == null) {
-                    return new FileSizeInfo(uri, size);
-                } else if (existingInfo.size != size) {
-                    throw new IllegalStateException("Existing size " + existingInfo.size + " does not match "
-                            + " the new size " + size + " for key " + key);
-                }
-                return existingInfo;
-            });
-        } else {
-            uriToFileSize = new KeyedObjectHashMap<>(URI_MATCH_KEY);
-            uriToFileSize.put(uri, new FileSizeInfo(uri, size));
-            uriToFileSizeSoftRef = new SoftReference<>(uriToFileSize);
+    private Map<URI, FileSizeInfo> getFileSizeCache() {
+        SoftReference<Map<URI, FileSizeInfo>> cacheRef;
+        Map<URI, FileSizeInfo> cache;
+        while ((cacheRef = fileSizeCacheRef) == null || (cache = cacheRef.get()) == null) {
+            if (FILE_SIZE_CACHE_REF_UPDATER.compareAndSet(this, cacheRef,
+                    new SoftReference<>(cache = new KeyedObjectHashMap<>(FileSizeInfo.URI_MATCH_KEY)))) {
+                return cache;
+            }
         }
+        return cache;
+    }
+
+    /**
+     * Update the given file size cache with the given URI and size.
+     */
+    private static void updateFileSizeCache(
+            @NotNull final Map<URI, FileSizeInfo> fileSizeCache,
+            @NotNull final URI uri,
+            final long size) {
+        fileSizeCache.compute(uri, (key, existingInfo) -> {
+            if (existingInfo == null) {
+                return new FileSizeInfo(uri, size);
+            } else if (existingInfo.size != size) {
+                throw new IllegalStateException("Existing size " + existingInfo.size + " does not match "
+                        + " the new size " + size + " for key " + key);
+            }
+            return existingInfo;
+        });
+    }
+
+    private static final class FileSizeInfo {
+        private final URI uri;
+        private final long size;
+
+        FileSizeInfo(@NotNull final URI uri, final long size) {
+            this.uri = Require.neqNull(uri, "uri");
+            this.size = size;
+        }
+
+        private static final KeyedObjectKey<URI, FileSizeInfo> URI_MATCH_KEY = new KeyedObjectKey.Basic<>() {
+            @Override
+            public URI getKey(@NotNull final FileSizeInfo value) {
+                return value.uri;
+            }
+        };
     }
 
     @Override
