@@ -746,6 +746,13 @@ public final class ParquetTableReadWriteTest {
         final Table fromDiskWithMetadataWithoutData = readTable(metadataFile);
         assertEquals(source.size(), fromDiskWithMetadataWithoutData.size());
 
+        // If we call select now, this should fail because the data files are empty
+        try {
+            fromDiskWithMetadataWithoutData.select();
+            fail("Expected exception when reading table with empty data files");
+        } catch (final RuntimeException expected) {
+        }
+
         // Now write with flat partitioned parquet files to different directories with metadata file
         parentDir.delete();
         final File updatedSecondDataFile = new File(rootFile, "testDir/data2.parquet");
@@ -784,6 +791,56 @@ public final class ParquetTableReadWriteTest {
         assertTableEquals(expected, fromDisk);
         final Table fromDiskWithMetadata = readTable(new File(parentDir, "_metadata"));
         assertTableEquals(expected, fromDiskWithMetadata);
+    }
+
+    @Test
+    public void keyValuePartitionedWithMetadataTest() throws IOException {
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofInt("PC1").withPartitioning(),
+                ColumnDefinition.ofInt("PC2").withPartitioning(),
+                ColumnDefinition.ofLong("I"));
+        final Table source = ((QueryTable) TableTools.emptyTable(1_000_000)
+                .updateView("PC1 = (int)(ii%3)",
+                        "PC2 = (int)(ii%2)",
+                        "I = ii"))
+                .withDefinitionUnsafe(definition);
+
+        final File parentDir = new File(rootFile, "keyValuePartitionedWithMetadataTest");
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setGenerateMetadataFiles(true)
+                .setBaseNameForPartitionedParquetData("data")
+                .build();
+        writeKeyValuePartitionedTable(source, parentDir.getAbsolutePath(), writeInstructions);
+
+        final Table fromDisk = readTable(parentDir);
+        assertTableEquals(source.sort("PC1", "PC2"), fromDisk.sort("PC1", "PC2"));
+
+        final File metadataFile = new File(parentDir, "_metadata");
+        final Table fromDiskWithMetadata = readTable(metadataFile);
+        assertTableEquals(source.sort("PC1", "PC2"), fromDiskWithMetadata.sort("PC1", "PC2"));
+
+        final File firstDataFile =
+                new File(parentDir, "PC1=0" + File.separator + "PC2=0" + File.separator + "data.parquet");
+        final File secondDataFile =
+                new File(parentDir, "PC1=0" + File.separator + "PC2=1" + File.separator + "data.parquet");
+        assertTrue(firstDataFile.exists());
+        assertTrue(secondDataFile.exists());
+
+        // Now replace the underlying data files with empty files and read the size from metadata file verifying that
+        // we can read the size without touching the data
+        firstDataFile.delete();
+        firstDataFile.createNewFile();
+        secondDataFile.delete();
+        secondDataFile.createNewFile();
+        final Table fromDiskWithMetadataWithoutData = readTable(metadataFile);
+        assertEquals(source.size(), fromDiskWithMetadataWithoutData.size());
+
+        // If we call select now, this should fail because the data files are empty
+        try {
+            fromDiskWithMetadataWithoutData.select();
+            fail("Expected exception when reading table with empty data files");
+        } catch (final RuntimeException expected) {
+        }
     }
 
     @Test

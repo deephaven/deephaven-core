@@ -73,6 +73,7 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     S3SeekableChannelProvider(@NotNull final S3Instructions s3Instructions) {
         this.s3AsyncClient = S3AsyncClientFactory.getAsyncClient(s3Instructions);
         this.s3Instructions = s3Instructions;
+        this.fileSizeCacheRef = new SoftReference<>(new KeyedObjectHashMap<>(FileSizeInfo.URI_MATCH_KEY));
     }
 
     @Override
@@ -224,7 +225,7 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     private Map<URI, FileSizeInfo> getFileSizeCache() {
         SoftReference<Map<URI, FileSizeInfo>> cacheRef;
         Map<URI, FileSizeInfo> cache;
-        while ((cacheRef = fileSizeCacheRef) == null || (cache = cacheRef.get()) == null) {
+        while ((cache = (cacheRef = fileSizeCacheRef).get()) == null) {
             if (FILE_SIZE_CACHE_REF_UPDATER.compareAndSet(this, cacheRef,
                     new SoftReference<>(cache = new KeyedObjectHashMap<>(FileSizeInfo.URI_MATCH_KEY)))) {
                 return cache;
