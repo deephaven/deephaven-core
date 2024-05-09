@@ -25,7 +25,6 @@ dependencies {
 
     Classpaths.inheritGuava(project)
 
-    testImplementation TestTools.projectDependency(project, 'Util')
     testImplementation TestTools.projectDependency(project, 'engine-table')
     testImplementation TestTools.projectDependency(project, 'engine-time')
 

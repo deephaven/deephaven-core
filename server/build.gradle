@@ -98,7 +98,6 @@ dependencies {
     testImplementation project(':base-test-utils')
     testImplementation project(':engine-context')
     testImplementation TestTools.projectDependency(project, 'engine-context')
-    testImplementation TestTools.projectDependency(project, 'Util')
 
     testImplementation project(':server-test')
     Classpaths.inheritJUnitClassic(project, 'testImplementation')
