@@ -27,10 +27,14 @@ dependencies {
 
     Classpaths.inheritAssertJ(project)
 
-    testImplementation TestTools.projectDependency(project, 'server')
+    testImplementation project(':server')
+    testImplementation project(':server-test')
+    testImplementation project(':engine-test-utils')
+    testImplementation project(':Plot')
     testImplementation project(':java-client-flight')
     testImplementation project(':proto:proto-backplane-grpc-flight')
     testImplementation project(':plugin-echo')
+    testImplementation project(':plugin-figure')
     testImplementation project(':log-to-slf4j')
     Classpaths.inheritAutoService(project, true)
 }

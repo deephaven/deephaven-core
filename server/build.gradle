@@ -90,26 +90,13 @@ dependencies {
 
     implementation 'dev.dirs:directories:26'
 
-    testImplementation 'io.grpc:grpc-testing'
-    testImplementation('io.grpc:grpc-inprocess')
-
-    testImplementation project(':proto:proto-backplane-grpc')
-
-    testImplementation project(':base-test-utils')
-    testImplementation project(':engine-context')
-    testImplementation project(':engine-test-utils')
-
     testImplementation project(':server-test')
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
-    Classpaths.inheritAssertJ(project)
 
     runtimeOnly project(':Numerics'), project(':extensions-kafka')
     Classpaths.inheritAssertJ(project)
 
     testRuntimeOnly project(':log-to-slf4j')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
-
-    Classpaths.inheritImmutables(project, true)
 
     runtimeOnly project(':authentication:example-providers:psk')
 }
