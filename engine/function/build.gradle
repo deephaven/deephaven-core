@@ -21,7 +21,8 @@ dependencies {
     implementation project(':Base')
     implementation depCommonsLang3
 
-    testImplementation TestTools.projectDependency(project, 'Base')
+    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    testImplementation project(':base-test-utils')
 }
 
 def generatedFiles = []
