@@ -25,7 +25,7 @@ dependencies {
 
     Classpaths.inheritGuava(project)
 
-    testImplementation TestTools.projectDependency(project, 'engine-table')
+    testImplementation project(':engine-test-utils')
     testImplementation TestTools.projectDependency(project, 'engine-time')
 
     testRuntimeOnly project(path: ':configs')

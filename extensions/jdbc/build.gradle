@@ -16,8 +16,8 @@ dependencies {
     Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)
 
-    testImplementation TestTools.projectDependency(project, 'engine-table'),
-            'com.h2database:h2:2.1.212'
+    testImplementation project(':engine-test-utils')
+    testImplementation 'com.h2database:h2:2.1.212'
 
     testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),

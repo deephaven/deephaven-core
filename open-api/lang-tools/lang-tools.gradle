@@ -23,7 +23,6 @@ dependencies {
     Classpaths.inheritGroovy(project, 'groovy', 'testImplementation')
     Classpaths.inheritGroovy(project, 'groovy-templates', 'testImplementation')
 
-    testImplementation TestTools.projectDependency(project, 'engine-table')
     testRuntimeOnly project(':configs')
     testRuntimeOnly  project(':test-configs')
     testRuntimeOnly project(':Numerics')

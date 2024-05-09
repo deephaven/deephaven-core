@@ -21,7 +21,6 @@ dependencies {
     implementation project(':Base')
     implementation depCommonsLang3
 
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
     testImplementation project(':base-test-utils')
 }
 
