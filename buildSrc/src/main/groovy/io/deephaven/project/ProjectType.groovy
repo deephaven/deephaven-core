@@ -20,7 +20,7 @@ enum ProjectType {
     static void register(Project project) {
         ProjectType type = getType(project)
         if (type == ROOT && project.rootProject != project) {
-            throw new IllegalStateException("Project '${project.name}' is likely inheriting the 'ROOT' type - please set the property 'io.deephaven.project.ProjectType' as appropriate.")
+            throw new IllegalStateException("Project '${project.name}' is likely inheriting the 'ROOT' type - please set the property 'deephaven.project.ProjectType' as appropriate.")
         }
         registerInternal(project, type)
         project.pluginManager.apply(type.pluginId)
@@ -38,9 +38,9 @@ enum ProjectType {
 
 
     static ProjectType getType(Project project) {
-        def typeString = project.findProperty('io.deephaven.project.ProjectType') as String
+        def typeString = project.findProperty('deephaven.project.ProjectType') as String
         if (typeString == null) {
-            throw new IllegalStateException("Project '${project.name}' must declare a type. Please set the property 'io.deephaven.project.ProjectType'.")
+            throw new IllegalStateException("Project '${project.name}' must declare a type. Please set the property 'deephaven.project.ProjectType'.")
         }
         return valueOf(typeString)
     }
