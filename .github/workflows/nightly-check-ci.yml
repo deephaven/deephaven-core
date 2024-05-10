@@ -67,7 +67,7 @@ jobs:
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: gradle-run
-          arguments: --scan --continue --rerun-tasks ${{ matrix.gradle-task }} -PtestRuntimeVersion=${{ matrix.test-jvm-version }}
+          arguments: --scan --continue --rerun-tasks ${{ matrix.gradle-task }} -Pdeephaven.testRuntimeVersion=${{ matrix.test-jvm-version }}
           gradle-version: wrapper
 
       - name: Upload Test Results
