@@ -92,7 +92,9 @@ public final class SafetyChecks {
             }
             if (isVulnerableVersion() && !hasWorkaround()) {
                 throw exception(JDK_8287432.class, String.format(
-                        "The current JDK is vulnerable to the bug https://bugs.openjdk.org/browse/JDK-8287432. We recommend updating to 11.0.17+, 17.0.5+, or 21+. If that is not possible, you can apply a workaround '%s'.",
+                        "The current JDK %s (located at %s) is vulnerable to the bug https://bugs.openjdk.org/browse/JDK-8287432. We recommend updating to 11.0.17+, 17.0.5+, or 21+. If that is not possible, you can apply a workaround '%s'.",
+                        Runtime.version(),
+                        System.getProperty("java.home"),
                         String.join(" ", workaroundJvmArguments())));
             }
         }
