@@ -316,8 +316,9 @@ public class BucketState {
                     } catch (final RuntimeException e) {
                         final String msg =
                                 "Bad data! indexInChunk=" + indexInChunk + ", col=" + columnIndex + ", usePrev="
-                                        + usePrev + ", offset=" + offset + ", indexInChunk=" + keyChunk.get(indexInChunk);
-                        log.error().append(msg).append("rowSet=").append(rowSet).endl();
+                                        + usePrev + ", offset=" + offset + ", indexInChunk="
+                                        + keyChunk.get(indexInChunk);
+                        log.error().append(msg).append(", rowSet=").append(rowSet).endl();
                         throw new IllegalStateException(msg, e);
                     }
                 }
