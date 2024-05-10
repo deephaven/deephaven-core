@@ -66,7 +66,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
      * Used to cache recently fetched fragments as well as the ownership token for the request. This cache is local to
      * the context and is used to keep the requests alive as long as the context is alive.
      */
-    private final Request.RequestInfo[] localCache;
+    private final Request.AcquiredRequest[] localCache;
 
     /**
      * The size of the object in bytes, stored in context to avoid fetching multiple times
@@ -82,7 +82,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
             @NotNull final S3RequestCache sharedCache) {
         this.client = Objects.requireNonNull(client);
         this.instructions = Objects.requireNonNull(instructions);
-        this.localCache = new Request.RequestInfo[instructions.maxCacheSize()];
+        this.localCache = new Request.AcquiredRequest[instructions.maxCacheSize()];
         this.sharedCache = sharedCache;
         if (sharedCache.getFragmentSize() != instructions.fragmentSize()) {
             throw new IllegalArgumentException("Fragment size mismatch between shared cache and instructions, "
@@ -205,7 +205,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
         if (locallyCached != null) {
             return locallyCached;
         }
-        final Request.RequestInfo sharedCacheRequest = sharedCache.getOrCreateRequest(uri, fragmentIndex, this);
+        final Request.AcquiredRequest sharedCacheRequest = sharedCache.getOrCreateRequest(uri, fragmentIndex, this);
         // Cache the request and the ownership token locally
         localCache[cacheIdx] = sharedCacheRequest;
         // Send the request, if not sent already. The following method is idempotent, so we always call it.
@@ -237,13 +237,13 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
      * @implNote This class extends from a {@link SoftReference<ByteBuffer>} and implements {@link CleanupReference} to
      *           allow for cancelling the request once all references to the buffer have been released. Users should not
      *           access the buffer directly, but instead use the {@link #fill(long, ByteBuffer)} method. Also, users
-     *           should hold instances of {@link Request.RequestInfo} to keep the requests alive.
+     *           should hold instances of {@link AcquiredRequest} to keep the requests alive.
      */
     static final class Request extends SoftReference<ByteBuffer>
             implements AsyncResponseTransformer<GetObjectResponse, ByteBuffer>, BiConsumer<ByteBuffer, Throwable>,
             CleanupReference<ByteBuffer> {
 
-        static class RequestInfo {
+        static class AcquiredRequest {
             final Request request;
             /**
              * The ownership token keeps the request alive. When the ownership token is GC'd, the request is no longer
@@ -251,7 +251,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
              */
             final Object ownershipToken;
 
-            RequestInfo(final Request request, final Object ownershipToken) {
+            AcquiredRequest(final Request request, final Object ownershipToken) {
                 this.request = request;
                 this.ownershipToken = ownershipToken;
             }
@@ -303,7 +303,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
         private final long from;
         private final long to;
         private final Instant createdAt;
-        private CompletableFuture<ByteBuffer> consumerFuture;
+        private volatile CompletableFuture<ByteBuffer> consumerFuture;
         private volatile CompletableFuture<ByteBuffer> producerFuture;
         private int fillCount;
         private long fillBytes;
@@ -312,20 +312,20 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
         /**
          * Create a new request for the given fragment index using the provided context object.
          *
-         * @return A new {@link RequestInfo} object containing newly created request and an ownership token. The request
-         *         will stay alive as long as the ownership token is held.
+         * @return A new {@link AcquiredRequest} object containing newly created request and an ownership token. The
+         *         request will stay alive as long as the ownership token is held.
          *
          * @implNote This method does not cache the context because contexts are short-lived while a request may be
          *           cached.
          */
         @NotNull
-        static RequestInfo createAndAcquire(final long fragmentIndex, @NotNull final S3ChannelContext context) {
+        static AcquiredRequest createAndAcquire(final long fragmentIndex, @NotNull final S3ChannelContext context) {
             final long from = fragmentIndex * context.instructions.fragmentSize();
             final long to = Math.min(from + context.instructions.fragmentSize(), context.size) - 1;
             final long requestLength = to - from + 1;
             final ByteBuffer buffer = ByteBuffer.allocate((int) requestLength);
             final Request request = new Request(fragmentIndex, context, buffer, from, to);
-            return new RequestInfo(request, buffer);
+            return new AcquiredRequest(request, buffer);
         }
 
         private Request(final long fragmentIndex, @NotNull final S3ChannelContext context,
@@ -355,12 +355,12 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
          * released.
          */
         @Nullable
-        RequestInfo tryAcquire() {
+        AcquiredRequest tryAcquire() {
             final Object token = get();
             if (token == null) {
                 return null;
             }
-            return new RequestInfo(this, token);
+            return new AcquiredRequest(this, token);
         }
 
         /**
@@ -505,28 +505,34 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
         // --------------------------------------------------------------------------------------------------
 
         private final class Sub implements Subscriber<ByteBuffer> {
+
             private final CompletableFuture<ByteBuffer> localProducer;
-            // Access to this view must be guarded by get() != null to ensure the buffer has not been GC'd
-            private ByteBuffer bufferView;
             private Subscription subscription;
+
+            /**
+             * Number of bytes stored in the buffer.
+             */
+            int offset;
 
             Sub() {
                 localProducer = producerFuture;
-                final ByteBuffer buffer = Request.super.get();
+                final ByteBuffer buffer = Request.this.get();
                 if (buffer == null) {
-                    bufferView = null;
                     localProducer.completeExceptionally(new IllegalStateException(
                             String.format("Failed to acquire buffer for new subscriber, %s", requestStr())));
                     return;
                 }
-                bufferView = buffer.duplicate();
+                if (buffer.position() != 0) {
+                    localProducer.completeExceptionally(new IllegalStateException(
+                            String.format("Buffer not empty for new subscriber, %s", requestStr())));
+                }
             }
 
             // ---------------------------------------------------- -------------------------
 
             @Override
             public void onSubscribe(Subscription s) {
-                if (bufferView == null) {
+                if (Request.this.get() == null) {
                     s.cancel();
                     return;
                 }
@@ -540,43 +546,38 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
 
             @Override
             public void onNext(final ByteBuffer byteBuffer) {
-                if (Request.super.get() == null) {
-                    bufferView = null;
+                final ByteBuffer buffer = Request.this.get();
+                if (buffer == null) {
                     localProducer.completeExceptionally(new IllegalStateException(
                             String.format("Failed to acquire buffer for data, %s", requestStr())));
                     return;
                 }
-                bufferView.put(byteBuffer);
+                final int numBytes = byteBuffer.remaining();
+                buffer.duplicate().position(offset).put(byteBuffer);
+                offset += numBytes;
                 subscription.request(1);
             }
 
             @Override
             public void onError(Throwable t) {
-                bufferView = null;
                 localProducer.completeExceptionally(t);
             }
 
             @Override
             public void onComplete() {
-                if (Request.super.get() == null) {
-                    bufferView = null;
+                final ByteBuffer buffer = Request.this.get();
+                if (buffer == null) {
                     localProducer.completeExceptionally(new IllegalStateException(
                             String.format("Failed to acquire buffer for completion, %s", requestStr())));
                     return;
                 }
-                if (bufferView.position() != requestLength()) {
+                if (offset != requestLength()) {
                     localProducer.completeExceptionally(new IllegalStateException(String.format(
-                            "Expected %d bytes, received %d, %s", requestLength(), bufferView.position(),
+                            "Expected %d bytes, received %d, %s", requestLength(), offset,
                             requestStr())));
                     return;
                 }
-                ByteBuffer toComplete = bufferView.asReadOnlyBuffer();
-                toComplete.flip();
-                if (toComplete.capacity() != toComplete.limit()) {
-                    toComplete = toComplete.slice();
-                }
-                localProducer.complete(toComplete);
-                bufferView = null;
+                localProducer.complete(buffer.asReadOnlyBuffer());
             }
         }
     }

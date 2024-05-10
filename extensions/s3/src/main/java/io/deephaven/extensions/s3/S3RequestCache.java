@@ -59,25 +59,25 @@ final class S3RequestCache {
      * @return the request
      */
     @NotNull
-    Request.RequestInfo getOrCreateRequest(@NotNull final S3Uri uri, final long fragmentIndex,
+    S3ChannelContext.Request.AcquiredRequest getOrCreateRequest(@NotNull final S3Uri uri, final long fragmentIndex,
             @NotNull final S3ChannelContext context) {
-        final Mutable<Request.RequestInfo> ret = new MutableObject<>();
+        final Mutable<Request.AcquiredRequest> ret = new MutableObject<>();
         // TODO Need to unwrap the compute to avoid putting() the same result in the map.
         requests.compute(new Request.ID(uri, fragmentIndex), (key, existingRequest) -> {
             if (existingRequest != null) {
-                final Request.RequestInfo acquiredExisting = existingRequest.tryAcquire();
+                final Request.AcquiredRequest acquiredExisting = existingRequest.tryAcquire();
                 if (acquiredExisting != null) {
                     ret.setValue(acquiredExisting);
                     return existingRequest;
                 }
             }
-            final Request.RequestInfo newRequestInfo = Request.createAndAcquire(fragmentIndex, context);
-            ret.setValue(newRequestInfo);
+            final Request.AcquiredRequest newAcquiredRequest = Request.createAndAcquire(fragmentIndex, context);
+            ret.setValue(newAcquiredRequest);
             if (log.isDebugEnabled()) {
                 log.debug().append("Adding new request to cache: ").append(String.format("ctx=%d ",
-                        System.identityHashCode(context))).append(newRequestInfo.request.requestStr()).endl();
+                        System.identityHashCode(context))).append(newAcquiredRequest.request.requestStr()).endl();
             }
-            return newRequestInfo.request;
+            return newAcquiredRequest.request;
         });
         return ret.getValue();
     }
