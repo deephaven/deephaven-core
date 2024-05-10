@@ -1,6 +1,7 @@
 #
 # Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
+import time
 import unittest
 from time import sleep
 
@@ -363,6 +364,34 @@ t1 = empty_table(0) if t.size == 2 else None
             pub_session.close()
             with self.assertRaises(DHError):
                  sub_session2.fetch_table(shared_ticket)
+
+
+    def atest_mt(self):
+        import threading
+        session = self.session
+
+        def _use_flight_client():
+            print(threading.current_thread())
+            pa_table = csv.read_csv(self.csv_file)
+            for _ in range(7200): # roughly 30+ minutes
+                table1 = session.import_table(pa_table)
+                table2 = table1.group_by()
+                self.assertEqual(table2.size, 1)
+                pa_table2 = table2.to_arrow()
+                self.assertEqual(pa_table2.num_rows, 1)
+                time.sleep(1)
+
+        threads = []
+        for i in range(100):
+            t = threading.Thread(target=_use_flight_client)
+            threads.append(t)
+
+        for t in threads:
+            t.start()
+
+        for t in threads:
+            t.join()
+
 
 
 if __name__ == '__main__':

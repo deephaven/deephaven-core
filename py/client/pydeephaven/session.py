@@ -14,7 +14,6 @@ from uuid import uuid4
 import grpc
 import pyarrow as pa
 import pyarrow.flight as paflight
-from bitstring import BitArray
 from pyarrow._flight import ClientMiddlewareFactory, ClientMiddleware, ClientAuthHandler
 
 from pydeephaven._app_service import AppService
@@ -55,8 +54,9 @@ class _DhClientAuthMiddleware(ClientMiddleware):
         super().received_headers(headers)
         if headers:
             auth_token = bytes(headers.get("authorization")[0], encoding='ascii')
-            if auth_token and auth_token != self._session._auth_token:
-                self._session._auth_token = auth_token
+            with self._session._r_lock:
+                if auth_token and auth_token != self._session._auth_token:
+                    self._session._auth_token = auth_token
 
     def sending_headers(self):
         return {
@@ -169,8 +169,7 @@ class Session:
             DHError
         """
         self._r_lock = threading.RLock()  # for thread-safety when accessing/changing session global state
-        self._last_ticket = 0
-        self._ticket_bitarray = BitArray(1024)
+        self._last_ticket = 0   # for generating unique ticket numbers, guarded by _r_lock
 
         self.host = host
         if not host:
@@ -187,8 +186,9 @@ class Session:
         self._client_opts = client_opts
         self._extra_headers = extra_headers if extra_headers else {}
 
-        self.is_connected = False
+        self.is_connected = False # whether the session is connected to the server, guarded by _r_lock
 
+        self._auth_token = "" # the authentication token string, guarded by _r_lock
         if auth_type == "Anonymous":
             self._auth_token = auth_type
         elif auth_type == "Basic":
@@ -198,26 +198,56 @@ class Session:
             self._auth_token = str(auth_type) + " " + auth_token
 
         self.grpc_channel = None
-        self._session_service = None
-        self._table_service = None
-        self._grpc_barrage_stub = None
-        self._console_service = None
-        self._flight_service = None
-        self._app_service = None
-        self._input_table_service = None
-        self._plugin_obj_service = None
         self._never_timeout = never_timeout
         self._keep_alive_timer = None
         self._session_type = session_type
         self._flight_client = None
         self._auth_handler = None
-        self._config_service = None
+        self.session_service = None
+        self.config_service = None
 
-        self._connect()
+        self._connect() # connect to the server, construct flight_client, session_service, and config_service
+
+        self.table_service = TableService(self)
+        self.console_service = ConsoleService(self)
+        self.flight_service = ArrowFlightService(self, self._flight_client)
+        self.app_service = AppService(self)
+        self.input_table_service = InputTableService(self)
+        self.plugin_object_service = PluginObjService(self)
+
+
+    def _connect(self):
+        try:
+            scheme = "grpc+tls" if self._use_tls else "grpc"
+            self._flight_client = paflight.FlightClient(
+                location=f"{scheme}://{self.host}:{self.port}",
+                middleware=[_DhClientAuthMiddlewareFactory(self)],
+                tls_root_certs=self._tls_root_certs,
+                cert_chain=self._client_cert_chain,
+                private_key=self._client_private_key,
+                generic_options=self._client_opts
+            )
+            self._auth_handler = _DhClientAuthHandler(self)
+            self._flight_client.authenticate(self._auth_handler)
+        except Exception as e:
+            raise DHError("failed to connect to the server.") from e
+
+        self.session_service = SessionService(self)
+        self.grpc_channel = self.session_service.connect()
+
+        self.config_service = ConfigService(self)
+        config_dict = self.config_service.get_configuration_constants()
+        session_duration = config_dict.get("http.session.durationMs")
+        if not session_duration:
+            raise DHError("server configuration is missing http.session.durationMs")
+
+        self.is_connected = True
+
+        self._timeout = int(session_duration.string_value)
+        if self._never_timeout:
+            self._keep_alive()
 
     def __enter__(self):
-        if not self.is_connected:
-            self._connect()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -246,59 +276,6 @@ class Session:
             l.extend(list(self._extra_headers.items()))
         return l
 
-    @property
-    def table_service(self) -> TableService:
-        if not self._table_service:
-            self._table_service = TableService(self)
-        return self._table_service
-
-    @property
-    def session_service(self) -> SessionService:
-        if not self._session_service:
-            self._session_service = SessionService(self)
-        return self._session_service
-
-    @property
-    def console_service(self) -> ConsoleService:
-        if not self._console_service:
-            self._console_service = ConsoleService(self)
-        return self._console_service
-
-    @property
-    def flight_service(self) -> ArrowFlightService:
-        if not self._flight_service:
-            self._flight_service = ArrowFlightService(self, self._flight_client)
-
-        return self._flight_service
-
-    @property
-    def app_service(self) -> AppService:
-        if not self._app_service:
-            self._app_service = AppService(self)
-
-        return self._app_service
-
-    @property
-    def config_service(self):
-        if not self._config_service:
-            self._config_service = ConfigService(self)
-
-        return self._config_service
-
-    @property
-    def input_table_service(self) -> InputTableService:
-        if not self._input_table_service:
-            self._input_table_service = InputTableService(self)
-
-        return self._input_table_service
-
-    @property
-    def plugin_object_service(self) -> PluginObjService:
-        if not self._plugin_obj_service:
-            self._plugin_obj_service = PluginObjService(self)
-
-        return self._plugin_obj_service
-
     def make_ticket(self, ticket_no=None):
         if not ticket_no:
             ticket_no = self.get_ticket()
@@ -326,47 +303,18 @@ class Session:
                 raise DHError("could not cancel ListFields subscription")
             return resp.created if resp.created else []
 
-    def _connect(self):
-        with self._r_lock:
-            try:
-                scheme = "grpc+tls" if self._use_tls else "grpc"
-                self._flight_client = paflight.FlightClient(
-                    location=f"{scheme}://{self.host}:{self.port}",
-                    middleware=[_DhClientAuthMiddlewareFactory(self)],
-                    tls_root_certs=self._tls_root_certs,
-                    cert_chain=self._client_cert_chain,
-                    private_key=self._client_private_key,
-                    generic_options=self._client_opts
-                )
-                self._auth_handler = _DhClientAuthHandler(self)
-                self._flight_client.authenticate(self._auth_handler)
-            except Exception as e:
-                raise DHError("failed to connect to the server.") from e
-
-            self.grpc_channel = self.session_service.connect()
-
-            config_dict = self.config_service.get_configuration_constants()
-            session_duration = config_dict.get("http.session.durationMs")
-            if not session_duration:
-                raise DHError("server configuration is missing http.session.durationMs")
-
-            self.is_connected = True
-
-            self._timeout = int(session_duration.string_value)
-            if self._never_timeout:
-                self._keep_alive()
-
     def _keep_alive(self):
-        if self.is_connected:
-            if self._keep_alive_timer:
-                self._refresh_token()
-            self._keep_alive_timer = threading.Timer(self._timeout / 2 / 1000, self._keep_alive)
-            self._keep_alive_timer.daemon = True
-            self._keep_alive_timer.start()
+        with self._r_lock:
+            if self.is_connected:
+                if self._keep_alive_timer:
+                    self._refresh_token()
+                self._keep_alive_timer = threading.Timer(10, self._keep_alive)
+                self._keep_alive_timer.daemon = True
+                self._keep_alive_timer.start()
 
     def _refresh_token(self):
         try:
-            self._flight_client.authenticate(self._auth_handler)
+            self.config_service.get_configuration_constants()
         except Exception as e:
             self.is_connected = False
             raise DHError("failed to refresh auth token") from e
@@ -382,7 +330,7 @@ class Session:
                 return True
 
             try:
-                self._flight_client.authenticate(self._auth_handler)
+                self.config_service.get_configuration_constants()
                 return True
             except DHError as e:
                 self.is_connected = False
@@ -476,7 +424,7 @@ class Session:
         Raises:
             DHError
         """
-        self._session_service.publish(table.ticket, ticket.api_ticket)
+        self.session_service.publish(table.ticket, ticket.api_ticket)
 
     def fetch_table(self, ticket: SharedTicket) -> Table:
         """Fetches a table by ticket.
