@@ -12,8 +12,8 @@ import software.amazon.awssdk.services.s3.S3Uri;
 import io.deephaven.extensions.s3.S3ChannelContext.Request;
 
 /**
- * This class uses a ({@link KeyedObjectHashMap}) to cache {@link Request} objects based on their URI and fragment
- * index. This cache can be used concurrently.
+ * This class uses a {@link KeyedObjectHashMap} to cache {@link Request} objects based on their URI and fragment index.
+ * This cache can be used concurrently.
  */
 final class S3RequestCache {
 
@@ -27,10 +27,13 @@ final class S3RequestCache {
      */
     S3RequestCache(final int fragmentSize) {
         this.fragmentSize = fragmentSize;
-        requests = new KeyedObjectHashMap<>(new REQUEST_KEY());
+        this.requests = new KeyedObjectHashMap<>(RequestKey.INSTANCE);
     }
 
-    private static final class REQUEST_KEY extends KeyedObjectKey.Basic<Request.ID, Request> {
+    private static final class RequestKey extends KeyedObjectKey.Basic<Request.ID, Request> {
+
+        private static final KeyedObjectKey<Request.ID, Request> INSTANCE = new RequestKey();
+
         @Override
         public Request.ID getKey(@NotNull final S3ChannelContext.Request request) {
             return request.getId();
@@ -38,7 +41,7 @@ final class S3RequestCache {
     }
 
     /**
-     * Return the size of fragments stored in this cache.
+     * @return the size of fragments stored in this cache.
      */
     int getFragmentSize() {
         return fragmentSize;
@@ -70,9 +73,10 @@ final class S3RequestCache {
             // TODO Do you think the init part should be done by the context, inside createAndAcquire or here?
             // Kept it here for now because caller doesn't know whether request is new or not. So should call init or
             // not. Maybe we can make init more idempotent and the context would call it always.
-            newRequest.init();
+            newRequest.sendRequest();
             if (log.isDebugEnabled()) {
-                log.debug().append("Adding new request to cache: ").append(newRequest.requestStr()).endl();
+                log.debug().append("Adding new request to cache: ").append(String.format("ctx=%d ",
+                        System.identityHashCode(context))).append(newRequest.requestStr()).endl();
             }
             return newRequest;
         });

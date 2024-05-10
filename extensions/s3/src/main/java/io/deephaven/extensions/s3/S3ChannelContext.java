@@ -62,7 +62,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
      */
     private final S3RequestCache sharedCache;
 
-    private final Map<Integer, Request> localCache;
+    private final Request[] localCache;
 
     /**
      * The size of the object in bytes, stored in context to avoid fetching multiple times
@@ -78,7 +78,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
             @NotNull final S3RequestCache sharedCache) {
         this.client = Objects.requireNonNull(client);
         this.instructions = Objects.requireNonNull(instructions);
-        this.localCache = new HashMap<>(instructions.maxCacheSize());
+        this.localCache = new Request[instructions.maxCacheSize()];
         this.sharedCache = sharedCache;
         if (sharedCache.getFragmentSize() != instructions.fragmentSize()) {
             throw new IllegalArgumentException("Fragment size mismatch between shared cache and instructions, "
@@ -176,23 +176,27 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
      * objects are garbage collected.
      */
     private void releaseOutstanding() {
-        for (final Request request : localCache.values()) {
-            request.release();
+        for (int i = 0; i < localCache.length; i++) {
+            if (localCache[i] != null) {
+                localCache[i].release();
+                localCache[i] = null;
+            }
         }
-        localCache.clear();
     }
 
     // --------------------------------------------------------------------------------------------------
 
+    @Nullable
     private Request getRequestFromLocalCache(final long fragmentIndex) {
         final int cacheIdx = cacheIndex(fragmentIndex);
-        final Request request = localCache.get(cacheIdx);
+        final Request request = localCache[cacheIdx];
         return request == null || !request.isFragment(fragmentIndex) ? null : request;
     }
 
+    @NotNull
     private Request getOrCreateRequest(final long fragmentIndex) {
         final int cacheIdx = cacheIndex(fragmentIndex);
-        final Request locallyCached = localCache.get(cacheIdx);
+        final Request locallyCached = localCache[cacheIdx];
         if (locallyCached != null && locallyCached.isFragment(fragmentIndex)) {
             return locallyCached;
         }
@@ -200,7 +204,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
         if (locallyCached != null) {
             locallyCached.release();
         }
-        localCache.put(cacheIdx, sharedCacheRequest);
+        localCache[cacheIdx] = sharedCacheRequest;
         return sharedCacheRequest;
     }
 
@@ -249,7 +253,9 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
 
             @Override
             public int hashCode() {
-                return Objects.hash(uri, fragmentIndex);
+                int result = 31 + Long.hashCode(fragmentIndex);
+                result = 31 * result + uri.hashCode();
+                return result;
             }
 
             @Override
@@ -314,6 +320,10 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
             sharedCache = context.sharedCache;
             createdAt = Instant.now();
             id = new ID(s3Uri, fragmentIndex);
+            if (log.isDebugEnabled()) {
+                log.debug().append("Creating request: ").append(String.format("ctx=%d ",
+                        System.identityHashCode(context))).append(requestStr()).endl();
+            }
         }
 
         ID getId() {
@@ -352,7 +362,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
             }
         }
 
-        void init() {
+        void sendRequest() {
             if (refCount == 0) {
                 throw new IllegalStateException(String.format("Request not acquired, %s", requestStr()));
             }

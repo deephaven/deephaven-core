@@ -172,7 +172,7 @@ public abstract class S3Instructions implements LogOutputAppendable {
     }
 
     @Check
-    final void boundsCheckMaxFragmentSize() {
+    final void boundsCheckMinFragmentSize() {
         if (fragmentSize() < MIN_FRAGMENT_SIZE) {
             throw new IllegalArgumentException("fragmentSize(=" + fragmentSize() + ") must be >= " + MIN_FRAGMENT_SIZE +
                     " bytes");
