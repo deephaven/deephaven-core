@@ -17,6 +17,7 @@ import io.deephaven.engine.table.DataIndexTransformer;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.FunctionalColumn;
 import io.deephaven.engine.table.impl.select.FunctionalColumnLong;
+import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -153,10 +154,10 @@ public class TransformedDataIndex extends LivenessArtifact implements BasicDataI
         final Function<RowSet, RowSet> mutator =
                 getMutator(transformer.intersectRowSet().orElse(null), transformer.invertRowSet().orElse(null));
         final Table mutated = indexTable
-                .update(List.of(new FunctionalColumn<>(
+                .update(List.of(SelectColumn.ofStateless(new FunctionalColumn<>(
                         parentIndex.rowSetColumnName(), RowSet.class,
                         parentIndex.rowSetColumnName(), RowSet.class,
-                        mutator)));
+                        mutator))));
         if (transformer.intersectRowSet().isPresent()) {
             return mutated.where(Filter.isNotNull(ColumnName.of(parentIndex.rowSetColumnName())));
         }

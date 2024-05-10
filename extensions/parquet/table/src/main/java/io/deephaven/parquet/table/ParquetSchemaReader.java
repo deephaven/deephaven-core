@@ -34,7 +34,6 @@ import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -93,30 +92,6 @@ public class ParquetSchemaReader {
             codecType = null;
             codecComponentType = null;
         }
-    }
-
-    /**
-     * Obtain schema information from a parquet file
-     *
-     * @param filePath Location for input parquet file
-     * @param readInstructions Parquet read instructions specifying transformations like column mappings and codecs.
-     *        Note a new read instructions based on this one may be returned by this method to provide necessary
-     *        transformations, eg, replacing unsupported characters like ' ' (space) in column names.
-     * @param consumer A ColumnDefinitionConsumer whose accept method would be called for each column in the file
-     * @return Parquet read instructions, either the ones supplied or a new object based on the supplied with necessary
-     *         transformations added.
-     */
-    public static ParquetInstructions readParquetSchema(
-            @NotNull final String filePath,
-            @NotNull final ParquetInstructions readInstructions,
-            @NotNull final ColumnDefinitionConsumer consumer,
-            @NotNull final BiFunction<String, Set<String>, String> legalizeColumnNameFunc) throws IOException {
-        final ParquetFileReader parquetFileReader =
-                ParquetFileReader.createChecked(new File(filePath), readInstructions.getSpecialInstructions());
-        final ParquetMetadata parquetMetadata =
-                new ParquetMetadataConverter().fromParquetMetadata(parquetFileReader.fileMetaData);
-        return readParquetSchema(parquetFileReader.getSchema(), parquetMetadata.getFileMetaData().getKeyValueMetaData(),
-                readInstructions, consumer, legalizeColumnNameFunc);
     }
 
     public static Optional<TableInfo> parseMetadata(@NotNull final Map<String, String> keyValueMetadata) {

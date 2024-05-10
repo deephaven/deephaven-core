@@ -17,13 +17,15 @@ public interface Session
     // ----------------------------------------------------------
 
     /**
-     * Closes the session.
+     * Closes the session, waiting some amount of time for completion. Logs on error. Delegates to
+     * {@link #closeFuture()}.
      */
     @Override
     void close();
 
     /**
-     * Closes the session.
+     * Closes the session and return a future containing the results. Will return the same future if invoked more than
+     * once.
      *
      * @return the future
      */

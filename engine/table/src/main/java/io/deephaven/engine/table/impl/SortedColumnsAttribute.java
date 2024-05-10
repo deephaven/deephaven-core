@@ -3,6 +3,8 @@
 //
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.SortColumn;
 import io.deephaven.engine.table.Table;
 
 import java.util.*;
@@ -93,6 +95,25 @@ public class SortedColumnsAttribute {
         final String oldAttribute = (String) table.getAttribute(Table.SORTED_COLUMNS_ATTRIBUTE);
         final String newAttribute = setOrderForColumn(oldAttribute, columnName, order);
         return table.withAttributes(Map.of(Table.SORTED_COLUMNS_ATTRIBUTE, newAttribute));
+    }
+
+    /**
+     * Get the columns a {@link Table} is sorted by.
+     *
+     * @param table The table to interrogate
+     *
+     * @return A (possibly-empty) list of {@link SortColumn SortColumns} representing columns the table is sorted on and
+     *         their associated sort order
+     */
+    public static List<SortColumn> getSortedColumns(Table table) {
+        final String attribute = (String) table.getAttribute(Table.SORTED_COLUMNS_ATTRIBUTE);
+        if (attribute == null || attribute.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return stringToMap(attribute, true).entrySet().stream().map(e -> {
+            final ColumnName columnName = ColumnName.of(e.getKey());
+            return e.getValue().isAscending() ? SortColumn.asc(columnName) : SortColumn.desc(columnName);
+        }).collect(Collectors.toList());
     }
 
     private static Map<String, SortingOrder> stringToMap(String attribute, boolean writable) {

@@ -8,7 +8,6 @@ import com.google.protobuf.ByteString;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoSet;
-import io.deephaven.auth.AuthenticationRequestHandler;
 import io.deephaven.auth.ServiceAuthWiring;
 import io.deephaven.auth.codegen.impl.ConsoleServiceAuthWiring;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
@@ -27,6 +26,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.client.impl.*;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
@@ -39,8 +39,10 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.util.BarrageChunkAppendingMarshaller;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
+import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.plugin.Registration;
 import io.deephaven.proto.backplane.grpc.SortTableRequest;
 import io.deephaven.proto.backplane.grpc.WrappedAuthenticationRequest;
@@ -73,6 +75,9 @@ import org.apache.arrow.flight.grpc.CredentialCallOption;
 import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.memory.ArrowBuf;
 import org.apache.arrow.memory.RootAllocator;
+import org.apache.arrow.vector.DateMilliVector;
+import org.apache.arrow.vector.FieldVector;
+import org.apache.arrow.vector.TimeNanoVector;
 import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.complex.ListVector;
 import org.apache.arrow.vector.types.pojo.ArrowType;
@@ -93,8 +98,11 @@ import javax.inject.Singleton;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.Consumer;
 
 import static io.deephaven.client.impl.BarrageSubscriptionImpl.makeRequestInternal;
 import static org.junit.Assert.*;
@@ -227,7 +235,7 @@ public abstract class FlightMessageRoundTripTest {
 
     private ManagedChannel clientChannel;
     private ScheduledExecutorService clientScheduler;
-    private FlightSession clientSession;
+    private Session clientSession;
 
     @BeforeClass
     public static void setupOnce() throws IOException {
@@ -235,7 +243,7 @@ public abstract class FlightMessageRoundTripTest {
     }
 
     @Before
-    public void setup() throws IOException {
+    public void setup() throws IOException, InterruptedException {
         logBuffer = new LogBuffer(128);
         LogBufferGlobal.setInstance(logBuffer);
 
@@ -272,14 +280,9 @@ public abstract class FlightMessageRoundTripTest {
                 .build();
 
         clientScheduler = Executors.newSingleThreadScheduledExecutor();
-        FlightSessionFactory flightSessionFactory =
-                DaggerDeephavenFlightRoot.create().factoryBuilder()
-                        .managedChannel(clientChannel)
-                        .scheduler(clientScheduler)
-                        .allocator(new RootAllocator())
-                        .build();
 
-        clientSession = flightSessionFactory.newFlightSession();
+        clientSession = SessionImpl
+                .create(SessionImplConfig.from(SessionConfig.builder().build(), clientChannel, clientScheduler));
     }
 
     private static final class TestAuthClientInterceptor implements ClientInterceptor {
@@ -644,6 +647,35 @@ public abstract class FlightMessageRoundTripTest {
     }
 
     @Test
+    public void testLocalDateCol() throws Exception {
+        final Table source = TableTools.emptyTable(10).update("LD = java.time.LocalDate.ofEpochDay(ii)");
+        final ColumnSource<LocalDate> ld = source.getColumnSource("LD");
+        assertRoundTripDataEqual(source,
+                recordBatch -> {
+                    final FieldVector fv = recordBatch.getFieldVectors().get(0);
+                    final DateMilliVector dmv = (DateMilliVector) fv;
+                    for (int ii = 0; ii < source.intSize(); ++ii) {
+                        Assert.equals(ld.get(ii), "ld.get(ii)", dmv.getObject(ii).toLocalDate(),
+                                "dmv.getObject(ii).toLocalDate()");
+                    }
+                });
+    }
+
+    @Test
+    public void testLocalTimeCol() throws Exception {
+        final Table source = TableTools.emptyTable(10).update("LT = java.time.LocalTime.ofSecondOfDay(ii * 60 * 60)");
+        final ColumnSource<LocalTime> lt = source.getColumnSource("LT");
+        assertRoundTripDataEqual(source,
+                recordBatch -> {
+                    final FieldVector fv = recordBatch.getFieldVectors().get(0);
+                    final TimeNanoVector tnv = (TimeNanoVector) fv;
+                    for (int ii = 0; ii < source.intSize(); ++ii) {
+                        Assert.eq(lt.get(ii).toNanoOfDay(), "lt.get(ii).toNanoOfDay()", tnv.get(ii), "tnv.get(ii)");
+                    }
+                });
+    }
+
+    @Test
     public void testFlightInfo() {
         final String staticTableName = "flightInfoTest";
         final String tickingTableName = "flightInfoTestTicking";
@@ -837,10 +869,10 @@ public abstract class FlightMessageRoundTripTest {
 
         // export from query scope to our session; this transforms the table
         assertEquals(0, numTransforms.intValue());
-        try (final TableHandle handle = clientSession.session().execute(TicketTable.fromQueryScopeField(tableName))) {
+        try (final TableHandle handle = clientSession.execute(TicketTable.fromQueryScopeField(tableName))) {
             // place the transformed table into the scope; wait on the future to ensure the server-side operation
             // completes
-            clientSession.session().publish(resultTableName, handle).get();
+            clientSession.publish(resultTableName, handle).get();
         }
         assertEquals(1, numTransforms.intValue());
 
@@ -860,11 +892,11 @@ public abstract class FlightMessageRoundTripTest {
         ExecutionContext.getContext().getQueryScope().putParam(tableName, table);
 
         // export from query scope to our session; this transforms the table
-        try (final TableHandle handle = clientSession.session().execute(TicketTable.fromQueryScopeField(tableName))) {
+        try (final TableHandle handle = clientSession.execute(TicketTable.fromQueryScopeField(tableName))) {
             // verify that we can sort the table prior to the restriction
-            clientSession.session().publish(resultTableName, handle).get();
+            clientSession.publish(resultTableName, handle).get();
             // verify that we can publish as many times as we please
-            clientSession.session().publish(resultTableName, handle).get();
+            clientSession.publish(resultTableName, handle).get();
 
             component.authorizationProvider().getConsoleServiceAuthWiring().delegate =
                     new ConsoleServiceAuthWiring.AllowAll() {
@@ -876,7 +908,7 @@ public abstract class FlightMessageRoundTripTest {
                     };
 
             try {
-                clientSession.session().publish(resultTableName, handle).get();
+                clientSession.publish(resultTableName, handle).get();
                 fail("expected the publish to fail");
             } catch (final Exception e) {
                 // expect the authorization error details to propagate
@@ -893,7 +925,7 @@ public abstract class FlightMessageRoundTripTest {
         ExecutionContext.getContext().getQueryScope().putParam(tableName, table);
 
         // export from query scope to our session; this transforms the table
-        try (final TableHandle handle = clientSession.session().execute(TicketTable.fromQueryScopeField(tableName))) {
+        try (final TableHandle handle = clientSession.execute(TicketTable.fromQueryScopeField(tableName))) {
 
             // verify that we can sort the table prior to the restriction
             // noinspection EmptyTryBlock
@@ -964,7 +996,14 @@ public abstract class FlightMessageRoundTripTest {
 
     private static int nextTicket = 1;
 
+
     private void assertRoundTripDataEqual(Table deephavenTable) throws Exception {
+        assertRoundTripDataEqual(deephavenTable, recordBatch -> {
+        });
+    }
+
+    private void assertRoundTripDataEqual(Table deephavenTable, Consumer<VectorSchemaRoot> recordBlockTester)
+            throws Exception {
         // bind the table in the session
         Flight.Ticket dhTableTicket = FlightExportTicketHelper.exportIdToFlightTicket(nextTicket++);
         currentSession.newExport(dhTableTicket, "test").submit(() -> deephavenTable);
@@ -982,6 +1021,7 @@ public abstract class FlightMessageRoundTripTest {
 
             // send the body of the table
             while (stream.next()) {
+                recordBlockTester.accept(root);
                 putStream.putNext();
             }
         }

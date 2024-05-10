@@ -4,7 +4,9 @@
 package io.deephaven.parquet.table;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
+import io.deephaven.api.SortColumn;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
@@ -24,6 +26,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
 import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
 import io.deephaven.engine.table.impl.select.FunctionalColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
@@ -39,6 +42,7 @@ import io.deephaven.extensions.s3.Credentials;
 import io.deephaven.extensions.s3.S3Instructions;
 import io.deephaven.parquet.base.InvalidParquetFileException;
 import io.deephaven.parquet.base.NullStatistics;
+import io.deephaven.parquet.table.location.ParquetTableLocation;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.parquet.table.pagestore.ColumnChunkPageStore;
 import io.deephaven.parquet.table.transfer.StringDictionary;
@@ -396,6 +400,63 @@ public final class ParquetTableReadWriteTest {
         verifyIndexingInfoExists(fromDisk, "someBigInt", "someInt");
     }
 
+    @Test
+    public void testSortingMetadata() {
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofInt("someInt"),
+                ColumnDefinition.ofString("someString"));
+        final Table testTable =
+                ((QueryTable) TableTools.emptyTable(10).select("someInt = i", "someString  = `foo`")
+                        .where("i % 2 == 0").groupBy("someString").ungroup("someInt")
+                        .sortDescending("someInt"))
+                        .withDefinitionUnsafe(definition);
+
+        DataIndexer.getOrCreateDataIndex(testTable, "someString");
+        DataIndexer.getOrCreateDataIndex(testTable, "someInt", "someString");
+
+        final File dest = new File(rootFile, "ParquetTest_sortingMetadata_test.parquet");
+        writeTable(testTable, dest);
+
+        final Table fromDisk = checkSingleTable(testTable, dest);
+
+        // Validate the indexes and lookup functions.
+        verifyIndexingInfoExists(fromDisk, "someString");
+        verifyIndexingInfoExists(fromDisk, "someInt", "someString");
+        verifyIndexingInfoExists(fromDisk, "someString", "someInt");
+
+        final ParquetTableLocation tableLocation = new ParquetTableLocation(
+                StandaloneTableKey.getInstance(),
+                new ParquetTableLocationKey(
+                        convertToURI(dest, false),
+                        0, Map.of(), EMPTY),
+                EMPTY);
+        assertEquals(tableLocation.getSortedColumns(), List.of(SortColumn.desc(ColumnName.of("someInt"))));
+
+        final ParquetTableLocation index1Location = new ParquetTableLocation(
+                StandaloneTableKey.getInstance(),
+                new ParquetTableLocationKey(
+                        convertToURI(new File(rootFile,
+                                ParquetTools.getRelativeIndexFilePath(dest, "someString")), false),
+                        0, Map.of(), EMPTY),
+                EMPTY);
+        assertEquals(index1Location.getSortedColumns(), List.of(SortColumn.asc(ColumnName.of("someString"))));
+        final Table index1Table = DataIndexer.getDataIndex(fromDisk, "someString").table();
+        assertTableEquals(index1Table, index1Table.sort("someString"));
+
+        final ParquetTableLocation index2Location = new ParquetTableLocation(
+                StandaloneTableKey.getInstance(),
+                new ParquetTableLocationKey(
+                        convertToURI(new File(rootFile,
+                                ParquetTools.getRelativeIndexFilePath(dest, "someInt", "someString")), false),
+                        0, Map.of(), EMPTY),
+                EMPTY);
+        assertEquals(index2Location.getSortedColumns(), List.of(
+                SortColumn.asc(ColumnName.of("someInt")),
+                SortColumn.asc(ColumnName.of("someString"))));
+        final Table index2Table = DataIndexer.getDataIndex(fromDisk, "someInt", "someString").table();
+        assertTableEquals(index2Table, index2Table.sort("someInt", "someString"));
+    }
+
     private static void verifyIndexingInfoExists(final Table table, final String... columnNames) {
         assertTrue(DataIndexer.hasDataIndex(table, columnNames));
         final DataIndex fullIndex = DataIndexer.getDataIndex(table, columnNames);
@@ -685,6 +746,13 @@ public final class ParquetTableReadWriteTest {
         final Table fromDiskWithMetadataWithoutData = readTable(metadataFile);
         assertEquals(source.size(), fromDiskWithMetadataWithoutData.size());
 
+        // If we call select now, this should fail because the data files are empty
+        try {
+            fromDiskWithMetadataWithoutData.select();
+            fail("Expected exception when reading table with empty data files");
+        } catch (final RuntimeException expected) {
+        }
+
         // Now write with flat partitioned parquet files to different directories with metadata file
         parentDir.delete();
         final File updatedSecondDataFile = new File(rootFile, "testDir/data2.parquet");
@@ -723,6 +791,56 @@ public final class ParquetTableReadWriteTest {
         assertTableEquals(expected, fromDisk);
         final Table fromDiskWithMetadata = readTable(new File(parentDir, "_metadata"));
         assertTableEquals(expected, fromDiskWithMetadata);
+    }
+
+    @Test
+    public void keyValuePartitionedWithMetadataTest() throws IOException {
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofInt("PC1").withPartitioning(),
+                ColumnDefinition.ofInt("PC2").withPartitioning(),
+                ColumnDefinition.ofLong("I"));
+        final Table source = ((QueryTable) TableTools.emptyTable(1_000_000)
+                .updateView("PC1 = (int)(ii%3)",
+                        "PC2 = (int)(ii%2)",
+                        "I = ii"))
+                .withDefinitionUnsafe(definition);
+
+        final File parentDir = new File(rootFile, "keyValuePartitionedWithMetadataTest");
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setGenerateMetadataFiles(true)
+                .setBaseNameForPartitionedParquetData("data")
+                .build();
+        writeKeyValuePartitionedTable(source, parentDir.getAbsolutePath(), writeInstructions);
+
+        final Table fromDisk = readTable(parentDir);
+        assertTableEquals(source.sort("PC1", "PC2"), fromDisk.sort("PC1", "PC2"));
+
+        final File metadataFile = new File(parentDir, "_metadata");
+        final Table fromDiskWithMetadata = readTable(metadataFile);
+        assertTableEquals(source.sort("PC1", "PC2"), fromDiskWithMetadata.sort("PC1", "PC2"));
+
+        final File firstDataFile =
+                new File(parentDir, "PC1=0" + File.separator + "PC2=0" + File.separator + "data.parquet");
+        final File secondDataFile =
+                new File(parentDir, "PC1=0" + File.separator + "PC2=1" + File.separator + "data.parquet");
+        assertTrue(firstDataFile.exists());
+        assertTrue(secondDataFile.exists());
+
+        // Now replace the underlying data files with empty files and read the size from metadata file verifying that
+        // we can read the size without touching the data
+        firstDataFile.delete();
+        firstDataFile.createNewFile();
+        secondDataFile.delete();
+        secondDataFile.createNewFile();
+        final Table fromDiskWithMetadataWithoutData = readTable(metadataFile);
+        assertEquals(source.size(), fromDiskWithMetadataWithoutData.size());
+
+        // If we call select now, this should fail because the data files are empty
+        try {
+            fromDiskWithMetadataWithoutData.select();
+            fail("Expected exception when reading table with empty data files");
+        } catch (final RuntimeException expected) {
+        }
     }
 
     @Test
@@ -1343,7 +1461,8 @@ public final class ParquetTableReadWriteTest {
         writeReadTableTest(arrayTable, dest, writeInstructions);
 
         // Make sure the column didn't use dictionary encoding
-        ParquetMetadata metadata = new ParquetTableLocationKey(dest, 0, null, ParquetInstructions.EMPTY).getMetadata();
+        ParquetMetadata metadata =
+                new ParquetTableLocationKey(dest.toURI(), 0, null, ParquetInstructions.EMPTY).getMetadata();
         String firstColumnMetadata = metadata.getBlocks().get(0).getColumns().get(0).toString();
         assertTrue(firstColumnMetadata.contains("someStringArrayColumn")
                 && !firstColumnMetadata.contains("RLE_DICTIONARY"));
@@ -1352,7 +1471,7 @@ public final class ParquetTableReadWriteTest {
         writeReadTableTest(vectorTable, dest, writeInstructions);
 
         // Make sure the column didn't use dictionary encoding
-        metadata = new ParquetTableLocationKey(dest, 0, null, ParquetInstructions.EMPTY).getMetadata();
+        metadata = new ParquetTableLocationKey(dest.toURI(), 0, null, ParquetInstructions.EMPTY).getMetadata();
         firstColumnMetadata = metadata.getBlocks().get(0).getColumns().get(0).toString();
         assertTrue(firstColumnMetadata.contains("someStringArrayColumn")
                 && !firstColumnMetadata.contains("RLE_DICTIONARY"));
@@ -1638,7 +1757,7 @@ public final class ParquetTableReadWriteTest {
         String path = ParquetTableReadWriteTest.class.getResource("/ReferenceParquetData.parquet").getFile();
         readParquetFileFromGitLFS(new File(path)).select();
         final ParquetMetadata metadata =
-                new ParquetTableLocationKey(new File(path), 0, null, ParquetInstructions.EMPTY).getMetadata();
+                new ParquetTableLocationKey(new File(path).toURI(), 0, null, ParquetInstructions.EMPTY).getMetadata();
         assertTrue(metadata.getFileMetaData().getKeyValueMetaData().get("deephaven").contains("\"version\":\"0.4.0\""));
 
         path = ParquetTableReadWriteTest.class.getResource("/ReferenceParquetVectorData.parquet").getFile();
@@ -2022,7 +2141,7 @@ public final class ParquetTableReadWriteTest {
 
         // Verify that the key-value metadata in the file has the correct name
         ParquetTableLocationKey tableLocationKey =
-                new ParquetTableLocationKey(destFile, 0, null, ParquetInstructions.EMPTY);
+                new ParquetTableLocationKey(destFile.toURI(), 0, null, ParquetInstructions.EMPTY);
         String metadataString = tableLocationKey.getMetadata().getFileMetaData().toString();
         assertTrue(metadataString.contains(vvvIndexFilePath));
 
@@ -2055,7 +2174,7 @@ public final class ParquetTableReadWriteTest {
 
         // Verify that the key-value metadata in the file has the correct legacy grouping file name
         final ParquetTableLocationKey tableLocationKey =
-                new ParquetTableLocationKey(destFile, 0, null, ParquetInstructions.EMPTY);
+                new ParquetTableLocationKey(destFile.toURI(), 0, null, ParquetInstructions.EMPTY);
         final String metadataString = tableLocationKey.getMetadata().getFileMetaData().toString();
         String groupingFileName = ParquetTools.legacyGroupingFileName(destFile, groupingColName);
         assertTrue(metadataString.contains(groupingFileName));
@@ -2220,10 +2339,10 @@ public final class ParquetTableReadWriteTest {
 
         // Verify that the key-value metadata in the file has the correct name
         ParquetTableLocationKey tableLocationKey =
-                new ParquetTableLocationKey(firstDestFile, 0, null, ParquetInstructions.EMPTY);
+                new ParquetTableLocationKey(firstDestFile.toURI(), 0, null, ParquetInstructions.EMPTY);
         String metadataString = tableLocationKey.getMetadata().getFileMetaData().toString();
         assertTrue(metadataString.contains(firstIndexFilePath));
-        tableLocationKey = new ParquetTableLocationKey(secondDestFile, 0, null, ParquetInstructions.EMPTY);
+        tableLocationKey = new ParquetTableLocationKey(secondDestFile.toURI(), 0, null, ParquetInstructions.EMPTY);
         metadataString = tableLocationKey.getMetadata().getFileMetaData().toString();
         assertTrue(metadataString.contains(secondIndexFilePath));
 
@@ -2273,7 +2392,7 @@ public final class ParquetTableReadWriteTest {
         checkSingleTable(anotherTableToSave, destFile);
 
         ParquetTableLocationKey tableLocationKey =
-                new ParquetTableLocationKey(destFile, 0, null, ParquetInstructions.EMPTY);
+                new ParquetTableLocationKey(destFile.toURI(), 0, null, ParquetInstructions.EMPTY);
         String metadataString = tableLocationKey.getMetadata().getFileMetaData().toString();
         assertTrue(metadataString.contains(xxxIndexFilePath) && !metadataString.contains(vvvIndexFilePath));
 
@@ -2289,7 +2408,7 @@ public final class ParquetTableReadWriteTest {
                 Map.of("vvv", new String[] {vvvIndexFilePath},
                         "xxx", new String[] {xxxIndexFilePath}));
 
-        tableLocationKey = new ParquetTableLocationKey(destFile, 0, null, ParquetInstructions.EMPTY);
+        tableLocationKey = new ParquetTableLocationKey(destFile.toURI(), 0, null, ParquetInstructions.EMPTY);
         metadataString = tableLocationKey.getMetadata().getFileMetaData().toString();
         assertTrue(metadataString.contains(xxxIndexFilePath) && !metadataString.contains(vvvIndexFilePath)
                 && !metadataString.contains(backupXXXIndexFileName));
@@ -2381,7 +2500,7 @@ public final class ParquetTableReadWriteTest {
 
         // Verify that string columns are properly dictionary encoded
         final ParquetMetadata metadata =
-                new ParquetTableLocationKey(dest, 0, null, ParquetInstructions.EMPTY).getMetadata();
+                new ParquetTableLocationKey(dest.toURI(), 0, null, ParquetInstructions.EMPTY).getMetadata();
         final String firstColumnMetadata = metadata.getBlocks().get(0).getColumns().get(0).toString();
         assertTrue(firstColumnMetadata.contains("shortStringColumn") && firstColumnMetadata.contains("RLE_DICTIONARY"));
         final String secondColumnMetadata = metadata.getBlocks().get(0).getColumns().get(1).toString();
@@ -2454,7 +2573,8 @@ public final class ParquetTableReadWriteTest {
         writeTable(stringTable, dest, writeInstructions);
         checkSingleTable(stringTable, dest);
 
-        ParquetMetadata metadata = new ParquetTableLocationKey(dest, 0, null, ParquetInstructions.EMPTY).getMetadata();
+        ParquetMetadata metadata =
+                new ParquetTableLocationKey(dest.toURI(), 0, null, ParquetInstructions.EMPTY).getMetadata();
         return metadata.getBlocks().get(0).getColumns().get(0);
     }
 
@@ -2478,7 +2598,7 @@ public final class ParquetTableReadWriteTest {
         checkSingleTable(table, dest);
 
         final ParquetMetadata metadata =
-                new ParquetTableLocationKey(dest, 0, null, ParquetInstructions.EMPTY).getMetadata();
+                new ParquetTableLocationKey(dest.toURI(), 0, null, ParquetInstructions.EMPTY).getMetadata();
         final String metadataStr = metadata.getFileMetaData().getKeyValueMetaData().get("deephaven");
         assertTrue(
                 metadataStr.contains("VariableWidthByteArrayColumn") && metadataStr.contains("SimpleByteArrayCodec"));
@@ -2539,7 +2659,7 @@ public final class ParquetTableReadWriteTest {
 
         // Verify that the types are correct in the schema
         final ParquetMetadata metadata =
-                new ParquetTableLocationKey(dest, 0, null, ParquetInstructions.EMPTY).getMetadata();
+                new ParquetTableLocationKey(dest.toURI(), 0, null, ParquetInstructions.EMPTY).getMetadata();
         final ColumnChunkMetaData dateColMetadata = metadata.getBlocks().get(0).getColumns().get(0);
         assertTrue(dateColMetadata.toString().contains("someDateColumn"));
         assertEquals(PrimitiveType.PrimitiveTypeName.INT32, dateColMetadata.getPrimitiveType().getPrimitiveTypeName());
@@ -3000,7 +3120,7 @@ public final class ParquetTableReadWriteTest {
     private void assertTableStatistics(Table inputTable, File dest) {
         // Verify that the columns have the correct statistics.
         final ParquetMetadata metadata =
-                new ParquetTableLocationKey(dest, 0, null, ParquetInstructions.EMPTY).getMetadata();
+                new ParquetTableLocationKey(dest.toURI(), 0, null, ParquetInstructions.EMPTY).getMetadata();
 
         final String[] colNames = inputTable.getDefinition().getColumnNamesArray();
         for (int colIdx = 0; colIdx < inputTable.numColumns(); ++colIdx) {
