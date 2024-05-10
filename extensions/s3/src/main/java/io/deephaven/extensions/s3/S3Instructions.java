@@ -24,6 +24,7 @@ import java.util.Optional;
 @CopyableStyle
 public abstract class S3Instructions implements LogOutputAppendable {
 
+    // TODO Profile and decide new defaults
     private final static int DEFAULT_MAX_CONCURRENT_REQUESTS = 50;
     private final static int DEFAULT_READ_AHEAD_COUNT = 1;
     private final static int DEFAULT_FRAGMENT_SIZE = 5 << 20; // 5 MiB

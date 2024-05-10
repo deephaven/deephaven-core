@@ -28,14 +28,14 @@ import java.lang.ref.SoftReference;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiConsumer;
 
 /**
@@ -62,7 +62,11 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
      */
     private final S3RequestCache sharedCache;
 
-    private final Request[] localCache;
+    /**
+     * Used to cache recently fetched fragments as well as the ownership token for the request. This cache is local to
+     * the context and is used to keep the requests alive as long as the context is alive.
+     */
+    private final Request.RequestInfo[] localCache;
 
     /**
      * The size of the object in bytes, stored in context to avoid fetching multiple times
@@ -78,7 +82,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
             @NotNull final S3RequestCache sharedCache) {
         this.client = Objects.requireNonNull(client);
         this.instructions = Objects.requireNonNull(instructions);
-        this.localCache = new Request[instructions.maxCacheSize()];
+        this.localCache = new Request.RequestInfo[instructions.maxCacheSize()];
         this.sharedCache = sharedCache;
         if (sharedCache.getFragmentSize() != instructions.fragmentSize()) {
             throw new IllegalArgumentException("Fragment size mismatch between shared cache and instructions, "
@@ -176,36 +180,37 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
      * objects are garbage collected.
      */
     private void releaseOutstanding() {
-        for (int i = 0; i < localCache.length; i++) {
-            if (localCache[i] != null) {
-                localCache[i].release();
-                localCache[i] = null;
-            }
-        }
+        Arrays.fill(localCache, null);
     }
 
     // --------------------------------------------------------------------------------------------------
 
     @Nullable
     private Request getRequestFromLocalCache(final long fragmentIndex) {
-        final int cacheIdx = cacheIndex(fragmentIndex);
-        final Request request = localCache[cacheIdx];
-        return request == null || !request.isFragment(fragmentIndex) ? null : request;
+        return getRequestFromLocalCache(fragmentIndex, cacheIndex(fragmentIndex));
+    }
+
+    @Nullable
+    private Request getRequestFromLocalCache(final long fragmentIndex, final int cacheIdx) {
+        if (localCache[cacheIdx] != null && localCache[cacheIdx].request.isFragment(fragmentIndex)) {
+            return localCache[cacheIdx].request;
+        }
+        return null;
     }
 
     @NotNull
     private Request getOrCreateRequest(final long fragmentIndex) {
         final int cacheIdx = cacheIndex(fragmentIndex);
-        final Request locallyCached = localCache[cacheIdx];
-        if (locallyCached != null && locallyCached.isFragment(fragmentIndex)) {
+        final Request locallyCached = getRequestFromLocalCache(fragmentIndex, cacheIdx);
+        if (locallyCached != null) {
             return locallyCached;
         }
-        final Request sharedCacheRequest = sharedCache.getOrCreateRequest(uri, fragmentIndex, this);
-        if (locallyCached != null) {
-            locallyCached.release();
-        }
+        final Request.RequestInfo sharedCacheRequest = sharedCache.getOrCreateRequest(uri, fragmentIndex, this);
+        // Cache the request and the ownership token locally
         localCache[cacheIdx] = sharedCacheRequest;
-        return sharedCacheRequest;
+        // Send the request, if not sent already. The following method is idempotent, so we always call it.
+        sharedCacheRequest.request.sendRequest();
+        return sharedCacheRequest.request;
     }
 
     private int cacheIndex(final long fragmentIndex) {
@@ -227,17 +232,30 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
 
     // TODO Move Request class into a separate file after the initial code review
     /**
-     * A request for a single fragment of an S3 object, which can be used concurrently. The request object must be
-     * {@link Request#acquire() acquired} before use and {@link Request#release() released} after use.
+     * A request for a single fragment of an S3 object, which can be used concurrently.
      *
-     * @implNote This class extends from a {@link SoftReference<ByteBuffer>}, maintains a reference count and keeps a
-     *           hard reference to the buffer when reference count is non-zero. This prevents the buffer from being
-     *           garbage collected. This class also implements {@link CleanupReference} to allow for cancelling the
-     *           request once all references have been {@link Request#release() released}.
+     * @implNote This class extends from a {@link SoftReference<ByteBuffer>} and implements {@link CleanupReference} to
+     *           allow for cancelling the request once all references to the buffer have been released. Users should not
+     *           access the buffer directly, but instead use the {@link #fill(long, ByteBuffer)} method. Also, users
+     *           should hold instances of {@link Request.RequestInfo} to keep the requests alive.
      */
     static final class Request extends SoftReference<ByteBuffer>
             implements AsyncResponseTransformer<GetObjectResponse, ByteBuffer>, BiConsumer<ByteBuffer, Throwable>,
             CleanupReference<ByteBuffer> {
+
+        static class RequestInfo {
+            final Request request;
+            /**
+             * The ownership token keeps the request alive. When the ownership token is GC'd, the request is no longer
+             * usable and will be cleaned up.
+             */
+            final Object ownershipToken;
+
+            RequestInfo(final Request request, final Object ownershipToken) {
+                this.request = request;
+                this.ownershipToken = ownershipToken;
+            }
+        }
 
         /**
          * A unique identifier for a request, consisting of the URI and fragment index.
@@ -271,10 +289,11 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
             }
         }
 
-        private int refCount;
-
-        @SuppressWarnings("unused")
-        private ByteBuffer bufferReference;
+        private static final int REQUEST_NOT_SENT = 0;
+        private static final int REQUEST_SENT = 1;
+        private volatile int requestSent = REQUEST_NOT_SENT;
+        private static final AtomicIntegerFieldUpdater<Request> REQUEST_SENT_UPDATER =
+                AtomicIntegerFieldUpdater.newUpdater(Request.class, "requestSent");
 
         private final S3Uri s3Uri;
         private final ID id;
@@ -291,26 +310,27 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
         private final S3RequestCache sharedCache;
 
         /**
-         * Create and {@link #acquire() acquire} a new request for the given fragment index and using the provided
-         * context object.
+         * Create a new request for the given fragment index using the provided context object.
+         *
+         * @return A new {@link RequestInfo} object containing newly created request and an ownership token. The request
+         *         will stay alive as long as the ownership token is held.
          *
          * @implNote This method does not cache the context because contexts are short-lived while a request may be
          *           cached.
          */
-        static Request createAndAcquire(final long fragmentIndex, @NotNull final S3ChannelContext context) {
+        @NotNull
+        static RequestInfo createAndAcquire(final long fragmentIndex, @NotNull final S3ChannelContext context) {
             final long from = fragmentIndex * context.instructions.fragmentSize();
             final long to = Math.min(from + context.instructions.fragmentSize(), context.size) - 1;
             final long requestLength = to - from + 1;
             final ByteBuffer buffer = ByteBuffer.allocate((int) requestLength);
             final Request request = new Request(fragmentIndex, context, buffer, from, to);
-            return request.acquire();
+            return new RequestInfo(request, buffer);
         }
 
         private Request(final long fragmentIndex, @NotNull final S3ChannelContext context,
                 @NotNull final ByteBuffer buffer, final long from, final long to) {
             super(buffer, CleanupReferenceProcessorInstance.DEFAULT.getReferenceQueue());
-            refCount = 0;
-            bufferReference = null;
             this.fragmentIndex = fragmentIndex;
             this.s3Uri = context.uri;
             this.instructions = context.instructions;
@@ -331,40 +351,24 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
         }
 
         /**
-         * Acquire a reference to this request, incrementing the reference count. Returns {@code null} if the request
-         * has already been released.
+         * Try to acquire a reference to this request and ownership token. Returns {@code null} if the token is already
+         * released.
          */
         @Nullable
-        Request acquire() {
-            final ByteBuffer buffer = super.get();
-            if (buffer == null) {
-                // The buffer has been garbage collected, so we can't acquire this request
+        RequestInfo tryAcquire() {
+            final Object token = get();
+            if (token == null) {
                 return null;
             }
-            synchronized (this) {
-                if (refCount++ == 0) {
-                    bufferReference = buffer;
-                }
-            }
-            return this;
+            return new RequestInfo(this, token);
         }
 
         /**
-         * Release a reference to this request, decrementing the reference count. The request will be eligible for
-         * {@link #cleanup() cleanup} once the reference count reaches zero.
+         * Send the request to the S3 service. This method is idempotent and can be called multiple times.
          */
-        // TODO Move the release method lower in file after the fill method. Kept it here for ease of review.
-        void release() {
-            synchronized (this) {
-                if (--refCount == 0) {
-                    bufferReference = null;
-                }
-            }
-        }
-
         void sendRequest() {
-            if (refCount == 0) {
-                throw new IllegalStateException(String.format("Request not acquired, %s", requestStr()));
+            if (!REQUEST_SENT_UPDATER.compareAndSet(this, REQUEST_NOT_SENT, REQUEST_SENT)) {
+                return;
             }
             if (log.isDebugEnabled()) {
                 log.debug().append("Sending: ").append(requestStr()).endl();
@@ -377,22 +381,12 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
             return consumerFuture.isDone();
         }
 
-        @Override
-        public ByteBuffer get() {
-            throw new UnsupportedOperationException("Use acquire() and release() to manage the request");
-        }
-
         /**
          * Fill the provided buffer with data from this request, starting at the given local position. Returns the
          * number of bytes filled. Note that the request must be acquired before calling this method.
          */
         int fill(long localPosition, ByteBuffer dest) throws IOException {
-            // TODO Should I keep both checks? I think the first one is enough and more exhaustive.
-            if (refCount == 0) {
-                throw new IllegalStateException(
-                        String.format("Trying to fill data before acquiring, %s", requestStr()));
-            }
-            if (super.get() == null) {
+            if (get() == null) {
                 throw new IllegalStateException(String.format("Trying to fill data after release, %s", requestStr()));
             }
             final int resultOffset = (int) (localPosition - from);

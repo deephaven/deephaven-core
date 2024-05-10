@@ -7,6 +7,8 @@ import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import org.apache.commons.lang3.mutable.Mutable;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.s3.S3Uri;
 import io.deephaven.extensions.s3.S3ChannelContext.Request;
@@ -48,7 +50,7 @@ final class S3RequestCache {
     }
 
     /**
-     * {@link Request#acquire() Acquire} a request for the given URI and fragment index, creating it if it does not
+     * Acquire a request for the given URI and fragment index, creating and sending a new request it if it does not
      * exist in the cache.
      *
      * @param uri the URI
@@ -57,29 +59,27 @@ final class S3RequestCache {
      * @return the request
      */
     @NotNull
-    Request getOrCreateRequest(@NotNull final S3Uri uri, final long fragmentIndex,
+    Request.RequestInfo getOrCreateRequest(@NotNull final S3Uri uri, final long fragmentIndex,
             @NotNull final S3ChannelContext context) {
-        // TODO Do you think the acquiring part should be done by the caller or here?
-        // I kept it here because acquire could potentially fail and the caller would have to call again in a loop,
-        // which felt unnecessary compared to a guaranteed acquire.
-        return requests.compute(new Request.ID(uri, fragmentIndex), (key, existingRequest) -> {
+        final Mutable<Request.RequestInfo> ret = new MutableObject<>();
+        // TODO Need to unwrap the compute to avoid putting() the same result in the map.
+        requests.compute(new Request.ID(uri, fragmentIndex), (key, existingRequest) -> {
             if (existingRequest != null) {
-                final Request acquired = existingRequest.acquire();
-                if (acquired != null) {
-                    return acquired;
+                final Request.RequestInfo acquiredExisting = existingRequest.tryAcquire();
+                if (acquiredExisting != null) {
+                    ret.setValue(acquiredExisting);
+                    return existingRequest;
                 }
             }
-            final Request newRequest = Request.createAndAcquire(fragmentIndex, context);
-            // TODO Do you think the init part should be done by the context, inside createAndAcquire or here?
-            // Kept it here for now because caller doesn't know whether request is new or not. So should call init or
-            // not. Maybe we can make init more idempotent and the context would call it always.
-            newRequest.sendRequest();
+            final Request.RequestInfo newRequestInfo = Request.createAndAcquire(fragmentIndex, context);
+            ret.setValue(newRequestInfo);
             if (log.isDebugEnabled()) {
                 log.debug().append("Adding new request to cache: ").append(String.format("ctx=%d ",
-                        System.identityHashCode(context))).append(newRequest.requestStr()).endl();
+                        System.identityHashCode(context))).append(newRequestInfo.request.requestStr()).endl();
             }
-            return newRequest;
+            return newRequestInfo.request;
         });
+        return ret.getValue();
     }
 
     /**
