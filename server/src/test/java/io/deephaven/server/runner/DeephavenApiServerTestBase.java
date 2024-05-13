@@ -145,6 +145,7 @@ public abstract class DeephavenApiServerTestBase {
     public void tearDown() throws Exception {
         if (scopeCloseable != null) {
             scopeCloseable.close();
+            scopeCloseable = null;
         }
 
         try {

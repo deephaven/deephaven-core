@@ -26,6 +26,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Function;
@@ -41,26 +42,27 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
     private static final Path CLASS_CACHE_LOCATION = CacheDir.get().resolve("script-session-classes");
 
-    protected static File newClassCacheLocation() {
+    protected static Path newClassCacheLocation() {
         // TODO(deephaven-core#1713): Introduce instance-id concept
         final UUID scriptCacheId = UuidCreator.getRandomBased();
-        final File directory = CLASS_CACHE_LOCATION.resolve(UuidCreator.toString(scriptCacheId)).toFile();
+        final Path directory = CLASS_CACHE_LOCATION.resolve(UuidCreator.toString(scriptCacheId));
         createOrClearDirectory(directory);
         return directory;
     }
 
     public static void createScriptCache() {
-        final File classCacheDirectory = CLASS_CACHE_LOCATION.toFile();
-        createOrClearDirectory(classCacheDirectory);
+        createOrClearDirectory(CLASS_CACHE_LOCATION);
     }
 
-    private static void createOrClearDirectory(final File directory) {
-        if (directory.exists()) {
-            FileUtils.deleteRecursively(directory);
+    private static void createOrClearDirectory(final Path directory) {
+        if (Files.exists(directory)) {
+            FileUtils.deleteRecursively(directory.toFile());
         }
-        if (!directory.mkdirs()) {
+        try {
+            Files.createDirectories(directory);
+        } catch (IOException e) {
             throw new UncheckedDeephavenException(
-                    "Failed to create class cache directory " + directory.getAbsolutePath());
+                    "Failed to create class cache directory " + directory.toAbsolutePath(), e);
         }
     }
 
@@ -78,7 +80,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
             final OperationInitializer operationInitializer,
             final ObjectTypeLookup objectTypeLookup,
             @Nullable final Listener changeListener) {
-        this(updateGraph, operationInitializer, objectTypeLookup, changeListener, newClassCacheLocation(),
+        this(updateGraph, operationInitializer, objectTypeLookup, changeListener, newClassCacheLocation().toFile(),
                 Thread.currentThread().getContextClassLoader());
     }
 

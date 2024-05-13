@@ -187,7 +187,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
             addDefaultImports(loadedGroovyScriptImports);
         }
 
-        final File classCacheDirectory = AbstractScriptSession.newClassCacheLocation();
+        final File classCacheDirectory = AbstractScriptSession.newClassCacheLocation().toFile();
 
         // Specify a classloader to read from the classpath, with script imports
         CompilerConfiguration scriptConfig = new CompilerConfiguration();
