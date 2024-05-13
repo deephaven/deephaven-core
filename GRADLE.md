@@ -27,11 +27,11 @@ The command `./gradlew -q javaToolchains` may be useful to debug and diagnose to
 
 ### Runtime Toolchain
 
-The runtime toolchains are used to invoke "normal" java executable tasks; that is, tasks of `org.gradle.api.tasks.JavaExec`.
+The runtime toolchains are used to invoke "normal" Java executable tasks; that is, tasks of `org.gradle.api.tasks.JavaExec`.
 The most visible task is the `server-jetty-app:run` task, but other tasks like code generation use the runtime toolchain
 as well.
 
-* `deephaven.runtimeVersion`: the runtime Java version to use, by default is 11
+* `deephaven.runtimeVersion`: the runtime Java version to use; by default is 11
 * `deephaven.runtimeVendor`: the runtime Java vendor to use
 
 For example, the following would ensure that the server is run with JDK 21 from a JVM vendor name that contains "azul":
@@ -40,7 +40,7 @@ For example, the following would ensure that the server is run with JDK 21 from 
 
 ### Test Runtime Toolchain
 
-The test runtime toolchains are used to invoke "test" java tasks; that is, tasks of `org.gradle.api.tasks.testing.Test`.
+The test runtime toolchains invoke "test" Java tasks; that is, tasks of `org.gradle.api.tasks.testing.Test`.
 
 * `deephaven.testRuntimeVersion`: the test runtime Java version to use, by default is 11
 * `deephaven.testRuntimeVendor`: the test runtime Java vendor to use
@@ -54,7 +54,7 @@ For example, the following will run the test tasks with JDK 21 from a JVM vendor
 
 ### Compiler Toolchain
 
-The compiler toolchains are used to invoke "compile" java tasks; that is, tasks of `org.gradle.api.tasks.compile.JavaCompile`.
+The compiler toolchains invoke "compile" Java tasks; that is, tasks of `org.gradle.api.tasks.compile.JavaCompile`.
 
 * `deephaven.compilerVersion`: the compile Java version to use, by default is 11
 * `deephaven.compilerVendor`: the compile Java vendor to use
