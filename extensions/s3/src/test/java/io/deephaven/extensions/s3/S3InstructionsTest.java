@@ -15,10 +15,10 @@ public class S3InstructionsTest {
     void defaults() {
         final S3Instructions instructions = S3Instructions.builder().regionName("some-region").build();
         assertThat(instructions.regionName()).isEqualTo("some-region");
-        assertThat(instructions.maxConcurrentRequests()).isEqualTo(50);
-        assertThat(instructions.readAheadCount()).isEqualTo(1);
-        assertThat(instructions.fragmentSize()).isEqualTo(5 * (1 << 20));
-        assertThat(instructions.maxCacheSize()).isEqualTo(32);
+        assertThat(instructions.maxConcurrentRequests()).isEqualTo(256);
+        assertThat(instructions.readAheadCount()).isEqualTo(32);
+        assertThat(instructions.fragmentSize()).isEqualTo(65536);
+        assertThat(instructions.maxCacheSize()).isEqualTo(256);
         assertThat(instructions.connectionTimeout()).isEqualTo(Duration.ofSeconds(2));
         assertThat(instructions.readTimeout()).isEqualTo(Duration.ofSeconds(2));
         assertThat(instructions.credentials()).isEqualTo(Credentials.defaultCredentials());

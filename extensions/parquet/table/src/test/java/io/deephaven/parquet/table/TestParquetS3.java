@@ -39,10 +39,6 @@ public final class TestParquetS3 {
         Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
         final S3Instructions s3Instructions = S3Instructions.builder()
                 .regionName("us-east-1")
-                .readAheadCount(1)
-                .fragmentSize(5 * 1024 * 1024)
-                .maxConcurrentRequests(50)
-                .maxCacheSize(32)
                 .readTimeout(Duration.ofSeconds(60))
                 .credentials(Credentials.defaultCredentials())
                 .build();
@@ -77,10 +73,6 @@ public final class TestParquetS3 {
         Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
         final S3Instructions s3Instructions = S3Instructions.builder()
                 .regionName("us-east-2")
-                .readAheadCount(1)
-                .fragmentSize(5 * 1024 * 1024)
-                .maxConcurrentRequests(50)
-                .maxCacheSize(32)
                 .connectionTimeout(Duration.ofSeconds(1))
                 .readTimeout(Duration.ofSeconds(60))
                 .credentials(Credentials.anonymous())
@@ -118,10 +110,6 @@ public final class TestParquetS3 {
         Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
         final S3Instructions s3Instructions = S3Instructions.builder()
                 .regionName("us-east-1")
-                .readAheadCount(1)
-                .fragmentSize(5 * 1024 * 1024)
-                .maxConcurrentRequests(50)
-                .maxCacheSize(32)
                 .readTimeout(Duration.ofSeconds(60))
                 .credentials(Credentials.defaultCredentials())
                 .build();
@@ -140,10 +128,6 @@ public final class TestParquetS3 {
         Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
         final S3Instructions s3Instructions = S3Instructions.builder()
                 .regionName("us-east-1")
-                .readAheadCount(1)
-                .fragmentSize(5 * 1024 * 1024)
-                .maxConcurrentRequests(50)
-                .maxCacheSize(32)
                 .readTimeout(Duration.ofSeconds(60))
                 .credentials(Credentials.defaultCredentials())
                 .build();
@@ -162,10 +146,6 @@ public final class TestParquetS3 {
         Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
         final S3Instructions s3Instructions = S3Instructions.builder()
                 .regionName("us-east-1")
-                .readAheadCount(1)
-                .fragmentSize(5 * 1024 * 1024)
-                .maxConcurrentRequests(50)
-                .maxCacheSize(32)
                 .readTimeout(Duration.ofSeconds(60))
                 .credentials(Credentials.defaultCredentials())
                 .build();
@@ -193,10 +173,6 @@ public final class TestParquetS3 {
         Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
         final S3Instructions s3Instructions = S3Instructions.builder()
                 .regionName("us-east-1")
-                .readAheadCount(1)
-                .fragmentSize(5 * 1024 * 1024)
-                .maxConcurrentRequests(50)
-                .maxCacheSize(32)
                 .readTimeout(Duration.ofSeconds(60))
                 .credentials(Credentials.anonymous())
                 .build();
