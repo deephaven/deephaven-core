@@ -57,25 +57,30 @@ final class S3RequestCache {
      * @return the request
      */
     @NotNull
-    S3ChannelContext.Request.AcquiredRequest getOrCreateRequest(@NotNull final S3Uri uri, final long fragmentIndex,
+    Request.AcquiredRequest getOrCreateRequest(@NotNull final S3Uri uri, final long fragmentIndex,
             @NotNull final S3ChannelContext context) {
         final Request.ID key = new Request.ID(uri, fragmentIndex);
         Request.AcquiredRequest newAcquiredRequest = null;
-        Request existingRequest = requests.get(key);
-        for (int retryCount = 0; retryCount < Integer.MAX_VALUE; retryCount++) {
+        while (true) {
+            final Request existingRequest = requests.get(key);
             if (existingRequest != null) {
                 final Request.AcquiredRequest acquired = existingRequest.tryAcquire();
                 if (acquired != null) {
                     return acquired;
-                } else {
-                    remove(existingRequest);
                 }
             }
             if (newAcquiredRequest == null) {
                 newAcquiredRequest = Request.createAndAcquire(fragmentIndex, context);
             }
-            existingRequest = requests.putIfAbsent(key, newAcquiredRequest.request);
+            final boolean added;
             if (existingRequest == null) {
+                // Ideally, we could have used ".replace" in this case as well, but KeyedObjectHashMap.replace currently
+                // has a bug when the key is not present in the map.
+                added = requests.putIfAbsent(key, newAcquiredRequest.request) == null;
+            } else {
+                added = requests.replace(key, existingRequest, newAcquiredRequest.request);
+            }
+            if (added) {
                 if (log.isDebugEnabled()) {
                     log.debug().append("Added new request to cache: ").append(String.format("ctx=%d ",
                             System.identityHashCode(context))).append(newAcquiredRequest.request.requestStr()).endl();
@@ -83,10 +88,6 @@ final class S3RequestCache {
                 return newAcquiredRequest;
             }
         }
-        // We have tried to add the request to the cache too many times
-        throw new IllegalStateException(
-                String.format("Failed to add request to cache: ctx=%d, uri=%s, fragmentIndex=%d",
-                        System.identityHashCode(context), uri, fragmentIndex));
     }
 
     /**
