@@ -67,11 +67,9 @@ final class JacksonSource {
     public static JsonParser of(JsonFactory factory, CharBuffer buffer) throws IOException {
         // TODO: suggest jackson build this in
         if (buffer.hasArray()) {
-            return of(factory, buffer.array(), buffer.position(), buffer.remaining());
+            return of(factory, buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
         }
         // We could build CharBufferReader. Surprised it's not build into JDK.
-
-
         throw new RuntimeException("Only supports CharBuffer when backed by array");
     }
 }
