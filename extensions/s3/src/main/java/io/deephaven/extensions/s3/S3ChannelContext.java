@@ -3,6 +3,7 @@
 //
 package io.deephaven.extensions.s3;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Require;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -240,7 +241,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
      *           should hold instances of {@link AcquiredRequest} to keep the requests alive.
      */
     static final class Request extends SoftReference<ByteBuffer>
-            implements AsyncResponseTransformer<GetObjectResponse, ByteBuffer>, BiConsumer<ByteBuffer, Throwable>,
+            implements AsyncResponseTransformer<GetObjectResponse, Boolean>, BiConsumer<Boolean, Throwable>,
             CleanupReference<ByteBuffer> {
 
         static class AcquiredRequest {
@@ -303,8 +304,8 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
         private final long from;
         private final long to;
         private final Instant createdAt;
-        private volatile CompletableFuture<ByteBuffer> consumerFuture;
-        private volatile CompletableFuture<ByteBuffer> producerFuture;
+        private volatile CompletableFuture<Boolean> consumerFuture;
+        private volatile CompletableFuture<Boolean> producerFuture;
         private int fillCount;
         private long fillBytes;
         private final S3RequestCache sharedCache;
@@ -429,10 +430,10 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
         // --------------------------------------------------------------------------------------------------
 
         @Override
-        public void accept(ByteBuffer byteBuffer, Throwable throwable) {
+        public void accept(final Boolean isComplete, final Throwable throwable) {
             if (log.isDebugEnabled()) {
                 final Instant completedAt = Instant.now();
-                if (byteBuffer != null) {
+                if (isComplete) {
                     log.debug().append("Send complete: ").append(requestStr()).append(' ')
                             .append(Duration.between(createdAt, completedAt).toString()).endl();
                 } else {
@@ -445,8 +446,8 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
         // --------------------------------------------------------------------------------------------------
 
         @Override
-        public CompletableFuture<ByteBuffer> prepare() {
-            final CompletableFuture<ByteBuffer> future = new CompletableFuture<>();
+        public CompletableFuture<Boolean> prepare() {
+            final CompletableFuture<Boolean> future = new CompletableFuture<>();
             producerFuture = future;
             return future;
         }
@@ -472,7 +473,15 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
             // Giving our own get() a bit of overhead - the clients should already be constructed with appropriate
             // apiCallTimeout.
             final long readNanos = instructions.readTimeout().plusMillis(100).toNanos();
-            final ByteBuffer result = consumerFuture.get(readNanos, TimeUnit.NANOSECONDS);
+            final Boolean isComplete = consumerFuture.get(readNanos, TimeUnit.NANOSECONDS);
+            if (!isComplete) {
+                throw new UncheckedDeephavenException(String.format("Failed to complete request %s", requestStr()));
+            }
+            final ByteBuffer result = get();
+            if (result == null) {
+                throw new IllegalStateException(
+                        String.format("Failed to acquire buffer after completion, %s", requestStr()));
+            }
             if (result.position() != 0 || result.limit() != result.capacity() || result.limit() != requestLength()) {
                 throw new IllegalStateException(String.format(
                         "Expected: pos=0, limit=%d, capacity=%d. Actual: pos=%d, limit=%d, capacity=%d",
@@ -506,7 +515,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
 
         private final class Sub implements Subscriber<ByteBuffer> {
 
-            private final CompletableFuture<ByteBuffer> localProducer;
+            private final CompletableFuture<Boolean> localProducer;
             private Subscription subscription;
 
             /**
@@ -577,7 +586,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
                             requestStr())));
                     return;
                 }
-                localProducer.complete(buffer.asReadOnlyBuffer());
+                localProducer.complete(true);
             }
         }
     }
