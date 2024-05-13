@@ -574,8 +574,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
 
             @Override
             public void onComplete() {
-                final ByteBuffer buffer = Request.this.get();
-                if (buffer == null) {
+                if (Request.this.get() == null) {
                     localProducer.completeExceptionally(new IllegalStateException(
                             String.format("Failed to acquire buffer for completion, %s", requestStr())));
                     return;

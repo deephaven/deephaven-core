@@ -61,8 +61,8 @@ final class S3RequestCache {
             @NotNull final S3ChannelContext context) {
         final Request.ID key = new Request.ID(uri, fragmentIndex);
         Request.AcquiredRequest newAcquiredRequest = null;
+        Request existingRequest = requests.get(key);
         for (int retryCount = 0; retryCount < Integer.MAX_VALUE; retryCount++) {
-            final Request existingRequest = requests.get(key);
             if (existingRequest != null) {
                 final Request.AcquiredRequest acquired = existingRequest.tryAcquire();
                 if (acquired != null) {
@@ -74,10 +74,13 @@ final class S3RequestCache {
             if (newAcquiredRequest == null) {
                 newAcquiredRequest = Request.createAndAcquire(fragmentIndex, context);
             }
-            final boolean added = requests.putIfAbsent(key, newAcquiredRequest.request) == null;
-            if (added && log.isDebugEnabled()) {
-                log.debug().append("Adding new request to cache: ").append(String.format("ctx=%d ",
-                        System.identityHashCode(context))).append(newAcquiredRequest.request.requestStr()).endl();
+            existingRequest = requests.putIfAbsent(key, newAcquiredRequest.request);
+            if (existingRequest == null) {
+                if (log.isDebugEnabled()) {
+                    log.debug().append("Added new request to cache: ").append(String.format("ctx=%d ",
+                            System.identityHashCode(context))).append(newAcquiredRequest.request.requestStr()).endl();
+                }
+                return newAcquiredRequest;
             }
         }
         // We have tried to add the request to the cache too many times
