@@ -55,7 +55,7 @@ class S3Instructions(JObjectWrapper):
             region_name (str): the region name for reading parquet files, mandatory parameter.
             max_concurrent_requests (int): the maximum number of concurrent requests for reading files, default is 256.
             read_ahead_count (int): the number of fragments to send asynchronous read requests for while reading the current
-                fragment. Default to 32, which means fetch the next 32 fragments in advance when reading the current fragment.
+                fragment. Defaults to 32, which means fetch the next 32 fragments in advance when reading the current fragment.
             fragment_size (int): the maximum size of each fragment to read, defaults to 64 KiB. If there are fewer bytes
                 remaining in the file, the fetched fragment can be smaller.
             max_cache_size (int): the maximum number of fragments to cache in memory while reading, defaults to 256. This
