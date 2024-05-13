@@ -63,7 +63,7 @@ final class S3RequestCache {
             @NotNull final S3ChannelContext context) {
         final Request.ID key = new Request.ID(uri, fragmentIndex);
         Request.AcquiredRequest newAcquiredRequest = null;
-        for (int i = 0; i < Integer.MAX_VALUE; i++) {
+        for (int retryCount = 0; retryCount < Integer.MAX_VALUE; retryCount++) {
             final Request existingRequest = requests.get(key);
             if (existingRequest != null) {
                 final Request.AcquiredRequest acquired = existingRequest.tryAcquire();
