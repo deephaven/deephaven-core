@@ -126,7 +126,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
                     : table.where(Filter.and(partitionFilters));
 
             return new TableAndRemainingFilters(result,
-                    otherFilters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
+                    otherFilters.toArray(WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY));
         }
 
         @Override
@@ -276,7 +276,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
         if (partitionFilters.isEmpty()) {
             return new DeferredViewTable(definition, getDescription() + "-withDeferredFilters",
                     new PartitionAwareQueryTableReference(this), null, null,
-                    otherFilters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
+                    otherFilters.toArray(WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY));
         }
 
         // If we have any partition filters, we first create a new instance that filters the location keys accordingly,

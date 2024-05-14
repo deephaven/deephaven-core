@@ -49,7 +49,7 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
         final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
         SelectAndViewAnalyzer.initializeSelectColumns(
                 parentDefinition.getColumnNameMap(), this.deferredViewColumns, compilationProcessor);
-        this.deferredFilters = deferredFilters == null ? WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY : deferredFilters;
+        this.deferredFilters = deferredFilters == null ? WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY : deferredFilters;
         for (final WhereFilter sf : this.deferredFilters) {
             sf.init(parentDefinition, compilationProcessor);
             if (sf instanceof LivenessReferent && sf.isRefreshing()) {
@@ -227,8 +227,8 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
         }
         compilationProcessor.compile();
 
-        return new PreAndPostFilters(preViewFilters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY),
-                postViewFilters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
+        return new PreAndPostFilters(preViewFilters.toArray(WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY),
+                postViewFilters.toArray(WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY));
     }
 
     @Override
