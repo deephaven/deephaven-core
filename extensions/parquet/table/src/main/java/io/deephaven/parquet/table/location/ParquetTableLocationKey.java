@@ -35,7 +35,8 @@ public class ParquetTableLocationKey extends URITableLocationKey {
     private ParquetFileReader fileReader;
     private ParquetMetadata metadata;
     private int[] rowGroupIndices;
-    private final ParquetInstructions readInstructions;
+
+    protected final ParquetInstructions readInstructions;
 
     /**
      * Construct a new ParquetTableLocationKey for the supplied {@code file} and {@code partitions}.

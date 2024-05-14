@@ -1,0 +1,214 @@
+{
+  "format-version" : 2,
+  "table-uuid" : "74cb0e81-37ae-4ca9-9225-18b9a885869d",
+  "location" : "s3://warehouse/nyc/taxis",
+  "last-sequence-number" : 3,
+  "last-updated-ms" : 1714753351429,
+  "last-column-id" : 19,
+  "current-schema-id" : 0,
+  "schemas" : [ {
+    "type" : "struct",
+    "schema-id" : 0,
+    "fields" : [ {
+      "id" : 1,
+      "name" : "VendorID",
+      "required" : false,
+      "type" : "long"
+    }, {
+      "id" : 2,
+      "name" : "tpep_pickup_datetime",
+      "required" : false,
+      "type" : "timestamp"
+    }, {
+      "id" : 3,
+      "name" : "tpep_dropoff_datetime",
+      "required" : false,
+      "type" : "timestamp"
+    }, {
+      "id" : 4,
+      "name" : "passenger_count",
+      "required" : false,
+      "type" : "double"
+    }, {
+      "id" : 5,
+      "name" : "trip_distance",
+      "required" : false,
+      "type" : "double"
+    }, {
+      "id" : 6,
+      "name" : "RatecodeID",
+      "required" : false,
+      "type" : "double"
+    }, {
+      "id" : 7,
+      "name" : "store_and_fwd_flag",
+      "required" : false,
+      "type" : "string"
+    }, {
+      "id" : 8,
+      "name" : "PULocationID",
+      "required" : false,
+      "type" : "long"
+    }, {
+      "id" : 9,
+      "name" : "DOLocationID",
+      "required" : false,
+      "type" : "long"
+    }, {
+      "id" : 10,
+      "name" : "payment_type",
+      "required" : false,
+      "type" : "long"
+    }, {
+      "id" : 11,
+      "name" : "fare_amount",
+      "required" : false,
+      "type" : "double"
+    }, {
+      "id" : 12,
+      "name" : "extra",
+      "required" : false,
+      "type" : "double"
+    }, {
+      "id" : 13,
+      "name" : "mta_tax",
+      "required" : false,
+      "type" : "double"
+    }, {
+      "id" : 14,
+      "name" : "tip_amount",
+      "required" : false,
+      "type" : "double"
+    }, {
+      "id" : 15,
+      "name" : "tolls_amount",
+      "required" : false,
+      "type" : "double"
+    }, {
+      "id" : 16,
+      "name" : "improvement_surcharge",
+      "required" : false,
+      "type" : "double"
+    }, {
+      "id" : 17,
+      "name" : "total_amount",
+      "required" : false,
+      "type" : "double"
+    }, {
+      "id" : 18,
+      "name" : "congestion_surcharge",
+      "required" : false,
+      "type" : "double"
+    }, {
+      "id" : 19,
+      "name" : "airport_fee",
+      "required" : false,
+      "type" : "double"
+    } ]
+  } ],
+  "default-spec-id" : 0,
+  "partition-specs" : [ {
+    "spec-id" : 0,
+    "fields" : [ ]
+  } ],
+  "last-partition-id" : 999,
+  "default-sort-order-id" : 0,
+  "sort-orders" : [ {
+    "order-id" : 0,
+    "fields" : [ ]
+  } ],
+  "properties" : {
+    "owner" : "root",
+    "created-at" : "2024-05-03T16:22:16.955845960Z",
+    "write.format.default" : "parquet",
+    "write.parquet.compression-codec" : "zstd"
+  },
+  "current-snapshot-id" : 7258036030029852722,
+  "refs" : {
+    "main" : {
+      "snapshot-id" : 7258036030029852722,
+      "type" : "branch"
+    }
+  },
+  "snapshots" : [ {
+    "sequence-number" : 1,
+    "snapshot-id" : 7480254251893511044,
+    "timestamp-ms" : 1714753341825,
+    "summary" : {
+      "operation" : "append",
+      "spark.app.id" : "local-1714753288452",
+      "added-data-files" : "1",
+      "added-records" : "584935",
+      "added-files-size" : "8731886",
+      "changed-partition-count" : "1",
+      "total-records" : "584935",
+      "total-files-size" : "8731886",
+      "total-data-files" : "1",
+      "total-delete-files" : "0",
+      "total-position-deletes" : "0",
+      "total-equality-deletes" : "0"
+    },
+    "manifest-list" : "s3://warehouse/nyc/taxis/metadata/snap-7480254251893511044-1-ee56d517-bd9b-4e53-ac6e-119ccd017ef3.avro",
+    "schema-id" : 0
+  }, {
+    "sequence-number" : 2,
+    "snapshot-id" : 4768271945146524109,
+    "parent-snapshot-id" : 7480254251893511044,
+    "timestamp-ms" : 1714753347072,
+    "summary" : {
+      "operation" : "append",
+      "spark.app.id" : "local-1714753288452",
+      "added-data-files" : "1",
+      "added-records" : "1167564",
+      "added-files-size" : "16886361",
+      "changed-partition-count" : "1",
+      "total-records" : "1752499",
+      "total-files-size" : "25618247",
+      "total-data-files" : "2",
+      "total-delete-files" : "0",
+      "total-position-deletes" : "0",
+      "total-equality-deletes" : "0"
+    },
+    "manifest-list" : "s3://warehouse/nyc/taxis/metadata/snap-4768271945146524109-1-b03f7748-dbb3-45a6-ae71-77c1b8882e8d.avro",
+    "schema-id" : 0
+  }, {
+    "sequence-number" : 3,
+    "snapshot-id" : 7258036030029852722,
+    "parent-snapshot-id" : 4768271945146524109,
+    "timestamp-ms" : 1714753351429,
+    "summary" : {
+      "operation" : "append",
+      "spark.app.id" : "local-1714753288452",
+      "added-data-files" : "1",
+      "added-records" : "584865",
+      "added-files-size" : "8750334",
+      "changed-partition-count" : "1",
+      "total-records" : "2337364",
+      "total-files-size" : "34368581",
+      "total-data-files" : "3",
+      "total-delete-files" : "0",
+      "total-position-deletes" : "0",
+      "total-equality-deletes" : "0"
+    },
+    "manifest-list" : "s3://warehouse/nyc/taxis/metadata/snap-7258036030029852722-1-1a418a9b-0fe5-4a50-978d-6a3c49279958.avro",
+    "schema-id" : 0
+  } ],
+  "statistics" : [ ],
+  "snapshot-log" : [ {
+    "timestamp-ms" : 1714753341825,
+    "snapshot-id" : 7480254251893511044
+  }, {
+    "timestamp-ms" : 1714753347072,
+    "snapshot-id" : 4768271945146524109
+  }, {
+    "timestamp-ms" : 1714753351429,
+    "snapshot-id" : 7258036030029852722
+  } ],
+  "metadata-log" : [ {
+    "timestamp-ms" : 1714753341825,
+    "metadata-file" : "s3://warehouse/nyc/taxis/metadata/00000-4d3ab82d-71da-4852-849e-a6d5a98e9ae9.metadata.json"
+  }, {
+    "timestamp-ms" : 1714753347072,
+    "metadata-file" : "s3://warehouse/nyc/taxis/metadata/00001-e8705414-3f79-4b9e-94c8-5b46b2da591a.metadata.json"
+  } ]
+}

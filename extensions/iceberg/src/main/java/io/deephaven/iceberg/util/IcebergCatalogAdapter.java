@@ -42,8 +42,6 @@ public class IcebergCatalogAdapter {
     private final FileIO fileIO;
     private final IcebergInstructions instructions;
 
-    private final WeakHashMap<PartitionAwareSourceTable, AbstractTableLocationProvider> tableLocationProviders;
-
     /**
      * Construct an IcebergCatalogAdapter given a set of configurable instructions.
      */
@@ -64,7 +62,6 @@ public class IcebergCatalogAdapter {
         this.catalog = catalog;
         this.fileIO = fileIO;
         this.instructions = instructions;
-        tableLocationProviders = new WeakHashMap<>();
     }
 
     static TableDefinition fromSchema(
@@ -72,6 +69,10 @@ public class IcebergCatalogAdapter {
             final PartitionSpec partitionSpec,
             final IcebergInstructions instructions) {
         final Map<String, String> renameMap = instructions.columnRenameMap();
+
+        final Set<String> columnNames = instructions.tableDefinition().isPresent()
+                ? new HashSet<>(instructions.tableDefinition().get().getColumnNames())
+                : null;
 
         final Set<String> partitionNames =
                 partitionSpec.fields().stream()
@@ -83,6 +84,10 @@ public class IcebergCatalogAdapter {
 
         for (final Types.NestedField field : schema.columns()) {
             final String name = renameMap.getOrDefault(field.name(), field.name());
+            // Skip columns that are not in the provided table definition.
+            if (columnNames != null && !columnNames.contains(name)) {
+                continue;
+            }
             final Type type = field.type();
             final io.deephaven.qst.type.Type<?> qstType = convertPrimitiveType(type);
             final ColumnDefinition<?> column;
@@ -138,7 +143,7 @@ public class IcebergCatalogAdapter {
     }
 
     public List<Long> listTableSnapshots(@NotNull final TableIdentifier tableIdentifier) {
-        final ArrayList<Long> snapshotIds = new ArrayList<>();
+        final List<Long> snapshotIds = new ArrayList<>();
         catalog.loadTable(tableIdentifier).snapshots().forEach(snapshot -> snapshotIds.add(snapshot.snapshotId()));
         return snapshotIds;
     }
@@ -188,10 +193,18 @@ public class IcebergCatalogAdapter {
         // Load the partitioning schema
         final org.apache.iceberg.PartitionSpec partitionSpec = table.spec();
 
-        // Use the user-supplied defininition or the Iceberg schema for the table definition.
-        final TableDefinition tableDef = instructions.tableDefinition().isPresent()
-                ? instructions.tableDefinition().get()
-                : fromSchema(schema, partitionSpec, instructions);
+        // Load the table-definition from the snapshot schema.
+        final TableDefinition icebergTableDef = fromSchema(schema, partitionSpec, instructions);
+
+        // If the user supplied a table definition, make sure it's fully compatible.
+        final TableDefinition tableDef;
+        if (instructions.tableDefinition().isPresent()) {
+            final TableDefinition userTableDef = instructions.tableDefinition().get();
+            tableDef = icebergTableDef.checkMutualCompatibility(userTableDef);
+        } else {
+            // Use the snapshot schema as the table definition.
+            tableDef = icebergTableDef;
+        }
 
         final String description;
         final TableLocationKeyFinder<IcebergTableLocationKey> keyFinder;
@@ -212,8 +225,9 @@ public class IcebergCatalogAdapter {
             final String[] missingColumns = Arrays.stream(partitionColumns)
                     .filter(col -> !columnDefinitionMap.containsKey(col)).toArray(String[]::new);
             if (missingColumns.length > 0) {
-                throw new IllegalStateException("Partitioning column(s) " + Arrays.toString(missingColumns)
-                        + " were not found in the table definition");
+                throw new IllegalStateException(
+                        String.format("%s:%d - Partitioning column(s) %s were not found in the table definition",
+                                table, snapshot.snapshotId(), Arrays.toString(missingColumns)));
             }
 
             // Create the partitioning column location key finder
@@ -222,7 +236,6 @@ public class IcebergCatalogAdapter {
                     table,
                     snapshot,
                     fileIO,
-                    partitionColumns,
                     instructions);
         }
 
@@ -248,11 +261,6 @@ public class IcebergCatalogAdapter {
                 RegionedTableComponentFactoryImpl.INSTANCE,
                 locationProvider,
                 updateSourceRegistrar);
-
-        if (isRefreshing) {
-            // Store a weak reference to the location provider.
-            tableLocationProviders.put(result, locationProvider);
-        }
 
         return result;
     }

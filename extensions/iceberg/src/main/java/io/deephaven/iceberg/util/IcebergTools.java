@@ -23,6 +23,7 @@ import java.util.Map;
  * Tools for accessing tables in the Iceberg table format.
  */
 public class IcebergTools {
+    private static final String S3_FILE_IO_CLASS = "org.apache.iceberg.aws.s3.S3FileIO";
 
     @SuppressWarnings("unused")
     public static IcebergCatalogAdapter createAdapter(
@@ -51,11 +52,9 @@ public class IcebergTools {
 
         final RESTCatalog catalog = new RESTCatalog();
 
-        properties.put(CatalogProperties.CATALOG_IMPL, "org.apache.iceberg.rest.RESTCatalog");
+        properties.put(CatalogProperties.CATALOG_IMPL, catalog.getClass().getName());
         properties.put(CatalogProperties.URI, catalogURI);
         properties.put(CatalogProperties.WAREHOUSE_LOCATION, warehouseLocation);
-
-        properties.put(CatalogProperties.FILE_IO_IMPL, "org.apache.iceberg.aws.s3.S3FileIO");
 
         // Configure the properties map from the Iceberg instructions.
         if (!Strings.isNullOrEmpty(accessKeyId) && !Strings.isNullOrEmpty(secretAccessKey)) {
@@ -70,9 +69,9 @@ public class IcebergTools {
         }
 
         // TODO: create a FileIO interface wrapping the Deephaven S3SeekableByteChannel/Provider
-        final FileIO fileIO = CatalogUtil.loadFileIO("org.apache.iceberg.aws.s3.S3FileIO", properties, null);
+        final FileIO fileIO = CatalogUtil.loadFileIO(S3_FILE_IO_CLASS, properties, null);
 
-        final String catalogName = name != null ? name : "IcebergTableDataService-" + catalogURI;
+        final String catalogName = name != null ? name : "IcebergCatalog-" + catalogURI;
         catalog.initialize(catalogName, properties);
 
         // If the user did not supply custom read instructions, let's create some defaults.

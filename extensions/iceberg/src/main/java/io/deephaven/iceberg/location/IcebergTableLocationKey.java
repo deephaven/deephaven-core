@@ -4,7 +4,6 @@
 package io.deephaven.iceberg.location;
 
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
-import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 
 /**
  * {@link TableLocationKey} implementation for use with data stored in Iceberg tables.
@@ -18,8 +17,7 @@ public interface IcebergTableLocationKey extends TableLocationKey {
     Object readInstructions();
 
     /**
-     * Verify that a reader for the file can be created successfully. Delegates to
-     * {@link ParquetTableLocationKey#verifyFileReader()} for parquet files.
+     * Verify that a reader for the file can be created successfully.
      */
     boolean verifyFileReader();
 }
