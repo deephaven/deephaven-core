@@ -68,14 +68,18 @@ abstract class ParquetS3SimpleTestBase extends S3SeekableChannelTestSetup {
         S3Helper.uploadDirectory(asyncClient, directory.toPath(), bucket, directory.getName(), Duration.ofSeconds(5));
     }
 
-    @Test
-    public final void readSingleParquetFile() throws ExecutionException, InterruptedException, TimeoutException {
-        final Table table = TableTools.emptyTable(500_000).update(
+    private static Table getTable(final int numRows) {
+        return TableTools.emptyTable(numRows).update(
                 "someIntColumn = (int) i",
                 "someDoubleColumn = (double) i",
                 "someStringColumn = String.valueOf(i)",
                 "someBooleanColumn = i % 2 == 0",
                 "someCharColumn = (char) (i % 26 + 'a')");
+    }
+
+    @Test
+    public final void readSingleParquetFile() throws ExecutionException, InterruptedException, TimeoutException {
+        final Table table = getTable(500_000);
         final File dest = new File(rootDir, "table.parquet");
         ParquetTools.writeTable(table, dest.getAbsolutePath());
         putObject("table.parquet", AsyncRequestBody.fromFile(dest));
@@ -94,12 +98,7 @@ abstract class ParquetS3SimpleTestBase extends S3SeekableChannelTestSetup {
     @Test
     public final void readFlatPartitionedParquetData()
             throws ExecutionException, InterruptedException, TimeoutException {
-        final Table table = TableTools.emptyTable(100_000).select(
-                "someIntColumn = (int) i",
-                "someDoubleColumn = (double) i",
-                "someStringColumn = String.valueOf(i)",
-                "someBooleanColumn = i % 2 == 0",
-                "someCharColumn = (char) (i % 26 + 'a')");
+        final Table table = getTable(100_000);
         final String destDirName = "flatPartitionedDataDir";
         final File destDir = new File(rootDir, destDirName);
         for (int i = 0; i < 3; ++i) {
@@ -127,12 +126,7 @@ abstract class ParquetS3SimpleTestBase extends S3SeekableChannelTestSetup {
     @Test
     public final void readFlatPartitionedParquetDataAsKVPartitioned()
             throws ExecutionException, InterruptedException, TimeoutException {
-        final Table table = TableTools.emptyTable(100_000).select(
-                "someIntColumn = (int) i",
-                "someDoubleColumn = (double) i",
-                "someStringColumn = String.valueOf(i)",
-                "someBooleanColumn = i % 2 == 0",
-                "someCharColumn = (char) (i % 26 + 'a')");
+        final Table table = getTable(100_000);
         final String destDirName = "flatPartitionedDataDir";
         final File destDir = new File(rootDir, destDirName);
         for (int i = 0; i < 3; ++i) {
