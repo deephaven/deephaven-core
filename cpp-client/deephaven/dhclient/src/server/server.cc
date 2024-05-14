@@ -10,7 +10,6 @@
 #include <grpc/support/log.h>
 #include <arrow/flight/client_auth.h>
 #include <arrow/flight/client.h>
-#include <arrow/flight/client_middleware.h>
 #include <arrow/flight/types.h>
 #include <arrow/array.h>
 #include <arrow/array/array_primitive.h>
@@ -20,46 +19,12 @@
 #include "deephaven/third_party/fmt/format.h"
 
 using arrow::flight::FlightClient;
-using deephaven::client::impl::MoveVectorData;
-using deephaven::dhcore::utility::Bit_cast;
 using deephaven::dhcore::utility::GetWhat;
-using io::deephaven::proto::backplane::grpc::AddTableRequest;
-using io::deephaven::proto::backplane::grpc::AddTableResponse;
-using io::deephaven::proto::backplane::grpc::AjRajTablesRequest;
-using io::deephaven::proto::backplane::grpc::AuthenticationConstantsRequest;
 using io::deephaven::proto::backplane::grpc::ConfigurationConstantsRequest;
 using io::deephaven::proto::backplane::grpc::ConfigurationConstantsResponse;
-using io::deephaven::proto::backplane::grpc::ConfigService;
-using io::deephaven::proto::backplane::grpc::CreateInputTableRequest;
-using io::deephaven::proto::backplane::grpc::CrossJoinTablesRequest;
-using io::deephaven::proto::backplane::grpc::DeleteTableRequest;
-using io::deephaven::proto::backplane::grpc::DeleteTableResponse;
-using io::deephaven::proto::backplane::grpc::DropColumnsRequest;
-using io::deephaven::proto::backplane::grpc::EmptyTableRequest;
-using io::deephaven::proto::backplane::grpc::ExactJoinTablesRequest;
-using io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse;
-using io::deephaven::proto::backplane::grpc::FetchTableRequest;
-using io::deephaven::proto::backplane::grpc::HandshakeRequest;
-using io::deephaven::proto::backplane::grpc::HeadOrTailRequest;
-using io::deephaven::proto::backplane::grpc::HeadOrTailByRequest;
-using io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest;
-using io::deephaven::proto::backplane::grpc::MergeTablesRequest;
-using io::deephaven::proto::backplane::grpc::NaturalJoinTablesRequest;
 using io::deephaven::proto::backplane::grpc::ReleaseRequest;
 using io::deephaven::proto::backplane::grpc::ReleaseResponse;
-using io::deephaven::proto::backplane::grpc::SelectDistinctRequest;
-using io::deephaven::proto::backplane::grpc::SelectOrUpdateRequest;
-using io::deephaven::proto::backplane::grpc::SortTableRequest;
 using io::deephaven::proto::backplane::grpc::Ticket;
-using io::deephaven::proto::backplane::grpc::TimeTableRequest;
-using io::deephaven::proto::backplane::grpc::WhereInRequest;
-using io::deephaven::proto::backplane::grpc::UpdateByRequest;
-using io::deephaven::proto::backplane::grpc::UnstructuredFilterTableRequest;
-using io::deephaven::proto::backplane::grpc::UngroupRequest;
-using io::deephaven::proto::backplane::script::grpc::BindTableToVariableRequest;
-using io::deephaven::proto::backplane::script::grpc::ExecuteCommandRequest;
-using io::deephaven::proto::backplane::script::grpc::ExecuteCommandResponse;
-using io::deephaven::proto::backplane::script::grpc::StartConsoleRequest;
 
 using UpdateByOperation = io::deephaven::proto::backplane::grpc::UpdateByRequest::UpdateByOperation;
 
