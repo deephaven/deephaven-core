@@ -69,7 +69,7 @@ public class DeephavenCompressorAdapterFactory {
                 // Use the Parquet LZ4_RAW codec, which internally uses aircompressor
                 Lz4RawCodec.class, CompressionCodecName.LZ4_RAW,
 
-                // The rest of these are aircompressor codecs which have fast / pure java implementations
+                // The rest of these are aircompressor codecs that have fast / pure java implementations
                 JdkGzipCodec.class, CompressionCodecName.GZIP,
                 LzoCodec.class, CompressionCodecName.LZO,
                 Lz4Codec.class, CompressionCodecName.LZ4,
