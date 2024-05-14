@@ -12,7 +12,7 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.s3.Credentials;
 import io.deephaven.extensions.s3.S3Instructions;
-import io.deephaven.extensions.s3.S3SeekableChannelTestBase;
+import io.deephaven.extensions.s3.testlib.S3SeekableChannelTestSetup;
 import io.deephaven.extensions.s3.testlib.S3Helper;
 import io.deephaven.test.types.OutOfBandTest;
 import org.junit.After;
@@ -37,9 +37,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @Category(OutOfBandTest.class)
-abstract class ParquetS3TestBase extends S3SeekableChannelTestBase {
+abstract class ParquetS3SimpleTestBase extends S3SeekableChannelTestSetup {
 
-    private static final File rootDir = new File(ParquetS3TestBase.class.getName() + "_root");
+    private static final File rootDir = new File(ParquetS3SimpleTestBase.class.getName() + "_root");
 
     // The following tests are disabled by default, as they are verifying against a remote system
     private static final boolean ENABLE_REMOTE_S3_TESTING = false;
@@ -49,7 +49,7 @@ abstract class ParquetS3TestBase extends S3SeekableChannelTestBase {
 
     @Before
     public void setUp() throws ExecutionException, InterruptedException, TimeoutException {
-        super.setUp();
+        super.doSetUp();
         if (rootDir.exists()) {
             FileUtils.deleteRecursively(rootDir);
         }
@@ -59,7 +59,7 @@ abstract class ParquetS3TestBase extends S3SeekableChannelTestBase {
 
     @After
     public void tearDown() throws ExecutionException, InterruptedException, TimeoutException {
-        super.tearDown();
+        super.doTearDown();
         FileUtils.deleteRecursively(rootDir);
     }
 
