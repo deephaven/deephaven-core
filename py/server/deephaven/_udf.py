@@ -20,6 +20,7 @@ numba = soft_dependency("numba")
 
 import numpy
 import numpy as np
+import numpy._typing as npt
 import jpy
 
 from deephaven import DHError, dtypes
@@ -279,7 +280,7 @@ def _component_np_dtype_char(t: type) -> Optional[str]:
 def _py_sequence_component_type(t: type) -> Optional[type]:
     """Returns the component type of Python subscribed sequence type, otherwise return None."""
     component_type = None
-    if sys.version_info > (3, 8):
+    if sys.version_info >= (3, 9):
         import types
         if isinstance(t, types.GenericAlias) and issubclass(t.__origin__, Sequence):  # novermin
             component_type = t.__args__[0]
@@ -304,7 +305,7 @@ def _np_ndarray_component_type(t: type) -> Optional[type]:
     # component type
     component_type = None
     if (3, 9) > sys.version_info >= (3, 8):
-        if isinstance(t, np._typing._generic_alias._GenericAlias) and t.__origin__ is np.ndarray:
+        if isinstance(t, npt._generic_alias._GenericAlias) and t.__origin__ is np.ndarray:
             component_type = t.__args__[1].__args__[0]
     # Py3.9+, np.ndarray as a generic alias is only supported in Python 3.9+, also npt.NDArray is still available but a
     # specific alias (e.g. npt.NDArray[np.int64]) now is an instance of typing.GenericAlias.

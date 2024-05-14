@@ -7,7 +7,6 @@ import dagger.BindsInstance;
 import dagger.Component;
 import io.deephaven.client.ClientDefaultsModule;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.TestExecutionContext;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
@@ -41,7 +40,6 @@ import javax.inject.Singleton;
 import java.io.PrintStream;
 import java.time.Duration;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Manages a single instance of {@link DeephavenApiServer}.
@@ -145,7 +143,10 @@ public abstract class DeephavenApiServerTestBase {
 
     @After
     public void tearDown() throws Exception {
-        scopeCloseable.close();
+        if (scopeCloseable != null) {
+            scopeCloseable.close();
+            scopeCloseable = null;
+        }
 
         try {
             server.teardownForUnitTests();

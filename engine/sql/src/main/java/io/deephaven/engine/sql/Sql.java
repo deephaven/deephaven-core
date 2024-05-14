@@ -25,11 +25,11 @@ import io.deephaven.sql.SqlAdapter;
 import io.deephaven.sql.TableInformation;
 import io.deephaven.util.annotations.ScriptApi;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.stream.Collectors;
 
 /**
  * Experimental SQL execution. Subject to change.
@@ -64,6 +64,10 @@ public final class Sql {
         return SqlAdapter.parseSql(sql, scope(scope, out));
     }
 
+    private static TicketTable sqlref(String tableName) {
+        return TicketTable.of(("sqlref/" + tableName).getBytes(StandardCharsets.UTF_8));
+    }
+
     private static Scope scope(Map<String, Table> scope, Map<TicketTable, Table> out) {
         final ScopeStaticImpl.Builder builder = ScopeStaticImpl.builder();
         for (Entry<String, Table> e : scope.entrySet()) {
@@ -71,7 +75,7 @@ public final class Sql {
             final Table table = e.getValue();
             // The TicketTable can technically be anything unique (incrementing number, random, ...), but for
             // visualization purposes it makes sense to use the (already unique) table name.
-            final TicketTable spec = TicketTable.of("sqlref/" + tableName);
+            final TicketTable spec = sqlref(tableName);
             final List<String> qualifiedName = List.of(tableName);
             final TableHeader header = adapt(table.getDefinition());
             builder.addTables(TableInformation.of(qualifiedName, header, spec));
