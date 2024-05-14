@@ -282,19 +282,28 @@ public class FileUtils {
         URI uri;
         try {
             uri = new URI(source);
+            if (uri.getScheme() == null) {
+                // Convert to a "file" URI
+                return convertToURI(new File(source), isDirectory);
+            }
+            String path = uri.getPath();
+            boolean isUpdated = false;
+            // Directory URIs should end with a slash
+            if (isDirectory && path.charAt(path.length() - 1) != URI_SEPARATOR_CHAR) {
+                path = path + URI_SEPARATOR_CHAR;
+                isUpdated = true;
+            }
             // Replace two or more consecutive slashes in the path with a single slash
-            final String path = uri.getPath();
             if (path.contains(REPEATED_URI_SEPARATOR)) {
-                final String canonicalizedPath = REPEATED_URI_SEPARATOR_PATTERN.matcher(path).replaceAll(URI_SEPARATOR);
-                uri = new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), canonicalizedPath,
-                        uri.getQuery(), uri.getFragment());
+                path = REPEATED_URI_SEPARATOR_PATTERN.matcher(path).replaceAll(URI_SEPARATOR);
+                isUpdated = true;
+            }
+            if (isUpdated) {
+                uri = new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), path, uri.getQuery(),
+                        uri.getFragment());
             }
         } catch (final URISyntaxException e) {
             // If the URI is invalid, assume it's a file path
-            return convertToURI(new File(source), isDirectory);
-        }
-        if (uri.getScheme() == null) {
-            // Convert to a "file" URI
             return convertToURI(new File(source), isDirectory);
         }
         return uri;
