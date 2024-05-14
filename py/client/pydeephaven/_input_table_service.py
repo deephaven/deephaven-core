@@ -15,19 +15,21 @@ class InputTableService:
     def add(self, input_table: InputTable, table: Table):
         """Adds a table to the InputTable."""
         try:
-            response = self._grpc_input_table_stub.AddTableToInputTable(
+            response, call = self._grpc_input_table_stub.AddTableToInputTable.with_call(
                 inputtable_pb2.AddTableRequest(input_table=input_table.ticket,
                                                table_to_add=table.ticket),
                 metadata=self.session.grpc_metadata)
+            self.session.update_metadata(call.initial_metadata())
         except Exception as e:
             raise DHError("failed to add to InputTable") from e
 
     def delete(self, input_table: InputTable, table: Table):
         """Deletes a table from an InputTable."""
         try:
-            response = self._grpc_input_table_stub.DeleteTableFromInputTable(
+            response, call = self._grpc_input_table_stub.DeleteTableFromInputTable.with_call(
                 inputtable_pb2.DeleteTableRequest(input_table=input_table.ticket,
                                                   table_to_remove=table.ticket),
                 metadata=self.session.grpc_metadata)
+            self.session.update_metadata(call.intiial_metadata())
         except Exception as e:
             raise DHError("failed to delete from InputTable") from e

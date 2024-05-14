@@ -20,9 +20,10 @@ class TableService:
         batch_ops = BatchOpAssembler(self.session, table_ops=ops).build_batch()
 
         try:
-            response = self._grpc_table_stub.Batch(
+            response, call = self._grpc_table_stub.Batch.with_call(
                 table_pb2.BatchTableRequest(ops=batch_ops),
                 metadata=self.session.grpc_metadata)
+            self.session.update_metadata(call.initial_metadata())
 
             exported_tables = []
             for exported in response:
@@ -46,8 +47,10 @@ class TableService:
             else:
                 table_reference = None
             stub_func = op.__class__.get_stub_func(self._grpc_table_stub)
-            response = stub_func(op.make_grpc_request(result_id=result_id, source_id=table_reference),
-                                 metadata=self.session.grpc_metadata)
+            response, call = stub_func.with_call(
+                op.make_grpc_request(result_id=result_id, source_id=table_reference),
+                metadata=self.session.grpc_metadata)
+            self.session.update_metadata(call.initial_metadata())
 
             if response.success:
                 return table_class(self.session, ticket=response.result_id.ticket,
@@ -61,7 +64,10 @@ class TableService:
 
     def fetch_etcr(self, ticket) -> Table:
         """Given a ticket, constructs a table around it, by fetching metadata from the server."""
-        response = self._grpc_table_stub.GetExportedTableCreationResponse(ticket, metadata=self.session.grpc_metadata)
+        response, call = self._grpc_table_stub.GetExportedTableCreationResponse.with_call(
+            ticket,
+            metadata=self.session.grpc_metadata)
+        self.session.update_metadata(call.intiial_metadata)
         if response.success:
             return Table(self.session, ticket=response.result_id.ticket,
                          schema_header=response.schema_header,

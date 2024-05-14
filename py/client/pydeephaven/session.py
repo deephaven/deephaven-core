@@ -6,16 +6,18 @@ server."""
 from __future__ import annotations
 
 import base64
+import datetime
 import os
 import threading
-from typing import Dict, List, Union, Tuple
+from typing import Dict, Iterable, List, Union, Tuple
 from uuid import uuid4
 
+#import traceback
 import grpc
 import pyarrow as pa
 import pyarrow.flight as paflight
 from bitstring import BitArray
-from pyarrow._flight import ClientMiddlewareFactory, ClientMiddleware, ClientAuthHandler
+from pyarrow._flight import ClientAuthHandler
 
 from pydeephaven._app_service import AppService
 from pydeephaven._arrow_flight_service import ArrowFlightService
@@ -33,52 +35,11 @@ from pydeephaven.proto import ticket_pb2
 from pydeephaven.query import Query
 from pydeephaven.table import Table, InputTable
 
+def trace(who):
+    print(f'{datetime.datetime.now()} TRACE: {who}', flush=True)
 
-class _DhClientAuthMiddlewareFactory(ClientMiddlewareFactory):
-    def __init__(self, session):
-        super().__init__()
-        self._session = session
-
-    def start_call(self, info):
-        return _DhClientAuthMiddleware(self._session)
-
-
-class _DhClientAuthMiddleware(ClientMiddleware):
-    def __init__(self, session):
-        super().__init__()
-        self._session = session
-
-    def call_completed(self, exception):
-        super().call_completed(exception)
-
-    def received_headers(self, headers):
-        super().received_headers(headers)
-        if headers:
-            auth_token = bytes(headers.get("authorization")[0], encoding='ascii')
-            if auth_token and auth_token != self._session._auth_token:
-                self._session._auth_token = auth_token
-
-    def sending_headers(self):
-        return {
-            **{
-                "authorization": self._session._auth_token
-            }, **self._session._extra_headers
-        }
-
-
-class _DhClientAuthHandler(ClientAuthHandler):
-    def __init__(self, session):
-        super().__init__()
-        self._session = session
-        self._token = b''
-
-    def authenticate(self, outgoing, incoming):
-        outgoing.write(self._session._auth_token)
-        self._token = incoming.read()
-
-    def get_token(self):
-        return self._token
-
+def deepcopy_bytes(bs: bytes):
+    return bs[0:]
 
 class SharedTicket:
     """ A SharedTicket object represents a ticket that can be shared with other sessions. """
@@ -168,6 +129,7 @@ class Session:
         Raises:
             DHError
         """
+        trace('Session.__init__')
         self._r_lock = threading.RLock()  # for thread-safety when accessing/changing session global state
         self._last_ticket = 0
         self._ticket_bitarray = BitArray(1024)
@@ -188,15 +150,17 @@ class Session:
         self._extra_headers = extra_headers if extra_headers else {}
 
         self.is_connected = False
+        self._auth_lock = threading.Lock()
 
         if auth_type == "Anonymous":
-            self._auth_token = auth_type
+            self._auth_value = auth_type
         elif auth_type == "Basic":
             auth_token_base64 = base64.b64encode(auth_token.encode("ascii")).decode("ascii")
-            self._auth_token = "Basic " + auth_token_base64
+            self._auth_value = "Basic " + auth_token_base64
         else:
-            self._auth_token = str(auth_type) + " " + auth_token
+            self._auth_value = str(auth_type) + " " + auth_token
 
+        self._auth_value = bytes(self._auth_value, 'ascii')
         self.grpc_channel = None
         self._session_service = None
         self._table_service = None
@@ -217,6 +181,8 @@ class Session:
 
     def __enter__(self):
         if not self.is_connected:
+            # double-checked locking, is_connected is checked insied _connect again, which
+            # may not end up connecting.
             self._connect()
         return self
 
@@ -239,24 +205,39 @@ class Session:
             fields = self._fetch_fields()
             return {field.field_name: field.typed_ticket for field in fields if field.application_id == 'scope'}
 
+    def update_metadata(self, metadata: Iterable[Tuple[bytes, bytes]]):
+        for header_tuple in metadata:
+            if header_tuple[0] == "authorization":
+                new_auth_value = header_tuple[1]
+                with self._auth_lock:
+                    self._auth_value = bytes(new_auth_value, 'ascii')
+                break
+
     @property
     def grpc_metadata(self):
-        l = [(b'authorization', self._auth_token)]
+        with self._auth_lock:
+            if self._auth_value is not None and isinstance(self._auth_value, bytes) and len(self._auth_value) > 0:
+                auth_value = deepcopy_bytes(self._auth_value)
+                l = [(b'authorization', auth_value)]
+            else:
+                l = []
         if self._extra_headers:
             l.extend(list(self._extra_headers.items()))
         return l
 
     @property
     def table_service(self) -> TableService:
-        if not self._table_service:
-            self._table_service = TableService(self)
-        return self._table_service
+        with self._r_lock:
+            if not self._table_service:
+                self._table_service = TableService(self)
+            return self._table_service
 
     @property
     def session_service(self) -> SessionService:
-        if not self._session_service:
-            self._session_service = SessionService(self)
-        return self._session_service
+        with self._r_lock:
+            if not self._session_service:
+                self._session_service = SessionService(self)
+            return self._session_service
 
     @property
     def console_service(self) -> ConsoleService:
@@ -266,38 +247,38 @@ class Session:
 
     @property
     def flight_service(self) -> ArrowFlightService:
-        if not self._flight_service:
-            self._flight_service = ArrowFlightService(self, self._flight_client)
-
-        return self._flight_service
+        with self._r_lock:
+            if not self._flight_service:
+                self._flight_service = ArrowFlightService(self, self._flight_client)
+            return self._flight_service
 
     @property
     def app_service(self) -> AppService:
-        if not self._app_service:
-            self._app_service = AppService(self)
-
-        return self._app_service
+        with self._r_lock:
+            if not self._app_service:
+                self._app_service = AppService(self)
+            return self._app_service
 
     @property
     def config_service(self):
-        if not self._config_service:
-            self._config_service = ConfigService(self)
-
-        return self._config_service
+        with self._r_lock:
+            if not self._config_service:
+                self._config_service = ConfigService(self)
+            return self._config_service
 
     @property
     def input_table_service(self) -> InputTableService:
-        if not self._input_table_service:
-            self._input_table_service = InputTableService(self)
-
-        return self._input_table_service
+        with self._r_lock:
+            if not self._input_table_service:
+                self._input_table_service = InputTableService(self)
+            return self._input_table_service
 
     @property
     def plugin_object_service(self) -> PluginObjService:
-        if not self._plugin_obj_service:
-            self._plugin_obj_service = PluginObjService(self)
-
-        return self._plugin_obj_service
+        with self._r_lock:
+            if not self._plugin_obj_service:
+                self._plugin_obj_service = PluginObjService(self)
+            return self._plugin_obj_service
 
     def make_ticket(self, ticket_no=None):
         if not ticket_no:
@@ -327,19 +308,20 @@ class Session:
             return resp.created if resp.created else []
 
     def _connect(self):
+        trace(f'_connect id={id(self)}')
         with self._r_lock:
+            if self.is_connected:
+                return
+            trace(f'_connect id={id(self)} connecting.')
             try:
                 scheme = "grpc+tls" if self._use_tls else "grpc"
                 self._flight_client = paflight.FlightClient(
                     location=f"{scheme}://{self.host}:{self.port}",
-                    middleware=[_DhClientAuthMiddlewareFactory(self)],
                     tls_root_certs=self._tls_root_certs,
                     cert_chain=self._client_cert_chain,
                     private_key=self._client_private_key,
                     generic_options=self._client_opts
                 )
-                self._auth_handler = _DhClientAuthHandler(self)
-                self._flight_client.authenticate(self._auth_handler)
             except Exception as e:
                 raise DHError("failed to connect to the server.") from e
 
@@ -352,24 +334,36 @@ class Session:
 
             self.is_connected = True
 
-            self._timeout = int(session_duration.string_value)
+            self._timeout_seconds = int(session_duration.string_value)/1000.0
             if self._never_timeout:
                 self._keep_alive()
 
     def _keep_alive(self):
-        if self.is_connected:
-            if self._keep_alive_timer:
-                self._refresh_token()
-            self._keep_alive_timer = threading.Timer(self._timeout / 2 / 1000, self._keep_alive)
-            self._keep_alive_timer.daemon = True
-            self._keep_alive_timer.start()
+        trace(f'_keep_alive')
+        if not self.is_connected:
+            return
+        factor = 0.01
+        ok = True
+        if self._keep_alive_timer:
+            ok = self._refresh_token()
+            if not ok:
+                factor = 0.001
+        timer_wakeup = self._timeout_seconds * factor
+        trace(f'_keep_alive timer_wakeup={timer_wakeup}')
+        self._keep_alive_timer = threading.Timer(timer_wakeup, self._keep_alive)
+        self._keep_alive_timer.daemon = True
+        self._keep_alive_timer.start()
+        if not ok:
+            print(f'{datetime.datetime.now()} Will retry authentication in {timer_wakeup} seconds.')
 
     def _refresh_token(self):
+        trace('_refresh_token')
         try:
-            self._flight_client.authenticate(self._auth_handler)
-        except Exception as e:
-            self.is_connected = False
-            raise DHError("failed to refresh auth token") from e
+            self.config_service.get_configuration_constants()
+            return True
+        except Exception as ex:
+            print(f'{datetime.datetime.now()} Caught exception in _refresh_token: {ex}.', flush=True)
+            return False
 
     @property
     def is_alive(self) -> bool:
@@ -382,7 +376,7 @@ class Session:
                 return True
 
             try:
-                self._flight_client.authenticate(self._auth_handler)
+                self.config_service.get_configuration_constants()
                 return True
             except DHError as e:
                 self.is_connected = False
@@ -395,12 +389,13 @@ class Session:
             DHError
         """
         with self._r_lock:
-            if self.is_connected:
-                self.session_service.close()
-                self.grpc_channel.close()
-                self.is_connected = False
-                self._last_ticket = 0
-                self._flight_client.close()
+            if not self.is_connected:
+                return
+            self.session_service.close()
+            self.grpc_channel.close()
+            self.is_connected = False
+            self._last_ticket = 0
+            self._flight_client.close()
 
     def release(self, ticket):
         self.session_service.release(ticket)

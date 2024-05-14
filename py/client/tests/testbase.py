@@ -26,6 +26,8 @@ class BaseTestCase(unittest.TestCase):
             os.remove(BaseTestCase.csv_file)
 
     def setUp(self) -> None:
+        # For netty server and psk, change auth_token to what the server printed.
+        # self.session = Session(port = 8080, auth_type = 'io.deephaven.authentication.psk.PskAuthenticationHandler', auth_token = 'safw7c4nzegp')
         self.session = Session()
 
     def tearDown(self) -> None:

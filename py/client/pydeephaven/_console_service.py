@@ -23,9 +23,12 @@ class ConsoleService:
             if not self.console_id:
                 try:
                     result_id = self.session.make_ticket()
-                    response = self._grpc_console_stub.StartConsole(
-                        console_pb2.StartConsoleRequest(result_id=result_id, session_type=self.session._session_type),
+                    response, call = self._grpc_console_stub.StartConsole.with_call(
+                        console_pb2.StartConsoleRequest(
+                            result_id=result_id,
+                            session_type=self.session._session_type),
                         metadata=self.session.grpc_metadata)
+                    self.session.update_metadata(call.initial_metadata())
                     self.console_id = response.result_id
                 except Exception as e:
                     raise DHError("failed to start a console.") from e
@@ -35,11 +38,12 @@ class ConsoleService:
         self.start_console()
 
         try:
-            response = self._grpc_console_stub.ExecuteCommand(
+            response, call = self._grpc_console_stub.ExecuteCommand.with_call(
                 console_pb2.ExecuteCommandRequest(
                     console_id=self.console_id,
                     code=server_script),
                 metadata=self.session.grpc_metadata)
+            self.session.update_metadata(call.initial_metadata())
             return response
         except Exception as e:
             raise DHError("failed to execute a command in the console.") from e
@@ -49,10 +53,11 @@ class ConsoleService:
         if not table or not variable_name:
             raise DHError("invalid table and/or variable_name values.")
         try:
-            response = self._grpc_console_stub.BindTableToVariable(
+            response, call = self._grpc_console_stub.BindTableToVariable.with_call(
                 console_pb2.BindTableToVariableRequest(console_id=self.console_id,
                                                        table_id=table.ticket,
                                                        variable_name=variable_name),
                 metadata=self.session.grpc_metadata)
+            self.session.update_metadata(call.initial_metadata())
         except Exception as e:
             raise DHError("failed to bind a table to a variable on the server.") from e
