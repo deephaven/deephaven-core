@@ -409,7 +409,7 @@ bool Server::KeepaliveHelper() {
       }
     }
     // Set a default nextHandshakeTime_. This will likely be overwritten by SendRpc, if it succeeds.
-    nextHandshakeTime_ = now + kHandshakeResendInterval;
+    nextHandshakeTime_ = now + std::chrono::seconds(3);
   }
 
   // Send a 'GetConfigurationConstants' as a handshake. On the way out, we note our local time.
