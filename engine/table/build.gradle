@@ -53,11 +53,9 @@ dependencies {
 
     Classpaths.inheritGuava(project)
 
-    testImplementation TestTools.projectDependency(project, 'Util')
     testImplementation TestTools.projectDependency(project, 'engine-chunk')
     testImplementation TestTools.projectDependency(project, 'engine-vector')
     testImplementation TestTools.projectDependency(project, 'Numerics')
-    testImplementation TestTools.projectDependency(project, 'engine-context')
     testImplementation TestTools.projectDependency(project, 'engine-time')
     testImplementation project(':base-test-utils')
     testImplementation project(':engine-rowset-test-utils')
@@ -76,9 +74,9 @@ dependencies {
     Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)
 
-    testRuntimeOnly project(':log-to-slf4j'),
-            project(path: ':configs'),
-            project(path: ':test-configs')
+    testRuntimeOnly project(':log-to-slf4j')
+    testRuntimeOnly project(':configs')
+    testRuntimeOnly project(':test-configs')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 }
 
