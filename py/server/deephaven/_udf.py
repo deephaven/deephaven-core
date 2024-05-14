@@ -536,9 +536,10 @@ def _udf_parser(fn: Callable):
         """
         arg_conv_needed = p_sig.prepare_auto_arg_conv(encoded_arg_types)
         p_sig.ret_annotation.setup_return_converter()
+        ret_converter = p_sig.ret_annotation.ret_converter
 
         if not for_vectorization:
-            if not arg_conv_needed and p_sig.ret_annotation.encoded_type == "O":
+            if not arg_conv_needed and not ret_converter and not return_array:
                 return fn
 
             def _wrapper(*args, **kwargs):
@@ -559,15 +560,16 @@ def _udf_parser(fn: Callable):
                 if return_array:
                     return dtypes.array(ret_dtype, ret)
                 else:
-                    return p_sig.ret_annotation.ret_converter(ret) if p_sig.ret_annotation.ret_converter else ret
+                    return ret_converter(ret) if ret_converter else ret
 
             return _wrapper
         else:  # for vectorization
+            if encoded_arg_types and len(encoded_arg_types.split(",")) != len(p_sig.params):
+                raise ValueError(
+                    f"The number of arguments doesn't match the function ({p_sig.fn.__name__}) signature. "
+                    f"{len(encoded_arg_types.split(','))}, {p_sig.encoded}")
+
             def _vectorization_wrapper(*args):
-                if len(args) != len(p_sig.params) + 2:
-                    raise ValueError(
-                        f"The number of arguments doesn't match the function ({p_sig.fn.__name__}) signature. "
-                        f"{len(args) - 2}, {p_sig.encoded}")
                 if args[0] <= 0:
                     raise ValueError(
                         f"The chunk size argument must be a positive integer for vectorized function ("
@@ -575,37 +577,40 @@ def _udf_parser(fn: Callable):
 
                 chunk_size = args[0]
                 chunk_result = args[1]
-                if args[2:]:
+                if args[2:] and arg_conv_needed:  # if there are arguments
                     vectorized_args = zip(*args[2:])
                     for i in range(chunk_size):
                         scalar_args = next(vectorized_args)
-                        if arg_conv_needed:
-                            converted_args = [param.arg_converter(arg) if param.arg_converter else arg
-                                              for param, arg in zip(p_sig.params, scalar_args)]
+                        converted_args = [param.arg_converter(arg) if param.arg_converter else arg
+                                          for param, arg in zip(p_sig.params, scalar_args)]
 
-                            # if the number of arguments is more than the number of parameters, treat the last parameter
-                            # as a vararg and use its arg_converter to convert the rest of the arguments
-                            if len(args) > len(p_sig.params):
-                                arg_converter = p_sig.params[-1].arg_converter
-                                converted_args.extend([arg_converter(arg) if arg_converter else arg
-                                                       for arg in scalar_args[len(converted_args):]])
-                        else:
-                            converted_args = scalar_args
-
+                        # if the number of arguments is more than the number of parameters, treat the last
+                        # parameter as a vararg and use its arg_converter to convert the rest of the arguments
+                        if len(args) > len(p_sig.params):
+                            arg_converter = p_sig.params[-1].arg_converter
+                            converted_args.extend([arg_converter(arg) if arg_converter else arg
+                                                   for arg in scalar_args[len(converted_args):]])
                         ret = fn(*converted_args)
                         if return_array:
                             chunk_result[i] = dtypes.array(ret_dtype, ret)
                         else:
-                            chunk_result[i] = p_sig.ret_annotation.ret_converter(
-                                ret) if p_sig.ret_annotation.ret_converter else ret
-                else:
-                    for i in range(chunk_size):
-                        ret = fn()
-                        if return_array:
-                            chunk_result[i] = dtypes.array(ret_dtype, ret)
-                        else:
-                            chunk_result[i] = p_sig.ret_annotation.ret_converter(
-                                ret) if p_sig.ret_annotation.ret_converter else ret
+                            chunk_result[i] = ret_converter(ret) if ret_converter else ret
+                else:  # no conversion needed or no arguments
+                    if args[2:]:
+                        vectorized_args = zip(*args[2:])
+                        for i in range(chunk_size):
+                            ret = fn(*next(vectorized_args))
+                            if return_array:
+                                chunk_result[i] = dtypes.array(ret_dtype, ret)
+                            else:
+                                chunk_result[i] = ret_converter(ret) if ret_converter else ret
+                    else:
+                        for i in range(chunk_size):
+                            ret = fn()
+                            if return_array:
+                                chunk_result[i] = dtypes.array(ret_dtype, ret)
+                            else:
+                                chunk_result[i] = ret_converter(ret) if ret_converter else ret
                 return chunk_result
 
             if test_vectorization:
