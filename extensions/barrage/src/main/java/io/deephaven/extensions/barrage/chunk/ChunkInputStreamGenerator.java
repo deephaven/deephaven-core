@@ -235,7 +235,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                 }
                 return LongChunkInputStreamGenerator.extractChunkFromInputStreamWithConversion(
                         Long.BYTES, options,
-                        (long v) -> (v * factor),
+                        (long v) -> v == QueryConstants.NULL_LONG ? QueryConstants.NULL_LONG : (v * factor),
                         fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
             case Float:
                 return FloatChunkInputStreamGenerator.extractChunkFromInputStream(
@@ -289,13 +289,25 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                 }
                 if (type == Instant.class) {
                     return FixedWidthChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
-                            Long.BYTES, options, io -> DateTimeUtils.epochNanosToInstant(io.readLong()),
+                            Long.BYTES, options, io -> {
+                                final long value = io.readLong();
+                                if (value == QueryConstants.NULL_LONG) {
+                                    return null;
+                                }
+                                return DateTimeUtils.epochNanosToInstant(value * factor);
+                            },
                             fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
                 }
                 if (type == ZonedDateTime.class) {
                     return FixedWidthChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
-                            Long.BYTES, options,
-                            io -> DateTimeUtils.epochNanosToZonedDateTime(io.readLong(), DateTimeUtils.timeZone()),
+                            Long.BYTES, options, io -> {
+                                final long value = io.readLong();
+                                if (value == QueryConstants.NULL_LONG) {
+                                    return null;
+                                }
+                                return DateTimeUtils.epochNanosToZonedDateTime(
+                                        value * factor, DateTimeUtils.timeZone());
+                            },
                             fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
                 }
                 if (type == Byte.class) {

@@ -200,7 +200,7 @@ public class ColumnHolder<T> {
     /**
      * Create a column holder for an Instant column where the values are represented as longs. Whatever process produces
      * a table from this column holder should respect this and create the appropriate type of ColumnSource. Under normal
-     * conditions, this will bean InstantArraySource (see {@link #getColumnSource()}).
+     * conditions, this will be an InstantArraySource (see {@link #getColumnSource()}).
      *
      * @param name column name
      * @param indexed true if the column is indexed; false otherwise
@@ -214,7 +214,7 @@ public class ColumnHolder<T> {
     /**
      * Create a column holder for an Instant column where the values are represented as longs. Whatever process produces
      * a table from this column holder should respect this and create the appropriate type of ColumnSource. Under normal
-     * conditions, this will bean InstantArraySource (see {@link #getColumnSource()}).
+     * conditions, this will be an InstantArraySource (see {@link #getColumnSource()}).
      *
      * @param name column name
      * @param indexed true if the column is indexed; false otherwise

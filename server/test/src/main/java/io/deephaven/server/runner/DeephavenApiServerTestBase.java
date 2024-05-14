@@ -143,7 +143,10 @@ public abstract class DeephavenApiServerTestBase {
 
     @After
     public void tearDown() throws Exception {
-        scopeCloseable.close();
+        if (scopeCloseable != null) {
+            scopeCloseable.close();
+            scopeCloseable = null;
+        }
 
         try {
             server.teardownForUnitTests();
