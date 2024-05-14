@@ -41,7 +41,6 @@ import io.deephaven.parquet.base.ParquetFileReader;
 import io.deephaven.parquet.table.layout.ParquetFlatPartitionedLayout;
 import io.deephaven.parquet.table.layout.ParquetKeyValuePartitionedLayout;
 import io.deephaven.parquet.table.layout.ParquetMetadataFileLayout;
-import io.deephaven.parquet.table.layout.ParquetSingleFileLayout;
 import io.deephaven.parquet.table.location.ParquetTableLocationFactory;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.parquet.table.ParquetInstructions.ParquetFileLayout;
@@ -103,7 +102,6 @@ public class ParquetTools {
      *
      * @param source The path or URI of file or directory to examine
      * @return table
-     * @see ParquetSingleFileLayout
      * @see ParquetMetadataFileLayout
      * @see ParquetKeyValuePartitionedLayout
      * @see ParquetFlatPartitionedLayout
@@ -127,7 +125,6 @@ public class ParquetTools {
      * @param source The path or URI of file or directory to examine
      * @param readInstructions Instructions for customizations while reading
      * @return table
-     * @see ParquetSingleFileLayout
      * @see ParquetMetadataFileLayout
      * @see ParquetKeyValuePartitionedLayout
      * @see ParquetFlatPartitionedLayout
@@ -174,7 +171,6 @@ public class ParquetTools {
      *
      * @param sourceFile The file or directory to examine
      * @return table
-     * @see ParquetSingleFileLayout
      * @see ParquetMetadataFileLayout
      * @see ParquetKeyValuePartitionedLayout
      * @see ParquetFlatPartitionedLayout
@@ -204,7 +200,6 @@ public class ParquetTools {
      * @param sourceFile The file or directory to examine
      * @param readInstructions Instructions for customizations while reading
      * @return table
-     * @see ParquetSingleFileLayout
      * @see ParquetMetadataFileLayout
      * @see ParquetKeyValuePartitionedLayout
      * @see ParquetFlatPartitionedLayout
@@ -1378,8 +1373,8 @@ public class ParquetTools {
     }
 
     private static Pair<TableDefinition, ParquetInstructions> infer(
-            KnownLocationKeyFinder<ParquetTableLocationKey> inferenceKeys,
-            ParquetInstructions readInstructions) {
+            final KnownLocationKeyFinder<ParquetTableLocationKey> inferenceKeys,
+            final ParquetInstructions readInstructions) {
         // TODO(deephaven-core#877): Support schema merge when discovering multiple parquet files
         final ParquetTableLocationKey lastKey = inferenceKeys.getLastKey().orElse(null);
         if (lastKey == null) {
@@ -1661,14 +1656,13 @@ public class ParquetTools {
             @NotNull final URI parquetFileURI,
             @NotNull final ParquetInstructions readInstructions) {
         verifyFileLayout(readInstructions, ParquetFileLayout.SINGLE_FILE);
+        final ParquetTableLocationKey locationKey =
+                new ParquetTableLocationKey(parquetFileURI, 0, null, readInstructions);
         if (readInstructions.getTableDefinition().isPresent()) {
-            return readTable(new ParquetTableLocationKey(parquetFileURI, 0, null, readInstructions),
-                    readInstructions);
+            return readTable(locationKey, readInstructions);
         }
         // Infer the table definition
-        final TableLocationKeyFinder<ParquetTableLocationKey> singleFileLayout =
-                new ParquetSingleFileLayout(parquetFileURI, readInstructions);
-        final KnownLocationKeyFinder<ParquetTableLocationKey> inferenceKeys = toKnownKeys(singleFileLayout);
+        final KnownLocationKeyFinder<ParquetTableLocationKey> inferenceKeys = new KnownLocationKeyFinder<>(locationKey);
         final Pair<TableDefinition, ParquetInstructions> inference = infer(inferenceKeys, readInstructions);
         final TableDefinition inferredTableDefinition = inference.getFirst();
         final ParquetInstructions inferredInstructions = inference.getSecond();
@@ -1722,8 +1716,9 @@ public class ParquetTools {
             @NotNull final File source,
             @NotNull final ParquetInstructions readInstructionsIn,
             @Nullable final MutableObject<ParquetInstructions> mutableInstructionsOut) {
+        final URI sourceURI = convertToURI(source, false);
         final ParquetTableLocationKey tableLocationKey =
-                new ParquetTableLocationKey(source, 0, null, readInstructionsIn);
+                new ParquetTableLocationKey(sourceURI, 0, null, readInstructionsIn);
         final Pair<List<ColumnDefinition<?>>, ParquetInstructions> schemaInfo = ParquetSchemaReader.convertSchema(
                 tableLocationKey.getFileReader().getSchema(),
                 tableLocationKey.getMetadata().getFileMetaData().getKeyValueMetaData(),

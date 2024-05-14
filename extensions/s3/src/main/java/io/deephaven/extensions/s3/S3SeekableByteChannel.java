@@ -41,8 +41,12 @@ final class S3SeekableByteChannel implements SeekableByteChannel, CachedChannelP
     private long size;
 
     S3SeekableByteChannel(final S3Uri uri) {
+        this(uri, UNINITIALIZED_SIZE);
+    }
+
+    S3SeekableByteChannel(final S3Uri uri, final long size) {
         this.uri = Objects.requireNonNull(uri);
-        this.size = UNINITIALIZED_SIZE;
+        this.size = size;
         this.position = INIT_POSITION;
     }
 
