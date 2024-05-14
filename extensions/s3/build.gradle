@@ -13,9 +13,6 @@ dependencies {
     implementation project(':Configuration')
     implementation project(':log-factory')
 
-    // TODO Included this to get CleanupReferenceProcessorInstance, where should I move CleanupReferenceProcessorInstance?
-    implementation project(':engine-updategraph')
-
     implementation platform('software.amazon.awssdk:bom:2.23.19')
     implementation 'software.amazon.awssdk:s3'
     implementation 'software.amazon.awssdk:aws-crt-client'
