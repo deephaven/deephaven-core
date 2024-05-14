@@ -39,11 +39,10 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.util.BarrageChunkAppendingMarshaller;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
-import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
-import io.deephaven.io.logger.Logger;
 import io.deephaven.plugin.Registration;
+import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.backplane.grpc.SortTableRequest;
 import io.deephaven.proto.backplane.grpc.WrappedAuthenticationRequest;
 import io.deephaven.proto.backplane.script.grpc.BindTableToVariableRequest;
@@ -63,6 +62,7 @@ import io.deephaven.server.session.*;
 import io.deephaven.server.table.TableModule;
 import io.deephaven.server.test.TestAuthModule.FakeBearer;
 import io.deephaven.server.util.Scheduler;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.auth.AuthContext;
 import io.grpc.*;
@@ -74,14 +74,22 @@ import org.apache.arrow.flight.auth2.Auth2Constants;
 import org.apache.arrow.flight.grpc.CredentialCallOption;
 import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.memory.ArrowBuf;
+import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
+import org.apache.arrow.vector.BigIntVector;
 import org.apache.arrow.vector.DateMilliVector;
 import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.TimeNanoVector;
+import org.apache.arrow.vector.TimeStampMicroVector;
+import org.apache.arrow.vector.TimeStampMilliVector;
+import org.apache.arrow.vector.TimeStampNanoVector;
+import org.apache.arrow.vector.TimeStampSecVector;
+import org.apache.arrow.vector.TimeStampVector;
 import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.complex.ListVector;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
+import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -98,8 +106,10 @@ import javax.inject.Singleton;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
@@ -1129,6 +1139,161 @@ public abstract class FlightMessageRoundTripTest {
                 Assert.eqTrue(root.getVector("I") instanceof ListVector, "column is wrapped in list");
                 Assert.eqTrue(root.getVector("J") instanceof ListVector, "column is wrapped in list");
                 Assert.eqTrue(root.getVector("Timestamp") instanceof ListVector, "column is wrapped in list");
+            }
+        }
+    }
+
+    @Test
+    public void testLongColumnWithFactor() {
+        testLongColumnWithFactor(org.apache.arrow.vector.types.TimeUnit.SECOND, 1_000_000_000L);
+        testLongColumnWithFactor(org.apache.arrow.vector.types.TimeUnit.MILLISECOND, 1_000_000L);
+        testLongColumnWithFactor(org.apache.arrow.vector.types.TimeUnit.MICROSECOND, 1_000L);
+        testLongColumnWithFactor(org.apache.arrow.vector.types.TimeUnit.NANOSECOND, 1L);
+    }
+
+    private void testLongColumnWithFactor(org.apache.arrow.vector.types.TimeUnit timeUnit, long factor) {
+        final int exportId = nextTicket++;
+        final Field field = Field.notNullable("Duration", new ArrowType.Duration(timeUnit));
+        try (final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE);
+                final BigIntVector vector = new BigIntVector(field, allocator);
+                final VectorSchemaRoot root = new VectorSchemaRoot(List.of(field), List.of(vector))) {
+            final FlightClient.ClientStreamListener stream = flightClient.startPut(
+                    FlightDescriptor.path("export", Integer.toString(exportId)), root, new SyncPutListener());
+
+            final int numRows = 12;
+            vector.allocateNew(numRows);
+            for (int ii = 0; ii < numRows; ++ii) {
+                vector.set(ii, ii % 3 == 0 ? QueryConstants.NULL_LONG : ii);
+            }
+            vector.setValueCount(numRows);
+
+            root.setRowCount(numRows);
+            stream.putNext();
+            stream.completed();
+            stream.getResult();
+
+            final SessionState.ExportObject<Table> result = currentSession.getExport(exportId);
+            Assert.eq(result.getState(), "result.getState()",
+                    ExportNotification.State.EXPORTED, "ExportNotification.State.EXPORTED");
+            Assert.eq(result.get().size(), "result.get().size()", numRows);
+            final ColumnSource<Long> duration = result.get().getColumnSource("Duration");
+
+            for (int ii = 0; ii < numRows; ++ii) {
+                if (ii % 3 == 0) {
+                    Assert.eq(duration.getLong(ii), "duration.getLong(ii)", QueryConstants.NULL_LONG,
+                            "QueryConstants.NULL_LONG");
+                } else {
+                    Assert.eq(duration.getLong(ii), "duration.getLong(ii)", ii * factor, "ii * factor");
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testInstantColumnWithFactor() {
+        testInstantColumnWithFactor(
+                org.apache.arrow.vector.types.TimeUnit.SECOND, 1_000_000_000L, TimeStampSecVector::new);
+        testInstantColumnWithFactor(
+                org.apache.arrow.vector.types.TimeUnit.MILLISECOND, 1_000_000L, TimeStampMilliVector::new);
+        testInstantColumnWithFactor(
+                org.apache.arrow.vector.types.TimeUnit.MICROSECOND, 1_000L, TimeStampMicroVector::new);
+        testInstantColumnWithFactor(
+                org.apache.arrow.vector.types.TimeUnit.NANOSECOND, 1L, TimeStampNanoVector::new);
+    }
+
+    private interface TimeVectorFactory {
+        TimeStampVector create(Field field, BufferAllocator allocator);
+    }
+
+    private void testInstantColumnWithFactor(
+            org.apache.arrow.vector.types.TimeUnit timeUnit, long factor, TimeVectorFactory factory) {
+        final int exportId = nextTicket++;
+        final Field field = Field.notNullable("Time", new ArrowType.Timestamp(timeUnit, null));
+        try (final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE);
+                final TimeStampVector vector = factory.create(field, allocator);
+                final VectorSchemaRoot root = new VectorSchemaRoot(List.of(field), List.of(vector))) {
+            final FlightClient.ClientStreamListener stream = flightClient.startPut(
+                    FlightDescriptor.path("export", Integer.toString(exportId)), root, new SyncPutListener());
+
+            final int numRows = 12;
+            vector.allocateNew(numRows);
+            for (int ii = 0; ii < numRows; ++ii) {
+                vector.set(ii, ii % 3 == 0 ? QueryConstants.NULL_LONG : ii);
+            }
+            vector.setValueCount(numRows);
+
+            root.setRowCount(numRows);
+            stream.putNext();
+            stream.completed();
+            stream.getResult();
+
+            final SessionState.ExportObject<Table> result = currentSession.getExport(exportId);
+            Assert.eq(result.getState(), "result.getState()",
+                    ExportNotification.State.EXPORTED, "ExportNotification.State.EXPORTED");
+            Assert.eq(result.get().size(), "result.get().size()", numRows);
+            final ColumnSource<Instant> time = result.get().getColumnSource("Time");
+
+            for (int ii = 0; ii < numRows; ++ii) {
+                if (ii % 3 == 0) {
+                    Assert.eqNull(time.get(ii), "time.get(ii)");
+                } else {
+                    final long value = time.get(ii).getEpochSecond() * 1_000_000_000 + time.get(ii).getNano();
+                    Assert.eq(value, "value", ii * factor, "ii * factor");
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testZonedDateTimeColumnWithFactor() {
+        testZonedDateTimeColumnWithFactor(
+                org.apache.arrow.vector.types.TimeUnit.SECOND, 1_000_000_000L, TimeStampSecVector::new);
+        testZonedDateTimeColumnWithFactor(
+                org.apache.arrow.vector.types.TimeUnit.MILLISECOND, 1_000_000L, TimeStampMilliVector::new);
+        testZonedDateTimeColumnWithFactor(
+                org.apache.arrow.vector.types.TimeUnit.MICROSECOND, 1_000L, TimeStampMicroVector::new);
+        testZonedDateTimeColumnWithFactor(
+                org.apache.arrow.vector.types.TimeUnit.NANOSECOND, 1L, TimeStampNanoVector::new);
+    }
+
+    private void testZonedDateTimeColumnWithFactor(
+            org.apache.arrow.vector.types.TimeUnit timeUnit, long factor, TimeVectorFactory factory) {
+        final int exportId = nextTicket++;
+        final FieldType type = new FieldType(
+                false, new ArrowType.Timestamp(timeUnit, null), null,
+                Collections.singletonMap("deephaven:type", "java.time.ZonedDateTime"));
+        final Field field = new Field("Time", type, null);
+        try (final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE);
+                final TimeStampVector vector = factory.create(field, allocator);
+                final VectorSchemaRoot root = new VectorSchemaRoot(List.of(field), List.of(vector))) {
+            final FlightClient.ClientStreamListener stream = flightClient.startPut(
+                    FlightDescriptor.path("export", Integer.toString(exportId)), root, new SyncPutListener());
+
+            final int numRows = 12;
+            vector.allocateNew(numRows);
+            for (int ii = 0; ii < numRows; ++ii) {
+                vector.set(ii, ii % 3 == 0 ? QueryConstants.NULL_LONG : ii);
+            }
+            vector.setValueCount(numRows);
+
+            root.setRowCount(numRows);
+            stream.putNext();
+            stream.completed();
+            stream.getResult();
+
+            final SessionState.ExportObject<Table> result = currentSession.getExport(exportId);
+            Assert.eq(result.getState(), "result.getState()",
+                    ExportNotification.State.EXPORTED, "ExportNotification.State.EXPORTED");
+            Assert.eq(result.get().size(), "result.get().size()", numRows);
+            final ColumnSource<ZonedDateTime> time = result.get().getColumnSource("Time");
+
+            for (int ii = 0; ii < numRows; ++ii) {
+                if (ii % 3 == 0) {
+                    Assert.eqNull(time.get(ii), "time.get(ii)");
+                } else {
+                    final long value = time.get(ii).toEpochSecond() * 1_000_000_000 + time.get(ii).getNano();
+                    Assert.eq(value, "value", ii * factor, "ii * factor");
+                }
             }
         }
     }
