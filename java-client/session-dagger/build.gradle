@@ -28,7 +28,7 @@ dependencies {
     Classpaths.inheritAssertJ(project)
 
     testImplementation project(':server')
-    testImplementation project(':server-test')
+    testImplementation project(':server-test-utils')
     testImplementation project(':engine-test-utils')
     testImplementation project(':Plot')
     testImplementation project(':java-client-flight')

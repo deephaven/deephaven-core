@@ -107,8 +107,8 @@ project(':ssl-config').projectDir = file('ssl/config')
 include(':ssl-kickstart')
 project(':ssl-kickstart').projectDir = file('ssl/kickstart')
 
-include(':server-test')
-project(':server-test').projectDir = file('server/test')
+include(':server-test-utils')
+project(':server-test-utils').projectDir = file('server/test-utils')
 
 include(':server-netty')
 project(':server-netty').projectDir = file('server/netty')

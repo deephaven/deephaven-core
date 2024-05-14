@@ -90,7 +90,7 @@ dependencies {
 
     implementation 'dev.dirs:directories:26'
 
-    testImplementation project(':server-test')
+    testImplementation project(':server-test-utils')
 
     runtimeOnly project(':Numerics'), project(':extensions-kafka')
     Classpaths.inheritAssertJ(project)
