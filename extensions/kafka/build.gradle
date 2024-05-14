@@ -36,12 +36,12 @@ dependencies {
 
     Classpaths.inheritImmutables(project)
 
-    testImplementation TestTools.projectDependency(project, 'engine-table')
+    testImplementation project(':engine-test-utils')
     Classpaths.inheritJUnitClassic(project, 'testImplementation')
 
-    testRuntimeOnly project(':log-to-slf4j'),
-            project(path: ':configs'),
-            project(path: ':test-configs')
+    testRuntimeOnly project(':log-to-slf4j')
+    testRuntimeOnly project(':configs')
+    testRuntimeOnly project(':test-configs')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 
     Classpaths.inheritAssertJ(project)

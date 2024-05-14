@@ -34,8 +34,7 @@ dependencies {
     implementation project(':Configuration')
     implementation 'org.openjdk.jmh:jmh-core:1.20'
 
-    testImplementation TestTools.projectDependency(project, 'Util')
-    testImplementation TestTools.projectDependency(project, 'engine-table')
+    testImplementation project(':engine-test-utils')
 
     testRuntimeOnly project(path: ':configs')
     testRuntimeOnly project(path: ':test-configs')

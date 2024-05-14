@@ -49,7 +49,7 @@ import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simu
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.time.DateTimeUtils.*;
 import static io.deephaven.util.QueryConstants.*;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.Assert.assertThrows;
 
 @Category(OutOfBandTest.class)
 public class TestEma extends BaseUpdateByTest {
@@ -272,10 +272,11 @@ public class TestEma extends BaseUpdateByTest {
     }
 
     private void testThrowsInternal(TableDefaults table) {
-        assertThrows(TableDataException.class,
+        assertThrows(
+                "Encountered negative delta time during EMA processing",
+                TableDataException.class,
                 () -> table.updateBy(UpdateByOperation.Ema(
-                        OperationControl.builder().build(), "ts", 100)),
-                "Encountered negative delta time during EMA processing");
+                        OperationControl.builder().build(), "ts", 100)));
     }
 
     @Test

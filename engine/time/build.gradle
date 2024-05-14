@@ -20,7 +20,7 @@ dependencies {
     implementation depJdom2
     Classpaths.inheritDagger(project)
 
-    testImplementation TestTools.projectDependency(project, 'Base')
+    testImplementation project(':base-test-utils')
 
     testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),

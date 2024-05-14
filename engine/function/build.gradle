@@ -21,7 +21,7 @@ dependencies {
     implementation project(':Base')
     implementation depCommonsLang3
 
-    testImplementation TestTools.projectDependency(project, 'Base')
+    testImplementation project(':base-test-utils')
 }
 
 def generatedFiles = []
