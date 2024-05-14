@@ -380,10 +380,9 @@ public class BarrageUtil {
                 final ArrowType.Timestamp timestampType = (ArrowType.Timestamp) arrowType;
                 final String tz = timestampType.getTimezone();
                 final TimeUnit timestampUnit = timestampType.getUnit();
-                if (tz == null || "UTC".equals(tz)) {
-                    if (maybeConvertForTimeUnit(timestampUnit, result, columnOffset)) {
-                        return Instant.class;
-                    }
+                boolean conversionSuccess = maybeConvertForTimeUnit(timestampUnit, result, columnOffset);
+                if ((tz == null || "UTC".equals(tz)) && conversionSuccess) {
+                    return Instant.class;
                 }
                 if (explicitType != null) {
                     return explicitType;
