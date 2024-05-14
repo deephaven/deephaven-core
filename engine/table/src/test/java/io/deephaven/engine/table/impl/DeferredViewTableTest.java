@@ -38,7 +38,7 @@ public class DeferredViewTableTest {
         final DeferredViewTable deferredTable = new DeferredViewTable(
                 resultDef,
                 "test",
-                new DeferredViewTable.SimpleTableReference(sourceTable),
+                new DeferredViewTable.TableReference(sourceTable),
                 CollectionUtil.ZERO_LENGTH_STRING_ARRAY,
                 viewColumns,
                 WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY);
@@ -66,7 +66,7 @@ public class DeferredViewTableTest {
         final DeferredViewTable deferredTable = new DeferredViewTable(
                 resultDef,
                 "test",
-                new DeferredViewTable.SimpleTableReference(sourceTable),
+                new DeferredViewTable.TableReference(sourceTable),
                 CollectionUtil.ZERO_LENGTH_STRING_ARRAY,
                 SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
                 WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY);
@@ -89,7 +89,7 @@ public class DeferredViewTableTest {
         final DeferredViewTable deferredTable = new DeferredViewTable(
                 resultDef,
                 "test",
-                new DeferredViewTable.SimpleTableReference(sourceTable),
+                new DeferredViewTable.TableReference(sourceTable),
                 CollectionUtil.ZERO_LENGTH_STRING_ARRAY,
                 SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
                 whereFilters);
@@ -109,7 +109,7 @@ public class DeferredViewTableTest {
         final DeferredViewTable deferredTable = new DeferredViewTable(
                 resultDef,
                 "test",
-                new DeferredViewTable.SimpleTableReference(sourceTable),
+                new DeferredViewTable.TableReference(sourceTable),
                 CollectionUtil.ZERO_LENGTH_STRING_ARRAY,
                 viewColumns,
                 WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY);

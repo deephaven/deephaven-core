@@ -101,9 +101,9 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
                         LinkedHashMap::new));
     }
 
-    private static class PartitionAwareQueryTableReference extends QueryTableReference {
+    private static class PartitionAwareTableReference extends DeferredViewTable.TableReference {
 
-        private PartitionAwareQueryTableReference(PartitionAwareSourceTable table) {
+        private PartitionAwareTableReference(PartitionAwareSourceTable table) {
             super(table);
         }
 
@@ -122,10 +122,10 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
             }
 
             final Table result = partitionFilters.isEmpty()
-                    ? table.coalesce()
+                    ? table
                     : table.where(Filter.and(partitionFilters));
 
-            return new TableAndRemainingFilters(result,
+            return new TableAndRemainingFilters(result.coalesce(),
                     otherFilters.toArray(WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY));
         }
 
@@ -188,7 +188,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
                 componentFactory, locationProvider, updateSourceRegistrar, partitioningColumnDefinitions,
                 partitioningColumnFilters);
         return new DeferredViewTable(newDefinition, description + "-retainColumns",
-                new PartitionAwareQueryTableReference(redefined),
+                new PartitionAwareTableReference(redefined),
                 droppedPartitioningColumnDefinitions.stream().map(ColumnDefinition::getName).toArray(String[]::new),
                 null, null);
     }
@@ -198,8 +198,8 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
             SelectColumn[] viewColumns) {
         BaseTable<?> redefined = redefine(newDefinitionInternal);
         DeferredViewTable.TableReference reference = redefined instanceof PartitionAwareSourceTable
-                ? new PartitionAwareQueryTableReference((PartitionAwareSourceTable) redefined)
-                : new DeferredViewTable.SimpleTableReference(redefined);
+                ? new PartitionAwareTableReference((PartitionAwareSourceTable) redefined)
+                : new DeferredViewTable.TableReference(redefined);
         return new DeferredViewTable(newDefinitionExternal, description + "-redefined",
                 reference, null, viewColumns, null);
     }
@@ -275,7 +275,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
         // If we have no partition filters, we defer all filters.
         if (partitionFilters.isEmpty()) {
             return new DeferredViewTable(definition, getDescription() + "-withDeferredFilters",
-                    new PartitionAwareQueryTableReference(this), null, null,
+                    new PartitionAwareTableReference(this), null, null,
                     otherFilters.toArray(WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY));
         }
 
