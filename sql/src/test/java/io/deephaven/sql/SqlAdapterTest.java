@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -349,9 +350,13 @@ public class SqlAdapterTest {
         return ScopeStaticImpl.empty();
     }
 
+    private static TicketTable scan(String name) {
+        return TicketTable.of(("scan/" + name).getBytes(StandardCharsets.UTF_8));
+    }
+
     private static Scope scope(String name, TableHeader header) {
         return ScopeStaticImpl.builder()
-                .addTables(TableInformation.of(List.of(name), header, TicketTable.of("scan/" + name)))
+                .addTables(TableInformation.of(List.of(name), header, scan(name)))
                 .build();
     }
 
@@ -360,8 +365,8 @@ public class SqlAdapterTest {
             String name2, TableHeader header2) {
         return ScopeStaticImpl.builder()
                 .addTables(
-                        TableInformation.of(List.of(name1), header1, TicketTable.of("scan/" + name1)),
-                        TableInformation.of(List.of(name2), header2, TicketTable.of("scan/" + name2)))
+                        TableInformation.of(List.of(name1), header1, scan(name1)),
+                        TableInformation.of(List.of(name2), header2, scan(name2)))
                 .build();
     }
 
@@ -371,9 +376,9 @@ public class SqlAdapterTest {
             String name3, TableHeader header3) {
         return ScopeStaticImpl.builder()
                 .addTables(
-                        TableInformation.of(List.of(name1), header1, TicketTable.of("scan/" + name1)),
-                        TableInformation.of(List.of(name2), header2, TicketTable.of("scan/" + name2)),
-                        TableInformation.of(List.of(name3), header3, TicketTable.of("scan/" + name3)))
+                        TableInformation.of(List.of(name1), header1, scan(name1)),
+                        TableInformation.of(List.of(name2), header2, scan(name2)),
+                        TableInformation.of(List.of(name3), header3, scan(name3)))
                 .build();
     }
 }
