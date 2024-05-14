@@ -50,18 +50,17 @@ import static io.deephaven.extensions.s3.S3SeekableChannelProviderPlugin.S3_URI_
  */
 final class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
-    /**
-     * We always allocate buffers of maximum allowed size for re-usability across reads with different fragment sizes.
-     * There can be a performance penalty though if the fragment size is much smaller than the maximum size.
-     */
-    private static final BufferPool BUFFER_POOL = new BufferPool(S3Instructions.MAX_FRAGMENT_SIZE);
-
     private static final int MAX_KEYS_PER_BATCH = 1000;
 
     private static final Logger log = LoggerFactory.getLogger(S3SeekableChannelProvider.class);
 
     private final S3AsyncClient s3AsyncClient;
     private final S3Instructions s3Instructions;
+
+    /**
+     * A shared cache for S3 requests. This cache is shared across all S3 channels created by this provider.
+     */
+    private final S3RequestCache sharedCache;
 
     @SuppressWarnings("rawtypes")
     private static final AtomicReferenceFieldUpdater<S3SeekableChannelProvider, SoftReference> FILE_SIZE_CACHE_REF_UPDATER =
@@ -73,6 +72,7 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     S3SeekableChannelProvider(@NotNull final S3Instructions s3Instructions) {
         this.s3AsyncClient = S3AsyncClientFactory.getAsyncClient(s3Instructions);
         this.s3Instructions = s3Instructions;
+        this.sharedCache = new S3RequestCache(s3Instructions.fragmentSize());
         this.fileSizeCacheRef = new SoftReference<>(new KeyedObjectHashMap<>(FileSizeInfo.URI_MATCH_KEY));
     }
 
@@ -96,12 +96,12 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
     @Override
     public SeekableChannelContext makeContext() {
-        return new S3ChannelContext(s3AsyncClient, s3Instructions, BUFFER_POOL);
+        return new S3ChannelContext(s3AsyncClient, s3Instructions, sharedCache);
     }
 
     @Override
     public SeekableChannelContext makeSingleUseContext() {
-        return new S3ChannelContext(s3AsyncClient, s3Instructions.singleUse(), BUFFER_POOL);
+        return new S3ChannelContext(s3AsyncClient, s3Instructions.singleUse(), sharedCache);
     }
 
     @Override
@@ -272,5 +272,6 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     @Override
     public void close() {
         s3AsyncClient.close();
+        sharedCache.clear();
     }
 }
