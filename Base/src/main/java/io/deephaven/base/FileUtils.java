@@ -82,7 +82,7 @@ public class FileUtils {
     /**
      * Move files accepted by a filter from their relative path under source to the same relative path under
      * destination. Creates missing destination subdirectories as needed.
-     * 
+     *
      * @param source Must be a directory.
      * @param destination Must be a directory if it exists.
      * @param filter Applied to normal files, only. We recurse on directories automatically.
@@ -129,7 +129,7 @@ public class FileUtils {
 
     /**
      * Recursive delete method that copes with .nfs files. Uses the file's parent as the trash directory.
-     * 
+     *
      * @param file
      */
     public static void deleteRecursivelyOnNFS(File file) {
@@ -138,7 +138,7 @@ public class FileUtils {
 
     /**
      * Recursive delete method that copes with .nfs files.
-     * 
+     *
      * @param trashFile Filename to move regular files to before deletion. .nfs files may be created in its parent
      *        directory.
      * @param fileToBeDeleted File or directory at which to begin recursive deletion.
@@ -169,7 +169,7 @@ public class FileUtils {
 
     /**
      * Scan directory recursively to find all files
-     * 
+     *
      * @param dir
      * @return
      */
@@ -282,19 +282,28 @@ public class FileUtils {
         URI uri;
         try {
             uri = new URI(source);
+            if (uri.getScheme() == null) {
+                // Convert to a "file" URI
+                return convertToURI(new File(source), isDirectory);
+            }
+            String path = uri.getPath();
+            boolean isUpdated = false;
+            // Directory URIs should end with a slash
+            if (isDirectory && path.charAt(path.length() - 1) != URI_SEPARATOR_CHAR) {
+                path = path + URI_SEPARATOR_CHAR;
+                isUpdated = true;
+            }
             // Replace two or more consecutive slashes in the path with a single slash
-            final String path = uri.getPath();
             if (path.contains(REPEATED_URI_SEPARATOR)) {
-                final String canonicalizedPath = REPEATED_URI_SEPARATOR_PATTERN.matcher(path).replaceAll(URI_SEPARATOR);
-                uri = new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), canonicalizedPath,
-                        uri.getQuery(), uri.getFragment());
+                path = REPEATED_URI_SEPARATOR_PATTERN.matcher(path).replaceAll(URI_SEPARATOR);
+                isUpdated = true;
+            }
+            if (isUpdated) {
+                uri = new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), path, uri.getQuery(),
+                        uri.getFragment());
             }
         } catch (final URISyntaxException e) {
             // If the URI is invalid, assume it's a file path
-            return convertToURI(new File(source), isDirectory);
-        }
-        if (uri.getScheme() == null) {
-            // Convert to a "file" URI
             return convertToURI(new File(source), isDirectory);
         }
         return uri;
@@ -314,14 +323,8 @@ public class FileUtils {
         if (File.separatorChar != URI_SEPARATOR_CHAR) {
             absPath = absPath.replace(File.separatorChar, URI_SEPARATOR_CHAR);
         }
-        if (absPath.charAt(0) != URI_SEPARATOR_CHAR) {
-            absPath = URI_SEPARATOR_CHAR + absPath;
-        }
         if (isDirectory && absPath.charAt(absPath.length() - 1) != URI_SEPARATOR_CHAR) {
             absPath = absPath + URI_SEPARATOR_CHAR;
-        }
-        if (absPath.startsWith(REPEATED_URI_SEPARATOR)) {
-            absPath = REPEATED_URI_SEPARATOR + absPath;
         }
         try {
             return new URI("file", null, absPath, null);
