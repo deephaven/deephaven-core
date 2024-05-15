@@ -18,7 +18,6 @@ import io.deephaven.proto.backplane.grpc.*;
 import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.function.ThrowingRunnable;
 import io.grpc.Context;
 import io.grpc.ForwardingServerCall.SimpleForwardingServerCall;
 import io.grpc.ForwardingServerCallListener;
@@ -313,9 +312,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
 
     @Singleton
     public static class SessionServiceInterceptor implements ServerInterceptor {
-        private final SessionService service;
-        private final SessionService.ErrorTransformer errorTransformer;
-        private static final Status authenticationDetailsInvalid =
+        private static final Status AUTHENTICATION_DETAILS_INVALID =
                 Status.UNAUTHENTICATED.withDescription("Authentication details invalid");
 
         // We can't use just io.grpc.MethodDescriptor (unless we chose provide and inject the named method descriptors),
@@ -325,6 +322,9 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
         private static final Set<String> CANCEL_RPC_ON_SESSION_CLOSE = Set.of(
                 ConsoleServiceGrpc.getSubscribeToLogsMethod().getFullMethodName(),
                 ObjectServiceGrpc.getMessageStreamMethod().getFullMethodName());
+
+        private final SessionService service;
+        private final SessionService.ErrorTransformer errorTransformer;
 
         @Inject
         public SessionServiceInterceptor(
@@ -355,12 +355,8 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                 try {
                     session = service.getSessionForAuthToken(token);
                 } catch (AuthenticationException e) {
-                    try {
-                        call.close(authenticationDetailsInvalid, new Metadata());
-                    } catch (IllegalStateException ignored) {
-                        // could be thrown if the call was already closed. As an interceptor, we can't throw,
-                        // so ignoring this and just returning the no-op listener.
-                    }
+                    // As an interceptor, we can't throw, so ignoring this and just returning the no-op listener.
+                    safeClose(call, AUTHENTICATION_DETAILS_INVALID, new Metadata(), false);
                     return new ServerCall.Listener<>() {};
                 }
             }
@@ -399,6 +395,8 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
 
     private static class SessionServiceCallListener<ReqT, RespT> extends
             ForwardingServerCallListener.SimpleForwardingServerCallListener<ReqT> implements Closeable {
+        private static final Status SESSION_CLOSED = Status.CANCELLED.withDescription("Session closed");
+
         private final ServerCall<ReqT, RespT> call;
         private final Context context;
         private final SessionState session;
@@ -426,11 +424,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
         @Override
         public void close() {
             // session.addOnCloseCallback
-            try {
-                call.close(Status.CANCELLED.withDescription("Session closed"), new Metadata());
-            } catch (Exception e) {
-                // ignored
-            }
+            safeClose(call, SESSION_CLOSED, new Metadata(), false);
         }
 
         @Override
@@ -479,34 +473,44 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
             @NotNull final Context context,
             @Nullable final SessionState session,
             @NotNull final SessionService.ErrorTransformer errorTransformer,
-            @NotNull final ThrowingRunnable<InterruptedException> lambda) {
+            @NotNull final Runnable lambda) {
         Context previous = context.attach();
         // note: we'll open the execution context here so that it may be used by the error transformer
         try (final SafeCloseable ignored1 = session == null ? null : session.getExecutionContext().open()) {
             try (final SafeCloseable ignored2 = LivenessScopeStack.open()) {
                 lambda.run();
-            } catch (final InterruptedException err) {
-                Thread.currentThread().interrupt();
-                closeWithError(call, errorTransformer.transform(err));
-            } catch (final Throwable err) {
-                closeWithError(call, errorTransformer.transform(err));
+            } catch (final RuntimeException err) {
+                safeClose(call, errorTransformer.transform(err));
+            } catch (final Error error) {
+                // Indicates a very serious failure; debateable whether we should even try to send close.
+                safeClose(call, Status.INTERNAL, new Metadata(), false);
+                throw error;
             } finally {
                 context.detach(previous);
             }
         }
     }
 
-    private static <ReqT, RespT> void closeWithError(
-            @NotNull final ServerCall<ReqT, RespT> call,
+    private static void safeClose(
+            @NotNull final ServerCall<?, ?> call,
             @NotNull final StatusRuntimeException err) {
+        Metadata metadata = Status.trailersFromThrowable(err);
+        if (metadata == null) {
+            metadata = new Metadata();
+        }
+        safeClose(call, Status.fromThrowable(err), metadata, true);
+    }
+
+    private static void safeClose(ServerCall<?, ?> call, Status status, Metadata trailers, boolean logOnError) {
         try {
-            Metadata metadata = Status.trailersFromThrowable(err);
-            if (metadata == null) {
-                metadata = new Metadata();
+            call.close(status, trailers);
+        } catch (IllegalStateException e) {
+            // IllegalStateException is explicitly documented as thrown if the call is already closed. It might be nice
+            // if there was a more explicit exception type, but this should suffice. We _could_ try and check the text
+            // "call already closed", but that is an undocumented implementation detail we should probably not rely on.
+            if (logOnError && log.isDebugEnabled()) {
+                log.debug().append("call.close error: ").append(e).endl();
             }
-            call.close(Status.fromThrowable(err), metadata);
-        } catch (final Exception unexpectedErr) {
-            log.debug().append("Unanticipated gRPC Error: ").append(unexpectedErr).endl();
         }
     }
 }
