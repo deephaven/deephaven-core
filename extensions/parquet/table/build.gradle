@@ -43,7 +43,7 @@ dependencies {
 
     testImplementation project(':base-test-utils')
     testImplementation project(':engine-test-utils')
-    testImplementation TestTools.projectDependency(project, 'engine-context')
+
     testImplementation TestTools.projectDependency(project, 'extensions-s3')
     Classpaths.inheritJUnitClassic(project, 'testImplementation')
 
