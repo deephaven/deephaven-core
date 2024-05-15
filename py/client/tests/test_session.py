@@ -366,35 +366,5 @@ t1 = empty_table(0) if t.size == 2 else None
                  sub_session2.fetch_table(shared_ticket)
 
 
-    def test_mt(self):
-        import threading
-        session = Session()
-        print(f'START test_mt at {datetime.datetime.now()}', flush=True)
-
-        def _interact_with_server():
-            print(f'THREAD START test_mt {threading.current_thread()}', flush=True)
-            pa_table = csv.read_csv(self.csv_file)
-            for _ in range(1800):
-                table1 = session.import_table(pa_table)
-                table2 = table1.group_by()
-                pa_table2 = table2.to_arrow()
-                self.assertEqual(table2.size, 1)
-                self.assertEqual(pa_table2.num_rows, 1)
-                time.sleep(1)
-            print(f'THREAD END test_mt {threading.current_thread()}', flush=True)
-
-        threads = []
-        for i in range(200):
-            t = threading.Thread(target=_interact_with_server)
-            threads.append(t)
-
-        for t in threads:
-            t.start()
-
-        for t in threads:
-            t.join()
-        print(f'END test_mt at {datetime.datetime.now()}', flush=True)
-
-
 if __name__ == '__main__':
     unittest.main()
