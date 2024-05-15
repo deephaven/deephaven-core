@@ -35,6 +35,7 @@ from pydeephaven.query import Query
 from pydeephaven.table import Table, InputTable
 
 _TRACE_ENABLED = False
+_MAX_REFRESH_CONSECUTIVE_FAILURES = 5
 
 def trace(who):
     if not _TRACE_ENABLED:
@@ -167,6 +168,7 @@ class Session:
             self._auth_header_value = str(auth_type) + " " + auth_token
 
         self._auth_header_value = bytes(self._auth_header_value, 'ascii')
+        self._refresh_consecutive_failures = 0
         self.grpc_channel = None
         self._session_service = None
         self._table_service = None
@@ -369,7 +371,13 @@ class Session:
         if self._keep_alive_timer:
             ok = self._refresh_token()
             if not ok:
+                self._refresh_consecutive_failures += 1
+                if (self._refresh_consecutive_failures > _MAX_REFRESH_CONSECUTIVE_FAILURES):
+                    self.is_connencted = False
+                    raise DHError(f'Failed to refresh token {self._refresh_consecutive_failures} times')
                 factor = 0.5
+            else:
+                self._refresh_consecutive_failures = 0
         timer_wakeup = self._timeout_seconds * factor
         trace(f'_keep_alive timer_wakeup={timer_wakeup}')
         self._keep_alive_timer = threading.Timer(timer_wakeup, self._keep_alive)
