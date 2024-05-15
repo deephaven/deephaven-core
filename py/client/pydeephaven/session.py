@@ -360,7 +360,7 @@ class Session:
         if not ok:
             logging.warning(f'{self._logpfx} Will retry auth token refresh in {timer_wakeup} seconds.')
 
-    def _refresh_token(self):
+    def _refresh_token(self) -> bool:
         trace('_refresh_token')
         try:
             self.config_service.get_configuration_constants()
