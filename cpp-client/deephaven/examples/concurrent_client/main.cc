@@ -4,6 +4,7 @@
 #include <exception>
 #include <iostream>
 #include <iomanip>
+#include <memory>
 #include <cstdlib>
 #include <thread>
 #include "deephaven/client/client.h"
@@ -16,8 +17,8 @@ void Usage(const char *const argv0, const int exit_status) {
   std::exit(exit_status);
 }
 
-void ThreadFun(Client *const client, const std::size_t ti) {
-    auto manager = client->GetManager();
+void ThreadFun(std::shared_ptr<Client> clientp, const std::size_t ti) {
+    auto manager = clientp->GetManager();
     using namespace std::chrono_literals;
     std::cout << "THREAD START " << ti << std::endl << std::flush;
     const std::string t1_name = std::string("import deephaven; t1_") + std::to_string(ti);
@@ -30,10 +31,10 @@ void ThreadFun(Client *const client, const std::size_t ti) {
     std::cout << "THREAD END " << ti << std::endl << std::flush;
 }
 
-void Run(Client *const client, const std::size_t nthreads) {
+void Run(std::shared_ptr<Client> clientp, const std::size_t nthreads) {
   std::thread threads[nthreads];
   for (std::size_t i = 0; i < nthreads; ++i) {
-    threads[i] = std::move(std::thread(&ThreadFun, client, i));
+    threads[i] = std::move(std::thread(&ThreadFun, clientp, i));
   }
   
   for (std::size_t i = 0; i < nthreads; ++i) {
@@ -84,7 +85,7 @@ int main(int argc, char *argv[]) {
   }
   try {
     auto client = Client::Connect(endpoint);
-    Run(&client, nthreads);
+    Run(std::make_shared<Client>(std::move(client)), nthreads);
   } catch (const std::exception &e) {
     std::cerr << "Caught exception: " << e.what() << '\n';
   }
