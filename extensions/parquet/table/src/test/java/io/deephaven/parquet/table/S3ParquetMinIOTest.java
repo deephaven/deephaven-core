@@ -7,17 +7,16 @@ import io.deephaven.extensions.s3.S3Instructions.Builder;
 import io.deephaven.extensions.s3.testlib.SingletonContainers.MinIO;
 import io.deephaven.extensions.s3.testlib.SingletonContainers;
 import io.deephaven.stats.util.OSUtil;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
-
-import static org.junit.Assert.assertFalse;
 
 public class S3ParquetMinIOTest extends S3ParquetTestBase {
 
     @BeforeClass
     public static void initContainer() {
         // TODO(deephaven-core#5116): MinIO testcontainers does not work on OS X
-        assertFalse("OSUtil.runningMacOS()", OSUtil.runningMacOS());
+        Assume.assumeFalse("OSUtil.runningMacOS()", OSUtil.runningMacOS());
         // ensure container is started so container startup time isn't associated with a specific test
         MinIO.init();
     }
