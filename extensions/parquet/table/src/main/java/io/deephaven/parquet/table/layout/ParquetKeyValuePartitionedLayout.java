@@ -19,7 +19,6 @@ import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
@@ -48,42 +47,50 @@ public class ParquetKeyValuePartitionedLayout
         extends URIStreamKeyValuePartitionLayout<ParquetTableLocationKey>
         implements TableLocationKeyFinder<ParquetTableLocationKey> {
 
-    private final ParquetInstructions readInstructions;
-
-    public ParquetKeyValuePartitionedLayout(
-            @NotNull final File tableRootDirectory,
-            @NotNull final TableDefinition tableDefinition,
-            @NotNull final ParquetInstructions readInstructions) {
-        this(convertToURI(tableRootDirectory, true), tableDefinition, readInstructions);
-    }
+    private final SeekableChannelsProvider channelsProvider;
 
     public ParquetKeyValuePartitionedLayout(
             @NotNull final URI tableRootDirectory,
             @NotNull final TableDefinition tableDefinition,
             @NotNull final ParquetInstructions readInstructions) {
+        this(tableRootDirectory, tableDefinition, readInstructions,
+                SeekableChannelsProviderLoader.getInstance().fromServiceLoader(tableRootDirectory,
+                        readInstructions.getSpecialInstructions()));
+    }
+
+    private ParquetKeyValuePartitionedLayout(
+            @NotNull final URI tableRootDirectory,
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final ParquetInstructions readInstructions,
+            @NotNull final SeekableChannelsProvider channelsProvider) {
         super(tableRootDirectory,
                 () -> new LocationTableBuilderDefinition(tableDefinition),
-                (uri, partitions) -> new ParquetTableLocationKey(uri, 0, partitions, readInstructions),
+                (uri, partitions) -> new ParquetTableLocationKey(uri, 0, partitions, readInstructions,
+                        channelsProvider),
                 Math.toIntExact(tableDefinition.getColumnStream().filter(ColumnDefinition::isPartitioning).count()));
-        this.readInstructions = readInstructions;
-    }
-
-    public ParquetKeyValuePartitionedLayout(
-            @NotNull final File tableRootDirectory,
-            final int maxPartitioningLevels,
-            @NotNull final ParquetInstructions readInstructions) {
-        this(convertToURI(tableRootDirectory, true), maxPartitioningLevels, readInstructions);
+        this.channelsProvider = channelsProvider;
     }
 
     public ParquetKeyValuePartitionedLayout(
             @NotNull final URI tableRootDirectory,
             final int maxPartitioningLevels,
             @NotNull final ParquetInstructions readInstructions) {
+        this(tableRootDirectory, maxPartitioningLevels, readInstructions,
+                SeekableChannelsProviderLoader.getInstance().fromServiceLoader(tableRootDirectory,
+                        readInstructions.getSpecialInstructions()));
+    }
+
+    private ParquetKeyValuePartitionedLayout(
+            @NotNull final URI tableRootDirectory,
+            final int maxPartitioningLevels,
+            @NotNull final ParquetInstructions readInstructions,
+            @NotNull final SeekableChannelsProvider channelsProvider) {
         super(tableRootDirectory,
                 () -> new LocationTableBuilderCsv(tableRootDirectory),
-                (uri, partitions) -> new ParquetTableLocationKey(uri, 0, partitions, readInstructions),
+                (uri, partitions) -> new ParquetTableLocationKey(uri, 0, partitions, readInstructions,
+                        channelsProvider),
                 maxPartitioningLevels);
-        this.readInstructions = readInstructions;
+        this.channelsProvider = channelsProvider;
     }
 
     @Override
@@ -95,11 +102,8 @@ public class ParquetKeyValuePartitionedLayout
         } else {
             uriFilter = uri -> uri.getPath().endsWith(ParquetUtils.PARQUET_FILE_EXTENSION);
         }
-        try (final SeekableChannelsProvider provider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(
-                tableRootDirectory, readInstructions.getSpecialInstructions());
-                final Stream<URI> uriStream = provider.walk(tableRootDirectory)) {
-            final Stream<URI> filteredStream = uriStream.filter(uriFilter);
-            findKeys(filteredStream, locationKeyObserver);
+        try (final Stream<URI> filteredUriStream = channelsProvider.walk(tableRootDirectory).filter(uriFilter)) {
+            findKeys(filteredUriStream, locationKeyObserver);
         } catch (final IOException e) {
             throw new TableDataException("Error finding parquet locations under " + tableRootDirectory, e);
         }

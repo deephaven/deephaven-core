@@ -724,13 +724,13 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private TableDefinition tableDefinition;
         private Collection<List<String>> indexColumns;
 
+        /**
+         * For each additional field added, make sure to update the copy constructor builder
+         * {@link #Builder(ParquetInstructions)}
+         */
+
         public Builder() {}
 
-        /**
-         * Creates a new {@link ParquetInstructions} object by only copying the column name to instructions mapping and
-         * parquet column name to instructions mapping from the given {@link ParquetInstructions} object. For copying
-         * all properties, use something like {@link ParquetInstructions#withTableDefinition}.
-         */
         public Builder(final ParquetInstructions parquetInstructions) {
             if (parquetInstructions == EMPTY) {
                 return;
@@ -738,6 +738,18 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             final ReadOnly readOnlyParquetInstructions = (ReadOnly) parquetInstructions;
             columnNameToInstructions = readOnlyParquetInstructions.copyColumnNameToInstructions();
             parquetColumnNameToInstructions = readOnlyParquetInstructions.copyParquetColumnNameToInstructions();
+            compressionCodecName = readOnlyParquetInstructions.getCompressionCodecName();
+            maximumDictionaryKeys = readOnlyParquetInstructions.getMaximumDictionaryKeys();
+            maximumDictionarySize = readOnlyParquetInstructions.getMaximumDictionarySize();
+            isLegacyParquet = readOnlyParquetInstructions.isLegacyParquet();
+            targetPageSize = readOnlyParquetInstructions.getTargetPageSize();
+            isRefreshing = readOnlyParquetInstructions.isRefreshing();
+            specialInstructions = readOnlyParquetInstructions.getSpecialInstructions();
+            generateMetadataFiles = readOnlyParquetInstructions.generateMetadataFiles();
+            baseNameForPartitionedParquetData = readOnlyParquetInstructions.baseNameForPartitionedParquetData();
+            fileLayout = readOnlyParquetInstructions.getFileLayout().orElse(null);
+            tableDefinition = readOnlyParquetInstructions.getTableDefinition().orElse(null);
+            indexColumns = readOnlyParquetInstructions.getIndexColumns().orElse(null);
         }
 
         private void newColumnNameToInstructionsMap() {

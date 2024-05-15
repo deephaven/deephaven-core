@@ -9,14 +9,13 @@ import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 
-import static io.deephaven.engine.util.TableTools.col;
-import static io.deephaven.engine.util.TableTools.intCol;
-import static io.deephaven.engine.util.TableTools.merge;
-import static io.deephaven.engine.util.TableTools.newTable;
+import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.time.DateTimeUtils.epochNanosToInstant;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 import io.deephaven.engine.testutil.StepClock;
+import io.deephaven.engine.util.TableTools;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -193,5 +192,39 @@ public class TestClockFilters {
         });
         assertArrayEquals(new int[] {1, 2, 3, 1, 2, 3, 2, 2, 3, 2, 2, 3, 2, 2, 3, 2, 2, 3},
                 (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
+    }
+
+    @Test
+    public void testInitiallyEmptyUnsorted() {
+        clock.reset();
+        final UnsortedClockFilter filter = new UnsortedClockFilter("Timestamp", clock, true);
+
+        final Table testEmpty = TableTools.newTable(instantCol("Timestamp"), intCol("Int"));
+
+        final Table result = testEmpty.where(filter);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            clock.run();
+            filter.run();
+        });
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    public void testInitiallyEmptySorted() {
+        clock.reset();
+        final UnsortedClockFilter filter = new UnsortedClockFilter("Timestamp", clock, true);
+
+        final Table testEmpty = TableTools.newTable(instantCol("Timestamp"), intCol("Int"));
+
+        final Table result = testEmpty.where(filter);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            clock.run();
+            filter.run();
+        });
+        assertEquals(0, result.size());
     }
 }

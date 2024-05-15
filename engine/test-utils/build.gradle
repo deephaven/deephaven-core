@@ -11,7 +11,7 @@ dependencies {
 
     implementation project(':Configuration')
     implementation project(':engine-tuple')
-    implementation project(':base-test-utils')
+    api project(':base-test-utils')
     implementation project(':engine-rowset-test-utils')
     implementation project(':extensions-source-support')
 

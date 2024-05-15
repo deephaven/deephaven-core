@@ -1,7 +1,7 @@
 //
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.utils.test;
+package io.deephaven.engine.util;
 
 import io.deephaven.configuration.Configuration;
 import io.deephaven.configuration.PropertyException;

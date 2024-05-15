@@ -319,6 +319,15 @@ public abstract class QueryTableWhereTest {
     }
 
     @Test
+    public void testWhereInOptimalIndexSelectionWithNoneAvailable() {
+        final Table lhs = emptyTable(10).update("Part=ii % 2 == 0 ? `Apple` : `Pie`", "Hello=ii", "Goodbye = `A`+ii");
+        DataIndexer.getOrCreateDataIndex(lhs, "Part");
+        final Table rhs = emptyTable(2).update("Hello=ii", "Goodbye = `A`+ii");
+        final Table result = lhs.whereIn(rhs, "Goodbye");
+        assertTableEquals(lhs.head(2), result);
+    }
+
+    @Test
     public void testWhereDynamicIn() {
         final QueryTable setTable = testRefreshingTable(i(2, 4, 6, 8).toTracking(), col("X", "A", "B", "C", "B"));
         final QueryTable filteredTable = testRefreshingTable(i(1, 2, 3, 4, 5).toTracking(),
