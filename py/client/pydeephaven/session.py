@@ -207,7 +207,11 @@ class Session:
                 break
 
     def wrap_rpc(self, stub_call, *args, **kwargs):
-        response, call = stub_call.with_call(*args, **{ **{"metadata": self.grpc_metadata}, **kwargs })
+        if "metadata" in kwargs:
+            kwargs["metadata"] = { **(kwargs["metadata"]), **self.grpc_metadata }
+        else:
+            kwargs["metadata"] = self.grpc_metadata
+        response, call = stub_call.with_call(*args, **kwargs)
         self.update_metadata(call.initial_metadata())
         return response
 
