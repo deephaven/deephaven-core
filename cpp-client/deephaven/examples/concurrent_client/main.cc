@@ -8,6 +8,8 @@
 #include <cstdlib>
 #include <thread>
 #include "deephaven/client/client.h"
+#include "deephaven/third_party/fmt/format.h"
+#include "deephaven/third_party/fmt/ostream.h"
 
 using deephaven::client::Client;
 using deephaven::client::TableHandleManager;
@@ -32,9 +34,9 @@ void ThreadFun(std::shared_ptr<Client> clientp, const std::size_t ti) {
 }
 
 void Run(std::shared_ptr<Client> clientp, const std::size_t nthreads) {
-  std::thread threads[nthreads];
+  std::vector<std::thread> threads(nthreads);
   for (std::size_t i = 0; i < nthreads; ++i) {
-    threads[i] = std::move(std::thread(&ThreadFun, clientp, i));
+    threads.emplace_back(&ThreadFun, clientp, i);
   }
   
   for (std::size_t i = 0; i < nthreads; ++i) {
@@ -60,10 +62,8 @@ std::size_t get_size_arg(
     }
     return val;
   } catch (const std::invalid_argument &e) {
-    std::cerr << argv[0] << ": can't convert " << description << " argument #" << c << " '"
-              << argv[c] << "' to a positive intenger ["
-              << e.what() << "], aborting."
-              << '\n';
+    fmt::println(std::cerr, "{}: can't convert {} argument #{} '{}' to a positive intenger [{}], aborting.",
+                 argv[0], description, c, argv[c], e.what());
     std::exit(1);
   }
 }
