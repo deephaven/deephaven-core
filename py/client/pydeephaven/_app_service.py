@@ -15,11 +15,10 @@ class AppService:
     def list_fields(self) -> Any:
         """Fetches the current application fields."""
         try:
-            fields = self._grpc_app_stub.ListFields(
-                application_pb2.ListFieldsRequest(),
-                metadata=self.session.grpc_metadata
+            fields = self.session.wrap_bidi_rpc(
+                self._grpc_app_stub.ListFields,
+                application_pb2.ListFieldsRequest()
             )
-            self.session.update_metadata(fields.initial_metadata())
             return fields
         except Exception as e:
             raise DHError("failed to list fields.") from e

@@ -187,7 +187,7 @@ class Session:
 
     def __enter__(self):
         if not self.is_connected:
-            # double-checked locking, is_connected is checked insied _connect again, which
+            # double-checked locking, is_connected is checked inside _connect again, which
             # may not end up connecting.
             self._connect()
         return self
@@ -197,6 +197,22 @@ class Session:
 
     def __del__(self):
         self.close()
+
+    def update_metadata(self, metadata: Iterable[Tuple[bytes, bytes]]):
+        for header_tuple in metadata:
+            if header_tuple[0] == "authorization":
+                self._auth_header_value = bytes(header_tuple[1], 'ascii')
+                break
+
+    def wrap_rpc(self, stub_call, *args, **kwargs):
+        response, call = stub_call.with_call(*args, **{ **{"metadata": self.grpc_metadata}, **kwargs })
+        self.update_metadata(call.initial_metadata())
+        return response
+
+    def wrap_bidi_rpc(self, stub_call, *args, **kwargs):
+        response = stub_call(*args, **{ **{"metadata": self.grpc_metadata}, **kwargs })
+        self.update_metadata(response.initial_metadata())
+        return response
 
     @property
     def tables(self):
@@ -211,23 +227,14 @@ class Session:
             fields = self._fetch_fields()
             return {field.field_name: field.typed_ticket for field in fields if field.application_id == 'scope'}
 
-    def update_metadata(self, metadata: Iterable[Tuple[bytes, bytes]]):
-        for header_tuple in metadata:
-            if header_tuple[0] == "authorization":
-                self._auth_header_value = bytes(header_tuple[1], 'ascii')
-                break
-
     @property
     def grpc_metadata(self):
-        # Strictly speaking this is a read/modify/write sequence (if statement checking a value and making a decision
-        # including the value checked right after.  Meaning this should use a lock.
-        # However the condition we are checking here is a kind of assert; it should not happen in practice
-        # unless we have a coding error or the server sent us something wrong.
-        if self._auth_header_value is None or not isinstance(self._auth_header_value, bytes) or len(self._auth_header_value) == 0:
-            logging.warning(f'{self._logpfx} internal invariant violated, _auth_header_value={self._auth_header_value}')
+        header_value_snap = self._auth_header_value  # ensure it doesn't change while doing multiple reads
+        if header_value_snap is None or not isinstance(header_value_snap, bytes) or len(header_value_snap) == 0:
+            logging.warning(f'{self._logpfx} internal invariant violated, _auth_header_value={header_value_snap}')
             l = []
         else:
-            l = [(b'authorization', self._auth_header_value)]
+            l = [(b'authorization', header_value_snap)]
         if self._extra_headers:
             l.extend(list(self._extra_headers.items()))
         return l
