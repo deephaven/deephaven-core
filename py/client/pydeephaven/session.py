@@ -52,11 +52,10 @@ class _DhClientAuthMiddleware(ClientMiddleware):
 
     def received_headers(self, headers):
         super().received_headers(headers)
-        if headers:
-            auth_token = bytes(headers.get("authorization")[0], encoding='ascii')
-            with self._session._r_lock:
-                if auth_token and auth_token != self._session._auth_token:
-                    self._session._auth_token = auth_token
+        if headers and (auth_field := headers.get("authorization")):
+            auth_token = bytes(auth_field[0], encoding='ascii')
+            if auth_token and auth_token != self._session._auth_token:
+                self._session._auth_token = auth_token
 
     def sending_headers(self):
         return {
@@ -308,6 +307,8 @@ class Session:
             if self.is_connected:
                 if self._keep_alive_timer:
                     self._refresh_token()
+                #  self._keep_alive_timer = threading.Timer(self._timeout / 2 / 1000, self._keep_alive)
+                #  TODO for testing only, will restore if confirmed.
                 self._keep_alive_timer = threading.Timer(10, self._keep_alive)
                 self._keep_alive_timer.daemon = True
                 self._keep_alive_timer.start()
