@@ -210,14 +210,16 @@ class Session:
     def wrap_rpc(self, stub_call, *args, **kwargs):
         if 'metadata' in kwargs:
             raise DHError('Internal error: "metadata" in kwargs not supported in wrap_rpc.')
-
         kwargs["metadata"] = self.grpc_metadata
         response, call = stub_call.with_call(*args, **kwargs)
         self.update_metadata(call.initial_metadata())
         return response
 
     def wrap_bidi_rpc(self, stub_call, *args, **kwargs):
-        response = stub_call(*args, **{ **{"metadata": self.grpc_metadata}, **kwargs })
+        if 'metadata' in kwargs:
+            raise DHError('Internal error: "metadata" in kwargs not supported in wrap_bidi_rpc.')
+        kwargs["metadata"] = self.grpc_metadata
+        response = stub_call(*args, **kwargs)
         self.update_metadata(response.initial_metadata())
         return response
 
