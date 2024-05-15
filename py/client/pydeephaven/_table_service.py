@@ -20,10 +20,10 @@ class TableService:
         batch_ops = BatchOpAssembler(self.session, table_ops=ops).build_batch()
 
         try:
-            response, call = self._grpc_table_stub.Batch.with_call(
+            response = self._grpc_table_stub.Batch(
                 table_pb2.BatchTableRequest(ops=batch_ops),
                 metadata=self.session.grpc_metadata)
-            self.session.update_metadata(call.initial_metadata())
+            self.session.update_metadata(response.initial_metadata())
 
             exported_tables = []
             for exported in response:

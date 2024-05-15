@@ -30,6 +30,6 @@ class InputTableService:
                 inputtable_pb2.DeleteTableRequest(input_table=input_table.ticket,
                                                   table_to_remove=table.ticket),
                 metadata=self.session.grpc_metadata)
-            self.session.update_metadata(call.intiial_metadata())
+            self.session.update_metadata(call.initial_metadata())
         except Exception as e:
             raise DHError("failed to delete from InputTable") from e
