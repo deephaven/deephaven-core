@@ -342,12 +342,12 @@ class Session:
         trace(f'_keep_alive')
         if not self.is_connected:
             return
-        factor = 0.01
+        factor = 1
         ok = True
         if self._keep_alive_timer:
             ok = self._refresh_token()
             if not ok:
-                factor = 0.001
+                factor = 0.5
         timer_wakeup = self._timeout_seconds * factor
         trace(f'_keep_alive timer_wakeup={timer_wakeup}')
         self._keep_alive_timer = threading.Timer(timer_wakeup, self._keep_alive)

@@ -5,7 +5,6 @@ import time
 import unittest
 from time import sleep
 
-import datetime
 import pyarrow as pa
 import pandas as pd
 from pyarrow import csv
@@ -395,36 +394,6 @@ t1 = empty_table(0) if t.size == 2 else None
         for t in threads:
             t.join()
         print(f'END test_mt at {datetime.datetime.now()}', flush=True)
-
-    def test_mt2(self):
-        import threading
-        session = self.session
-        print(f'START test_mt2 at {datetime.datetime.now()}', flush=True)
-
-        def _interact_with_server(ti):
-            print(f'THREAD START test_mt2 {ti}', flush=True)
-            pa_table = csv.read_csv(self.csv_file)
-            while True:
-                session.run_script(f'import deephaven; t1_{ti} = deephaven.time_table("PT1S")')
-                time.sleep(2)
-                table1 = session.open_table(f't1_{ti}')
-                pa_table1 = table1.to_arrow()
-                time.sleep(1)
-            print(f'THREAD END test_mt2 {ti}', flush=True)
-
-        threads = []
-        for i in range(200):
-#        for i in range(1):
-            t = threading.Thread(target=_interact_with_server, args=(i,))
-            threads.append(t)
-
-        for t in threads:
-            t.start()
-
-        for t in threads:
-            t.join()
-        print(f'END test_mt2 at {datetime.datetime.now()}', flush=True)
-
 
 
 if __name__ == '__main__':
