@@ -31,7 +31,7 @@ class SessionService:
         """Closes the gRPC connection."""
         try:
             _, call = self._grpc_session_stub.CloseSession.with_call(
-                session_pb2.HandshakeRequest(auth_protocol=0, payload=self.session._auth_value),
+                session_pb2.HandshakeRequest(auth_protocol=0, payload=self.session._auth_header_value),
                 metadata=self.session.grpc_metadata)
             self.session.update_metadata(call.initial_metadata())
         except Exception as e:
