@@ -17,7 +17,6 @@ import grpc
 import pyarrow as pa
 import pyarrow.flight as paflight
 from bitstring import BitArray
-from pyarrow._flight import ClientAuthHandler
 
 from pydeephaven._app_service import AppService
 from pydeephaven._arrow_flight_service import ArrowFlightService
