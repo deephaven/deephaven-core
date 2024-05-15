@@ -10,46 +10,42 @@ import java.nio.file.Path;
 
 import junit.framework.TestCase;
 import org.junit.Assert;
-import org.junit.rules.TemporaryFolder;
 
 public class FileUtilsTest extends TestCase {
 
     public void testConvertToFileURI() throws IOException {
-        final TemporaryFolder folder = new TemporaryFolder();
-        folder.create();
+        final File currentDir = new File("").getAbsoluteFile();
+        fileUriTestHelper(currentDir.toString(), true, currentDir.toURI().toString());
 
-        final File someDir = folder.newFolder();
-        fileUriTestHelper(someDir.getPath(), true, someDir.toURI().toString());
-
-        final File someFile = folder.newFile();
+        final File someFile = new File(currentDir, "tempFile.txt");
         fileUriTestHelper(someFile.getPath(), false, someFile.toURI().toString());
 
         // Check if trailing slash gets added for a directory
-        final String expectedURI = "file:" + someDir.getPath() + "/path/to/directory/";
-        fileUriTestHelper(someDir.getPath() + "/path/to/directory", true, expectedURI);
+        final String expectedURI = "file:" + currentDir.getPath() + "/path/to/directory/";
+        fileUriTestHelper(currentDir.getPath() + "/path/to/directory", true, expectedURI);
 
         // Check if multiple slashes get normalized
-        fileUriTestHelper(someDir.getPath() + "////path///to////directory", true, expectedURI);
+        fileUriTestHelper(currentDir.getPath() + "////path///to////directory", true, expectedURI);
 
         // Check if multiple slashes in the beginning get normalized
-        fileUriTestHelper("////" + someDir.getPath() + "/path/to/directory", true, expectedURI);
+        fileUriTestHelper("////" + currentDir.getPath() + "/path/to/directory", true, expectedURI);
     }
 
     private static void fileUriTestHelper(final String filePath, final boolean isDirectory,
-            final String expctedURIString) {
-        Assert.assertEquals(expctedURIString, FileUtils.convertToURI(filePath, isDirectory).toString());
-        Assert.assertEquals(expctedURIString, FileUtils.convertToURI(new File(filePath), isDirectory).toString());
-        Assert.assertEquals(expctedURIString, FileUtils.convertToURI(Path.of(filePath), isDirectory).toString());
+            final String expectedURIString) {
+        Assert.assertEquals(expectedURIString, FileUtils.convertToURI(filePath, isDirectory).toString());
+        Assert.assertEquals(expectedURIString, FileUtils.convertToURI(new File(filePath), isDirectory).toString());
+        Assert.assertEquals(expectedURIString, FileUtils.convertToURI(Path.of(filePath), isDirectory).toString());
     }
 
     public void testConvertToS3URI() throws URISyntaxException {
-        assertEquals("s3:/bucket/key", FileUtils.convertToURI("s3:/bucket/key", false).toString());
+        assertEquals("s3://bucket/key", FileUtils.convertToURI("s3://bucket/key", false).toString());
 
         // Check if trailing slash gets added for a directory
-        assertEquals("s3:/bucket/key/".toString(), FileUtils.convertToURI("s3:/bucket/key", true).toString());
+        assertEquals("s3://bucket/key/".toString(), FileUtils.convertToURI("s3://bucket/key", true).toString());
 
         // Check if multiple slashes get normalized
-        assertEquals("s3:/bucket/key/", FileUtils.convertToURI("s3:////bucket///key///", true).toString());
+        assertEquals("s3://bucket/key/", FileUtils.convertToURI("s3://bucket///key///", true).toString());
 
         try {
             FileUtils.convertToURI("", false);
