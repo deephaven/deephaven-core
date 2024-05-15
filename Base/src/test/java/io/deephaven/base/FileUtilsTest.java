@@ -33,12 +33,6 @@ public class FileUtilsTest extends TestCase {
 
         // Check if multiple slashes in the beginning get normalized
         fileUriTestHelper("////" + someDir.getPath() + "/path/to/directory", true, expectedURI);
-
-        try {
-            fileUriTestHelper("", false, "file:/");
-            Assert.fail("Expected IllegalArgumentException");
-        } catch (IllegalArgumentException expected) {
-        }
     }
 
     private static void fileUriTestHelper(final String filePath, final boolean isDirectory,
@@ -58,7 +52,7 @@ public class FileUtilsTest extends TestCase {
         assertEquals("s3:/bucket/key/", FileUtils.convertToURI("s3:////bucket///key///", true).toString());
 
         try {
-            fileUriTestHelper("", false, "s3:/");
+            FileUtils.convertToURI("", false);
             Assert.fail("Expected IllegalArgumentException");
         } catch (IllegalArgumentException expected) {
         }
