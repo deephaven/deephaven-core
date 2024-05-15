@@ -34,7 +34,7 @@ void ThreadFun(std::shared_ptr<Client> clientp, const std::size_t ti) {
 }
 
 void Run(std::shared_ptr<Client> clientp, const std::size_t nthreads) {
-  std::vector<std::thread> threads(nthreads);
+  std::vector<std::thread> threads;
   for (std::size_t i = 0; i < nthreads; ++i) {
     threads.emplace_back(&ThreadFun, clientp, i);
   }
