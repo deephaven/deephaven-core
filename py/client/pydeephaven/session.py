@@ -7,12 +7,12 @@ from __future__ import annotations
 
 import base64
 import datetime
+import logging
 import os
 import threading
 from typing import Dict, Iterable, List, Union, Tuple
 from uuid import uuid4
 
-#import traceback
 import grpc
 import pyarrow as pa
 import pyarrow.flight as paflight
@@ -35,7 +35,11 @@ from pydeephaven.proto import ticket_pb2
 from pydeephaven.query import Query
 from pydeephaven.table import Table, InputTable
 
+_TRACE_ENABLED = False
+
 def trace(who):
+    if not _TRACE_ENABLED:
+        return
     print(f'{datetime.datetime.now()} TRACE: {who}', flush=True)
 
 def deepcopy_bytes(bs: bytes):
@@ -142,6 +146,7 @@ class Session:
         if not port:
             self.port = int(os.environ.get("DH_PORT", 10000))
 
+        self._logpfx = f'pydh.Session {id(self)} {host}:port: '
         self._use_tls = use_tls
         self._tls_root_certs = tls_root_certs
         self._client_cert_chain = client_cert_chain
@@ -354,7 +359,7 @@ class Session:
         self._keep_alive_timer.daemon = True
         self._keep_alive_timer.start()
         if not ok:
-            print(f'{datetime.datetime.now()} Will retry authentication in {timer_wakeup} seconds.')
+            logging.warning(f'{self._logpfx} Will retry auth token refresh in {timer_wakeup} seconds.')
 
     def _refresh_token(self):
         trace('_refresh_token')
@@ -362,7 +367,7 @@ class Session:
             self.config_service.get_configuration_constants()
             return True
         except Exception as ex:
-            print(f'{datetime.datetime.now()} Caught exception in _refresh_token: {ex}.', flush=True)
+            logging.warning(f'{self._logpfx} Caught exception while refreshing auth token: {ex}.')
             return False
 
     @property

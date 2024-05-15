@@ -34,7 +34,7 @@ def _interact_with_server(session, ti, deadline):
         table = session.open_table(f't1_{ti}')
         pa_table = table.to_arrow()
         time.sleep(1)
-        print(f'THREAD {ti} END at {datetime.datetime.now()}', flush=True)
+    print(f'THREAD {ti} END at {datetime.datetime.now()}', flush=True)
 
 if __name__ == '__main__':
     main()
