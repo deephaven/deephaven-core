@@ -45,7 +45,7 @@ import java.util.stream.Stream;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.col;
 import static io.deephaven.engine.util.TableTools.intCol;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.Assert.assertTrue;
 
 @Category(OutOfBandTest.class)
 public class TestWindowCheck {
