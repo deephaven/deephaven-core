@@ -120,12 +120,6 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
         return (ParquetTableLocation) getTableLocation();
     }
 
-    @Override
-    @Nullable
-    public <METADATA_TYPE> METADATA_TYPE getMetadata(@NotNull final ColumnDefinition<?> columnDefinition) {
-        return null;
-    }
-
     private <SOURCE, REGION_TYPE> REGION_TYPE makeColumnRegion(
             @NotNull final Function<ColumnDefinition<?>, SOURCE[]> sourceArrayFactory,
             @NotNull final ColumnDefinition<?> columnDefinition,

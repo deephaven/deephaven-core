@@ -82,6 +82,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
         final ParquetMetadata parquetMetadata;
         // noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (tableLocationKey) {
+            // Following methods are internally synchronized, we synchronize them together here to minimize lock/unlock
+            // calls
             parquetFileReader = tableLocationKey.getFileReader();
             parquetMetadata = tableLocationKey.getMetadata();
             rowGroupIndices = tableLocationKey.getRowGroupIndices();
@@ -243,8 +245,8 @@ public class ParquetTableLocation extends AbstractTableLocation {
         return !fileURI.getScheme().equals(FILE_URI_SCHEME) || Files.exists(Path.of(fileURI));
     }
 
-    @Nullable
     @Override
+    @Nullable
     public BasicDataIndex loadDataIndex(@NotNull final String... columns) {
         if (tableInfo == null) {
             return null;

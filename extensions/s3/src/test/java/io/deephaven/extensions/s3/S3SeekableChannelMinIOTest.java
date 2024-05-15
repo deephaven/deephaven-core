@@ -5,12 +5,12 @@ package io.deephaven.extensions.s3;
 
 
 import io.deephaven.extensions.s3.S3Instructions.Builder;
-import io.deephaven.extensions.s3.SingletonContainers.MinIO;
+import io.deephaven.extensions.s3.testlib.SingletonContainers.MinIO;
 import io.deephaven.stats.util.OSUtil;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
-import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 @Tag("testcontainers")
 public class S3SeekableChannelMinIOTest extends S3SeekableChannelTestBase {
@@ -29,7 +29,7 @@ public class S3SeekableChannelMinIOTest extends S3SeekableChannelTestBase {
     }
 
     @Override
-    public S3Client s3Client() {
-        return MinIO.s3Client();
+    public S3AsyncClient s3AsyncClient() {
+        return MinIO.s3AsyncClient();
     }
 }

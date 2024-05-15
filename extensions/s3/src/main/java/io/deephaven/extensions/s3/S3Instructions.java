@@ -6,7 +6,6 @@ package io.deephaven.extensions.s3;
 import io.deephaven.annotations.CopyableStyle;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
-import io.deephaven.configuration.Configuration;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
@@ -25,16 +24,11 @@ import java.util.Optional;
 @CopyableStyle
 public abstract class S3Instructions implements LogOutputAppendable {
 
-    private final static int DEFAULT_MAX_CONCURRENT_REQUESTS = 50;
-    private final static int DEFAULT_READ_AHEAD_COUNT = 1;
-
-    private final static String MAX_FRAGMENT_SIZE_CONFIG_PARAM = "S3.maxFragmentSize";
-    final static int MAX_FRAGMENT_SIZE =
-            Configuration.getInstance().getIntegerWithDefault(MAX_FRAGMENT_SIZE_CONFIG_PARAM, 5 << 20); // 5 MiB
-    private final static int DEFAULT_FRAGMENT_SIZE = MAX_FRAGMENT_SIZE;
-    private final static int SINGLE_USE_FRAGMENT_SIZE_DEFAULT = Math.min(65536, MAX_FRAGMENT_SIZE); // 64 KiB
+    private final static int DEFAULT_MAX_CONCURRENT_REQUESTS = 256;
+    private final static int DEFAULT_READ_AHEAD_COUNT = 32;
+    private final static int DEFAULT_FRAGMENT_SIZE = 1 << 16; // 64 KiB
     private final static int MIN_FRAGMENT_SIZE = 8 << 10; // 8 KiB
-    private final static int DEFAULT_MAX_CACHE_SIZE = 32;
+    private final static int DEFAULT_MAX_CACHE_SIZE = 256;
     private final static Duration DEFAULT_CONNECTION_TIMEOUT = Duration.ofSeconds(2);
     private final static Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(2);
 
@@ -66,10 +60,9 @@ public abstract class S3Instructions implements LogOutputAppendable {
     }
 
     /**
-     * The maximum byte size of each fragment to read from S3, defaults to the value of config parameter
-     * {@value MAX_FRAGMENT_SIZE_CONFIG_PARAM}, or 5 MiB if unset. Must be between 8 KiB and the value of config
-     * parameter {@value MAX_FRAGMENT_SIZE_CONFIG_PARAM}. If there are fewer bytes remaining in the file, the fetched
-     * fragment can be smaller.
+     * The maximum byte size of each fragment to read from S3, defaults to {@value DEFAULT_FRAGMENT_SIZE}, must be
+     * larger than {@value MIN_FRAGMENT_SIZE}. If there are fewer bytes remaining in the file, the fetched fragment can
+     * be smaller.
      */
     @Default
     public int fragmentSize() {
@@ -155,15 +148,12 @@ public abstract class S3Instructions implements LogOutputAppendable {
 
     abstract S3Instructions withReadAheadCount(int readAheadCount);
 
-    abstract S3Instructions withFragmentSize(int fragmentSize);
-
     abstract S3Instructions withMaxCacheSize(int maxCacheSize);
 
     @Lazy
     S3Instructions singleUse() {
         final int readAheadCount = Math.min(DEFAULT_READ_AHEAD_COUNT, readAheadCount());
         return withReadAheadCount(readAheadCount)
-                .withFragmentSize(Math.min(SINGLE_USE_FRAGMENT_SIZE_DEFAULT, fragmentSize()))
                 .withMaxCacheSize(readAheadCount + 1);
     }
 
@@ -182,13 +172,9 @@ public abstract class S3Instructions implements LogOutputAppendable {
     }
 
     @Check
-    final void boundsCheckMaxFragmentSize() {
+    final void boundsCheckMinFragmentSize() {
         if (fragmentSize() < MIN_FRAGMENT_SIZE) {
             throw new IllegalArgumentException("fragmentSize(=" + fragmentSize() + ") must be >= " + MIN_FRAGMENT_SIZE +
-                    " bytes");
-        }
-        if (fragmentSize() > MAX_FRAGMENT_SIZE) {
-            throw new IllegalArgumentException("fragmentSize(=" + fragmentSize() + ") must be <= " + MAX_FRAGMENT_SIZE +
                     " bytes");
         }
     }

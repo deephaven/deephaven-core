@@ -14,13 +14,16 @@ dependencies {
     implementation project(':extensions-barrage')
     implementation project(':test-configs')
     implementation depCommonsLang3
-    implementation project(':engine-test-utils')
+    api project(':engine-test-utils')
+
+    Classpaths.inheritGrpcPlatform(project, 'api')
+    api 'io.grpc:grpc-testing'
+
+    Classpaths.inheritImmutables(project)
 
     Classpaths.inheritArrow(project, 'flight-core', 'implementation')
 
     Classpaths.inheritDagger(project)
 
-//    Classpaths.inheritJUnitPlatform(project, 'api')
-    Classpaths.inheritJUnitClassic(project, 'implementation')
-
+    Classpaths.inheritJUnitClassic(project, 'api')
 }

@@ -24,7 +24,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
-import org.opentest4j.AssertionFailedError;
+import junit.framework.AssertionFailedError;
 
 import java.lang.reflect.Array;
 import java.time.Instant;
@@ -504,7 +504,7 @@ public class QueryTableRangeJoinTest {
                             assertThat(actualRangeSize).isEqualTo(expectedRangeSize);
                         }
                     } catch (AssertionFailedError e) {
-                        throw new AssertionFailedError(String.format("Failure for type %s at row position %s",
+                        throw new AssertionError(String.format("Failure for type %s at row position %s",
                                 type, rowPosition), e);
                     }
                     ++rowPosition;

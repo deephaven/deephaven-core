@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.api.updateby.UpdateByOperation;
+import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
@@ -12,6 +13,7 @@ import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.function.Numeric;
 import io.deephaven.test.types.OutOfBandTest;
 import org.jetbrains.annotations.NotNull;
@@ -33,6 +35,29 @@ public class TestCumMinMax extends BaseUpdateByTest {
     @Test
     public void testStaticZeroKey() {
         final QueryTable t = createTestTable(100000, false, false, false, 0x2134BCFA).t;
+
+        final Table result = t.updateBy(List.of(
+                UpdateByOperation.CumMin("byteColMin=byteCol", "shortColMin=shortCol", "intColMin=intCol",
+                        "longColMin=longCol", "floatColMin=floatCol", "doubleColMin=doubleCol",
+                        "bigIntColMin=bigIntCol", "bigDecimalColMin=bigDecimalCol"),
+                UpdateByOperation.CumMax("byteColMax=byteCol", "shortColMax=shortCol", "intColMax=intCol",
+                        "longColMax=longCol", "floatColMax=floatCol", "doubleColMax=doubleCol",
+                        "bigIntColMax=bigIntCol", "bigDecimalColMax=bigDecimalCol")));
+        for (String col : t.getDefinition().getColumnNamesArray()) {
+            if ("boolCol".equals(col)) {
+                continue;
+            }
+            assertWithCumMin(DataAccessHelpers.getColumn(t, col).getDirect(),
+                    DataAccessHelpers.getColumn(result, col + "Min").getDirect());
+            assertWithCumMax(DataAccessHelpers.getColumn(t, col).getDirect(),
+                    DataAccessHelpers.getColumn(result, col + "Max").getDirect());
+        }
+    }
+
+    @Test
+    public void testStaticZeroKeyAllNulls() {
+        final QueryTable t = createTestTableAllNull(100000, false, false, false, 0x31313131,
+                CollectionUtil.ZERO_LENGTH_STRING_ARRAY, new TestDataGenerator[0]).t;
 
         final Table result = t.updateBy(List.of(
                 UpdateByOperation.CumMin("byteColMin=byteCol", "shortColMin=shortCol", "intColMin=intCol",

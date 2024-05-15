@@ -17,6 +17,7 @@ import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -56,7 +57,8 @@ class DoPutSpray implements Callable<Void> {
                 .addShutdownHook(new Thread(() -> onShutdown(scheduler, sourceFactory.managedChannel())));
 
         try (final FlightSession sourceSession = sourceFactory.newFlightSession()) {
-            try (final TableHandle sourceHandle = sourceSession.session().execute(TicketTable.of(ticket))) {
+            try (final TableHandle sourceHandle =
+                    sourceSession.session().execute(TicketTable.of(ticket.getBytes(StandardCharsets.UTF_8)))) {
                 for (ConnectOptions other : connects.subList(1, connects.size())) {
                     final Factory otherFactory = FlightSessionFactoryConfig.builder()
                             .clientConfig(other.config())

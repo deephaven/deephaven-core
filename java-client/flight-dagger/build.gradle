@@ -25,7 +25,8 @@ dependencies {
 
     Classpaths.inheritAssertJ(project)
 
-    testImplementation TestTools.projectDependency(project, 'server')
+    testImplementation project(':server')
+    testImplementation project(':server-test-utils')
     testImplementation project(':log-to-slf4j')
 }
 

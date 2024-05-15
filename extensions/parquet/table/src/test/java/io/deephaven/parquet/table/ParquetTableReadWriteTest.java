@@ -38,8 +38,6 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.BigDecimalUtils;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
-import io.deephaven.extensions.s3.Credentials;
-import io.deephaven.extensions.s3.S3Instructions;
 import io.deephaven.parquet.base.InvalidParquetFileException;
 import io.deephaven.parquet.base.NullStatistics;
 import io.deephaven.parquet.table.location.ParquetTableLocation;
@@ -76,7 +74,6 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URI;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -128,11 +125,6 @@ public final class ParquetTableReadWriteTest {
 
     private static final ParquetInstructions EMPTY = ParquetInstructions.EMPTY;
     private static final ParquetInstructions REFRESHING = ParquetInstructions.builder().setIsRefreshing(true).build();
-
-    // TODO(deephaven-core#5064): Add support for local S3 testing
-    // The following tests are disabled by default, as they are verifying against a remote system
-    private static final boolean ENABLE_S3_TESTING =
-            Configuration.getInstance().getBooleanWithDefault("ParquetTest.enableS3Testing", false);
 
     private static File rootFile;
 
@@ -746,6 +738,13 @@ public final class ParquetTableReadWriteTest {
         final Table fromDiskWithMetadataWithoutData = readTable(metadataFile);
         assertEquals(source.size(), fromDiskWithMetadataWithoutData.size());
 
+        // If we call select now, this should fail because the data files are empty
+        try {
+            fromDiskWithMetadataWithoutData.select();
+            fail("Expected exception when reading table with empty data files");
+        } catch (final RuntimeException expected) {
+        }
+
         // Now write with flat partitioned parquet files to different directories with metadata file
         parentDir.delete();
         final File updatedSecondDataFile = new File(rootFile, "testDir/data2.parquet");
@@ -784,6 +783,56 @@ public final class ParquetTableReadWriteTest {
         assertTableEquals(expected, fromDisk);
         final Table fromDiskWithMetadata = readTable(new File(parentDir, "_metadata"));
         assertTableEquals(expected, fromDiskWithMetadata);
+    }
+
+    @Test
+    public void keyValuePartitionedWithMetadataTest() throws IOException {
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofInt("PC1").withPartitioning(),
+                ColumnDefinition.ofInt("PC2").withPartitioning(),
+                ColumnDefinition.ofLong("I"));
+        final Table source = ((QueryTable) TableTools.emptyTable(1_000_000)
+                .updateView("PC1 = (int)(ii%3)",
+                        "PC2 = (int)(ii%2)",
+                        "I = ii"))
+                .withDefinitionUnsafe(definition);
+
+        final File parentDir = new File(rootFile, "keyValuePartitionedWithMetadataTest");
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setGenerateMetadataFiles(true)
+                .setBaseNameForPartitionedParquetData("data")
+                .build();
+        writeKeyValuePartitionedTable(source, parentDir.getAbsolutePath(), writeInstructions);
+
+        final Table fromDisk = readTable(parentDir);
+        assertTableEquals(source.sort("PC1", "PC2"), fromDisk.sort("PC1", "PC2"));
+
+        final File metadataFile = new File(parentDir, "_metadata");
+        final Table fromDiskWithMetadata = readTable(metadataFile);
+        assertTableEquals(source.sort("PC1", "PC2"), fromDiskWithMetadata.sort("PC1", "PC2"));
+
+        final File firstDataFile =
+                new File(parentDir, "PC1=0" + File.separator + "PC2=0" + File.separator + "data.parquet");
+        final File secondDataFile =
+                new File(parentDir, "PC1=0" + File.separator + "PC2=1" + File.separator + "data.parquet");
+        assertTrue(firstDataFile.exists());
+        assertTrue(secondDataFile.exists());
+
+        // Now replace the underlying data files with empty files and read the size from metadata file verifying that
+        // we can read the size without touching the data
+        firstDataFile.delete();
+        firstDataFile.createNewFile();
+        secondDataFile.delete();
+        secondDataFile.createNewFile();
+        final Table fromDiskWithMetadataWithoutData = readTable(metadataFile);
+        assertEquals(source.size(), fromDiskWithMetadataWithoutData.size());
+
+        // If we call select now, this should fail because the data files are empty
+        try {
+            fromDiskWithMetadataWithoutData.select();
+            fail("Expected exception when reading table with empty data files");
+        } catch (final RuntimeException expected) {
+        }
     }
 
     @Test
@@ -1404,7 +1453,8 @@ public final class ParquetTableReadWriteTest {
         writeReadTableTest(arrayTable, dest, writeInstructions);
 
         // Make sure the column didn't use dictionary encoding
-        ParquetMetadata metadata = new ParquetTableLocationKey(dest, 0, null, ParquetInstructions.EMPTY).getMetadata();
+        ParquetMetadata metadata =
+                new ParquetTableLocationKey(dest.toURI(), 0, null, ParquetInstructions.EMPTY).getMetadata();
         String firstColumnMetadata = metadata.getBlocks().get(0).getColumns().get(0).toString();
         assertTrue(firstColumnMetadata.contains("someStringArrayColumn")
                 && !firstColumnMetadata.contains("RLE_DICTIONARY"));
@@ -1413,188 +1463,10 @@ public final class ParquetTableReadWriteTest {
         writeReadTableTest(vectorTable, dest, writeInstructions);
 
         // Make sure the column didn't use dictionary encoding
-        metadata = new ParquetTableLocationKey(dest, 0, null, ParquetInstructions.EMPTY).getMetadata();
+        metadata = new ParquetTableLocationKey(dest.toURI(), 0, null, ParquetInstructions.EMPTY).getMetadata();
         firstColumnMetadata = metadata.getBlocks().get(0).getColumns().get(0).toString();
         assertTrue(firstColumnMetadata.contains("someStringArrayColumn")
                 && !firstColumnMetadata.contains("RLE_DICTIONARY"));
-    }
-
-    @Test
-    public void readSampleParquetFilesFromDeephavenS3Bucket() {
-        Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
-        final S3Instructions s3Instructions = S3Instructions.builder()
-                .regionName("us-east-1")
-                .readAheadCount(1)
-                .fragmentSize(5 * 1024 * 1024)
-                .maxConcurrentRequests(50)
-                .maxCacheSize(32)
-                .readTimeout(Duration.ofSeconds(60))
-                .credentials(Credentials.defaultCredentials())
-                .build();
-        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
-                .setSpecialInstructions(s3Instructions)
-                .build();
-        final Table fromAws1 =
-                ParquetTools.readTable("s3://dh-s3-parquet-test1/multiColFile.parquet", readInstructions).select();
-        final Table dhTable1 = TableTools.emptyTable(1_000_000).update("A=(int)i", "B=(double)(i+1)");
-        assertTableEquals(fromAws1, dhTable1);
-
-        final Table fromAws2 =
-                ParquetTools.readTable("s3://dh-s3-parquet-test1/singleColFile.parquet", readInstructions).select();
-        final Table dhTable2 = TableTools.emptyTable(5).update("A=(int)i");
-        assertTableEquals(fromAws2, dhTable2);
-
-        final Table fromAws3 = ParquetTools
-                .readTable("s3://dh-s3-parquet-test1/single%20col%20file%20with%20spaces%20in%20name.parquet",
-                        readInstructions)
-                .select();
-        assertTableEquals(fromAws3, dhTable2);
-
-        final Table fromAws4 =
-                ParquetTools.readTable("s3://dh-s3-parquet-test1/singleColFile.parquet", readInstructions)
-                        .select().sumBy();
-        final Table dhTable4 = TableTools.emptyTable(5).update("A=(int)i").sumBy();
-        assertTableEquals(fromAws4, dhTable4);
-    }
-
-    @Test
-    public void readSampleParquetFilesFromPublicS3() {
-        Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
-        final S3Instructions s3Instructions = S3Instructions.builder()
-                .regionName("us-east-2")
-                .readAheadCount(1)
-                .fragmentSize(5 * 1024 * 1024)
-                .maxConcurrentRequests(50)
-                .maxCacheSize(32)
-                .connectionTimeout(Duration.ofSeconds(1))
-                .readTimeout(Duration.ofSeconds(60))
-                .credentials(Credentials.anonymous())
-                .build();
-        final TableDefinition tableDefinition = TableDefinition.of(
-                ColumnDefinition.ofString("hash"),
-                ColumnDefinition.ofLong("version"),
-                ColumnDefinition.ofLong("size"),
-                ColumnDefinition.ofString("block_hash"),
-                ColumnDefinition.ofLong("block_number"),
-                ColumnDefinition.ofLong("index"),
-                ColumnDefinition.ofLong("virtual_size"),
-                ColumnDefinition.ofLong("lock_time"),
-                ColumnDefinition.ofLong("input_count"),
-                ColumnDefinition.ofLong("output_count"),
-                ColumnDefinition.ofBoolean("isCoinbase"),
-                ColumnDefinition.ofDouble("output_value"),
-                ColumnDefinition.ofTime("last_modified"),
-                ColumnDefinition.ofDouble("input_value"));
-        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
-                .setSpecialInstructions(s3Instructions)
-                .setTableDefinition(tableDefinition)
-                .build();
-        ParquetTools.readTable(
-                "s3://aws-public-blockchain/v1.0/btc/transactions/date=2009-01-03/part-00000-bdd84ab2-82e9-4a79-8212-7accd76815e8-c000.snappy.parquet",
-                readInstructions).head(10).select();
-
-        ParquetTools.readTable(
-                "s3://aws-public-blockchain/v1.0/btc/transactions/date=2023-11-13/part-00000-da3a3c27-700d-496d-9c41-81281388eca8-c000.snappy.parquet",
-                readInstructions).head(10).select();
-    }
-
-    @Test
-    public void readFlatPartitionedParquetFromS3() {
-        Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
-        final S3Instructions s3Instructions = S3Instructions.builder()
-                .regionName("us-east-1")
-                .readAheadCount(1)
-                .fragmentSize(5 * 1024 * 1024)
-                .maxConcurrentRequests(50)
-                .maxCacheSize(32)
-                .readTimeout(Duration.ofSeconds(60))
-                .credentials(Credentials.defaultCredentials())
-                .build();
-        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
-                .setSpecialInstructions(s3Instructions)
-                .setFileLayout(ParquetInstructions.ParquetFileLayout.FLAT_PARTITIONED)
-                .build();
-        final Table table = ParquetTools.readTable("s3://dh-s3-parquet-test1/flatPartitionedParquet/",
-                readInstructions);
-        final Table expected = emptyTable(30).update("A = (int)i % 10");
-        assertTableEquals(expected, table);
-    }
-
-    @Test
-    public void readFlatPartitionedDataAsKeyValuePartitionedParquetFromS3() {
-        Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
-        final S3Instructions s3Instructions = S3Instructions.builder()
-                .regionName("us-east-1")
-                .readAheadCount(1)
-                .fragmentSize(5 * 1024 * 1024)
-                .maxConcurrentRequests(50)
-                .maxCacheSize(32)
-                .readTimeout(Duration.ofSeconds(60))
-                .credentials(Credentials.defaultCredentials())
-                .build();
-        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
-                .setSpecialInstructions(s3Instructions)
-                .setFileLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED)
-                .build();
-        final Table table = ParquetTools.readTable("s3://dh-s3-parquet-test1/flatPartitionedParquet3/",
-                readInstructions);
-        final Table expected = emptyTable(30).update("A = (int)i % 10");
-        assertTableEquals(expected, table);
-    }
-
-    @Test
-    public void readKeyValuePartitionedParquetFromS3() {
-        Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
-        final S3Instructions s3Instructions = S3Instructions.builder()
-                .regionName("us-east-1")
-                .readAheadCount(1)
-                .fragmentSize(5 * 1024 * 1024)
-                .maxConcurrentRequests(50)
-                .maxCacheSize(32)
-                .readTimeout(Duration.ofSeconds(60))
-                .credentials(Credentials.defaultCredentials())
-                .build();
-        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
-                .setSpecialInstructions(s3Instructions)
-                .setFileLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED)
-                .build();
-        final Table table = ParquetTools.readTable("s3://dh-s3-parquet-test1/KeyValuePartitionedData/",
-                readInstructions);
-        final List<ColumnDefinition<?>> partitioningColumns = table.getDefinition().getPartitioningColumns();
-        assertEquals(3, partitioningColumns.size());
-        assertEquals("PC1", partitioningColumns.get(0).getName());
-        assertEquals("PC2", partitioningColumns.get(1).getName());
-        assertEquals("PC3", partitioningColumns.get(2).getName());
-        assertEquals(100, table.size());
-        assertEquals(3, table.selectDistinct("PC1").size());
-        assertEquals(2, table.selectDistinct("PC2").size());
-        assertEquals(2, table.selectDistinct("PC3").size());
-        assertEquals(100, table.selectDistinct("I").size());
-        assertEquals(1, table.selectDistinct("J").size());
-    }
-
-    @Test
-    public void readKeyValuePartitionedParquetFromPublicS3() {
-        Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
-        final S3Instructions s3Instructions = S3Instructions.builder()
-                .regionName("us-east-1")
-                .readAheadCount(1)
-                .fragmentSize(5 * 1024 * 1024)
-                .maxConcurrentRequests(50)
-                .maxCacheSize(32)
-                .readTimeout(Duration.ofSeconds(60))
-                .credentials(Credentials.anonymous())
-                .build();
-        final TableDefinition ookla_table_definition = TableDefinition.of(
-                ColumnDefinition.ofInt("quarter").withPartitioning(),
-                ColumnDefinition.ofString("quadkey"));
-        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
-                .setSpecialInstructions(s3Instructions)
-                .setTableDefinition(ookla_table_definition)
-                .build();
-        final Table table = ParquetTools.readTable("s3://ookla-open-data/parquet/performance/type=mobile/year=2023",
-                readInstructions).head(10).select();
-        assertEquals(2, table.numColumns());
     }
 
     @Test
@@ -1699,7 +1571,7 @@ public final class ParquetTableReadWriteTest {
         String path = ParquetTableReadWriteTest.class.getResource("/ReferenceParquetData.parquet").getFile();
         readParquetFileFromGitLFS(new File(path)).select();
         final ParquetMetadata metadata =
-                new ParquetTableLocationKey(new File(path), 0, null, ParquetInstructions.EMPTY).getMetadata();
+                new ParquetTableLocationKey(new File(path).toURI(), 0, null, ParquetInstructions.EMPTY).getMetadata();
         assertTrue(metadata.getFileMetaData().getKeyValueMetaData().get("deephaven").contains("\"version\":\"0.4.0\""));
 
         path = ParquetTableReadWriteTest.class.getResource("/ReferenceParquetVectorData.parquet").getFile();
@@ -2083,7 +1955,7 @@ public final class ParquetTableReadWriteTest {
 
         // Verify that the key-value metadata in the file has the correct name
         ParquetTableLocationKey tableLocationKey =
-                new ParquetTableLocationKey(destFile, 0, null, ParquetInstructions.EMPTY);
+                new ParquetTableLocationKey(destFile.toURI(), 0, null, ParquetInstructions.EMPTY);
         String metadataString = tableLocationKey.getMetadata().getFileMetaData().toString();
         assertTrue(metadataString.contains(vvvIndexFilePath));
 
@@ -2116,7 +1988,7 @@ public final class ParquetTableReadWriteTest {
 
         // Verify that the key-value metadata in the file has the correct legacy grouping file name
         final ParquetTableLocationKey tableLocationKey =
-                new ParquetTableLocationKey(destFile, 0, null, ParquetInstructions.EMPTY);
+                new ParquetTableLocationKey(destFile.toURI(), 0, null, ParquetInstructions.EMPTY);
         final String metadataString = tableLocationKey.getMetadata().getFileMetaData().toString();
         String groupingFileName = ParquetTools.legacyGroupingFileName(destFile, groupingColName);
         assertTrue(metadataString.contains(groupingFileName));
@@ -2281,10 +2153,10 @@ public final class ParquetTableReadWriteTest {
 
         // Verify that the key-value metadata in the file has the correct name
         ParquetTableLocationKey tableLocationKey =
-                new ParquetTableLocationKey(firstDestFile, 0, null, ParquetInstructions.EMPTY);
+                new ParquetTableLocationKey(firstDestFile.toURI(), 0, null, ParquetInstructions.EMPTY);
         String metadataString = tableLocationKey.getMetadata().getFileMetaData().toString();
         assertTrue(metadataString.contains(firstIndexFilePath));
-        tableLocationKey = new ParquetTableLocationKey(secondDestFile, 0, null, ParquetInstructions.EMPTY);
+        tableLocationKey = new ParquetTableLocationKey(secondDestFile.toURI(), 0, null, ParquetInstructions.EMPTY);
         metadataString = tableLocationKey.getMetadata().getFileMetaData().toString();
         assertTrue(metadataString.contains(secondIndexFilePath));
 
@@ -2334,7 +2206,7 @@ public final class ParquetTableReadWriteTest {
         checkSingleTable(anotherTableToSave, destFile);
 
         ParquetTableLocationKey tableLocationKey =
-                new ParquetTableLocationKey(destFile, 0, null, ParquetInstructions.EMPTY);
+                new ParquetTableLocationKey(destFile.toURI(), 0, null, ParquetInstructions.EMPTY);
         String metadataString = tableLocationKey.getMetadata().getFileMetaData().toString();
         assertTrue(metadataString.contains(xxxIndexFilePath) && !metadataString.contains(vvvIndexFilePath));
 
@@ -2350,7 +2222,7 @@ public final class ParquetTableReadWriteTest {
                 Map.of("vvv", new String[] {vvvIndexFilePath},
                         "xxx", new String[] {xxxIndexFilePath}));
 
-        tableLocationKey = new ParquetTableLocationKey(destFile, 0, null, ParquetInstructions.EMPTY);
+        tableLocationKey = new ParquetTableLocationKey(destFile.toURI(), 0, null, ParquetInstructions.EMPTY);
         metadataString = tableLocationKey.getMetadata().getFileMetaData().toString();
         assertTrue(metadataString.contains(xxxIndexFilePath) && !metadataString.contains(vvvIndexFilePath)
                 && !metadataString.contains(backupXXXIndexFileName));
@@ -2442,7 +2314,7 @@ public final class ParquetTableReadWriteTest {
 
         // Verify that string columns are properly dictionary encoded
         final ParquetMetadata metadata =
-                new ParquetTableLocationKey(dest, 0, null, ParquetInstructions.EMPTY).getMetadata();
+                new ParquetTableLocationKey(dest.toURI(), 0, null, ParquetInstructions.EMPTY).getMetadata();
         final String firstColumnMetadata = metadata.getBlocks().get(0).getColumns().get(0).toString();
         assertTrue(firstColumnMetadata.contains("shortStringColumn") && firstColumnMetadata.contains("RLE_DICTIONARY"));
         final String secondColumnMetadata = metadata.getBlocks().get(0).getColumns().get(1).toString();
@@ -2515,7 +2387,8 @@ public final class ParquetTableReadWriteTest {
         writeTable(stringTable, dest, writeInstructions);
         checkSingleTable(stringTable, dest);
 
-        ParquetMetadata metadata = new ParquetTableLocationKey(dest, 0, null, ParquetInstructions.EMPTY).getMetadata();
+        ParquetMetadata metadata =
+                new ParquetTableLocationKey(dest.toURI(), 0, null, ParquetInstructions.EMPTY).getMetadata();
         return metadata.getBlocks().get(0).getColumns().get(0);
     }
 
@@ -2539,7 +2412,7 @@ public final class ParquetTableReadWriteTest {
         checkSingleTable(table, dest);
 
         final ParquetMetadata metadata =
-                new ParquetTableLocationKey(dest, 0, null, ParquetInstructions.EMPTY).getMetadata();
+                new ParquetTableLocationKey(dest.toURI(), 0, null, ParquetInstructions.EMPTY).getMetadata();
         final String metadataStr = metadata.getFileMetaData().getKeyValueMetaData().get("deephaven");
         assertTrue(
                 metadataStr.contains("VariableWidthByteArrayColumn") && metadataStr.contains("SimpleByteArrayCodec"));
@@ -2600,7 +2473,7 @@ public final class ParquetTableReadWriteTest {
 
         // Verify that the types are correct in the schema
         final ParquetMetadata metadata =
-                new ParquetTableLocationKey(dest, 0, null, ParquetInstructions.EMPTY).getMetadata();
+                new ParquetTableLocationKey(dest.toURI(), 0, null, ParquetInstructions.EMPTY).getMetadata();
         final ColumnChunkMetaData dateColMetadata = metadata.getBlocks().get(0).getColumns().get(0);
         assertTrue(dateColMetadata.toString().contains("someDateColumn"));
         assertEquals(PrimitiveType.PrimitiveTypeName.INT32, dateColMetadata.getPrimitiveType().getPrimitiveTypeName());
@@ -3061,7 +2934,7 @@ public final class ParquetTableReadWriteTest {
     private void assertTableStatistics(Table inputTable, File dest) {
         // Verify that the columns have the correct statistics.
         final ParquetMetadata metadata =
-                new ParquetTableLocationKey(dest, 0, null, ParquetInstructions.EMPTY).getMetadata();
+                new ParquetTableLocationKey(dest.toURI(), 0, null, ParquetInstructions.EMPTY).getMetadata();
 
         final String[] colNames = inputTable.getDefinition().getColumnNamesArray();
         for (int colIdx = 0; colIdx < inputTable.numColumns(); ++colIdx) {

@@ -58,7 +58,15 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     private final RAPriQueue<PerPathPool> releasePriority =
             new RAPriQueue<>(8, PerPathPool.RAPQ_ADAPTER, PerPathPool.class);
 
-    public CachedChannelProvider(@NotNull final SeekableChannelsProvider wrappedProvider,
+    public static CachedChannelProvider create(@NotNull final SeekableChannelsProvider wrappedProvider,
+            final int maximumPooledCount) {
+        if (wrappedProvider instanceof CachedChannelProvider) {
+            throw new IllegalArgumentException("Cannot wrap a CachedChannelProvider in another CachedChannelProvider");
+        }
+        return new CachedChannelProvider(wrappedProvider, maximumPooledCount);
+    }
+
+    private CachedChannelProvider(@NotNull final SeekableChannelsProvider wrappedProvider,
             final int maximumPooledCount) {
         this.wrappedProvider = wrappedProvider;
         this.maximumPooledCount = Require.gtZero(maximumPooledCount, "maximumPooledCount");

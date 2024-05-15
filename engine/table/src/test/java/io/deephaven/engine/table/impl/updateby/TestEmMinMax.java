@@ -51,7 +51,7 @@ import static io.deephaven.time.DateTimeUtils.*;
 import static io.deephaven.util.QueryConstants.*;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.fail;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.Assert.assertThrows;
 
 @Category(OutOfBandTest.class)
 public class TestEmMinMax extends BaseUpdateByTest {
@@ -511,10 +511,11 @@ public class TestEmMinMax extends BaseUpdateByTest {
     }
 
     private void testThrowsInternal(TableDefaults table) {
-        assertThrows(TableDataException.class,
+        assertThrows(
+                "Encountered negative delta time during EMS processing",
+                TableDataException.class,
                 () -> table.updateBy(UpdateByOperation.EmMin(
-                        OperationControl.builder().build(), "ts", 100)),
-                "Encountered negative delta time during EMS processing");
+                        OperationControl.builder().build(), "ts", 100)));
     }
 
     @Test

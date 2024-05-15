@@ -87,11 +87,6 @@ public class BarrageUtil {
             Configuration.getInstance().getLongForClassWithDefault(BarrageUtil.class,
                     "maxSnapshotCellCount", Long.MAX_VALUE);
 
-    // year is 4 bytes, month is 1 byte, day is 1 byte
-    public static final ArrowType.FixedSizeBinary LOCAL_DATE_TYPE = new ArrowType.FixedSizeBinary(6);
-    // hour, minute, second are each one byte, nano is 4 bytes
-    public static final ArrowType.FixedSizeBinary LOCAL_TIME_TYPE = new ArrowType.FixedSizeBinary(7);
-
     /**
      * Note that arrow's wire format states that Timestamps without timezones are not UTC -- that they are no timezone
      * at all. It's very important that we mark these times as UTC.
@@ -119,7 +114,9 @@ public class BarrageUtil {
             BigInteger.class,
             String.class,
             Instant.class,
-            Boolean.class));
+            Boolean.class,
+            LocalDate.class,
+            LocalTime.class));
 
     public static ByteString schemaBytesFromTable(@NotNull final Table table) {
         return schemaBytesFromTableDefinition(table.getDefinition(), table.getAttributes(), table.isFlat());
@@ -314,26 +311,32 @@ public class BarrageUtil {
         metadata.put(ATTR_DH_PREFIX + key, value);
     }
 
-    private static boolean maybeConvertForTimeUnit(final TimeUnit unit, final ConvertedArrowSchema result,
-            final int i) {
+    private static boolean maybeConvertForTimeUnit(
+            final TimeUnit unit,
+            final ConvertedArrowSchema result,
+            final int columnOffset) {
         switch (unit) {
             case NANOSECOND:
                 return true;
             case MICROSECOND:
-                setConversionFactor(result, i, 1000);
+                setConversionFactor(result, columnOffset, 1000);
                 return true;
             case MILLISECOND:
-                setConversionFactor(result, i, 1000 * 1000);
+                setConversionFactor(result, columnOffset, 1000 * 1000);
                 return true;
             case SECOND:
-                setConversionFactor(result, i, 1000 * 1000 * 1000);
+                setConversionFactor(result, columnOffset, 1000 * 1000 * 1000);
                 return true;
             default:
                 return false;
         }
     }
 
-    private static Class<?> getDefaultType(final ArrowType arrowType, final ConvertedArrowSchema result, final int i) {
+    private static Class<?> getDefaultType(
+            final ArrowType arrowType,
+            final ConvertedArrowSchema result,
+            final int columnOffset,
+            final Class<?> explicitType) {
         final String exMsg = "Schema did not include `" + ATTR_DH_PREFIX + ATTR_TYPE_TAG + "` metadata for field ";
         switch (arrowType.getTypeID()) {
             case Int:
@@ -368,7 +371,7 @@ public class BarrageUtil {
             case Duration:
                 final ArrowType.Duration durationType = (ArrowType.Duration) arrowType;
                 final TimeUnit durationUnit = durationType.getUnit();
-                if (maybeConvertForTimeUnit(durationUnit, result, i)) {
+                if (maybeConvertForTimeUnit(durationUnit, result, columnOffset)) {
                     return long.class;
                 }
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
@@ -377,10 +380,12 @@ public class BarrageUtil {
                 final ArrowType.Timestamp timestampType = (ArrowType.Timestamp) arrowType;
                 final String tz = timestampType.getTimezone();
                 final TimeUnit timestampUnit = timestampType.getUnit();
-                if (tz == null || "UTC".equals(tz)) {
-                    if (maybeConvertForTimeUnit(timestampUnit, result, i)) {
-                        return Instant.class;
-                    }
+                boolean conversionSuccess = maybeConvertForTimeUnit(timestampUnit, result, columnOffset);
+                if ((tz == null || "UTC".equals(tz)) && conversionSuccess) {
+                    return Instant.class;
+                }
+                if (explicitType != null) {
+                    return explicitType;
                 }
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
                         " of timestampType(Timezone=" + tz +
@@ -400,6 +405,9 @@ public class BarrageUtil {
             case Utf8:
                 return java.lang.String.class;
             default:
+                if (explicitType != null) {
+                    return explicitType;
+                }
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
                         " of type " + arrowType.getTypeID().toString());
         }
@@ -434,12 +442,15 @@ public class BarrageUtil {
         }
     }
 
-    private static void setConversionFactor(final ConvertedArrowSchema result, final int i, final int factor) {
+    private static void setConversionFactor(
+            final ConvertedArrowSchema result,
+            final int columnOffset,
+            final int factor) {
         if (result.conversionFactors == null) {
             result.conversionFactors = new int[result.nCols];
             Arrays.fill(result.conversionFactors, 1);
         }
-        result.conversionFactors[i] = factor;
+        result.conversionFactors[columnOffset] = factor;
     }
 
     public static TableDefinition convertTableDefinition(final ExportedTableCreationResponse response) {
@@ -517,13 +528,14 @@ public class BarrageUtil {
                 }
             });
 
+            // this has side effects such as setting the conversion factor; must call even if dest type is well known
+            Class<?> defaultType = getDefaultType(getArrowType.apply(i), result, i, type.getValue());
+
             if (type.getValue() == null) {
-                Class<?> defaultType = getDefaultType(getArrowType.apply(i), result, i);
                 type.setValue(defaultType);
             } else if (type.getValue() == boolean.class || type.getValue() == Boolean.class) {
                 // check existing barrage clients that might be sending int8 instead of bool
                 // TODO (deephaven-core#3403) widen this check for better assurances
-                Class<?> defaultType = getDefaultType(getArrowType.apply(i), result, i);
                 Assert.eq(Boolean.class, "deephaven column type", defaultType, "arrow inferred type");
                 // force to boxed boolean to allow nullability in the column sources
                 type.setValue(Boolean.class);
@@ -657,10 +669,10 @@ public class BarrageUtil {
                     return Types.MinorType.LIST.getType();
                 }
                 if (type == LocalDate.class) {
-                    return LOCAL_DATE_TYPE;
+                    return Types.MinorType.DATEMILLI.getType();
                 }
                 if (type == LocalTime.class) {
-                    return LOCAL_TIME_TYPE;
+                    return Types.MinorType.TIMENANO.getType();
                 }
                 if (type == BigDecimal.class
                         || type == BigInteger.class) {

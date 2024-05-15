@@ -260,12 +260,13 @@ public class ArrowFlightUtil {
             }
             localResultTable.dropReference();
 
-            // let's finally export the table to our listener
-            localExportBuilder.submit(() -> {
-                GrpcUtil.safelyComplete(observer);
-                session.removeOnCloseCallback(this);
-                return localResultTable;
-            });
+            // let's finally export the table to our destination export
+            localExportBuilder
+                    .onSuccess(() -> GrpcUtil.safelyComplete(observer))
+                    .submit(() -> {
+                        session.removeOnCloseCallback(this);
+                        return localResultTable;
+                    });
         }
 
         @Override

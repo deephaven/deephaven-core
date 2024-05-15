@@ -38,12 +38,16 @@ public abstract class GrpcTableOperationTestBase<Request extends Message>
 
     @Override
     public void tearDown() throws Exception {
-        for (ExportObject<?> export : exports) {
-            export.cancel();
+        if (exports != null) {
+            for (ExportObject<?> export : exports) {
+                export.cancel();
+            }
+            exports = null;
         }
-        exports = null;
-        executionContext.close();
-        executionContext = null;
+        if (executionContext != null) {
+            executionContext.close();
+            executionContext = null;
+        }
         super.tearDown();
     }
 
