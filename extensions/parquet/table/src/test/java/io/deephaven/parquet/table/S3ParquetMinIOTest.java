@@ -4,26 +4,31 @@
 package io.deephaven.parquet.table;
 
 import io.deephaven.extensions.s3.S3Instructions.Builder;
-import io.deephaven.extensions.s3.testlib.SingletonContainers.LocalStack;
+import io.deephaven.extensions.s3.testlib.SingletonContainers.MinIO;
 import io.deephaven.extensions.s3.testlib.SingletonContainers;
+import io.deephaven.stats.util.OSUtil;
 import org.junit.BeforeClass;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
-public class ParquetS3SimpleLocalStackTest extends ParquetS3SimpleTestBase {
+import static org.junit.Assert.assertFalse;
+
+public class S3ParquetMinIOTest extends S3ParquetTestBase {
 
     @BeforeClass
     public static void initContainer() {
+        // TODO(deephaven-core#5116): MinIO testcontainers does not work on OS X
+        assertFalse("OSUtil.runningMacOS()", OSUtil.runningMacOS());
         // ensure container is started so container startup time isn't associated with a specific test
-        LocalStack.init();
+        MinIO.init();
     }
 
     @Override
-    public Builder s3Instructions(Builder builder) {
-        return LocalStack.s3Instructions(builder);
+    public Builder s3Instructions(final Builder builder) {
+        return MinIO.s3Instructions(builder);
     }
 
     @Override
     public S3AsyncClient s3AsyncClient() {
-        return SingletonContainers.LocalStack.s3AsyncClient();
+        return SingletonContainers.MinIO.s3AsyncClient();
     }
 }

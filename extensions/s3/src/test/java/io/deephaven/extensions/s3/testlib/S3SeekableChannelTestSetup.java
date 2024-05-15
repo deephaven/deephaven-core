@@ -14,7 +14,6 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
@@ -50,14 +49,9 @@ public abstract class S3SeekableChannelTestSetup {
         executor.shutdownNow();
     }
 
-    protected final void uploadDirectory(String resourceDir)
-            throws URISyntaxException, ExecutionException, InterruptedException, TimeoutException {
-        S3Helper.uploadDirectory(
-                asyncClient,
-                Path.of(S3SeekableChannelTestSetup.class.getResource(resourceDir).toURI()),
-                bucket,
-                null,
-                Duration.ofSeconds(5));
+    protected void uploadDirectory(final Path directory, final String prefix)
+            throws ExecutionException, InterruptedException, TimeoutException {
+        S3Helper.uploadDirectory(asyncClient, directory, bucket, prefix, Duration.ofSeconds(5));
     }
 
     protected final URI uri(String key) {

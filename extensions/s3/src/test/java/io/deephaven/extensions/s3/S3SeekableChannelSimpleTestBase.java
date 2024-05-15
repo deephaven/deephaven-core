@@ -18,6 +18,7 @@ import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
@@ -38,7 +39,7 @@ abstract class S3SeekableChannelSimpleTestBase extends S3SeekableChannelTestSetu
     @Test
     void readSimpleFiles()
             throws IOException, URISyntaxException, ExecutionException, InterruptedException, TimeoutException {
-        uploadDirectory("readSimpleFiles");
+        uploadDirectory(Path.of(S3SeekableChannelSimpleTestBase.class.getResource("readSimpleFiles").toURI()), null);
         {
             final URI uri = uri("empty.txt");
             final ByteBuffer buffer = ByteBuffer.allocate(1);
