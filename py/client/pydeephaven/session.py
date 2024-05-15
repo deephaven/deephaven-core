@@ -41,9 +41,6 @@ def trace(who):
         return
     print(f'{datetime.datetime.now()} TRACE: {who}', flush=True)
 
-def deepcopy_bytes(bs: bytes):
-    return bs[0:]
-
 class SharedTicket:
     """ A SharedTicket object represents a ticket that can be shared with other sessions. """
 
@@ -154,17 +151,22 @@ class Session:
         self._extra_headers = extra_headers if extra_headers else {}
 
         self.is_connected = False
-        self._auth_lock = threading.Lock()
 
+        # We set here the initial value for the authorization header,
+        # which will bootstrap our authentication to the server on the first
+        # RPC going out.  The server will give us back a bearer token to use
+        # in subsequent RPCs in the same authorization header.  From then
+        # on, the value of _auth_header_value will be similar to b'Bearer X'
+        # where X is the bearer token provided by the server.
         if auth_type == "Anonymous":
-            self._auth_value = auth_type
+            self._auth_header_value = auth_type
         elif auth_type == "Basic":
             auth_token_base64 = base64.b64encode(auth_token.encode("ascii")).decode("ascii")
-            self._auth_value = "Basic " + auth_token_base64
+            self._auth_header_value = "Basic " + auth_token_base64
         else:
-            self._auth_value = str(auth_type) + " " + auth_token
+            self._auth_header_value = str(auth_type) + " " + auth_token
 
-        self._auth_value = bytes(self._auth_value, 'ascii')
+        self._auth_header_value = bytes(self._auth_header_value, 'ascii')
         self.grpc_channel = None
         self._session_service = None
         self._table_service = None
@@ -212,19 +214,20 @@ class Session:
     def update_metadata(self, metadata: Iterable[Tuple[bytes, bytes]]):
         for header_tuple in metadata:
             if header_tuple[0] == "authorization":
-                new_auth_value = header_tuple[1]
-                with self._auth_lock:
-                    self._auth_value = bytes(new_auth_value, 'ascii')
+                self._auth_header_value = bytes(header_tuple[1], 'ascii')
                 break
 
     @property
     def grpc_metadata(self):
-        with self._auth_lock:
-            if self._auth_value is not None and isinstance(self._auth_value, bytes) and len(self._auth_value) > 0:
-                auth_value = deepcopy_bytes(self._auth_value)
-                l = [(b'authorization', auth_value)]
-            else:
-                l = []
+        # Strictly speaking this is a read/modify/write sequence (if statement checking a value and making a decision
+        # including the value checked right after.  Meaning this should use a lock.
+        # However the condition we are checking here is a kind of assert; it should not happen in practice
+        # unless we have a coding error or the server sent us something wrong.
+        if self._auth_header_value is None or not isinstance(self._auth_header_value, bytes) or len(self._auth_header_value) == 0:
+            logging.warning(f'{self._logpfx} internal invariant violated, _auth_header_value={self._auth_header_value}')
+            l = []
+        else:
+            l = [(b'authorization', self._auth_header_value)]
         if self._extra_headers:
             l.extend(list(self._extra_headers.items()))
         return l
@@ -331,6 +334,14 @@ class Session:
 
             self.grpc_channel = self.session_service.connect()
 
+            # This RPC will get is the configuration and will also bootstrap
+            # our authentication to the server by virtue of sending the right
+            # header: "authorization" header key and our selected header value.
+            # The implementation will process the initial headers coming back
+            # from the server which will contain the bearer token we will
+            # use in subsequent RPCs; the token will be included in the updated
+            # value for self._auth_header_value that will happen through a call
+            # to update_metadata.
             config_dict = self.config_service.get_configuration_constants()
             session_duration = config_dict.get("http.session.durationMs")
             if not session_duration:
