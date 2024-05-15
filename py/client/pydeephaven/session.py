@@ -6,6 +6,7 @@ server."""
 from __future__ import annotations
 
 import base64
+import copy
 import datetime
 import logging
 import os
@@ -207,10 +208,10 @@ class Session:
                 break
 
     def wrap_rpc(self, stub_call, *args, **kwargs):
-        if "metadata" in kwargs:
-            kwargs["metadata"] = { **(kwargs["metadata"]), **self.grpc_metadata }
-        else:
-            kwargs["metadata"] = self.grpc_metadata
+        if 'metadata' in kwargs:
+            raise DHError('Internal error: "metadata" in kwargs not supported in wrap_rpc.')
+
+        kwargs["metadata"] = self.grpc_metadata
         response, call = stub_call.with_call(*args, **kwargs)
         self.update_metadata(call.initial_metadata())
         return response
