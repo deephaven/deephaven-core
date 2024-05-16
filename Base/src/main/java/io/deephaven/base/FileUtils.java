@@ -16,19 +16,9 @@ import java.util.ArrayList;
 import java.util.regex.Pattern;
 
 public class FileUtils {
-    private final static FileFilter DIRECTORY_FILE_FILTER = new FileFilter() {
-        @Override
-        public boolean accept(File pathname) {
-            return pathname.isDirectory();
-        }
-    };
+    private final static FileFilter DIRECTORY_FILE_FILTER = File::isDirectory;
     private final static File[] EMPTY_DIRECTORY_ARRAY = new File[0];
-    private final static FilenameFilter DIRECTORY_FILENAME_FILTER = new FilenameFilter() {
-        @Override
-        public boolean accept(File dir, String name) {
-            return new File(dir, name).isDirectory();
-        }
-    };
+    private final static FilenameFilter DIRECTORY_FILENAME_FILTER = (dir, name) -> new File(dir, name).isDirectory();
     private final static String[] EMPTY_STRING_ARRAY = new String[0];
 
     public static final char URI_SEPARATOR_CHAR = '/';
