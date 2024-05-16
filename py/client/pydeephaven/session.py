@@ -37,6 +37,7 @@ from pydeephaven.table import Table, InputTable
 
 logger = logging.getLogger(__name__)
 
+
 class _DhClientAuthMiddlewareFactory(ClientMiddlewareFactory):
     def __init__(self, session):
         super().__init__()
