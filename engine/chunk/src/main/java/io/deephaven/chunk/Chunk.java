@@ -17,7 +17,7 @@ public interface Chunk<ATTR extends Any> {
     /**
      * The threshold at which we should use System.arrayCopy rather than our own copy
      */
-    int SYSTEM_ARRAYCOPY_THRESHOLD = 16;
+    int SYSTEM_ARRAYCOPY_THRESHOLD = 0;
     /**
      * The threshold at which we should use Array.fill rather than our own fill
      */

@@ -72,16 +72,14 @@ public class RingTableToolsTest {
     }
 
     @Test
-    public void doubleArrayAndEmptyObjectArray() {
-        final Object[] genericArray = {
+    public void doubleArrayChunk() {
+        final Object[] objectArray = {
                 null,
-                // this is the important piece; it's the only one that can't be assigned to a double[]
-                ObjectChunk.makeArray(0),
                 new double[] {},
                 new double[] {42.42, 43.43}
         };
         final Table table = TableTools.newTable(TstUtils.columnHolderForChunk(
-                "DoubleArray", double[].class, double.class, ObjectChunk.chunkWrap(genericArray)));
+                "DoubleArray", double[].class, double.class, ObjectChunk.chunkWrap(objectArray)));
         final Table ring = RingTableTools.of(table, 32, true);
         checkEquals(table, ring);
     }

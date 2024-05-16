@@ -21,6 +21,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.Closeable;
 import java.lang.reflect.Array;
+import java.util.Objects;
 import java.util.function.LongConsumer;
 
 import static io.deephaven.engine.table.impl.AbstractColumnSource.USE_RANGES_AVERAGE_RUN_LENGTH;
@@ -67,19 +68,12 @@ abstract class AbstractRingChunkSource<T, ARRAY, SELF extends AbstractRingChunkS
     protected final int capacity;
     long nextRingIx;
 
-    public AbstractRingChunkSource(@NotNull Class<T> type, int capacity) {
+    public AbstractRingChunkSource(ARRAY ring) {
+        this.ring = Objects.requireNonNull(ring);
+        this.capacity = Array.getLength(ring);
         if (capacity <= 0) {
             throw new IllegalArgumentException("Capacity must be positive");
         }
-        this.capacity = capacity;
-        // noinspection unchecked
-        ring = type.isArray()
-                // Must fake it with nested arrays to match the expectations that we can accept an empty Object array in
-                // lieu of the real type (ie, new Object[0]).
-                // io.deephaven.util.type.ArrayTypeUtils.EMPTY_OBJECT_ARRAY / ObjectChunk.
-                // See https://github.com/deephaven/deephaven-core/issues/5498
-                ? (ARRAY) new Object[capacity]
-                : (ARRAY) Array.newInstance(type, capacity);
     }
 
     /**
