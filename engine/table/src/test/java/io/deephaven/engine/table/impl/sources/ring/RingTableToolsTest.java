@@ -77,8 +77,8 @@ public class RingTableToolsTest {
                 null,
                 // this is the important piece; it's the only one that can't be assigned to a double[]
                 ObjectChunk.makeArray(0),
-                new double[]{},
-                new double[]{42.42, 43.43}
+                new double[] {},
+                new double[] {42.42, 43.43}
         };
         final Table table = TableTools.newTable(TstUtils.columnHolderForChunk(
                 "DoubleArray", double[].class, double.class, ObjectChunk.chunkWrap(genericArray)));

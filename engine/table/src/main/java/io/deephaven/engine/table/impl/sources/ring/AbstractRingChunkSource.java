@@ -72,7 +72,7 @@ abstract class AbstractRingChunkSource<T, ARRAY, SELF extends AbstractRingChunkS
             throw new IllegalArgumentException("Capacity must be positive");
         }
         this.capacity = capacity;
-        //noinspection unchecked
+        // noinspection unchecked
         ring = type.isArray()
                 // Must fake it with nested arrays to match the expectations that we can accept an empty Object array in
                 // lieu of the real type (ie, new Object[0]).
