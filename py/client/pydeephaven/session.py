@@ -18,6 +18,7 @@ import grpc
 import pyarrow as pa
 import pyarrow.flight as paflight
 from bitstring import BitArray
+from pyarrow._flight import ClientMiddlewareFactory, ClientMiddleware
 
 from pydeephaven._app_service import AppService
 from pydeephaven._arrow_flight_service import ArrowFlightService
@@ -36,6 +37,41 @@ from pydeephaven.query import Query
 from pydeephaven.table import Table, InputTable
 
 logger = logging.getLogger(__name__)
+
+class _DhClientAuthMiddlewareFactory(ClientMiddlewareFactory):
+    def __init__(self, session):
+        super().__init__()
+        self._session = session
+        self._middleware = _DhClientAuthMiddleware(session)
+
+    def start_call(self, info):
+        return self._middleware
+
+class _DhClientAuthMiddleware(ClientMiddleware):
+    def __init__(self, session):
+        super().__init__()
+        self._session = session
+
+    def call_completed(self, exception):
+        super().call_completed(exception)
+
+    def received_headers(self, headers):
+        super().received_headers(headers)
+        header_key = "authorization"
+        try:
+            if headers and header_key in headers:
+                header_value = headers.get(header_key)
+                auth_header_value = bytes(header_value[0], encoding='ascii')
+                if auth_header_value:
+                    self._session._auth_header_value = auth_header_value
+        except Exception as e:
+            logger.exception(f'_DhClientAuthMiddleware.received_headers got headers={headers}')
+            return
+            
+
+    def sending_headers(self):
+        return None
+
 
 def trace(who):
     logger.debug(f'TRACE: {who}')
@@ -338,6 +374,7 @@ class Session:
                 scheme = "grpc+tls" if self._use_tls else "grpc"
                 self._flight_client = paflight.FlightClient(
                     location=f"{scheme}://{self.host}:{self.port}",
+                    middleware=[_DhClientAuthMiddlewareFactory(self)],
                     tls_root_certs=self._tls_root_certs,
                     cert_chain=self._client_cert_chain,
                     private_key=self._client_private_key,
