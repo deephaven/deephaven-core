@@ -207,7 +207,7 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
 
                     @Override
                     public FieldVector visit(GenericVectorType<?, ?> genericVectorType) {
-                        throw new UnsupportedOperationException();
+                        throw unsupported(genericVectorType);
                     }
                 });
             }
