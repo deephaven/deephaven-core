@@ -68,7 +68,6 @@ class _DhClientAuthMiddleware(ClientMiddleware):
         except Exception as e:
             logger.exception(f'_DhClientAuthMiddleware.received_headers got headers={headers}')
             return
-            
 
     def sending_headers(self):
         return None
@@ -76,6 +75,7 @@ class _DhClientAuthMiddleware(ClientMiddleware):
 
 def trace(who):
     logger.debug(f'TRACE: {who}')
+
 
 class SharedTicket:
     """ A SharedTicket object represents a ticket that can be shared with other sessions. """
