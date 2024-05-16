@@ -398,7 +398,6 @@ t1 = empty_table(0) if t.size == 2 else None
         for t in threads:
             t.join()
 
-        
-        
+
 if __name__ == '__main__':
     unittest.main()
