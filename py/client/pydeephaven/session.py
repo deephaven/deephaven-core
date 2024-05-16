@@ -8,7 +8,6 @@ from __future__ import annotations
 import base64
 import logging
 import os
-import sys
 from random import random
 import threading
 from typing import Dict, Iterable, List, Union, Tuple
@@ -451,8 +450,9 @@ class Session:
         if self._refresh_failures == 0:
             timer_wakeup = 0.5*self._timeout_seconds
         elif self._refresh_failures >= len(self._refresh_backoff):
-            logger.critical(f'Failed to refresh token {self._refresh_failures} times, aborting.')
-            sys.exit(1)
+            msg = f'Failed to refresh token {self._refresh_failures} times, will stop retrying.'
+            logger.critical(msg)
+            raise DHError(msg)
         else:
             timer_wakeup = self._refresh_backoff[self._refresh_failures]
         trace(f'_keep_alive timer_wakeup={timer_wakeup}')
