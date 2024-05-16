@@ -20,9 +20,9 @@ class TableService:
         batch_ops = BatchOpAssembler(self.session, table_ops=ops).build_batch()
 
         try:
-            response = self._grpc_table_stub.Batch(
-                table_pb2.BatchTableRequest(ops=batch_ops),
-                metadata=self.session.grpc_metadata)
+            response = self.session.wrap_bidi_rpc(
+                self._grpc_table_stub.Batch,
+                table_pb2.BatchTableRequest(ops=batch_ops))
 
             exported_tables = []
             for exported in response:
@@ -46,9 +46,11 @@ class TableService:
             else:
                 table_reference = None
             stub_func = op.__class__.get_stub_func(self._grpc_table_stub)
-            response = stub_func(op.make_grpc_request(result_id=result_id, source_id=table_reference),
-                                 metadata=self.session.grpc_metadata)
-
+            response = self.session.wrap_rpc(
+                stub_func,
+                op.make_grpc_request(
+                    result_id=result_id,
+                    source_id=table_reference))
             if response.success:
                 return table_class(self.session, ticket=response.result_id.ticket,
                                    schema_header=response.schema_header,
@@ -61,11 +63,13 @@ class TableService:
 
     def fetch_etcr(self, ticket) -> Table:
         """Given a ticket, constructs a table around it, by fetching metadata from the server."""
-        response = self._grpc_table_stub.GetExportedTableCreationResponse(ticket, metadata=self.session.grpc_metadata)
+        response = self.session.wrap_rpc(
+            self._grpc_table_stub.GetExportedTableCreationResponse,
+            ticket)
         if response.success:
             return Table(self.session, ticket=response.result_id.ticket,
                          schema_header=response.schema_header,
                          size=response.size,
                          is_static=response.is_static)
-        else:
-            raise DHError(f"Server error received for ExportedTableCreationResponse: {response.error_info}")
+        raise DHError(
+            f"Server error received for ExportedTableCreationResponse: {response.error_info}")

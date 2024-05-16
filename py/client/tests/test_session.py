@@ -2,7 +2,7 @@
 # Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
 import unittest
-from time import sleep
+from time import sleep, time
 
 import pyarrow as pa
 import pandas as pd
@@ -363,6 +363,40 @@ t1 = empty_table(0) if t.size == 2 else None
             pub_session.close()
             with self.assertRaises(DHError):
                  sub_session2.fetch_table(shared_ticket)
+
+    # Note no 'test_' prefix; we don't want this to be picked up
+    # on every run; you can still ask the test runner to run it by manually asking
+    # for it with, eg, `python -m unittest tests.test_session.SessionTestCase.mt_session`
+    def mt_session(self):
+        # There is already a Session object in the parent class, using that
+        # is important to ensure you get only one Session involved,
+        # otherwise debugging is hard.
+        import datetime
+        import threading
+        session = self.session
+        num_threads = 200
+        run_time_seconds = 60*60
+        deadline = time() + run_time_seconds
+        def _interact_with_server(ti):
+            print(f'THREAD {ti} START at {datetime.datetime.now()}', flush=True)
+            while time() < deadline:
+                session.run_script(f'import deephaven; t1_{ti} = deephaven.time_table("PT1S")')
+                sleep(2)
+                table = session.open_table(f't1_{ti}')
+                pa_table = table.to_arrow()
+                sleep(1)
+            print(f'THREAD {ti} END at {datetime.datetime.now()}', flush=True)
+
+        threads = []
+        for ti in range(num_threads):
+            t = threading.Thread(target=_interact_with_server, args=(ti,))
+            threads.append(t)
+
+        for t in threads:
+            t.start()
+
+        for t in threads:
+            t.join()
 
 
 if __name__ == '__main__':
