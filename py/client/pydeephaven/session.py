@@ -240,7 +240,7 @@ class Session:
     def update_metadata(self, metadata: Iterable[Tuple[bytes, bytes]]):
         for header_tuple in metadata:
             if header_tuple[0] == "authorization":
-                self._auth_header_value = bytes(header_tuple[1], 'ascii')
+                self._auth_header_value = header_tuple[1]
                 break
 
     def wrap_rpc(self, stub_call, *args, **kwargs):
@@ -344,7 +344,7 @@ class Session:
         return self._input_table_service
 
     @property
-    def plugin_object_service(self) -> PluginObjService: 
+    def plugin_object_service(self) -> PluginObjService:
         if not self._plugin_obj_service:
             with self._services_lock:
                 if not self._plugin_obj_service:
@@ -418,7 +418,7 @@ class Session:
             skew = random()
             # Backoff schedule for retries after consecutive failures to refresh auth token
             self._refresh_backoff = [ skew + 0.1, skew + 1, skew + 10 ]
-            
+
             if self._refresh_backoff[0] > self._timeout_seconds:
                 raise DHError(f'server configuration http.session.durationMs={session_duration} is too small.')
             if 0.25*self._timeout_seconds < self._refresh_backoff[-1]:
