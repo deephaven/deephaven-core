@@ -10,7 +10,7 @@ import copy
 import datetime
 import logging
 import os
-import random
+from random import random
 import threading
 from typing import Dict, Iterable, List, Union, Tuple
 from uuid import uuid4
@@ -246,9 +246,12 @@ class Session:
         if 'metadata' in kwargs:
             raise DHError('Internal error: "metadata" in kwargs not supported in wrap_rpc.')
         kwargs["metadata"] = self.grpc_metadata
-        response, call = stub_call.with_call(*args, **kwargs)
-        self.update_metadata(call.initial_metadata())
-        return response
+        # We use a future to get a chance to process initial metadata before the call
+        # is completed
+        future = stub_call.future(*args, **kwargs)
+        self.update_metadata(future.initial_metadata())
+        # Now block until we get the result (or an exception)
+        return future.result()
 
     def wrap_bidi_rpc(self, stub_call, *args, **kwargs):
         if 'metadata' in kwargs:
