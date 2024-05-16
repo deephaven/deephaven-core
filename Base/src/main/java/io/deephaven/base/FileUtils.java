@@ -287,9 +287,12 @@ public class FileUtils {
                 return convertToURI(new File(source), isDirectory);
             }
             String path = uri.getPath();
+            final boolean endsWithSlash = path.charAt(path.length() - 1) == URI_SEPARATOR_CHAR;
+            if (!isDirectory && endsWithSlash) {
+                throw new IllegalArgumentException("Non-directory URI should not end with a slash: " + uri);
+            }
             boolean isUpdated = false;
-            // Directory URIs should end with a slash
-            if (isDirectory && path.charAt(path.length() - 1) != URI_SEPARATOR_CHAR) {
+            if (isDirectory && !endsWithSlash) {
                 path = path + URI_SEPARATOR_CHAR;
                 isUpdated = true;
             }

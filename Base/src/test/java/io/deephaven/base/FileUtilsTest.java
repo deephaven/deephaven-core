@@ -17,7 +17,7 @@ public class FileUtilsTest extends TestCase {
         final File currentDir = new File("").getAbsoluteFile();
         fileUriTestHelper(currentDir.toString(), true, currentDir.toURI().toString());
 
-        final File someFile = new File(currentDir, "tempFile.txt");
+        final File someFile = new File(currentDir, "tempFile");
         fileUriTestHelper(someFile.getPath(), false, someFile.toURI().toString());
 
         // Check if trailing slash gets added for a directory
@@ -25,10 +25,13 @@ public class FileUtilsTest extends TestCase {
         fileUriTestHelper(currentDir.getPath() + "/path/to/directory", true, expectedURI);
 
         // Check if multiple slashes get normalized
-        fileUriTestHelper(currentDir.getPath() + "////path///to////directory", true, expectedURI);
+        fileUriTestHelper(currentDir.getPath() + "////path///to////directory////", true, expectedURI);
 
         // Check if multiple slashes in the beginning get normalized
         fileUriTestHelper("////" + currentDir.getPath() + "/path/to/directory", true, expectedURI);
+
+        // Check for bad inputs
+        fileUriTestHelper(someFile.getPath() + "/", false, someFile.toURI().toString());
     }
 
     private static void fileUriTestHelper(final String filePath, final boolean isDirectory,
@@ -39,16 +42,22 @@ public class FileUtilsTest extends TestCase {
     }
 
     public void testConvertToS3URI() throws URISyntaxException {
-        assertEquals("s3://bucket/key", FileUtils.convertToURI("s3://bucket/key", false).toString());
+        Assert.assertEquals("s3://bucket/key", FileUtils.convertToURI("s3://bucket/key", false).toString());
 
         // Check if trailing slash gets added for a directory
-        assertEquals("s3://bucket/key/".toString(), FileUtils.convertToURI("s3://bucket/key", true).toString());
+        Assert.assertEquals("s3://bucket/key/".toString(), FileUtils.convertToURI("s3://bucket/key", true).toString());
 
         // Check if multiple slashes get normalized
-        assertEquals("s3://bucket/key/", FileUtils.convertToURI("s3://bucket///key///", true).toString());
+        Assert.assertEquals("s3://bucket/key/", FileUtils.convertToURI("s3://bucket///key///", true).toString());
 
         try {
             FileUtils.convertToURI("", false);
+            Assert.fail("Expected IllegalArgumentException");
+        } catch (IllegalArgumentException expected) {
+        }
+
+        try {
+            FileUtils.convertToURI("s3://bucket/key/", false);
             Assert.fail("Expected IllegalArgumentException");
         } catch (IllegalArgumentException expected) {
         }
