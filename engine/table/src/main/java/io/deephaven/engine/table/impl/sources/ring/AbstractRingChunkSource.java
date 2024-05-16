@@ -72,8 +72,14 @@ abstract class AbstractRingChunkSource<T, ARRAY, SELF extends AbstractRingChunkS
             throw new IllegalArgumentException("Capacity must be positive");
         }
         this.capacity = capacity;
-        // noinspection unchecked
-        ring = (ARRAY) Array.newInstance(type, capacity);
+        //noinspection unchecked
+        ring = type.isArray()
+                // Must fake it with nested arrays to match the expectations that we can accept an empty Object array in
+                // lieu of the real type (ie, new Object[0]).
+                // io.deephaven.util.type.ArrayTypeUtils.EMPTY_OBJECT_ARRAY / ObjectChunk.
+                // See https://github.com/deephaven/deephaven-core/issues/5498
+                ? (ARRAY) new Object[capacity]
+                : (ARRAY) Array.newInstance(type, capacity);
     }
 
     /**

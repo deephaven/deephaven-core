@@ -15,6 +15,7 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.ShortChunk;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.WritableColumnSource;
@@ -291,8 +292,10 @@ public class ColumnHolder<T> {
 
         final WritableColumnSource<?> cs = ArrayBackedColumnSource.getMemoryColumnSource(
                 chunkData.size(), dataType, componentType);
-        try (final ChunkSink.FillFromContext ffc = cs.makeFillFromContext(chunkData.size())) {
-            cs.fillFromChunk(ffc, chunkData, RowSequenceFactory.forRange(0, chunkData.size() - 1));
+        try (
+                final ChunkSink.FillFromContext ffc = cs.makeFillFromContext(chunkData.size());
+                final RowSequence rs = RowSequenceFactory.forRange(0, chunkData.size() - 1)) {
+            cs.fillFromChunk(ffc, chunkData, rs);
         }
         return cs;
     }
