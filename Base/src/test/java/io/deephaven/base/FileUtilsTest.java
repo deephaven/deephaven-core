@@ -21,17 +21,20 @@ public class FileUtilsTest extends TestCase {
         fileUriTestHelper(someFile.getPath(), false, someFile.toURI().toString());
 
         // Check if trailing slash gets added for a directory
-        final String expectedURI = "file:" + currentDir.getPath() + "/path/to/directory/";
-        fileUriTestHelper(currentDir.getPath() + "/path/to/directory", true, expectedURI);
+        final String expectedDirURI = "file:" + currentDir.getPath() + "/path/to/directory/";
+        fileUriTestHelper(currentDir.getPath() + "/path/to/directory", true, expectedDirURI);
 
         // Check if multiple slashes get normalized
-        fileUriTestHelper(currentDir.getPath() + "////path///to////directory////", true, expectedURI);
+        fileUriTestHelper(currentDir.getPath() + "////path///to////directory////", true, expectedDirURI);
 
         // Check if multiple slashes in the beginning get normalized
-        fileUriTestHelper("////" + currentDir.getPath() + "/path/to/directory", true, expectedURI);
+        fileUriTestHelper("////" + currentDir.getPath() + "/path/to/directory", true, expectedDirURI);
 
-        // Check for bad inputs
-        fileUriTestHelper(someFile.getPath() + "/", false, someFile.toURI().toString());
+        // Check for bad inputs for files with trailing slashes
+        final String expectedFileURI = someFile.toURI().toString();
+        fileUriTestHelper(someFile.getPath() + "/", false, expectedFileURI);
+        Assert.assertEquals(expectedFileURI,
+                FileUtils.convertToURI("file:" + someFile.getPath() + "/", false).toString());
     }
 
     private static void fileUriTestHelper(final String filePath, final boolean isDirectory,

@@ -39,6 +39,8 @@ public class FileUtils {
 
     public static final Pattern REPEATED_URI_SEPARATOR_PATTERN = Pattern.compile("//+");
 
+    public static final String FILE_URI_SCHEME = "file";
+
     /**
      * Cleans the specified path. All files and subdirectories in the path will be deleted. (ie you'll be left with an
      * empty directory).
@@ -286,6 +288,9 @@ public class FileUtils {
                 // Convert to a "file" URI
                 return convertToURI(new File(source), isDirectory);
             }
+            if (uri.getScheme().equals(FILE_URI_SCHEME)) {
+                return convertToURI(new File(uri), isDirectory);
+            }
             String path = uri.getPath();
             final boolean endsWithSlash = path.charAt(path.length() - 1) == URI_SEPARATOR_CHAR;
             if (!isDirectory && endsWithSlash) {
@@ -330,7 +335,7 @@ public class FileUtils {
             absPath = absPath + URI_SEPARATOR_CHAR;
         }
         try {
-            return new URI("file", null, absPath, null);
+            return new URI(FILE_URI_SCHEME, null, absPath, null);
         } catch (final URISyntaxException e) {
             throw new IllegalStateException("Failed to convert file to URI: " + file, e);
         }
