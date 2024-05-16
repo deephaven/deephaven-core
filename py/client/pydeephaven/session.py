@@ -10,7 +10,7 @@ import logging
 import os
 from random import random
 import threading
-from typing import Dict, Iterable, List, Union, Tuple
+from typing import Any, Dict, Iterable, List, Union, Tuple, NewType
 from uuid import uuid4
 
 import grpc
@@ -73,7 +73,7 @@ class _DhClientAuthMiddleware(ClientMiddleware):
         return None
 
 
-def trace(who):
+def _trace(who):
     logger.debug(f'TRACE: {who}')
 
 
@@ -105,6 +105,14 @@ class SharedTicket:
         bytes_ = uuid4().int.to_bytes(16, byteorder='little', signed=False)
         return cls(ticket_bytes=b'h' + bytes_)
 
+_BidiRpc = NewType("_BidiRpc", grpc.StreamStreamMultiCallable)
+
+_NotBidiRpc = NewType(
+    "_NotBidiRpc",
+    Union[
+        grpc.UnaryUnaryMultiCallable,
+        grpc.UnaryStreamMultiCallable,
+        grpc.StreamUnaryMultiCallable])
 
 class Session:
     """A Session object represents a connection to the Deephaven data server. It contains a number of convenience
@@ -165,7 +173,7 @@ class Session:
         Raises:
             DHError
         """
-        trace('Session.__init__')
+        _trace('Session.__init__')
         self._r_lock = threading.RLock()  # for thread-safety when accessing/changing session global state
         self._services_lock = threading.Lock()  # for lazy initialization of services
         self._last_ticket = 0
@@ -237,14 +245,14 @@ class Session:
     def __del__(self):
         self.close()
 
-    def update_metadata(self, metadata: Iterable[Tuple[str, Union[str, bytes]]]):
+    def update_metadata(self, metadata: Iterable[Tuple[str, Union[str, bytes]]]) -> None:
         for header_tuple in metadata:
             if header_tuple[0] == "authorization":
                 v = header_tuple[1]
                 self._auth_header_value = v if isinstance(v, bytes) else v.encode('ascii')
                 break
 
-    def wrap_rpc(self, stub_call, *args, **kwargs):
+    def wrap_rpc(self, stub_call: NotBidiRpc, *args, **kwargs) -> Any:
         if 'metadata' in kwargs:
             raise DHError('Internal error: "metadata" in kwargs not supported in wrap_rpc.')
         kwargs["metadata"] = self.grpc_metadata
@@ -255,7 +263,7 @@ class Session:
         # Now block until we get the result (or an exception)
         return future.result()
 
-    def wrap_bidi_rpc(self, stub_call, *args, **kwargs):
+    def wrap_bidi_rpc(self, stub_call: BidiRpc, *args, **kwargs) -> Any:
         if 'metadata' in kwargs:
             raise DHError('Internal error: "metadata" in kwargs not supported in wrap_bidi_rpc.')
         kwargs["metadata"] = self.grpc_metadata
@@ -380,11 +388,11 @@ class Session:
             return resp.created if resp.created else []
 
     def _connect(self):
-        trace(f'_connect id={id(self)}')
+        _trace(f'_connect id={id(self)}')
         with self._r_lock:
             if self.is_connected:
                 return
-            trace(f'_connect id={id(self)} connecting.')
+            _trace(f'_connect id={id(self)} connecting.')
             try:
                 scheme = "grpc+tls" if self._use_tls else "grpc"
                 self._flight_client = paflight.FlightClient(
@@ -438,7 +446,7 @@ class Session:
                 self._keep_alive()
 
     def _keep_alive(self):
-        trace(f'_keep_alive')
+        _trace(f'_keep_alive')
         if not self.is_connected:
             return
         ok = True
@@ -456,7 +464,7 @@ class Session:
             raise DHError(msg)
         else:
             timer_wakeup = self._refresh_backoff[self._refresh_failures]
-        trace(f'_keep_alive timer_wakeup={timer_wakeup}')
+        _trace(f'_keep_alive timer_wakeup={timer_wakeup}')
         self._keep_alive_timer = threading.Timer(timer_wakeup, self._keep_alive)
         self._keep_alive_timer.daemon = True
         self._keep_alive_timer.start()
@@ -466,7 +474,7 @@ class Session:
                 f' Will retry in {timer_wakeup} seconds.')
 
     def _refresh_token(self) -> bool:
-        trace('_refresh_token')
+        _trace('_refresh_token')
         try:
             self.config_service.get_configuration_constants()
             return True
