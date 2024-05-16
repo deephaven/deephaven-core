@@ -449,7 +449,7 @@ class Session:
         if self._refresh_failures == 0:
             timer_wakeup = 0.5*self._timeout_seconds
         elif self._refresh_failures >= len(self._refresh_backoff):
-            self.is_connencted = False
+            self.is_connected = False
             raise DHError(f'Failed to refresh token {self._refresh_failures} times')
         else:
             timer_wakeup = self._refresh_backoff[self._refresh_failures]
