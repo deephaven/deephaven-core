@@ -10,6 +10,7 @@ import copy
 import datetime
 import logging
 import os
+import random
 import threading
 from typing import Dict, Iterable, List, Union, Tuple
 from uuid import uuid4
@@ -408,12 +409,19 @@ class Session:
                 raise DHError("server configuration is missing http.session.durationMs")
 
             self._timeout_seconds = int(session_duration.string_value)/1000.0
+            # Random skew to ensure multiple processes that may have
+            # started together don't align retries.
+            skew = random()
             # Backoff schedule for retries after consecutive failures to refresh auth token
-            self._refresh_backoff = [ 0.1, 1, 10 ]
+            self._refresh_backoff = [ skew + 0.1, skew + 1, skew + 10 ]
+            
             if self._refresh_backoff[0] > self._timeout_seconds:
                 raise DHError(f'server configuration http.session.durationMs={session_duration} is too small.')
             if 0.25*self._timeout_seconds < self._refresh_backoff[-1]:
-                self._refresh_backoff.extend([0.25 * self._timeout_seconds, 0.35*self._timeout_seconds, 0.45*self._timeout_seconds])
+                self._refresh_backoff.extend(
+                    [skew + 0.25 * self._timeout_seconds,
+                     skew + 0.35 * self._timeout_seconds,
+                     skew + 0.45 * self._timeout_seconds])
             for i in range(1, len(self._refresh_backoff)):
                 if self._refresh_backoff[i] > self._timeout_seconds:
                     self._refresh_backoff = self._refresh_backoff[0:i]
@@ -443,7 +451,7 @@ class Session:
         else:
             timer_wakeup = self._refresh_backoff[self._refresh_failures]
         trace(f'_keep_alive timer_wakeup={timer_wakeup}')
-        self._keep_alive_timer = threading.Timer(3.0, self._keep_alive)
+        self._keep_alive_timer = threading.Timer(timer_wakeup, self._keep_alive)
         self._keep_alive_timer.daemon = True
         self._keep_alive_timer.start()
         if not ok:
