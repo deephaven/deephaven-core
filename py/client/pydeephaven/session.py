@@ -273,7 +273,7 @@ class Session:
     @property
     def grpc_metadata(self):
         header_value_snap = self._auth_header_value  # ensure it doesn't change while doing multiple reads
-        if header_value_snap is None or not isinstance(header_value_snap, bytes) or len(header_value_snap) == 0:
+        if not header_value_snap or not isinstance(header_value_snap, bytes):
             logger.warning(f'{self._logpfx} internal invariant violated, _auth_header_value={header_value_snap}')
             l = []
         else:
