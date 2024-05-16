@@ -69,6 +69,12 @@ public class ObjectArrayExpansionKernel implements ArrayExpansionKernel {
             return WritableObjectChunk.makeWritableChunk(totalRows);
         }
 
+        Class<?> tmpComponentType = componentType;
+        while (tmpComponentType.isArray()) {
+            tmpComponentType = tmpComponentType.getComponentType();
+        }
+        final boolean isPrimitiveArrayType = tmpComponentType.isPrimitive();
+
         final int itemsInBatch = perElementLengthDest.size() - 1;
         final ObjectChunk<T, A> typedSource = source.asObjectChunk();
         final WritableObjectChunk<Object, A> result;
@@ -84,7 +90,11 @@ public class ObjectArrayExpansionKernel implements ArrayExpansionKernel {
         for (int i = 0; i < itemsInBatch; ++i) {
             final int rowLen = perElementLengthDest.get(i + 1) - perElementLengthDest.get(i);
             if (rowLen == 0) {
-                result.set(outOffset + i, CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                if (isPrimitiveArrayType) {
+                    result.set(outOffset + i, Array.newInstance(componentType, 0));
+                } else {
+                    result.set(outOffset + i, CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+                }
             } else {
                 final Object[] row = (Object[]) Array.newInstance(componentType, rowLen);
                 typedSource.copyToArray(lenRead, row, 0, rowLen);
