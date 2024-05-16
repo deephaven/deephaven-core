@@ -165,6 +165,7 @@ class Session:
         """
         trace('Session.__init__')
         self._r_lock = threading.RLock()  # for thread-safety when accessing/changing session global state
+        self._services_lock = threading.Lock()  # for lazy initialization of services
         self._last_ticket = 0
         self._ticket_bitarray = BitArray(1024)
 
@@ -287,7 +288,7 @@ class Session:
     @property
     def table_service(self) -> TableService:
         if not self._table_service:
-            with self._r_lock:
+            with self._services_lock:
                 if not self._table_service:
                     self._table_service = TableService(self)
         return self._table_service
@@ -295,7 +296,7 @@ class Session:
     @property
     def session_service(self) -> SessionService:
         if not self._session_service:
-            with self._r_lock:
+            with self._services_lock:
                 if not self._session_service:
                     self._session_service = SessionService(self)
         return self._session_service
@@ -303,7 +304,7 @@ class Session:
     @property
     def console_service(self) -> ConsoleService:
         if not self._console_service:
-            with self._r_lock:
+            with self._services_lock:
                 if not self._console_service:
                     self._console_service = ConsoleService(self)
         return self._console_service
@@ -311,7 +312,7 @@ class Session:
     @property
     def flight_service(self) -> ArrowFlightService:
         if not self._flight_service:
-            with self._r_lock:
+            with self._services_lock:
                 if not self._flight_service:
                     self._flight_service = ArrowFlightService(self, self._flight_client)
         return self._flight_service
@@ -319,7 +320,7 @@ class Session:
     @property
     def app_service(self) -> AppService:
         if not self._app_service:
-            with self._r_lock:
+            with self._services_lock:
                 if not self._app_service:
                     self._app_service = AppService(self)
         return self._app_service
@@ -327,7 +328,7 @@ class Session:
     @property
     def config_service(self):
         if not self._config_service:
-            with self._r_lock:
+            with self._services_lock:
                 if not self._config_service:
                     self._config_service = ConfigService(self)
         return self._config_service
@@ -335,7 +336,7 @@ class Session:
     @property
     def input_table_service(self) -> InputTableService:
         if not self._input_table_service:
-            with self._r_lock:
+            with self._services_lock:
                 if not self._input_table_service:
                     self._input_table_service = InputTableService(self)
         return self._input_table_service
@@ -343,7 +344,7 @@ class Session:
     @property
     def plugin_object_service(self) -> PluginObjService: 
         if not self._plugin_obj_service:
-            with self._r_lock:
+            with self._services_lock:
                 if not self._plugin_obj_service:
                     self._plugin_obj_service = PluginObjService(self)
         return self._plugin_obj_service
