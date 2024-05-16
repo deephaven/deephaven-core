@@ -35,13 +35,10 @@ from pydeephaven.proto import ticket_pb2
 from pydeephaven.query import Query
 from pydeephaven.table import Table, InputTable
 
-_TRACE_ENABLED = False
-_MAX_REFRESH_CONSECUTIVE_FAILURES = 5
+logger = logging.getLogger(__name__)
 
 def trace(who):
-    if not _TRACE_ENABLED:
-        return
-    print(f'{datetime.datetime.now()} TRACE: {who}', flush=True)
+    logger.debug(f'TRACE: {who}')
 
 class SharedTicket:
     """ A SharedTicket object represents a ticket that can be shared with other sessions. """
@@ -169,7 +166,8 @@ class Session:
             self._auth_header_value = str(auth_type) + " " + auth_token
 
         self._auth_header_value = bytes(self._auth_header_value, 'ascii')
-        self._refresh_consecutive_failures = 0
+        # Counter for consecutive failures to refresh auth token, used to calculate retry backoff
+        self._refresh_failures = 0
         self.grpc_channel = None
         self._session_service = None
         self._table_service = None
@@ -240,7 +238,7 @@ class Session:
     def grpc_metadata(self):
         header_value_snap = self._auth_header_value  # ensure it doesn't change while doing multiple reads
         if header_value_snap is None or not isinstance(header_value_snap, bytes) or len(header_value_snap) == 0:
-            logging.warning(f'{self._logpfx} internal invariant violated, _auth_header_value={header_value_snap}')
+            logger.warning(f'{self._logpfx} internal invariant violated, _auth_header_value={header_value_snap}')
             l = []
         else:
             l = [(b'authorization', header_value_snap)]
@@ -363,9 +361,20 @@ class Session:
             if not session_duration:
                 raise DHError("server configuration is missing http.session.durationMs")
 
+            self._timeout_seconds = int(session_duration.string_value)/1000.0
+            # Backoff schedule for retries after consecutive failures to refresh auth token
+            self._refresh_backoff = [ 0.1, 1, 10 ]
+            if self._refresh_backoff[0] > self._timeout_seconds:
+                raise DHError(f'server configuration http.session.durationMs={session_duration} is too small.')
+            if 0.25*self._timeout_seconds < self._refresh_backoff[-1]:
+                self._refresh_backoff.extend([0.25*self._timeout_seconds, 0.35*self_timeout_seconds, 0.45*self._timeout_seconds])
+            for i in range(1, len(self._refresh_backoff)):
+                if self._refresh_backoff[i] > self._timeout_seconds:
+                    self._refresh_backoff = self._refresh_backoff[0:i]
+                    break
+
             self.is_connected = True
 
-            self._timeout_seconds = int(session_duration.string_value)/1000.0
             if self._never_timeout:
                 self._keep_alive()
 
@@ -373,25 +382,28 @@ class Session:
         trace(f'_keep_alive')
         if not self.is_connected:
             return
-        factor = 1
         ok = True
         if self._keep_alive_timer:
             ok = self._refresh_token()
-            if not ok:
-                self._refresh_consecutive_failures += 1
-                if (self._refresh_consecutive_failures > _MAX_REFRESH_CONSECUTIVE_FAILURES):
-                    self.is_connencted = False
-                    raise DHError(f'Failed to refresh token {self._refresh_consecutive_failures} times')
-                factor = 0.5
+            if ok:
+                self._refresh_failures = 0
             else:
-                self._refresh_consecutive_failures = 0
-        timer_wakeup = self._timeout_seconds * factor
+                self._refresh_failures += 1
+        if self._refresh_failures == 0:
+            timer_wakeup = 0.5*self._timeout_seconds
+        elif self_.refresh_failures >= len(self._refresh_backoff):
+            self.is_connencted = False
+            raise DHError(f'Failed to refresh token {self._refresh_failures} times')
+        else:
+            timer_wakeup = self._refresh_backoff[self_.refresh_failures]
         trace(f'_keep_alive timer_wakeup={timer_wakeup}')
         self._keep_alive_timer = threading.Timer(timer_wakeup, self._keep_alive)
         self._keep_alive_timer.daemon = True
         self._keep_alive_timer.start()
         if not ok:
-            logging.warning(f'{self._logpfx} Will retry auth token refresh in {timer_wakeup} seconds.')
+            logger.warning(
+                f'{self._logpfx}: failed to refresh auth token (retry #{self._refresh_failures-1}).' +
+                f' Will retry in {timer_wakeup} seconds.')
 
     def _refresh_token(self) -> bool:
         trace('_refresh_token')
@@ -399,7 +411,7 @@ class Session:
             self.config_service.get_configuration_constants()
             return True
         except Exception as ex:
-            logging.warning(f'{self._logpfx} Caught exception while refreshing auth token: {ex}.')
+            logger.warning(f'{self._logpfx} Caught exception while refreshing auth token: {ex}.')
             return False
 
     @property
