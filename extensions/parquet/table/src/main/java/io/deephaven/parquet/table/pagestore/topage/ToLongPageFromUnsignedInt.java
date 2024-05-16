@@ -25,8 +25,8 @@ public class ToLongPageFromUnsignedInt<ATTR extends Any> implements ToPage<ATTR,
 
     @Override
     @NotNull
-    public final Class<Integer> getNativeType() {
-        return int.class;
+    public final Class<Long> getNativeType() {
+        return long.class;
     }
 
     @Override
