@@ -13,6 +13,7 @@ from pydeephaven import Session
 from pydeephaven.session import SharedTicket
 from tests.testbase import BaseTestCase
 
+
 class SessionTestCase(BaseTestCase):
 
     def test_connect(self):
