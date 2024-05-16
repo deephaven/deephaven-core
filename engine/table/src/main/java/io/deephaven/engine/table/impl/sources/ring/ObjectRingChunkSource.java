@@ -35,7 +35,7 @@ final class ObjectRingChunkSource<T> extends AbstractRingChunkSource<T, T[], Obj
         // In the general case, we can't know that Array.newInstance(Class<T>, ...) will result in T[]; for example,
         // type=int.class (T=Integer) => int[] (not Integer[]). That said, we know that type is generic, and thus we
         // know resulting array type is T[].
-        //noinspection unchecked
+        // noinspection unchecked
         super((T[]) Array.newInstance(type, capacity));
     }
 
