@@ -413,7 +413,7 @@ class Session:
             if self._refresh_backoff[0] > self._timeout_seconds:
                 raise DHError(f'server configuration http.session.durationMs={session_duration} is too small.')
             if 0.25*self._timeout_seconds < self._refresh_backoff[-1]:
-                self._refresh_backoff.extend([0.25*self._timeout_seconds, 0.35*self_timeout_seconds, 0.45*self._timeout_seconds])
+                self._refresh_backoff.extend([0.25 * self._timeout_seconds, 0.35*self._timeout_seconds, 0.45*self._timeout_seconds])
             for i in range(1, len(self._refresh_backoff)):
                 if self._refresh_backoff[i] > self._timeout_seconds:
                     self._refresh_backoff = self._refresh_backoff[0:i]
@@ -437,11 +437,11 @@ class Session:
                 self._refresh_failures += 1
         if self._refresh_failures == 0:
             timer_wakeup = 0.5*self._timeout_seconds
-        elif self_.refresh_failures >= len(self._refresh_backoff):
+        elif self._refresh_failures >= len(self._refresh_backoff):
             self.is_connencted = False
             raise DHError(f'Failed to refresh token {self._refresh_failures} times')
         else:
-            timer_wakeup = self._refresh_backoff[self_.refresh_failures]
+            timer_wakeup = self._refresh_backoff[self._refresh_failures]
         trace(f'_keep_alive timer_wakeup={timer_wakeup}')
         self._keep_alive_timer = threading.Timer(3.0, self._keep_alive)
         self._keep_alive_timer.daemon = True
