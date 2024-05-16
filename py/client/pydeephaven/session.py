@@ -237,10 +237,11 @@ class Session:
     def __del__(self):
         self.close()
 
-    def update_metadata(self, metadata: Iterable[Tuple[bytes, bytes]]):
+    def update_metadata(self, metadata: Iterable[Tuple[str, Union[str, bytes]]]):
         for header_tuple in metadata:
             if header_tuple[0] == "authorization":
-                self._auth_header_value = header_tuple[1]
+                v = header_tuple[1]
+                self._auth_header_value = v if isinstance(v, bytes) else v.encode('ascii')
                 break
 
     def wrap_rpc(self, stub_call, *args, **kwargs):
