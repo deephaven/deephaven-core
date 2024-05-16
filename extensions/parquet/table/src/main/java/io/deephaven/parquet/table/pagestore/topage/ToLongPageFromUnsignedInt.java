@@ -48,7 +48,8 @@ public class ToLongPageFromUnsignedInt<ATTR extends Any> implements ToPage<ATTR,
         final int[] from = (int[]) result;
         final long[] to = new long[from.length];
         for (int i = 0; i < from.length; ++i) {
-            to[i] = from[i] == NULL_INT ? NULL_LONG : Integer.toUnsignedLong(from[i]);
+            final int fromValue = from[i];
+            to[i] = fromValue == NULL_INT ? NULL_LONG : Integer.toUnsignedLong(fromValue);
         }
         return to;
     }
