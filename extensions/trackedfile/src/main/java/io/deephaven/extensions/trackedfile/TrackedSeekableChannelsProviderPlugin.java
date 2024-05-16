@@ -12,13 +12,13 @@ import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
 
+import static io.deephaven.base.FileUtils.FILE_URI_SCHEME;
+
 /**
  * {@link SeekableChannelsProviderPlugin} implementation used for reading files from local disk.
  */
 @AutoService(SeekableChannelsProviderPlugin.class)
 public final class TrackedSeekableChannelsProviderPlugin implements SeekableChannelsProviderPlugin {
-
-    static final String FILE_URI_SCHEME = "file";
 
     @Override
     public boolean isCompatible(@NotNull final URI uri, @Nullable final Object object) {
