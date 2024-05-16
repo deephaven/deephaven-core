@@ -84,82 +84,8 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
     }
 
     @Override
-    public FieldVector visit(ByteArray byteArray) {
-        Field field = FieldAdapter.byteField(name);
-        TinyIntVector vector = new TinyIntVector(field, allocator);
-        VectorHelper.fill(vector, byteArray.values(), 0, byteArray.size());
-        return vector;
-    }
-
-    @Override
-    public FieldVector visit(BooleanArray booleanArray) {
-        Field field = FieldAdapter.booleanField(name);
-        BitVector vector = new BitVector(field, allocator);
-        VectorHelper.fill(vector, booleanArray, 0, booleanArray.size());
-        return vector;
-    }
-
-    @Override
-    public FieldVector visit(CharArray charArray) {
-        Field field = FieldAdapter.charField(name);
-        UInt2Vector vector = new UInt2Vector(field, allocator);
-        VectorHelper.fill(vector, charArray.values(), 0, charArray.size());
-        return vector;
-    }
-
-    @Override
-    public FieldVector visit(ShortArray shortArray) {
-        Field field = FieldAdapter.shortField(name);
-        SmallIntVector vector = new SmallIntVector(field, allocator);
-        VectorHelper.fill(vector, shortArray.values(), 0, shortArray.size());
-        return vector;
-    }
-
-    @Override
-    public FieldVector visit(IntArray intArray) {
-        Field field = FieldAdapter.intField(name);
-        IntVector vector = new IntVector(field, allocator);
-        VectorHelper.fill(vector, intArray.values(), 0, intArray.size());
-        return vector;
-    }
-
-    @Override
-    public FieldVector visit(LongArray longArray) {
-        Field field = FieldAdapter.longField(name);
-        BigIntVector vector = new BigIntVector(field, allocator);
-        VectorHelper.fill(vector, longArray.values(), 0, longArray.size());
-        return vector;
-    }
-
-    @Override
-    public FieldVector visit(FloatArray floatArray) {
-        Field field = FieldAdapter.floatField(name);
-        Float4Vector vector = new Float4Vector(field, allocator);
-        VectorHelper.fill(vector, floatArray.values(), 0, floatArray.size());
-        return vector;
-    }
-
-    @Override
-    public FieldVector visit(DoubleArray doubleArray) {
-        Field field = FieldAdapter.doubleField(name);
-        Float8Vector vector = new Float8Vector(field, allocator);
-        VectorHelper.fill(vector, doubleArray.values(), 0, doubleArray.size());
-        return vector;
-    }
-
-    @Override
     public FieldVector visit(GenericArray<?> generic) {
         return generic.componentType().walk(new Visitor<FieldVector>() {
-            @Override
-            public FieldVector visit(StringType stringType) {
-                return visitStringElements(generic.cast(stringType).values());
-            }
-
-            @Override
-            public FieldVector visit(InstantType instantType) {
-                return visitInstantElements(generic.cast(instantType).values());
-            }
-
             @Override
             public FieldVector visit(BoxedType<?> boxedType) {
                 return boxedType.walk(new BoxedType.Visitor<FieldVector>() {
@@ -203,6 +129,16 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
                         return visitDoubleElements(generic.cast(doubleType).values());
                     }
                 });
+            }
+
+            @Override
+            public FieldVector visit(StringType stringType) {
+                return visitStringElements(generic.cast(stringType).values());
+            }
+
+            @Override
+            public FieldVector visit(InstantType instantType) {
+                return visitInstantElements(generic.cast(instantType).values());
             }
 
             @Override
@@ -281,6 +217,70 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
                 throw unsupported(customType);
             }
         });
+    }
+
+    @Override
+    public FieldVector visit(ByteArray byteArray) {
+        Field field = FieldAdapter.byteField(name);
+        TinyIntVector vector = new TinyIntVector(field, allocator);
+        VectorHelper.fill(vector, byteArray.values(), 0, byteArray.size());
+        return vector;
+    }
+
+    @Override
+    public FieldVector visit(BooleanArray booleanArray) {
+        Field field = FieldAdapter.booleanField(name);
+        BitVector vector = new BitVector(field, allocator);
+        VectorHelper.fill(vector, booleanArray, 0, booleanArray.size());
+        return vector;
+    }
+
+    @Override
+    public FieldVector visit(CharArray charArray) {
+        Field field = FieldAdapter.charField(name);
+        UInt2Vector vector = new UInt2Vector(field, allocator);
+        VectorHelper.fill(vector, charArray.values(), 0, charArray.size());
+        return vector;
+    }
+
+    @Override
+    public FieldVector visit(ShortArray shortArray) {
+        Field field = FieldAdapter.shortField(name);
+        SmallIntVector vector = new SmallIntVector(field, allocator);
+        VectorHelper.fill(vector, shortArray.values(), 0, shortArray.size());
+        return vector;
+    }
+
+    @Override
+    public FieldVector visit(IntArray intArray) {
+        Field field = FieldAdapter.intField(name);
+        IntVector vector = new IntVector(field, allocator);
+        VectorHelper.fill(vector, intArray.values(), 0, intArray.size());
+        return vector;
+    }
+
+    @Override
+    public FieldVector visit(LongArray longArray) {
+        Field field = FieldAdapter.longField(name);
+        BigIntVector vector = new BigIntVector(field, allocator);
+        VectorHelper.fill(vector, longArray.values(), 0, longArray.size());
+        return vector;
+    }
+
+    @Override
+    public FieldVector visit(FloatArray floatArray) {
+        Field field = FieldAdapter.floatField(name);
+        Float4Vector vector = new Float4Vector(field, allocator);
+        VectorHelper.fill(vector, floatArray.values(), 0, floatArray.size());
+        return vector;
+    }
+
+    @Override
+    public FieldVector visit(DoubleArray doubleArray) {
+        Field field = FieldAdapter.doubleField(name);
+        Float8Vector vector = new Float8Vector(field, allocator);
+        VectorHelper.fill(vector, doubleArray.values(), 0, doubleArray.size());
+        return vector;
     }
 
     FieldVector visitBooleanElements(Collection<Boolean> elements) {
