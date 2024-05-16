@@ -45,8 +45,6 @@ class ArrowFlightService:
         """Gets a snapshot of a Table via Flight do_get."""
         try:
             flight_ticket = paflight.Ticket(table.ticket.ticket)
-            # No need to add headers/metadata here via the options argument;
-            # or middleware is already doing it for every call.
             reader = self._flight_client.do_get(
                 flight_ticket,
                 FlightCallOptions(headers=self.session.grpc_metadata))
