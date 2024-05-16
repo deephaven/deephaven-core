@@ -284,58 +284,67 @@ class Session:
 
     @property
     def table_service(self) -> TableService:
-        with self._r_lock:
-            if not self._table_service:
-                self._table_service = TableService(self)
-            return self._table_service
+        if not self._table_service:
+            with self._r_lock:
+                if not self._table_service:
+                    self._table_service = TableService(self)
+        return self._table_service
 
     @property
     def session_service(self) -> SessionService:
-        with self._r_lock:
-            if not self._session_service:
-                self._session_service = SessionService(self)
-            return self._session_service
+        if not self._session_service:
+            with self._r_lock:
+                if not self._session_service:
+                    self._session_service = SessionService(self)
+        return self._session_service
 
     @property
     def console_service(self) -> ConsoleService:
         if not self._console_service:
-            self._console_service = ConsoleService(self)
+            with self._r_lock:
+                if not self._console_service:
+                    self._console_service = ConsoleService(self)
         return self._console_service
 
     @property
     def flight_service(self) -> ArrowFlightService:
-        with self._r_lock:
-            if not self._flight_service:
-                self._flight_service = ArrowFlightService(self, self._flight_client)
-            return self._flight_service
+        if not self._flight_service:
+            with self._r_lock:
+                if not self._flight_service:
+                    self._flight_service = ArrowFlightService(self, self._flight_client)
+        return self._flight_service
 
     @property
     def app_service(self) -> AppService:
-        with self._r_lock:
-            if not self._app_service:
-                self._app_service = AppService(self)
-            return self._app_service
+        if not self._app_service:
+            with self._r_lock:
+                if not self._app_service:
+                    self._app_service = AppService(self)
+        return self._app_service
 
     @property
     def config_service(self):
-        with self._r_lock:
-            if not self._config_service:
-                self._config_service = ConfigService(self)
-            return self._config_service
+        if not self._config_service:
+            with self._r_lock:
+                if not self._config_service:
+                    self._config_service = ConfigService(self)
+        return self._config_service
 
     @property
     def input_table_service(self) -> InputTableService:
-        with self._r_lock:
-            if not self._input_table_service:
-                self._input_table_service = InputTableService(self)
-            return self._input_table_service
+        if not self._input_table_service:
+            with self._r_lock:
+                if not self._input_table_service:
+                    self._input_table_service = InputTableService(self)
+        return self._input_table_service
 
     @property
-    def plugin_object_service(self) -> PluginObjService:
-        with self._r_lock:
-            if not self._plugin_obj_service:
-                self._plugin_obj_service = PluginObjService(self)
-            return self._plugin_obj_service
+    def plugin_object_service(self) -> PluginObjService: 
+        if not self._plugin_obj_service:
+            with self._r_lock:
+                if not self._plugin_obj_service:
+                    self._plugin_obj_service = PluginObjService(self)
+        return self._plugin_obj_service
 
     def make_ticket(self, ticket_no=None):
         if not ticket_no:
@@ -434,7 +443,7 @@ class Session:
         else:
             timer_wakeup = self._refresh_backoff[self_.refresh_failures]
         trace(f'_keep_alive timer_wakeup={timer_wakeup}')
-        self._keep_alive_timer = threading.Timer(timer_wakeup, self._keep_alive)
+        self._keep_alive_timer = threading.Timer(3.0, self._keep_alive)
         self._keep_alive_timer.daemon = True
         self._keep_alive_timer.start()
         if not ok:
