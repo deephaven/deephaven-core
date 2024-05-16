@@ -47,6 +47,7 @@ class _DhClientAuthMiddlewareFactory(ClientMiddlewareFactory):
     def start_call(self, info):
         return self._middleware
 
+
 class _DhClientAuthMiddleware(ClientMiddleware):
     def __init__(self, session):
         super().__init__()
