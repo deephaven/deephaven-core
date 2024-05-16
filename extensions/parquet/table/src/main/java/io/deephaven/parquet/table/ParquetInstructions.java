@@ -225,6 +225,12 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
     public abstract ParquetInstructions withTableDefinition(final TableDefinition tableDefinition);
 
     /**
+     * Creates a new {@link ParquetInstructions} object with the same properties as the current object but layout set as
+     * the provided {@link ParquetFileLayout}.
+     */
+    public abstract ParquetInstructions withLayout(final ParquetFileLayout fileLayout);
+
+    /**
      * Creates a new {@link ParquetInstructions} object with the same properties as the current object but definition
      * and layout set as the provided values.
      */
@@ -350,18 +356,23 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         @Override
-        public ParquetInstructions withTableDefinition(@Nullable final TableDefinition tableDefinition) {
-            return withTableDefinitionAndLayout(tableDefinition, null);
+        public ParquetInstructions withTableDefinition(@Nullable final TableDefinition useDefinition) {
+            return withTableDefinitionAndLayout(useDefinition, null);
+        }
+
+        @Override
+        public ParquetInstructions withLayout(@Nullable final ParquetFileLayout useLayout) {
+            return withTableDefinitionAndLayout(null, useLayout);
         }
 
         @Override
         public ParquetInstructions withTableDefinitionAndLayout(
-                @Nullable final TableDefinition tableDefinition,
-                @Nullable final ParquetFileLayout fileLayout) {
+                @Nullable final TableDefinition useDefinition,
+                @Nullable final ParquetFileLayout useLayout) {
             return new ReadOnly(null, null, getCompressionCodecName(), getMaximumDictionaryKeys(),
                     getMaximumDictionarySize(), isLegacyParquet(), getTargetPageSize(), isRefreshing(),
                     getSpecialInstructions(), generateMetadataFiles(), baseNameForPartitionedParquetData(),
-                    fileLayout, tableDefinition, null);
+                    useLayout, useDefinition, null);
         }
 
         @Override
@@ -598,7 +609,12 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
         @Override
         public ParquetInstructions withTableDefinition(@Nullable final TableDefinition useDefinition) {
-            return withTableDefinitionAndLayout(useDefinition, getFileLayout().orElse(null));
+            return withTableDefinitionAndLayout(useDefinition, fileLayout);
+        }
+
+        @Override
+        public ParquetInstructions withLayout(@Nullable final ParquetFileLayout useLayout) {
+            return withTableDefinitionAndLayout(tableDefinition, useLayout);
         }
 
         @Override
