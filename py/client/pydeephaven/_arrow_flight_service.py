@@ -27,8 +27,6 @@ class ArrowFlightService:
                 dh_fields.append(pa.field(name=f.name, type=f.type, metadata=map_arrow_type(f.type)))
             dh_schema = pa.schema(dh_fields)
 
-            # No need to add headers/metadata here via the options argument;
-            # or middleware is already doing it for every call.
             writer, reader = self._flight_client.do_put(
                 pa.flight.FlightDescriptor.for_path("export", str(ticket)),
                 dh_schema,
