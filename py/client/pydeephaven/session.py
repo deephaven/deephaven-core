@@ -73,7 +73,7 @@ class _DhClientAuthMiddleware(ClientMiddleware):
         return None
 
 
-def _trace(who):
+def _trace(who: str) -> None:
     logger.debug(f'TRACE: {who}')
 
 
