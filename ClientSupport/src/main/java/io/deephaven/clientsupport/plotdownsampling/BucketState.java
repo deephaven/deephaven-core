@@ -9,6 +9,8 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.impl.RowSetUtils;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
@@ -26,6 +28,8 @@ import java.util.stream.IntStream;
  * its own offset in those arrays.
  */
 public class BucketState {
+    private static final Logger log = LoggerFactory.getLogger(BucketState.class);
+
     private final WritableRowSet rowSet = RowSetFactory.empty();
 
     private RowSet cachedRowSet;
@@ -310,22 +314,16 @@ public class BucketState {
                         values[columnIndex].validate(offset, keyChunk.get(indexInChunk), valueChunks[columnIndex],
                                 indexInChunk, trackNulls ? nulls[columnIndex] : null);
                     } catch (final RuntimeException e) {
-                        System.out.println(rowSet);
                         final String msg =
                                 "Bad data! indexInChunk=" + indexInChunk + ", col=" + columnIndex + ", usePrev="
-                                        + usePrev + ", offset=" + offset + ", rowSet=" + keyChunk.get(indexInChunk);
+                                        + usePrev + ", offset=" + offset + ", indexInChunk="
+                                        + keyChunk.get(indexInChunk);
+                        log.error().append(msg).append(", rowSet=").append(rowSet).endl();
                         throw new IllegalStateException(msg, e);
                     }
                 }
             }
         }
         Assert.eqTrue(makeRowSet().subsetOf(rowSet), "makeRowSet().subsetOf(rowSet)");
-    }
-
-    public void close() {
-        if (cachedRowSet != null) {
-            cachedRowSet.close();
-        }
-        rowSet.close();
     }
 }

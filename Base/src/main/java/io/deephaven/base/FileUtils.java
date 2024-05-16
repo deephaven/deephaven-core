@@ -39,6 +39,8 @@ public class FileUtils {
 
     public static final Pattern REPEATED_URI_SEPARATOR_PATTERN = Pattern.compile("//+");
 
+    public static final String FILE_URI_SCHEME = "file";
+
     /**
      * Cleans the specified path. All files and subdirectories in the path will be deleted. (ie you'll be left with an
      * empty directory).
@@ -282,19 +284,34 @@ public class FileUtils {
         URI uri;
         try {
             uri = new URI(source);
+            if (uri.getScheme() == null) {
+                // Convert to a "file" URI
+                return convertToURI(new File(source), isDirectory);
+            }
+            if (uri.getScheme().equals(FILE_URI_SCHEME)) {
+                return convertToURI(new File(uri), isDirectory);
+            }
+            String path = uri.getPath();
+            final boolean endsWithSlash = path.charAt(path.length() - 1) == URI_SEPARATOR_CHAR;
+            if (!isDirectory && endsWithSlash) {
+                throw new IllegalArgumentException("Non-directory URI should not end with a slash: " + uri);
+            }
+            boolean isUpdated = false;
+            if (isDirectory && !endsWithSlash) {
+                path = path + URI_SEPARATOR_CHAR;
+                isUpdated = true;
+            }
             // Replace two or more consecutive slashes in the path with a single slash
-            final String path = uri.getPath();
             if (path.contains(REPEATED_URI_SEPARATOR)) {
-                final String canonicalizedPath = REPEATED_URI_SEPARATOR_PATTERN.matcher(path).replaceAll(URI_SEPARATOR);
-                uri = new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), canonicalizedPath,
-                        uri.getQuery(), uri.getFragment());
+                path = REPEATED_URI_SEPARATOR_PATTERN.matcher(path).replaceAll(URI_SEPARATOR);
+                isUpdated = true;
+            }
+            if (isUpdated) {
+                uri = new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), path, uri.getQuery(),
+                        uri.getFragment());
             }
         } catch (final URISyntaxException e) {
             // If the URI is invalid, assume it's a file path
-            return convertToURI(new File(source), isDirectory);
-        }
-        if (uri.getScheme() == null) {
-            // Convert to a "file" URI
             return convertToURI(new File(source), isDirectory);
         }
         return uri;
@@ -314,17 +331,11 @@ public class FileUtils {
         if (File.separatorChar != URI_SEPARATOR_CHAR) {
             absPath = absPath.replace(File.separatorChar, URI_SEPARATOR_CHAR);
         }
-        if (absPath.charAt(0) != URI_SEPARATOR_CHAR) {
-            absPath = URI_SEPARATOR_CHAR + absPath;
-        }
         if (isDirectory && absPath.charAt(absPath.length() - 1) != URI_SEPARATOR_CHAR) {
             absPath = absPath + URI_SEPARATOR_CHAR;
         }
-        if (absPath.startsWith(REPEATED_URI_SEPARATOR)) {
-            absPath = REPEATED_URI_SEPARATOR + absPath;
-        }
         try {
-            return new URI("file", null, absPath, null);
+            return new URI(FILE_URI_SCHEME, null, absPath, null);
         } catch (final URISyntaxException e) {
             throw new IllegalStateException("Failed to convert file to URI: " + file, e);
         }
