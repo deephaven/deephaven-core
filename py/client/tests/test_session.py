@@ -3,7 +3,7 @@
 #
 
 import unittest
-from time import sleep
+from time import sleep, time
 
 import pyarrow as pa
 import pandas as pd
@@ -272,7 +272,6 @@ t1 = empty_table(0) if t.is_blink else None
         # this should trigger __del__
         session = None
         self.assertIsNone(session)
-
 
 if __name__ == '__main__':
     unittest.main()

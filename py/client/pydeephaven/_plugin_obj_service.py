@@ -23,7 +23,9 @@ class PluginObjService:
     def message_stream(self, req_stream: PluginRequestStream) -> Any:
         """Opens a connection to the server-side implementation of this plugin."""
         try:
-            resp = self._grpc_app_stub.MessageStream(req_stream, metadata=self.session.grpc_metadata)
+            resp = self.session.wrap_bidi_rpc(
+                self._grpc_app_stub.MessageStream,
+                req_stream)
             return resp
         except Exception as e:
             raise DHError("failed to establish bidirectional stream with the server.") from e

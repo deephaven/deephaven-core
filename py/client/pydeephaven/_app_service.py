@@ -15,9 +15,9 @@ class AppService:
     def list_fields(self) -> Any:
         """Fetches the current application fields."""
         try:
-            fields = self._grpc_app_stub.ListFields(
-                application_pb2.ListFieldsRequest(),
-                metadata=self.session.grpc_metadata
+            fields = self.session.wrap_bidi_rpc(
+                self._grpc_app_stub.ListFields,
+                application_pb2.ListFieldsRequest()
             )
             return fields
         except Exception as e:
