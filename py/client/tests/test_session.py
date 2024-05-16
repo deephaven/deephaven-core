@@ -364,7 +364,6 @@ t1 = empty_table(0) if t.size == 2 else None
             with self.assertRaises(DHError):
                  sub_session2.fetch_table(shared_ticket)
 
-
     # Note no 'test_' prefix; we don't want this to be picked up
     # on every run; you can still ask the test runner to run it by manually asking
     # for it with, eg, `python -m unittest tests.test_session.SessionTestCase.mt_session`
