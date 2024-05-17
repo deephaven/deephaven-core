@@ -1301,19 +1301,24 @@ public abstract class FlightMessageRoundTripTest {
         }
     }
 
+    private Schema createDoubleArraySchema() {
+        final Field payload = new Field("", new FieldType(false, Types.MinorType.FLOAT8.getType(), null), null);
+
+        final FieldType innerFieldType = new FieldType(true, Types.MinorType.LIST.getType(), null);
+        final Field inner = new Field("", innerFieldType, Collections.singletonList(payload));
+
+        final FieldType outerFieldType = new FieldType(true, Types.MinorType.LIST.getType(), null, Map.of(
+                "deephaven:type", "double[][]"));
+        final Field outer = new Field("data", outerFieldType, Collections.singletonList(inner));
+        return new Schema(Collections.singletonList(outer));
+    }
+
     @Test
     public void testNullNestedPrimitiveArray() {
         final int exportId = nextTicket++;
 
-        final FieldType listType = new FieldType(true, Types.MinorType.LIST.getType(), null, Map.of(
-                "deephaven:type", "double[][]"));
-        final Field payload = new Field("", new FieldType(false, Types.MinorType.FLOAT8.getType(), null), null);
-        final Field inner = new Field("", listType, Collections.singletonList(payload));
-        final Field outer = new Field("data", listType, Collections.singletonList(inner));
-        final Schema schema = new Schema(Collections.singletonList(outer));
-
         try (final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE);
-                final VectorSchemaRoot root = VectorSchemaRoot.create(schema, allocator)) {
+                final VectorSchemaRoot root = VectorSchemaRoot.create(createDoubleArraySchema(), allocator)) {
 
             final ListVector outerVector = (ListVector) root.getVector(0);
             final FlightClient.ClientStreamListener stream = flightClient.startPut(
@@ -1345,15 +1350,8 @@ public abstract class FlightMessageRoundTripTest {
     public void testEmptyNestedPrimitiveArray() {
         final int exportId = nextTicket++;
 
-        final FieldType listType = new FieldType(true, Types.MinorType.LIST.getType(), null, Map.of(
-                "deephaven:type", "double[][]"));
-        final Field payload = new Field("", new FieldType(false, Types.MinorType.FLOAT8.getType(), null), null);
-        final Field inner = new Field("", listType, Collections.singletonList(payload));
-        final Field outer = new Field("data", listType, Collections.singletonList(inner));
-        final Schema schema = new Schema(Collections.singletonList(outer));
-
         try (final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE);
-                final VectorSchemaRoot root = VectorSchemaRoot.create(schema, allocator)) {
+                final VectorSchemaRoot root = VectorSchemaRoot.create(createDoubleArraySchema(), allocator)) {
 
             final ListVector outerVector = (ListVector) root.getVector(0);
             final FlightClient.ClientStreamListener stream = flightClient.startPut(
@@ -1389,15 +1387,8 @@ public abstract class FlightMessageRoundTripTest {
     public void testInterestingNestedPrimitiveArray() {
         final int exportId = nextTicket++;
 
-        final FieldType listType = new FieldType(true, Types.MinorType.LIST.getType(), null, Map.of(
-                "deephaven:type", "double[][]"));
-        final Field payload = new Field("", new FieldType(false, Types.MinorType.FLOAT8.getType(), null), null);
-        final Field inner = new Field("", listType, Collections.singletonList(payload));
-        final Field outer = new Field("data", listType, Collections.singletonList(inner));
-        final Schema schema = new Schema(Collections.singletonList(outer));
-
         try (final RootAllocator allocator = new RootAllocator(Integer.MAX_VALUE);
-                final VectorSchemaRoot root = VectorSchemaRoot.create(schema, allocator)) {
+                final VectorSchemaRoot root = VectorSchemaRoot.create(createDoubleArraySchema(), allocator)) {
 
             final ListVector outerVector = (ListVector) root.getVector(0);
             final FlightClient.ClientStreamListener stream = flightClient.startPut(
