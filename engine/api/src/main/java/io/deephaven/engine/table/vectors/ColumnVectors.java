@@ -19,20 +19,33 @@ import io.deephaven.vector.Vector;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Utility methods for constructing {@link Vector Vectors} from the columns of a {@link Table}, enabling inefficient
- * random-access and efficient bulk access to column data by row position.
+ * Utility methods for constructing {@link Vector Vectors} from the columns of a {@link Table}, enabling random and bulk
+ * access to column data by row position.
+ * <p>
+ * Users should note that random access by row position (e.g. {@code get} methods) maybe be inefficient due to the need
+ * to convert row positions to row keys and acquire implementation-specific resources once per row. Thus, random access
+ * should generally be avoided when possible. On the other hand, bulk access methods (e.g. {@code iterator} and
+ * {@code toArray} methods) are generally quite efficient because they can amortize row position to row key conversions
+ * via iteration patterns and use bulk data movement operators.
+ * <p>
+ * Most usage of these APIs is perfectly safe, because script commands are run using an exclusive lock that inhibits
+ * concurrent update processing, and table listeners run during a period when it is always safe to access previous and
+ * current data for the table. That said, if the table is {@link Table#isRefreshing() refreshing}, it's important to
+ * note that the returned vectors are only valid for use during the current cycle (or
+ * {@link io.deephaven.engine.updategraph.LogicalClock.State#Updating Updating} phase, when
+ * {@code usePreviousValues = true}). See
+ * <a href="https://deephaven.io/core/docs/conceptual/query-engine/engine-locking/">Engine Locking</a> for more
+ * information on safe, consistent data access. {@link Vector#getDirect() Direct vectors} or {@link Vector#copyToArray()
+ * copied arrays} are always safe to use if they are created while the vector is valid.
  */
 public final class ColumnVectors {
 
     private ColumnVectors() {}
 
     /**
-     * Get a {@link Vector} of the data belonging to the specified column. This is useful for randomly-accessing column
-     * data by row position (which is fairly inefficient), or extracting data from the column in bulk (which is quite
-     * efficient).
+     * Get a {@link Vector} of the data belonging to the specified column.
      * <p>
-     * If {@code table} is {@link Table#isRefreshing() refreshing}, the returned vector is only valid for use during the
-     * current cycle.
+     * See {@link ColumnVectors class-level documentation} for more details on recommended usage and safety.
      * <p>
      * Users should generally prefer one of the typed variants, e.g. {@link #ofChar ofChar} or {@link #ofObject
      * ofObject}, rather than this method.
@@ -48,12 +61,9 @@ public final class ColumnVectors {
     }
 
     /**
-     * Get a {@link Vector} of the data belonging to the specified column. This is useful for randomly-accessing column
-     * data by row position (which is fairly inefficient), or extracting data from the column in bulk (which is quite
-     * efficient).
+     * Get a {@link Vector} of the data belonging to the specified column.
      * <p>
-     * If {@code table} is {@link Table#isRefreshing() refreshing}, the returned vector is only valid for use during the
-     * current cycle.
+     * See {@link ColumnVectors class-level documentation} for more details on recommended usage and safety.
      * <p>
      * Users should generally prefer one of the typed variants, e.g. {@link #ofChar ofChar} or {@link #ofObject
      * ofObject}, rather than this method.
@@ -62,7 +72,7 @@ public final class ColumnVectors {
      * @param columnName The name of the column to access
      * @param usePreviousValues Whether the resulting vector should contain the previous values of the column. This is
      *        only meaningful if {@code table} is {@link Table#isRefreshing() refreshing}, and only defined during the
-     *        {@link io.deephaven.engine.updategraph.LogicalClock.State#Updating updating} phase of a cycle that isn't
+     *        {@link io.deephaven.engine.updategraph.LogicalClock.State#Updating Updating} phase of a cycle that isn't
      *        the instantiation cycle of {@code table}.
      * @return A {@link Vector} of the data belonging to the specified column
      */
@@ -99,13 +109,9 @@ public final class ColumnVectors {
 
     /**
      * Get a {@link CharVector} of the data belonging to the specified column, which must be of
-     * {@link ColumnSource#getType() type} {@code char}. This is useful for randomly-accessing column data by row
-     * position (e.g. {@link CharVector#get(long) get(long rowKey)} which is fairly inefficient), or extracting data
-     * from the column in bulk (e.g. {@link CharVector#iterator() iterator()} or {@link CharVector#toArray() toArray()},
-     * which are quite efficient).
+     * {@link ColumnSource#getType() type} {@code char}.
      * <p>
-     * If {@code table} is {@link Table#isRefreshing() refreshing}, the returned vector is only valid for use during the
-     * current cycle.
+     * See {@link ColumnVectors class-level documentation} for more details on recommended usage and safety.
      *
      * @param table The {@link Table} to access column data from
      * @param columnName The name of the column to access
@@ -117,19 +123,15 @@ public final class ColumnVectors {
 
     /**
      * Get a {@link CharVector} of the data belonging to the specified column, which must be of
-     * {@link ColumnSource#getType() type} {@code char}. This is useful for randomly-accessing column data by row
-     * position (e.g. {@link CharVector#get(long) get(long rowKey)} which is fairly inefficient), or extracting data
-     * from the column in bulk (e.g. {@link CharVector#iterator() iterator()} or {@link CharVector#toArray() toArray()},
-     * which are quite efficient).
+     * {@link ColumnSource#getType() type} {@code char}.
      * <p>
-     * If {@code table} is {@link Table#isRefreshing() refreshing}, the returned vector is only valid for use during the
-     * current cycle.
+     * See {@link ColumnVectors class-level documentation} for more details on recommended usage and safety.
      *
      * @param table The {@link Table} to access column data from
      * @param columnName The name of the column to access
      * @param usePreviousValues Whether the resulting vector should contain the previous values of the column. This is
      *        only meaningful if {@code table} is {@link Table#isRefreshing() refreshing}, and only defined during the
-     *        {@link io.deephaven.engine.updategraph.LogicalClock.State#Updating updating} phase of a cycle that isn't
+     *        {@link io.deephaven.engine.updategraph.LogicalClock.State#Updating Updating} phase of a cycle that isn't
      *        the instantiation cycle of {@code table}.
      * @return A {@link CharVector} of the data belonging to the specified column
      */
@@ -147,13 +149,9 @@ public final class ColumnVectors {
 
     /**
      * Get a {@link ByteVector} of the data belonging to the specified column, which must be of
-     * {@link ColumnSource#getType() type} {@code byte}. This is useful for randomly-accessing column data by row
-     * position (e.g. {@link ByteVector#get(long) get(long rowKey)} which is fairly inefficient), or extracting data
-     * from the column in bulk (e.g. {@link ByteVector#iterator() iterator()} or {@link ByteVector#toArray() toArray()},
-     * which are quite efficient).
+     * {@link ColumnSource#getType() type} {@code byte}.
      * <p>
-     * If {@code table} is {@link Table#isRefreshing() refreshing}, the returned vector is only valid for use during the
-     * current cycle.
+     * See {@link ColumnVectors class-level documentation} for more details on recommended usage and safety.
      *
      * @param table The {@link Table} to access column data from
      * @param columnName The name of the column to access
@@ -165,19 +163,15 @@ public final class ColumnVectors {
 
     /**
      * Get a {@link ByteVector} of the data belonging to the specified column, which must be of
-     * {@link ColumnSource#getType() type} {@code byte}. This is useful for randomly-accessing column data by row
-     * position (e.g. {@link ByteVector#get(long) get(long rowKey)} which is fairly inefficient), or extracting data
-     * from the column in bulk (e.g. {@link ByteVector#iterator() iterator()} or {@link ByteVector#toArray() toArray()},
-     * which are quite efficient).
+     * {@link ColumnSource#getType() type} {@code byte}.
      * <p>
-     * If {@code table} is {@link Table#isRefreshing() refreshing}, the returned vector is only valid for use during the
-     * current cycle.
+     * See {@link ColumnVectors class-level documentation} for more details on recommended usage and safety.
      *
      * @param table The {@link Table} to access column data from
      * @param columnName The name of the column to access
      * @param usePreviousValues Whether the resulting vector should contain the previous values of the column. This is
      *        only meaningful if {@code table} is {@link Table#isRefreshing() refreshing}, and only defined during the
-     *        {@link io.deephaven.engine.updategraph.LogicalClock.State#Updating updating} phase of a cycle that isn't
+     *        {@link io.deephaven.engine.updategraph.LogicalClock.State#Updating Updating} phase of a cycle that isn't
      *        the instantiation cycle of {@code table}.
      * @return A {@link ByteVector} of the data belonging to the specified column
      */
@@ -195,13 +189,9 @@ public final class ColumnVectors {
 
     /**
      * Get a {@link ShortVector} of the data belonging to the specified column, which must be of
-     * {@link ColumnSource#getType() type} {@code short}. This is useful for randomly-accessing column data by row
-     * position (e.g. {@link ShortVector#get(long) get(long rowKey)} which is fairly inefficient), or extracting data
-     * from the column in bulk (e.g. {@link ShortVector#iterator() iterator()} or {@link ShortVector#toArray()
-     * toArray()}, which are quite efficient).
+     * {@link ColumnSource#getType() type} {@code short}.
      * <p>
-     * If {@code table} is {@link Table#isRefreshing() refreshing}, the returned vector is only valid for use during the
-     * current cycle.
+     * See {@link ColumnVectors class-level documentation} for more details on recommended usage and safety.
      *
      * @param table The {@link Table} to access column data from
      * @param columnName The name of the column to access
@@ -213,19 +203,15 @@ public final class ColumnVectors {
 
     /**
      * Get a {@link ShortVector} of the data belonging to the specified column, which must be of
-     * {@link ColumnSource#getType() type} {@code short}. This is useful for randomly-accessing column data by row
-     * position (e.g. {@link ShortVector#get(long) get(long rowKey)} which is fairly inefficient), or extracting data
-     * from the column in bulk (e.g. {@link ShortVector#iterator() iterator()} or {@link ShortVector#toArray()
-     * toArray()}, which are quite efficient).
+     * {@link ColumnSource#getType() type} {@code short}.
      * <p>
-     * If {@code table} is {@link Table#isRefreshing() refreshing}, the returned vector is only valid for use during the
-     * current cycle.
+     * See {@link ColumnVectors class-level documentation} for more details on recommended usage and safety.
      *
      * @param table The {@link Table} to access column data from
      * @param columnName The name of the column to access
      * @param usePreviousValues Whether the resulting vector should contain the previous values of the column. This is
      *        only meaningful if {@code table} is {@link Table#isRefreshing() refreshing}, and only defined during the
-     *        {@link io.deephaven.engine.updategraph.LogicalClock.State#Updating updating} phase of a cycle that isn't
+     *        {@link io.deephaven.engine.updategraph.LogicalClock.State#Updating Updating} phase of a cycle that isn't
      *        the instantiation cycle of {@code table}.
      * @return A {@link ShortVector} of the data belonging to the specified column
      */
@@ -243,13 +229,9 @@ public final class ColumnVectors {
 
     /**
      * Get an {@link IntVector} of the data belonging to the specified column, which must be of
-     * {@link ColumnSource#getType() type} {@code int}. This is useful for randomly-accessing column data by row
-     * position (e.g. {@link IntVector#get(long) get(long rowKey)} which is fairly inefficient), or extracting data from
-     * the column in bulk (e.g. {@link IntVector#iterator() iterator()} or {@link IntVector#toArray() toArray()}, which
-     * are quite efficient).
+     * {@link ColumnSource#getType() type} {@code int}.
      * <p>
-     * If {@code table} is {@link Table#isRefreshing() refreshing}, the returned vector is only valid for use during the
-     * current cycle.
+     * See {@link ColumnVectors class-level documentation} for more details on recommended usage and safety.
      *
      * @param table The {@link Table} to access column data from
      * @param columnName The name of the column to access
@@ -261,19 +243,15 @@ public final class ColumnVectors {
 
     /**
      * Get an {@link IntVector} of the data belonging to the specified column, which must be of
-     * {@link ColumnSource#getType() type} {@code int}. This is useful for randomly-accessing column data by row
-     * position (e.g. {@link IntVector#get(long) get(long rowKey)} which is fairly inefficient), or extracting data from
-     * the column in bulk (e.g. {@link IntVector#iterator() iterator()} or {@link IntVector#toArray() toArray()}, which
-     * are quite efficient).
+     * {@link ColumnSource#getType() type} {@code int}.
      * <p>
-     * If {@code table} is {@link Table#isRefreshing() refreshing}, the returned vector is only valid for use during the
-     * current cycle.
+     * See {@link ColumnVectors class-level documentation} for more details on recommended usage and safety.
      *
      * @param table The {@link Table} to access column data from
      * @param columnName The name of the column to access
      * @param usePreviousValues Whether the resulting vector should contain the previous values of the column. This is
      *        only meaningful if {@code table} is {@link Table#isRefreshing() refreshing}, and only defined during the
-     *        {@link io.deephaven.engine.updategraph.LogicalClock.State#Updating updating} phase of a cycle that isn't
+     *        {@link io.deephaven.engine.updategraph.LogicalClock.State#Updating Updating} phase of a cycle that isn't
      *        the instantiation cycle of {@code table}.
      * @return An {@link IntVector} of the data belonging to the specified column
      */
@@ -291,13 +269,9 @@ public final class ColumnVectors {
 
     /**
      * Get a {@link LongVector} of the data belonging to the specified column, which must be of
-     * {@link ColumnSource#getType() type} {@code long}. This is useful for randomly-accessing column data by row
-     * position (e.g. {@link LongVector#get(long) get(long rowKey)} which is fairly inefficient), or extracting data
-     * from the column in bulk (e.g. {@link LongVector#iterator() iterator()} or {@link LongVector#toArray() toArray()},
-     * which are quite efficient).
+     * {@link ColumnSource#getType() type} {@code long}.
      * <p>
-     * If {@code table} is {@link Table#isRefreshing() refreshing}, the returned vector is only valid for use during the
-     * current cycle.
+     * See {@link ColumnVectors class-level documentation} for more details on recommended usage and safety.
      *
      * @param table The {@link Table} to access column data from
      * @param columnName The name of the column to access
@@ -309,19 +283,15 @@ public final class ColumnVectors {
 
     /**
      * Get a {@link LongVector} of the data belonging to the specified column, which must be of
-     * {@link ColumnSource#getType() type} {@code long}. This is useful for randomly-accessing column data by row
-     * position (e.g. {@link LongVector#get(long) get(long rowKey)} which is fairly inefficient), or extracting data
-     * from the column in bulk (e.g. {@link LongVector#iterator() iterator()} or {@link LongVector#toArray() toArray()},
-     * which are quite efficient).
+     * {@link ColumnSource#getType() type} {@code long}.
      * <p>
-     * If {@code table} is {@link Table#isRefreshing() refreshing}, the returned vector is only valid for use during the
-     * current cycle.
+     * See {@link ColumnVectors class-level documentation} for more details on recommended usage and safety.
      *
      * @param table The {@link Table} to access column data from
      * @param columnName The name of the column to access
      * @param usePreviousValues Whether the resulting vector should contain the previous values of the column. This is
      *        only meaningful if {@code table} is {@link Table#isRefreshing() refreshing}, and only defined during the
-     *        {@link io.deephaven.engine.updategraph.LogicalClock.State#Updating updating} phase of a cycle that isn't
+     *        {@link io.deephaven.engine.updategraph.LogicalClock.State#Updating Updating} phase of a cycle that isn't
      *        the instantiation cycle of {@code table}.
      * @return A {@link LongVector} of the data belonging to the specified column
      */
@@ -339,13 +309,9 @@ public final class ColumnVectors {
 
     /**
      * Get a {@link FloatVector} of the data belonging to the specified column, which must be of
-     * {@link ColumnSource#getType() type} {@code float}. This is useful for randomly-accessing column data by row
-     * position (e.g. {@link FloatVector#get(long) get(long rowKey)} which is fairly inefficient), or extracting data
-     * from the column in bulk (e.g. {@link FloatVector#iterator() iterator()} or {@link FloatVector#toArray()
-     * toArray()}, which are quite efficient).
+     * {@link ColumnSource#getType() type} {@code float}.
      * <p>
-     * If {@code table} is {@link Table#isRefreshing() refreshing}, the returned vector is only valid for use during the
-     * current cycle.
+     * See {@link ColumnVectors class-level documentation} for more details on recommended usage and safety.
      *
      * @param table The {@link Table} to access column data from
      * @param columnName The name of the column to access
@@ -357,19 +323,15 @@ public final class ColumnVectors {
 
     /**
      * Get a {@link FloatVector} of the data belonging to the specified column, which must be of
-     * {@link ColumnSource#getType() type} {@code float}. This is useful for randomly-accessing column data by row
-     * position (e.g. {@link FloatVector#get(long) get(long rowKey)} which is fairly inefficient), or extracting data
-     * from the column in bulk (e.g. {@link FloatVector#iterator() iterator()} or {@link FloatVector#toArray()
-     * toArray()}, which are quite efficient).
+     * {@link ColumnSource#getType() type} {@code float}.
      * <p>
-     * If {@code table} is {@link Table#isRefreshing() refreshing}, the returned vector is only valid for use during the
-     * current cycle.
+     * See {@link ColumnVectors class-level documentation} for more details on recommended usage and safety.
      *
      * @param table The {@link Table} to access column data from
      * @param columnName The name of the column to access
      * @param usePreviousValues Whether the resulting vector should contain the previous values of the column. This is
      *        only meaningful if {@code table} is {@link Table#isRefreshing() refreshing}, and only defined during the
-     *        {@link io.deephaven.engine.updategraph.LogicalClock.State#Updating updating} phase of a cycle that isn't
+     *        {@link io.deephaven.engine.updategraph.LogicalClock.State#Updating Updating} phase of a cycle that isn't
      *        the instantiation cycle of {@code table}.
      * @return A {@link FloatVector} of the data belonging to the specified column
      */
@@ -387,13 +349,9 @@ public final class ColumnVectors {
 
     /**
      * Get a {@link DoubleVector} of the data belonging to the specified column, which must be of
-     * {@link ColumnSource#getType() type} {@code double}. This is useful for randomly-accessing column data by row
-     * position (e.g. {@link DoubleVector#get(long) get(long rowKey)} which is fairly inefficient), or extracting data
-     * from the column in bulk (e.g. {@link DoubleVector#iterator() iterator()} or {@link DoubleVector#toArray()
-     * toArray()}, which are quite efficient).
+     * {@link ColumnSource#getType() type} {@code double}.
      * <p>
-     * If {@code table} is {@link Table#isRefreshing() refreshing}, the returned vector is only valid for use during the
-     * current cycle.
+     * See {@link ColumnVectors class-level documentation} for more details on recommended usage and safety.
      *
      * @param table The {@link Table} to access column data from
      * @param columnName The name of the column to access
@@ -405,19 +363,15 @@ public final class ColumnVectors {
 
     /**
      * Get a {@link DoubleVector} of the data belonging to the specified column, which must be of
-     * {@link ColumnSource#getType() type} {@code double}. This is useful for randomly-accessing column data by row
-     * position (e.g. {@link DoubleVector#get(long) get(long rowKey)} which is fairly inefficient), or extracting data
-     * from the column in bulk (e.g. {@link DoubleVector#iterator() iterator()} or {@link DoubleVector#toArray()
-     * toArray()}, which are quite efficient).
+     * {@link ColumnSource#getType() type} {@code double}.
      * <p>
-     * If {@code table} is {@link Table#isRefreshing() refreshing}, the returned vector is only valid for use during the
-     * current cycle.
+     * See {@link ColumnVectors class-level documentation} for more details on recommended usage and safety.
      *
      * @param table The {@link Table} to access column data from
      * @param columnName The name of the column to access
      * @param usePreviousValues Whether the resulting vector should contain the previous values of the column. This is
      *        only meaningful if {@code table} is {@link Table#isRefreshing() refreshing}, and only defined during the
-     *        {@link io.deephaven.engine.updategraph.LogicalClock.State#Updating updating} phase of a cycle that isn't
+     *        {@link io.deephaven.engine.updategraph.LogicalClock.State#Updating Updating} phase of a cycle that isn't
      *        the instantiation cycle of {@code table}.
      * @return A {@link DoubleVector} of the data belonging to the specified column
      */
@@ -435,13 +389,9 @@ public final class ColumnVectors {
 
     /**
      * Get an {@link ObjectVector} of the data belonging to the specified column, which must be of
-     * {@link ColumnSource#getType() type} {@code DATA_TYPE}. This is useful for randomly-accessing column data by row
-     * position (e.g. {@link ObjectVector#get(long) get(long rowKey)} which is fairly inefficient), or extracting data
-     * from the column in bulk (e.g. {@link ObjectVector#iterator() iterator()} or {@link ObjectVector#toArray()
-     * toArray()}, which are quite efficient).
+     * {@link ColumnSource#getType() type} {@code DATA_TYPE}.
      * <p>
-     * If {@code table} is {@link Table#isRefreshing() refreshing}, the returned vector is only valid for use during the
-     * current cycle.
+     * See {@link ColumnVectors class-level documentation} for more details on recommended usage and safety.
      *
      * @param table The {@link Table} to access column data from
      * @param columnName The name of the column to access
@@ -457,20 +407,16 @@ public final class ColumnVectors {
 
     /**
      * Get an {@link ObjectVector} of the data belonging to the specified column, which must be of
-     * {@link ColumnSource#getType() type} {@code DATA_TYPE}. This is useful for randomly-accessing column data by row
-     * position (e.g. {@link ObjectVector#get(long) get(long rowKey)} which is fairly inefficient), or extracting data
-     * from the column in bulk (e.g. {@link ObjectVector#iterator() iterator()} or {@link ObjectVector#toArray()
-     * toArray()}, which are quite efficient).
+     * {@link ColumnSource#getType() type} {@code DATA_TYPE}.
      * <p>
-     * If {@code table} is {@link Table#isRefreshing() refreshing}, the returned vector is only valid for use during the
-     * current cycle.
+     * See {@link ColumnVectors class-level documentation} for more details on recommended usage and safety.
      *
      * @param table The {@link Table} to access column data from
      * @param columnName The name of the column to access
      * @param type The data type of the column
      * @param usePreviousValues Whether the resulting vector should contain the previous values of the column. This is
      *        only meaningful if {@code table} is {@link Table#isRefreshing() refreshing}, and only defined during the
-     *        {@link io.deephaven.engine.updategraph.LogicalClock.State#Updating updating} phase of a cycle that isn't
+     *        {@link io.deephaven.engine.updategraph.LogicalClock.State#Updating Updating} phase of a cycle that isn't
      *        the instantiation cycle of {@code table}.
      * @return An {@link ObjectVector} of the data belonging to the specified column
      */
