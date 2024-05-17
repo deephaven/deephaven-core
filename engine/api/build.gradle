@@ -25,6 +25,8 @@ dependencies {
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 
     testImplementation project(':engine-test-utils')
+    testImplementation TestTools.projectDependency(project, 'engine-table')
+    testImplementation TestTools.projectDependency(project, 'engine-vector')
     testImplementation depCommonsLang3
 
     Classpaths.inheritJUnitClassic(project, 'testImplementation')

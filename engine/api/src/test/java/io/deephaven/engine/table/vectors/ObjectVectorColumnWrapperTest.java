@@ -9,7 +9,7 @@ package io.deephaven.engine.table.vectors;
 
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.vectors.ObjectVectorColumnWrapper;import io.deephaven.vector.ObjectVector;
+import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ObjectVectorTest;
 import org.jetbrains.annotations.NotNull;
 
