@@ -17,7 +17,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.vector.DoubleVectorColumnWrapper;
+import io.deephaven.engine.table.vectors.DoubleVectorColumnWrapper;
 import io.deephaven.vector.DoubleVector;
 import io.deephaven.vector.DoubleVectorDirect;
 import org.jetbrains.annotations.NotNull;
