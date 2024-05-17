@@ -208,7 +208,8 @@ public class FieldAdapter implements Type.Visitor<Field>, PrimitiveType.Visitor<
 
     // ----------------------------------------------------------
 
-    final class NativeArrayVisitor implements Type.Visitor<Field>, PrimitiveType.Visitor<Field>, GenericType.Visitor<Field> {
+    final class NativeArrayVisitor
+            implements Type.Visitor<Field>, PrimitiveType.Visitor<Field>, GenericType.Visitor<Field> {
         @Override
         public Field visit(PrimitiveType<?> primitiveType) {
             return primitiveType.walk((PrimitiveType.Visitor<Field>) this);

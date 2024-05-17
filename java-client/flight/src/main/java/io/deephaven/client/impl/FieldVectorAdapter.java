@@ -44,6 +44,7 @@ import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.qst.type.ShortType;
 import io.deephaven.qst.type.StringType;
 import io.deephaven.qst.type.Type;
+import org.apache.arrow.memory.ArrowBuf;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.vector.BigIntVector;
 import org.apache.arrow.vector.BitVector;
@@ -61,6 +62,7 @@ import org.apache.arrow.vector.complex.ListVector;
 import org.apache.arrow.vector.complex.impl.UnionListWriter;
 import org.apache.arrow.vector.types.pojo.Field;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Objects;
@@ -235,7 +237,8 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
 
                                     @Override
                                     public FieldVector visit(InstantType instantType) {
-                                        return visitInstantArrayElements(generic.cast(instantType.arrayType()).values());
+                                        return visitInstantArrayElements(
+                                                generic.cast(instantType.arrayType()).values());
                                     }
 
                                     @Override
@@ -335,70 +338,70 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
         return vector;
     }
 
-    FieldVector visitBooleanElements(Collection<Boolean> elements) {
+    private FieldVector visitBooleanElements(Collection<Boolean> elements) {
         Field field = FieldAdapter.booleanField(name);
         BitVector vector = new BitVector(field, allocator);
         VectorHelper.fill(vector, elements);
         return vector;
     }
 
-    FieldVector visitByteElements(Collection<Byte> elements) {
+    private FieldVector visitByteElements(Collection<Byte> elements) {
         Field field = FieldAdapter.byteField(name);
         TinyIntVector vector = new TinyIntVector(field, allocator);
         VectorHelper.fill(vector, elements);
         return vector;
     }
 
-    FieldVector visitCharacterElements(Collection<Character> elements) {
+    private FieldVector visitCharacterElements(Collection<Character> elements) {
         Field field = FieldAdapter.charField(name);
         UInt2Vector vector = new UInt2Vector(field, allocator);
         VectorHelper.fill(vector, elements);
         return vector;
     }
 
-    FieldVector visitShortElements(Collection<Short> elements) {
+    private FieldVector visitShortElements(Collection<Short> elements) {
         Field field = FieldAdapter.shortField(name);
         SmallIntVector vector = new SmallIntVector(field, allocator);
         VectorHelper.fill(vector, elements);
         return vector;
     }
 
-    FieldVector visitIntegerElements(Collection<Integer> elements) {
+    private FieldVector visitIntegerElements(Collection<Integer> elements) {
         Field field = FieldAdapter.intField(name);
         IntVector vector = new IntVector(field, allocator);
         VectorHelper.fill(vector, elements);
         return vector;
     }
 
-    FieldVector visitLongElements(Collection<Long> elements) {
+    private FieldVector visitLongElements(Collection<Long> elements) {
         Field field = FieldAdapter.longField(name);
         BigIntVector vector = new BigIntVector(field, allocator);
         VectorHelper.fill(vector, elements);
         return vector;
     }
 
-    FieldVector visitFloatElements(Collection<Float> elements) {
+    private FieldVector visitFloatElements(Collection<Float> elements) {
         Field field = FieldAdapter.floatField(name);
         Float4Vector vector = new Float4Vector(field, allocator);
         VectorHelper.fill(vector, elements);
         return vector;
     }
 
-    FieldVector visitDoubleElements(Collection<Double> elements) {
+    private FieldVector visitDoubleElements(Collection<Double> elements) {
         Field field = FieldAdapter.doubleField(name);
         Float8Vector vector = new Float8Vector(field, allocator);
         VectorHelper.fill(vector, elements);
         return vector;
     }
 
-    FieldVector visitStringElements(Collection<String> elements) {
+    private FieldVector visitStringElements(Collection<String> elements) {
         Field field = FieldAdapter.stringField(name);
         VarCharVector vector = new VarCharVector(field, allocator);
         VectorHelper.fill(vector, elements);
         return vector;
     }
 
-    FieldVector visitInstantElements(Collection<Instant> elements) {
+    private FieldVector visitInstantElements(Collection<Instant> elements) {
         Field field = FieldAdapter.instantField(name);
         TimeStampNanoTZVector vector = new TimeStampNanoTZVector(field, allocator);
         VectorHelper.fill(vector, elements);
@@ -411,7 +414,7 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
     // manually advance the position after writeNull because it doesn't automatically advanced the position like endList
     // does.
 
-    FieldVector visitBooleanArrayElements(Collection<boolean[]> elements) {
+    private FieldVector visitBooleanArrayElements(Collection<boolean[]> elements) {
         final Field field = FieldAdapter.of(ColumnHeader.of(name, Type.booleanType().arrayType()));
         final ListVector vector = new ListVector(field.getName(), allocator, field.getFieldType(), null);
         final UnionListWriter writer = new UnionListWriter(vector);
@@ -431,7 +434,7 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
         return vector;
     }
 
-    FieldVector visitByteArrayElements(Collection<byte[]> elements) {
+    private FieldVector visitByteArrayElements(Collection<byte[]> elements) {
         // Note: byte[] is the only array type that doesn't follow the LIST conventions that the other array types have
         // Might want to re-examine this in the future.
         Field field = FieldAdapter.byteVectorField(name);
@@ -440,7 +443,7 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
         return vector;
     }
 
-    FieldVector visitCharArrayElements(Collection<char[]> elements) {
+    private FieldVector visitCharArrayElements(Collection<char[]> elements) {
         final Field field = FieldAdapter.of(ColumnHeader.of(name, Type.charType().arrayType()));
         final ListVector vector = new ListVector(field.getName(), allocator, field.getFieldType(), null);
         vector.allocateNew();
@@ -461,7 +464,7 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
         return vector;
     }
 
-    FieldVector visitShortArrayElements(Collection<short[]> elements) {
+    private FieldVector visitShortArrayElements(Collection<short[]> elements) {
         final Field field = FieldAdapter.of(ColumnHeader.of(name, Type.shortType().arrayType()));
         final ListVector vector = new ListVector(field.getName(), allocator, field.getFieldType(), null);
         vector.allocateNew();
@@ -482,7 +485,7 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
         return vector;
     }
 
-    FieldVector visitIntArrayElements(Collection<int[]> elements) {
+    private FieldVector visitIntArrayElements(Collection<int[]> elements) {
         final Field field = FieldAdapter.of(ColumnHeader.of(name, Type.intType().arrayType()));
         final ListVector vector = new ListVector(field.getName(), allocator, field.getFieldType(), null);
         vector.allocateNew();
@@ -503,7 +506,7 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
         return vector;
     }
 
-    FieldVector visitLongArrayElements(Collection<long[]> elements) {
+    private FieldVector visitLongArrayElements(Collection<long[]> elements) {
         final Field field = FieldAdapter.of(ColumnHeader.of(name, Type.longType().arrayType()));
         final ListVector vector = new ListVector(field.getName(), allocator, field.getFieldType(), null);
         vector.allocateNew();
@@ -524,7 +527,7 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
         return vector;
     }
 
-    FieldVector visitFloatArrayElements(Collection<float[]> elements) {
+    private FieldVector visitFloatArrayElements(Collection<float[]> elements) {
         final Field field = FieldAdapter.of(ColumnHeader.of(name, Type.floatType().arrayType()));
         final ListVector vector = new ListVector(field.getName(), allocator, field.getFieldType(), null);
         vector.allocateNew();
@@ -545,7 +548,7 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
         return vector;
     }
 
-    FieldVector visitDoubleArrayElements(Collection<double[]> elements) {
+    private FieldVector visitDoubleArrayElements(Collection<double[]> elements) {
         final Field field = FieldAdapter.of(ColumnHeader.of(name, Type.doubleType().arrayType()));
         final ListVector vector = new ListVector(field.getName(), allocator, field.getFieldType(), null);
         vector.allocateNew();
@@ -566,7 +569,7 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
         return vector;
     }
 
-    FieldVector visitStringArrayElements(Collection<String[]> elements) {
+    private FieldVector visitStringArrayElements(Collection<String[]> elements) {
         final Field field = FieldAdapter.of(ColumnHeader.of(name, Type.stringType().arrayType()));
         final ListVector vector = new ListVector(field.getName(), allocator, field.getFieldType(), null);
         vector.allocateNew();
@@ -581,7 +584,11 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
                     if (x == null) {
                         writer.writeNull();
                     } else {
-                        writer.writeVarChar(0, 0, null);
+                        final byte[] bytes = x.getBytes(StandardCharsets.UTF_8);
+                        try (final ArrowBuf buffer = allocator.buffer(bytes.length)) {
+                            buffer.writeBytes(bytes);
+                            writer.writeVarChar(0, bytes.length, buffer);
+                        }
                     }
                 }
                 writer.endList();
@@ -591,7 +598,7 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
         return vector;
     }
 
-    FieldVector visitInstantArrayElements(Collection<Instant[]> elements) {
+    private FieldVector visitInstantArrayElements(Collection<Instant[]> elements) {
         final Field field = FieldAdapter.of(ColumnHeader.of(name, Type.instantType().arrayType()));
         final ListVector vector = new ListVector(field.getName(), allocator, field.getFieldType(), null);
         vector.allocateNew();
@@ -609,7 +616,7 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
                         final long epochSecond = x.getEpochSecond();
                         final int nano = x.getNano();
                         final long epochNano = Math.addExact(Math.multiplyExact(epochSecond, 1_000_000_000L), nano);
-                        writer.writeTimeStampNanoTZ(epochNano); // todo: TZ?
+                        writer.writeTimeStampNanoTZ(epochNano);
                     }
                 }
                 writer.endList();
