@@ -4,7 +4,6 @@
 package io.deephaven.time.calendar;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.function.Function;
 
@@ -15,9 +14,8 @@ import java.util.function.Function;
  */
 class YearMonthSummaryCache<T> {
 
-    private final FastConcurrentCache<Integer, T> monthCache;
-    private final FastConcurrentCache<Integer, T> yearCache;
-    private volatile boolean fastCache = false; // synchronized
+    private final ImmutableReadHeavyConcurrentCache<Integer, T> monthCache;
+    private final ImmutableReadHeavyConcurrentCache<Integer, T> yearCache;
 
     /**
      * Creates a new cache.
@@ -26,98 +24,14 @@ class YearMonthSummaryCache<T> {
      * @param computeYearSummary the function to compute a year summary
      */
     YearMonthSummaryCache(Function<Integer, T> computeMonthSummary, Function<Integer, T> computeYearSummary) {
-        monthCache = new FastConcurrentCache<>(computeMonthSummary);
-        yearCache = new FastConcurrentCache<>(computeYearSummary);
-    }
-
-    /**
-     * Returns whether the fast cache is enabled.
-     *
-     * @return whether the fast cache is enabled
-     */
-    public synchronized boolean isFastCache() {
-        return fastCache;
-    }
-
-    /**
-     * Computes the summaries for the specified range and caches them. The map is changed from a ConcurrentHashMap to a
-     * HashMap for faster access. This results in faster cache access, but it limits the range of dates in the cache.
-     * <p>
-     * To enable the fast cache for a different range, clear the cache first.
-     *
-     * @param startYear the start year (inclusive)
-     * @param startMonth the start month (inclusive)
-     * @param endYear the end year (inclusive)
-     * @param endMonth the end month (inclusive)
-     * @param wait whether to wait for the computation to finish before returning
-     * @throws IllegalStateException if the fast cache is already enabled
-     */
-    synchronized void enableFastCache(final int startYear, final int startMonth, final int endYear, final int endMonth,
-            final boolean wait) {
-
-        if (fastCache) {
-            throw new IllegalStateException(
-                    "Fast cache is already enabled.  To change the range, clear the cache first.");
-        }
-
-        fastCache = true;
-
-        final ArrayList<Integer> yearMonths = new ArrayList<>();
-
-        for (int year = startYear; year <= endYear; year++) {
-            for (int month =
-                    (year == startYear ? startMonth : 1); month <= (year == endYear ? endMonth : 12); month++) {
-                yearMonths.add(year * 100 + month);
-            }
-        }
-
-        monthCache.enableFastCache(yearMonths, wait);
-
-        final ArrayList<Integer> years = new ArrayList<>();
-
-        for (int year = (startMonth == 1 ? startYear : startYear + 1); year <= (endMonth == 12 ? endYear
-                : endYear - 1); year++) {
-            years.add(year);
-        }
-
-        yearCache.enableFastCache(years, wait);
-    }
-
-    /**
-     * Computes the summaries for the specified range and caches them. The map is changed from a ConcurrentHashMap to a
-     * HashMap for faster access. This results in faster cache access, but it limits the range of dates in the cache.
-     * <p>
-     * To enable the fast cache for a different range, clear the cache first.
-     *
-     * @param start the start date (inclusive)
-     * @param end the end date (inclusive)
-     * @param wait whether to wait for the computation to finish before returning
-     * @throws IllegalStateException if the fast cache is already enabled
-     */
-    void enableFastCache(LocalDate start, LocalDate end, final boolean wait) {
-        // Ensure only full months are computed
-
-        // Skip the first month if the start date is not the first day of the month
-        if (start.getDayOfMonth() != 1) {
-            start = start.withDayOfMonth(1).plusMonths(1);
-        }
-
-        // Skip the last month if the end date is not the last day of the month
-
-        final LocalDate endPlus1 = end.plusDays(1);
-
-        if (end.getMonth() == endPlus1.getMonth()) {
-            end = end.withDayOfMonth(1).minusMonths(1);
-        }
-
-        enableFastCache(start.getYear(), start.getMonthValue(), end.getYear(), end.getMonthValue(), wait);
+        monthCache = new ImmutableReadHeavyConcurrentCache<>(computeMonthSummary);
+        yearCache = new ImmutableReadHeavyConcurrentCache<>(computeYearSummary);
     }
 
     /**
      * Clears the cache.
      */
     synchronized void clear() {
-        fastCache = false;
         monthCache.clear();
         yearCache.clear();
     }

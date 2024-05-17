@@ -90,8 +90,8 @@ public class BusinessCalendar extends Calendar {
         }
     }
 
-    private final FastConcurrentCache<LocalDate, CalendarDay<Instant>> schedulesCache =
-            new FastConcurrentCache<>(this::computeCalendarDay);
+    private final ImmutableReadHeavyConcurrentCache<LocalDate, CalendarDay<Instant>> schedulesCache =
+            new ImmutableReadHeavyConcurrentCache<>(this::computeCalendarDay);
     private final YearMonthSummaryCache<SummaryData> summaryCache =
             new YearMonthSummaryCache<>(this::computeMonthSummary, this::computeYearSummary);
     private final int yearCacheStart;
@@ -215,30 +215,6 @@ public class BusinessCalendar extends Calendar {
         } else {
             return CalendarDay.toInstant(standardBusinessDay, date, timeZone());
         }
-    }
-
-    /**
-     * Enables a fast cache that improves access and computation times.
-     * <p>
-     * If the cache is already enabled, this method does nothing.
-     *
-     * @param wait whether to wait for the computation to finish
-     */
-    public synchronized void enableFastCache(final boolean wait) {
-        if (isFastCache()) {
-            return;
-        }
-
-        super.enableFastCache(firstValidDate, lastValidDate, wait);
-        summaryCache.enableFastCache(firstValidDate, lastValidDate, wait);
-
-        final ArrayList<LocalDate> dates = new ArrayList<>();
-
-        for (LocalDate date = firstValidDate; !date.isAfter(lastValidDate); date = date.plusDays(1)) {
-            dates.add(date);
-        }
-
-        schedulesCache.enableFastCache(dates, wait);
     }
 
     // endregion

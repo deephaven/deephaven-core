@@ -282,19 +282,4 @@ public class TestCalendar extends BaseArrayTestCase {
         assertEquals(NULL_INT, calendar.numberCalendarDates(null, end.atTime(3, 15).atZone(timeZone), false, false));
         assertEquals(NULL_INT, calendar.numberCalendarDates(start.atTime(3, 15).atZone(timeZone), null, false, false));
     }
-
-    public void testFastCache() {
-        final LocalDate start = LocalDate.of(2018, 2, 3);
-        final LocalDate end = LocalDate.of(2023, 2, 5);
-
-        calendar.clearCache();
-        assertFalse(calendar.isFastCache());
-        final LocalDate[] dates = calendar.calendarDates(start, end);
-
-        calendar.enableFastCache(start, end, true);
-        assertTrue(calendar.isFastCache());
-        final LocalDate[] dates2 = calendar.calendarDates(start, end);
-
-        assertEquals(dates, dates2);
-    }
 }

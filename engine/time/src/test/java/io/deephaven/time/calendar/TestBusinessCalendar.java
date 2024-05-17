@@ -912,6 +912,7 @@ public class TestBusinessCalendar extends TestCalendar {
         // LocalDate.of(2023,7,15),
         // };
 
+        assertEquals(0, bCalendar.numberNonBusinessDates(end, start));
         assertEquals(nonBus.length, bCalendar.numberNonBusinessDates(start, end));
         assertEquals(nonBus.length, bCalendar.numberNonBusinessDates(start.toString(), end.toString()));
         assertEquals(nonBus.length, bCalendar.numberNonBusinessDates(start.atTime(1, 24).atZone(timeZone),
@@ -959,6 +960,11 @@ public class TestBusinessCalendar extends TestCalendar {
                 bCalendar.numberNonBusinessDates(start.atTime(1, 2).atZone(timeZone).toInstant(), null, true, true));
         assertEquals(NULL_INT, bCalendar.numberNonBusinessDates(null, end.atTime(1, 2).atZone(timeZone), true, true));
         assertEquals(NULL_INT, bCalendar.numberNonBusinessDates(start.atTime(1, 2).atZone(timeZone), null, true, true));
+
+        final LocalDate startLong = LocalDate.of(2023, 7, 3);
+        final LocalDate endLong = LocalDate.of(2025, 7, 15);
+        final LocalDate[] nonBusLong = bCalendar.nonBusinessDates(startLong, endLong);
+        assertEquals(nonBusLong.length, bCalendar.numberNonBusinessDates(startLong, endLong));
     }
 
     public void testDiffBusinessNanos() {
@@ -1611,27 +1617,6 @@ public class TestBusinessCalendar extends TestCalendar {
         final int i3 = bCalendar.numberBusinessDates(start, end);
         final int i4 = bCalendar.numberBusinessDates(start, end);
         assertEquals(i3, i4);
-    }
-
-    public void testFastCache() {
-        final LocalDate start = LocalDate.of(2018, 2, 3);
-        final LocalDate end = LocalDate.of(2023, 2, 5);
-
-        bCalendar.clearCache();
-        assertFalse(bCalendar.isFastCache());
-        final LocalDate[] calDates = bCalendar.calendarDates(start, end);
-        final LocalDate[] busDates = bCalendar.businessDates(start, end);
-        final LocalDate[] nonBusDates = bCalendar.nonBusinessDates(start, end);
-
-        bCalendar.enableFastCache(true);
-        assertTrue(bCalendar.isFastCache());
-        final LocalDate[] calDates2 = bCalendar.calendarDates(start, end);
-        final LocalDate[] busDates2 = bCalendar.businessDates(start, end);
-        final LocalDate[] nonBusDates2 = bCalendar.nonBusinessDates(start, end);
-
-        assertEquals(calDates, calDates2);
-        assertEquals(busDates, busDates2);
-        assertEquals(nonBusDates, nonBusDates2);
     }
 
 }
