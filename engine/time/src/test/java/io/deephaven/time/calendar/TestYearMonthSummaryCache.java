@@ -94,7 +94,8 @@ public class TestYearMonthSummaryCache extends BaseArrayTestCase {
     }
 
     public void testIteratorInclusive() {
-        final YearMonthSummaryCache<Value> cache = new YearMonthSummaryCache<>(i -> new Value(i, "month" + i), i -> new Value(i, "year" + i));
+        final YearMonthSummaryCache<Value> cache =
+                new YearMonthSummaryCache<>(i -> new Value(i, "month" + i), i -> new Value(i, "year" + i));
         final boolean startInclusive = true;
         final boolean endInclusive = true;
 
@@ -124,49 +125,56 @@ public class TestYearMonthSummaryCache extends BaseArrayTestCase {
         start = LocalDate.of(2021, 1, 1);
         end = LocalDate.of(2021, 2, 11);
         target = new String[] {"month202101"};
-        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x->x.getValue()).toArray(String[]::new);
+        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x -> x.getValue())
+                .toArray(String[]::new);
         assertEquals(target, actual);
 
         // full month + few days
         start = LocalDate.of(2020, 12, 12);
         end = LocalDate.of(2021, 2, 11);
         target = new String[] {"month202101"};
-        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x->x.getValue()).toArray(String[]::new);
+        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x -> x.getValue())
+                .toArray(String[]::new);
         assertEquals(target, actual);
 
         // multiple months + few days
         start = LocalDate.of(2020, 11, 12);
         end = LocalDate.of(2021, 4, 11);
         target = new String[] {"month202012", "month202101", "month202102", "month202103"};
-        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x->x.getValue()).toArray(String[]::new);
+        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x -> x.getValue())
+                .toArray(String[]::new);
         assertEquals(target, actual);
 
         // partial month + full month
         start = LocalDate.of(2021, 1, 3);
         end = LocalDate.of(2021, 2, 28);
         target = new String[] {"month202102"};
-        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x->x.getValue()).toArray(String[]::new);
+        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x -> x.getValue())
+                .toArray(String[]::new);
         assertEquals(target, actual);
 
         // full year
         start = LocalDate.of(2021, 1, 1);
         end = LocalDate.of(2021, 12, 31);
         target = new String[] {"year2021"};
-        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x->x.getValue()).toArray(String[]::new);
+        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x -> x.getValue())
+                .toArray(String[]::new);
         assertEquals(target, actual);
 
         // full year + few days
         start = LocalDate.of(2020, 12, 11);
         end = LocalDate.of(2022, 1, 3);
         target = new String[] {"year2021"};
-        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x->x.getValue()).toArray(String[]::new);
+        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x -> x.getValue())
+                .toArray(String[]::new);
         assertEquals(target, actual);
 
         // multiple years + few days
         start = LocalDate.of(2018, 12, 11);
         end = LocalDate.of(2022, 1, 3);
         target = new String[] {"year2019", "year2020", "year2021"};
-        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x->x.getValue()).toArray(String[]::new);
+        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x -> x.getValue())
+                .toArray(String[]::new);
         assertEquals(target, actual);
 
         // mixed
@@ -174,12 +182,14 @@ public class TestYearMonthSummaryCache extends BaseArrayTestCase {
         end = LocalDate.of(2022, 3, 3);
         target = new String[] {"month201811", "month201812", "year2019", "year2020", "year2021", "month202201",
                 "month202202"};
-        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x->x.getValue()).toArray(String[]::new);
+        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x -> x.getValue())
+                .toArray(String[]::new);
         assertEquals(target, actual);
     }
 
     public void testIteratorExclusiveInclusive() {
-        final YearMonthSummaryCache<Value> cache = new YearMonthSummaryCache<>(i -> new Value(i, "month" + i), i -> new Value(i, "year" + i));
+        final YearMonthSummaryCache<Value> cache =
+                new YearMonthSummaryCache<>(i -> new Value(i, "month" + i), i -> new Value(i, "year" + i));
 
         // start and end of month
 
@@ -190,25 +200,29 @@ public class TestYearMonthSummaryCache extends BaseArrayTestCase {
         boolean endInclusive = true;
         String[] target = new String[] {"month202112"};
         String[] actual =
-                iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x->x.getValue()).toArray(String[]::new);
+                iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x -> x.getValue())
+                        .toArray(String[]::new);
         assertEquals(target, actual);
 
         startInclusive = false;
         endInclusive = true;
         target = new String[] {};
-        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x->x.getValue()).toArray(String[]::new);
+        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x -> x.getValue())
+                .toArray(String[]::new);
         assertEquals(target, actual);
 
         startInclusive = true;
         endInclusive = false;
         target = new String[] {};
-        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x->x.getValue()).toArray(String[]::new);
+        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x -> x.getValue())
+                .toArray(String[]::new);
         assertEquals(target, actual);
 
         startInclusive = false;
         endInclusive = false;
         target = new String[] {};
-        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x->x.getValue()).toArray(String[]::new);
+        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x -> x.getValue())
+                .toArray(String[]::new);
         assertEquals(target, actual);
 
         // day before start of month
@@ -219,25 +233,29 @@ public class TestYearMonthSummaryCache extends BaseArrayTestCase {
         startInclusive = true;
         endInclusive = true;
         target = new String[] {"month202112"};
-        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x->x.getValue()).toArray(String[]::new);
+        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x -> x.getValue())
+                .toArray(String[]::new);
         assertEquals(target, actual);
 
         startInclusive = false;
         endInclusive = true;
         target = new String[] {"month202112"};
-        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x->x.getValue()).toArray(String[]::new);
+        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x -> x.getValue())
+                .toArray(String[]::new);
         assertEquals(target, actual);
 
         startInclusive = true;
         endInclusive = false;
         target = new String[] {};
-        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x->x.getValue()).toArray(String[]::new);
+        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x -> x.getValue())
+                .toArray(String[]::new);
         assertEquals(target, actual);
 
         startInclusive = false;
         endInclusive = false;
         target = new String[] {};
-        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x->x.getValue()).toArray(String[]::new);
+        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x -> x.getValue())
+                .toArray(String[]::new);
         assertEquals(target, actual);
 
         // day after end of month
@@ -248,25 +266,29 @@ public class TestYearMonthSummaryCache extends BaseArrayTestCase {
         startInclusive = true;
         endInclusive = true;
         target = new String[] {"month202112"};
-        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x->x.getValue()).toArray(String[]::new);
+        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x -> x.getValue())
+                .toArray(String[]::new);
         assertEquals(target, actual);
 
         startInclusive = false;
         endInclusive = true;
         target = new String[] {};
-        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x->x.getValue()).toArray(String[]::new);
+        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x -> x.getValue())
+                .toArray(String[]::new);
         assertEquals(target, actual);
 
         startInclusive = true;
         endInclusive = false;
         target = new String[] {"month202112"};
-        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x->x.getValue()).toArray(String[]::new);
+        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x -> x.getValue())
+                .toArray(String[]::new);
         assertEquals(target, actual);
 
         startInclusive = false;
         endInclusive = false;
         target = new String[] {};
-        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x->x.getValue()).toArray(String[]::new);
+        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x -> x.getValue())
+                .toArray(String[]::new);
         assertEquals(target, actual);
 
         // day before and after end of month
@@ -277,25 +299,29 @@ public class TestYearMonthSummaryCache extends BaseArrayTestCase {
         startInclusive = true;
         endInclusive = true;
         target = new String[] {"month202112"};
-        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x->x.getValue()).toArray(String[]::new);
+        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x -> x.getValue())
+                .toArray(String[]::new);
         assertEquals(target, actual);
 
         startInclusive = false;
         endInclusive = true;
         target = new String[] {"month202112"};
-        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x->x.getValue()).toArray(String[]::new);
+        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x -> x.getValue())
+                .toArray(String[]::new);
         assertEquals(target, actual);
 
         startInclusive = true;
         endInclusive = false;
         target = new String[] {"month202112"};
-        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x->x.getValue()).toArray(String[]::new);
+        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x -> x.getValue())
+                .toArray(String[]::new);
         assertEquals(target, actual);
 
         startInclusive = false;
         endInclusive = false;
         target = new String[] {"month202112"};
-        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x->x.getValue()).toArray(String[]::new);
+        actual = iteratorToStream(cache.iterator(start, end, startInclusive, endInclusive)).map(x -> x.getValue())
+                .toArray(String[]::new);
         assertEquals(target, actual);
     }
 }

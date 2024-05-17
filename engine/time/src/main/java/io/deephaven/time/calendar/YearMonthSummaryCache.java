@@ -24,7 +24,7 @@ class YearMonthSummaryCache<T extends ImmutableConcurrentCache.IntKeyedValue> {
      * @param computeYearSummary the function to compute a year summary
      */
     YearMonthSummaryCache(IntFunction<T> computeMonthSummary, IntFunction<T> computeYearSummary) {
-        monthCache = new ImmutableConcurrentCache<>(12*50, computeMonthSummary);
+        monthCache = new ImmutableConcurrentCache<>(12 * 50, computeMonthSummary);
         yearCache = new ImmutableConcurrentCache<>(50, computeYearSummary);
     }
 
