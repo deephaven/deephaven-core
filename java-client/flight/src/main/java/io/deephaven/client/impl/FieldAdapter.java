@@ -208,7 +208,7 @@ public class FieldAdapter implements Type.Visitor<Field>, PrimitiveType.Visitor<
 
     // ----------------------------------------------------------
 
-    final class NativeArrayVisitor implements Type.Visitor<Field>, PrimitiveType.Visitor<Field> {
+    final class NativeArrayVisitor implements Type.Visitor<Field>, PrimitiveType.Visitor<Field>, GenericType.Visitor<Field> {
         @Override
         public Field visit(PrimitiveType<?> primitiveType) {
             return primitiveType.walk((PrimitiveType.Visitor<Field>) this);
@@ -258,7 +258,32 @@ public class FieldAdapter implements Type.Visitor<Field>, PrimitiveType.Visitor<
 
         @Override
         public Field visit(GenericType<?> genericType) {
-            throw unsupported(genericType.arrayType());
+            return genericType.walk((GenericType.Visitor<Field>) this);
+        }
+
+        @Override
+        public Field visit(BoxedType<?> boxedType) {
+            throw unsupported(boxedType.arrayType());
+        }
+
+        @Override
+        public Field visit(StringType stringType) {
+            return field(name, MinorType.LIST.getType(), "java.lang.String[]");
+        }
+
+        @Override
+        public Field visit(InstantType instantType) {
+            return field(name, MinorType.LIST.getType(), "java.time.Instant[]");
+        }
+
+        @Override
+        public Field visit(ArrayType<?, ?> arrayType) {
+            throw unsupported(arrayType.arrayType());
+        }
+
+        @Override
+        public Field visit(CustomType<?> customType) {
+            throw unsupported(customType.arrayType());
         }
     }
 }

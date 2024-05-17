@@ -99,6 +99,12 @@ class AddToBlinkTable extends FlightExampleBase {
                 null,
                 new double[] {},
                 new double[] {42.42, 43.43});
+
+//        addAndPublish(flight, "StringArray", Type.stringType().arrayType(), null, new String[] {}, new String[] { null, "", "Hello World" });
+        addAndPublish(flight, "InstantArray", Type.instantType().arrayType(),
+                null,
+                new Instant[] {},
+                new Instant[] { null, Instant.now() });
     }
 
     public static void main(String[] args) {

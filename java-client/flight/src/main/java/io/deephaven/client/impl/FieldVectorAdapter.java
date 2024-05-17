@@ -16,7 +16,23 @@ import io.deephaven.qst.array.PrimitiveArray;
 import io.deephaven.qst.array.ShortArray;
 import io.deephaven.qst.column.Column;
 import io.deephaven.qst.column.header.ColumnHeader;
-import io.deephaven.qst.type.*;
+import io.deephaven.qst.type.ArrayType;
+import io.deephaven.qst.type.BooleanType;
+import io.deephaven.qst.type.BoxedBooleanType;
+import io.deephaven.qst.type.BoxedByteType;
+import io.deephaven.qst.type.BoxedCharType;
+import io.deephaven.qst.type.BoxedDoubleType;
+import io.deephaven.qst.type.BoxedFloatType;
+import io.deephaven.qst.type.BoxedIntType;
+import io.deephaven.qst.type.BoxedLongType;
+import io.deephaven.qst.type.BoxedShortType;
+import io.deephaven.qst.type.BoxedType;
+import io.deephaven.qst.type.ByteType;
+import io.deephaven.qst.type.CharType;
+import io.deephaven.qst.type.CustomType;
+import io.deephaven.qst.type.DoubleType;
+import io.deephaven.qst.type.FloatType;
+import io.deephaven.qst.type.GenericType;
 import io.deephaven.qst.type.GenericType.Visitor;
 import io.deephaven.qst.type.GenericVectorType;
 import io.deephaven.qst.type.InstantType;
@@ -29,7 +45,18 @@ import io.deephaven.qst.type.ShortType;
 import io.deephaven.qst.type.StringType;
 import io.deephaven.qst.type.Type;
 import org.apache.arrow.memory.BufferAllocator;
-import org.apache.arrow.vector.*;
+import org.apache.arrow.vector.BigIntVector;
+import org.apache.arrow.vector.BitVector;
+import org.apache.arrow.vector.FieldVector;
+import org.apache.arrow.vector.Float4Vector;
+import org.apache.arrow.vector.Float8Vector;
+import org.apache.arrow.vector.IntVector;
+import org.apache.arrow.vector.SmallIntVector;
+import org.apache.arrow.vector.TimeStampNanoTZVector;
+import org.apache.arrow.vector.TinyIntVector;
+import org.apache.arrow.vector.UInt2Vector;
+import org.apache.arrow.vector.VarBinaryVector;
+import org.apache.arrow.vector.VarCharVector;
 import org.apache.arrow.vector.complex.ListVector;
 import org.apache.arrow.vector.complex.impl.UnionListWriter;
 import org.apache.arrow.vector.types.pojo.Field;
@@ -195,7 +222,32 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
 
                             @Override
                             public FieldVector visit(GenericType<?> genericType) {
-                                throw unsupported(genericType.arrayType());
+                                return genericType.walk(new GenericType.Visitor<FieldVector>() {
+                                    @Override
+                                    public FieldVector visit(BoxedType<?> boxedType) {
+                                        throw unsupported(boxedType.arrayType());
+                                    }
+
+                                    @Override
+                                    public FieldVector visit(StringType stringType) {
+                                        return visitStringArrayElements(generic.cast(stringType.arrayType()).values());
+                                    }
+
+                                    @Override
+                                    public FieldVector visit(InstantType instantType) {
+                                        return visitInstantArrayElements(generic.cast(instantType.arrayType()).values());
+                                    }
+
+                                    @Override
+                                    public FieldVector visit(ArrayType<?, ?> arrayType) {
+                                        throw unsupported(arrayType.arrayType());
+                                    }
+
+                                    @Override
+                                    public FieldVector visit(CustomType<?> customType) {
+                                        throw unsupported(customType.arrayType());
+                                    }
+                                });
                             }
                         });
                     }
@@ -506,6 +558,59 @@ public class FieldVectorAdapter implements Array.Visitor<FieldVector>, Primitive
                 writer.startList();
                 for (double x : array) {
                     writer.writeFloat8(x);
+                }
+                writer.endList();
+            }
+        }
+        vector.setValueCount(elements.size());
+        return vector;
+    }
+
+    FieldVector visitStringArrayElements(Collection<String[]> elements) {
+        final Field field = FieldAdapter.of(ColumnHeader.of(name, Type.stringType().arrayType()));
+        final ListVector vector = new ListVector(field.getName(), allocator, field.getFieldType(), null);
+        vector.allocateNew();
+        final UnionListWriter writer = new UnionListWriter(vector);
+        for (String[] array : elements) {
+            if (array == null) {
+                writer.writeNull();
+                writer.setPosition(writer.getPosition() + 1);
+            } else {
+                writer.startList();
+                for (String x : array) {
+                    if (x == null) {
+                        writer.writeNull();
+                    } else {
+                        writer.writeVarChar(0, 0, null);
+                    }
+                }
+                writer.endList();
+            }
+        }
+        vector.setValueCount(elements.size());
+        return vector;
+    }
+
+    FieldVector visitInstantArrayElements(Collection<Instant[]> elements) {
+        final Field field = FieldAdapter.of(ColumnHeader.of(name, Type.instantType().arrayType()));
+        final ListVector vector = new ListVector(field.getName(), allocator, field.getFieldType(), null);
+        vector.allocateNew();
+        final UnionListWriter writer = new UnionListWriter(vector);
+        for (Instant[] array : elements) {
+            if (array == null) {
+                writer.writeNull();
+                writer.setPosition(writer.getPosition() + 1);
+            } else {
+                writer.startList();
+                for (Instant x : array) {
+                    if (x == null) {
+                        writer.writeNull();
+                    } else {
+                        final long epochSecond = x.getEpochSecond();
+                        final int nano = x.getNano();
+                        final long epochNano = Math.addExact(Math.multiplyExact(epochSecond, 1_000_000_000L), nano);
+                        writer.writeTimeStampNanoTZ(epochNano); // todo: TZ?
+                    }
                 }
                 writer.endList();
             }
