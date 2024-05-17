@@ -7,6 +7,7 @@ import io.deephaven.api.Selectable;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.table.impl.select.MatchFilter;
@@ -89,7 +90,7 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
     private Table getResultTableWithWhere(WhereFilter... whereFilters) {
         {
             final Table coalesced = getCoalesced();
-            if (coalesced != null) {
+            if (Liveness.verifyCachedObjectForReuse(coalesced)) {
                 return coalesced.where(Filter.and(whereFilters));
             }
         }
@@ -259,7 +260,7 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
         /* If the cachedResult table has already been created, we can just use that. */
         {
             final Table coalesced = getCoalesced();
-            if (coalesced != null) {
+            if (Liveness.verifyCachedObjectForReuse(coalesced)) {
                 return coalesced.selectDistinct(columns);
             }
         }
