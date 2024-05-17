@@ -8,7 +8,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.StampedLock;
 import java.util.function.Function;
+
+//TODO: update docs
 
 /**
  * A cache that is designed to be fast when accessed concurrently. When created, the cache uses a ConcurrentHashMap to
@@ -26,8 +29,9 @@ import java.util.function.Function;
 class FastConcurrentCache<K, V> {
 
     private final Function<K, V> valueComputer;
-    private final Map<K, V> concurrentCache = new ConcurrentHashMap<>();
-    private final Map<K, V> fastCache = new HashMap<>();
+    private final StampedLock lock = new StampedLock();
+    private final Map<K, V> cache = new HashMap<>();
+
     private boolean isFastCacheEnabled = false; // synchronized
     private volatile boolean isFastCacheActive = false;
     private CompletableFuture<Void> fastCacheFuture = null; // synchronized
@@ -69,12 +73,8 @@ class FastConcurrentCache<K, V> {
         isFastCacheEnabled = true;
 
         fastCacheFuture = CompletableFuture.runAsync(() -> {
-            fastCache.putAll(concurrentCache);
-
             for (K key : keys) {
-                if (!fastCache.containsKey(key)) {
-                    fastCache.put(key, valueComputer.apply(key));
-                }
+                get(key);
             }
 
             isFastCacheActive = true;
@@ -100,8 +100,13 @@ class FastConcurrentCache<K, V> {
         }
 
         isFastCacheEnabled = false;
-        fastCache.clear();
-        concurrentCache.clear();
+
+        long stamp = lock.writeLock();
+        try {
+            cache.clear();
+        } finally {
+            lock.unlock(stamp);
+        }
     }
 
     /**
@@ -115,7 +120,7 @@ class FastConcurrentCache<K, V> {
      */
     public V get(K key) {
         if (isFastCacheActive) {
-            final V v = fastCache.get(key);
+            final V v = cache.get(key);
 
             if (v == null) {
                 throw new IllegalArgumentException(
@@ -123,8 +128,37 @@ class FastConcurrentCache<K, V> {
             }
 
             return v;
-        } else {
-            return concurrentCache.computeIfAbsent(key, valueComputer);
+        }
+
+        long stamp = lock.tryOptimisticRead();
+        V existing = cache.get(key);
+
+        if (!lock.validate(stamp)) {
+            stamp = lock.readLock();
+            try {
+                existing = cache.get(key);
+            } finally {
+                lock.unlockRead(stamp);
+            }
+        }
+
+        if (existing != null) {
+            return existing;
+        }
+
+        stamp = lock.writeLock();
+
+        try {
+            final V newValue = valueComputer.apply(key);
+
+            if (newValue == null) {
+                throw new IllegalArgumentException("Computed a null value for: key=" + key);
+            }
+
+            existing = cache.putIfAbsent(key, newValue);
+            return existing == null ? newValue : existing;
+        } finally {
+            lock.unlockWrite(stamp);
         }
     }
 }
