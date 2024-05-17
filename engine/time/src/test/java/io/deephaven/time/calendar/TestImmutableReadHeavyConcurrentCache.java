@@ -10,7 +10,7 @@ import java.util.List;
 public class TestImmutableReadHeavyConcurrentCache extends BaseArrayTestCase {
 
     private static String makeVal(String s) {
-        if(s.equals("d")) {
+        if (s.equals("d")) {
             return null;
         }
 
@@ -18,7 +18,8 @@ public class TestImmutableReadHeavyConcurrentCache extends BaseArrayTestCase {
     }
 
     public void testCache() {
-        final ImmutableReadHeavyConcurrentCache<String, String> cache = new ImmutableReadHeavyConcurrentCache<>(TestImmutableReadHeavyConcurrentCache::makeVal);
+        final ImmutableReadHeavyConcurrentCache<String, String> cache =
+                new ImmutableReadHeavyConcurrentCache<>(TestImmutableReadHeavyConcurrentCache::makeVal);
 
         assertEquals("A", cache.get("a"));
         assertEquals("A", cache.get("a"));

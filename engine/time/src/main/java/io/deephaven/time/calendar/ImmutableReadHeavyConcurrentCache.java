@@ -9,9 +9,8 @@ import java.util.concurrent.locks.StampedLock;
 import java.util.function.Function;
 
 /**
- * An immutable cache that is designed to be fast when accessed concurrently with read-heavy workloads.
- * Values are populated from a function when they are not found in the cache.
- * All values must be non-null.
+ * An immutable cache that is designed to be fast when accessed concurrently with read-heavy workloads. Values are
+ * populated from a function when they are not found in the cache. All values must be non-null.
  *
  * @param <K> the key type
  * @param <V> the value type
