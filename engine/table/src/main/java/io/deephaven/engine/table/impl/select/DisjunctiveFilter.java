@@ -38,7 +38,7 @@ public class DisjunctiveFilter extends ComposedFilter {
             }
         }
 
-        return new DisjunctiveFilter(rawComponents.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
+        return new DisjunctiveFilter(rawComponents.toArray(WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY));
     }
 
     static WritableRowSet orImpl(RowSet selection, RowSet fullSet, Table table, boolean usePrev, boolean invert,

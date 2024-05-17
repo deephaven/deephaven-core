@@ -5,6 +5,7 @@
 import pyarrow as pa
 import pyarrow.flight as paflight
 
+from pyarrow.flight import FlightCallOptions
 from pydeephaven._arrow import map_arrow_type
 from pydeephaven.dherror import DHError
 from pydeephaven.table import Table
@@ -26,10 +27,10 @@ class ArrowFlightService:
                 dh_fields.append(pa.field(name=f.name, type=f.type, metadata=map_arrow_type(f.type)))
             dh_schema = pa.schema(dh_fields)
 
-            # No need to add headers/metadata here via the options argument;
-            # or middleware is already doing it for every call.
             writer, reader = self._flight_client.do_put(
-                pa.flight.FlightDescriptor.for_path("export", str(ticket)), dh_schema)
+                pa.flight.FlightDescriptor.for_path("export", str(ticket)),
+                dh_schema,
+                FlightCallOptions(headers=self.session.grpc_metadata))
             writer.write_table(data)
             # Note that pyarrow's write_table completes the gRPC. If we send another gRPC close
             # it is possible that by the time the request arrives at the server that it no longer
@@ -44,9 +45,10 @@ class ArrowFlightService:
         """Gets a snapshot of a Table via Flight do_get."""
         try:
             flight_ticket = paflight.Ticket(table.ticket.ticket)
-            # No need to add headers/metadata here via the options argument;
-            # or middleware is already doing it for every call.
-            reader = self._flight_client.do_get(flight_ticket)
+            reader = self._flight_client.do_get(
+                flight_ticket,
+                FlightCallOptions(headers=self.session.grpc_metadata))
+
             return reader.read_all()
         except Exception as e:
             raise DHError("failed to perform a flight DoGet on the table.") from e
@@ -59,7 +61,9 @@ class ArrowFlightService:
         """
         try:
             desc = pa.flight.FlightDescriptor.for_command(b"dphn")
-            writer, reader = self._flight_client.do_exchange(desc)
+            writer, reader = self._flight_client.do_exchange(
+                desc,
+                FlightCallOptions(headers=self.session.grpc_metadata))
             return writer, reader
 
         except Exception as e:

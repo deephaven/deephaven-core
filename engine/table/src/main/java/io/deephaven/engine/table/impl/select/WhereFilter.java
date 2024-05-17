@@ -83,7 +83,7 @@ public interface WhereFilter extends Filter {
         void setIsRefreshing(boolean refreshing);
     }
 
-    WhereFilter[] ZERO_LENGTH_SELECT_FILTER_ARRAY = new WhereFilter[0];
+    WhereFilter[] ZERO_LENGTH_WHERE_FILTER_ARRAY = new WhereFilter[0];
 
     /**
      * Get the columns required by this select filter.

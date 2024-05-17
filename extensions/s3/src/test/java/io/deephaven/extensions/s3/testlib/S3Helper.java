@@ -37,7 +37,7 @@ public final class S3Helper {
         }
     }
 
-    public static void uploadDirectory(
+    private static void uploadDirectory(
             S3TransferManager transferManager,
             Path dir,
             String bucket,
@@ -67,6 +67,9 @@ public final class S3Helper {
                     .map(S3Object::key)
                     .map(S3Helper::objectId)
                     .collect(Collectors.toList());
+            if (deletes.isEmpty()) {
+                break;
+            }
             futures.add(s3AsyncClient.deleteObjects(DeleteObjectsRequest.builder()
                     .bucket(bucket)
                     .delete(Delete.builder().objects(deletes).build())
@@ -78,6 +81,9 @@ public final class S3Helper {
             response = s3AsyncClient.listObjectsV2(
                     ListObjectsV2Request.builder().bucket(bucket).continuationToken(nextContinuationToken).build())
                     .get(5, TimeUnit.SECONDS);
+        }
+        if (futures.isEmpty()) {
+            return;
         }
         CompletableFuture.allOf(futures.stream().toArray(CompletableFuture[]::new)).get(5, TimeUnit.SECONDS);
     }

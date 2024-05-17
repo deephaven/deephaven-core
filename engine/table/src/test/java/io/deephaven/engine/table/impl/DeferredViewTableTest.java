@@ -38,10 +38,10 @@ public class DeferredViewTableTest {
         final DeferredViewTable deferredTable = new DeferredViewTable(
                 resultDef,
                 "test",
-                new DeferredViewTable.SimpleTableReference(sourceTable),
+                new DeferredViewTable.TableReference(sourceTable),
                 CollectionUtil.ZERO_LENGTH_STRING_ARRAY,
                 viewColumns,
-                WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY);
+                WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY);
 
         final Table resultTable = deferredTable.coalesce();
         final Table expectedTable = sourceTable.update(Arrays.asList(viewColumns));
@@ -66,10 +66,10 @@ public class DeferredViewTableTest {
         final DeferredViewTable deferredTable = new DeferredViewTable(
                 resultDef,
                 "test",
-                new DeferredViewTable.SimpleTableReference(sourceTable),
+                new DeferredViewTable.TableReference(sourceTable),
                 CollectionUtil.ZERO_LENGTH_STRING_ARRAY,
                 SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
-                WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY);
+                WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY);
 
         Assert.eq(deferredTable.isRefreshing(), "deferredTable.isRefreshing()", sourceRefreshing, "sourceRefreshing");
     }
@@ -89,7 +89,7 @@ public class DeferredViewTableTest {
         final DeferredViewTable deferredTable = new DeferredViewTable(
                 resultDef,
                 "test",
-                new DeferredViewTable.SimpleTableReference(sourceTable),
+                new DeferredViewTable.TableReference(sourceTable),
                 CollectionUtil.ZERO_LENGTH_STRING_ARRAY,
                 SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
                 whereFilters);
@@ -109,10 +109,10 @@ public class DeferredViewTableTest {
         final DeferredViewTable deferredTable = new DeferredViewTable(
                 resultDef,
                 "test",
-                new DeferredViewTable.SimpleTableReference(sourceTable),
+                new DeferredViewTable.TableReference(sourceTable),
                 CollectionUtil.ZERO_LENGTH_STRING_ARRAY,
                 viewColumns,
-                WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY);
+                WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY);
 
         final Class<?> resultType = deferredTable.coalesce().getDefinition().getColumn("X").getDataType();
         Assert.eq(resultType, "resultType", int.class, "int.class");
