@@ -57,6 +57,7 @@ import io.deephaven.vector.Vector;
 import io.deephaven.vector.*;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.*;
+import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.column.Encoding;
 import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.hadoop.metadata.ColumnChunkMetaData;
@@ -1579,6 +1580,50 @@ public final class ParquetTableReadWriteTest {
 
         path = ParquetTableReadWriteTest.class.getResource("/ReferenceParquetArrayData.parquet").getFile();
         readParquetFileFromGitLFS(new File(path)).select();
+    }
+
+    /**
+     * The reference data is generated using:
+     *
+     * <pre>
+     * df = pandas.DataFrame.from_records(
+     *     data=[(-1, -1, -1), (2, 2, 2), (0, 0, 0), (5, 5, 5)],
+     *     columns=['uint8Col', 'uint16Col',  'uint32Col']
+     * )
+     * df['uint8Col'] = df['uint8Col'].astype(np.uint8)
+     * df['uint16Col'] = df['uint16Col'].astype(np.uint16)
+     * df['uint32Col'] = df['uint32Col'].astype(np.uint32)
+     *
+     * # Add some nulls
+     * df['uint8Col'][3] = df['uint16Col'][3] = df['uint32Col'][3] = None
+     * schema = pyarrow.schema([
+     *     pyarrow.field('uint8Col', pyarrow.uint8()),
+     *     pyarrow.field('uint16Col', pyarrow.uint16()),
+     *     pyarrow.field('uint32Col', pyarrow.uint32()),
+     * ])
+     * schema = schema.remove_metadata()
+     * table = pyarrow.Table.from_pandas(df, schema).replace_schema_metadata()
+     * writer = pyarrow.parquet.ParquetWriter('data_from_pyarrow.parquet', schema=schema)
+     * writer.write_table(table)
+     * </pre>
+     */
+    @Test
+    public void testReadUintParquetData() {
+        final String path = ParquetTableReadWriteTest.class.getResource("/ReferenceUintParquetData.parquet").getFile();
+        final Table fromDisk = readParquetFileFromGitLFS(new File(path)).select();
+
+        final ParquetMetadata metadata =
+                new ParquetTableLocationKey(new File(path).toURI(), 0, null, ParquetInstructions.EMPTY).getMetadata();
+        final List<ColumnDescriptor> columnsMetadata = metadata.getFileMetaData().getSchema().getColumns();
+        assertTrue(columnsMetadata.get(0).toString().contains("int32 uint8Col (INTEGER(8,false))"));
+        assertTrue(columnsMetadata.get(1).toString().contains("int32 uint16Col (INTEGER(16,false))"));
+        assertTrue(columnsMetadata.get(2).toString().contains("int32 uint32Col (INTEGER(32,false))"));
+
+        final Table expected = newTable(
+                charCol("uint8Col", (char) 255, (char) 2, (char) 0, NULL_CHAR),
+                charCol("uint16Col", (char) 65535, (char) 2, (char) 0, NULL_CHAR),
+                longCol("uint32Col", 4294967295L, 2L, 0L, NULL_LONG));
+        assertTableEquals(expected, fromDisk);
     }
 
     @Test
