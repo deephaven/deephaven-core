@@ -25,7 +25,7 @@ final class IntegerRingChunkSource extends AbstractRingChunkSource<Integer, int[
     }
 
     public IntegerRingChunkSource(int capacity) {
-        super(int.class, capacity);
+        super(new int[capacity]);
     }
 
     @Override
