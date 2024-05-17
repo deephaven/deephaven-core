@@ -10,6 +10,7 @@ import java.util.Iterator;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -26,12 +27,12 @@ public class TestYearMonthSummaryCache extends BaseArrayTestCase {
         final int[] monthCount = new int[] {0};
         final int[] yearCount = new int[] {0};
 
-        final Function<Integer, Value> monthSummary = i -> {
+        final IntFunction<Value> monthSummary = i -> {
             monthCount[0]++;
             return new Value(i, "month" + i);
         };
 
-        final Function<Integer, Value> yearSummary = i -> {
+        final IntFunction<Value> yearSummary = i -> {
             yearCount[0]++;
             return new Value(i, "year" + i);
         };

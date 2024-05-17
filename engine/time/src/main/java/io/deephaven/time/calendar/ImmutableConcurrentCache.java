@@ -6,7 +6,7 @@ package io.deephaven.time.calendar;
 import io.deephaven.hash.KeyedIntObjectHash;
 import io.deephaven.hash.KeyedIntObjectKey;
 
-import java.util.function.Function;
+import java.util.function.IntFunction;
 
 /**
  * An immutable cache that is designed to be fast when accessed concurrently with read-heavy workloads. Values are
@@ -88,7 +88,7 @@ class ImmutableConcurrentCache<V extends ImmutableConcurrentCache.IntKeyedValue>
         }
     }
 
-    private final Function<Integer, V> valueComputer;
+    private final IntFunction<V> valueComputer;
     private final KeyedIntObjectHash<V> cache;
 
     /**
@@ -97,9 +97,9 @@ class ImmutableConcurrentCache<V extends ImmutableConcurrentCache.IntKeyedValue>
      * @param initialCapacity the initial capacity
      * @param valueComputer computes the value for a key.
      */
-    public ImmutableConcurrentCache(final int initialCapacity, final Function<Integer, V> valueComputer) {
+    public ImmutableConcurrentCache(final int initialCapacity, final IntFunction<V> valueComputer) {
         this.valueComputer = valueComputer;
-        this.cache = new KeyedIntObjectHash<>(initialCapacity, new KeyDef<V>());
+        this.cache = new KeyedIntObjectHash<>(initialCapacity, new KeyDef<>());
     }
 
     /**

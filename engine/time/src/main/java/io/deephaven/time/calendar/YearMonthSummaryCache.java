@@ -5,7 +5,7 @@ package io.deephaven.time.calendar;
 
 import java.time.LocalDate;
 import java.util.Iterator;
-import java.util.function.Function;
+import java.util.function.IntFunction;
 
 /**
  * A thread-safe lazily initialized cache for year and month summaries.
@@ -23,7 +23,7 @@ class YearMonthSummaryCache<T extends ImmutableConcurrentCache.IntKeyedValue> {
      * @param computeMonthSummary the function to compute a month summary
      * @param computeYearSummary the function to compute a year summary
      */
-    YearMonthSummaryCache(Function<Integer, T> computeMonthSummary, Function<Integer, T> computeYearSummary) {
+    YearMonthSummaryCache(IntFunction<T> computeMonthSummary, IntFunction<T> computeYearSummary) {
         monthCache = new ImmutableConcurrentCache<>(12*50, computeMonthSummary);
         yearCache = new ImmutableConcurrentCache<>(50, computeYearSummary);
     }
