@@ -25,7 +25,7 @@ final class ShortRingChunkSource extends AbstractRingChunkSource<Short, short[],
     }
 
     public ShortRingChunkSource(int capacity) {
-        super(short.class, capacity);
+        super(new short[capacity]);
     }
 
     @Override
