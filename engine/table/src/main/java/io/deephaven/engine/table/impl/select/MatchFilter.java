@@ -121,14 +121,12 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
     }
 
     public MatchFilter renameFilter(String newName) {
-        io.deephaven.engine.table.impl.select.MatchFilter.MatchType matchType =
-                invertMatch ? io.deephaven.engine.table.impl.select.MatchFilter.MatchType.Inverted
-                        : io.deephaven.engine.table.impl.select.MatchFilter.MatchType.Regular;
-        CaseSensitivity sensitivity = (caseInsensitive) ? CaseSensitivity.IgnoreCase : CaseSensitivity.MatchCase;
         if (strValues == null) {
-            return new MatchFilter(matchType, newName, values);
+            return new MatchFilter(getMatchType(), newName, values);
         } else {
-            return new MatchFilter(sensitivity, matchType, newName, strValues);
+            return new MatchFilter(
+                    caseInsensitive ? CaseSensitivity.IgnoreCase : CaseSensitivity.MatchCase,
+                    getMatchType(), newName, strValues);
         }
     }
 
