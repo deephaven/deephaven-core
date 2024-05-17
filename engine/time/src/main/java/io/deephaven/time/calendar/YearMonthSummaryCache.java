@@ -12,10 +12,10 @@ import java.util.function.Function;
  *
  * @param <T> the type of the summary
  */
-class YearMonthSummaryCache<T> {
+class YearMonthSummaryCache<T extends ImmutableConcurrentCache.IntKeyedValue> {
 
-    private final ImmutableReadHeavyConcurrentCache<Integer, T> monthCache;
-    private final ImmutableReadHeavyConcurrentCache<Integer, T> yearCache;
+    private final ImmutableConcurrentCache<T> monthCache;
+    private final ImmutableConcurrentCache<T> yearCache;
 
     /**
      * Creates a new cache.
@@ -24,8 +24,8 @@ class YearMonthSummaryCache<T> {
      * @param computeYearSummary the function to compute a year summary
      */
     YearMonthSummaryCache(Function<Integer, T> computeMonthSummary, Function<Integer, T> computeYearSummary) {
-        monthCache = new ImmutableReadHeavyConcurrentCache<>(computeMonthSummary);
-        yearCache = new ImmutableReadHeavyConcurrentCache<>(computeYearSummary);
+        monthCache = new ImmutableConcurrentCache<>(12*50, computeMonthSummary);
+        yearCache = new ImmutableConcurrentCache<>(50, computeYearSummary);
     }
 
     /**

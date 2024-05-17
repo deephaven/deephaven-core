@@ -30,12 +30,13 @@ public class Calendar {
 
     // region Cache
 
-    private static class SummaryData {
+    private static class SummaryData extends ImmutableConcurrentCache.IntKeyedValue {
         final LocalDate startDate;
         final LocalDate endDate; // exclusive
         final List<LocalDate> dates;
 
-        SummaryData(LocalDate startDate, LocalDate endDate, List<LocalDate> dates) {
+        SummaryData(int key, LocalDate startDate, LocalDate endDate, List<LocalDate> dates) {
+            super(key);
             this.startDate = startDate;
             this.endDate = endDate;
             this.dates = dates;
@@ -46,7 +47,7 @@ public class Calendar {
     private final YearMonthSummaryCache<SummaryData> summaryCache =
             new YearMonthSummaryCache<>(this::computeMonthSummary, this::computeYearSummary);
 
-    private SummaryData summarize(final LocalDate startDate, final LocalDate endDate) {
+    private SummaryData summarize(final int key, final LocalDate startDate, final LocalDate endDate) {
         LocalDate date = startDate;
         final ArrayList<LocalDate> dates = new ArrayList<>();
 
@@ -55,7 +56,7 @@ public class Calendar {
             date = date.plusDays(1);
         }
 
-        return new SummaryData(startDate, endDate, dates); // end date is exclusive
+        return new SummaryData(key, startDate, endDate, dates); // end date is exclusive
     }
 
     private SummaryData computeMonthSummary(final int yearMonth) {
@@ -63,7 +64,7 @@ public class Calendar {
         final int month = yearMonth % 100;
         final LocalDate startDate = LocalDate.of(year, month, 1);
         final LocalDate endDate = startDate.plusMonths(1); // exclusive
-        return summarize(startDate, endDate);
+        return summarize(yearMonth, startDate, endDate);
     }
 
     private SummaryData computeYearSummary(final int year) {
@@ -84,7 +85,7 @@ public class Calendar {
             dates.addAll(ms.dates);
         }
 
-        return new SummaryData(startDate, endDate, dates);
+        return new SummaryData(year, startDate, endDate, dates);
     }
 
     // endregion

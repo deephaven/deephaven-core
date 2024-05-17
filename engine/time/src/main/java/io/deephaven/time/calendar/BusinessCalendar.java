@@ -57,7 +57,7 @@ public class BusinessCalendar extends Calendar {
 
     // region Cache
 
-    private static class SummaryData {
+    private static class SummaryData extends ImmutableConcurrentCache.IntKeyedValue {
         private final Instant startInstant;
         private final LocalDate startDate;
         private final Instant endInstant;
@@ -69,6 +69,7 @@ public class BusinessCalendar extends Calendar {
         private final ArrayList<LocalDate> nonBusinessDates;
 
         public SummaryData(
+                final int key,
                 final Instant startInstant,
                 final LocalDate startDate,
                 final Instant endInstant,
@@ -78,6 +79,7 @@ public class BusinessCalendar extends Calendar {
                 final int nonBusinessDays,
                 final ArrayList<LocalDate> businessDates,
                 final ArrayList<LocalDate> nonBusinessDates) {
+            super(key);
             this.startInstant = startInstant;
             this.startDate = startDate;
             this.endInstant = endInstant;
@@ -90,8 +92,8 @@ public class BusinessCalendar extends Calendar {
         }
     }
 
-    private final ImmutableReadHeavyConcurrentCache<LocalDate, CalendarDay<Instant>> schedulesCache =
-            new ImmutableReadHeavyConcurrentCache<>(this::computeCalendarDay);
+    private final ImmutableConcurrentCache<ImmutableConcurrentCache.Pair<CalendarDay<Instant>>> schedulesCache =
+            new ImmutableConcurrentCache<>(10000, this::computeCalendarDay);
     private final YearMonthSummaryCache<SummaryData> summaryCache =
             new YearMonthSummaryCache<>(this::computeMonthSummary, this::computeYearSummary);
     private final int yearCacheStart;
@@ -104,7 +106,7 @@ public class BusinessCalendar extends Calendar {
         summaryCache.clear();
     }
 
-    private SummaryData summarize(final LocalDate startDate, final LocalDate endDate) {
+    private SummaryData summarize(final int key, final LocalDate startDate, final LocalDate endDate) {
         final ZonedDateTime start = startDate.atTime(0, 0).atZone(timeZone());
         final ZonedDateTime end = endDate.atTime(0, 0).atZone(timeZone());
 
@@ -134,6 +136,7 @@ public class BusinessCalendar extends Calendar {
         }
 
         return new SummaryData(
+                key,
                 start.toInstant(),
                 start.toLocalDate(),
                 end.toInstant(),
@@ -150,7 +153,7 @@ public class BusinessCalendar extends Calendar {
         final int month = yearMonth % 100;
         final LocalDate startDate = LocalDate.of(year, month, 1);
         final LocalDate endDate = startDate.plusMonths(1); // exclusive
-        return summarize(startDate, endDate);
+        return summarize(yearMonth, startDate, endDate);
     }
 
     private SummaryData computeYearSummary(final int year) {
@@ -184,6 +187,7 @@ public class BusinessCalendar extends Calendar {
         }
 
         return new SummaryData(
+                year,
                 startInstant,
                 startDate,
                 endInstant,
@@ -205,16 +209,24 @@ public class BusinessCalendar extends Calendar {
     }
 
 
-    private CalendarDay<Instant> computeCalendarDay(final LocalDate date) {
+    private ImmutableConcurrentCache.Pair<CalendarDay<Instant>> computeCalendarDay(final int yearMonthDay) {
+        final int year = yearMonthDay / 10000;
+        final int monthDay = yearMonthDay % 10000;
+        final int month = monthDay / 100;
+        final int day = monthDay % 100;
+        final LocalDate date = LocalDate.of(year, month, day);
         final CalendarDay<Instant> h = holidays.get(date);
+        final CalendarDay<Instant> v;
 
         if (h != null) {
-            return h;
+            v = h;
         } else if (weekendDays.contains(date.getDayOfWeek())) {
-            return CalendarDay.toInstant(CalendarDay.HOLIDAY, date, timeZone());
+            v = CalendarDay.toInstant(CalendarDay.HOLIDAY, date, timeZone());
         } else {
-            return CalendarDay.toInstant(standardBusinessDay, date, timeZone());
+            v = CalendarDay.toInstant(standardBusinessDay, date, timeZone());
         }
+
+        return new ImmutableConcurrentCache.Pair<>(yearMonthDay, v);
     }
 
     // endregion
@@ -346,7 +358,8 @@ public class BusinessCalendar extends Calendar {
                     + " lastValidDate=" + lastValidDate);
         }
 
-        return schedulesCache.get(date);
+        final int yearMonthDay = date.getYear() * 10000 + date.getMonthValue() * 100 + date.getDayOfMonth();
+        return schedulesCache.get(yearMonthDay).getValue();
     }
 
     /**
