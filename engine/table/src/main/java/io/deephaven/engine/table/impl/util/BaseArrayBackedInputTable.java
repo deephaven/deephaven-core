@@ -343,21 +343,5 @@ abstract class BaseArrayBackedInputTable extends UpdatableTable {
                 }
             }
         }
-
-        @NotNull
-        private Map<String, WritableColumnSource<Object>> buildSourcesMap(int capacity,
-                List<ColumnDefinition<?>> columnDefinitions) {
-            final Map<String, WritableColumnSource<Object>> sources = new LinkedHashMap<>();
-            for (final ColumnDefinition<?> columnDefinition : columnDefinitions) {
-                WritableColumnSource<?> cs = ArrayBackedColumnSource.getMemoryColumnSource(
-                        capacity, columnDefinition.getDataType());
-                // noinspection unchecked
-                final WritableColumnSource<Object> memoryColumnSource = (WritableColumnSource<Object>) cs;
-                memoryColumnSource.ensureCapacity(capacity);
-                sources.put(columnDefinition.getName(), memoryColumnSource);
-            }
-            return sources;
-        }
-
     }
 }

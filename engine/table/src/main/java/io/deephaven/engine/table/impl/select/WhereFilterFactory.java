@@ -270,7 +270,7 @@ public class WhereFilterFactory {
                                 return null;
                             }
                             return ConjunctiveFilter.makeConjunctiveFilter(
-                                    filters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
+                                    filters.toArray(WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY));
                         } else if (filterMode == QuickFilterMode.OR) {
                             final String[] parts = quickFilter.split("\\s+");
                             final List<WhereFilter> filters = Arrays.stream(parts)
@@ -281,7 +281,7 @@ public class WhereFilterFactory {
                                 return null;
                             }
                             return DisjunctiveFilter.makeDisjunctiveFilter(
-                                    filters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
+                                    filters.toArray(WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY));
                         } else {
                             return createQuickFilter(cd, quickFilter, filterMode);
                         }
@@ -289,7 +289,7 @@ public class WhereFilterFactory {
                     }).filter(Objects::nonNull).toArray(WhereFilter[]::new);
         }
 
-        return WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY;
+        return WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY;
     }
 
     private static WhereFilter[] expandMultiColumnQuickFilter(TableDefinition tableDefinition, String quickFilter) {
@@ -307,7 +307,7 @@ public class WhereFilterFactory {
             }
         }
 
-        return filters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY);
+        return filters.toArray(WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY);
     }
 
     private static WhereFilter createQuickFilter(ColumnDefinition<?> colDef, String quickFilter,
