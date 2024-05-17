@@ -1,51 +1,54 @@
 //
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.engine.table.impl.vector;
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharVectorColumnWrapper and run "./gradlew replicateVectorColumnWrappers" to regenerate
+//
+// @formatter:off
+package io.deephaven.engine.table.vectors;
 
 import io.deephaven.base.ClampUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.chunk.ResettableWritableObjectChunk;
-import io.deephaven.chunk.WritableObjectChunk;
+import io.deephaven.chunk.ResettableWritableLongChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.iterators.ChunkedObjectColumnIterator;
-import io.deephaven.engine.table.iterators.SerialObjectColumnIterator;
-import io.deephaven.vector.ObjectSubVector;
-import io.deephaven.vector.ObjectVector;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.iterators.*;
+import io.deephaven.vector.LongSubVector;
+import io.deephaven.vector.LongVector;
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.reflect.Array;
 import java.util.Arrays;
 
-import static io.deephaven.engine.primitive.iterator.CloseableIterator.maybeConcat;
-import static io.deephaven.engine.primitive.iterator.CloseableIterator.repeat;
+import static io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong.maybeConcat;
+import static io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong.repeat;
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
-import static io.deephaven.engine.table.impl.vector.VectorColumnWrapperConstants.CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD;
+import static io.deephaven.engine.table.vectors.VectorColumnWrapperConstants.CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD;
 import static io.deephaven.engine.table.iterators.ChunkedColumnIterator.DEFAULT_CHUNK_SIZE;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
 
-public class ObjectVectorColumnWrapper<T> extends ObjectVector.Indirect<T> {
+public class LongVectorColumnWrapper extends LongVector.Indirect {
 
-    private static final long serialVersionUID = -5944424618636079377L;
+    private static final long serialVersionUID = -2715269662143763674L;
 
-    private final ColumnSource<T> columnSource;
+    private final ColumnSource<Long> columnSource;
     private final RowSet rowSet;
     private final long startPadding;
     private final long endPadding;
 
-    public ObjectVectorColumnWrapper(
-            @NotNull final ColumnSource<T> columnSource,
+    public LongVectorColumnWrapper(
+            @NotNull final ColumnSource<Long> columnSource,
             @NotNull final RowSet rowSet) {
         this(columnSource, rowSet, 0, 0);
     }
 
-    public ObjectVectorColumnWrapper(
-            @NotNull final ColumnSource<T> columnSource,
+    public LongVectorColumnWrapper(
+            @NotNull final ColumnSource<Long> columnSource,
             @NotNull final RowSet rowSet,
             final long startPadding,
             final long endPadding) {
@@ -57,18 +60,18 @@ public class ObjectVectorColumnWrapper<T> extends ObjectVector.Indirect<T> {
     }
 
     @Override
-    public T get(long index) {
+    public long get(long index) {
         index -= startPadding;
 
         if (index < 0 || index >= rowSet.size()) {
-            return null;
+            return NULL_LONG;
         }
 
-        return columnSource.get(rowSet.get(index));
+        return columnSource.getLong(rowSet.get(index));
     }
 
     @Override
-    public ObjectVector<T> subVector(long fromIndexInclusive, long toIndexExclusive) {
+    public LongVector subVector(long fromIndexInclusive, long toIndexExclusive) {
         fromIndexInclusive -= startPadding;
         toIndexExclusive -= startPadding;
 
@@ -82,32 +85,32 @@ public class ObjectVectorColumnWrapper<T> extends ObjectVector.Indirect<T> {
                 ? toIndexExclusive - fromIndexInclusive
                 : Math.max(0, toIndexExclusive - rowSet.size());
 
-        return new ObjectVectorColumnWrapper<>(columnSource, rowSet.subSetByPositionRange(realFrom, realTo),
+        return new LongVectorColumnWrapper(columnSource, rowSet.subSetByPositionRange(realFrom, realTo),
                 newStartPadding, newEndPadding);
     }
 
-    public ObjectVector<T> subVectorByPositions(@NotNull final long[] positions) {
-        return new ObjectSubVector<>(this, positions);
+    @Override
+    public LongVector subVectorByPositions(final long[] positions) {
+        return new LongSubVector(this, positions);
     }
 
     @Override
-    public T[] toArray() {
-        return toArray(false, Long.MAX_VALUE);
+    public long[] toArray() {
+        return toArray(false, Integer.MAX_VALUE);
     }
 
-    public T[] toArray(final boolean shouldBeNullIfOutOfBounds, final long maxSize) {
+    public long[] toArray(final boolean shouldBeNullIfOutOfBounds, final int maxSize) {
         if (shouldBeNullIfOutOfBounds && (startPadding > 0 || endPadding > 0)) {
             return null;
         }
 
         final int size = (int) Math.min(size(), maxSize);
-        // noinspection unchecked
-        final T[] result = (T[]) Array.newInstance(getComponentType(), size);
+        final long[] result = new long[size];
         int nextFillIndex;
 
         final int startPaddingFillAmount = (int) Math.min(startPadding, size);
         if (startPaddingFillAmount > 0) {
-            Arrays.fill(result, 0, startPaddingFillAmount, null);
+            Arrays.fill(result, 0, startPaddingFillAmount, NULL_LONG);
             nextFillIndex = startPaddingFillAmount;
         } else {
             nextFillIndex = 0;
@@ -119,15 +122,15 @@ public class ObjectVectorColumnWrapper<T> extends ObjectVector.Indirect<T> {
             if (contextSize == rowSetFillAmount) {
                 try (final ChunkSource.FillContext fillContext = columnSource.makeFillContext(contextSize)) {
                     columnSource.fillChunk(fillContext,
-                            WritableObjectChunk.writableChunkWrap(result, nextFillIndex, rowSetFillAmount), rowSet);
+                            WritableLongChunk.writableChunkWrap(result, nextFillIndex, rowSetFillAmount), rowSet);
                     nextFillIndex += rowSetFillAmount;
                 }
             } else {
                 // @formatter:off
                 try (final ChunkSource.FillContext fillContext = columnSource.makeFillContext(contextSize);
                      final RowSequence.Iterator rowsIterator = rowSet.getRowSequenceIterator();
-                     final ResettableWritableObjectChunk<T, Values> chunk =
-                             ResettableWritableObjectChunk.makeResettableChunk()) {
+                     final ResettableWritableLongChunk<Values> chunk =
+                             ResettableWritableLongChunk.makeResettableChunk()) {
                     // @formatter:on
                     while (rowsIterator.hasMore()) {
                         final int maxFillSize = Math.min(contextSize, size - nextFillIndex);
@@ -142,21 +145,21 @@ public class ObjectVectorColumnWrapper<T> extends ObjectVector.Indirect<T> {
 
         final int endPaddingFillAmount = (int) Math.min(endPadding, size - nextFillIndex);
         if (endPaddingFillAmount > 0) {
-            Arrays.fill(result, nextFillIndex, nextFillIndex + endPaddingFillAmount, null);
+            Arrays.fill(result, nextFillIndex, nextFillIndex + endPaddingFillAmount, NULL_LONG);
         }
 
         return result;
     }
 
     @Override
-    public CloseableIterator<T> iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    public CloseablePrimitiveIteratorOfLong iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         final long rowSetSize = rowSet.size();
         if (startPadding == 0 && endPadding == 0 && fromIndexInclusive == 0 && toIndexExclusive == rowSetSize) {
             if (rowSetSize >= CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD) {
-                return new ChunkedObjectColumnIterator<>(columnSource, rowSet, DEFAULT_CHUNK_SIZE, rowSet.firstRowKey(),
-                        rowSetSize);
+                return new ChunkedLongColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE,
+                        rowSet.firstRowKey(), rowSetSize);
             } else {
-                return new SerialObjectColumnIterator<>(columnSource, rowSet, rowSet.firstRowKey(), rowSetSize);
+                return new SerialLongColumnIterator(columnSource, rowSet, rowSet.firstRowKey(), rowSetSize);
             }
         }
 
@@ -185,17 +188,17 @@ public class ObjectVectorColumnWrapper<T> extends ObjectVector.Indirect<T> {
             includedRows = 0;
         }
 
-        final CloseableIterator<T> initialNullsIterator = includedInitialNulls > 0
-                ? repeat(null, includedInitialNulls)
+        final CloseablePrimitiveIteratorOfLong initialNullsIterator = includedInitialNulls > 0
+                ? repeat(NULL_LONG, includedInitialNulls)
                 : null;
-        final CloseableIterator<T> rowsIterator = includedRows > CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD
-                ? new ChunkedObjectColumnIterator<>(columnSource, rowSet, DEFAULT_CHUNK_SIZE, firstIncludedRowKey,
+        final CloseablePrimitiveIteratorOfLong rowsIterator = includedRows > CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD
+                ? new ChunkedLongColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE, firstIncludedRowKey,
                         includedRows)
                 : includedRows > 0
-                        ? new SerialObjectColumnIterator<>(columnSource, rowSet, firstIncludedRowKey, includedRows)
+                        ? new SerialLongColumnIterator(columnSource, rowSet, firstIncludedRowKey, includedRows)
                         : null;
-        final CloseableIterator<T> finalNullsIterator = remaining > 0
-                ? repeat(null, remaining)
+        final CloseablePrimitiveIteratorOfLong finalNullsIterator = remaining > 0
+                ? repeat(NULL_LONG, remaining)
                 : null;
         return maybeConcat(initialNullsIterator, rowsIterator, finalNullsIterator);
     }
@@ -203,10 +206,5 @@ public class ObjectVectorColumnWrapper<T> extends ObjectVector.Indirect<T> {
     @Override
     public long size() {
         return startPadding + rowSet.size() + endPadding;
-    }
-
-    @Override
-    public Class<T> getComponentType() {
-        return columnSource.getType();
     }
 }

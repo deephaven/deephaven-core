@@ -344,7 +344,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
                     final String vtp = getVectorType(ac.columnDefinition.getDataType()).getCanonicalName().replace(
                             "io.deephaven.vector",
-                            "io.deephaven.engine.table.impl.vector");
+                            "io.deephaven.engine.table.vectors");
                     fc.replace("VECTOR_TYPE_PREFIX", vtp);
                     return null;
                 },

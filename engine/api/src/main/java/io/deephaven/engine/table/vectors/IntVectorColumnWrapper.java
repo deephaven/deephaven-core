@@ -5,50 +5,50 @@
 // ****** Edit CharVectorColumnWrapper and run "./gradlew replicateVectorColumnWrappers" to regenerate
 //
 // @formatter:off
-package io.deephaven.engine.table.impl.vector;
+package io.deephaven.engine.table.vectors;
 
 import io.deephaven.base.ClampUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.chunk.ResettableWritableByteChunk;
-import io.deephaven.chunk.WritableByteChunk;
+import io.deephaven.chunk.ResettableWritableIntChunk;
+import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfByte;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfInt;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.iterators.*;
-import io.deephaven.vector.ByteSubVector;
-import io.deephaven.vector.ByteVector;
+import io.deephaven.vector.IntSubVector;
+import io.deephaven.vector.IntVector;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
-import static io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfByte.maybeConcat;
-import static io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfByte.repeat;
+import static io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfInt.maybeConcat;
+import static io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfInt.repeat;
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
-import static io.deephaven.engine.table.impl.vector.VectorColumnWrapperConstants.CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD;
+import static io.deephaven.engine.table.vectors.VectorColumnWrapperConstants.CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD;
 import static io.deephaven.engine.table.iterators.ChunkedColumnIterator.DEFAULT_CHUNK_SIZE;
-import static io.deephaven.util.QueryConstants.NULL_BYTE;
+import static io.deephaven.util.QueryConstants.NULL_INT;
 
-public class ByteVectorColumnWrapper extends ByteVector.Indirect {
+public class IntVectorColumnWrapper extends IntVector.Indirect {
 
     private static final long serialVersionUID = -2715269662143763674L;
 
-    private final ColumnSource<Byte> columnSource;
+    private final ColumnSource<Integer> columnSource;
     private final RowSet rowSet;
     private final long startPadding;
     private final long endPadding;
 
-    public ByteVectorColumnWrapper(
-            @NotNull final ColumnSource<Byte> columnSource,
+    public IntVectorColumnWrapper(
+            @NotNull final ColumnSource<Integer> columnSource,
             @NotNull final RowSet rowSet) {
         this(columnSource, rowSet, 0, 0);
     }
 
-    public ByteVectorColumnWrapper(
-            @NotNull final ColumnSource<Byte> columnSource,
+    public IntVectorColumnWrapper(
+            @NotNull final ColumnSource<Integer> columnSource,
             @NotNull final RowSet rowSet,
             final long startPadding,
             final long endPadding) {
@@ -60,18 +60,18 @@ public class ByteVectorColumnWrapper extends ByteVector.Indirect {
     }
 
     @Override
-    public byte get(long index) {
+    public int get(long index) {
         index -= startPadding;
 
         if (index < 0 || index >= rowSet.size()) {
-            return NULL_BYTE;
+            return NULL_INT;
         }
 
-        return columnSource.getByte(rowSet.get(index));
+        return columnSource.getInt(rowSet.get(index));
     }
 
     @Override
-    public ByteVector subVector(long fromIndexInclusive, long toIndexExclusive) {
+    public IntVector subVector(long fromIndexInclusive, long toIndexExclusive) {
         fromIndexInclusive -= startPadding;
         toIndexExclusive -= startPadding;
 
@@ -85,32 +85,32 @@ public class ByteVectorColumnWrapper extends ByteVector.Indirect {
                 ? toIndexExclusive - fromIndexInclusive
                 : Math.max(0, toIndexExclusive - rowSet.size());
 
-        return new ByteVectorColumnWrapper(columnSource, rowSet.subSetByPositionRange(realFrom, realTo),
+        return new IntVectorColumnWrapper(columnSource, rowSet.subSetByPositionRange(realFrom, realTo),
                 newStartPadding, newEndPadding);
     }
 
     @Override
-    public ByteVector subVectorByPositions(final long[] positions) {
-        return new ByteSubVector(this, positions);
+    public IntVector subVectorByPositions(final long[] positions) {
+        return new IntSubVector(this, positions);
     }
 
     @Override
-    public byte[] toArray() {
+    public int[] toArray() {
         return toArray(false, Integer.MAX_VALUE);
     }
 
-    public byte[] toArray(final boolean shouldBeNullIfOutOfBounds, final int maxSize) {
+    public int[] toArray(final boolean shouldBeNullIfOutOfBounds, final int maxSize) {
         if (shouldBeNullIfOutOfBounds && (startPadding > 0 || endPadding > 0)) {
             return null;
         }
 
         final int size = (int) Math.min(size(), maxSize);
-        final byte[] result = new byte[size];
+        final int[] result = new int[size];
         int nextFillIndex;
 
         final int startPaddingFillAmount = (int) Math.min(startPadding, size);
         if (startPaddingFillAmount > 0) {
-            Arrays.fill(result, 0, startPaddingFillAmount, NULL_BYTE);
+            Arrays.fill(result, 0, startPaddingFillAmount, NULL_INT);
             nextFillIndex = startPaddingFillAmount;
         } else {
             nextFillIndex = 0;
@@ -122,15 +122,15 @@ public class ByteVectorColumnWrapper extends ByteVector.Indirect {
             if (contextSize == rowSetFillAmount) {
                 try (final ChunkSource.FillContext fillContext = columnSource.makeFillContext(contextSize)) {
                     columnSource.fillChunk(fillContext,
-                            WritableByteChunk.writableChunkWrap(result, nextFillIndex, rowSetFillAmount), rowSet);
+                            WritableIntChunk.writableChunkWrap(result, nextFillIndex, rowSetFillAmount), rowSet);
                     nextFillIndex += rowSetFillAmount;
                 }
             } else {
                 // @formatter:off
                 try (final ChunkSource.FillContext fillContext = columnSource.makeFillContext(contextSize);
                      final RowSequence.Iterator rowsIterator = rowSet.getRowSequenceIterator();
-                     final ResettableWritableByteChunk<Values> chunk =
-                             ResettableWritableByteChunk.makeResettableChunk()) {
+                     final ResettableWritableIntChunk<Values> chunk =
+                             ResettableWritableIntChunk.makeResettableChunk()) {
                     // @formatter:on
                     while (rowsIterator.hasMore()) {
                         final int maxFillSize = Math.min(contextSize, size - nextFillIndex);
@@ -145,21 +145,21 @@ public class ByteVectorColumnWrapper extends ByteVector.Indirect {
 
         final int endPaddingFillAmount = (int) Math.min(endPadding, size - nextFillIndex);
         if (endPaddingFillAmount > 0) {
-            Arrays.fill(result, nextFillIndex, nextFillIndex + endPaddingFillAmount, NULL_BYTE);
+            Arrays.fill(result, nextFillIndex, nextFillIndex + endPaddingFillAmount, NULL_INT);
         }
 
         return result;
     }
 
     @Override
-    public CloseablePrimitiveIteratorOfByte iterator(final long fromIndexInclusive, final long toIndexExclusive) {
+    public CloseablePrimitiveIteratorOfInt iterator(final long fromIndexInclusive, final long toIndexExclusive) {
         final long rowSetSize = rowSet.size();
         if (startPadding == 0 && endPadding == 0 && fromIndexInclusive == 0 && toIndexExclusive == rowSetSize) {
             if (rowSetSize >= CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD) {
-                return new ChunkedByteColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE,
+                return new ChunkedIntegerColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE,
                         rowSet.firstRowKey(), rowSetSize);
             } else {
-                return new SerialByteColumnIterator(columnSource, rowSet, rowSet.firstRowKey(), rowSetSize);
+                return new SerialIntegerColumnIterator(columnSource, rowSet, rowSet.firstRowKey(), rowSetSize);
             }
         }
 
@@ -188,17 +188,17 @@ public class ByteVectorColumnWrapper extends ByteVector.Indirect {
             includedRows = 0;
         }
 
-        final CloseablePrimitiveIteratorOfByte initialNullsIterator = includedInitialNulls > 0
-                ? repeat(NULL_BYTE, includedInitialNulls)
+        final CloseablePrimitiveIteratorOfInt initialNullsIterator = includedInitialNulls > 0
+                ? repeat(NULL_INT, includedInitialNulls)
                 : null;
-        final CloseablePrimitiveIteratorOfByte rowsIterator = includedRows > CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD
-                ? new ChunkedByteColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE, firstIncludedRowKey,
+        final CloseablePrimitiveIteratorOfInt rowsIterator = includedRows > CHUNKED_COLUMN_ITERATOR_SIZE_THRESHOLD
+                ? new ChunkedIntegerColumnIterator(columnSource, rowSet, DEFAULT_CHUNK_SIZE, firstIncludedRowKey,
                         includedRows)
                 : includedRows > 0
-                        ? new SerialByteColumnIterator(columnSource, rowSet, firstIncludedRowKey, includedRows)
+                        ? new SerialIntegerColumnIterator(columnSource, rowSet, firstIncludedRowKey, includedRows)
                         : null;
-        final CloseablePrimitiveIteratorOfByte finalNullsIterator = remaining > 0
-                ? repeat(NULL_BYTE, remaining)
+        final CloseablePrimitiveIteratorOfInt finalNullsIterator = remaining > 0
+                ? repeat(NULL_INT, remaining)
                 : null;
         return maybeConcat(initialNullsIterator, rowsIterator, finalNullsIterator);
     }

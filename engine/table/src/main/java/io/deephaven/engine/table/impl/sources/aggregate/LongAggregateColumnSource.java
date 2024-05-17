@@ -9,7 +9,7 @@ package io.deephaven.engine.table.impl.sources.aggregate;
 
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.vector.LongVector;
-import io.deephaven.engine.table.impl.vector.LongVectorColumnWrapper;
+import io.deephaven.engine.table.vectors.LongVectorColumnWrapper;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.ObjectChunk;
