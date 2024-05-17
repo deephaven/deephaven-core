@@ -25,7 +25,7 @@ final class ByteRingChunkSource extends AbstractRingChunkSource<Byte, byte[], By
     }
 
     public ByteRingChunkSource(int capacity) {
-        super(byte.class, capacity);
+        super(new byte[capacity]);
     }
 
     @Override
