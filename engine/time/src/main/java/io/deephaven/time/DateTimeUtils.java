@@ -802,6 +802,27 @@ public class DateTimeUtils {
     }
 
     /**
+     * Converts a {@link LocalDateTime} and {@link ZoneId} to an {@link Instant}.
+     *
+     * @param localDateTime the local date time
+     * @param timeZone the time zone
+     * @return the {@link Instant}, or {@code null} if any input is {@code null}
+     */
+    @ScriptApi
+    @Nullable
+    public static Instant toInstant(
+            @Nullable final LocalDateTime localDateTime,
+            @Nullable final ZoneId timeZone) {
+        if (localDateTime == null || timeZone == null) {
+            return null;
+        }
+
+        return localDateTime // LocalDateTime
+                .atZone(timeZone) // ZonedDateTime
+                .toInstant(); // Instant
+    }
+
+    /**
      * Converts a {@link LocalDate}, {@link LocalTime}, and {@link ZoneId} to an {@link Instant}.
      *
      * @param date the local date
@@ -857,6 +878,26 @@ public class DateTimeUtils {
         }
 
         return ZonedDateTime.ofInstant(instant, timeZone);
+    }
+
+    /**
+     * Converts a {@link LocalDateTime} and {@link ZoneId} to a {@link ZonedDateTime}.
+     *
+     * @param localDateTime the local date time
+     * @param timeZone the time zone
+     * @return the {@link ZonedDateTime}, or {@code null} if any input is {@code null}
+     */
+    @ScriptApi
+    @Nullable
+    public static ZonedDateTime toZonedDateTime(
+            @Nullable final LocalDateTime localDateTime,
+            @Nullable final ZoneId timeZone) {
+        if (localDateTime == null || timeZone == null) {
+            return null;
+        }
+
+        return localDateTime // LocalDateTime
+                .atZone(timeZone); // ZonedDateTime
     }
 
     /**
