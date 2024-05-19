@@ -25,6 +25,7 @@ import org.apache.parquet.format.PageType;
 import org.apache.parquet.io.ParquetDecodingException;
 import org.apache.parquet.schema.Type;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -185,8 +186,9 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
                 false);
     }
 
-    private int readRowCountFromDataPage(SeekableByteChannel ch, SeekableChannelContext channelContext)
-            throws IOException {
+    private int readRowCountFromDataPage(
+            final SeekableByteChannel ch,
+            final SeekableChannelContext channelContext) throws IOException {
         switch (pageHeader.type) {
             case DATA_PAGE:
                 try (final InputStream in = channelsProvider.getInputStream(ch)) {
@@ -200,7 +202,10 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         }
     }
 
-    private IntBuffer readKeysFromDataPage(IntBuffer keyDest, int nullPlaceholder, SeekableByteChannel ch,
+    private IntBuffer readKeysFromDataPage(
+            final IntBuffer keyDest,
+            final int nullPlaceholder,
+            final SeekableByteChannel ch,
             @NotNull final SeekableChannelContext channelContext) throws IOException {
         switch (pageHeader.type) {
             case DATA_PAGE:
@@ -210,8 +215,8 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
                 }
             case DATA_PAGE_V2:
                 try (final InputStream in = channelsProvider.getInputStream(ch)) {
-                    readKeysFromPageV2(readV2Unsafe(in, channelContext), keyDest, nullPlaceholder, channelContext);
-                    return null;
+                    return readKeysFromPageV2(readV2Unsafe(in, channelContext), keyDest, nullPlaceholder,
+                            channelContext);
                 }
             default:
                 throw new IOException(String.format("Unexpected page of type %s of size %d", pageHeader.getType(),
@@ -219,8 +224,10 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         }
     }
 
-    private Object readDataPage(Object nullValue, SeekableByteChannel ch,
-            @NotNull SeekableChannelContext channelContext) throws IOException {
+    private Object readDataPage(
+            final Object nullValue,
+            final SeekableByteChannel ch,
+            @NotNull final SeekableChannelContext channelContext) throws IOException {
         switch (pageHeader.type) {
             case DATA_PAGE:
                 try (final InputStream in = channelsProvider.getInputStream(ch)) {
@@ -228,7 +235,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
                 }
             case DATA_PAGE_V2:
                 try (final InputStream in = channelsProvider.getInputStream(ch)) {
-                    return readPageV2(readV2Unsafe(in, channelContext), nullValue);
+                    return readPageV2(readV2Unsafe(in, channelContext), nullValue, channelContext);
                 }
             default:
                 throw new IOException(String.format("Unexpected page of type %s of size %d", pageHeader.getType(),
@@ -236,11 +243,11 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         }
     }
 
-    private Encoding getEncoding(org.apache.parquet.format.Encoding encoding) {
+    private static Encoding getEncoding(final org.apache.parquet.format.Encoding encoding) {
         return org.apache.parquet.column.Encoding.valueOf(encoding.name());
     }
 
-    private int readRowCountFromPageV1(DataPageV1 page) {
+    private int readRowCountFromPageV1(final DataPageV1 page) {
         try {
             if (path.getMaxRepetitionLevel() != 0) {
                 // TODO - move away from page and use ByteBuffers directly
@@ -251,18 +258,47 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             } else {
                 return page.getValueCount();
             }
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new ParquetDecodingException("could not read page " + page + " in col " + path, e);
         }
     }
 
-    private IntBuffer readKeysFromPageV1(DataPageV1 page, IntBuffer keyDest, int nullPlaceholder,
-            @NotNull SeekableChannelContext channelContext) {
-        RunLengthBitPackingHybridBufferDecoder rlDecoder = null;
-        RunLengthBitPackingHybridBufferDecoder dlDecoder = null;
+    @Nullable
+    private RunLengthBitPackingHybridBufferDecoder getRlDecoderPageV1(final ByteBuffer pageBytes) {
+        if (path.getMaxRepetitionLevel() != 0) {
+            final int length = pageBytes.getInt();
+            final RunLengthBitPackingHybridBufferDecoder rlDecoder =
+                    new RunLengthBitPackingHybridBufferDecoder(path.getMaxRepetitionLevel(),
+                            pageBytes.slice().limit(length));
+            pageBytes.position(pageBytes.position() + length);
+            return rlDecoder;
+        }
+        return null;
+    }
+
+    @Nullable
+    private RunLengthBitPackingHybridBufferDecoder getDlDecoderPageV1(final ByteBuffer pageBytes) {
+        if (path.getMaxDefinitionLevel() > 0) {
+            final int length = pageBytes.getInt();
+            final RunLengthBitPackingHybridBufferDecoder dlDecoder =
+                    new RunLengthBitPackingHybridBufferDecoder(path.getMaxDefinitionLevel(),
+                            pageBytes.slice().limit(length));
+            pageBytes.position(pageBytes.position() + length);
+            return dlDecoder;
+        }
+        return null;
+    }
+
+
+    @Nullable
+    private IntBuffer readKeysFromPageV1(
+            final DataPageV1 page,
+            final IntBuffer keyDest,
+            final int nullPlaceholder,
+            @NotNull final SeekableChannelContext channelContext) {
         try {
-            ByteBuffer bytes = page.getBytes().toByteBuffer(); // TODO - move away from page and use
-                                                               // ByteBuffers directly
+            // TODO - move away from page and use ByteBuffers directly
+            final ByteBuffer bytes = page.getBytes().toByteBuffer();
             bytes.order(ByteOrder.LITTLE_ENDIAN);
             /*
              * IntBuffer offsets = null; if (path.getMaxRepetitionLevel() != 0) { int length = bytes.getInt(); offsets =
@@ -274,37 +310,38 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
              * { readKeysWithNulls(keyDest, nullPlaceholder, numValues(), dlDecoder, dataReader); } else {
              * readKeysNonNulls(keyDest, numValues, dataReader); }
              */
-            if (path.getMaxRepetitionLevel() != 0) {
-                int length = bytes.getInt();
-                rlDecoder = new RunLengthBitPackingHybridBufferDecoder(path.getMaxRepetitionLevel(),
-                        bytes.slice().limit(length));
-                bytes.position(bytes.position() + length);
-            }
-            if (path.getMaxDefinitionLevel() > 0) {
-                int length = bytes.getInt();
-                dlDecoder = new RunLengthBitPackingHybridBufferDecoder(path.getMaxDefinitionLevel(),
-                        bytes.slice().limit(length));
-                bytes.position(bytes.position() + length);
-            }
-            ValuesReader dataReader =
+            final RunLengthBitPackingHybridBufferDecoder rlDecoder = getRlDecoderPageV1(bytes);
+            final RunLengthBitPackingHybridBufferDecoder dlDecoder = getDlDecoderPageV1(bytes);
+            final ValuesReader dataReader =
                     new KeyIndexReader((DictionaryValuesReader) getDataReader(page.getValueEncoding(),
                             bytes, page.getValueCount(), channelContext));
-            Object result = materialize(PageMaterializer.IntFactory, dlDecoder, rlDecoder,
-                    dataReader, nullPlaceholder);
-            if (result instanceof DataWithOffsets) {
-                keyDest.put((int[]) ((DataWithOffsets) result).materializeResult);
-                return ((DataWithOffsets) result).offsets;
-            }
-            keyDest.put((int[]) result);
-            return null;
-        } catch (IOException e) {
-            throw new ParquetDecodingException("could not read page " + page + " in col " + path,
-                    e);
+            return readKeysFromPageCommon(keyDest, nullPlaceholder, rlDecoder, dlDecoder, dataReader);
+        } catch (final IOException e) {
+            throw new ParquetDecodingException("could not read page " + page + " in col " + path, e);
         }
     }
 
-    private int readRepetitionLevels(ByteBuffer byteBuffer) throws IOException {
-        RunLengthBitPackingHybridBufferDecoder rlDecoder;
+
+    @Nullable
+    private IntBuffer readKeysFromPageCommon(
+            final IntBuffer keyDest,
+            final int nullPlaceholder,
+            final RunLengthBitPackingHybridBufferDecoder rlDecoder,
+            final RunLengthBitPackingHybridBufferDecoder dlDecoder,
+            final ValuesReader dataReader) throws IOException {
+        final Object result = materialize(PageMaterializer.IntFactory, dlDecoder, rlDecoder, dataReader,
+                nullPlaceholder);
+        if (result instanceof DataWithOffsets) {
+            keyDest.put((int[]) ((DataWithOffsets) result).materializeResult);
+            return ((DataWithOffsets) result).offsets;
+        }
+        keyDest.put((int[]) result);
+        return null;
+    }
+
+
+    private int readRepetitionLevels(final ByteBuffer byteBuffer) throws IOException {
+        final RunLengthBitPackingHybridBufferDecoder rlDecoder;
         rlDecoder = new RunLengthBitPackingHybridBufferDecoder(path.getMaxRepetitionLevel(), byteBuffer);
         int rowsRead = 0;
         int totalCount = 0;
@@ -323,40 +360,33 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         return rowsRead;
     }
 
-    private Object readPageV1(DataPageV1 page, Object nullValue,
+
+    private Object readPageV1(
+            final DataPageV1 page,
+            final Object nullValue,
             @NotNull final SeekableChannelContext channelContext) {
-        RunLengthBitPackingHybridBufferDecoder dlDecoder = null;
         try {
             // TODO - move away from page and use ByteBuffers directly
-            ByteBuffer bytes = page.getBytes().toByteBuffer();
+            final ByteBuffer bytes = page.getBytes().toByteBuffer();
             bytes.order(ByteOrder.LITTLE_ENDIAN);
-            RunLengthBitPackingHybridBufferDecoder rlDecoder = null;
-            if (path.getMaxRepetitionLevel() != 0) {
-                int length = bytes.getInt();
-                rlDecoder = new RunLengthBitPackingHybridBufferDecoder(path.getMaxRepetitionLevel(),
-                        bytes.slice().limit(length));
-                bytes.position(bytes.position() + length);
-            }
-            if (path.getMaxDefinitionLevel() > 0) {
-                int length = bytes.getInt();
-                dlDecoder = new RunLengthBitPackingHybridBufferDecoder(path.getMaxDefinitionLevel(),
-                        bytes.slice().limit(length));
-                bytes.position(bytes.position() + length);
-            }
-            ValuesReader dataReader =
+            final RunLengthBitPackingHybridBufferDecoder rlDecoder = getRlDecoderPageV1(bytes);
+            final RunLengthBitPackingHybridBufferDecoder dlDecoder = getDlDecoderPageV1(bytes);
+            final ValuesReader dataReader =
                     getDataReader(page.getValueEncoding(), bytes, page.getValueCount(), channelContext);
             return materialize(pageMaterializerFactory, dlDecoder, rlDecoder,
                     dataReader, nullValue);
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new ParquetDecodingException("could not read page " + page + " in col " + path,
                     e);
         }
     }
 
-    private Object materialize(PageMaterializerFactory factory,
-            RunLengthBitPackingHybridBufferDecoder dlDecoder,
-            RunLengthBitPackingHybridBufferDecoder rlDecoder, ValuesReader dataReader, Object nullValue)
-            throws IOException {
+    private Object materialize(
+            final PageMaterializerFactory factory,
+            final RunLengthBitPackingHybridBufferDecoder dlDecoder,
+            final RunLengthBitPackingHybridBufferDecoder rlDecoder,
+            final ValuesReader dataReader,
+            final Object nullValue) throws IOException {
         if (dlDecoder == null) {
             return materializeNonNull(factory, numValues, dataReader);
         } else {
@@ -364,43 +394,67 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         }
     }
 
-    private void readKeysFromPageV2(DataPageV2 page, IntBuffer keyDest, int nullPlaceholder,
-            @NotNull final SeekableChannelContext channelContext)
-            throws IOException {
-        if (path.getMaxRepetitionLevel() > 0) {
-            throw new RuntimeException("Repeating levels not supported");
+    @Nullable
+    private RunLengthBitPackingHybridBufferDecoder getRlDecoderPageV2(final DataPageV2 page) throws IOException {
+        if (path.getMaxRepetitionLevel() != 0) {
+            return new RunLengthBitPackingHybridBufferDecoder(path.getMaxRepetitionLevel(),
+                    page.getRepetitionLevels().toByteBuffer());
         }
-        RunLengthBitPackingHybridBufferDecoder dlDecoder = null;
+        return null;
+    }
 
+    @Nullable
+    private RunLengthBitPackingHybridBufferDecoder getDlDecoderPageV2(final DataPageV2 page) throws IOException {
         if (path.getMaxDefinitionLevel() > 0) {
-            dlDecoder = new RunLengthBitPackingHybridBufferDecoder(path.getMaxDefinitionLevel(),
+            return new RunLengthBitPackingHybridBufferDecoder(path.getMaxDefinitionLevel(),
                     page.getDefinitionLevels().toByteBuffer());
         }
+        return null;
+    }
+
+    @Nullable
+    private IntBuffer readKeysFromPageV2(
+            final DataPageV2 page,
+            final IntBuffer keyDest,
+            final int nullPlaceholder,
+            @NotNull final SeekableChannelContext channelContext) throws IOException {
+        final RunLengthBitPackingHybridBufferDecoder rlDecoder = getRlDecoderPageV2(page);
+        final RunLengthBitPackingHybridBufferDecoder dlDecoder = getDlDecoderPageV2(page);
         // LOG.debug("page data size {} bytes and {} records", page.getData().size(),
         // page.getValueCount());
+        final ValuesReader dataReader =
+                new KeyIndexReader((DictionaryValuesReader) getDataReader(page.getDataEncoding(),
+                        page.getData().toByteBuffer(), page.getValueCount(), channelContext));
+        return readKeysFromPageCommon(keyDest, nullPlaceholder, rlDecoder, dlDecoder, dataReader);
+    }
+
+    private Object readPageV2(
+            final DataPageV2 page,
+            final Object nullValue,
+            @NotNull final SeekableChannelContext channelContext) {
         try {
-            ValuesReader dataReader = getDataReader(page.getDataEncoding(),
+            final RunLengthBitPackingHybridBufferDecoder rlDecoder = getRlDecoderPageV2(page);
+            final RunLengthBitPackingHybridBufferDecoder dlDecoder = getDlDecoderPageV2(page);
+            final ValuesReader dataReader = getDataReader(page.getDataEncoding(),
                     page.getData().toByteBuffer(), page.getValueCount(), channelContext);
-            if (dlDecoder != null) {
-                readKeysWithNulls(keyDest, nullPlaceholder, dlDecoder, dataReader);
-            } else {
-                readKeysNonNulls(keyDest, dataReader);
-            }
-        } catch (IOException e) {
-            throw new ParquetDecodingException("could not read page " + page + " in col " + path,
-                    e);
+            return materialize(pageMaterializerFactory, dlDecoder, rlDecoder, dataReader, nullValue);
+        } catch (final IOException e) {
+            throw new ParquetDecodingException("could not read page " + page + " in col " + path, e);
         }
     }
 
-
-    private Object readPageV2(DataPageV2 page, Object nullValue) throws IOException {
-        throw new UnsupportedOperationException("Parquet V2 data pages are not supported");
-    }
-
-    private void readKeysWithNulls(IntBuffer keysBuffer, int nullPlaceholder,
-            RunLengthBitPackingHybridBufferDecoder dlDecoder, ValuesReader dataReader)
+    // TODO Create an issue for testing and optimizing further
+    @SuppressWarnings("unused")
+    private void readKeysWithNulls(
+            final IntBuffer keysBuffer,
+            final int nullPlaceholder,
+            final RunLengthBitPackingHybridBufferDecoder dlDecoder,
+            final ValuesReader dataReader)
             throws IOException {
-        DictionaryValuesReader dictionaryValuesReader = (DictionaryValuesReader) dataReader;
+        if (path.getMaxRepetitionLevel() > 0) {
+            throw new UnsupportedOperationException("Repeating levels not supported");
+        }
+        final DictionaryValuesReader dictionaryValuesReader = (DictionaryValuesReader) dataReader;
         int startIndex = 0;
         while (dlDecoder.hasNext() && startIndex < numValues) {
             dlDecoder.readNextRange();
@@ -420,13 +474,18 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         }
     }
 
-    private void readKeysNonNulls(IntBuffer keysBuffer, ValuesReader dataReader)
-            throws IOException {
-        DictionaryValuesReader dictionaryValuesReader = (DictionaryValuesReader) dataReader;
+    // TODO Create an issue for testing and optimizing further
+    @SuppressWarnings("unused")
+    private void readKeysNonNulls(final IntBuffer keysBuffer, final ValuesReader dataReader) {
+        if (path.getMaxRepetitionLevel() > 0) {
+            throw new UnsupportedOperationException("Repeating levels not supported");
+        }
+        final DictionaryValuesReader dictionaryValuesReader = (DictionaryValuesReader) dataReader;
         for (int i = 0; i < numValues; i++) {
             keysBuffer.put(dictionaryValuesReader.readValueDictionaryId());
         }
     }
+
 
     private static Object materializeWithNulls(PageMaterializerFactory factory,
             int numberOfValues,
@@ -451,9 +510,11 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
     /**
      * Creates a list of offsets with null entries
      */
-    private static IntBuffer combineOptionalAndRepeating(IntBuffer nullOffsets, IntBuffer repeatingRanges,
-            int nullValue) {
-        IntBuffer result = IntBuffer.allocate(nullOffsets.limit() + repeatingRanges.limit());
+    private static IntBuffer combineOptionalAndRepeating(
+            final IntBuffer nullOffsets,
+            final IntBuffer repeatingRanges,
+            final int nullValue) {
+        final IntBuffer result = IntBuffer.allocate(nullOffsets.limit() + repeatingRanges.limit());
         int startIndex = 0;
         int nextNullPos = nullOffsets.hasRemaining() ? nullOffsets.get() : result.capacity();
         while (result.hasRemaining()) {
@@ -479,11 +540,11 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             RunLengthBitPackingHybridBufferDecoder rlDecoder, ValuesReader dataReader, Object nullValue)
             throws IOException {
         Pair<Pair<Type.Repetition, IntBuffer>[], Integer> offsetsAndCount = getOffsetsAndNulls(dlDecoder, rlDecoder);
-        int updatedNumValues = offsetsAndCount.second;
+        final int updatedNumValues = offsetsAndCount.second;
         Pair<Type.Repetition, IntBuffer>[] offsetAndNulls = offsetsAndCount.first;
-        List<IntBuffer> offsetsWithNull = new ArrayList<>();
+        final List<IntBuffer> offsetsWithNull = new ArrayList<>();
         IntBuffer currentNullOffsets = null;
-        for (Pair<Type.Repetition, IntBuffer> offsetAndNull : offsetAndNulls) {
+        for (final Pair<Type.Repetition, IntBuffer> offsetAndNull : offsetAndNulls) {
             if (offsetAndNull.first == Type.Repetition.OPTIONAL) {
                 if (currentNullOffsets != null) {
                     throw new UnsupportedOperationException("Nested optional levels not supported");
@@ -515,17 +576,22 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         return new DataWithMultiLevelOffsets(offsetsWithNull.toArray(new IntBuffer[0]), values);
     }
 
-    private static Object materializeNonNull(PageMaterializerFactory factory, int numberOfValues,
-            ValuesReader dataReader) {
+    private static Object materializeNonNull(
+            final PageMaterializerFactory factory,
+            final int numberOfValues,
+            final ValuesReader dataReader) {
         return factory.makeMaterializerNonNull(dataReader, numberOfValues).fillAll();
     }
 
-    private ValuesReader getDataReader(Encoding dataEncoding, ByteBuffer in, int valueCount,
+    private ValuesReader getDataReader(
+            final Encoding dataEncoding,
+            final ByteBuffer in,
+            final int valueCount,
             @NotNull final SeekableChannelContext channelContext) {
         if (dataEncoding == Encoding.DELTA_BYTE_ARRAY) {
             throw new RuntimeException("DELTA_BYTE_ARRAY encoding not supported");
         }
-        ValuesReader dataReader;
+        final ValuesReader dataReader;
         if (dataEncoding.usesDictionary()) {
             final Dictionary dictionary = dictionarySupplier.apply(channelContext);
             if (dictionary == ColumnChunkReader.NULL_DICTIONARY) {
@@ -574,8 +640,8 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
     }
 
     private Pair<Pair<Type.Repetition, IntBuffer>[], Integer> getOffsetsAndNulls(
-            RunLengthBitPackingHybridBufferDecoder dlDecoder,
-            RunLengthBitPackingHybridBufferDecoder rlDecoder) throws IOException {
+            final RunLengthBitPackingHybridBufferDecoder dlDecoder,
+            final RunLengthBitPackingHybridBufferDecoder rlDecoder) throws IOException {
         dlDecoder.readNextRange();
         if (rlDecoder != null) {
             rlDecoder.readNextRange();
@@ -585,7 +651,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         int rlRangeSize = rlDecoder == null ? numValues : rlDecoder.currentRangeCount();
         int currentRl = rlDecoder == null ? 0 : rlDecoder.currentValue();
 
-        LevelsController levelsController = new LevelsController(
+        final LevelsController levelsController = new LevelsController(
                 fieldTypes.stream().map(Type::getRepetition).toArray(Type.Repetition[]::new));
         for (int valuesProcessed = 0; valuesProcessed < numValues;) {
             if (dlRangeSize == 0) {
@@ -598,7 +664,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
                 rlRangeSize = Math.min(numValues - valuesProcessed, rlDecoder.currentRangeCount());
                 currentRl = rlDecoder.currentValue();
             }
-            int currentRangeSize = Math.min(dlRangeSize, rlRangeSize);
+            final int currentRangeSize = Math.min(dlRangeSize, rlRangeSize);
             dlRangeSize -= currentRangeSize;
             rlRangeSize -= currentRangeSize;
             levelsController.addElements(currentRl, currentDl, currentRangeSize);
