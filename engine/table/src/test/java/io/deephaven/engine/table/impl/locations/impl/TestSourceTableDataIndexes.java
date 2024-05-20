@@ -107,34 +107,31 @@ public class TestSourceTableDataIndexes {
 
         final String tableName = "TestTable";
 
+        // @formatter:off
         ParquetTools.writeTable(
                 partitions[0],
                 new File(dataDirectory,
                         "IP" + File.separator + "0000" + File.separator + tableName + File.separator
-                                + PARQUET_FILE_NAME)
-                        .getPath(),
+                                + PARQUET_FILE_NAME).getPath(),
                 ParquetInstructions.EMPTY.withTableDefinition(partitionedDataDefinition));
         ParquetTools.writeTable(
                 partitions[1],
                 new File(dataDirectory,
                         "IP" + File.separator + "0001" + File.separator + tableName + File.separator
-                                + PARQUET_FILE_NAME)
-                        .getPath(),
+                                + PARQUET_FILE_NAME).getPath(),
                 ParquetInstructions.EMPTY.withTableDefinition(partitionedDataDefinition));
         ParquetTools.writeTable(
                 partitions[2],
                 new File(dataDirectory,
                         "IP" + File.separator + "0002" + File.separator + tableName + File.separator
-                                + PARQUET_FILE_NAME)
-                        .getPath(),
+                                + PARQUET_FILE_NAME).getPath(),
                 ParquetInstructions.EMPTY.withTableDefinition(
                         missingIndexes ? partitionedMissingDataDefinition : partitionedDataDefinition));
         ParquetTools.writeTable(
                 partitions[3],
                 new File(dataDirectory,
                         "IP" + File.separator + "0003" + File.separator + tableName + File.separator
-                                + PARQUET_FILE_NAME)
-                        .getPath(),
+                                + PARQUET_FILE_NAME).getPath(),
                 ParquetInstructions.EMPTY.withTableDefinition(
                         missingIndexes ? partitionedMissingDataDefinition : partitionedDataDefinition));
         ParquetTools.writeTables(
@@ -150,9 +147,9 @@ public class TestSourceTableDataIndexes {
                 TableTools.emptyTable(0).updateView("Sym=NULL_CHAR", "Other=NULL_LONG"),
                 new File(dataDirectory,
                         "IP" + File.separator + "XXXX" + File.separator + tableName + File.separator
-                                + PARQUET_FILE_NAME)
-                        .getPath(),
-                ParquetInstructions.EMPTY.withTableDefinition(partitionedDataDefinition));
+                                + PARQUET_FILE_NAME).getPath(),
+                    ParquetInstructions.EMPTY.withTableDefinition(partitionedDataDefinition));
+        // @formatter:on
 
         if (missingIndexes) {
             // Put Sym back on for the partitions that dropped it.
