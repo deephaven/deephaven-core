@@ -306,7 +306,6 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         return null;
     }
 
-
     @Nullable
     private IntBuffer readKeysFromPageV1(
             final DataPageV1 page,
@@ -317,16 +316,6 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             // TODO - move away from page and use ByteBuffers directly
             final ByteBuffer bytes = page.getBytes().toByteBuffer();
             bytes.order(ByteOrder.LITTLE_ENDIAN);
-            /*
-             * IntBuffer offsets = null; if (path.getMaxRepetitionLevel() != 0) { int length = bytes.getInt(); offsets =
-             * readRepetitionLevels((ByteBuffer) bytes.slice().limit(length), IntBuffer.allocate(INITIAL_BUFFER_SIZE));
-             * bytes.position(bytes.position() + length); } if (path.getMaxDefinitionLevel() > 0) { int length =
-             * bytes.getInt(); dlDecoder = new RunLengthBitPackingHybridBufferDecoder(path.getMaxDefinitionLevel(),
-             * (ByteBuffer) bytes.slice().limit(length)); bytes.position(bytes.position() + length); } ValuesReader
-             * dataReader = getDataReader(page.getValueEncoding(), bytes, page.getValueCount()); if (dlDecoder != null)
-             * { readKeysWithNulls(keyDest, nullPlaceholder, numValues(), dlDecoder, dataReader); } else {
-             * readKeysNonNulls(keyDest, numValues, dataReader); }
-             */
             final RunLengthBitPackingHybridBufferDecoder rlDecoder = getRlDecoderPageV1(bytes);
             final RunLengthBitPackingHybridBufferDecoder dlDecoder = getDlDecoderPageV1(bytes);
             final ValuesReader dataReader =
@@ -337,7 +326,6 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             throw new ParquetDecodingException("could not read page " + page + " in col " + path, e);
         }
     }
-
 
     @Nullable
     private IntBuffer readKeysFromPageCommon(
@@ -355,7 +343,6 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         keyDest.put((int[]) result);
         return null;
     }
-
 
     private int readRepetitionLevels(final ByteBuffer byteBuffer) throws IOException {
         final RunLengthBitPackingHybridBufferDecoder rlDecoder;
@@ -376,7 +363,6 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         }
         return rowsRead;
     }
-
 
     private Object readPageV1(
             final DataPageV1 page,
@@ -436,8 +422,6 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             @NotNull final SeekableChannelContext channelContext) throws IOException {
         final RunLengthBitPackingHybridBufferDecoder rlDecoder = getRlDecoderPageV2(page);
         final RunLengthBitPackingHybridBufferDecoder dlDecoder = getDlDecoderPageV2(page);
-        // LOG.debug("page data size {} bytes and {} records", page.getData().size(),
-        // page.getValueCount());
         final ValuesReader dataReader =
                 new KeyIndexReader((DictionaryValuesReader) getDataReader(page.getDataEncoding(),
                         page.getData().toByteBuffer(), page.getValueCount(), channelContext));
@@ -458,49 +442,6 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             throw new ParquetDecodingException("could not read page " + page + " in col " + path, e);
         }
     }
-
-    // TODO Create an issue for testing and optimizing further
-    @SuppressWarnings("unused")
-    private void readKeysWithNulls(
-            final IntBuffer keysBuffer,
-            final int nullPlaceholder,
-            final RunLengthBitPackingHybridBufferDecoder dlDecoder,
-            final ValuesReader dataReader) throws IOException {
-        if (path.getMaxRepetitionLevel() > 0) {
-            throw new UnsupportedOperationException("Repeating levels not supported");
-        }
-        final DictionaryValuesReader dictionaryValuesReader = (DictionaryValuesReader) dataReader;
-        int startIndex = 0;
-        while (dlDecoder.hasNext() && startIndex < numValues) {
-            dlDecoder.readNextRange();
-            final int count = dlDecoder.currentRangeCount();
-            final int endIndex = Math.min(startIndex + count, numValues);
-            if (dlDecoder.isNullRange()) {
-                for (int i = startIndex; i < endIndex; i++) {
-                    keysBuffer.put(nullPlaceholder);
-                }
-            } else {
-                for (int i = startIndex; i < endIndex; i++) {
-                    keysBuffer.put(dictionaryValuesReader.readValueDictionaryId());
-                }
-            }
-
-            startIndex = endIndex;
-        }
-    }
-
-    // TODO Create an issue for testing and optimizing further
-    @SuppressWarnings("unused")
-    private void readKeysNonNulls(final IntBuffer keysBuffer, final ValuesReader dataReader) {
-        if (path.getMaxRepetitionLevel() > 0) {
-            throw new UnsupportedOperationException("Repeating levels not supported");
-        }
-        final DictionaryValuesReader dictionaryValuesReader = (DictionaryValuesReader) dataReader;
-        for (int i = 0; i < numValues; i++) {
-            keysBuffer.put(dictionaryValuesReader.readValueDictionaryId());
-        }
-    }
-
 
     private static Object materializeWithNulls(
             final PageMaterializerFactory factory,
@@ -625,7 +566,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
 
         try {
             dataReader.initFromPage(valueCount, ByteBufferInputStream.wrap(in));
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new ParquetDecodingException("Could not read page in col " + path, e);
         }
         return dataReader;
