@@ -2347,6 +2347,31 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
     }
 
+    public void testMultiply() {
+        final Period p = Period.ofDays(3);
+        final Duration d = Duration.ofNanos(123456789L);
+
+        TestCase.assertEquals(Period.ofDays(6), DateTimeUtils.multiply(p, 2));
+        TestCase.assertEquals(Period.ofDays(9), DateTimeUtils.multiply(p, 3));
+        TestCase.assertEquals(Period.ofDays(3), DateTimeUtils.multiply(p, 1));
+        TestCase.assertEquals(Period.ofDays(0), DateTimeUtils.multiply(p, 0));
+        TestCase.assertEquals(Period.ofDays(-3), DateTimeUtils.multiply(p, -1));
+        TestCase.assertEquals(Period.ofDays(-6), DateTimeUtils.multiply(p, -2));
+        TestCase.assertEquals(Period.ofDays(-9), DateTimeUtils.multiply(p, -3));
+        TestCase.assertNull(DateTimeUtils.multiply((Period) null, 3));
+        TestCase.assertNull(DateTimeUtils.multiply(p, NULL_INT));
+
+        TestCase.assertEquals(Duration.ofNanos(246913578L), DateTimeUtils.multiply(d, 2));
+        TestCase.assertEquals(Duration.ofNanos(370370367L), DateTimeUtils.multiply(d, 3));
+        TestCase.assertEquals(Duration.ofNanos(123456789L), DateTimeUtils.multiply(d, 1));
+        TestCase.assertEquals(Duration.ofNanos(0), DateTimeUtils.multiply(d, 0));
+        TestCase.assertEquals(Duration.ofNanos(-123456789L), DateTimeUtils.multiply(d, -1));
+        TestCase.assertEquals(Duration.ofNanos(-246913578L), DateTimeUtils.multiply(d, -2));
+        TestCase.assertEquals(Duration.ofNanos(-370370367L), DateTimeUtils.multiply(d, -3));
+        TestCase.assertNull(DateTimeUtils.multiply((Duration) null, 3));
+        TestCase.assertNull(DateTimeUtils.multiply(d, NULL_LONG));
+    }
+
     public void testDiffNanos() {
         final Instant i1 = DateTimeUtils.epochNanosToInstant(12345678987654321L);
         final Instant i2 = DateTimeUtils.epochNanosToInstant(98765432123456789L);

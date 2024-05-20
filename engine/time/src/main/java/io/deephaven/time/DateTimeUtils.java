@@ -1872,6 +1872,67 @@ public class DateTimeUtils {
     }
 
     /**
+     * Multiply a duration by a scalar.
+     *
+     * @param duration the duration to multiply
+     * @param scalar the scalar to multiply by
+     * @return {@code null} if either input is {@code null}; otherwise the duration multiplied by the scalar
+     */
+    public static Duration multiply(final Duration duration, final long scalar) {
+        if (duration == null || scalar == NULL_LONG) {
+            return null;
+        }
+
+        return duration.multipliedBy(scalar);
+    }
+
+    /**
+     * Multiply a duration by a scalar.
+     *
+     * @param duration the duration to multiply
+     * @param scalar the scalar to multiply by
+     * @return {@code null} if either input is {@code null}; otherwise the duration multiplied by the scalar
+     */
+    public static Duration multiply(final long scalar, final Duration duration) {
+        if (duration == null || scalar == NULL_LONG) {
+            return null;
+        }
+
+        return duration.multipliedBy(scalar);
+    }
+
+    /**
+     * Multiply a period by a scalar.
+     *
+     * @param period the period to multiply
+     * @param scalar the scalar to multiply by
+     * @return {@code null} if either input is {@code null}; otherwise the period multiplied by the scalar
+     */
+    public static Period multiply(final Period period, final int scalar) {
+        if (period == null || scalar == NULL_INT) {
+            return null;
+        }
+
+        return period.multipliedBy(scalar);
+    }
+
+    /**
+     * Multiply a period by a scalar.
+     *
+     * @param period the period to multiply
+     * @param scalar the scalar to multiply by
+     * @return {@code null} if either input is {@code null}; otherwise the period multiplied by the scalar
+     */
+    public static Period multiply(final int scalar, final Period period) {
+        if (period == null || scalar == NULL_INT) {
+            return null;
+        }
+
+        return period.multipliedBy(scalar);
+    }
+
+
+    /**
      * Returns the difference in nanoseconds between two instant values.
      *
      * @param start start time
