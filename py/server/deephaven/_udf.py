@@ -504,38 +504,6 @@ def _parse_signature(fn: Callable) -> _ParsedSignature:
         p_sig.ret_annotation = _parse_return_annotation(t)
         return p_sig
 
-ARG_CONV_CODE_SNIPPET = """
-    converted_args = [param.arg_converter(arg) if param.arg_converter else arg
-                          for param, arg in zip(p_sig.params, args)]
-
-    # if the number of arguments is more than the number of parameters, treat the last parameter as a
-    # vararg and use its arg_converter to convert the rest of the arguments
-    if len(args) > len(p_sig.params):
-        arg_converter = p_sig.params[-1].arg_converter
-        converted_args.extend([arg_converter(arg) if arg_converter else arg for arg in args[len(converted_args):]])
-    ret = fn(*converted_args, **kwargs)
-"""
-
-NO_ARG_CONV_CODE_SNIPPET = """
-    ret = fn(*args, **kwargs)                
-"""
-
-ARRAY_RET_CODE_SNIPPET = """
-    return dtypes.array(ret_dtype, ret)
-"""
-
-SCALAR_RET_CODE_SNIPPET = """
-    return ret_converter(ret) if ret_converter else ret
-"""
-
-V_ARRAY_RET_CODE_SNIPPET = """
-        chunk_result[i] = dtypes.array(ret_dtype, ret)
-"""
-
-V_SCALAR_RET_CODE_SNIPPET = """
-        chunk_result[i] = ret_converter(ret) if ret_converter else ret
-"""
-
 def _udf_parser(fn: Callable):
     """A decorator that acts as a transparent translator for Python UDFs used in Deephaven query formulas between
     Python and Java. This decorator is intended for internal use by the Deephaven query engine and should not be used by
@@ -568,95 +536,27 @@ def _udf_parser(fn: Callable):
         arg_conv_needed = p_sig.prepare_auto_arg_conv(encoded_arg_types)
         p_sig.ret_annotation.setup_return_converter()
         ret_converter = p_sig.ret_annotation.ret_converter
+        nonlocal ret_dtype
 
         if not for_vectorization:
             if not arg_conv_needed and not ret_converter and not return_array:
                 return fn
-
-            if arg_conv_needed:
-                conv_str = ARG_CONV_CODE_SNIPPET
-            else:
-                conv_str = NO_ARG_CONV_CODE_SNIPPET
-
-            if return_array:
-                nonlocal ret_dtype
-                ret_str = ARRAY_RET_CODE_SNIPPET
-            else:
-                ret_str = SCALAR_RET_CODE_SNIPPET
-
-            _wrapper_str = f"""
-def _wrapper(*args, **kwargs):                
-{conv_str}
-{ret_str}
-            """
-
-            # eval the wrapper code in the scope of the function
-            scope = {**globals(), **locals()}
-            exec(_wrapper_str, scope)
-            return scope["_wrapper"]
         else:  # for vectorization
             if encoded_arg_types and len(encoded_arg_types.split(",")) != len(p_sig.params):
                 raise ValueError(
                     f"The number of arguments doesn't match the function ({p_sig.fn.__name__}) signature. "
                     f"{len(encoded_arg_types.split(','))}, {p_sig.encoded}")
 
-
-            if len(p_sig.params) == 0:
-                chunk_str = ""
-                conv_str = """
-        ret = fn()
-                """
-            elif arg_conv_needed:
-                chunk_str = """
-    vectorized_args = zip(*args[2:])
-                """
-                conv_str = """
-        scalar_args = next(vectorized_args)
-        converted_args = [param.arg_converter(arg) if param.arg_converter else arg
-                                          for param, arg in zip(p_sig.params, scalar_args)]
-        # if the number of arguments is more than the number of parameters, treat the last
-        # parameter as a vararg and use its arg_converter to convert the rest of the arguments
-        if len(args) > len(p_sig.params):
-            arg_converter = p_sig.params[-1].arg_converter
-            converted_args.extend([arg_converter(arg) if arg_converter else arg
-                                   for arg in scalar_args[len(converted_args):]])
-        ret = fn(*converted_args)
-                """
-            else:
-                chunk_str = """
-    vectorized_args = zip(*args[2:])
-                """
-                conv_str = """
-        ret = fn(*next(vectorized_args))
-                """
-
-            if return_array:
-                nonlocal ret_dtype
-                ret_str = V_ARRAY_RET_CODE_SNIPPET
-            else:
-                ret_str = V_SCALAR_RET_CODE_SNIPPET
-
-        _wrapper_str = f"""
-def _vectorization_wrapper(*args):
-    chunk_size = args[0]
-    chunk_result = args[1]
-    
-    {chunk_str}         
-    for i in range(chunk_size):
-{conv_str}
-    {ret_str}
-    return chunk_result
-        """
-
-        # eval the wrapper code in the scope of the function
+        _wrapper_str = _gen_wrapper_code(p_sig, for_vectorization, arg_conv_needed, return_array)
         scope = {**globals(), **locals()}
         exec(_wrapper_str, scope)
 
-        if test_vectorization:
+        if for_vectorization and test_vectorization:
             global vectorized_count
             vectorized_count += 1
 
-        return scope["_vectorization_wrapper"]
+        return scope["_wrapper"]
+
 
     _udf_decorator.j_name = ret_dtype.j_name
     real_ret_dtype = _BUILDABLE_ARRAY_DTYPE_MAP.get(ret_dtype, dtypes.PyObject) if return_array else ret_dtype
@@ -670,3 +570,90 @@ def _vectorization_wrapper(*args):
     _udf_decorator.signature = p_sig.encoded
 
     return _udf_decorator
+
+# region Wrapper Code Generation
+INDENT_STR= " " * 4
+WRAPPER_HEADER = """def _wrapper(*args, **kwargs):"""
+ARG_CONV = """
+converted_args = [param.arg_converter(arg) if param.arg_converter else arg
+                      for param, arg in zip(p_sig.params, args)]
+
+# if the number of arguments is more than the number of parameters, treat the last parameter as a
+# vararg and use its arg_converter to convert the rest of the arguments
+if len(args) > len(p_sig.params):
+    arg_converter = p_sig.params[-1].arg_converter
+    converted_args.extend([arg_converter(arg) if arg_converter else arg for arg in args[len(converted_args):]])
+ret = fn(*converted_args, **kwargs)"""
+NO_ARG_CONV = """ret = fn(*args, **kwargs)"""
+ARRAY_RET = """return dtypes.array(ret_dtype, ret)"""
+SCALAR_RET = """return ret_converter(ret) if ret_converter else ret"""
+
+V_WRAPPER_HEADER = """
+def _wrapper(*args):
+    chunk_size = args[0]
+    chunk_result = args[1]"""
+V_ARRAY_RET = """chunk_result[i] = dtypes.array(ret_dtype, ret)"""
+V_SCALAR_RET = """chunk_result[i] = ret_converter(ret) if ret_converter else ret"""
+V_ZIP_CHUNK_ARGS = """vectorized_args = zip(*args[2:])"""
+V_ARG_CONV = """
+scalar_args = next(vectorized_args)
+converted_args = [param.arg_converter(arg) if param.arg_converter else arg
+                                  for param, arg in zip(p_sig.params, scalar_args)]
+# if the number of arguments is more than the number of parameters, treat the last
+# parameter as a vararg and use its arg_converter to convert the rest of the arguments
+if len(args) > len(p_sig.params):
+    arg_converter = p_sig.params[-1].arg_converter
+    converted_args.extend([arg_converter(arg) if arg_converter else arg
+                           for arg in scalar_args[len(converted_args):]])
+ret = fn(*converted_args)"""
+V_NO_ARG_CONV = """ret = fn(*next(vectorized_args))"""
+V_NO_ARG = """ret = fn()"""
+V_LOOP_CHUNK = """for i in range(chunk_size):"""
+V_RET_CHUNK = "return chunk_result"
+
+
+def _gen_wrapper_code(p_sig: _ParsedSignature, for_vectorization: bool, arg_conv_needed: bool, return_array: bool) -> str:
+    """ Generate the wrapper code for the UDF based on the parsed signature and the context of the UDF usage."""
+    if not for_vectorization:
+        if arg_conv_needed:
+            conv_str = ARG_CONV
+        else:
+            conv_str = NO_ARG_CONV
+
+        if return_array:
+            ret_str = ARRAY_RET
+        else:
+            ret_str = SCALAR_RET
+
+        _wrapper_str = (WRAPPER_HEADER + "\n"
+                        + INDENT_STR + conv_str.replace("\n", "\n" + INDENT_STR) + "\n"
+                        + INDENT_STR + ret_str.replace("\n", "\n" + INDENT_STR) + "\n")
+        return _wrapper_str + "\n"
+    else:
+        if return_array:
+            ret_str = V_ARRAY_RET
+        else:
+            ret_str = V_SCALAR_RET
+
+        if len(p_sig.params) == 0:
+           _wrapper_str = (V_WRAPPER_HEADER + "\n"
+                           + INDENT_STR + V_LOOP_CHUNK + "\n"
+                           + INDENT_STR * 2 + V_NO_ARG + "\n"
+                           + INDENT_STR * 2 + ret_str)
+        else:
+            _wrapper_str = (V_WRAPPER_HEADER + "\n"
+                            + INDENT_STR + V_ZIP_CHUNK_ARGS + "\n"
+                            + INDENT_STR + V_LOOP_CHUNK + "\n")
+            if arg_conv_needed:
+                _wrapper_str = (_wrapper_str
+                            + INDENT_STR * 2 + V_ARG_CONV.replace("\n", "\n" + INDENT_STR * 2) + "\n"
+                            + INDENT_STR * 2 + ret_str + "\n")
+            else:
+                _wrapper_str = (_wrapper_str
+                            + INDENT_STR * 2 + V_NO_ARG_CONV.replace("\n", "\n" + INDENT_STR * 2) + "\n"
+                            + INDENT_STR * 2 + ret_str + "\n")
+
+        return (_wrapper_str + "\n"
+                + INDENT_STR + V_RET_CHUNK + "\n")
+    # endregion
+
