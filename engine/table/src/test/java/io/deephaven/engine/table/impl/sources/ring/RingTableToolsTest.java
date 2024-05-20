@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.sources.ring;
 
+import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -68,6 +69,19 @@ public class RingTableToolsTest {
         coprime(1, 93);
         coprime(5, 71);
         coprime(14, 25);
+    }
+
+    @Test
+    public void doubleArrayChunk() {
+        final Object[] objectArray = {
+                null,
+                new double[] {},
+                new double[] {42.42, 43.43}
+        };
+        final Table table = TableTools.newTable(TstUtils.columnHolderForChunk(
+                "DoubleArray", double[].class, double.class, ObjectChunk.chunkWrap(objectArray)));
+        final Table ring = RingTableTools.of(table, 32, true);
+        checkEquals(table, ring);
     }
 
     private static void coprime(int a, int b) {

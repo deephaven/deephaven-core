@@ -8,12 +8,13 @@ import tempfile
 import unittest
 import fnmatch
 
+import numpy as np
 import pandas
 import pyarrow.parquet
 
 from deephaven import DHError, empty_table, dtypes, new_table
 from deephaven import arrow as dharrow
-from deephaven.column import InputColumn, Column, ColumnType, string_col, int_col
+from deephaven.column import InputColumn, Column, ColumnType, string_col, int_col, char_col, long_col
 from deephaven.pandas import to_pandas, to_table
 from deephaven.parquet import (write, batch_write, read, delete, ColumnInstruction, ParquetFileLayout,
                                write_partitioned)
@@ -577,7 +578,6 @@ class ParquetTestCase(BaseTestCase):
         # Fails because we don't have the right credentials
         with self.assertRaises(Exception):
             read("s3://dh-s3-parquet-test1/multiColFile.parquet", special_instructions=s3_instructions).select()
-        # TODO(deephaven-core#5064): Add support for local S3 testing
 
     def verify_index_files(self, index_dir_path, expected_num_index_files=1):
         self.assertTrue(os.path.exists(index_dir_path))
@@ -708,6 +708,29 @@ class ParquetTestCase(BaseTestCase):
 
         with self.assertRaises(Exception):
             write(table, "data_from_dh.parquet", table_definition=table_definition, col_definitions=col_definitions)
+
+    def test_unsigned_ints(self):
+        df = pandas.DataFrame.from_records(
+            data=[(-1, -1, -1), (2, 2, 2), (0, 0, 0)],
+            columns=['uint8Col', 'uint16Col',  'uint32Col']
+        )
+        df['uint8Col'] = df['uint8Col'].astype(np.uint8)
+        df['uint16Col'] = df['uint16Col'].astype(np.uint16)
+        df['uint32Col'] = df['uint32Col'].astype(np.uint32)
+
+        pyarrow.parquet.write_table(pyarrow.Table.from_pandas(df), 'data_from_pyarrow.parquet')
+        schema_from_disk = pyarrow.parquet.read_metadata("data_from_pyarrow.parquet").schema.to_arrow_schema()
+        self.assertTrue(schema_from_disk.field('uint8Col').type.equals(pyarrow.uint8()))
+        self.assertTrue(schema_from_disk.field('uint16Col').type.equals(pyarrow.uint16()))
+        self.assertTrue(schema_from_disk.field('uint32Col').type.equals(pyarrow.uint32()))
+
+        table_from_disk = read("data_from_pyarrow.parquet")
+        expected = new_table([
+            char_col("uint8Col", [255, 2, 0]),
+            char_col("uint16Col", [65535, 2, 0]),
+            long_col("uint32Col", [4294967295, 2, 0]),
+        ])
+        self.assert_table_equals(table_from_disk, expected)
 
 if __name__ == '__main__':
     unittest.main()

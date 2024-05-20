@@ -1141,6 +1141,7 @@ public class SessionState {
             if (!(caughtException instanceof StatusRuntimeException)) {
                 caughtException = null;
             }
+            queryPerformanceRecorder = null;
         }
 
         /**

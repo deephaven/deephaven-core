@@ -13,7 +13,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.vector.CharVectorColumnWrapper;
+import io.deephaven.engine.table.vectors.CharVectorColumnWrapper;
 import io.deephaven.vector.CharVector;
 import io.deephaven.vector.CharVectorDirect;
 import org.jetbrains.annotations.NotNull;

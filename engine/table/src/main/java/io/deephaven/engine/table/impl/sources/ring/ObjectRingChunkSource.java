@@ -10,22 +10,33 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;
 
+import java.lang.reflect.Array;
 import java.util.Objects;
 
 // Note: this is not being auto-generated ATM
-final class ObjectRingChunkSource<T> extends AbstractRingChunkSource<T, Object[], ObjectRingChunkSource<T>> {
+final class ObjectRingChunkSource<T> extends AbstractRingChunkSource<T, T[], ObjectRingChunkSource<T>> {
     public static <T> RingColumnSource<T> columnSource(Class<T> type, int capacity) {
+        if (type.isPrimitive()) {
+            throw new IllegalArgumentException();
+        }
         return new RingColumnSource<>(type, new ObjectRingChunkSource<>(type, capacity),
                 new ObjectRingChunkSource<>(type, capacity));
     }
 
     public static <T> RingColumnSource<T> columnSource(Class<T> type, Class<?> componentType, int capacity) {
+        if (type.isPrimitive()) {
+            throw new IllegalArgumentException();
+        }
         return new RingColumnSource<>(type, componentType, new ObjectRingChunkSource<>(type, capacity),
                 new ObjectRingChunkSource<>(type, capacity));
     }
 
-    public ObjectRingChunkSource(Class<T> type, int capacity) {
-        super(type, capacity);
+    private ObjectRingChunkSource(Class<T> type, int capacity) {
+        // In the general case, we can't know that Array.newInstance(Class<T>, ...) will result in T[]; for example,
+        // type=int.class (T=Integer) => int[] (not Integer[]). That said, we know that type is generic, and thus we
+        // know resulting array type is T[].
+        // noinspection unchecked
+        super((T[]) Array.newInstance(type, capacity));
     }
 
     @Override
@@ -42,8 +53,7 @@ final class ObjectRingChunkSource<T> extends AbstractRingChunkSource<T, Object[]
             throw new IllegalArgumentException(
                     String.format("Invalid key %d. available=[%d, %d]", key, firstKey(), lastKey()));
         }
-        // noinspection unchecked
-        return (T) ring[keyToRingIndex(key)];
+        return ring[keyToRingIndex(key)];
     }
 
     @Override
@@ -60,14 +70,12 @@ final class ObjectRingChunkSource<T> extends AbstractRingChunkSource<T, Object[]
 
         @Override
         protected void copyFromRing(int srcRingIx, int destOffset) {
-            // noinspection unchecked
-            dest.set(destOffset, (T) ring[srcRingIx]);
+            dest.set(destOffset, ring[srcRingIx]);
         }
 
         @Override
         protected void copyFromRing(int srcRingIx, int destOffset, int size) {
-            // noinspection unchecked
-            dest.copyFromTypedArray((T[]) ring, srcRingIx, destOffset, size);
+            dest.copyFromTypedArray(ring, srcRingIx, destOffset, size);
         }
 
         @Override

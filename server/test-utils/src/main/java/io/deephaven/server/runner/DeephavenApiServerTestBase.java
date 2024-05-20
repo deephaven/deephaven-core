@@ -53,6 +53,7 @@ public abstract class DeephavenApiServerTestBase {
             LogModule.class,
             NoConsoleSessionModule.class,
             ServerBuilderInProcessModule.class,
+            RpcServerStateInterceptor.Module.class,
             ExecutionContextUnitTestModule.class,
             ClientDefaultsModule.class,
             ObfuscatingErrorTransformerModule.class,
@@ -104,6 +105,9 @@ public abstract class DeephavenApiServerTestBase {
 
     @Inject
     Provider<ManagedChannelBuilder<?>> managedChannelBuilderProvider;
+
+    @Inject
+    RpcServerStateInterceptor serverStateInterceptor;
 
     @Before
     public void setUp() throws Exception {
@@ -177,6 +181,10 @@ public abstract class DeephavenApiServerTestBase {
 
     public ExecutionContext getExecutionContext() {
         return executionContext;
+    }
+
+    public RpcServerStateInterceptor serverStateInterceptor() {
+        return serverStateInterceptor;
     }
 
     /**

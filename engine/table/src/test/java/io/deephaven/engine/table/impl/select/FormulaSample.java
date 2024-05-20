@@ -90,7 +90,7 @@ public class FormulaSample extends io.deephaven.engine.table.impl.select.Formula
         this.__columnName = __columnName;
         II = __columnsToData.get("II");
         I = __columnsToData.get("I");
-        II_ = new io.deephaven.engine.table.impl.vector.LongVectorColumnWrapper(__columnsToData.get("II"), __rowSet);
+        II_ = new io.deephaven.engine.table.vectors.LongVectorColumnWrapper(__columnsToData.get("II"), __rowSet);
         q = (java.lang.Integer) __params[0].getValue();
         __lazyResultCache = __lazy ? new ConcurrentHashMap<>() : null;
     }
