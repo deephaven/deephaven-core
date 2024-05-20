@@ -504,6 +504,37 @@ def _parse_signature(fn: Callable) -> _ParsedSignature:
         p_sig.ret_annotation = _parse_return_annotation(t)
         return p_sig
 
+ARG_CONV_CODE_SNIPPET = """
+    converted_args = [param.arg_converter(arg) if param.arg_converter else arg
+                          for param, arg in zip(p_sig.params, args)]
+
+    # if the number of arguments is more than the number of parameters, treat the last parameter as a
+    # vararg and use its arg_converter to convert the rest of the arguments
+    if len(args) > len(p_sig.params):
+        arg_converter = p_sig.params[-1].arg_converter
+        converted_args.extend([arg_converter(arg) if arg_converter else arg for arg in args[len(converted_args):]])
+    ret = fn(*converted_args, **kwargs)
+"""
+
+NO_ARG_CONV_CODE_SNIPPET = """
+    ret = fn(*args, **kwargs)                
+"""
+
+ARRAY_RET_CODE_SNIPPET = """
+    return dtypes.array(ret_dtype, ret)
+"""
+
+SCALAR_RET_CODE_SNIPPET = """
+    return ret_converter(ret) if ret_converter else ret
+"""
+
+V_ARRAY_RET_CODE_SNIPPET = """
+        chunk_result[i] = dtypes.array(ret_dtype, ret)
+"""
+
+V_SCALAR_RET_CODE_SNIPPET = """
+        chunk_result[i] = ret_converter(ret) if ret_converter else ret
+"""
 
 def _udf_parser(fn: Callable):
     """A decorator that acts as a transparent translator for Python UDFs used in Deephaven query formulas between
@@ -542,81 +573,90 @@ def _udf_parser(fn: Callable):
             if not arg_conv_needed and not ret_converter and not return_array:
                 return fn
 
-            def _wrapper(*args, **kwargs):
-                if arg_conv_needed:
-                    converted_args = [param.arg_converter(arg) if param.arg_converter else arg
-                                      for param, arg in zip(p_sig.params, args)]
+            if arg_conv_needed:
+                conv_str = ARG_CONV_CODE_SNIPPET
+            else:
+                conv_str = NO_ARG_CONV_CODE_SNIPPET
 
-                    # if the number of arguments is more than the number of parameters, treat the last parameter as a
-                    # vararg and use its arg_converter to convert the rest of the arguments
-                    if len(args) > len(p_sig.params):
-                        arg_converter = p_sig.params[-1].arg_converter
-                        converted_args.extend([arg_converter(arg) if arg_converter else arg
-                                               for arg in args[len(converted_args):]])
-                else:
-                    converted_args = args
-                # kwargs are not converted because they are not used in the UDFs
-                ret = fn(*converted_args, **kwargs)
-                if return_array:
-                    return dtypes.array(ret_dtype, ret)
-                else:
-                    return ret_converter(ret) if ret_converter else ret
+            if return_array:
+                nonlocal ret_dtype
+                ret_str = ARRAY_RET_CODE_SNIPPET
+            else:
+                ret_str = SCALAR_RET_CODE_SNIPPET
 
-            return _wrapper
+            _wrapper_str = f"""
+def _wrapper(*args, **kwargs):                
+{conv_str}
+{ret_str}
+            """
+
+            # eval the wrapper code in the scope of the function
+            scope = {**globals(), **locals()}
+            exec(_wrapper_str, scope)
+            return scope["_wrapper"]
         else:  # for vectorization
             if encoded_arg_types and len(encoded_arg_types.split(",")) != len(p_sig.params):
                 raise ValueError(
                     f"The number of arguments doesn't match the function ({p_sig.fn.__name__}) signature. "
                     f"{len(encoded_arg_types.split(','))}, {p_sig.encoded}")
 
-            def _vectorization_wrapper(*args):
-                if args[0] <= 0:
-                    raise ValueError(
-                        f"The chunk size argument must be a positive integer for vectorized function ("
-                        f"{p_sig.fn.__name__}). {args[0]}")
 
-                chunk_size = args[0]
-                chunk_result = args[1]
-                if args[2:] and arg_conv_needed:  # if there are arguments
-                    vectorized_args = zip(*args[2:])
-                    for i in range(chunk_size):
-                        scalar_args = next(vectorized_args)
-                        converted_args = [param.arg_converter(arg) if param.arg_converter else arg
+            if len(p_sig.params) == 0:
+                chunk_str = ""
+                conv_str = """
+        ret = fn()
+                """
+            elif arg_conv_needed:
+                chunk_str = """
+    vectorized_args = zip(*args[2:])
+                """
+                conv_str = """
+        scalar_args = next(vectorized_args)
+        converted_args = [param.arg_converter(arg) if param.arg_converter else arg
                                           for param, arg in zip(p_sig.params, scalar_args)]
+        # if the number of arguments is more than the number of parameters, treat the last
+        # parameter as a vararg and use its arg_converter to convert the rest of the arguments
+        if len(args) > len(p_sig.params):
+            arg_converter = p_sig.params[-1].arg_converter
+            converted_args.extend([arg_converter(arg) if arg_converter else arg
+                                   for arg in scalar_args[len(converted_args):]])
+        ret = fn(*converted_args)
+                """
+            else:
+                chunk_str = """
+    vectorized_args = zip(*args[2:])
+                """
+                conv_str = """
+        ret = fn(*next(vectorized_args))
+                """
 
-                        # if the number of arguments is more than the number of parameters, treat the last
-                        # parameter as a vararg and use its arg_converter to convert the rest of the arguments
-                        if len(args) > len(p_sig.params):
-                            arg_converter = p_sig.params[-1].arg_converter
-                            converted_args.extend([arg_converter(arg) if arg_converter else arg
-                                                   for arg in scalar_args[len(converted_args):]])
-                        ret = fn(*converted_args)
-                        if return_array:
-                            chunk_result[i] = dtypes.array(ret_dtype, ret)
-                        else:
-                            chunk_result[i] = ret_converter(ret) if ret_converter else ret
-                else:  # no conversion needed or no arguments
-                    if args[2:]:
-                        vectorized_args = zip(*args[2:])
-                        for i in range(chunk_size):
-                            ret = fn(*next(vectorized_args))
-                            if return_array:
-                                chunk_result[i] = dtypes.array(ret_dtype, ret)
-                            else:
-                                chunk_result[i] = ret_converter(ret) if ret_converter else ret
-                    else:
-                        for i in range(chunk_size):
-                            ret = fn()
-                            if return_array:
-                                chunk_result[i] = dtypes.array(ret_dtype, ret)
-                            else:
-                                chunk_result[i] = ret_converter(ret) if ret_converter else ret
-                return chunk_result
+            if return_array:
+                nonlocal ret_dtype
+                ret_str = V_ARRAY_RET_CODE_SNIPPET
+            else:
+                ret_str = V_SCALAR_RET_CODE_SNIPPET
 
-            if test_vectorization:
-                global vectorized_count
-                vectorized_count += 1
-            return _vectorization_wrapper
+        _wrapper_str = f"""
+def _vectorization_wrapper(*args):
+    chunk_size = args[0]
+    chunk_result = args[1]
+    
+    {chunk_str}         
+    for i in range(chunk_size):
+{conv_str}
+    {ret_str}
+    return chunk_result
+        """
+
+        # eval the wrapper code in the scope of the function
+        scope = {**globals(), **locals()}
+        exec(_wrapper_str, scope)
+
+        if test_vectorization:
+            global vectorized_count
+            vectorized_count += 1
+
+        return scope["_vectorization_wrapper"]
 
     _udf_decorator.j_name = ret_dtype.j_name
     real_ret_dtype = _BUILDABLE_ARRAY_DTYPE_MAP.get(ret_dtype, dtypes.PyObject) if return_array else ret_dtype
