@@ -60,7 +60,7 @@ public class ToInstantPageFromInt96<ATTR extends Any> implements ToPage<ATTR, lo
      */
     public static void setReferenceTimeZone(@NotNull final String timeZone) {
         offset = DateTimeUtils.nanosOfDay(DateTimeUtils.parseInstant("1970-01-01T00:00:00 " + timeZone),
-                ZoneId.of("UTC"));
+                ZoneId.of("UTC"), false);
     }
 
     @Override
