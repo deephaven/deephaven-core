@@ -7,6 +7,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.util.ShiftData;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
@@ -71,7 +72,7 @@ import java.util.Collection;
  * </p>
  */
 public abstract class SparseArrayColumnSource<T>
-        extends AbstractDeferredGroupingColumnSource<T>
+        extends AbstractColumnSource<T>
         implements FillUnordered<Values>, WritableColumnSource<T>, InMemoryColumnSource, PossiblyImmutableColumnSource,
         WritableSourceWithPrepareForParallelPopulation, ShiftData.RowSetShiftCallback {
 

@@ -21,8 +21,8 @@ import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 import static io.deephaven.replication.ReplicationUtils.*;
 
 /**
- * Code generation for basic RegionedColumnSource implementations as well as well as the primary region interfaces for
- * some primitive types.
+ * Code generation for basic RegionedColumnSource implementations as well as the primary region interfaces for some
+ * primitive types.
  */
 public class ReplicateRegionsAndRegionedSources {
     private static final String TASK = "replicateRegionsAndRegionedSources";

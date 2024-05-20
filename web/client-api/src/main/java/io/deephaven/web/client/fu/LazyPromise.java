@@ -34,7 +34,6 @@ public class LazyPromise<T> implements PromiseLike<T> {
     private final JsArray<JsConsumer<T>> onResolved = new JsArray<>();
     private final JsArray<JsConsumer<Object>> onRejected = new JsArray<>();
 
-    private boolean cancelled;
     private boolean isScheduled;
 
     @JsIgnore
@@ -70,19 +69,11 @@ public class LazyPromise<T> implements PromiseLike<T> {
      *         (see {@link #asPromise(int)} and {@link #timeout(int)}
      */
     public final Promise<T> asPromise() {
-        return new Promise<>(((resolve, reject) -> {
-            if (spyReject(reject)) {
-                spyResolve(resolve);
-            }
-        }));
+        return new Promise<>(this::spyResult);
     }
 
     public final CancellablePromise<T> asPromise(JsRunnable cancel) {
-        return CancellablePromise.from((resolve, reject) -> {
-            if (spyReject(reject)) {
-                spyResolve(resolve);
-            }
-        }, cancel.beforeMe(this::cancel));
+        return CancellablePromise.from(this::spyResult, cancel.beforeMe(this::cancel));
     }
 
     private void cancel() {
@@ -93,11 +84,9 @@ public class LazyPromise<T> implements PromiseLike<T> {
             // already failed
             JsLog.debug("Cancelled promise after it failed with", failed, this);
         } else {
-            // not resolved yet
+            // not resolved yet, cancellation is treated as a failure with the cancellation message as the reason
             fail(CANCELLATION_MESSAGE);
         }
-        // we set this last because fail will drop the message if it's true when running.
-        cancelled = true;
     }
 
     public final <V> CancellablePromise<V> asPromise(JsFunction<T, V> mapper, JsRunnable cancel) {
@@ -117,32 +106,16 @@ public class LazyPromise<T> implements PromiseLike<T> {
                 }, cancel.andThen(this::cancel));
     }
 
-    protected boolean spyReject(RejectCallbackFn reject) {
-        if (cancelled) {
-            if (failed == null) {
-                failed = CANCELLATION_MESSAGE;
-            }
-        }
-        if (failed != null) {
-            runLater(() -> reject.onInvoke(failed));
-            return false;
-        }
+    private void spyResult(ResolveCallbackFn<T> resolve, RejectCallbackFn reject) {
+        onResolved.push(resolve::onInvoke);
         onRejected.push(reject::onInvoke);
-        return true;
-    }
-
-    protected void spyResolve(ResolveCallbackFn<T> resolve) {
-        // we ignore cancellation here because we are only called if spyReject returns true,
-        // and it will return false when cancelled.
-        if (failed == null && succeeded != null) {
-            runLater(() -> resolve.onInvoke(succeeded));
-        } else {
-            onResolved.push(resolve::onInvoke);
+        if (isFulfilled()) {
+            this.flushCallbacks();
         }
     }
 
     public boolean isUnresolved() {
-        return failed == null && succeeded == null;
+        return !isFailure() && !isSuccess();
     }
 
     public boolean isResolved() {
@@ -157,32 +130,28 @@ public class LazyPromise<T> implements PromiseLike<T> {
         return failed == null && isSuccess;
     }
 
+    public boolean isFulfilled() {
+        return !isUnresolved();
+    }
+
     public void fail(Object reason) {
-        if (cancelled) {
-            // already cancelled...
-            JsLog.debug("Got failure after cancellation", this, reason);
-        } else if (isSuccess) {
-            // Perhaps downgrade to a runtime exception, or allowing failure after success
-            // (though that gets into dicey race conditions I want no part of).
-            throw new AssertionError("Trying to fail after succeeding");
+        if (isFulfilled()) {
+            JsLog.debug("Got failure after fulfilled", this, reason, this.succeeded, failed);
         } else {
             this.failed = reason;
+            runLater(this::flushCallbacks);
         }
-        runLater(this::flushCallbacks);
     }
 
     public void succeed(T value) {
-        if (cancelled) {
-            JsLog.debug("Got success after cancellation", this, value);
-        } else if (failed != null) {
-            // Perhaps downgrade to a runtime exception...
-            throw new AssertionError("Trying to succeed after failing with message: " + failed);
+        if (isFulfilled()) {
+            JsLog.debug("Got success after fulfilled", this, value, this.succeeded, failed);
         } else {
             this.isSuccess = true;
             // just storing value is not good enough, since we can be resolved w/ null
             this.succeeded = value;
+            runLater(this::flushCallbacks);
         }
-        runLater(this::flushCallbacks);
     }
 
     private void flushCallbacks() {
@@ -196,14 +165,14 @@ public class LazyPromise<T> implements PromiseLike<T> {
             isScheduled = false;
             if (isFailure()) {
                 while (onRejected.length > 0) {
-                    onRejected.pop().apply(failed);
+                    onRejected.shift().apply(failed);
                 }
             } else if (isSuccess()) {
                 while (onResolved.length > 0) {
-                    onResolved.pop().apply(succeeded);
+                    onResolved.shift().apply(succeeded);
                 }
             } else {
-                assert isUnresolved();
+                throw new IllegalStateException("flushCallbacks called when promise is not fulfilled");
             }
             onResolved.length = 0;
             onRejected.length = 0;
@@ -212,7 +181,7 @@ public class LazyPromise<T> implements PromiseLike<T> {
 
     @Override
     public void onSuccess(JsConsumer<T> success) {
-        if (isFailure() || cancelled) {
+        if (isFailure()) {
             return;
         }
         onResolved.push(success);
@@ -223,7 +192,7 @@ public class LazyPromise<T> implements PromiseLike<T> {
 
     @Override
     public void onFailure(JsConsumer<Object> failure) {
-        if (isSuccess() || cancelled) {
+        if (isSuccess()) {
             return;
         }
         onRejected.push(failure);
@@ -250,7 +219,7 @@ public class LazyPromise<T> implements PromiseLike<T> {
 
     public LazyPromise<T> timeout(int wait) {
         final double pid = DomGlobal.setTimeout(a -> {
-            if (!isSuccess && failed == null && !cancelled) {
+            if (!isSuccess && failed == null) {
                 fail("Timeout after " + wait + "ms");
             }
         }, wait);

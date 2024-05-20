@@ -6,11 +6,9 @@ package io.deephaven.extensions.arrow;
 import io.deephaven.base.ArrayUtil;
 import io.deephaven.base.reference.WeakCleanupReference;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ResettableContext;
 import io.deephaven.engine.util.file.FileHandle;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
-import io.deephaven.engine.util.reference.CleanupReferenceProcessorInstance;
 import io.deephaven.extensions.arrow.sources.ArrowByteColumnSource;
 import io.deephaven.extensions.arrow.sources.ArrowCharColumnSource;
 import io.deephaven.extensions.arrow.sources.ArrowInstantColumnSource;
@@ -55,6 +53,7 @@ import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.datastructures.SizeException;
+import io.deephaven.util.reference.CleanupReferenceProcessor;
 import org.apache.arrow.compression.CommonsCompressionFactory;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.RecordBatch;
@@ -441,7 +440,7 @@ public class ArrowWrapperTools {
         private final ArrowFileReader reader;
 
         private ReaderCleanup(final Shareable shareable) {
-            super(shareable, CleanupReferenceProcessorInstance.DEFAULT.getReferenceQueue());
+            super(shareable, CleanupReferenceProcessor.getDefault().getReferenceQueue());
             this.reader = shareable.getReader();
         }
 

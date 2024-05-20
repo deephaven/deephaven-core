@@ -11,7 +11,6 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.sources.regioned.*;
 import io.deephaven.util.type.NamedImplementation;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * Per-TableLocation, per-column key, state, and factory object.
@@ -42,17 +41,14 @@ public interface ColumnLocation extends StringUtils.StringKeyedObject, NamedImpl
     boolean exists();
 
     /**
-     * <p>
-     * Get the metadata object stored with this column, or null if no such data exists.
-     * <p>
-     * This is typically a value to range map (grouping metadata). The value to range map, if non-null, is a map from
-     * unique (boxed) column values for this location to the associated ranges in which they occur. Ranges are either
-     * 2-element int[]s, or 2-element long[]s.
+     * Get this column location cast to the specified type
      *
-     * @return The metadata stored with this column, or null if no such data exists
+     * @return {@code this}, with the appropriate cast applied
      */
-    @Nullable
-    <METADATA_TYPE> METADATA_TYPE getMetadata(@NotNull ColumnDefinition<?> columnDefinition);
+    default <CL extends ColumnLocation> CL cast() {
+        // noinspection unchecked
+        return (CL) this;
+    }
 
     // ------------------------------------------------------------------------------------------------------------------
     // ColumnRegion Factories

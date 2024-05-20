@@ -75,6 +75,12 @@ class LongConstantColumn implements SelectColumn {
     }
 
     @Override
+    public Class<?> getReturnedComponentType() {
+        // long does not have a component type
+        return null;
+    }
+
+    @Override
     public final List<String> getColumnArrays() {
         return Collections.emptyList();
     }

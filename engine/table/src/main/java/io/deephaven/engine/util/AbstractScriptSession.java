@@ -26,6 +26,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.function.Function;
@@ -41,24 +42,33 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
     private static final Path CLASS_CACHE_LOCATION = CacheDir.get().resolve("script-session-classes");
 
-    public static void createScriptCache() {
-        final File classCacheDirectory = CLASS_CACHE_LOCATION.toFile();
-        createOrClearDirectory(classCacheDirectory);
+    protected static Path newClassCacheLocation() {
+        // TODO(deephaven-core#1713): Introduce instance-id concept
+        final UUID scriptCacheId = UuidCreator.getRandomBased();
+        final Path directory = CLASS_CACHE_LOCATION.resolve(UuidCreator.toString(scriptCacheId));
+        createOrClearDirectory(directory);
+        return directory;
     }
 
-    private static void createOrClearDirectory(final File directory) {
-        if (directory.exists()) {
-            FileUtils.deleteRecursively(directory);
+    public static void createScriptCache() {
+        createOrClearDirectory(CLASS_CACHE_LOCATION);
+    }
+
+    private static void createOrClearDirectory(final Path directory) {
+        if (Files.exists(directory)) {
+            FileUtils.deleteRecursively(directory.toFile());
         }
-        if (!directory.mkdirs()) {
+        try {
+            Files.createDirectories(directory);
+        } catch (IOException e) {
             throw new UncheckedDeephavenException(
-                    "Failed to create class cache directory " + directory.getAbsolutePath());
+                    "Failed to create class cache directory " + directory.toAbsolutePath(), e);
         }
     }
 
     private final ObjectTypeLookup objectTypeLookup;
     private final Listener changeListener;
-    private final File classCacheDirectory;
+    protected final File classCacheDirectory;
     private final ScriptSessionQueryScope queryScope;
 
     protected final ExecutionContext executionContext;
@@ -66,21 +76,28 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     private S lastSnapshot;
 
     protected AbstractScriptSession(
-            UpdateGraph updateGraph,
+            final UpdateGraph updateGraph,
             final OperationInitializer operationInitializer,
-            ObjectTypeLookup objectTypeLookup,
-            @Nullable Listener changeListener) {
+            final ObjectTypeLookup objectTypeLookup,
+            @Nullable final Listener changeListener) {
+        this(updateGraph, operationInitializer, objectTypeLookup, changeListener, newClassCacheLocation().toFile(),
+                Thread.currentThread().getContextClassLoader());
+    }
+
+    protected AbstractScriptSession(
+            final UpdateGraph updateGraph,
+            final OperationInitializer operationInitializer,
+            final ObjectTypeLookup objectTypeLookup,
+            @Nullable final Listener changeListener,
+            @NotNull final File classCacheDirectory,
+            @NotNull final ClassLoader parentClassLoader) {
         this.objectTypeLookup = objectTypeLookup;
         this.changeListener = changeListener;
 
-        // TODO(deephaven-core#1713): Introduce instance-id concept
-        final UUID scriptCacheId = UuidCreator.getRandomBased();
-        classCacheDirectory = CLASS_CACHE_LOCATION.resolve(UuidCreator.toString(scriptCacheId)).toFile();
-        createOrClearDirectory(classCacheDirectory);
+        this.classCacheDirectory = classCacheDirectory;
 
         queryScope = new ScriptSessionQueryScope();
-        final QueryCompiler compilerContext =
-                QueryCompiler.create(classCacheDirectory, Thread.currentThread().getContextClassLoader());
+        final QueryCompiler compilerContext = QueryCompilerImpl.create(classCacheDirectory, parentClassLoader);
 
         executionContext = ExecutionContext.newBuilder()
                 .markSystemic()

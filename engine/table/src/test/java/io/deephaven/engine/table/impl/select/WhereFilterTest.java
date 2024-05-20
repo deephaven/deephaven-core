@@ -27,6 +27,7 @@ public class WhereFilterTest extends TestCase {
     private static final ColumnName BAR = ColumnName.of("Bar");
     private static final ColumnName BAZ = ColumnName.of("Baz");
     private static final Literal V42 = Literal.of(42L);
+    private static final Literal HELLO = Literal.of("Hello");
 
     public void testFooIsTrue() {
         regular(Filter.isTrue(FOO), MatchFilter.class, "Foo in [true]");
@@ -70,20 +71,28 @@ public class WhereFilterTest extends TestCase {
     public void testEq() {
         regular(FilterComparison.eq(FOO, V42), MatchFilter.class, "Foo in [42]");
         regular(FilterComparison.eq(V42, FOO), MatchFilter.class, "Foo in [42]");
+        regular(FilterComparison.eq(FOO, HELLO), MatchFilter.class, "Foo in [Hello]");
+        regular(FilterComparison.eq(HELLO, FOO), MatchFilter.class, "Foo in [Hello]");
         regular(FilterComparison.eq(FOO, BAR), ConditionFilter.class, "Foo == Bar");
 
         inverse(FilterComparison.eq(FOO, V42), MatchFilter.class, "Foo not in [42]");
         inverse(FilterComparison.eq(V42, FOO), MatchFilter.class, "Foo not in [42]");
+        inverse(FilterComparison.eq(FOO, HELLO), MatchFilter.class, "Foo not in [Hello]");
+        inverse(FilterComparison.eq(HELLO, FOO), MatchFilter.class, "Foo not in [Hello]");
         inverse(FilterComparison.eq(FOO, BAR), ConditionFilter.class, "Foo != Bar");
     }
 
     public void testNeq() {
         regular(FilterComparison.neq(FOO, V42), MatchFilter.class, "Foo not in [42]");
         regular(FilterComparison.neq(V42, FOO), MatchFilter.class, "Foo not in [42]");
+        regular(FilterComparison.neq(FOO, HELLO), MatchFilter.class, "Foo not in [Hello]");
+        regular(FilterComparison.neq(HELLO, FOO), MatchFilter.class, "Foo not in [Hello]");
         regular(FilterComparison.neq(FOO, BAR), ConditionFilter.class, "Foo != Bar");
 
         inverse(FilterComparison.neq(FOO, V42), MatchFilter.class, "Foo in [42]");
         inverse(FilterComparison.neq(V42, FOO), MatchFilter.class, "Foo in [42]");
+        inverse(FilterComparison.neq(FOO, HELLO), MatchFilter.class, "Foo in [Hello]");
+        inverse(FilterComparison.neq(HELLO, FOO), MatchFilter.class, "Foo in [Hello]");
         inverse(FilterComparison.neq(FOO, BAR), ConditionFilter.class, "Foo == Bar");
     }
 
@@ -92,12 +101,20 @@ public class WhereFilterTest extends TestCase {
                 "RangeConditionFilter(Foo greater than 42)");
         regular(FilterComparison.gt(V42, FOO), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo less than 42)");
+        regular(FilterComparison.gt(FOO, HELLO), RangeConditionFilter.class,
+                "RangeConditionFilter(Foo greater than \"Hello\")");
+        regular(FilterComparison.gt(HELLO, FOO), RangeConditionFilter.class,
+                "RangeConditionFilter(Foo less than \"Hello\")");
         regular(FilterComparison.gt(FOO, BAR), ConditionFilter.class, "Foo > Bar");
 
         inverse(FilterComparison.gt(FOO, V42), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo less than or equal to 42)");
         inverse(FilterComparison.gt(V42, FOO), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo greater than or equal to 42)");
+        inverse(FilterComparison.gt(FOO, HELLO), RangeConditionFilter.class,
+                "RangeConditionFilter(Foo less than or equal to \"Hello\")");
+        inverse(FilterComparison.gt(HELLO, FOO), RangeConditionFilter.class,
+                "RangeConditionFilter(Foo greater than or equal to \"Hello\")");
         inverse(FilterComparison.gt(FOO, BAR), ConditionFilter.class, "Foo <= Bar");
     }
 
@@ -106,12 +123,20 @@ public class WhereFilterTest extends TestCase {
                 "RangeConditionFilter(Foo greater than or equal to 42)");
         regular(FilterComparison.geq(V42, FOO), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo less than or equal to 42)");
+        regular(FilterComparison.geq(FOO, HELLO), RangeConditionFilter.class,
+                "RangeConditionFilter(Foo greater than or equal to \"Hello\")");
+        regular(FilterComparison.geq(HELLO, FOO), RangeConditionFilter.class,
+                "RangeConditionFilter(Foo less than or equal to \"Hello\")");
         regular(FilterComparison.geq(FOO, BAR), ConditionFilter.class, "Foo >= Bar");
 
         inverse(FilterComparison.geq(FOO, V42), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo less than 42)");
         inverse(FilterComparison.geq(V42, FOO), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo greater than 42)");
+        inverse(FilterComparison.geq(FOO, HELLO), RangeConditionFilter.class,
+                "RangeConditionFilter(Foo less than \"Hello\")");
+        inverse(FilterComparison.geq(HELLO, FOO), RangeConditionFilter.class,
+                "RangeConditionFilter(Foo greater than \"Hello\")");
         inverse(FilterComparison.geq(FOO, BAR), ConditionFilter.class, "Foo < Bar");
     }
 
@@ -120,12 +145,20 @@ public class WhereFilterTest extends TestCase {
                 "RangeConditionFilter(Foo less than 42)");
         regular(FilterComparison.lt(V42, FOO), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo greater than 42)");
+        regular(FilterComparison.lt(FOO, HELLO), RangeConditionFilter.class,
+                "RangeConditionFilter(Foo less than \"Hello\")");
+        regular(FilterComparison.lt(HELLO, FOO), RangeConditionFilter.class,
+                "RangeConditionFilter(Foo greater than \"Hello\")");
         regular(FilterComparison.lt(FOO, BAR), ConditionFilter.class, "Foo < Bar");
 
         inverse(FilterComparison.lt(FOO, V42), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo greater than or equal to 42)");
         inverse(FilterComparison.lt(V42, FOO), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo less than or equal to 42)");
+        inverse(FilterComparison.lt(FOO, HELLO), RangeConditionFilter.class,
+                "RangeConditionFilter(Foo greater than or equal to \"Hello\")");
+        inverse(FilterComparison.lt(HELLO, FOO), RangeConditionFilter.class,
+                "RangeConditionFilter(Foo less than or equal to \"Hello\")");
         inverse(FilterComparison.lt(FOO, BAR), ConditionFilter.class, "Foo >= Bar");
     }
 
@@ -134,12 +167,20 @@ public class WhereFilterTest extends TestCase {
                 "RangeConditionFilter(Foo less than or equal to 42)");
         regular(FilterComparison.leq(V42, FOO), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo greater than or equal to 42)");
+        regular(FilterComparison.leq(FOO, HELLO), RangeConditionFilter.class,
+                "RangeConditionFilter(Foo less than or equal to \"Hello\")");
+        regular(FilterComparison.leq(HELLO, FOO), RangeConditionFilter.class,
+                "RangeConditionFilter(Foo greater than or equal to \"Hello\")");
         regular(FilterComparison.leq(FOO, BAR), ConditionFilter.class, "Foo <= Bar");
 
         inverse(FilterComparison.leq(FOO, V42), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo greater than 42)");
         inverse(FilterComparison.leq(V42, FOO), RangeConditionFilter.class,
                 "RangeConditionFilter(Foo less than 42)");
+        inverse(FilterComparison.leq(FOO, HELLO), RangeConditionFilter.class,
+                "RangeConditionFilter(Foo greater than \"Hello\")");
+        inverse(FilterComparison.leq(HELLO, FOO), RangeConditionFilter.class,
+                "RangeConditionFilter(Foo less than \"Hello\")");
         inverse(FilterComparison.leq(FOO, BAR), ConditionFilter.class, "Foo > Bar");
     }
 

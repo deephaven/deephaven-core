@@ -19,11 +19,10 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public class FunctionalColumn<S, D> implements SelectColumn {
@@ -37,13 +36,19 @@ public class FunctionalColumn<S, D> implements SelectColumn {
     @NotNull
     private final Class<D> destDataType;
     @NotNull
-    private final BiFunction<Long, S, D> function;
-    @NotNull
+    private final RowKeyAndValueFunction<S, D> function;
+    @Nullable
     private final Class<?> componentType;
 
     private ColumnSource<S> sourceColumnSource;
 
-    public FunctionalColumn(@NotNull String sourceName,
+    @FunctionalInterface
+    public interface RowKeyAndValueFunction<S, D> {
+        D apply(long rowKey, S value);
+    }
+
+    public FunctionalColumn(
+            @NotNull String sourceName,
             @NotNull Class<S> sourceDataType,
             @NotNull String destName,
             @NotNull Class<D> destDataType,
@@ -51,34 +56,37 @@ public class FunctionalColumn<S, D> implements SelectColumn {
         this(sourceName, sourceDataType, destName, destDataType, (l, v) -> function.apply(v));
     }
 
-    public FunctionalColumn(@NotNull String sourceName,
+    public FunctionalColumn(
+            @NotNull String sourceName,
             @NotNull Class<S> sourceDataType,
             @NotNull String destName,
             @NotNull Class<D> destDataType,
-            @NotNull Class<?> componentType,
+            @Nullable Class<?> componentType,
             @NotNull Function<S, D> function) {
         this(sourceName, sourceDataType, destName, destDataType, componentType, (l, v) -> function.apply(v));
     }
 
-    public FunctionalColumn(@NotNull String sourceName,
+    public FunctionalColumn(
+            @NotNull String sourceName,
             @NotNull Class<S> sourceDataType,
             @NotNull String destName,
             @NotNull Class<D> destDataType,
-            @NotNull BiFunction<Long, S, D> function) {
-        this(sourceName, sourceDataType, destName, destDataType, Object.class, function);
+            @NotNull RowKeyAndValueFunction<S, D> function) {
+        this(sourceName, sourceDataType, destName, destDataType, null, function);
     }
 
-    public FunctionalColumn(@NotNull String sourceName,
+    public FunctionalColumn(
+            @NotNull String sourceName,
             @NotNull Class<S> sourceDataType,
             @NotNull String destName,
             @NotNull Class<D> destDataType,
-            @NotNull Class<?> componentType,
-            @NotNull BiFunction<Long, S, D> function) {
+            @Nullable Class<?> componentType,
+            @NotNull RowKeyAndValueFunction<S, D> function) {
         this.sourceName = NameValidator.validateColumnName(sourceName);
         this.sourceDataType = Require.neqNull(sourceDataType, "sourceDataType");
         this.destName = NameValidator.validateColumnName(destName);
         this.destDataType = Require.neqNull(destDataType, "destDataType");
-        this.componentType = Require.neqNull(componentType, "componentType");
+        this.componentType = componentType;
         this.function = function;
         Require.gtZero(destName.length(), "destName.length()");
     }
@@ -106,7 +114,7 @@ public class FunctionalColumn<S, D> implements SelectColumn {
     }
 
     @Override
-    public List<String> initDef(Map<String, ColumnDefinition<?>> columnDefinitionMap) {
+    public List<String> initDef(@NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap) {
         // noinspection unchecked
         final ColumnDefinition<S> sourceColumnDefinition = (ColumnDefinition<S>) columnDefinitionMap.get(sourceName);
         if (sourceColumnDefinition == null) {
@@ -126,27 +134,33 @@ public class FunctionalColumn<S, D> implements SelectColumn {
     }
 
     @Override
+    public Class<?> getReturnedComponentType() {
+        return componentType;
+    }
+
+    @Override
     public List<String> getColumns() {
-        return Collections.singletonList(sourceName);
+        return List.of(sourceName);
     }
 
     @Override
     public List<String> getColumnArrays() {
-        return Collections.emptyList();
+        return List.of();
     }
 
     @NotNull
     @Override
     public ColumnSource<D> getDataView() {
         return new ViewColumnSource<>(destDataType, componentType, new Formula(null) {
+
             @Override
-            public Object getPrev(long rowKey) {
-                return function.apply(rowKey, sourceColumnSource.getPrev(rowKey));
+            public Object get(final long rowKey) {
+                return function.apply(rowKey, sourceColumnSource.get(rowKey));
             }
 
             @Override
-            public Object get(long rowKey) {
-                return function.apply(rowKey, sourceColumnSource.get(rowKey));
+            public Object getPrev(final long rowKey) {
+                return function.apply(rowKey, sourceColumnSource.getPrev(rowKey));
             }
 
             @Override
@@ -155,13 +169,13 @@ public class FunctionalColumn<S, D> implements SelectColumn {
             }
 
             @Override
-            public FillContext makeFillContext(int chunkCapacity) {
-                // Not sure this is right.
+            public FillContext makeFillContext(final int chunkCapacity) {
                 return new FunctionalColumnFillContext(getChunkType());
             }
 
             @Override
-            public void fillChunk(@NotNull FillContext fillContext,
+            public void fillChunk(
+                    @NotNull final FillContext fillContext,
                     @NotNull final WritableChunk<? super Values> destination,
                     @NotNull final RowSequence rowSequence) {
                 final FunctionalColumnFillContext ctx = (FunctionalColumnFillContext) fillContext;
@@ -169,7 +183,8 @@ public class FunctionalColumn<S, D> implements SelectColumn {
             }
 
             @Override
-            public void fillPrevChunk(@NotNull FillContext fillContext,
+            public void fillPrevChunk(
+                    @NotNull final FillContext fillContext,
                     @NotNull final WritableChunk<? super Values> destination,
                     @NotNull final RowSequence rowSequence) {
                 final FunctionalColumnFillContext ctx = (FunctionalColumnFillContext) fillContext;
@@ -179,9 +194,10 @@ public class FunctionalColumn<S, D> implements SelectColumn {
     }
 
     private static class FunctionalColumnFillContext implements Formula.FillContext {
-        final ChunkFiller chunkFiller;
 
-        FunctionalColumnFillContext(final ChunkType chunkType) {
+        private final ChunkFiller chunkFiller;
+
+        private FunctionalColumnFillContext(final ChunkType chunkType) {
             chunkFiller = ChunkFiller.forChunkType(chunkType);
         }
     }
@@ -189,7 +205,6 @@ public class FunctionalColumn<S, D> implements SelectColumn {
     @NotNull
     @Override
     public ColumnSource<?> getLazyView() {
-        // TODO: memoize
         return getDataView();
     }
 

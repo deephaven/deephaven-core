@@ -77,6 +77,11 @@ public class BooleanFloatColumnTupleSource extends AbstractTupleSource<ByteFloat
         );
     }
 
+    @Override
+    public final int tupleLength() {
+        return 2;
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public final <ELEMENT_TYPE> void exportElement(@NotNull final ByteFloatTuple tuple, final int elementIndex, @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationRowKey) {
@@ -103,6 +108,18 @@ public class BooleanFloatColumnTupleSource extends AbstractTupleSource<ByteFloat
     }
 
     @Override
+    public final void exportAllTo(final Object @NotNull [] dest, @NotNull final ByteFloatTuple tuple) {
+        dest[0] = BooleanUtils.byteAsBoolean(tuple.getFirstElement());
+        dest[1] = TypeUtils.box(tuple.getSecondElement());
+    }
+
+    @Override
+    public final void exportAllTo(final Object @NotNull [] dest, @NotNull final ByteFloatTuple tuple, final int @NotNull [] map) {
+        dest[map[0]] = BooleanUtils.byteAsBoolean(tuple.getFirstElement());
+        dest[map[1]] = TypeUtils.box(tuple.getSecondElement());
+    }
+
+    @Override
     public final Object exportElementReinterpreted(@NotNull final ByteFloatTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
             return BooleanUtils.byteAsBoolean(tuple.getFirstElement());
@@ -121,6 +138,18 @@ public class BooleanFloatColumnTupleSource extends AbstractTupleSource<ByteFloat
             destinationObjectChunk.set(ii, new ByteFloatTuple(BooleanUtils.booleanAsByte(chunk1.get(ii)), chunk2.get(ii)));
         }
         destination.setSize(chunkSize);
+    }
+
+    @Override
+    public final void exportAllReinterpretedTo(final Object @NotNull [] dest, @NotNull final ByteFloatTuple tuple) {
+        dest[0] = BooleanUtils.byteAsBoolean(tuple.getFirstElement());
+        dest[1] = TypeUtils.box(tuple.getSecondElement());
+    }
+
+    @Override
+    public final void exportAllReinterpretedTo(final Object @NotNull [] dest, @NotNull final ByteFloatTuple tuple, final int @NotNull [] map) {
+        dest[map[0]] = BooleanUtils.byteAsBoolean(tuple.getFirstElement());
+        dest[map[1]] = TypeUtils.box(tuple.getSecondElement());
     }
 
     /** {@link TwoColumnTupleSourceFactory} for instances of {@link BooleanFloatColumnTupleSource}. **/

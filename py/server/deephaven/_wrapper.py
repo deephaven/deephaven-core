@@ -12,8 +12,9 @@ import importlib
 import inspect
 import pkgutil
 import sys
+import threading
 from abc import ABC, abstractmethod
-from typing import Set, Union, Optional, Any
+from typing import Set, Union, Optional, Any, List
 
 import jpy
 
@@ -23,6 +24,7 @@ _has_all_wrappers_imported = False
 
 JLivePyObjectWrapper = jpy.get_type('io.deephaven.server.plugin.python.LivePyObjectWrapper')
 
+_recursive_import_lock = threading.Lock()
 
 def _recursive_import(package_path: str) -> None:
     """ Recursively import every module in a package. """
@@ -102,21 +104,18 @@ def _is_direct_initialisable(cls) -> bool:
     return False
 
 
-def _lookup_wrapped_class(j_obj: jpy.JType) -> Optional[type]:
-    """ Returns the wrapper class for the specified Java object. """
+def _lookup_wrapped_class(j_obj: jpy.JType) -> List[JObjectWrapper]:
+    """ Returns the wrapper classes for the specified Java object. """
     # load every module in the deephaven package so that all the wrapper classes are loaded and available to wrap
     # the Java objects returned by calling resolve()
     global _has_all_wrappers_imported
     if not _has_all_wrappers_imported:
-        _recursive_import(__package__.partition(".")[0])
-        _has_all_wrappers_imported = True
+        with _recursive_import_lock:
+            if not _has_all_wrappers_imported:
+                _recursive_import(__package__.partition(".")[0])
+                _has_all_wrappers_imported = True
 
-    for wc in _di_wrapper_classes:
-        j_clz = wc.j_object_type
-        if j_clz.jclass.isInstance(j_obj):
-            return wc
-
-    return None
+    return [wc for wc in _di_wrapper_classes if wc.j_object_type.jclass.isInstance(j_obj)]
 
 
 def javaify(obj: Any) -> Optional[jpy.JType]:
@@ -162,15 +161,43 @@ def pythonify(j_obj: Any) -> Optional[Any]:
     return wrap_j_object(j_obj)
 
 
-def wrap_j_object(j_obj: jpy.JType) -> Union[JObjectWrapper, jpy.JType]:
-    """ Wraps the specified Java object as an instance of a custom wrapper class if one is available, otherwise returns
-    the raw Java object. """
+def _wrap_with_subclass(j_obj: jpy.JType, cls: type) -> Optional[JObjectWrapper]:
+    """ Returns a wrapper instance for the specified Java object by trying the entire subclasses' hierarchy. The
+    function employs a Depth First Search strategy to try the most specific subclass first. If no matching wrapper class is found,
+    returns None.
+
+    The premises for this function are as follows:
+    - The subclasses all share the same class attribute `j_object_type` (guaranteed by subclassing JObjectWrapper)
+    - The subclasses are all direct initialisable (guaranteed by subclassing JObjectWrapper)
+    - The subclasses are all distinct from each other and check for their uniqueness in the initializer (__init__), e.g.
+      InputTable checks for the presence of the INPUT_TABLE_ATTRIBUTE attribute on the Java object.
+    """
+    for subclass in cls.__subclasses__():
+        try:
+            if (wrapper := _wrap_with_subclass(j_obj, subclass)) is not None:
+                return wrapper
+            return subclass(j_obj)
+        except:
+            continue
+    return None
+
+
+def wrap_j_object(j_obj: jpy.JType) -> Optional[Union[JObjectWrapper, jpy.JType]]:
+    """ Wraps the specified Java object as an instance of the most specific custom wrapper class if one is available,
+    otherwise returns the raw Java object. """
     if j_obj is None:
         return None
 
-    wc = _lookup_wrapped_class(j_obj)
+    wcs = _lookup_wrapped_class(j_obj)
+    for wc in wcs:
+        try:
+            if (wrapper:= _wrap_with_subclass(j_obj, wc)) is not None:
+                return wrapper
+            return wc(j_obj)
+        except:
+            continue
 
-    return wc(j_obj) if wc else j_obj
+    return j_obj
 
 
 def unwrap(obj: Any) -> Union[jpy.JType, Any]:

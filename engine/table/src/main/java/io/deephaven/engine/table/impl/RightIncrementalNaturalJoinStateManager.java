@@ -5,17 +5,16 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
 public abstract class RightIncrementalNaturalJoinStateManager extends StaticNaturalJoinStateManager
         implements IncrementalNaturalJoinStateManager {
+
     protected RightIncrementalNaturalJoinStateManager(ColumnSource<?>[] keySourcesForErrorMessages) {
         super(keySourcesForErrorMessages);
     }
@@ -23,16 +22,16 @@ public abstract class RightIncrementalNaturalJoinStateManager extends StaticNatu
     public abstract void buildFromLeftSide(final Table leftTable, ColumnSource<?>[] leftSources,
             final InitialBuildContext initialBuildContext);
 
-    public abstract void convertLeftGroups(int groupingSize, InitialBuildContext initialBuildContext,
-            ObjectArraySource<WritableRowSet> rowSetSource);
+    public abstract void convertLeftDataIndex(int groupingSize, InitialBuildContext initialBuildContext,
+            ColumnSource<RowSet> rowSetSource);
 
     public abstract void addRightSide(RowSequence rightIndex, ColumnSource<?>[] rightSources);
 
     public abstract WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable, boolean exactMatch,
             InitialBuildContext initialBuildContext, JoinControl.RedirectionType redirectionType);
 
-    public abstract WritableRowRedirection buildRowRedirectionFromHashSlotGrouped(QueryTable leftTable,
-            ObjectArraySource<WritableRowSet> rowSetSource, int groupingSize, boolean exactMatch,
+    public abstract WritableRowRedirection buildRowRedirectionFromHashSlotIndexed(QueryTable leftTable,
+            ColumnSource<RowSet> rowSetSource, int groupingSize, boolean exactMatch,
             InitialBuildContext initialBuildContext, JoinControl.RedirectionType redirectionType);
 
     // modification probes

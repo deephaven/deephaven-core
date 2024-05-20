@@ -14,6 +14,7 @@ import io.deephaven.extensions.barrage.ColumnConversionMode;
 import io.deephaven.extensions.barrage.util.DefensiveDrainable;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
@@ -27,12 +28,17 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.PrimitiveIterator;
 
 public interface ChunkInputStreamGenerator extends SafeCloseable {
+    long MS_PER_DAY = 24 * 60 * 60 * 1000L;
+    long MIN_LOCAL_DATE_VALUE = QueryConstants.MIN_LONG / MS_PER_DAY;
+    long MAX_LOCAL_DATE_VALUE = QueryConstants.MAX_LONG / MS_PER_DAY;
 
     static <T> ChunkInputStreamGenerator makeInputStreamGenerator(
             final ChunkType chunkType,
@@ -40,6 +46,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
             final Class<?> componentType,
             final Chunk<Values> chunk,
             final long rowOffset) {
+        // TODO (deephaven-core#5453): pass in ArrowType to enable ser/deser of single java class in multiple formats
         switch (chunkType) {
             case Boolean:
                 throw new UnsupportedOperationException("Booleans are reinterpreted as bytes");
@@ -144,6 +151,33 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                 if (type == Short.class) {
                     return ShortChunkInputStreamGenerator.convertBoxed(chunk.asObjectChunk(), rowOffset);
                 }
+                if (type == LocalDate.class) {
+                    return LongChunkInputStreamGenerator.<LocalDate>convertWithTransform(chunk.asObjectChunk(),
+                            rowOffset, date -> {
+                                if (date == null) {
+                                    return QueryConstants.NULL_LONG;
+                                }
+                                final long epochDay = date.toEpochDay();
+                                if (epochDay < MIN_LOCAL_DATE_VALUE || epochDay > MAX_LOCAL_DATE_VALUE) {
+                                    throw new IllegalArgumentException("Date out of range: " + date + " (" + epochDay
+                                            + " not in [" + MIN_LOCAL_DATE_VALUE + ", " + MAX_LOCAL_DATE_VALUE + "])");
+                                }
+                                return epochDay * MS_PER_DAY;
+                            });
+                }
+                if (type == LocalTime.class) {
+                    return LongChunkInputStreamGenerator.<LocalTime>convertWithTransform(chunk.asObjectChunk(),
+                            rowOffset, time -> {
+                                if (time == null) {
+                                    return QueryConstants.NULL_LONG;
+                                }
+                                final long nanoOfDay = time.toNanoOfDay();
+                                if (nanoOfDay < 0) {
+                                    throw new IllegalArgumentException("Time out of range: " + time);
+                                }
+                                return nanoOfDay;
+                            });
+                }
                 // TODO (core#936): support column conversion modes
 
                 return new VarBinaryChunkInputStreamGenerator<>(chunk.asObjectChunk(), rowOffset,
@@ -173,6 +207,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
             final PrimitiveIterator.OfLong bufferInfoIter,
             final DataInput is,
             final WritableChunk<Values> outChunk, final int outOffset, final int totalRows) throws IOException {
+        // TODO (deephaven-core#5453): pass in ArrowType to enable ser/deser of single java class in multiple formats
         switch (chunkType) {
             case Boolean:
                 throw new UnsupportedOperationException("Booleans are reinterpreted as bytes");
@@ -200,7 +235,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                 }
                 return LongChunkInputStreamGenerator.extractChunkFromInputStreamWithConversion(
                         Long.BYTES, options,
-                        (long v) -> (v * factor),
+                        (long v) -> v == QueryConstants.NULL_LONG ? QueryConstants.NULL_LONG : (v * factor),
                         fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
             case Float:
                 return FloatChunkInputStreamGenerator.extractChunkFromInputStream(
@@ -254,13 +289,25 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                 }
                 if (type == Instant.class) {
                     return FixedWidthChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
-                            Long.BYTES, options, io -> DateTimeUtils.epochNanosToInstant(io.readLong()),
+                            Long.BYTES, options, io -> {
+                                final long value = io.readLong();
+                                if (value == QueryConstants.NULL_LONG) {
+                                    return null;
+                                }
+                                return DateTimeUtils.epochNanosToInstant(value * factor);
+                            },
                             fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
                 }
                 if (type == ZonedDateTime.class) {
                     return FixedWidthChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
-                            Long.BYTES, options,
-                            io -> DateTimeUtils.epochNanosToZonedDateTime(io.readLong(), DateTimeUtils.timeZone()),
+                            Long.BYTES, options, io -> {
+                                final long value = io.readLong();
+                                if (value == QueryConstants.NULL_LONG) {
+                                    return null;
+                                }
+                                return DateTimeUtils.epochNanosToZonedDateTime(
+                                        value * factor, DateTimeUtils.timeZone());
+                            },
                             fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
                 }
                 if (type == Byte.class) {
@@ -296,6 +343,20 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                 if (type == Short.class) {
                     return FixedWidthChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
                             Short.BYTES, options, io -> TypeUtils.box(io.readShort()),
+                            fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
+                }
+                if (type == LocalDate.class) {
+                    return LongChunkInputStreamGenerator.extractChunkFromInputStreamWithTransform(
+                            Long.BYTES, options,
+                            value -> value == QueryConstants.NULL_LONG
+                                    ? null
+                                    : LocalDate.ofEpochDay(value / MS_PER_DAY),
+                            fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
+                }
+                if (type == LocalTime.class) {
+                    return LongChunkInputStreamGenerator.extractChunkFromInputStreamWithTransform(
+                            Long.BYTES, options,
+                            value -> value == QueryConstants.NULL_LONG ? null : LocalTime.ofNanoOfDay(value),
                             fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
                 }
                 if (type == String.class ||
@@ -343,14 +404,6 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
         public FieldNodeInfo(final org.apache.arrow.flatbuf.FieldNode node) {
             this(LongSizedDataStructure.intSize("FieldNodeInfo", node.length()),
                     LongSizedDataStructure.intSize("FieldNodeInfo", node.nullCount()));
-        }
-    }
-
-    final class BufferInfo {
-        public final long length;
-
-        public BufferInfo(final long length) {
-            this.length = length;
         }
     }
 

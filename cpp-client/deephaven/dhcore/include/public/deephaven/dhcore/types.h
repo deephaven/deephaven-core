@@ -12,6 +12,8 @@
 
 namespace deephaven::dhcore {
 struct ElementTypeId {
+  ElementTypeId() = delete;
+
   // We don't use "enum class" here because we can't figure out how to get it to work right with Cython.
   // TODO(kosak): we are going to have to expand LIST to be a true nested type.
   enum Enum {
@@ -390,6 +392,14 @@ private:
   int64_t nanos_ = 0;
 
   friend std::ostream &operator<<(std::ostream &s, const DateTime &o);
+
+  friend bool operator==(const DateTime &lhs, const DateTime &rhs) {
+    return lhs.nanos_ == rhs.nanos_;
+  }
+
+  friend bool operator!=(const DateTime &lhs, const DateTime &rhs) {
+    return !(lhs == rhs);
+  }
 };
 }  // namespace deephaven::dhcore
 

@@ -4,7 +4,7 @@ plugins {
 }
 
 dependencies {
-    implementation project(':java-client-flight-dagger')
+    implementation project(':java-client-flight')
     implementation project(':java-client-example-utilities')
 
     implementation "io.deephaven.barrage:barrage-format:0.6.0"
@@ -50,6 +50,7 @@ application.applicationDistribution.into('bin') {
     from(createApplication('do-put-table', 'io.deephaven.client.examples.DoPutTable'))
 
     from(createApplication('add-to-input-table', 'io.deephaven.client.examples.AddToInputTable'))
+    from(createApplication('add-to-blink-table', 'io.deephaven.client.examples.AddToBlinkTable'))
     from(createApplication('kv-input-table', 'io.deephaven.client.examples.KeyValueInputTable'))
 
     from(createApplication('get-table', 'io.deephaven.client.examples.GetDirectTable'))

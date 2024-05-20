@@ -1,3 +1,6 @@
+import java.nio.charset.StandardCharsets
+import java.security.MessageDigest
+
 plugins {
     id 'com.bmuschko.docker-remote-api'
     id 'io.deephaven.project.register'
@@ -19,8 +22,9 @@ dependencies {
     implementation project(':log-factory')
 
     testImplementation project(':engine-test-utils')
-    testImplementation TestTools.projectDependency(project, 'engine-time')
 
+    // Needed for CalendarInit
+    testRuntimeOnly TestTools.projectDependency(project, 'engine-time')
     testRuntimeOnly project(':log-to-slf4j')
     // add configs, and some runtime dependencies to test classpaths
     testRuntimeOnly project(':configs')
@@ -58,6 +62,12 @@ def runInDocker = { String name, String sourcePath, List<String> command, Closur
             from(test.runtimeClasspath) {
                 into 'classpath'
             }
+            from("${sourcePath}/../client") {
+                include 'setup.py'
+                include 'pydeephaven/**'
+                include 'README.md'
+                into 'python/client'
+            }
 
             // Unpack the config contents for now, since we don't seem to read the configs from inside a jar.
             // This does not add a task dependency, but we already put :configs in the testRuntime classpath,
@@ -94,6 +104,8 @@ def runInDocker = { String name, String sourcePath, List<String> command, Closur
             // copy in the contents that we do expect to change as the project updates
             copyFile 'python', '/python'
             copyFile 'classpath', '/classpath'
+            runCommand '''pip3 install /python/client'''
+
         }
         entrypoint = command
 
@@ -103,8 +115,17 @@ def runInDocker = { String name, String sourcePath, List<String> command, Closur
     }
 }
 
-// Using Integrations/docker-compose.yml, this will start redpanda and wait until it is running before letting tests proceed.
+// Using Integrations/docker-compose.yml, this will start all the containers and wait until the exposed ports are ready
 dockerCompose {
+    // To workaround errors encountered when dockerCompose auto-inherits the projectName (it uses "-" and "_" next to
+    // each other, which violates docker naming conventions), we can explicitly set a projectName.
+    // https://github.com/avast/gradle-docker-compose-plugin/issues/393
+    // https://github.com/avast/gradle-docker-compose-plugin/issues/372#issuecomment-1403264410
+    // Additionally, this preserves the prefix logic that dockerCompose chooses to use based on the absolutePath of the
+    // project. This may be beneficial in workflows where the user has checked out multiple repositories and wants to
+    // ensure docker names do not collide.
+    def projectSafePrefix = MessageDigest.getInstance("MD5").digest(project.projectDir.absolutePath.toString().getBytes(StandardCharsets.UTF_8)).encodeHex().toString()
+    projectName = "${projectSafePrefix}_${project.name.replace('.', '_')}"
     waitForTcpPortsTimeout = Duration.ofMinutes(2)
 }
 

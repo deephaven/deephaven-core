@@ -12,10 +12,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.hierarchical.TreeTable;
-import io.deephaven.engine.table.impl.AbsoluteSortColumnConventions;
-import io.deephaven.engine.table.impl.NoSuchColumnException;
-import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.TableAdapter;
+import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
@@ -284,16 +281,24 @@ abstract class BaseNodeOperationsRecorder<TYPE> {
             // custom columns in the future. For now, we've plumbed absolute column value sorting via naming
             // conventions. Note that we simply avoid telling the client about these columns when sending schemas, so we
             // have no need to drop them post-sort.
-            return sortColumns.stream()
+
+            final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor =
+                    QueryCompilerRequestProcessor.batch();
+
+            final SelectColumn[] columns = sortColumns.stream()
                     .map(sc -> sc.column().name())
                     .filter(AbsoluteSortColumnConventions::isAbsoluteColumnName)
                     .map(cn -> {
                         final String baseColumnName = AbsoluteSortColumnConventions.absoluteColumnNameToBaseName(cn);
                         final Selectable selectable = AbsoluteSortColumnConventions.makeSelectable(cn, baseColumnName);
                         final SelectColumn selectColumn = SelectColumn.of(selectable);
-                        selectColumn.initDef(Map.of(baseColumnName, getDefinition().getColumn(baseColumnName)));
+                        selectColumn.initDef(Map.of(baseColumnName, getDefinition().getColumn(baseColumnName)),
+                                compilationProcessor);
                         return selectColumn;
-                    });
+                    }).toArray(SelectColumn[]::new);
+
+            compilationProcessor.compile();
+            return Stream.of(columns);
         }
     }
 }

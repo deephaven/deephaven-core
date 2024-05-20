@@ -14,6 +14,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.sources.*;
@@ -35,7 +36,7 @@ import java.util.Arrays;
  *
  * If your size is greater than the maximum capacity of an array, prefer {@link Immutable2DObjectArraySource}.
  */
-public class ImmutableObjectArraySource<T> extends AbstractDeferredGroupingColumnSource<T>
+public class ImmutableObjectArraySource<T> extends AbstractColumnSource<T>
         implements ImmutableColumnSourceGetDefaults.ForObject<T>, WritableColumnSource<T>, FillUnordered<Values>,
         InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource, WritableSourceWithPrepareForParallelPopulation
 /* MIXIN_IMPLS */ {

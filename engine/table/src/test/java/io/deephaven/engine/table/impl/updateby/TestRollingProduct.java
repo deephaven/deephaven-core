@@ -10,12 +10,10 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.util.TableDiff;
@@ -149,9 +147,7 @@ public class TestRollingProduct extends BaseUpdateByTest {
         final QueryTable t = getTable(tableSize, random, columnInfos);
 
         if (!isRefreshing && includeGroups) {
-            final AbstractColumnSource groupingSource = (AbstractColumnSource) t.getColumnSource("Sym");
-            final Map<String, RowSet> gtr = groupingSource.getValuesMapping(t.getRowSet());
-            groupingSource.setGroupToRange(gtr);
+            DataIndexer.getOrCreateDataIndex(t, "Sym");
         }
 
         t.setRefreshing(isRefreshing);

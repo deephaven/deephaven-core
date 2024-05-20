@@ -35,8 +35,8 @@ import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.util.TableTools.stringCol;
 import static io.deephaven.engine.testutil.junit4.EngineCleanup.printTableUpdates;
 import static io.deephaven.util.QueryConstants.NULL_INT;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 @Category(OutOfBandTest.class)
 public class TestForwardFill extends BaseUpdateByTest {

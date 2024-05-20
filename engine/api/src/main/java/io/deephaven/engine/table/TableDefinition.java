@@ -221,22 +221,6 @@ public class TableDefinition implements LogOutputAppendable {
         return getColumnStream().filter(ColumnDefinition::isPartitioning).collect(Collectors.toList());
     }
 
-    /**
-     * @return A list of {@link ColumnDefinition column definitions} for all {@link ColumnDefinition.ColumnType#Grouping
-     *         grouping} columns in the same relative order as the column definitions list
-     */
-    public List<ColumnDefinition<?>> getGroupingColumns() {
-        return getColumnStream().filter(ColumnDefinition::isGrouping).collect(Collectors.toList());
-    }
-
-    /**
-     * @return An array containing the names of all {@link ColumnDefinition.ColumnType#Grouping grouping} columns in the
-     *         same relative order as the column definitions list
-     */
-    public String[] getGroupingColumnNamesArray() {
-        return getColumnStream().filter(ColumnDefinition::isGrouping).map(ColumnDefinition::getName)
-                .toArray(String[]::new);
-    }
 
     /**
      * @return The column names as a list in the same order as {@link #getColumns()}

@@ -25,7 +25,7 @@ final class FloatRingChunkSource extends AbstractRingChunkSource<Float, float[],
     }
 
     public FloatRingChunkSource(int capacity) {
-        super(float.class, capacity);
+        super(new float[capacity]);
     }
 
     @Override

@@ -58,8 +58,14 @@ setup(
     keywords='Deephaven Development',
     python_requires='>=3.8',
     install_requires=[
-        'jpy>=0.14.0',
-        "java-utilities",
+        'jpy>=0.16.0',
+        'java-utilities',
         f"deephaven-core[autocomplete]=={_version}",
-    ]
+        'click>=8.1.7',
+    ],
+    entry_points={
+        'console_scripts': [
+            'deephaven = deephaven_server.cli:cli',
+        ],
+    },
 )

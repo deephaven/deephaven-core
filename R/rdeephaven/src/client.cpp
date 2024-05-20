@@ -545,7 +545,7 @@ public:
 
         std::shared_ptr<arrow::RecordBatchReader> record_batch_reader = arrow::RecordBatchReader::Make(empty_record_batches).ValueOrDie();
         ArrowArrayStream* stream_ptr = new ArrowArrayStream();
-        arrow::ExportRecordBatchReader(record_batch_reader, stream_ptr);
+        deephaven::client::utility::OkOrThrow(DEEPHAVEN_LOCATION_EXPR(arrow::ExportRecordBatchReader(record_batch_reader, stream_ptr)));
 
         // XPtr is needed here to ensure Rcpp can properly handle type casting, as it does not like raw pointers
         return Rcpp::XPtr<ArrowArrayStream>(stream_ptr, true);
@@ -709,7 +709,7 @@ public:
         std::unique_ptr<arrow::flight::FlightMetadataReader> fmr;
 
         auto ticket = internal_tbl_hdl_mngr.NewTicket();
-        auto fd = deephaven::client::utility::ConvertTicketToFlightDescriptor(ticket);
+        auto fd = deephaven::client::utility::ArrowUtil::ConvertTicketToFlightDescriptor(ticket);
 
         deephaven::client::utility::OkOrThrow(DEEPHAVEN_LOCATION_EXPR(wrapper.FlightClient()->DoPut(options, fd, schema, &fsw, &fmr)));
         while(true) {

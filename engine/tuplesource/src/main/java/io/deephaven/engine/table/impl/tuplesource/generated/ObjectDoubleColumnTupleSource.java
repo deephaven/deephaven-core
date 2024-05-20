@@ -76,6 +76,11 @@ public class ObjectDoubleColumnTupleSource extends AbstractTupleSource<ObjectDou
         );
     }
 
+    @Override
+    public final int tupleLength() {
+        return 2;
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public final <ELEMENT_TYPE> void exportElement(@NotNull final ObjectDoubleTuple tuple, final int elementIndex, @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationRowKey) {
@@ -102,6 +107,18 @@ public class ObjectDoubleColumnTupleSource extends AbstractTupleSource<ObjectDou
     }
 
     @Override
+    public final void exportAllTo(final Object @NotNull [] dest, @NotNull final ObjectDoubleTuple tuple) {
+        dest[0] = tuple.getFirstElement();
+        dest[1] = TypeUtils.box(tuple.getSecondElement());
+    }
+
+    @Override
+    public final void exportAllTo(final Object @NotNull [] dest, @NotNull final ObjectDoubleTuple tuple, final int @NotNull [] map) {
+        dest[map[0]] = tuple.getFirstElement();
+        dest[map[1]] = TypeUtils.box(tuple.getSecondElement());
+    }
+
+    @Override
     public final Object exportElementReinterpreted(@NotNull final ObjectDoubleTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
             return tuple.getFirstElement();
@@ -120,6 +137,18 @@ public class ObjectDoubleColumnTupleSource extends AbstractTupleSource<ObjectDou
             destinationObjectChunk.set(ii, new ObjectDoubleTuple(chunk1.get(ii), chunk2.get(ii)));
         }
         destination.setSize(chunkSize);
+    }
+
+    @Override
+    public final void exportAllReinterpretedTo(final Object @NotNull [] dest, @NotNull final ObjectDoubleTuple tuple) {
+        dest[0] = tuple.getFirstElement();
+        dest[1] = TypeUtils.box(tuple.getSecondElement());
+    }
+
+    @Override
+    public final void exportAllReinterpretedTo(final Object @NotNull [] dest, @NotNull final ObjectDoubleTuple tuple, final int @NotNull [] map) {
+        dest[map[0]] = tuple.getFirstElement();
+        dest[map[1]] = TypeUtils.box(tuple.getSecondElement());
     }
 
     /** {@link TwoColumnTupleSourceFactory} for instances of {@link ObjectDoubleColumnTupleSource}. **/

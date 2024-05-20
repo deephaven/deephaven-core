@@ -14,6 +14,8 @@ dependencies {
     Classpaths.inheritArrow(project, 'arrow-vector', 'api')
     Classpaths.inheritAutoService(project)
 
+    Classpaths.inheritImmutables(project)
+
     Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)
     testImplementation 'org.junit.jupiter:junit-jupiter'

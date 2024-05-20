@@ -6,8 +6,8 @@ set(CMAKE_CXX_STANDARD 17)
 # for CMAKE_INSTALL_{dir}
 include(GNUInstallDirs)
 
-find_package(Arrow REQUIRED)
-find_package(ArrowFlight REQUIRED HINTS ${Arrow_DIR})
+find_package(Arrow CONFIG REQUIRED)
+find_package(ArrowFlight CONFIG REQUIRED HINTS ${Arrow_DIR})
 find_package(Immer REQUIRED)
 find_package(Protobuf CONFIG REQUIRED)
 find_package(gRPC CONFIG REQUIRED)
@@ -22,7 +22,6 @@ set(ALL_FILES
     src/impl/table_handle_impl.cc
     src/impl/table_handle_manager_impl.cc
     src/impl/update_by_operation_impl.cc
-
     include/private/deephaven/client/impl/aggregate_impl.h
     include/private/deephaven/client/impl/client_impl.h
     include/private/deephaven/client/impl/table_handle_impl.h
@@ -30,6 +29,8 @@ set(ALL_FILES
     include/private/deephaven/client/impl/update_by_operation_impl.h
     include/private/deephaven/client/impl/util.h
 
+    src/arrowutil/arrow_client_table.cc
+    include/private/deephaven/client/arrowutil/arrow_client_table.h
     include/private/deephaven/client/arrowutil/arrow_column_source.h
     include/private/deephaven/client/arrowutil/arrow_value_converter.h
     include/private/deephaven/client/arrowutil/arrow_visitors.h
@@ -38,7 +39,6 @@ set(ALL_FILES
     src/client.cc
     src/flight.cc
     src/update_by.cc
-
     include/public/deephaven/client/client.h
     include/public/deephaven/client/client_options.h
     include/public/deephaven/client/flight.h
@@ -97,26 +97,35 @@ set(ALL_FILES
     proto/deephaven/proto/ticket.pb.h
 )
 
-add_library(dhclient ${ALL_FILES})
-# In order to make a shared library suitable for Cython.
-set_property(TARGET dhclient PROPERTY POSITION_INDEPENDENT_CODE ON)
+add_library(dhclient SHARED ${ALL_FILES})
 
 # This is so deephaven::client works both when using the installed CMake config
 # and when using this project as a CMake subdirectory of your own project.
 add_library(deephaven::client ALIAS dhclient)
-target_compile_options(dhclient PRIVATE -Wall -Werror -Wno-deprecated-declarations)
+
+set_property(TARGET dhclient PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+if (LINUX)
+    target_compile_options(dhclient PRIVATE -Wall -Werror -Wno-deprecated-declarations)
+endif()
+
+if (WIN32)
+    set_property(TARGET dhclient PROPERTY WINDOWS_EXPORT_ALL_SYMBOLS ON)
+    # /Wall is a bit too chatty so we stick with /W3
+    # /bigobj needed because ticking/immer_table_state.cc compiles to something too large apparently
+    target_compile_options(dhclient PRIVATE /W3 /bigobj)
+endif()
 
 target_include_directories(dhclient PRIVATE include/private)
 target_include_directories(dhclient PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/public>)
-
 # Protos and flatbuf are doing their own thing.
 target_include_directories(dhclient PRIVATE "./proto")
 target_include_directories(dhclient PRIVATE "./flatbuf")
 
-target_link_libraries(dhclient PUBLIC dhcore)
+target_link_libraries(dhclient PUBLIC deephaven::dhcore)
 
-target_link_libraries(dhclient PUBLIC arrow_flight_static)
-target_link_libraries(dhclient PUBLIC arrow_static)
+target_link_libraries(dhclient PUBLIC ArrowFlight::arrow_flight_shared)
+target_link_libraries(dhclient PUBLIC Arrow::arrow_shared)
 target_link_libraries(dhclient PUBLIC immer)
 target_link_libraries(dhclient PUBLIC protobuf::libprotobuf)
 target_link_libraries(dhclient PUBLIC gRPC::grpc++)

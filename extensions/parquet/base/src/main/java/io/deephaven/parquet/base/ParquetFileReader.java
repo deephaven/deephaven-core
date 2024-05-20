@@ -3,21 +3,24 @@
 //
 package io.deephaven.parquet.base;
 
+import io.deephaven.util.channel.CachedChannelProvider;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.apache.parquet.format.*;
 import org.apache.parquet.format.ColumnOrder;
 import org.apache.parquet.format.Type;
 import org.apache.parquet.schema.*;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
+import static io.deephaven.parquet.base.ParquetUtils.MAGIC;
 import static io.deephaven.base.FileUtils.convertToURI;
 
 /**
@@ -26,8 +29,6 @@ import static io.deephaven.base.FileUtils.convertToURI;
  */
 public class ParquetFileReader {
     private static final int FOOTER_LENGTH_SIZE = 4;
-    private static final String MAGIC_STR = "PAR1";
-    static final byte[] MAGIC = MAGIC_STR.getBytes(StandardCharsets.US_ASCII);
     public static final String FILE_URI_SCHEME = "file";
 
     public final FileMetaData fileMetaData;
@@ -40,25 +41,51 @@ public class ParquetFileReader {
     private final MessageType type;
 
     /**
-     * Create a new ParquetFileReader for the provided source.
+     * Make a {@link ParquetFileReader} for the supplied {@link File}. Wraps {@link IOException} as
+     * {@link UncheckedIOException}.
      *
-     * @param source The source path or URI for the parquet file or the parquet metadata file
+     * @param parquetFile The parquet file or the parquet metadata file
      * @param channelsProvider The {@link SeekableChannelsProvider} to use for reading the file
+     * @return The new {@link ParquetFileReader}
      */
-    public ParquetFileReader(final String source, final SeekableChannelsProvider channelsProvider)
-            throws IOException {
-        this(convertToURI(source, false), channelsProvider);
+    public static ParquetFileReader create(
+            @NotNull final File parquetFile,
+            @NotNull final SeekableChannelsProvider channelsProvider) {
+        try {
+            return new ParquetFileReader(convertToURI(parquetFile, false), channelsProvider);
+        } catch (final IOException e) {
+            throw new UncheckedIOException("Failed to create Parquet file reader: " + parquetFile, e);
+        }
+    }
+
+    /**
+     * Make a {@link ParquetFileReader} for the supplied {@link URI}. Wraps {@link IOException} as
+     * {@link UncheckedIOException}.
+     *
+     * @param parquetFileURI The URI for the parquet file or the parquet metadata file
+     * @param channelsProvider The {@link SeekableChannelsProvider} to use for reading the file
+     * @return The new {@link ParquetFileReader}
+     */
+    public static ParquetFileReader create(
+            @NotNull final URI parquetFileURI,
+            @NotNull final SeekableChannelsProvider channelsProvider) {
+        try {
+            return new ParquetFileReader(parquetFileURI, channelsProvider);
+        } catch (final IOException e) {
+            throw new UncheckedIOException("Failed to create Parquet file reader: " + parquetFileURI, e);
+        }
     }
 
     /**
      * Create a new ParquetFileReader for the provided source.
      *
      * @param parquetFileURI The URI for the parquet file or the parquet metadata file
-     * @param channelsProvider The {@link SeekableChannelsProvider} to use for reading the file
+     * @param provider The {@link SeekableChannelsProvider} to use for reading the file
      */
-    public ParquetFileReader(final URI parquetFileURI, final SeekableChannelsProvider channelsProvider)
-            throws IOException {
-        this.channelsProvider = channelsProvider;
+    private ParquetFileReader(
+            @NotNull final URI parquetFileURI,
+            @NotNull final SeekableChannelsProvider provider) throws IOException {
+        this.channelsProvider = CachedChannelProvider.create(provider, 1 << 7);
         if (!parquetFileURI.getRawPath().endsWith(".parquet") && FILE_URI_SCHEME.equals(parquetFileURI.getScheme())) {
             // Construct a new file URI for the parent directory
             rootURI = convertToURI(new File(parquetFileURI).getParentFile(), true);
@@ -67,7 +94,7 @@ public class ParquetFileReader {
             rootURI = parquetFileURI;
         }
         try (
-                final SeekableChannelContext context = channelsProvider.makeContext();
+                final SeekableChannelContext context = channelsProvider.makeSingleUseContext();
                 final SeekableByteChannel ch = channelsProvider.getReadChannel(context, parquetFileURI)) {
             positionToFileMetadata(parquetFileURI, ch);
             try (final InputStream in = channelsProvider.getInputStream(ch)) {
@@ -197,7 +224,7 @@ public class ParquetFileReader {
 
     /**
      * Create a {@link RowGroupReader} object for provided row group number
-     * 
+     *
      * @param version The "version" string from deephaven specific parquet metadata, or null if it's not present.
      */
     public RowGroupReader getRowGroup(final int groupNumber, final String version) {
@@ -433,7 +460,7 @@ public class ParquetFileReader {
 
     /**
      * Helper method to determine if a logical type is adjusted to UTC.
-     * 
+     *
      * @param logicalType the logical type to check
      * @return true if the logical type is a timestamp adjusted to UTC, false otherwise
      */

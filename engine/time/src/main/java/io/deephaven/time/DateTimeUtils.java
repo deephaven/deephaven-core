@@ -4081,6 +4081,11 @@ public class DateTimeUtils {
      */
     @ScriptApi
     public static long parseEpochNanos(@NotNull final String s) {
+        // noinspection ConstantConditions
+        if (s == null) {
+            throw new DateTimeParseException("Cannot parse epoch nanos (null): " + s);
+        }
+
         try {
             if (LONG_PATTERN.matcher(s).matches()) {
                 return epochAutoToEpochNanos(Long.parseLong(s));
@@ -4132,6 +4137,11 @@ public class DateTimeUtils {
     @ScriptApi
     @NotNull
     public static Instant parseInstant(@NotNull final String s) {
+        // noinspection ConstantConditions
+        if (s == null) {
+            throw new DateTimeParseException("Cannot parse instant (null): " + s);
+        }
+
         try {
             if (LONG_PATTERN.matcher(s).matches()) {
                 final long nanos = epochAutoToEpochNanos(Long.parseLong(s));

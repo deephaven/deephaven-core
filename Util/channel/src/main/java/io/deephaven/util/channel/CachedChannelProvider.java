@@ -19,6 +19,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * {@link SeekableChannelsProvider Channel provider} that will cache a bounded number of unused channels.
@@ -57,7 +58,15 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     private final RAPriQueue<PerPathPool> releasePriority =
             new RAPriQueue<>(8, PerPathPool.RAPQ_ADAPTER, PerPathPool.class);
 
-    public CachedChannelProvider(@NotNull final SeekableChannelsProvider wrappedProvider,
+    public static CachedChannelProvider create(@NotNull final SeekableChannelsProvider wrappedProvider,
+            final int maximumPooledCount) {
+        if (wrappedProvider instanceof CachedChannelProvider) {
+            throw new IllegalArgumentException("Cannot wrap a CachedChannelProvider in another CachedChannelProvider");
+        }
+        return new CachedChannelProvider(wrappedProvider, maximumPooledCount);
+    }
+
+    private CachedChannelProvider(@NotNull final SeekableChannelsProvider wrappedProvider,
             final int maximumPooledCount) {
         this.wrappedProvider = wrappedProvider;
         this.maximumPooledCount = Require.gtZero(maximumPooledCount, "maximumPooledCount");
@@ -107,6 +116,16 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
                 ? new CachedChannel(wrappedProvider.getWriteChannel(path, append), channelType, pathKey)
                 : result.position(append ? result.size() : 0); // The seek isn't really necessary for append; will be at
                                                                // end no matter what.
+    }
+
+    @Override
+    public Stream<URI> list(@NotNull final URI directory) throws IOException {
+        return wrappedProvider.list(directory);
+    }
+
+    @Override
+    public Stream<URI> walk(@NotNull final URI directory) throws IOException {
+        return wrappedProvider.walk(directory);
     }
 
     @Nullable

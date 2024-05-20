@@ -8,15 +8,19 @@ import io.deephaven.qst.table.Graphviz;
 import io.deephaven.qst.table.TableHeader;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TicketTable;
+import io.deephaven.qst.type.Type;
+import org.apache.calcite.runtime.CalciteContextException;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 public class SqlAdapterTest {
 
@@ -44,6 +48,14 @@ public class SqlAdapterTest {
     private static final TableHeader TIME1 = TableHeader.of(ColumnHeader.ofInstant("Time1"));
 
     private static final TableHeader TIME2 = TableHeader.of(ColumnHeader.ofInstant("Time2"));
+
+    interface MyCustomType {
+
+    }
+
+    private static final TableHeader CUSTOM = TableHeader.of(
+            ColumnHeader.of("Foo", Type.longType()),
+            ColumnHeader.of("Bar", Type.ofCustom(MyCustomType.class)));
 
     @Test
     void sql1() throws IOException, URISyntaxException {
@@ -270,8 +282,44 @@ public class SqlAdapterTest {
         check(scope, 35);
     }
 
+    @Test
+    void sql36() throws IOException, URISyntaxException {
+        final Scope scope = scope("custom", CUSTOM);
+        check(scope, 36);
+    }
+
+    @Test
+    void sql37() throws IOException, URISyntaxException {
+        final Scope scope = scope("custom", CUSTOM);
+        check(scope, 37);
+    }
+
+    @Test
+    void sql38() throws IOException, URISyntaxException {
+        final Scope scope = scope("custom", CUSTOM);
+        check(scope, 38);
+    }
+
+    @Test
+    void sql39() throws IOException, URISyntaxException {
+        final Scope scope = scope("custom", CUSTOM);
+        checkError(scope, 39, CalciteContextException.class,
+                "Cannot apply '+' to arguments of type '<JAVATYPE(CLASS IO.DEEPHAVEN.SQL.TYPEADAPTER$SQLTODOCUSTOMTYPE)> + <INTEGER>'");
+    }
+
     private static void check(Scope scope, int index) throws IOException, URISyntaxException {
         check(scope, String.format("query-%d.sql", index), String.format("qst-%d.dot", index));
+    }
+
+    private static void checkError(Scope scope, int index, Class<? extends Throwable> clazz, String messagePart)
+            throws IOException, URISyntaxException {
+        try {
+            SqlAdapter.parseSql(read(String.format("query-%d.sql", index)), scope);
+            failBecauseExceptionWasNotThrown(clazz);
+        } catch (Throwable t) {
+            assertThat(t).isInstanceOf(clazz);
+            assertThat(t).hasMessageContaining(messagePart);
+        }
     }
 
     private static void check(Scope scope, String queryResource, String expectedResource)
@@ -302,9 +350,13 @@ public class SqlAdapterTest {
         return ScopeStaticImpl.empty();
     }
 
+    private static TicketTable scan(String name) {
+        return TicketTable.of(("scan/" + name).getBytes(StandardCharsets.UTF_8));
+    }
+
     private static Scope scope(String name, TableHeader header) {
         return ScopeStaticImpl.builder()
-                .addTables(TableInformation.of(List.of(name), header, TicketTable.of("scan/" + name)))
+                .addTables(TableInformation.of(List.of(name), header, scan(name)))
                 .build();
     }
 
@@ -313,8 +365,8 @@ public class SqlAdapterTest {
             String name2, TableHeader header2) {
         return ScopeStaticImpl.builder()
                 .addTables(
-                        TableInformation.of(List.of(name1), header1, TicketTable.of("scan/" + name1)),
-                        TableInformation.of(List.of(name2), header2, TicketTable.of("scan/" + name2)))
+                        TableInformation.of(List.of(name1), header1, scan(name1)),
+                        TableInformation.of(List.of(name2), header2, scan(name2)))
                 .build();
     }
 
@@ -324,9 +376,9 @@ public class SqlAdapterTest {
             String name3, TableHeader header3) {
         return ScopeStaticImpl.builder()
                 .addTables(
-                        TableInformation.of(List.of(name1), header1, TicketTable.of("scan/" + name1)),
-                        TableInformation.of(List.of(name2), header2, TicketTable.of("scan/" + name2)),
-                        TableInformation.of(List.of(name3), header3, TicketTable.of("scan/" + name3)))
+                        TableInformation.of(List.of(name1), header1, scan(name1)),
+                        TableInformation.of(List.of(name2), header2, scan(name2)),
+                        TableInformation.of(List.of(name3), header3, scan(name3)))
                 .build();
     }
 }

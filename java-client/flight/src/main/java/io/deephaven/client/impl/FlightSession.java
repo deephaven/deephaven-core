@@ -18,6 +18,14 @@ import java.util.concurrent.CompletableFuture;
 
 public class FlightSession implements AutoCloseable {
 
+    /**
+     * Creates a flight session. Closing the flight session does <b>not</b> close {@code channel}.
+     *
+     * @param session the session
+     * @param incomingAllocator the incoming allocator
+     * @param channel the managed channel
+     * @return the flight session
+     */
     public static FlightSession of(SessionImpl session, BufferAllocator incomingAllocator,
             ManagedChannel channel) {
         // Note: this pattern of FlightClient owning the ManagedChannel does not mesh well with the idea that some
@@ -309,8 +317,17 @@ public class FlightSession implements AutoCloseable {
         return client.listFlights(Criteria.ALL);
     }
 
+    /**
+     * Closes {@code this} session by invoking {@link Session#closeFuture()} and closing the underlying
+     * {@link FlightClient}. More advanced users may prefer to explicitly call {@link Session#closeFuture()} and wait
+     * first. The state of the underlying {@link ManagedChannel} depends on how {@code this} was constructed. In most
+     * cases, closing {@code this} does <b>not</b> close the {@link ManagedChannel}.
+     *
+     * @throws InterruptedException if the current thread is interrupted
+     */
     @Override
     public void close() throws InterruptedException {
+        session.closeFuture();
         client.close();
     }
 }

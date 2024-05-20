@@ -19,15 +19,14 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.table.impl.chunkfillers.ChunkFiller;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.TrackingRowSet;
-import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
-// TODO: Comment the heck out of this...
 public class MultiSourceFunctionalColumn<D> implements SelectColumn {
+
     private final List<String> sourceNames;
     private ColumnSource<?>[] sourceColumns;
     private ColumnSource<?>[] prevSources;
@@ -37,29 +36,36 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
     @NotNull
     private final Class<D> destDataType;
     @NotNull
-    private final BiFunction<Long, ColumnSource<?>[], D> function;
-    @NotNull
+    private final RowKeyAndSourcesFunction<D> function;
+    @Nullable
     private final Class<?> componentType;
 
-    public MultiSourceFunctionalColumn(@NotNull List<String> sourceNames,
-            @NotNull String destName,
-            @NotNull Class<D> destDataType,
-            @NotNull BiFunction<Long, ColumnSource<?>[], D> function) {
-        this(sourceNames, destName, destDataType, Object.class, function);
+    @FunctionalInterface
+    public interface RowKeyAndSourcesFunction<D> {
+        D apply(long rowKey, ColumnSource<?>[] sources);
     }
 
-    public MultiSourceFunctionalColumn(@NotNull List<String> sourceNames,
+    public MultiSourceFunctionalColumn(
+            @NotNull List<String> sourceNames,
             @NotNull String destName,
             @NotNull Class<D> destDataType,
-            @NotNull Class<?> componentType,
-            @NotNull BiFunction<Long, ColumnSource<?>[], D> function) {
+            @NotNull RowKeyAndSourcesFunction<D> function) {
+        this(sourceNames, destName, destDataType, null, function);
+    }
+
+    public MultiSourceFunctionalColumn(
+            @NotNull List<String> sourceNames,
+            @NotNull String destName,
+            @NotNull Class<D> destDataType,
+            @Nullable Class<?> componentType,
+            @NotNull RowKeyAndSourcesFunction<D> function) {
         this.sourceNames = sourceNames.stream()
                 .map(NameValidator::validateColumnName)
                 .collect(Collectors.toList());
 
         this.destName = NameValidator.validateColumnName(destName);
         this.destDataType = Require.neqNull(destDataType, "destDataType");
-        this.componentType = Require.neqNull(componentType, "componentType");
+        this.componentType = componentType;
         this.function = function;
         Require.gtZero(destName.length(), "destName.length()");
     }
@@ -94,7 +100,7 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
     }
 
     @Override
-    public List<String> initDef(Map<String, ColumnDefinition<?>> columnDefinitionMap) {
+    public List<String> initDef(@NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap) {
         NoSuchColumnException.throwIf(columnDefinitionMap.keySet(), sourceNames);
         return getColumns();
     }
@@ -105,27 +111,33 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
     }
 
     @Override
+    public Class<?> getReturnedComponentType() {
+        return componentType;
+    }
+
+    @Override
     public List<String> getColumns() {
         return Collections.unmodifiableList(sourceNames);
     }
 
     @Override
     public List<String> getColumnArrays() {
-        return Collections.emptyList();
+        return List.of();
     }
 
     @NotNull
     @Override
     public ColumnSource<D> getDataView() {
         return new ViewColumnSource<>(destDataType, componentType, new Formula(null) {
-            @Override
-            public Object getPrev(long rowKey) {
-                return function.apply(rowKey, prevSources);
-            }
 
             @Override
             public Object get(long rowKey) {
                 return function.apply(rowKey, sourceColumns);
+            }
+
+            @Override
+            public Object getPrev(long rowKey) {
+                return function.apply(rowKey, prevSources);
             }
 
             @Override
@@ -135,7 +147,6 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
 
             @Override
             public FillContext makeFillContext(int chunkCapacity) {
-                // Not sure this is right.
                 return new FunctionalColumnFillContext(getChunkType());
             }
 
@@ -158,9 +169,10 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
     }
 
     private static class FunctionalColumnFillContext implements Formula.FillContext {
-        final ChunkFiller chunkFiller;
 
-        FunctionalColumnFillContext(final ChunkType chunkType) {
+        private final ChunkFiller chunkFiller;
+
+        private FunctionalColumnFillContext(final ChunkType chunkType) {
             chunkFiller = ChunkFiller.forChunkType(chunkType);
         }
     }
@@ -168,7 +180,6 @@ public class MultiSourceFunctionalColumn<D> implements SelectColumn {
     @NotNull
     @Override
     public ColumnSource<?> getLazyView() {
-        // TODO: memoize
         return getDataView();
     }
 

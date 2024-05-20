@@ -111,7 +111,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
                 final ContextHolder holder = SeekableChannelContext.ensureContext(channelsProvider, channelContext);
                 final SeekableByteChannel ch = channelsProvider.getReadChannel(holder.get(), uri)) {
             ch.position(dataOffset);
-            return readRowCountFromDataPage(ch);
+            return readRowCountFromDataPage(ch, holder.get());
         }
     }
 
@@ -129,13 +129,14 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
     /**
      * Callers must ensure resulting data page does not outlive the input stream.
      */
-    private DataPageV1 readV1Unsafe(InputStream in) throws IOException {
+    private DataPageV1 readV1Unsafe(InputStream in, SeekableChannelContext channelContext) throws IOException {
         if (pageHeader.type != PageType.DATA_PAGE) {
             throw new IllegalArgumentException();
         }
         final int uncompressedPageSize = pageHeader.getUncompressed_page_size();
         final int compressedPageSize = pageHeader.getCompressed_page_size();
-        final BytesInput decompressedInput = compressorAdapter.decompress(in, compressedPageSize, uncompressedPageSize);
+        final BytesInput decompressedInput =
+                compressorAdapter.decompress(in, compressedPageSize, uncompressedPageSize, channelContext);
         final DataPageHeader header = pageHeader.getData_page_header();
         return new DataPageV1(
                 decompressedInput,
@@ -150,7 +151,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
     /**
      * Callers must ensure resulting data page does not outlive the input stream.
      */
-    private DataPageV2 readV2Unsafe(InputStream in) throws IOException {
+    private DataPageV2 readV2Unsafe(InputStream in, SeekableChannelContext channelContext) throws IOException {
         if (pageHeader.type != PageType.DATA_PAGE_V2) {
             throw new IllegalArgumentException();
         }
@@ -170,7 +171,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
                 BytesInput.copy(BytesInput.from(in, header.getRepetition_levels_byte_length()));
         final BytesInput definitionLevels =
                 BytesInput.copy(BytesInput.from(in, header.getDefinition_levels_byte_length()));
-        final BytesInput data = compressorAdapter.decompress(in, compressedSize, uncompressedSize);
+        final BytesInput data = compressorAdapter.decompress(in, compressedSize, uncompressedSize, channelContext);
         return new DataPageV2(
                 header.getNum_rows(),
                 header.getNum_nulls(),
@@ -184,11 +185,12 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
                 false);
     }
 
-    private int readRowCountFromDataPage(SeekableByteChannel ch) throws IOException {
+    private int readRowCountFromDataPage(SeekableByteChannel ch, SeekableChannelContext channelContext)
+            throws IOException {
         switch (pageHeader.type) {
             case DATA_PAGE:
                 try (final InputStream in = channelsProvider.getInputStream(ch)) {
-                    return readRowCountFromPageV1(readV1Unsafe(in));
+                    return readRowCountFromPageV1(readV1Unsafe(in, channelContext));
                 }
             case DATA_PAGE_V2:
                 DataPageHeaderV2 dataHeaderV2 = pageHeader.getData_page_header_v2();
@@ -203,11 +205,12 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         switch (pageHeader.type) {
             case DATA_PAGE:
                 try (final InputStream in = channelsProvider.getInputStream(ch)) {
-                    return readKeysFromPageV1(readV1Unsafe(in), keyDest, nullPlaceholder, channelContext);
+                    return readKeysFromPageV1(readV1Unsafe(in, channelContext), keyDest, nullPlaceholder,
+                            channelContext);
                 }
             case DATA_PAGE_V2:
                 try (final InputStream in = channelsProvider.getInputStream(ch)) {
-                    readKeysFromPageV2(readV2Unsafe(in), keyDest, nullPlaceholder, channelContext);
+                    readKeysFromPageV2(readV2Unsafe(in, channelContext), keyDest, nullPlaceholder, channelContext);
                     return null;
                 }
             default:
@@ -221,11 +224,11 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         switch (pageHeader.type) {
             case DATA_PAGE:
                 try (final InputStream in = channelsProvider.getInputStream(ch)) {
-                    return readPageV1(readV1Unsafe(in), nullValue, channelContext);
+                    return readPageV1(readV1Unsafe(in, channelContext), nullValue, channelContext);
                 }
             case DATA_PAGE_V2:
                 try (final InputStream in = channelsProvider.getInputStream(ch)) {
-                    return readPageV2(readV2Unsafe(in), nullValue);
+                    return readPageV2(readV2Unsafe(in, channelContext), nullValue);
                 }
             default:
                 throw new IOException(String.format("Unexpected page of type %s of size %d", pageHeader.getType(),
@@ -265,7 +268,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
              * IntBuffer offsets = null; if (path.getMaxRepetitionLevel() != 0) { int length = bytes.getInt(); offsets =
              * readRepetitionLevels((ByteBuffer) bytes.slice().limit(length), IntBuffer.allocate(INITIAL_BUFFER_SIZE));
              * bytes.position(bytes.position() + length); } if (path.getMaxDefinitionLevel() > 0) { int length =
-             * bytes.getInt(); dlDecoder = new RunLenghBitPackingHybridBufferDecoder(path.getMaxDefinitionLevel(),
+             * bytes.getInt(); dlDecoder = new RunLengthBitPackingHybridBufferDecoder(path.getMaxDefinitionLevel(),
              * (ByteBuffer) bytes.slice().limit(length)); bytes.position(bytes.position() + length); } ValuesReader
              * dataReader = getDataReader(page.getValueEncoding(), bytes, page.getValueCount()); if (dlDecoder != null)
              * { readKeysWithNulls(keyDest, nullPlaceholder, numValues(), dlDecoder, dataReader); } else {
