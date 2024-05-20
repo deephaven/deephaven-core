@@ -16,8 +16,9 @@ import java.util.Map;
  * {@link TableLocationKey} implementation for use with data stored in Iceberg tables in the parquet format.
  */
 public class IcebergTableParquetLocationKey extends ParquetTableLocationKey implements IcebergTableLocationKey {
-
     private static final String IMPLEMENTATION_NAME = IcebergTableParquetLocationKey.class.getSimpleName();
+
+    private final ParquetInstructions readInstructions;
 
     /**
      * Construct a new IcebergTableParquetLocationKey for the supplied {@code fileUri} and {@code partitions}.
@@ -35,6 +36,7 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
             @Nullable final Map<String, Comparable<?>> partitions,
             @NotNull final ParquetInstructions readInstructions) {
         super(fileUri, order, partitions, readInstructions);
+        this.readInstructions = readInstructions;
     }
 
     @Override

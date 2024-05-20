@@ -213,7 +213,7 @@ public class IcebergCatalogAdapter {
 
         if (partitionSpec.isUnpartitioned()) {
             // Create the flat layout location key finder
-            keyFinder = new IcebergFlatLayout(table, snapshot, fileIO, instructions);
+            keyFinder = new IcebergFlatLayout(tableDef, table, snapshot, fileIO, instructions);
         } else {
             final String[] partitionColumns = partitionSpec.fields().stream()
                     .map(PartitionField::name)
@@ -231,12 +231,7 @@ public class IcebergCatalogAdapter {
             }
 
             // Create the partitioning column location key finder
-            keyFinder = new IcebergKeyValuePartitionedLayout(
-                    tableDef,
-                    table,
-                    snapshot,
-                    fileIO,
-                    instructions);
+            keyFinder = new IcebergKeyValuePartitionedLayout(tableDef, table, snapshot, fileIO, instructions);
         }
 
         if (isRefreshing) {

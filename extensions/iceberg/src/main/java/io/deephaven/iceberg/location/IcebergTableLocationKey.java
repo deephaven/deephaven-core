@@ -15,9 +15,4 @@ public interface IcebergTableLocationKey extends TableLocationKey {
      * @return the read instructions
      */
     Object readInstructions();
-
-    /**
-     * Verify that a reader for the file can be created successfully.
-     */
-    boolean verifyFileReader();
 }
