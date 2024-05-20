@@ -39,6 +39,7 @@ import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.UpdateGraphLock;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.io.log.LogEntry;
+import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
@@ -3326,8 +3327,8 @@ public class QueryTableTest extends QueryTableTestBase {
         testDirectory.mkdirs();
         final File dest = new File(testDirectory, "Table.parquet");
         try {
-            ParquetTools.writeTable(source, dest, definition);
-            final Table table = ParquetTools.readTable(dest);
+            ParquetTools.writeTable(source, dest.getPath(), ParquetInstructions.EMPTY.withTableDefinition(definition));
+            final Table table = ParquetTools.readTable(dest.getPath());
             testFunction.accept(table);
             table.close();
         } finally {

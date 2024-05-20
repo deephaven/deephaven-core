@@ -24,6 +24,7 @@ import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
@@ -1687,8 +1688,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final String[] leftSyms = new String[] {"Apple", "Banana", "Cantaloupe", "DragonFruit",
                 "Apple", "Cantaloupe", "Banana", "Banana", "Cantaloupe"};
         final Table leftTable = newTable(stringCol("Symbol", leftSyms)).update("LeftSentinel=i");
-        ParquetTools.writeTable(leftTable, leftLocation, leftDefinition);
-        return ParquetTools.readTable(leftLocation);
+        ParquetTools.writeTable(leftTable, leftLocation.getPath(),
+                ParquetInstructions.EMPTY.withTableDefinition(leftDefinition));
+        return ParquetTools.readTable(leftLocation.getPath());
     }
 
     @NotNull
@@ -1698,7 +1700,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 ColumnDefinition.ofInt("RightSentinel"));
         final String[] rightSyms = new String[] {"Elderberry", "Apple", "Banana", "Cantaloupe"};
         final Table rightTable = newTable(stringCol("Symbol", rightSyms)).update("RightSentinel=100+i");
-        ParquetTools.writeTable(rightTable, rightLocation, rightDefinition);
-        return ParquetTools.readTable(rightLocation);
+        ParquetTools.writeTable(rightTable, rightLocation.getPath(),
+                ParquetInstructions.EMPTY.withTableDefinition(rightDefinition));
+        return ParquetTools.readTable(rightLocation.getPath());
     }
 }

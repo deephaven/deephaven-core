@@ -1090,12 +1090,12 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
             final ParquetInstructions instructions = ParquetInstructions.builder().useDictionary("I", true).build();
             Table a = emptyTable(200).update("I = `` + (50 + (ii % 100))", "K = ii");
             Table b = emptyTable(200).update("I = `` + (ii % 100)", "K = ii");
-            ParquetTools.writeTable(a, new java.io.File(tmpDir + "/Partition=p0/data.parquet"), instructions);
-            ParquetTools.writeTable(b, new java.io.File(tmpDir + "/Partition=p1/data.parquet"), instructions);
+            ParquetTools.writeTable(a, tmpDir + "/Partition=p0/data.parquet", instructions);
+            ParquetTools.writeTable(b, tmpDir + "/Partition=p1/data.parquet", instructions);
             a = a.updateView("Partition = `p0`").moveColumnsUp("Partition");
             b = b.updateView("Partition = `p1`").moveColumnsUp("Partition");
 
-            final Table fromDisk = ParquetTools.readTable(tmpDir);
+            final Table fromDisk = ParquetTools.readTable(tmpDir.getPath());
 
             // Assert non-partitioned table sorts.
             final Table diskOuterSort = fromDisk.sort("I");
