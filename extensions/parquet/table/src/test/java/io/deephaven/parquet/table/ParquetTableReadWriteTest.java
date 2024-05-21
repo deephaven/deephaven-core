@@ -3073,7 +3073,7 @@ public final class ParquetTableReadWriteTest {
                         new SerialObjectColumnIterator<>(
                                 (ColumnSource<Boolean[]>) columnSource,
                                 inputTable.getRowSet()),
-                        (Statistics<Integer>) statistics);
+                        (Statistics<Boolean>) statistics);
             } else if (csType == byte.class || csType == Byte.class) {
                 assertByteColumnStatistics(
                         new SerialByteColumnIterator(
@@ -3277,7 +3277,7 @@ public final class ParquetTableReadWriteTest {
     }
 
     private void assertBooleanArrayColumnStatistics(SerialObjectColumnIterator<Boolean[]> iterator,
-            Statistics<Integer> statistics) {
+            Statistics<Boolean> statistics) {
         MutableLong itemCount = new MutableLong(0);
         MutableLong nullCount = new MutableLong(0);
         MutableInt min = new MutableInt(NULL_BYTE);
