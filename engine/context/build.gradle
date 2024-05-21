@@ -26,7 +26,6 @@ dependencies {
     Classpaths.inheritCommonsText(project, 'implementation')
     Classpaths.inheritImmutables(project)
 
-    testImplementation TestTools.projectDependency(project, 'Base')
     testImplementation project(':engine-test-utils')
 
     testRuntimeOnly project(':log-to-slf4j'),

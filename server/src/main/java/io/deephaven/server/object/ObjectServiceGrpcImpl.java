@@ -323,6 +323,8 @@ public class ObjectServiceGrpcImpl extends ObjectServiceGrpc.ObjectServiceImplBa
     @Override
     public StreamObserver<StreamRequest> messageStream(StreamObserver<StreamResponse> responseObserver) {
         SessionState session = sessionService.getCurrentSession();
+        // Session close logic implicitly handled in
+        // io.deephaven.server.session.SessionServiceGrpcImpl.SessionServiceInterceptor
         return new SendMessageObserver(session, responseObserver);
     }
 

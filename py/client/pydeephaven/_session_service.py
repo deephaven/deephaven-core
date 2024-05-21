@@ -30,16 +30,20 @@ class SessionService:
     def close(self):
         """Closes the gRPC connection."""
         try:
-            self._grpc_session_stub.CloseSession(
-                session_pb2.HandshakeRequest(auth_protocol=0, payload=self.session._auth_token),
-                metadata=self.session.grpc_metadata)
+            self.session.wrap_rpc(
+                self._grpc_session_stub.CloseSession,
+                session_pb2.HandshakeRequest(
+                    auth_protocol=0,
+                    payload=self.session._auth_header_value))
         except Exception as e:
             raise DHError("failed to close the session.") from e
 
     def release(self, ticket):
         """Releases an exported ticket."""
         try:
-            self._grpc_session_stub.Release(session_pb2.ReleaseRequest(id=ticket), metadata=self.session.grpc_metadata)
+            self.session.wrap_rpc(
+                self._grpc_session_stub.Release,
+                session_pb2.ReleaseRequest(id=ticket))
         except Exception as e:
             raise DHError("failed to release a ticket.") from e
 
@@ -52,6 +56,10 @@ class SessionService:
             result_ticket: The result ticket to publish to.
         """
         try:
-            self._grpc_session_stub.PublishFromTicket(session_pb2.PublishRequest(source_id=source_ticket, result_id=result_ticket), metadata=self.session.grpc_metadata)
+            self.session.wrap_rpc(
+                self._grpc_session_stub.PublishFromTicket,
+                session_pb2.PublishRequest(
+                    source_id=source_ticket,
+                    result_id=result_ticket))
         except Exception as e:
             raise DHError("failed to publish a ticket.") from e

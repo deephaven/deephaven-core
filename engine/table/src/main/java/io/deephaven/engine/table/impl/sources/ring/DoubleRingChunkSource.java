@@ -25,7 +25,7 @@ final class DoubleRingChunkSource extends AbstractRingChunkSource<Double, double
     }
 
     public DoubleRingChunkSource(int capacity) {
-        super(double.class, capacity);
+        super(new double[capacity]);
     }
 
     @Override

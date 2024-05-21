@@ -21,7 +21,7 @@ final class CharacterRingChunkSource extends AbstractRingChunkSource<Character, 
     }
 
     public CharacterRingChunkSource(int capacity) {
-        super(char.class, capacity);
+        super(new char[capacity]);
     }
 
     @Override

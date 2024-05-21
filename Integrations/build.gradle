@@ -22,8 +22,9 @@ dependencies {
     implementation project(':log-factory')
 
     testImplementation project(':engine-test-utils')
-    testImplementation TestTools.projectDependency(project, 'engine-time')
 
+    // Needed for CalendarInit
+    testRuntimeOnly TestTools.projectDependency(project, 'engine-time')
     testRuntimeOnly project(':log-to-slf4j')
     // add configs, and some runtime dependencies to test classpaths
     testRuntimeOnly project(':configs')

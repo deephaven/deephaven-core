@@ -1,4 +1,5 @@
 add_subdirectory(table_cleanup)
+add_subdirectory(concurrent_client)
 add_subdirectory(create_table_with_arrow_flight)
 add_subdirectory(create_table_with_table_maker)
 add_subdirectory(demos)

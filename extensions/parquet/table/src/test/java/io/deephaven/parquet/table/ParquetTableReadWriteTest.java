@@ -9,7 +9,6 @@ import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.function.ByteConsumer;
 import io.deephaven.engine.primitive.function.CharConsumer;
@@ -38,8 +37,6 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.BigDecimalUtils;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
-import io.deephaven.extensions.s3.Credentials;
-import io.deephaven.extensions.s3.S3Instructions;
 import io.deephaven.parquet.base.InvalidParquetFileException;
 import io.deephaven.parquet.base.NullStatistics;
 import io.deephaven.parquet.table.location.ParquetTableLocation;
@@ -59,6 +56,7 @@ import io.deephaven.vector.Vector;
 import io.deephaven.vector.*;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.*;
+import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.column.Encoding;
 import org.apache.parquet.column.statistics.Statistics;
 import org.apache.parquet.hadoop.metadata.ColumnChunkMetaData;
@@ -76,7 +74,6 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URI;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -128,11 +125,6 @@ public final class ParquetTableReadWriteTest {
 
     private static final ParquetInstructions EMPTY = ParquetInstructions.EMPTY;
     private static final ParquetInstructions REFRESHING = ParquetInstructions.builder().setIsRefreshing(true).build();
-
-    // TODO(deephaven-core#5064): Add support for local S3 testing
-    // The following tests are disabled by default, as they are verifying against a remote system
-    private static final boolean ENABLE_S3_TESTING =
-            Configuration.getInstance().getBooleanWithDefault("ParquetTest.enableS3Testing", false);
 
     private static File rootFile;
 
@@ -1478,184 +1470,6 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
-    public void readSampleParquetFilesFromDeephavenS3Bucket() {
-        Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
-        final S3Instructions s3Instructions = S3Instructions.builder()
-                .regionName("us-east-1")
-                .readAheadCount(1)
-                .fragmentSize(5 * 1024 * 1024)
-                .maxConcurrentRequests(50)
-                .maxCacheSize(32)
-                .readTimeout(Duration.ofSeconds(60))
-                .credentials(Credentials.defaultCredentials())
-                .build();
-        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
-                .setSpecialInstructions(s3Instructions)
-                .build();
-        final Table fromAws1 =
-                ParquetTools.readTable("s3://dh-s3-parquet-test1/multiColFile.parquet", readInstructions).select();
-        final Table dhTable1 = TableTools.emptyTable(1_000_000).update("A=(int)i", "B=(double)(i+1)");
-        assertTableEquals(fromAws1, dhTable1);
-
-        final Table fromAws2 =
-                ParquetTools.readTable("s3://dh-s3-parquet-test1/singleColFile.parquet", readInstructions).select();
-        final Table dhTable2 = TableTools.emptyTable(5).update("A=(int)i");
-        assertTableEquals(fromAws2, dhTable2);
-
-        final Table fromAws3 = ParquetTools
-                .readTable("s3://dh-s3-parquet-test1/single%20col%20file%20with%20spaces%20in%20name.parquet",
-                        readInstructions)
-                .select();
-        assertTableEquals(fromAws3, dhTable2);
-
-        final Table fromAws4 =
-                ParquetTools.readTable("s3://dh-s3-parquet-test1/singleColFile.parquet", readInstructions)
-                        .select().sumBy();
-        final Table dhTable4 = TableTools.emptyTable(5).update("A=(int)i").sumBy();
-        assertTableEquals(fromAws4, dhTable4);
-    }
-
-    @Test
-    public void readSampleParquetFilesFromPublicS3() {
-        Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
-        final S3Instructions s3Instructions = S3Instructions.builder()
-                .regionName("us-east-2")
-                .readAheadCount(1)
-                .fragmentSize(5 * 1024 * 1024)
-                .maxConcurrentRequests(50)
-                .maxCacheSize(32)
-                .connectionTimeout(Duration.ofSeconds(1))
-                .readTimeout(Duration.ofSeconds(60))
-                .credentials(Credentials.anonymous())
-                .build();
-        final TableDefinition tableDefinition = TableDefinition.of(
-                ColumnDefinition.ofString("hash"),
-                ColumnDefinition.ofLong("version"),
-                ColumnDefinition.ofLong("size"),
-                ColumnDefinition.ofString("block_hash"),
-                ColumnDefinition.ofLong("block_number"),
-                ColumnDefinition.ofLong("index"),
-                ColumnDefinition.ofLong("virtual_size"),
-                ColumnDefinition.ofLong("lock_time"),
-                ColumnDefinition.ofLong("input_count"),
-                ColumnDefinition.ofLong("output_count"),
-                ColumnDefinition.ofBoolean("isCoinbase"),
-                ColumnDefinition.ofDouble("output_value"),
-                ColumnDefinition.ofTime("last_modified"),
-                ColumnDefinition.ofDouble("input_value"));
-        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
-                .setSpecialInstructions(s3Instructions)
-                .setTableDefinition(tableDefinition)
-                .build();
-        ParquetTools.readTable(
-                "s3://aws-public-blockchain/v1.0/btc/transactions/date=2009-01-03/part-00000-bdd84ab2-82e9-4a79-8212-7accd76815e8-c000.snappy.parquet",
-                readInstructions).head(10).select();
-
-        ParquetTools.readTable(
-                "s3://aws-public-blockchain/v1.0/btc/transactions/date=2023-11-13/part-00000-da3a3c27-700d-496d-9c41-81281388eca8-c000.snappy.parquet",
-                readInstructions).head(10).select();
-    }
-
-    @Test
-    public void readFlatPartitionedParquetFromS3() {
-        Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
-        final S3Instructions s3Instructions = S3Instructions.builder()
-                .regionName("us-east-1")
-                .readAheadCount(1)
-                .fragmentSize(5 * 1024 * 1024)
-                .maxConcurrentRequests(50)
-                .maxCacheSize(32)
-                .readTimeout(Duration.ofSeconds(60))
-                .credentials(Credentials.defaultCredentials())
-                .build();
-        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
-                .setSpecialInstructions(s3Instructions)
-                .setFileLayout(ParquetInstructions.ParquetFileLayout.FLAT_PARTITIONED)
-                .build();
-        final Table table = ParquetTools.readTable("s3://dh-s3-parquet-test1/flatPartitionedParquet/",
-                readInstructions);
-        final Table expected = emptyTable(30).update("A = (int)i % 10");
-        assertTableEquals(expected, table);
-    }
-
-    @Test
-    public void readFlatPartitionedDataAsKeyValuePartitionedParquetFromS3() {
-        Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
-        final S3Instructions s3Instructions = S3Instructions.builder()
-                .regionName("us-east-1")
-                .readAheadCount(1)
-                .fragmentSize(5 * 1024 * 1024)
-                .maxConcurrentRequests(50)
-                .maxCacheSize(32)
-                .readTimeout(Duration.ofSeconds(60))
-                .credentials(Credentials.defaultCredentials())
-                .build();
-        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
-                .setSpecialInstructions(s3Instructions)
-                .setFileLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED)
-                .build();
-        final Table table = ParquetTools.readTable("s3://dh-s3-parquet-test1/flatPartitionedParquet3/",
-                readInstructions);
-        final Table expected = emptyTable(30).update("A = (int)i % 10");
-        assertTableEquals(expected, table);
-    }
-
-    @Test
-    public void readKeyValuePartitionedParquetFromS3() {
-        Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
-        final S3Instructions s3Instructions = S3Instructions.builder()
-                .regionName("us-east-1")
-                .readAheadCount(1)
-                .fragmentSize(5 * 1024 * 1024)
-                .maxConcurrentRequests(50)
-                .maxCacheSize(32)
-                .readTimeout(Duration.ofSeconds(60))
-                .credentials(Credentials.defaultCredentials())
-                .build();
-        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
-                .setSpecialInstructions(s3Instructions)
-                .setFileLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED)
-                .build();
-        final Table table = ParquetTools.readTable("s3://dh-s3-parquet-test1/KeyValuePartitionedData/",
-                readInstructions);
-        final List<ColumnDefinition<?>> partitioningColumns = table.getDefinition().getPartitioningColumns();
-        assertEquals(3, partitioningColumns.size());
-        assertEquals("PC1", partitioningColumns.get(0).getName());
-        assertEquals("PC2", partitioningColumns.get(1).getName());
-        assertEquals("PC3", partitioningColumns.get(2).getName());
-        assertEquals(100, table.size());
-        assertEquals(3, table.selectDistinct("PC1").size());
-        assertEquals(2, table.selectDistinct("PC2").size());
-        assertEquals(2, table.selectDistinct("PC3").size());
-        assertEquals(100, table.selectDistinct("I").size());
-        assertEquals(1, table.selectDistinct("J").size());
-    }
-
-    @Test
-    public void readKeyValuePartitionedParquetFromPublicS3() {
-        Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_S3_TESTING);
-        final S3Instructions s3Instructions = S3Instructions.builder()
-                .regionName("us-east-1")
-                .readAheadCount(1)
-                .fragmentSize(5 * 1024 * 1024)
-                .maxConcurrentRequests(50)
-                .maxCacheSize(32)
-                .readTimeout(Duration.ofSeconds(60))
-                .credentials(Credentials.anonymous())
-                .build();
-        final TableDefinition ookla_table_definition = TableDefinition.of(
-                ColumnDefinition.ofInt("quarter").withPartitioning(),
-                ColumnDefinition.ofString("quadkey"));
-        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
-                .setSpecialInstructions(s3Instructions)
-                .setTableDefinition(ookla_table_definition)
-                .build();
-        final Table table = ParquetTools.readTable("s3://ookla-open-data/parquet/performance/type=mobile/year=2023",
-                readInstructions).head(10).select();
-        assertEquals(2, table.numColumns());
-    }
-
-    @Test
     public void stringDictionaryTest() {
         final int nullPos = -5;
         final int maxKeys = 10;
@@ -1767,6 +1581,50 @@ public final class ParquetTableReadWriteTest {
         readParquetFileFromGitLFS(new File(path)).select();
     }
 
+    /**
+     * The reference data is generated using:
+     *
+     * <pre>
+     * df = pandas.DataFrame.from_records(
+     *     data=[(-1, -1, -1), (2, 2, 2), (0, 0, 0), (5, 5, 5)],
+     *     columns=['uint8Col', 'uint16Col',  'uint32Col']
+     * )
+     * df['uint8Col'] = df['uint8Col'].astype(np.uint8)
+     * df['uint16Col'] = df['uint16Col'].astype(np.uint16)
+     * df['uint32Col'] = df['uint32Col'].astype(np.uint32)
+     *
+     * # Add some nulls
+     * df['uint8Col'][3] = df['uint16Col'][3] = df['uint32Col'][3] = None
+     * schema = pyarrow.schema([
+     *     pyarrow.field('uint8Col', pyarrow.uint8()),
+     *     pyarrow.field('uint16Col', pyarrow.uint16()),
+     *     pyarrow.field('uint32Col', pyarrow.uint32()),
+     * ])
+     * schema = schema.remove_metadata()
+     * table = pyarrow.Table.from_pandas(df, schema).replace_schema_metadata()
+     * writer = pyarrow.parquet.ParquetWriter('data_from_pyarrow.parquet', schema=schema)
+     * writer.write_table(table)
+     * </pre>
+     */
+    @Test
+    public void testReadUintParquetData() {
+        final String path = ParquetTableReadWriteTest.class.getResource("/ReferenceUintParquetData.parquet").getFile();
+        final Table fromDisk = readParquetFileFromGitLFS(new File(path)).select();
+
+        final ParquetMetadata metadata =
+                new ParquetTableLocationKey(new File(path).toURI(), 0, null, ParquetInstructions.EMPTY).getMetadata();
+        final List<ColumnDescriptor> columnsMetadata = metadata.getFileMetaData().getSchema().getColumns();
+        assertTrue(columnsMetadata.get(0).toString().contains("int32 uint8Col (INTEGER(8,false))"));
+        assertTrue(columnsMetadata.get(1).toString().contains("int32 uint16Col (INTEGER(16,false))"));
+        assertTrue(columnsMetadata.get(2).toString().contains("int32 uint32Col (INTEGER(32,false))"));
+
+        final Table expected = newTable(
+                charCol("uint8Col", (char) 255, (char) 2, (char) 0, NULL_CHAR),
+                charCol("uint16Col", (char) 65535, (char) 2, (char) 0, NULL_CHAR),
+                longCol("uint32Col", 4294967295L, 2L, 0L, NULL_LONG));
+        assertTableEquals(expected, fromDisk);
+    }
+
     @Test
     public void testVersionChecks() {
         assertFalse(ColumnChunkPageStore.hasCorrectVectorOffsetIndexes("0.0.0"));
@@ -1780,6 +1638,78 @@ public final class ParquetTableReadWriteTest {
         assertTrue(ColumnChunkPageStore.hasCorrectVectorOffsetIndexes("0.31.0-SNAPSHOT"));
     }
 
+    /**
+     * Reference data is generated using the following code:
+     * 
+     * <pre>
+     *      num_rows = 100000
+     *      dh_table = empty_table(num_rows).update(formulas=[
+     *         "someStringColumn = i % 10 == 0?null:(`` + (i % 101))",
+     *         ... # Same as in the test code
+     *      ])
+     *
+     *      write(dh_table, "data_from_dh.parquet")
+     *      pa_table = pyarrow.parquet.read_table("data_from_dh.parquet")
+     *      pyarrow.parquet.write_table(pa_table, "ReferenceParquetV1PageData.parquet", data_page_version='1.0')
+     *      pyarrow.parquet.write_table(pa_table, "ReferenceParquetV2PageData.parquet", data_page_version='2.0')
+     * </pre>
+     */
+    @Test
+    public void testReadParquetV2Pages() {
+        final String pathV1 =
+                ParquetTableReadWriteTest.class.getResource("/ReferenceParquetV1PageData.parquet").getFile();
+        final Table fromDiskV1 = readParquetFileFromGitLFS(new File(pathV1));
+        final String pathV2 =
+                ParquetTableReadWriteTest.class.getResource("/ReferenceParquetV2PageData.parquet").getFile();
+        final Table fromDiskV2 = readParquetFileFromGitLFS(new File(pathV2));
+        assertTableEquals(fromDiskV1, fromDiskV2);
+
+        final Table expected = emptyTable(100_000).update(
+                "someStringColumn = i % 10 == 0?null:(`` + (i % 101))",
+                "nonNullString = `` + (i % 60)",
+                "nonNullPolyString = `` + (i % 600)",
+                "someIntColumn = i",
+                "someLongColumn = ii",
+                "someDoubleColumn = i*1.1",
+                "someFloatColumn = (float)(i*1.1)",
+                "someBoolColumn = i % 3 == 0?true:i%3 == 1?false:null",
+                "someShortColumn = (short)i",
+                "someByteColumn = (byte)i",
+                "someCharColumn = (char)i",
+                "someKey = `` + (int)(i /100)",
+                "nullKey = i < -1?`123`:null",
+                "nullIntColumn = (int)null",
+                "nullLongColumn = (long)null",
+                "nullDoubleColumn = (double)null",
+                "nullFloatColumn = (float)null",
+                "nullBoolColumn = (Boolean)null",
+                "nullShortColumn = (short)null",
+                "nullByteColumn = (byte)null",
+                "nullCharColumn = (char)null",
+                "nullTime = (Instant)null",
+                "nullString = (String)null",
+                "someStringArrayColumn = new String[] {i % 10 == 0 ? null : (`` + (i % 101))}",
+                "someIntArrayColumn = new int[] {i % 10 == 0 ? null : i}",
+                "someLongArrayColumn = new long[] {i % 10 == 0 ? null : i}",
+                "someDoubleArrayColumn = new double[] {i % 10 == 0 ? null : i*1.1}",
+                "someFloatArrayColumn = new float[] {i % 10 == 0 ? null : (float)(i*1.1)}",
+                "someBoolArrayColumn = new Boolean[] {i % 3 == 0 ? true :i % 3 == 1 ? false : null}",
+                "someShorArrayColumn = new short[] {i % 10 == 0 ? null : (short)i}",
+                "someByteArrayColumn = new byte[] {i % 10 == 0 ? null : (byte)i}",
+                "someCharArrayColumn = new char[] {i % 10 == 0 ? null : (char)i}",
+                "someTimeArrayColumn = new Instant[] {i % 10 == 0 ? null : java.time.Instant.ofEpochSecond(ii)}",
+                "nullStringArrayColumn = new String[] {(String)null}",
+                "nullIntArrayColumn = new int[] {(int)null}",
+                "nullLongArrayColumn = new long[] {(long)null}",
+                "nullDoubleArrayColumn = new double[] {(double)null}",
+                "nullFloatArrayColumn = new float[] {(float)null}",
+                "nullBoolArrayColumn = new Boolean[] {(Boolean)null}",
+                "nullShorArrayColumn = new short[] {(short)null}",
+                "nullByteArrayColumn = new byte[] {(byte)null}",
+                "nullCharArrayColumn = new char[] {(char)null}",
+                "nullTimeArrayColumn = new Instant[] {(Instant)null}");
+        assertTableEquals(expected, fromDiskV2);
+    }
 
     /**
      * Test if the parquet reading code can read pre-generated parquet files which have different number of rows in each

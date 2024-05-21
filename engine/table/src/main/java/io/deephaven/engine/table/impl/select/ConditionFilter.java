@@ -528,7 +528,7 @@ public class ConditionFilter extends AbstractConditionFilter {
 
                 final String arrayType = columnType.getCanonicalName().replace(
                         "io.deephaven.vector",
-                        "io.deephaven.engine.table.impl.vector") + "ColumnWrapper";
+                        "io.deephaven.engine.table.vectors") + "ColumnWrapper";
 
                 /*
                  * Adding array column fields.

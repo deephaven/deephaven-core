@@ -18,7 +18,6 @@ import org.apache.parquet.internal.hadoop.metadata.IndexReference;
 import org.apache.parquet.schema.MessageType;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
