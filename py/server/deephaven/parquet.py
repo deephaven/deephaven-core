@@ -415,10 +415,9 @@ def batch_write(
         paths (List[str]): the destination paths. Any non-existing directories in the paths provided are
             created. If there is an error, any intermediate directories previously created are removed; note this makes
             this method unsafe for concurrent use
-        table_definition (Union[Dict[str, DType], List[Column]]): the table definition to use for writing,
-            instead of the definitions implied by the table. Default is None, which means use the column definitions
-            implied by the table. This definition can be used to skip some columns or add additional columns with
-            null values.
+        table_definition (Union[Dict[str, DType], List[Column]]): the table definition to use for writing, instead of
+            the definitions implied by the tables. This definition can be used to skip some columns or add additional
+            columns with null values.
         col_instructions (Optional[List[ColumnInstruction]]): instructions for customizations while writing
         compression_codec_name (Optional[str]): the compression codec to use. Allowed values include "UNCOMPRESSED",
             "SNAPPY", "GZIP", "LZO", "LZ4", "LZ4_RAW", "ZSTD", etc. If not specified, defaults to "SNAPPY".
