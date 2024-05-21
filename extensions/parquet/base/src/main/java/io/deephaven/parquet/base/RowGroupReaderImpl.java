@@ -60,14 +60,15 @@ final class RowGroupReaderImpl implements RowGroupReader {
 
     @Override
     @Nullable
-    public ColumnChunkReaderImpl getColumnChunk(@NotNull final List<String> path) {
+    public ColumnChunkReaderImpl getColumnChunk(@NotNull final String columnName, @NotNull final List<String> path) {
         final String key = path.toString();
         final ColumnChunk columnChunk = chunkMap.get(key);
         final List<Type> fieldTypes = schemaMap.get(key);
         if (columnChunk == null) {
             return null;
         }
-        return new ColumnChunkReaderImpl(columnChunk, channelsProvider, rootURI, type, fieldTypes, numRows(), version);
+        return new ColumnChunkReaderImpl(columnName, columnChunk, channelsProvider, rootURI, type, fieldTypes,
+                numRows(), version);
     }
 
     @Override
