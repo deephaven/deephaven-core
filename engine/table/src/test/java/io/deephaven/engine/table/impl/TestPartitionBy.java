@@ -440,7 +440,7 @@ public class TestPartitionBy extends QueryTableTestBase {
             rawTable.notifyListeners(i(8), i(), i());
             start.setValue(System.currentTimeMillis());
         });
-        System.out.println("Completion took: " + (System.currentTimeMillis() - start.getValue()));
+        System.out.println("Completion took: " + (System.currentTimeMillis() - start.longValue()));
 
         final MutableObject<Future<?>> mutableFuture = new MutableObject<>();
 
@@ -463,7 +463,7 @@ public class TestPartitionBy extends QueryTableTestBase {
 
             start.setValue(System.currentTimeMillis());
         });
-        System.out.println("Completion took: " + (System.currentTimeMillis() - start.getValue()));
+        System.out.println("Completion took: " + (System.currentTimeMillis() - start.longValue()));
 
         try {
             mutableFuture.getValue().get();

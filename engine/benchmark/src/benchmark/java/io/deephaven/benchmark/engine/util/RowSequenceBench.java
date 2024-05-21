@@ -84,7 +84,7 @@ public class RowSequenceBench {
         for (int i = 0; i < sz; ++i) {
             accum.setValue(accum.longValue() ^ indicesChunk.get(i));
         }
-        return accum.getValue();
+        return accum.longValue();
     }
 
     @Benchmark

@@ -1055,7 +1055,7 @@ public class SortedRangesTest {
         long prev = -1L;
         final MutableLong mutVal = new MutableLong(-1L);
         final RowSet.TargetComparator comp =
-                (final long key, final int dir) -> Long.signum(dir * (mutVal.getValue() - key));
+                (final long key, final int dir) -> Long.signum(dir * (mutVal.longValue() - key));
         for (long[] segment : segments0) {
             final long start = segment[0];
             final long end = segment[1];

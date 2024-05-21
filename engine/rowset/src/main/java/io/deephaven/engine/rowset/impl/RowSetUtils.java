@@ -199,7 +199,7 @@ public class RowSetUtils {
         final RowSequence.Iterator sourceProbe = sourceRowSet.getRowSequenceIterator();
         final MutableLong sourceOffset = new MutableLong();
         destRowSet.forAllRowKeyRanges((start, end) -> {
-            final long sourceStart = sourceOffset.getValue() + sourceProbe.advanceAndGetPositionDistance(start);
+            final long sourceStart = sourceOffset.longValue() + sourceProbe.advanceAndGetPositionDistance(start);
             final long sourceEnd = sourceStart + sourceProbe.advanceAndGetPositionDistance(end);
             if (!hasPending.booleanValue()) {
                 pendingStart.setValue(sourceStart);
