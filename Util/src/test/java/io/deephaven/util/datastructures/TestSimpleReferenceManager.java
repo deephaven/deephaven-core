@@ -100,7 +100,7 @@ public class TestSimpleReferenceManager {
         final MutableInt sum = new MutableInt();
         SUT.forEach((final SimpleReference<MutableInt> ref, final MutableInt item) -> {
             TestCase.assertSame(ref, item);
-            sum.add(item);
+            sum.add(item.intValue());
         });
         TestCase.assertEquals(expectedSum, sum.intValue());
     }

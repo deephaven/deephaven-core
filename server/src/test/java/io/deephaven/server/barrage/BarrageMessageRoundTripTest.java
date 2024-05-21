@@ -451,7 +451,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         void runTest(final Runnable simulateSourceStep) {
             createTable();
             createNuggets();
-            final int maxSteps = numSteps.getValue();
+            final int maxSteps = numSteps.intValue();
             final RemoteNugget[] nuggetsToValidate = nuggets.toArray(new RemoteNugget[0]);
             for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
                 for (int rt = 0; rt < numConsumerCoalesce; ++rt) {
@@ -751,7 +751,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         void runTest() {
             createTable();
             createNuggets();
-            final int maxSteps = numSteps.getValue();
+            final int maxSteps = numSteps.intValue();
             final RemoteNugget[] nuggetsToValidate = nuggets.toArray(new RemoteNugget[0]);
             for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
                 for (int rt = 0; rt < numConsumerCoalesce; ++rt) {

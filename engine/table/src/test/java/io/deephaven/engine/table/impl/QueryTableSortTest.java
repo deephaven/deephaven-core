@@ -458,7 +458,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         };
 
         for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
-            simulateShiftAwareStep(ctxt + " step == " + numSteps.getValue(), size, random, queryTable, columnInfo, en);
+            simulateShiftAwareStep(ctxt + " step == " + numSteps.intValue(), size, random, queryTable, columnInfo, en);
         }
     }
 

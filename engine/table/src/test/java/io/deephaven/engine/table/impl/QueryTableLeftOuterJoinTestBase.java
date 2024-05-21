@@ -359,7 +359,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
                             random, rightTicking, rightColumns);
                 }
             });
-            TstUtils.validate(ctxt + " step == " + numSteps.getValue(), en);
+            TstUtils.validate(ctxt + " step == " + numSteps.intValue(), en);
         }
     }
 
@@ -1549,7 +1549,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
                 }
             });
 
-            TstUtils.validate(ctxt + " step == " + numSteps.getValue(), en);
+            TstUtils.validate(ctxt + " step == " + numSteps.intValue(), en);
         }
     }
 
@@ -1608,42 +1608,42 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
-            final long rightOffset = numSteps.getValue();
+            final long rightOffset = numSteps.intValue();
 
             updateGraph.runWithinUnitTestCycle(() -> {
-                addToTable(leftTicking, i(numSteps.getValue()), longCol("intCol", numSteps.getValue()));
+                addToTable(leftTicking, i(numSteps.intValue()), longCol("intCol", numSteps.intValue()));
                 TableUpdateImpl up = new TableUpdateImpl();
                 up.shifted = RowSetShiftData.EMPTY;
-                up.added = i(numSteps.getValue());
+                up.added = i(numSteps.intValue());
                 up.removed = i();
                 up.modified = i();
                 up.modifiedColumnSet = ModifiedColumnSet.ALL;
                 leftTicking.notifyListeners(up);
 
-                final long[] data = new long[numSteps.getValue() + 1];
-                for (int i = 0; i <= numSteps.getValue(); ++i) {
+                final long[] data = new long[numSteps.intValue() + 1];
+                for (int i = 0; i <= numSteps.intValue(); ++i) {
                     data[i] = i;
                 }
-                addToTable(rightTicking, RowSetFactory.fromRange(rightOffset, rightOffset + numSteps.getValue()),
+                addToTable(rightTicking, RowSetFactory.fromRange(rightOffset, rightOffset + numSteps.intValue()),
                         longCol("intCol", data));
                 TstUtils.removeRows(rightTicking, i(rightOffset - 1));
 
                 up = new TableUpdateImpl();
                 final RowSetShiftData.Builder shifted = new RowSetShiftData.Builder();
-                shifted.shiftRange(0, numSteps.getValue() + rightOffset, 1);
+                shifted.shiftRange(0, numSteps.intValue() + rightOffset, 1);
                 up.shifted = shifted.build();
-                up.added = i(rightOffset + numSteps.getValue());
+                up.added = i(rightOffset + numSteps.intValue());
                 up.removed = i();
-                if (numSteps.getValue() == 0) {
+                if (numSteps.intValue() == 0) {
                     up.modified = RowSetFactory.empty();
                 } else {
-                    up.modified = RowSetFactory.fromRange(rightOffset, rightOffset + numSteps.getValue() - 1);
+                    up.modified = RowSetFactory.fromRange(rightOffset, rightOffset + numSteps.intValue() - 1);
                 }
                 up.modifiedColumnSet = ModifiedColumnSet.ALL;
                 rightTicking.notifyListeners(up);
             });
 
-            TstUtils.validate(" step == " + numSteps.getValue(), en);
+            TstUtils.validate(" step == " + numSteps.intValue(), en);
         }
     }
 

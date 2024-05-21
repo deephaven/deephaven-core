@@ -3917,7 +3917,7 @@ public class QueryTableAggregationTest {
             final long[] values = new long[result.intSize()];
             final MutableInt pos = new MutableInt();
             result.longColumnIterator("Value").forEachRemaining((long value) -> {
-                values[pos.getValue()] = value;
+                values[pos.intValue()] = value;
                 pos.increment();
             });
             assertArrayEquals(new long[] {0, 5, 17, 23}, values);
