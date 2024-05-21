@@ -1638,6 +1638,78 @@ public final class ParquetTableReadWriteTest {
         assertTrue(ColumnChunkPageStore.hasCorrectVectorOffsetIndexes("0.31.0-SNAPSHOT"));
     }
 
+    /**
+     * Reference data is generated using the following code:
+     * 
+     * <pre>
+     *      num_rows = 100000
+     *      dh_table = empty_table(num_rows).update(formulas=[
+     *         "someStringColumn = i % 10 == 0?null:(`` + (i % 101))",
+     *         ... # Same as in the test code
+     *      ])
+     *
+     *      write(dh_table, "data_from_dh.parquet")
+     *      pa_table = pyarrow.parquet.read_table("data_from_dh.parquet")
+     *      pyarrow.parquet.write_table(pa_table, "ReferenceParquetV1PageData.parquet", data_page_version='1.0')
+     *      pyarrow.parquet.write_table(pa_table, "ReferenceParquetV2PageData.parquet", data_page_version='2.0')
+     * </pre>
+     */
+    @Test
+    public void testReadParquetV2Pages() {
+        final String pathV1 =
+                ParquetTableReadWriteTest.class.getResource("/ReferenceParquetV1PageData.parquet").getFile();
+        final Table fromDiskV1 = readParquetFileFromGitLFS(new File(pathV1));
+        final String pathV2 =
+                ParquetTableReadWriteTest.class.getResource("/ReferenceParquetV2PageData.parquet").getFile();
+        final Table fromDiskV2 = readParquetFileFromGitLFS(new File(pathV2));
+        assertTableEquals(fromDiskV1, fromDiskV2);
+
+        final Table expected = emptyTable(100_000).update(
+                "someStringColumn = i % 10 == 0?null:(`` + (i % 101))",
+                "nonNullString = `` + (i % 60)",
+                "nonNullPolyString = `` + (i % 600)",
+                "someIntColumn = i",
+                "someLongColumn = ii",
+                "someDoubleColumn = i*1.1",
+                "someFloatColumn = (float)(i*1.1)",
+                "someBoolColumn = i % 3 == 0?true:i%3 == 1?false:null",
+                "someShortColumn = (short)i",
+                "someByteColumn = (byte)i",
+                "someCharColumn = (char)i",
+                "someKey = `` + (int)(i /100)",
+                "nullKey = i < -1?`123`:null",
+                "nullIntColumn = (int)null",
+                "nullLongColumn = (long)null",
+                "nullDoubleColumn = (double)null",
+                "nullFloatColumn = (float)null",
+                "nullBoolColumn = (Boolean)null",
+                "nullShortColumn = (short)null",
+                "nullByteColumn = (byte)null",
+                "nullCharColumn = (char)null",
+                "nullTime = (Instant)null",
+                "nullString = (String)null",
+                "someStringArrayColumn = new String[] {i % 10 == 0 ? null : (`` + (i % 101))}",
+                "someIntArrayColumn = new int[] {i % 10 == 0 ? null : i}",
+                "someLongArrayColumn = new long[] {i % 10 == 0 ? null : i}",
+                "someDoubleArrayColumn = new double[] {i % 10 == 0 ? null : i*1.1}",
+                "someFloatArrayColumn = new float[] {i % 10 == 0 ? null : (float)(i*1.1)}",
+                "someBoolArrayColumn = new Boolean[] {i % 3 == 0 ? true :i % 3 == 1 ? false : null}",
+                "someShorArrayColumn = new short[] {i % 10 == 0 ? null : (short)i}",
+                "someByteArrayColumn = new byte[] {i % 10 == 0 ? null : (byte)i}",
+                "someCharArrayColumn = new char[] {i % 10 == 0 ? null : (char)i}",
+                "someTimeArrayColumn = new Instant[] {i % 10 == 0 ? null : java.time.Instant.ofEpochSecond(ii)}",
+                "nullStringArrayColumn = new String[] {(String)null}",
+                "nullIntArrayColumn = new int[] {(int)null}",
+                "nullLongArrayColumn = new long[] {(long)null}",
+                "nullDoubleArrayColumn = new double[] {(double)null}",
+                "nullFloatArrayColumn = new float[] {(float)null}",
+                "nullBoolArrayColumn = new Boolean[] {(Boolean)null}",
+                "nullShorArrayColumn = new short[] {(short)null}",
+                "nullByteArrayColumn = new byte[] {(byte)null}",
+                "nullCharArrayColumn = new char[] {(char)null}",
+                "nullTimeArrayColumn = new Instant[] {(Instant)null}");
+        assertTableEquals(expected, fromDiskV2);
+    }
 
     /**
      * Test if the parquet reading code can read pre-generated parquet files which have different number of rows in each
