@@ -3,6 +3,7 @@
 //
 package io.deephaven.parquet.base;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Require;
 import io.deephaven.parquet.compress.CompressorAdapter;
@@ -43,6 +44,7 @@ import static org.apache.parquet.column.ValuesType.VALUES;
 final class ColumnPageReaderImpl implements ColumnPageReader {
     private static final int NULL_OFFSET = -1;
 
+    private final String columnName;
     private final SeekableChannelsProvider channelsProvider;
     private final CompressorAdapter compressorAdapter;
     private final Function<SeekableChannelContext, Dictionary> dictionarySupplier;
@@ -55,13 +57,15 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
      * The offset for data following the page header in the file.
      */
     private final long dataOffset;
-    private PageHeader pageHeader;
-    private int numValues;
+    private final PageHeader pageHeader;
+    private final int numValues;
     private int rowCount = -1;
+
 
     /**
      * Returns a {@link ColumnPageReader} object for reading the column page data from the file.
      *
+     * @param columnName The name of the column.
      * @param channelsProvider The provider for {@link SeekableByteChannel} for reading the file.
      * @param compressorAdapter The adapter for decompressing the data.
      * @param dictionarySupplier The supplier for dictionary data, set as {@link ColumnChunkReader#NULL_DICTIONARY} if
@@ -75,6 +79,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
      * @param numValues The number of values in the page.
      */
     ColumnPageReaderImpl(
+            final String columnName,
             final SeekableChannelsProvider channelsProvider,
             final CompressorAdapter compressorAdapter,
             final Function<SeekableChannelContext, Dictionary> dictionarySupplier,
@@ -85,6 +90,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             final long dataOffset,
             final PageHeader pageHeader,
             final int numValues) {
+        this.columnName = columnName;
         this.channelsProvider = channelsProvider;
         this.compressorAdapter = compressorAdapter;
         this.dictionarySupplier = dictionarySupplier;
@@ -137,7 +143,8 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             final InputStream in,
             @NotNull final SeekableChannelContext channelContext) throws IOException {
         if (pageHeader.type != PageType.DATA_PAGE) {
-            throw new IllegalArgumentException("Expected parquet DATA_PAGE V1, found " + pageHeader.getType());
+            throw new IllegalArgumentException("Expected parquet DATA_PAGE V1, found " + pageHeader.getType() + " for "
+                    + "column: " + columnName + ", uri: " + uri);
         }
         final int uncompressedPageSize = pageHeader.getUncompressed_page_size();
         final int compressedPageSize = pageHeader.getCompressed_page_size();
@@ -161,7 +168,8 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             final InputStream in,
             @NotNull final SeekableChannelContext channelContext) throws IOException {
         if (pageHeader.type != PageType.DATA_PAGE_V2) {
-            throw new IllegalArgumentException("Expected parquet DATA_PAGE_V2, found " + pageHeader.getType());
+            throw new IllegalArgumentException("Expected parquet DATA_PAGE_V2, found " + pageHeader.getType() + " for "
+                    + "column: " + columnName + ", uri: " + uri);
         }
         final int uncompressedPageSize = pageHeader.getUncompressed_page_size();
         final int compressedPageSize = pageHeader.getCompressed_page_size();
@@ -205,7 +213,8 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
                 final DataPageHeaderV2 dataHeaderV2 = pageHeader.getData_page_header_v2();
                 return dataHeaderV2.getNum_rows();
             default:
-                throw new RuntimeException("Unsupported type: " + pageHeader.type);
+                throw new UncheckedDeephavenException("Unsupported page type " + pageHeader.type + " for column: " +
+                        columnName + ", uri: " + uri);
         }
     }
 
@@ -227,7 +236,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
                 }
             default:
                 throw new IOException(String.format("Unexpected page of type %s of size %d", pageHeader.getType(),
-                        pageHeader.getCompressed_page_size()));
+                        pageHeader.getCompressed_page_size()) + " for column: " + columnName + ", uri: " + uri);
         }
     }
 
@@ -246,7 +255,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
                 }
             default:
                 throw new IOException(String.format("Unexpected page of type %s of size %d", pageHeader.getType(),
-                        pageHeader.getCompressed_page_size()));
+                        pageHeader.getCompressed_page_size()) + " for column: " + columnName + ", uri: " + uri);
         }
     }
 
@@ -266,7 +275,8 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
                 return page.getValueCount();
             }
         } catch (final IOException e) {
-            throw new ParquetDecodingException("could not read page " + page + " in col " + path, e);
+            throw new ParquetDecodingException("Failed to read row count from Parquet V1 page for column: " +
+                    columnName + ", uri: " + uri, e);
         }
     }
 
@@ -378,8 +388,8 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
                     getDataReader(page.getValueEncoding(), bytes, page.getValueCount(), channelContext);
             return materialize(pageMaterializerFactory, dlDecoder, rlDecoder, dataReader, nullValue);
         } catch (final IOException e) {
-            throw new ParquetDecodingException("could not read page " + page + " in col " + path,
-                    e);
+            throw new ParquetDecodingException("Failed to read parquet V1 page for column: " + columnName +
+                    ", uri: " + uri, e);
         }
     }
 
@@ -439,7 +449,8 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
                     page.getData().toByteBuffer(), page.getValueCount(), channelContext);
             return materialize(pageMaterializerFactory, dlDecoder, rlDecoder, dataReader, nullValue);
         } catch (final IOException e) {
-            throw new ParquetDecodingException("could not read page " + page + " in col " + path, e);
+            throw new ParquetDecodingException("Failed to read parquet V2 page for column: " + columnName +
+                    ", uri: " + uri, e);
         }
     }
 
@@ -508,7 +519,9 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         for (final Pair<Type.Repetition, IntBuffer> offsetAndNull : offsetAndNulls) {
             if (offsetAndNull.first == Type.Repetition.OPTIONAL) {
                 if (currentNullOffsets != null) {
-                    throw new UnsupportedOperationException("Nested optional levels not supported");
+                    throw new UnsupportedOperationException(
+                            "Failed to read parquet page because nested optional levels are not supported, found for column: "
+                                    + columnName + ", uri: " + uri);
                 }
                 currentNullOffsets = offsetAndNull.second;
             } else {
@@ -556,8 +569,9 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         if (dataEncoding.usesDictionary()) {
             final Dictionary dictionary = dictionarySupplier.apply(channelContext);
             if (dictionary == ColumnChunkReader.NULL_DICTIONARY) {
-                throw new ParquetDecodingException("Could not read page in col " + path + " as the dictionary was " +
-                        "missing for encoding " + dataEncoding);
+                throw new ParquetDecodingException(
+                        "Failed to read parquet page for column: " + columnName + ", uri: " + uri +
+                                " as the dictionary was missing for encoding: " + dataEncoding);
             }
             dataReader = new DictionaryValuesReader(dictionary);
         } else {
@@ -567,7 +581,8 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         try {
             dataReader.initFromPage(valueCount, ByteBufferInputStream.wrap(in));
         } catch (final IOException e) {
-            throw new ParquetDecodingException("Could not read page in col " + path, e);
+            throw new ParquetDecodingException("Failed to read parquet page for column: " + columnName +
+                    ", uri: " + uri, e);
         }
         return dataReader;
     }
