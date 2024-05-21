@@ -12,7 +12,8 @@ final class ByteBufferInputStream extends InputStream {
 
     public static InputStream of(ByteBuffer buffer) {
         if (buffer.hasArray()) {
-            return new ByteArrayInputStream(buffer.array(), buffer.position(), buffer.remaining());
+            return new ByteArrayInputStream(buffer.array(), buffer.arrayOffset() + buffer.position(),
+                    buffer.remaining());
         } else {
             return new ByteBufferInputStream(buffer.asReadOnlyBuffer());
         }
