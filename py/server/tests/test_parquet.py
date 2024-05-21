@@ -733,5 +733,18 @@ class ParquetTestCase(BaseTestCase):
         ])
         self.assert_table_equals(table_from_disk, expected)
 
+    def test_v2_pages(self):
+        def test_v2_pages_helper(dh_table):
+            write(dh_table, "data_from_dh.parquet")
+            pa_table = pyarrow.parquet.read_table("data_from_dh.parquet")
+            pyarrow.parquet.write_table(pa_table, "data_from_pq_v2.parquet", data_page_version='2.0')
+            from_disk = read("data_from_pq_v2.parquet")
+            self.assert_table_equals(dh_table, from_disk)
+
+        dh_table1 = self.get_table_data()
+        test_v2_pages_helper(dh_table1)
+        dh_table2 = self.get_table_with_array_data()
+        test_v2_pages_helper(dh_table2)
+
 if __name__ == '__main__':
     unittest.main()

@@ -15,12 +15,13 @@ import java.util.List;
 public interface RowGroupReader {
     /**
      * Returns the accessor to a given Column Chunk
-     * 
+     *
+     * @param columnName the name of the column
      * @param path the full column path
      * @return the accessor to a given Column Chunk, or null if the column is not present in this Row Group
      */
     @Nullable
-    ColumnChunkReader getColumnChunk(@NotNull List<String> path);
+    ColumnChunkReader getColumnChunk(@NotNull String columnName, @NotNull List<String> path);
 
     long numRows();
 
