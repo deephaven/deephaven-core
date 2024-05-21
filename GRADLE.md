@@ -75,14 +75,19 @@ The language levels are mostly internal properties of the individual subprojects
 
 ### Application options
 
-* `deephaven.javaOpts`: the "generally applicable and recommended JVM options" for the application. Currently, defaults
-to `-XX:+UseG1GC -XX:MaxGCPauseMillis=100 -XX:+UseStringDeduplication`.
+* `deephaven.javaOpts`: the "generally applicable and recommended JVM options" for the application set at _build_ time. 
+Currently, defaults to `-XX:+UseG1GC -XX:MaxGCPauseMillis=100 -XX:+UseStringDeduplication`.
 
-This property is mainly meant to serve as the defaults for `org.gradle.api.plugins.JavaApplication` tasks, which in
-turn serves as the defaults for users running the application (it also applies to `org.gradle.api.tasks.JavaExec`
-and `org.gradle.api.tasks.testing.Test` tasks). Overly specific options do not belong here. For example, heap settings
-(`-Xmx4g`) or system properties (`-Dkey=value`) should not be set here.
+This property serves as the _build_ time defaults for `org.gradle.api.plugins.JavaApplication` tasks, which in
+turn serves as the defaults for users running the native application via the `JAVA_OPTS` environment variable (it also
+applies to `org.gradle.api.tasks.JavaExec` and `org.gradle.api.tasks.testing.Test` tasks). Overly specific options do
+not belong here, and are best left for users to configure at _runtime_. For example, heap settings (such as `-Xmx<size>`)
+are better set in a `START_OPTS` environment variable; Deephaven configuration properties are better set in the
+Deephaven configuration file.
 
 For example, the following will create an application tar that uses Generational ZGC by default:
 
 `./gradlew server-jetty-app:distTar -Pdeephaven.javaOpts="-XX:+UseZGC -XX:+ZGenerational"`
+
+See [server/jetty-app/README.MD](server/jetty-app/README.md) for more information about
+the native application.
