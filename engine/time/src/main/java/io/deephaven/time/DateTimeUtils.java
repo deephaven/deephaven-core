@@ -24,8 +24,7 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static io.deephaven.util.QueryConstants.NULL_INT;
-import static io.deephaven.util.QueryConstants.NULL_LONG;
+import static io.deephaven.util.QueryConstants.*;
 import static java.time.format.DateTimeFormatter.*;
 
 /**
@@ -1653,6 +1652,44 @@ public class DateTimeUtils {
     }
 
     /**
+     * Adds two durations.
+     *
+     * @param duration1 first duration
+     * @param duration2 second duration
+     * @return {@code null} if either input is {@code null}; otherwise the sum of the two durations
+     */
+    public static Duration plus(@Nullable final Duration duration1, @Nullable final Duration duration2) {
+        if (duration1 == null || duration2 == null) {
+            return null;
+        }
+
+        try {
+            return duration1.plus(duration2);
+        } catch (Exception ex) {
+            throw new DateTimeOverflowException(ex);
+        }
+    }
+
+    /**
+     * Adds two periods.
+     *
+     * @param  period1 first period
+     * @param period2 second period
+     * @return {@code null} if either input is {@code null}; otherwise the sum of the two periods
+     */
+    public static Period plus(@Nullable final Period period1, @Nullable final Period period2) {
+        if (period1 == null || period2 == null) {
+            return null;
+        }
+
+        try {
+            return period1.plus(period2);
+        } catch (Exception ex) {
+            throw new DateTimeOverflowException(ex);
+        }
+    }
+
+    /**
      * Subtracts days from a {@link LocalDate}.
      *
      * @param date starting date
@@ -1872,6 +1909,44 @@ public class DateTimeUtils {
     }
 
     /**
+     * Subtracts two durations.
+     *
+     * @param duration1 first duration
+     * @param duration2 second duration
+     * @return {@code null} if either input is {@code null}; otherwise the difference of the two durations
+     */
+    public static Duration minus(@Nullable final Duration duration1, @Nullable final Duration duration2) {
+        if (duration1 == null || duration2 == null) {
+            return null;
+        }
+
+        try {
+            return duration1.minus(duration2);
+        } catch (Exception ex) {
+            throw new DateTimeOverflowException(ex);
+        }
+    }
+
+    /**
+     * Subtracts two periods.
+     *
+     * @param  period1 first period
+     * @param period2 second period
+     * @return {@code null} if either input is {@code null}; otherwise the difference of the two periods
+     */
+    public static Period minus(@Nullable final Period period1, @Nullable final Period period2) {
+        if (period1 == null || period2 == null) {
+            return null;
+        }
+
+        try {
+            return period1.minus(period2);
+        } catch (Exception ex) {
+            throw new DateTimeOverflowException(ex);
+        }
+    }
+
+    /**
      * Multiply a duration by a scalar.
      *
      * @param duration the duration to multiply
@@ -1894,11 +1969,43 @@ public class DateTimeUtils {
      * @return {@code null} if either input is {@code null}; otherwise the duration multiplied by the scalar
      */
     public static Duration multiply(final long scalar, final Duration duration) {
-        if (duration == null || scalar == NULL_LONG) {
+        return multiply(duration, scalar);
+    }
+
+    /**
+     * Multiply a duration by a scalar.
+     *
+     * @param duration the duration to multiply
+     * @param scalar the scalar to multiply by
+     * @return {@code null} if either input is {@code null}; otherwise the duration multiplied by the scalar
+     */
+    public static Duration multiply(final Duration duration, final double scalar) {
+        if (duration == null || scalar == NULL_DOUBLE) {
             return null;
         }
 
-        return duration.multipliedBy(scalar);
+        if(Double.isNaN(scalar)) {
+            throw new DateTimeOverflowException("Scalar value is NaN");
+        }
+
+        final double product = duration.toNanos() * scalar;
+
+        if(product > Long.MAX_VALUE || product < Long.MIN_VALUE) {
+            throw new DateTimeOverflowException("Product value is too large to be cast to a long");
+        }
+
+        return Duration.ofNanos((long) product);
+    }
+
+    /**
+     * Multiply a duration by a scalar.
+     *
+     * @param duration the duration to multiply
+     * @param scalar the scalar to multiply by
+     * @return {@code null} if either input is {@code null}; otherwise the duration multiplied by the scalar
+     */
+    public static Duration multiply(final double scalar, final Duration duration) {
+        return multiply(duration, scalar);
     }
 
     /**
@@ -1924,13 +2031,80 @@ public class DateTimeUtils {
      * @return {@code null} if either input is {@code null}; otherwise the period multiplied by the scalar
      */
     public static Period multiply(final int scalar, final Period period) {
-        if (period == null || scalar == NULL_INT) {
+        return multiply(period, scalar);
+    }
+
+    /**
+     * Multiply a period by a scalar.
+     *
+     * @param period the period to multiply
+     * @param scalar the scalar to multiply by
+     * @return {@code null} if either input is {@code null}; otherwise the period multiplied by the scalar
+     */
+    public static Period multiply(final Period period, final long scalar) {
+        if (period == null || scalar == NULL_LONG) {
             return null;
         }
 
-        return period.multipliedBy(scalar);
+        if(scalar > Integer.MAX_VALUE || scalar < Integer.MIN_VALUE) {
+            throw new DateTimeOverflowException("Scalar value is too large to be cast to an int");
+        }
+
+        return period.multipliedBy((int) scalar);
     }
 
+    /**
+     * Multiply a period by a scalar.
+     *
+     * @param period the period to multiply
+     * @param scalar the scalar to multiply by
+     * @return {@code null} if either input is {@code null}; otherwise the period multiplied by the scalar
+     */
+    public static Period multiply(final long scalar, final Period period) {
+        return multiply(period, scalar);
+    }
+
+    /**
+     * Divide a duration by a scalar.
+     *
+     * @param duration the duration to divide
+     * @param scalar the scalar to divide by
+     * @return {@code null} if either input is {@code null}; otherwise the duration divide by the scalar
+     */
+    public static Duration divide(final Duration duration, final long scalar) {
+        if (duration == null || scalar == NULL_LONG) {
+            return null;
+        }
+
+        if(scalar == 0) {
+            throw new DateTimeOverflowException("Scalar value is zero");
+        }
+
+        return duration.dividedBy(scalar);
+    }
+
+    /**
+     * Divide a duration by a scalar.
+     *
+     * @param duration the duration to divide
+     * @param scalar the scalar to divide by
+     * @return {@code null} if either input is {@code null}; otherwise the duration divide by the scalar
+     */
+    public static Duration divide(final Duration duration, final double scalar) {
+        if (duration == null || scalar == NULL_DOUBLE) {
+            return null;
+        }
+
+        if(Double.isNaN(scalar)) {
+            throw new DateTimeOverflowException("Scalar value is NaN");
+        }
+
+        if(scalar == 0) {
+            throw new DateTimeOverflowException("Scalar value is zero");
+        }
+
+        return Duration.ofNanos((long) (duration.toNanos() / scalar));
+    }
 
     /**
      * Returns the difference in nanoseconds between two instant values.
