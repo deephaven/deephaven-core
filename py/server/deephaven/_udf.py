@@ -567,6 +567,7 @@ def _udf_parser(fn: Callable):
     return _udf_decorator
 
 # region Wrapper Code Generation
+# for non-vectorize-able UDFs
 INDENT_STR= " " * 4
 WRAPPER_HEADER = """def _wrapper(*args):"""
 ARG_CONV = """
@@ -583,6 +584,7 @@ NO_ARG_CONV = """ret = fn(*args)"""
 ARRAY_RET = """return dtypes.array(ret_dtype, ret)"""
 SCALAR_RET = """return ret_converter(ret) if ret_converter else ret"""
 
+# for vectorize-able UDFs
 V_WRAPPER_HEADER = """
 def _wrapper(*args):
     chunk_size = args[0]
@@ -639,5 +641,5 @@ def _gen_wrapper_code(p_sig: _ParsedSignature, for_vectorization: bool, arg_conv
 
         return (wrapper_str + "\n"
                 + INDENT_STR + V_RET_CHUNK + "\n")
-    # endregion
+# endregion
 
