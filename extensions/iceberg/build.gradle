@@ -11,19 +11,15 @@ ext {
 
 dependencies {
     api project(':engine-api')
-    api project(':engine-stringset')
     api project(':engine-table')
 
     implementation project(':engine-base')
     implementation project(':log-factory')
     implementation project(':Configuration')
-    implementation depTrove3
 
     implementation platform('software.amazon.awssdk:bom:2.23.19')
     implementation 'software.amazon.awssdk:s3'
     implementation 'software.amazon.awssdk:aws-crt-client'
-
-    compileOnly depAnnotations
 
     Classpaths.inheritAutoService(project)
     Classpaths.inheritImmutables(project)
@@ -51,7 +47,6 @@ dependencies {
     implementation "org.apache.iceberg:iceberg-bundled-guava"
     runtimeOnly "org.apache.iceberg:iceberg-aws-bundle"
 
-    // ??? BOM?
     implementation "org.apache.hadoop:hadoop-common:${hadoopVersion}"
     implementation "org.apache.hadoop:hadoop-hdfs-client:${hadoopVersion}"
 
