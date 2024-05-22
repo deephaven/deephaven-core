@@ -83,17 +83,17 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
 
             if (numPages == 1) {
                 fixedPageSize = numRows();
-                return;
-            }
-            boolean isPageSizeFixed = true;
-            final long firstPageSize = offsetIndex.getFirstRowIndex(1) - offsetIndex.getFirstRowIndex(0);
-            for (int i = 2; i < numPages; ++i) {
-                if (offsetIndex.getFirstRowIndex(i) - offsetIndex.getFirstRowIndex(i - 1) != firstPageSize) {
-                    isPageSizeFixed = false;
-                    break;
+            } else {
+                boolean isPageSizeFixed = true;
+                final long firstPageSize = offsetIndex.getFirstRowIndex(1) - offsetIndex.getFirstRowIndex(0);
+                for (int i = 2; i < numPages; ++i) {
+                    if (offsetIndex.getFirstRowIndex(i) - offsetIndex.getFirstRowIndex(i - 1) != firstPageSize) {
+                        isPageSizeFixed = false;
+                        break;
+                    }
                 }
+                fixedPageSize = isPageSizeFixed ? firstPageSize : PAGE_SIZE_NOT_FIXED;
             }
-            fixedPageSize = isPageSizeFixed ? firstPageSize : PAGE_SIZE_NOT_FIXED;
             isInitialized = true;
         }
     }
