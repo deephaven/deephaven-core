@@ -29,7 +29,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiConsumer;
 
 /**
@@ -92,12 +91,6 @@ final class S3Request extends SoftReference<ByteBuffer>
 
     private static final Logger log = LoggerFactory.getLogger(S3Request.class);
 
-    private static final int REQUEST_NOT_SENT = 0;
-    private static final int REQUEST_SENT = 1;
-    private volatile int requestSent = REQUEST_NOT_SENT;
-    private static final AtomicIntegerFieldUpdater<S3Request> REQUEST_SENT_UPDATER =
-            AtomicIntegerFieldUpdater.newUpdater(S3Request.class, "requestSent");
-
     private final S3Uri s3Uri;
     private final ID id;
     private final S3Instructions instructions;
@@ -106,7 +99,7 @@ final class S3Request extends SoftReference<ByteBuffer>
     private final long from;
     private final long to;
     private final Instant createdAt;
-    private CompletableFuture<Boolean> consumerFuture;
+    private volatile CompletableFuture<Boolean> consumerFuture;
     private volatile CompletableFuture<Boolean> producerFuture;
     private int fillCount;
     private long fillBytes;
@@ -169,14 +162,18 @@ final class S3Request extends SoftReference<ByteBuffer>
      * Send the request to the S3 service. This method is idempotent and can be called multiple times.
      */
     void sendRequest() {
-        if (!REQUEST_SENT_UPDATER.compareAndSet(this, REQUEST_NOT_SENT, REQUEST_SENT)) {
-            return;
+        if (consumerFuture == null) {
+            synchronized (this) {
+                if (consumerFuture == null) {
+                    if (log.isDebugEnabled()) {
+                        log.debug().append("Sending: ").append(requestStr()).endl();
+                    }
+                    final CompletableFuture<Boolean> ret = client.getObject(getObjectRequest(), this);
+                    ret.whenComplete(this);
+                    consumerFuture = ret;
+                }
+            }
         }
-        if (log.isDebugEnabled()) {
-            log.debug().append("Sending: ").append(requestStr()).endl();
-        }
-        consumerFuture = client.getObject(getObjectRequest(), this);
-        consumerFuture.whenComplete(this);
     }
 
     boolean isDone() {
