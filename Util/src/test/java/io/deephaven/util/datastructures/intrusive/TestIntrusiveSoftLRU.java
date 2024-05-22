@@ -16,7 +16,8 @@ public class TestIntrusiveSoftLRU {
 
     private final IntrusiveSoftLRU.Adapter<TestNode> ADAPTER = new IntrusiveSoftLRU.Node.Adapter<>();
 
-    static class TestNode extends IntrusiveSoftLRU.Node.Impl<TestNode> {
+    static class TestNode extends IntrusiveSoftLRU.Node.Impl {
+
         final int index;
 
         TestNode(int index) {
@@ -126,7 +127,6 @@ public class TestIntrusiveSoftLRU {
                 i.remove();
             } else {
                 assertTrue(testNode.index < 16 || testNode.index >= 272);
-                assertEquals(testNode, ADAPTER.getOwner(testNode).get());
                 assertTrue(used.add(ADAPTER.getSlot(testNode)));
             }
         }
@@ -163,7 +163,6 @@ public class TestIntrusiveSoftLRU {
             } else {
                 nonNullItems++;
                 assertTrue(testNode.index >= lru.currentCapacity());
-                assertEquals(testNode, ADAPTER.getOwner(testNode).get());
                 assertTrue(used.add(ADAPTER.getSlot(testNode)));
             }
         }

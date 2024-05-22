@@ -22,6 +22,7 @@ import java.util.Set;
  * @param <T> the cached type
  */
 public class IntrusiveSoftLRU<T> {
+
     private static final SoftReference<?> NULL = new SoftReference<>(null);
 
     private final Adapter<T> adapter;
@@ -126,7 +127,7 @@ public class IntrusiveSoftLRU<T> {
                 softReferences[slot].get() != itemToTouch) {
             // A new entry, place it on top of the tail
             adapter.setSlot(itemToTouch, tail);
-            softReferences[tail] = adapter.getOwner(itemToTouch);
+            softReferences[tail] = new SoftReference<>(itemToTouch);
 
             // Move the tail back one slot
             tail = prevs[tail];
@@ -170,7 +171,7 @@ public class IntrusiveSoftLRU<T> {
                 // No, cool. Just add it.
                 final int slotForItem = size++;
                 adapter.setSlot(itemToTouch, slotForItem);
-                softReferences[slotForItem] = adapter.getOwner(itemToTouch);
+                softReferences[slotForItem] = new SoftReference<>(itemToTouch);
             } else {
                 // Yep, resize, copy, and potentially switch to LRU mode.
                 doResize();
@@ -270,19 +271,10 @@ public class IntrusiveSoftLRU<T> {
     /**
      * An interface defining the required intrusive property getters and setters. Users should not directly call these
      * methods, or they risk corrupting the internal data structure.
-     * 
+     *
      * @param <T>
      */
     public interface Adapter<T> {
-
-        /**
-         * Get a {@link SoftReference} object which refers to the object being cached and will act as its "owner" in the
-         * cache.
-         *
-         * @param cachedObject the object being cached.
-         * @return a {@link SoftReference} that refers to the item and will act as its "owner" in the cache.
-         */
-        SoftReference<T> getOwner(T cachedObject);
 
         /**
          * Get the slot in which the object is stored in the cache.
@@ -303,12 +295,8 @@ public class IntrusiveSoftLRU<T> {
 
     /**
      * An intrusive node for storing items in the cache.
-     * 
-     * @param <T> the actual node type
      */
-    public interface Node<T extends Node<T>> {
-
-        SoftReference<T> getOwner();
+    public interface Node {
 
         int getSlot();
 
@@ -316,23 +304,13 @@ public class IntrusiveSoftLRU<T> {
 
         /**
          * The base node implementation for items in the cache.
-         * 
-         * @param <T>
          */
-        class Impl<T extends Impl<T>> implements Node<T> {
+        class Impl implements Node {
 
-            private final SoftReference<T> owner;
             private int slot;
 
             protected Impl() {
-                // noinspection unchecked
-                owner = new SoftReference<>((T) this);
                 slot = -1;
-            }
-
-            @Override
-            public SoftReference<T> getOwner() {
-                return owner;
             }
 
             @Override
@@ -351,18 +329,13 @@ public class IntrusiveSoftLRU<T> {
          * 
          * @param <T>
          */
-        class Adapter<T extends Node<T>> implements IntrusiveSoftLRU.Adapter<T> {
+        class Adapter<T extends Node> implements IntrusiveSoftLRU.Adapter<T> {
 
             private static final IntrusiveSoftLRU.Adapter<?> INSTANCE = new Adapter<>();
 
-            public static <T extends Node<T>> IntrusiveSoftLRU.Adapter<T> getInstance() {
+            public static <T extends Node> IntrusiveSoftLRU.Adapter<T> getInstance() {
                 // noinspection unchecked
                 return (IntrusiveSoftLRU.Adapter<T>) INSTANCE;
-            }
-
-            @Override
-            public SoftReference<T> getOwner(@NotNull T cachedObject) {
-                return cachedObject.getOwner();
             }
 
             @Override

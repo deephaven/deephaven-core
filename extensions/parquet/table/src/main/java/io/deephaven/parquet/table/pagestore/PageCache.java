@@ -33,7 +33,7 @@ public class PageCache<ATTR extends Any> extends IntrusiveSoftLRU<PageCache.Intr
     /**
      * Intrusive data structure for page caching.
      */
-    public static class IntrusivePage<ATTR extends Any> extends IntrusiveSoftLRU.Node.Impl<IntrusivePage<ATTR>> {
+    public static class IntrusivePage<ATTR extends Any> extends IntrusiveSoftLRU.Node.Impl {
 
         private final ChunkPage<ATTR> page;
 
