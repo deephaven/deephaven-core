@@ -71,14 +71,14 @@ final class BigIntegerMixin extends Mixin<BigIntegerValue> implements ToObject<B
         if (!allowNumberInt()) {
             throw Parsing.mismatch(parser, BigInteger.class);
         }
-        return parser.getBigIntegerValue();
+        return Parsing.parseIntAsBigInteger(parser);
     }
 
     private BigInteger parseFromDecimal(JsonParser parser) throws IOException {
         if (!allowDecimal()) {
             throw Parsing.mismatch(parser, BigInteger.class);
         }
-        return parser.getBigIntegerValue();
+        return Parsing.parseDecimalAsBigInteger(parser);
     }
 
     private BigInteger parseFromString(JsonParser parser) throws IOException {

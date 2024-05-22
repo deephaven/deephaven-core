@@ -16,6 +16,7 @@ import io.deephaven.chunk.ShortChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.util.hashing.ChunkEquals;
 import io.deephaven.processor.ObjectProcessor;
 
 import java.io.IOException;
@@ -68,6 +69,7 @@ public class TestHelper {
     static void check(Chunk<?> actual, Chunk<?> expected) {
         assertThat(actual.getChunkType()).isEqualTo(expected.getChunkType());
         assertThat(actual.size()).isEqualTo(expected.size());
+        //ChunkEquals.makeEqual(actual.getChunkType()).equalReduce()
         switch (actual.getChunkType()) {
             case Boolean:
                 check(actual.asBooleanChunk(), expected.asBooleanChunk());

@@ -165,7 +165,7 @@ final class TupleMixin extends Mixin<TupleValue> {
 
         @Override
         public void processNullRepeater(JsonParser parser) throws IOException {
-            if (!allowMissing()) {
+            if (!allowNull()) {
                 throw Parsing.mismatch(parser, Object.class);
             }
             for (RepeaterProcessor value : values) {

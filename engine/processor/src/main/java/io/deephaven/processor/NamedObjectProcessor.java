@@ -87,7 +87,7 @@ public abstract class NamedObjectProcessor<T> {
     final void checkSizes() {
         if (names().size() != processor().size()) {
             throw new IllegalArgumentException(
-                    String.format("Unmatched sizes; columnNames().size()=%d, processor().size()=%d",
+                    String.format("Unmatched sizes; names().size()=%d, processor().size()=%d",
                             names().size(), processor().size()));
         }
     }

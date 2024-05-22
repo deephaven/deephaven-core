@@ -10,11 +10,12 @@ import io.deephaven.qst.type.Type;
 import io.deephaven.time.DateTimeUtils;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.Stream;
 
-final class InstantNumberMixin extends Mixin<InstantNumberValue> {
+final class  InstantNumberMixin extends Mixin<InstantNumberValue> {
 
     private final long onNull;
     private final long onMissing;
@@ -53,27 +54,47 @@ final class InstantNumberMixin extends Mixin<InstantNumberValue> {
     private LongValueProcessor.ToLong function() {
         switch (options.format()) {
             case EPOCH_SECONDS:
-                return new EpochSeconds();
+                return new Impl(9);
             case EPOCH_MILLIS:
-                return new EpochMillis();
+                return new Impl(6);
             case EPOCH_MICROS:
-                return new EpochMicros();
+                return new Impl(3);
             case EPOCH_NANOS:
-                return new EpochNanos();
+                return new Impl(0);
             default:
                 throw new IllegalStateException();
         }
     }
 
-    private abstract class Base implements LongValueProcessor.ToLong {
+    private class Impl implements LongValueProcessor.ToLong {
 
-        abstract long parseFromInt(JsonParser parser) throws IOException;
+        private final int scaled;
+        private final int mult;
 
-        abstract long parseFromDecimal(JsonParser parser) throws IOException;
+        Impl(int scaled) {
+            this.scaled = scaled;
+            this.mult = BigInteger.valueOf(10).pow(scaled).intValueExact();
+        }
 
-        abstract long parseFromString(JsonParser parser) throws IOException;
+        private long parseFromInt(JsonParser parser) throws IOException {
+            return mult * Parsing.parseIntAsLong(parser);
+        }
 
-        abstract long parseFromDecimalString(JsonParser parser) throws IOException;
+        private long parseFromDecimal(JsonParser parser) throws IOException {
+            // We need to parse w/ BigDecimal in the case of VALUE_NUMBER_FLOAT, otherwise we might lose accuracy
+            // jshell> (long)(1703292532.123456789 * 1000000000)
+            // $4 ==> 1703292532123456768
+            // See InstantNumberOptionsTest
+            return Parsing.parseDecimalAsScaledTruncatedLong(parser, scaled);
+        }
+
+        private long parseFromString(JsonParser parser) throws IOException {
+            return mult * Parsing.parseStringAsLong(parser);
+        }
+
+        private long parseFromDecimalString(JsonParser parser) throws IOException {
+            return Parsing.parseDecimalStringAsScaledTruncatedLong(parser, scaled);
+        }
 
         @Override
         public final long parseValue(JsonParser parser) throws IOException {
@@ -111,122 +132,6 @@ final class InstantNumberMixin extends Mixin<InstantNumberValue> {
                 throw Parsing.mismatchMissing(parser, Instant.class);
             }
             return onMissing;
-        }
-    }
-
-    // We need to parse w/ BigDecimal in the case of VALUE_NUMBER_FLOAT, otherwise we might lose accuracy
-    // jshell> (long)(1703292532.123456789 * 1000000000)
-    // $4 ==> 1703292532123456768
-    // See InstantNumberOptionsTest
-
-    private class EpochSeconds extends Base {
-
-        private static final int SCALED = 9;
-        private static final int MULT = 1_000_000_000;
-
-        private long epochNanos(long epochSeconds) {
-            return MULT * epochSeconds;
-        }
-
-        @Override
-        long parseFromInt(JsonParser parser) throws IOException {
-            return epochNanos(Parsing.parseIntAsLong(parser));
-        }
-
-        @Override
-        long parseFromDecimal(JsonParser parser) throws IOException {
-            return Parsing.parseDecimalAsScaledTruncatedLong(parser, SCALED);
-        }
-
-        @Override
-        long parseFromString(JsonParser parser) throws IOException {
-            return epochNanos(Parsing.parseStringAsLong(parser));
-        }
-
-        @Override
-        long parseFromDecimalString(JsonParser parser) throws IOException {
-            return Parsing.parseDecimalStringAsScaledTruncatedLong(parser, SCALED);
-        }
-    }
-
-    private class EpochMillis extends Base {
-        private static final int SCALED = 6;
-        private static final int MULT = 1_000_000;
-
-        private long epochNanos(long epochMillis) {
-            return MULT * epochMillis;
-        }
-
-        @Override
-        long parseFromInt(JsonParser parser) throws IOException {
-            return epochNanos(Parsing.parseIntAsLong(parser));
-        }
-
-        @Override
-        long parseFromDecimal(JsonParser parser) throws IOException {
-            return Parsing.parseDecimalAsScaledTruncatedLong(parser, SCALED);
-        }
-
-        @Override
-        long parseFromString(JsonParser parser) throws IOException {
-            return epochNanos(Parsing.parseStringAsLong(parser));
-        }
-
-        @Override
-        long parseFromDecimalString(JsonParser parser) throws IOException {
-            return Parsing.parseDecimalStringAsScaledTruncatedLong(parser, SCALED);
-        }
-    }
-
-    private class EpochMicros extends Base {
-        private static final int SCALED = 3;
-        private static final int MULT = 1_000;
-
-        private long epochNanos(long epochMicros) {
-            return MULT * epochMicros;
-        }
-
-        @Override
-        long parseFromInt(JsonParser parser) throws IOException {
-            return epochNanos(Parsing.parseIntAsLong(parser));
-        }
-
-        @Override
-        long parseFromDecimal(JsonParser parser) throws IOException {
-            return Parsing.parseDecimalAsScaledTruncatedLong(parser, SCALED);
-        }
-
-        @Override
-        long parseFromString(JsonParser parser) throws IOException {
-            return epochNanos(Parsing.parseStringAsLong(parser));
-        }
-
-        @Override
-        long parseFromDecimalString(JsonParser parser) throws IOException {
-            return Parsing.parseDecimalStringAsScaledTruncatedLong(parser, SCALED);
-        }
-    }
-
-    private class EpochNanos extends Base {
-
-        @Override
-        long parseFromInt(JsonParser parser) throws IOException {
-            return Parsing.parseIntAsLong(parser);
-        }
-
-        @Override
-        long parseFromDecimal(JsonParser parser) throws IOException {
-            return Parsing.parseDecimalAsTruncatedLong(parser);
-        }
-
-        @Override
-        long parseFromString(JsonParser parser) throws IOException {
-            return Parsing.parseStringAsLong(parser);
-        }
-
-        @Override
-        long parseFromDecimalString(JsonParser parser) throws IOException {
-            return Parsing.parseDecimalStringAsTruncatedLong(parser);
         }
     }
 }

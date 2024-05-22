@@ -16,8 +16,18 @@ import java.util.List;
 import java.util.stream.Stream;
 
 final class BoolMixin extends Mixin<BoolValue> implements ToByte {
+
+    private final Boolean onNull;
+    private final Boolean onMissing;
+    private final byte onNullByte;
+    private final byte onMissingByte;
+
     public BoolMixin(BoolValue options, JsonFactory factory) {
         super(factory, options);
+        onNull = options.onNull().orElse(null);
+        onMissing = options.onMissing().orElse(null);
+        onNullByte = BooleanUtils.booleanAsByte(onNull);
+        onMissingByte = BooleanUtils.booleanAsByte(onMissing);
     }
 
     @Override
@@ -53,7 +63,7 @@ final class BoolMixin extends Mixin<BoolValue> implements ToByte {
             case FIELD_NAME:
                 return parseFromString(parser);
         }
-        throw Parsing.mismatch(parser, boolean.class);
+        throw Parsing.mismatch(parser, Boolean.class);
     }
 
     @Override
@@ -81,7 +91,7 @@ final class BoolMixin extends Mixin<BoolValue> implements ToByte {
                 case FIELD_NAME:
                     return parseFromStringBoolean(parser);
             }
-            throw Parsing.mismatch(parser, boolean.class);
+            throw Parsing.mismatch(parser, Boolean.class);
         }
 
         @Override
@@ -92,44 +102,30 @@ final class BoolMixin extends Mixin<BoolValue> implements ToByte {
 
     private byte parseFromString(JsonParser parser) throws IOException {
         if (!allowString()) {
-            throw Parsing.mismatch(parser, boolean.class);
+            throw Parsing.mismatch(parser, Boolean.class);
         }
         if (!allowNull()) {
             final byte res = Parsing.parseStringAsByteBool(parser, BooleanUtils.NULL_BOOLEAN_AS_BYTE);
             if (res == BooleanUtils.NULL_BOOLEAN_AS_BYTE) {
-                throw Parsing.mismatch(parser, boolean.class);
+                throw Parsing.mismatch(parser, Boolean.class);
             }
             return res;
         }
-        return Parsing.parseStringAsByteBool(parser, BooleanUtils.booleanAsByte(options.onNull().orElse(null)));
+        return Parsing.parseStringAsByteBool(parser, onNullByte);
     }
 
     private byte parseFromNull(JsonParser parser) throws IOException {
         if (!allowNull()) {
-            throw Parsing.mismatch(parser, boolean.class);
+            throw Parsing.mismatch(parser, Boolean.class);
         }
-        return BooleanUtils.booleanAsByte(options.onNull().orElse(null));
+        return onNullByte;
     }
 
     private byte parseFromMissing(JsonParser parser) throws IOException {
         if (!allowMissing()) {
-            throw Parsing.mismatchMissing(parser, boolean.class);
-        }
-        return BooleanUtils.booleanAsByte(options.onMissing().orElse(null));
-    }
-
-    private Boolean parseFromNullBoolean(JsonParser parser) throws IOException {
-        if (!allowNull()) {
-            throw Parsing.mismatch(parser, Boolean.class);
-        }
-        return options.onNull().orElse(null);
-    }
-
-    private Boolean parseFromMissingBoolean(JsonParser parser) throws IOException {
-        if (!allowMissing()) {
             throw Parsing.mismatchMissing(parser, Boolean.class);
         }
-        return options.onMissing().orElse(null);
+        return onMissingByte;
     }
 
     private Boolean parseFromStringBoolean(JsonParser parser) throws IOException {
@@ -143,6 +139,20 @@ final class BoolMixin extends Mixin<BoolValue> implements ToByte {
             }
             return result;
         }
-        return Parsing.parseStringAsBoolean(parser, options.onNull().orElse(null));
+        return Parsing.parseStringAsBoolean(parser, onNull);
+    }
+
+    private Boolean parseFromNullBoolean(JsonParser parser) throws IOException {
+        if (!allowNull()) {
+            throw Parsing.mismatch(parser, Boolean.class);
+        }
+        return onNull;
+    }
+
+    private Boolean parseFromMissingBoolean(JsonParser parser) throws IOException {
+        if (!allowMissing()) {
+            throw Parsing.mismatchMissing(parser, Boolean.class);
+        }
+        return onMissing;
     }
 }

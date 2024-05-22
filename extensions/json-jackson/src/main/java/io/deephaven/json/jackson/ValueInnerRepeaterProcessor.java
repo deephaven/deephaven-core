@@ -4,6 +4,7 @@
 package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonParser;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.sized.SizedObjectChunk;
@@ -37,6 +38,7 @@ final class ValueInnerRepeaterProcessor implements RepeaterProcessor, Context {
         final List<WritableChunk<?>> innerChunks = innerProcessor.columnTypes()
                 .map(Type::arrayType)
                 .map(ObjectProcessor::chunkType)
+                .peek(ValueInnerRepeaterProcessor::checkObjectChunk)
                 .map(o -> o.makeWritableChunk(1))
                 .peek(wc -> wc.setSize(0))
                 .collect(Collectors.toList());
@@ -48,6 +50,12 @@ final class ValueInnerRepeaterProcessor implements RepeaterProcessor, Context {
         sizedObjectChunks = IntStream.range(0, innerProcessor.numColumns())
                 .mapToObj(i -> new SizedObjectChunk<>(0))
                 .collect(Collectors.toList());
+    }
+
+    static void checkObjectChunk(ChunkType chunkType) {
+        if (chunkType != ChunkType.Object) {
+            throw new IllegalStateException();
+        }
     }
 
     @Override

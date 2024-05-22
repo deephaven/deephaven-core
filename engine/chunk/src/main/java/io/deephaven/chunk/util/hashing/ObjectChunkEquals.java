@@ -252,7 +252,7 @@ public class ObjectChunkEquals implements ChunkEquals {
 
     // region eq
     static private boolean eq(Object lhs, Object rhs) {
-        return Objects.equals(lhs, rhs);
+        return Objects.deepEquals(lhs, rhs);
     }
     // endregion eq
 

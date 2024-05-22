@@ -111,6 +111,8 @@ final class Parsing {
         return text.charAt(0);
     }
 
+    // ---------------------------------------------------------------------------
+
     static byte parseIntAsByte(JsonParser parser) throws IOException {
         return parser.getByteValue();
     }
@@ -127,6 +129,9 @@ final class Parsing {
     static byte parseStringAsByte(JsonParser parser) throws IOException {
         return (byte) parseStringAsInt(parser);
     }
+
+    // ---------------------------------------------------------------------------
+
 
     static short parseIntAsShort(JsonParser parser) throws IOException {
         return parser.getShortValue();
@@ -145,6 +150,8 @@ final class Parsing {
         return (short) parseStringAsInt(parser);
     }
 
+    // ---------------------------------------------------------------------------
+
     static int parseIntAsInt(JsonParser parser) throws IOException {
         return parser.getIntValue();
     }
@@ -153,6 +160,8 @@ final class Parsing {
         // parser as double then cast to int; no loss of whole number part (64 bit -> 32 bit)
         return parser.getIntValue();
     }
+
+    // ---------------------------------------------------------------------------
 
     static long parseIntAsLong(JsonParser parser) throws IOException {
         return parser.getLongValue();
@@ -173,6 +182,8 @@ final class Parsing {
         return parser.getDecimalValue().scaleByPowerOfTen(n).longValue();
     }
 
+    // ---------------------------------------------------------------------------
+
     static String parseStringAsString(JsonParser parser) throws IOException {
         return parser.getText();
     }
@@ -189,9 +200,7 @@ final class Parsing {
         return parser.getText();
     }
 
-    static BigDecimal parseDecimalAsBigDecimal(JsonParser parser) throws IOException {
-        return parser.getDecimalValue();
-    }
+    // ---------------------------------------------------------------------------
 
     static float parseNumberAsFloat(JsonParser parser) throws IOException {
         // TODO: improve after https://github.com/FasterXML/jackson-core/issues/1229
@@ -202,6 +211,8 @@ final class Parsing {
         // TODO: improve after https://github.com/FasterXML/jackson-core/issues/1229
         return parser.getDoubleValue();
     }
+
+    // ---------------------------------------------------------------------------
 
     static int parseStringAsInt(JsonParser parser) throws IOException {
         if (parser.hasTextCharacters()) {
@@ -259,6 +270,16 @@ final class Parsing {
                 : Double.parseDouble(parser.getText());
     }
 
+    // ---------------------------------------------------------------------------
+
+    static BigInteger parseIntAsBigInteger(JsonParser parser) throws IOException {
+        return parser.getBigIntegerValue();
+    }
+
+    static BigInteger parseDecimalAsBigInteger(JsonParser parser) throws IOException {
+        return parser.getBigIntegerValue();
+    }
+
     static BigInteger parseStringAsBigInteger(JsonParser parser) throws IOException {
         // TODO: improve after https://github.com/FasterXML/jackson-core/issues/1229
         return parser.isEnabled(StreamReadFeature.USE_FAST_BIG_NUMBER_PARSER)
@@ -270,12 +291,20 @@ final class Parsing {
         return parseStringAsBigDecimal(parser).toBigInteger();
     }
 
+    // ---------------------------------------------------------------------------
+
+    static BigDecimal parseDecimalAsBigDecimal(JsonParser parser) throws IOException {
+        return parser.getDecimalValue();
+    }
+
     static BigDecimal parseStringAsBigDecimal(JsonParser parser) throws IOException {
         // TODO: improve after https://github.com/FasterXML/jackson-core/issues/1229
         return parser.isEnabled(StreamReadFeature.USE_FAST_BIG_NUMBER_PARSER)
                 ? parseStringAsBigDecimalFast(parser)
                 : new BigDecimal(parser.getText());
     }
+
+    // ---------------------------------------------------------------------------
 
     private static float parseStringAsFloatFast(JsonParser p) throws IOException {
         return p.hasTextCharacters()
