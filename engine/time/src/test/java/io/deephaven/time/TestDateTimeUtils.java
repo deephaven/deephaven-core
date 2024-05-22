@@ -2012,7 +2012,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             // ok
         }
     }
-    
+
     public void testPlusDuration() {
         final Duration d1 = Duration.ofSeconds(1);
         final Duration d2 = Duration.ofSeconds(2);
@@ -2439,7 +2439,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertNull(DateTimeUtils.multiply((Period) null, 3L));
         TestCase.assertNull(DateTimeUtils.multiply(p, NULL_LONG));
 
-        try{
+        try {
             DateTimeUtils.multiply(p, Long.MAX_VALUE);
             TestCase.fail("This should have overflowed");
         } catch (DateTimeUtils.DateTimeOverflowException e) {
@@ -2462,21 +2462,21 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertNull(DateTimeUtils.multiply((Duration) null, 3.0));
         TestCase.assertNull(DateTimeUtils.multiply(d, NULL_DOUBLE));
 
-        try{
+        try {
             DateTimeUtils.multiply(d, Double.NaN);
             TestCase.fail("This should have excepted");
         } catch (DateTimeUtils.DateTimeOverflowException e) {
             // ok
         }
 
-        try{
+        try {
             DateTimeUtils.multiply(d, Double.POSITIVE_INFINITY);
             TestCase.fail("This should have excepted");
         } catch (DateTimeUtils.DateTimeOverflowException e) {
             // ok
         }
 
-        try{
+        try {
             DateTimeUtils.multiply(d, Double.NEGATIVE_INFINITY);
             TestCase.fail("This should have excepted");
         } catch (DateTimeUtils.DateTimeOverflowException e) {
@@ -2494,7 +2494,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertNull(DateTimeUtils.divide((Duration) null, 3));
         TestCase.assertNull(DateTimeUtils.divide(d, NULL_LONG));
 
-        try{
+        try {
             DateTimeUtils.divide(d, 0);
             TestCase.fail("This should have excepted");
         } catch (DateTimeUtils.DateTimeOverflowException e) {
@@ -2507,14 +2507,14 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertNull(DateTimeUtils.divide((Duration) null, 3.0));
         TestCase.assertNull(DateTimeUtils.divide(d, NULL_DOUBLE));
 
-        try{
+        try {
             DateTimeUtils.divide(d, 0.0);
             TestCase.fail("This should have excepted");
         } catch (DateTimeUtils.DateTimeOverflowException e) {
             // ok
         }
 
-        try{
+        try {
             DateTimeUtils.divide(d, Double.NaN);
             TestCase.fail("This should have excepted");
         } catch (DateTimeUtils.DateTimeOverflowException e) {

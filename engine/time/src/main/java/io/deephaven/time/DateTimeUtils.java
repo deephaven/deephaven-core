@@ -1673,7 +1673,7 @@ public class DateTimeUtils {
     /**
      * Adds two periods.
      *
-     * @param  period1 first period
+     * @param period1 first period
      * @param period2 second period
      * @return {@code null} if either input is {@code null}; otherwise the sum of the two periods
      */
@@ -1930,7 +1930,7 @@ public class DateTimeUtils {
     /**
      * Subtracts two periods.
      *
-     * @param  period1 first period
+     * @param period1 first period
      * @param period2 second period
      * @return {@code null} if either input is {@code null}; otherwise the difference of the two periods
      */
@@ -1984,13 +1984,13 @@ public class DateTimeUtils {
             return null;
         }
 
-        if(Double.isNaN(scalar)) {
+        if (Double.isNaN(scalar)) {
             throw new DateTimeOverflowException("Scalar value is NaN");
         }
 
         final double product = duration.toNanos() * scalar;
 
-        if(product > Long.MAX_VALUE || product < Long.MIN_VALUE) {
+        if (product > Long.MAX_VALUE || product < Long.MIN_VALUE) {
             throw new DateTimeOverflowException("Product value is too large to be cast to a long");
         }
 
@@ -2046,7 +2046,7 @@ public class DateTimeUtils {
             return null;
         }
 
-        if(scalar > Integer.MAX_VALUE || scalar < Integer.MIN_VALUE) {
+        if (scalar > Integer.MAX_VALUE || scalar < Integer.MIN_VALUE) {
             throw new DateTimeOverflowException("Scalar value is too large to be cast to an int");
         }
 
@@ -2076,7 +2076,7 @@ public class DateTimeUtils {
             return null;
         }
 
-        if(scalar == 0) {
+        if (scalar == 0) {
             throw new DateTimeOverflowException("Scalar value is zero");
         }
 
@@ -2095,11 +2095,11 @@ public class DateTimeUtils {
             return null;
         }
 
-        if(Double.isNaN(scalar)) {
+        if (Double.isNaN(scalar)) {
             throw new DateTimeOverflowException("Scalar value is NaN");
         }
 
-        if(scalar == 0) {
+        if (scalar == 0) {
             throw new DateTimeOverflowException("Scalar value is zero");
         }
 
