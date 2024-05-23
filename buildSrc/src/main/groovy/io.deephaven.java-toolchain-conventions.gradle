@@ -155,6 +155,9 @@ def JAVA_OPTS = parseJvmArgumentsFromProperty("deephaven.javaOpts", parseJvmArgu
   '-XX:+UseG1GC',
   '-XX:MaxGCPauseMillis=100',
   '-XX:+UseStringDeduplication',
+  // TODO(deephaven-core#5519): Remove SoftReference cache OOM mitigation
+  // Requires -XX:+UnlockDiagnosticVMOptions which is already included in def compilerArgs earlier
+  '-XX:GCLockerRetryAllocationCount=128',
 ]))
 
 // Utility to add jvm args to all executions, whether intellij or from a application script or gradle javaexec
