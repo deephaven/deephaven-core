@@ -14,7 +14,7 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.table.impl.ssms.LongSegmentedSortedMultiset;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.util.QueryConstants;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 
 public class InstantPercentileTypeHelper implements SsmChunkedPercentileOperator.PercentileTypeHelper {
     private final double percentile;

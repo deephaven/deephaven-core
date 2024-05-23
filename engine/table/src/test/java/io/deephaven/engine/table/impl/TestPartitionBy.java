@@ -24,8 +24,8 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.tuple.ArrayTuple;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.mutable.MutableLong;
 import junit.framework.TestCase;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.Assert;
 

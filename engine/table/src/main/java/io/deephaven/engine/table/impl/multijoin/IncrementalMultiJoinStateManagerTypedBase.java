@@ -25,7 +25,7 @@ import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;

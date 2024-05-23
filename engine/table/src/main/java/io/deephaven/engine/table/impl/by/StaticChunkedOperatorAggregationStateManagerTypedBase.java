@@ -13,7 +13,7 @@ import io.deephaven.engine.table.impl.util.IntColumnSourceWritableRowRedirection
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.BuildContext;
 
 public abstract class StaticChunkedOperatorAggregationStateManagerTypedBase

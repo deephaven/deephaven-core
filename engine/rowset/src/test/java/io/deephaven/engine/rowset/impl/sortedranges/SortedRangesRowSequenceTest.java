@@ -10,7 +10,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.impl.RowSequenceTestBase;
 import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
 import io.deephaven.engine.testutil.rowset.RowSetTstUtils;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.junit.Test;
 
 public class SortedRangesRowSequenceTest extends RowSequenceTestBase {

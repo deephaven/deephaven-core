@@ -16,7 +16,7 @@ import io.deephaven.engine.table.impl.util.TypedHasherUtil;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.BuildContext;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 
 public abstract class StaticChunkedOperatorAggregationStateManagerOpenAddressedBase
         extends OperatorAggregationStateManagerOpenAddressedBase {

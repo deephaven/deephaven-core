@@ -4,7 +4,7 @@
 package io.deephaven.util.datastructures;
 
 import io.deephaven.base.reference.SimpleReference;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

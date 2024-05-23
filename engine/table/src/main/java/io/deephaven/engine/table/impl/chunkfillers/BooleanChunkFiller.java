@@ -17,7 +17,7 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableBooleanChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 
 public final class BooleanChunkFiller implements ChunkFiller {
     public static final BooleanChunkFiller INSTANCE = new BooleanChunkFiller();

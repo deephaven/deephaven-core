@@ -43,7 +43,7 @@ import org.jetbrains.annotations.NotNull;
 
 // region extra imports
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableLong;
 // endregion extra imports
 
 import static io.deephaven.util.SafeCloseable.closeAll;

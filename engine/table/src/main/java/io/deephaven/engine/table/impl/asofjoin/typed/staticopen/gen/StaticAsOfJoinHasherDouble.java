@@ -23,10 +23,10 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.asofjoin.StaticAsOfJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableDoubleArraySource;
+import io.deephaven.util.mutable.MutableInt;
 import java.lang.Object;
 import java.lang.Override;
 import java.util.Arrays;
-import org.apache.commons.lang3.mutable.MutableInt;
 
 final class StaticAsOfJoinHasherDouble extends StaticAsOfJoinStateManagerTypedBase {
     private final ImmutableDoubleArraySource mainKeySource0;

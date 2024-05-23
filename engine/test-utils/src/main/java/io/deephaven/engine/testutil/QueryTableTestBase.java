@@ -12,7 +12,7 @@ import io.deephaven.engine.table.impl.util.ShiftObliviousUpdateCoalescer;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 
 import java.text.SimpleDateFormat;
 import java.util.Random;

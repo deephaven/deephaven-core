@@ -61,11 +61,11 @@ import io.deephaven.stringset.StringSet;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.type.TypeUtils;
 import junit.framework.AssertionFailedError;
 import junit.framework.ComparisonFailure;
 import junit.framework.TestCase;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.assertj.core.api.Assertions;
 import org.jetbrains.annotations.NotNull;
 

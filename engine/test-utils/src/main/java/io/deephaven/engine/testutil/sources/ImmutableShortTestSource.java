@@ -20,8 +20,8 @@ import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.type.TypeUtils;
+import io.deephaven.util.mutable.MutableInt;
 import it.unimi.dsi.fastutil.longs.Long2ShortOpenHashMap;
-import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.util.function.LongConsumer;
 

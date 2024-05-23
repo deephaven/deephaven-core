@@ -7,10 +7,10 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.updategraph.LogicalClock;
-import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.util.mutable.MutableInt;
+import gnu.trove.list.array.TLongArrayList;
 import junit.framework.TestCase;
-import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.util.Arrays;
 import java.util.Random;

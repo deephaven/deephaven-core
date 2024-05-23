@@ -17,8 +17,8 @@ import io.deephaven.engine.rowset.impl.rsp.container.Container;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
-import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableLong;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 

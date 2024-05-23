@@ -4,7 +4,7 @@
 package io.deephaven.engine.table.impl.sources.sparse;
 
 import io.deephaven.engine.rowset.RowSet;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableLong;
 
 public class SparseConstants {
     public static final int LOG_BLOCK0_SIZE = 23;

@@ -5,8 +5,8 @@ package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.base.string.EncodingInfo;
 import io.deephaven.util.codec.ObjectCodec;
+import io.deephaven.util.mutable.MutableLong;
 import junit.framework.TestCase;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

@@ -26,9 +26,9 @@ import io.deephaven.extensions.barrage.util.BarrageProtoUtil;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.vector.LongVector;
 import io.deephaven.vector.LongVectorDirect;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayInputStream;

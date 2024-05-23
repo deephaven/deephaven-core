@@ -28,9 +28,9 @@ import io.deephaven.engine.rowset.impl.sortedranges.SortedRangesInt;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRangesLong;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRangesShort;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.util.mutable.MutableLong;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.junit.experimental.categories.Category;
 

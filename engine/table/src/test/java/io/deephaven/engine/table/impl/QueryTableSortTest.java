@@ -23,10 +23,10 @@ import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.engine.table.impl.util.*;
+import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.util.mutable.MutableInt;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
-import io.deephaven.test.types.OutOfBandTest;
-import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.io.File;
 import java.io.IOException;

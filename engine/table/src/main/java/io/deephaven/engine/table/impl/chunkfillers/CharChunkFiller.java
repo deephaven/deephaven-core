@@ -13,7 +13,7 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableCharChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 
 public final class CharChunkFiller implements ChunkFiller {
     public static final CharChunkFiller INSTANCE = new CharChunkFiller();

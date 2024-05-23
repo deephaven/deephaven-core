@@ -3,8 +3,8 @@
 //
 package io.deephaven.util.datastructures;
 
+import io.deephaven.util.mutable.MutableInt;
 import junit.framework.TestCase;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.Test;
 
 import java.util.Arrays;
