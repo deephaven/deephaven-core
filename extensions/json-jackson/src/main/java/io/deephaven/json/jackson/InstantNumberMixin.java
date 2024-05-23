@@ -15,7 +15,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.stream.Stream;
 
-final class  InstantNumberMixin extends Mixin<InstantNumberValue> {
+final class InstantNumberMixin extends Mixin<InstantNumberValue> {
 
     private final long onNull;
     private final long onMissing;

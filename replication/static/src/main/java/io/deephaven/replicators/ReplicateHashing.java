@@ -75,8 +75,9 @@ public class ReplicateHashing {
         final File objectFile = new File(objectPath);
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
         lines = addImport(lines, Objects.class);
+        // TODO: verify this is safe
         FileUtils.writeLines(objectFile, simpleFixup(fixupChunkAttributes(lines),
-                "eq", "lhs == rhs", "Objects.equals(lhs, rhs)"));
+                "eq", "lhs == rhs", "Objects.deepEquals(lhs, rhs)"));
     }
 
     private static void fixupBooleanCompact(String booleanPath) throws IOException {
