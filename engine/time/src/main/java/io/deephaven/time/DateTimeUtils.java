@@ -2087,11 +2087,11 @@ public class DateTimeUtils {
             return null;
         }
 
-        if (scalar == 0) {
-            throw new DateTimeOverflowException("Scalar value is zero");
+        try {
+            return duration.dividedBy(scalar);
+        } catch (ArithmeticException ex) {
+            throw new DateTimeOverflowException(ex);
         }
-
-        return duration.dividedBy(scalar);
     }
 
     /**
