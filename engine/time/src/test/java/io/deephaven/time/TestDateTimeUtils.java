@@ -2456,32 +2456,6 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(Duration.ofNanos(-370370367L), DateTimeUtils.multiply(d, -3));
         TestCase.assertNull(DateTimeUtils.multiply((Duration) null, 3));
         TestCase.assertNull(DateTimeUtils.multiply(d, NULL_LONG));
-
-        TestCase.assertEquals(Duration.ofNanos(246913578L), DateTimeUtils.multiply(d, 2.0));
-        TestCase.assertEquals(Duration.ofNanos(246913578L), DateTimeUtils.multiply(2.0, d));
-        TestCase.assertNull(DateTimeUtils.multiply((Duration) null, 3.0));
-        TestCase.assertNull(DateTimeUtils.multiply(d, NULL_DOUBLE));
-
-        try {
-            DateTimeUtils.multiply(d, Double.NaN);
-            TestCase.fail("This should have excepted");
-        } catch (DateTimeUtils.DateTimeOverflowException e) {
-            // ok
-        }
-
-        try {
-            DateTimeUtils.multiply(d, Double.POSITIVE_INFINITY);
-            TestCase.fail("This should have excepted");
-        } catch (DateTimeUtils.DateTimeOverflowException e) {
-            // ok
-        }
-
-        try {
-            DateTimeUtils.multiply(d, Double.NEGATIVE_INFINITY);
-            TestCase.fail("This should have excepted");
-        } catch (DateTimeUtils.DateTimeOverflowException e) {
-            // ok
-        }
     }
 
     public void testDivideDuration() {
@@ -2500,27 +2474,6 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         } catch (DateTimeUtils.DateTimeOverflowException e) {
             // ok
         }
-
-        TestCase.assertEquals(Duration.ofNanos(61728395L), DateTimeUtils.divide(d, 2.0));
-        TestCase.assertEquals(Duration.ofNanos(0L), DateTimeUtils.divide(d, POS_INFINITY_DOUBLE));
-        TestCase.assertEquals(Duration.ofNanos(0L), DateTimeUtils.divide(d, NEG_INFINITY_DOUBLE));
-        TestCase.assertNull(DateTimeUtils.divide((Duration) null, 3.0));
-        TestCase.assertNull(DateTimeUtils.divide(d, NULL_DOUBLE));
-
-        try {
-            DateTimeUtils.divide(d, 0.0);
-            TestCase.fail("This should have excepted");
-        } catch (DateTimeUtils.DateTimeOverflowException e) {
-            // ok
-        }
-
-        try {
-            DateTimeUtils.divide(d, Double.NaN);
-            TestCase.fail("This should have excepted");
-        } catch (DateTimeUtils.DateTimeOverflowException e) {
-            // ok
-        }
-
     }
 
     public void testDiffNanos() {

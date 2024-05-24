@@ -1977,45 +1977,6 @@ public class DateTimeUtils {
     }
 
     /**
-     * Multiply a duration by a scalar.
-     * <p>
-     * Because the scalar is a double, the result may not be exact. In particular, the result will be rounded to the
-     * nearest nanosecond. In the case of a tie, the result will be rounded up.
-     *
-     * @param duration the duration to multiply
-     * @param scalar the scalar to multiply by
-     * @return {@code null} if either input is {@code null}; otherwise the duration multiplied by the scalar.
-     */
-    public static Duration multiply(final Duration duration, final double scalar) {
-        if (duration == null || scalar == NULL_DOUBLE) {
-            return null;
-        }
-
-        if (Double.isNaN(scalar)) {
-            throw new DateTimeOverflowException("Scalar value is NaN");
-        }
-
-        final double product = duration.toNanos() * scalar;
-
-        if (product > Long.MAX_VALUE || product < Long.MIN_VALUE) {
-            throw new DateTimeOverflowException("Product value is too large to be cast to a long");
-        }
-
-        return Duration.ofNanos(Math.round(product));
-    }
-
-    /**
-     * Multiply a duration by a scalar.
-     *
-     * @param duration the duration to multiply
-     * @param scalar the scalar to multiply by
-     * @return {@code null} if either input is {@code null}; otherwise the duration multiplied by the scalar
-     */
-    public static Duration multiply(final double scalar, final Duration duration) {
-        return multiply(duration, scalar);
-    }
-
-    /**
      * Multiply a period by a scalar.
      *
      * @param period the period to multiply
@@ -2092,32 +2053,6 @@ public class DateTimeUtils {
         } catch (ArithmeticException ex) {
             throw new DateTimeOverflowException(ex);
         }
-    }
-
-    /**
-     * Divide a duration by a scalar.
-     * <p>
-     * Because the scalar is a double, the result may not be exact. In particular, the result will be rounded to the
-     * nearest nanosecond. In the case of a tie, the result will be rounded up.
-     *
-     * @param duration the duration to divide
-     * @param scalar the scalar to divide by
-     * @return {@code null} if either input is {@code null}; otherwise the duration divide by the scalar
-     */
-    public static Duration divide(final Duration duration, final double scalar) {
-        if (duration == null || scalar == NULL_DOUBLE) {
-            return null;
-        }
-
-        if (Double.isNaN(scalar)) {
-            throw new DateTimeOverflowException("Scalar value is NaN");
-        }
-
-        if (scalar == 0) {
-            throw new DateTimeOverflowException("Scalar value is zero");
-        }
-
-        return Duration.ofNanos(Math.round(duration.toNanos() / scalar));
     }
 
     /**
