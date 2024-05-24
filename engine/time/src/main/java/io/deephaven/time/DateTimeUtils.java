@@ -1958,7 +1958,11 @@ public class DateTimeUtils {
             return null;
         }
 
-        return duration.multipliedBy(scalar);
+        try {
+            return duration.multipliedBy(scalar);
+        } catch (ArithmeticException ex) {
+            throw new DateTimeOverflowException(ex);
+        }
     }
 
     /**
