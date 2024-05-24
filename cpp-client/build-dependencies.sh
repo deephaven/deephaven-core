@@ -513,6 +513,7 @@ if [ "$BUILD_ABSEIL" = "yes" ]; then
   cd $SRC/abseil-cpp
   mkdir -p "cmake/$BUILD_DIR" && cd "cmake/$BUILD_DIR"
   cmake -DCMAKE_CXX_STANDARD=17 \
+	-DABSL_PROPAGATE_CXX_STD=ON \
         ${cmake_common_args} \
         -DCMAKE_INSTALL_PREFIX=$(prefix abseil) \
         ../..
@@ -562,7 +563,7 @@ if [ "$CLONE_PROTOBUF" = "yes" ]; then
   echo "*** Cloning protobuf"
   cd $SRC
   # Previously used version: v3.21.2
-  git clone $GIT_FLAGS -b v26.1 --depth 1 "${GITHUB_BASE_URL}/protocolbuffers/protobuf.git"
+  git clone $GIT_FLAGS -b v25.3 --depth 1 "${GITHUB_BASE_URL}/protocolbuffers/protobuf.git"
   echo "*** Cloning protobuf DONE"
 fi
 if [ "$BUILD_PROTOBUF" = "yes" ]; then
