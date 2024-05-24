@@ -85,7 +85,7 @@ final class InstantNumberMixin extends Mixin<InstantNumberValue> {
             // jshell> (long)(1703292532.123456789 * 1000000000)
             // $4 ==> 1703292532123456768
             // See InstantNumberOptionsTest
-            return Parsing.parseDecimalAsScaledTruncatedLong(parser, scaled);
+            return Parsing.parseDecimalAsScaledLong(parser, scaled);
         }
 
         private long parseFromString(JsonParser parser) throws IOException {
@@ -93,7 +93,7 @@ final class InstantNumberMixin extends Mixin<InstantNumberValue> {
         }
 
         private long parseFromDecimalString(JsonParser parser) throws IOException {
-            return Parsing.parseDecimalStringAsScaledTruncatedLong(parser, scaled);
+            return Parsing.parseDecimalStringAsScaledLong(parser, scaled);
         }
 
         @Override

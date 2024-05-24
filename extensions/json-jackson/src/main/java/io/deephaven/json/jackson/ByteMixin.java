@@ -109,7 +109,7 @@ final class ByteMixin extends Mixin<ByteValue> implements ToByte {
         if (!allowDecimal()) {
             throw Parsing.mismatch(parser, byte.class);
         }
-        return Parsing.parseDecimalAsTruncatedByte(parser);
+        return Parsing.parseDecimalAsByte(parser);
     }
 
     private byte parseFromString(JsonParser parser) throws IOException {
@@ -117,7 +117,7 @@ final class ByteMixin extends Mixin<ByteValue> implements ToByte {
             throw Parsing.mismatch(parser, byte.class);
         }
         return allowDecimal()
-                ? Parsing.parseDecimalStringAsTruncatedByte(parser)
+                ? Parsing.parseDecimalStringAsByte(parser)
                 : Parsing.parseStringAsByte(parser);
     }
 

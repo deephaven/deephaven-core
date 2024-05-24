@@ -110,7 +110,7 @@ final class IntMixin extends Mixin<IntValue> implements ToInt {
         if (!allowDecimal()) {
             throw Parsing.mismatch(parser, int.class);
         }
-        return Parsing.parseDecimalAsTruncatedInt(parser);
+        return Parsing.parseDecimalAsInt(parser);
     }
 
     private int parseFromString(JsonParser parser) throws IOException {
@@ -118,7 +118,7 @@ final class IntMixin extends Mixin<IntValue> implements ToInt {
             throw Parsing.mismatch(parser, int.class);
         }
         return allowDecimal()
-                ? Parsing.parseDecimalStringAsTruncatedInt(parser)
+                ? Parsing.parseDecimalStringAsInt(parser)
                 : Parsing.parseStringAsInt(parser);
     }
 

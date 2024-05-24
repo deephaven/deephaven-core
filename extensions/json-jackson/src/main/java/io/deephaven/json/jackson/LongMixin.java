@@ -76,8 +76,7 @@ final class LongMixin extends Mixin<LongValue> implements LongValueProcessor.ToL
         if (!allowDecimal()) {
             throw Parsing.mismatch(parser, long.class);
         }
-        // TODO: allow caller to configure between lossy long and truncated long?
-        return Parsing.parseDecimalAsLossyLong(parser);
+        return Parsing.parseDecimalAsLong(parser);
     }
 
     private long parseFromString(JsonParser parser) throws IOException {
@@ -85,9 +84,7 @@ final class LongMixin extends Mixin<LongValue> implements LongValueProcessor.ToL
             throw Parsing.mismatch(parser, long.class);
         }
         return allowDecimal()
-                // TODO: allow caller to configure between lossy long and truncated long?
-                // ? Helpers.parseDecimalStringAsLossyLong(parser)
-                ? Parsing.parseDecimalStringAsTruncatedLong(parser)
+                ? Parsing.parseDecimalStringAsLong(parser)
                 : Parsing.parseStringAsLong(parser);
     }
 

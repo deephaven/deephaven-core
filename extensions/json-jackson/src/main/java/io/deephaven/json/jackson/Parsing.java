@@ -117,13 +117,13 @@ final class Parsing {
         return parser.getByteValue();
     }
 
-    static byte parseDecimalAsTruncatedByte(JsonParser parser) throws IOException {
+    static byte parseDecimalAsByte(JsonParser parser) throws IOException {
         return parser.getByteValue();
     }
 
-    static byte parseDecimalStringAsTruncatedByte(JsonParser parser) throws IOException {
+    static byte parseDecimalStringAsByte(JsonParser parser) throws IOException {
         // parse as float then cast to byte; no loss of whole number part (32 bit -> 8 bit) if in range
-        return (byte) Parsing.parseStringAsFloat(parser);
+        return (byte) parseStringAsFloat(parser);
     }
 
     static byte parseStringAsByte(JsonParser parser) throws IOException {
@@ -137,13 +137,14 @@ final class Parsing {
         return parser.getShortValue();
     }
 
-    static short parseDecimalAsTruncatedShort(JsonParser parser) throws IOException {
+    static short parseDecimalAsShort(JsonParser parser) throws IOException {
+        // parse as double then cast to short; no loss of whole number part (64 bit -> 16 bit)
         return parser.getShortValue();
     }
 
-    static short parseDecimalStringAsTruncatedShort(JsonParser parser) throws IOException {
+    static short parseDecimalStringAsShort(JsonParser parser) throws IOException {
         // parse as float then cast to short; no loss of whole number part (32 bit -> 16 bit) if in range
-        return (short) Parsing.parseStringAsFloat(parser);
+        return (short) parseStringAsFloat(parser);
     }
 
     static short parseStringAsShort(JsonParser parser) throws IOException {
@@ -156,8 +157,8 @@ final class Parsing {
         return parser.getIntValue();
     }
 
-    static int parseDecimalAsTruncatedInt(JsonParser parser) throws IOException {
-        // parser as double then cast to int; no loss of whole number part (64 bit -> 32 bit)
+    static int parseDecimalAsInt(JsonParser parser) throws IOException {
+        // parse as double then cast to int; no loss of whole number part (64 bit -> 32 bit)
         return parser.getIntValue();
     }
 
@@ -167,18 +168,13 @@ final class Parsing {
         return parser.getLongValue();
     }
 
-    static long parseDecimalAsLossyLong(JsonParser parser) throws IOException {
-        // parser as double then cast to long; loses info (64 bit -> 64 bit)
-        return parser.getLongValue();
-    }
-
-    static long parseDecimalAsTruncatedLong(JsonParser parser) throws IOException {
-        // io.deephaven.json.InstantNumberOptionsTest.epochNanosDecimal fails
-        // return parser.getLongValue();
+    static long parseDecimalAsLong(JsonParser parser) throws IOException {
+        // Parsing as double then casting to long will lose precision.
+        // (long)9223372036854775806.0 == 9223372036854775807
         return parser.getDecimalValue().longValue();
     }
 
-    static long parseDecimalAsScaledTruncatedLong(JsonParser parser, int n) throws IOException {
+    static long parseDecimalAsScaledLong(JsonParser parser, int n) throws IOException {
         return parser.getDecimalValue().scaleByPowerOfTen(n).longValue();
     }
 
@@ -216,7 +212,6 @@ final class Parsing {
 
     static int parseStringAsInt(JsonParser parser) throws IOException {
         if (parser.hasTextCharacters()) {
-            // TODO: potential to write parseInt optimized for char[]
             final int len = parser.getTextLength();
             final CharSequence cs = CharBuffer.wrap(parser.getTextCharacters(), parser.getTextOffset(), len);
             return Integer.parseInt(cs, 0, len, 10);
@@ -225,14 +220,13 @@ final class Parsing {
         }
     }
 
-    static int parseDecimalStringAsTruncatedInt(JsonParser parser) throws IOException {
+    static int parseDecimalStringAsInt(JsonParser parser) throws IOException {
         // parse as double then cast to int; no loss of whole number part (64 bit -> 32 bit)
-        return (int) Parsing.parseStringAsDouble(parser);
+        return (int) parseStringAsDouble(parser);
     }
 
     static long parseStringAsLong(JsonParser parser) throws IOException {
         if (parser.hasTextCharacters()) {
-            // TODO: potential to write parseInt optimized for char[]
             final int len = parser.getTextLength();
             final CharSequence cs = CharBuffer.wrap(parser.getTextCharacters(), parser.getTextOffset(), len);
             return Long.parseLong(cs, 0, len, 10);
@@ -241,17 +235,12 @@ final class Parsing {
         }
     }
 
-    static long parseDecimalStringAsLossyLong(JsonParser parser) throws IOException {
-        // parser as double then cast to long; loses info (64 bit -> 64 bit)
-        return (long) parseStringAsDouble(parser);
-    }
-
-    static long parseDecimalStringAsTruncatedLong(JsonParser parser) throws IOException {
+    static long parseDecimalStringAsLong(JsonParser parser) throws IOException {
         // To ensure 64-bit in cases where the string is a decimal, we need BigDecimal
         return parseStringAsBigDecimal(parser).longValue();
     }
 
-    static long parseDecimalStringAsScaledTruncatedLong(JsonParser parser, int n) throws IOException {
+    static long parseDecimalStringAsScaledLong(JsonParser parser, int n) throws IOException {
         // To ensure 64-bit in cases where the string is a decimal, we need BigDecimal
         return parseStringAsBigDecimal(parser).scaleByPowerOfTen(n).longValue();
     }
@@ -287,7 +276,7 @@ final class Parsing {
                 : new BigInteger(parser.getText());
     }
 
-    static BigInteger parseStringAsTruncatedBigInteger(JsonParser parser) throws IOException {
+    static BigInteger parseDecimalStringAsBigInteger(JsonParser parser) throws IOException {
         return parseStringAsBigDecimal(parser).toBigInteger();
     }
 

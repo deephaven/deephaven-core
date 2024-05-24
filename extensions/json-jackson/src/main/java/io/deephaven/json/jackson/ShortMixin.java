@@ -109,7 +109,7 @@ final class ShortMixin extends Mixin<ShortValue> implements ToShort {
         if (!allowDecimal()) {
             throw Parsing.mismatch(parser, short.class);
         }
-        return Parsing.parseDecimalAsTruncatedShort(parser);
+        return Parsing.parseDecimalAsShort(parser);
     }
 
     private short parseFromString(JsonParser parser) throws IOException {
@@ -117,7 +117,7 @@ final class ShortMixin extends Mixin<ShortValue> implements ToShort {
             throw Parsing.mismatch(parser, short.class);
         }
         return allowDecimal()
-                ? Parsing.parseDecimalStringAsTruncatedShort(parser)
+                ? Parsing.parseDecimalStringAsShort(parser)
                 : Parsing.parseStringAsShort(parser);
     }
 

@@ -86,7 +86,7 @@ final class BigIntegerMixin extends Mixin<BigIntegerValue> implements ToObject<B
             throw Parsing.mismatch(parser, BigInteger.class);
         }
         return allowDecimal()
-                ? Parsing.parseStringAsTruncatedBigInteger(parser)
+                ? Parsing.parseDecimalStringAsBigInteger(parser)
                 : Parsing.parseStringAsBigInteger(parser);
     }
 
