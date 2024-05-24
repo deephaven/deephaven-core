@@ -636,6 +636,7 @@ class ListItemsResponse final :
 
   enum : int {
     kItemsFieldNumber = 1,
+    kCanonicalPathFieldNumber = 2,
   };
   // repeated .io.deephaven.proto.backplane.grpc.ItemInfo items = 1;
   int items_size() const;
@@ -655,6 +656,20 @@ class ListItemsResponse final :
   const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::grpc::ItemInfo >&
       items() const;
 
+  // string canonical_path = 2;
+  void clear_canonical_path();
+  const std::string& canonical_path() const;
+  template <typename ArgT0 = const std::string&, typename... ArgT>
+  void set_canonical_path(ArgT0&& arg0, ArgT... args);
+  std::string* mutable_canonical_path();
+  PROTOBUF_NODISCARD std::string* release_canonical_path();
+  void set_allocated_canonical_path(std::string* canonical_path);
+  private:
+  const std::string& _internal_canonical_path() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_canonical_path(const std::string& value);
+  std::string* _internal_mutable_canonical_path();
+  public:
+
   // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.ListItemsResponse)
  private:
   class _Internal;
@@ -664,6 +679,7 @@ class ListItemsResponse final :
   typedef void DestructorSkippable_;
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::backplane::grpc::ItemInfo > items_;
+    ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr canonical_path_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -2528,6 +2544,56 @@ inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::io::deephaven::proto::
 ListItemsResponse::items() const {
   // @@protoc_insertion_point(field_list:io.deephaven.proto.backplane.grpc.ListItemsResponse.items)
   return _impl_.items_;
+}
+
+// string canonical_path = 2;
+inline void ListItemsResponse::clear_canonical_path() {
+  _impl_.canonical_path_.ClearToEmpty();
+}
+inline const std::string& ListItemsResponse::canonical_path() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.ListItemsResponse.canonical_path)
+  return _internal_canonical_path();
+}
+template <typename ArgT0, typename... ArgT>
+inline PROTOBUF_ALWAYS_INLINE
+void ListItemsResponse::set_canonical_path(ArgT0&& arg0, ArgT... args) {
+ 
+ _impl_.canonical_path_.Set(static_cast<ArgT0 &&>(arg0), args..., GetArenaForAllocation());
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.ListItemsResponse.canonical_path)
+}
+inline std::string* ListItemsResponse::mutable_canonical_path() {
+  std::string* _s = _internal_mutable_canonical_path();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.ListItemsResponse.canonical_path)
+  return _s;
+}
+inline const std::string& ListItemsResponse::_internal_canonical_path() const {
+  return _impl_.canonical_path_.Get();
+}
+inline void ListItemsResponse::_internal_set_canonical_path(const std::string& value) {
+  
+  _impl_.canonical_path_.Set(value, GetArenaForAllocation());
+}
+inline std::string* ListItemsResponse::_internal_mutable_canonical_path() {
+  
+  return _impl_.canonical_path_.Mutable(GetArenaForAllocation());
+}
+inline std::string* ListItemsResponse::release_canonical_path() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.ListItemsResponse.canonical_path)
+  return _impl_.canonical_path_.Release();
+}
+inline void ListItemsResponse::set_allocated_canonical_path(std::string* canonical_path) {
+  if (canonical_path != nullptr) {
+    
+  } else {
+    
+  }
+  _impl_.canonical_path_.SetAllocated(canonical_path, GetArenaForAllocation());
+#ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (_impl_.canonical_path_.IsDefault()) {
+    _impl_.canonical_path_.Set("", GetArenaForAllocation());
+  }
+#endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.ListItemsResponse.canonical_path)
 }
 
 // -------------------------------------------------------------------

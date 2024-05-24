@@ -60,6 +60,7 @@ PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORIT
 PROTOBUF_CONSTEXPR ListItemsResponse::ListItemsResponse(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.items_)*/{}
+  , /*decltype(_impl_.canonical_path_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct ListItemsResponseDefaultTypeInternal {
   PROTOBUF_CONSTEXPR ListItemsResponseDefaultTypeInternal()
@@ -244,6 +245,7 @@ const uint32_t TableStruct_deephaven_2fproto_2fstorage_2eproto::offsets[] PROTOB
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ListItemsResponse, _impl_.items_),
+  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ListItemsResponse, _impl_.canonical_path_),
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FetchFileRequest, _impl_._has_bits_),
   PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FetchFileRequest, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -327,16 +329,16 @@ static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protode
   { 0, 8, -1, sizeof(::io::deephaven::proto::backplane::grpc::ListItemsRequest)},
   { 10, 20, -1, sizeof(::io::deephaven::proto::backplane::grpc::ItemInfo)},
   { 24, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::ListItemsResponse)},
-  { 31, 39, -1, sizeof(::io::deephaven::proto::backplane::grpc::FetchFileRequest)},
-  { 41, 49, -1, sizeof(::io::deephaven::proto::backplane::grpc::FetchFileResponse)},
-  { 51, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::SaveFileRequest)},
-  { 60, 67, -1, sizeof(::io::deephaven::proto::backplane::grpc::SaveFileResponse)},
-  { 68, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::MoveItemRequest)},
-  { 77, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::MoveItemResponse)},
-  { 83, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::CreateDirectoryRequest)},
-  { 90, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::CreateDirectoryResponse)},
-  { 96, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::DeleteItemRequest)},
-  { 103, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::DeleteItemResponse)},
+  { 32, 40, -1, sizeof(::io::deephaven::proto::backplane::grpc::FetchFileRequest)},
+  { 42, 50, -1, sizeof(::io::deephaven::proto::backplane::grpc::FetchFileResponse)},
+  { 52, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::SaveFileRequest)},
+  { 61, 68, -1, sizeof(::io::deephaven::proto::backplane::grpc::SaveFileResponse)},
+  { 69, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::MoveItemRequest)},
+  { 78, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::MoveItemResponse)},
+  { 84, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::CreateDirectoryRequest)},
+  { 91, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::CreateDirectoryResponse)},
+  { 97, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::DeleteItemRequest)},
+  { 104, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::DeleteItemResponse)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -362,48 +364,48 @@ const char descriptor_table_protodef_deephaven_2fproto_2fstorage_2eproto[] PROTO
   "\tH\000\210\001\001B\016\n\014_filter_glob\"\201\001\n\010ItemInfo\022\014\n\004p"
   "ath\030\001 \001(\t\0229\n\004type\030\002 \001(\0162+.io.deephaven.p"
   "roto.backplane.grpc.ItemType\022\020\n\004size\030\003 \001"
-  "(\022B\0020\001\022\021\n\004etag\030\004 \001(\tH\000\210\001\001B\007\n\005_etag\"O\n\021Li"
+  "(\022B\0020\001\022\021\n\004etag\030\004 \001(\tH\000\210\001\001B\007\n\005_etag\"g\n\021Li"
   "stItemsResponse\022:\n\005items\030\001 \003(\0132+.io.deep"
-  "haven.proto.backplane.grpc.ItemInfo\"<\n\020F"
-  "etchFileRequest\022\014\n\004path\030\001 \001(\t\022\021\n\004etag\030\002 "
-  "\001(\tH\000\210\001\001B\007\n\005_etag\"A\n\021FetchFileResponse\022\020"
-  "\n\010contents\030\001 \001(\014\022\021\n\004etag\030\002 \001(\tH\000\210\001\001B\007\n\005_"
-  "etag\"J\n\017SaveFileRequest\022\027\n\017allow_overwri"
-  "te\030\001 \001(\010\022\014\n\004path\030\002 \001(\t\022\020\n\010contents\030\003 \001(\014"
-  "\".\n\020SaveFileResponse\022\021\n\004etag\030\001 \001(\tH\000\210\001\001B"
-  "\007\n\005_etag\"N\n\017MoveItemRequest\022\020\n\010old_path\030"
-  "\001 \001(\t\022\020\n\010new_path\030\002 \001(\t\022\027\n\017allow_overwri"
-  "te\030\003 \001(\010\"\022\n\020MoveItemResponse\"&\n\026CreateDi"
-  "rectoryRequest\022\014\n\004path\030\001 \001(\t\"\031\n\027CreateDi"
-  "rectoryResponse\"!\n\021DeleteItemRequest\022\014\n\004"
-  "path\030\001 \001(\t\"\024\n\022DeleteItemResponse*0\n\010Item"
-  "Type\022\013\n\007UNKNOWN\020\000\022\r\n\tDIRECTORY\020\001\022\010\n\004FILE"
-  "\020\0022\374\005\n\016StorageService\022x\n\tListItems\0223.io."
-  "deephaven.proto.backplane.grpc.ListItems"
-  "Request\0324.io.deephaven.proto.backplane.g"
-  "rpc.ListItemsResponse\"\000\022x\n\tFetchFile\0223.i"
-  "o.deephaven.proto.backplane.grpc.FetchFi"
-  "leRequest\0324.io.deephaven.proto.backplane"
-  ".grpc.FetchFileResponse\"\000\022u\n\010SaveFile\0222."
-  "io.deephaven.proto.backplane.grpc.SaveFi"
-  "leRequest\0323.io.deephaven.proto.backplane"
-  ".grpc.SaveFileResponse\"\000\022u\n\010MoveItem\0222.i"
-  "o.deephaven.proto.backplane.grpc.MoveIte"
-  "mRequest\0323.io.deephaven.proto.backplane."
-  "grpc.MoveItemResponse\"\000\022\212\001\n\017CreateDirect"
-  "ory\0229.io.deephaven.proto.backplane.grpc."
-  "CreateDirectoryRequest\032:.io.deephaven.pr"
-  "oto.backplane.grpc.CreateDirectoryRespon"
-  "se\"\000\022{\n\nDeleteItem\0224.io.deephaven.proto."
-  "backplane.grpc.DeleteItemRequest\0325.io.de"
-  "ephaven.proto.backplane.grpc.DeleteItemR"
-  "esponse\"\000BCH\001P\001Z=github.com/deephaven/de"
-  "ephaven-core/go/internal/proto/storageb\006"
-  "proto3"
+  "haven.proto.backplane.grpc.ItemInfo\022\026\n\016c"
+  "anonical_path\030\002 \001(\t\"<\n\020FetchFileRequest\022"
+  "\014\n\004path\030\001 \001(\t\022\021\n\004etag\030\002 \001(\tH\000\210\001\001B\007\n\005_eta"
+  "g\"A\n\021FetchFileResponse\022\020\n\010contents\030\001 \001(\014"
+  "\022\021\n\004etag\030\002 \001(\tH\000\210\001\001B\007\n\005_etag\"J\n\017SaveFile"
+  "Request\022\027\n\017allow_overwrite\030\001 \001(\010\022\014\n\004path"
+  "\030\002 \001(\t\022\020\n\010contents\030\003 \001(\014\".\n\020SaveFileResp"
+  "onse\022\021\n\004etag\030\001 \001(\tH\000\210\001\001B\007\n\005_etag\"N\n\017Move"
+  "ItemRequest\022\020\n\010old_path\030\001 \001(\t\022\020\n\010new_pat"
+  "h\030\002 \001(\t\022\027\n\017allow_overwrite\030\003 \001(\010\"\022\n\020Move"
+  "ItemResponse\"&\n\026CreateDirectoryRequest\022\014"
+  "\n\004path\030\001 \001(\t\"\031\n\027CreateDirectoryResponse\""
+  "!\n\021DeleteItemRequest\022\014\n\004path\030\001 \001(\t\"\024\n\022De"
+  "leteItemResponse*0\n\010ItemType\022\013\n\007UNKNOWN\020"
+  "\000\022\r\n\tDIRECTORY\020\001\022\010\n\004FILE\020\0022\374\005\n\016StorageSe"
+  "rvice\022x\n\tListItems\0223.io.deephaven.proto."
+  "backplane.grpc.ListItemsRequest\0324.io.dee"
+  "phaven.proto.backplane.grpc.ListItemsRes"
+  "ponse\"\000\022x\n\tFetchFile\0223.io.deephaven.prot"
+  "o.backplane.grpc.FetchFileRequest\0324.io.d"
+  "eephaven.proto.backplane.grpc.FetchFileR"
+  "esponse\"\000\022u\n\010SaveFile\0222.io.deephaven.pro"
+  "to.backplane.grpc.SaveFileRequest\0323.io.d"
+  "eephaven.proto.backplane.grpc.SaveFileRe"
+  "sponse\"\000\022u\n\010MoveItem\0222.io.deephaven.prot"
+  "o.backplane.grpc.MoveItemRequest\0323.io.de"
+  "ephaven.proto.backplane.grpc.MoveItemRes"
+  "ponse\"\000\022\212\001\n\017CreateDirectory\0229.io.deephav"
+  "en.proto.backplane.grpc.CreateDirectoryR"
+  "equest\032:.io.deephaven.proto.backplane.gr"
+  "pc.CreateDirectoryResponse\"\000\022{\n\nDeleteIt"
+  "em\0224.io.deephaven.proto.backplane.grpc.D"
+  "eleteItemRequest\0325.io.deephaven.proto.ba"
+  "ckplane.grpc.DeleteItemResponse\"\000BCH\001P\001Z"
+  "=github.com/deephaven/deephaven-core/go/"
+  "internal/proto/storageb\006proto3"
   ;
 static ::_pbi::once_flag descriptor_table_deephaven_2fproto_2fstorage_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_deephaven_2fproto_2fstorage_2eproto = {
-    false, false, 1726, descriptor_table_protodef_deephaven_2fproto_2fstorage_2eproto,
+    false, false, 1750, descriptor_table_protodef_deephaven_2fproto_2fstorage_2eproto,
     "deephaven/proto/storage.proto",
     &descriptor_table_deephaven_2fproto_2fstorage_2eproto_once, nullptr, 0, 13,
     schemas, file_default_instances, TableStruct_deephaven_2fproto_2fstorage_2eproto::offsets,
@@ -1051,9 +1053,18 @@ ListItemsResponse::ListItemsResponse(const ListItemsResponse& from)
   ListItemsResponse* const _this = this; (void)_this;
   new (&_impl_) Impl_{
       decltype(_impl_.items_){from._impl_.items_}
+    , decltype(_impl_.canonical_path_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _impl_.canonical_path_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.canonical_path_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_canonical_path().empty()) {
+    _this->_impl_.canonical_path_.Set(from._internal_canonical_path(), 
+      _this->GetArenaForAllocation());
+  }
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.ListItemsResponse)
 }
 
@@ -1063,8 +1074,13 @@ inline void ListItemsResponse::SharedCtor(
   (void)is_message_owned;
   new (&_impl_) Impl_{
       decltype(_impl_.items_){arena}
+    , decltype(_impl_.canonical_path_){}
     , /*decltype(_impl_._cached_size_)*/{}
   };
+  _impl_.canonical_path_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.canonical_path_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
 }
 
 ListItemsResponse::~ListItemsResponse() {
@@ -1079,6 +1095,7 @@ ListItemsResponse::~ListItemsResponse() {
 inline void ListItemsResponse::SharedDtor() {
   GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
   _impl_.items_.~RepeatedPtrField();
+  _impl_.canonical_path_.Destroy();
 }
 
 void ListItemsResponse::SetCachedSize(int size) const {
@@ -1092,6 +1109,7 @@ void ListItemsResponse::Clear() {
   (void) cached_has_bits;
 
   _impl_.items_.Clear();
+  _impl_.canonical_path_.ClearToEmpty();
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -1111,6 +1129,16 @@ const char* ListItemsResponse::_InternalParse(const char* ptr, ::_pbi::ParseCont
             CHK_(ptr);
             if (!ctx->DataAvailable(ptr)) break;
           } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<10>(ptr));
+        } else
+          goto handle_unusual;
+        continue;
+      // string canonical_path = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+          auto str = _internal_mutable_canonical_path();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.ListItemsResponse.canonical_path"));
         } else
           goto handle_unusual;
         continue;
@@ -1151,6 +1179,16 @@ uint8_t* ListItemsResponse::_InternalSerialize(
         InternalWriteMessage(1, repfield, repfield.GetCachedSize(), target, stream);
   }
 
+  // string canonical_path = 2;
+  if (!this->_internal_canonical_path().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_canonical_path().data(), static_cast<int>(this->_internal_canonical_path().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "io.deephaven.proto.backplane.grpc.ListItemsResponse.canonical_path");
+    target = stream->WriteStringMaybeAliased(
+        2, this->_internal_canonical_path(), target);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -1174,6 +1212,13 @@ size_t ListItemsResponse::ByteSizeLong() const {
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
   }
 
+  // string canonical_path = 2;
+  if (!this->_internal_canonical_path().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_canonical_path());
+  }
+
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
@@ -1193,6 +1238,9 @@ void ListItemsResponse::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, cons
   (void) cached_has_bits;
 
   _this->_impl_.items_.MergeFrom(from._impl_.items_);
+  if (!from._internal_canonical_path().empty()) {
+    _this->_internal_set_canonical_path(from._internal_canonical_path());
+  }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
@@ -1209,8 +1257,14 @@ bool ListItemsResponse::IsInitialized() const {
 
 void ListItemsResponse::InternalSwap(ListItemsResponse* other) {
   using std::swap;
+  auto* lhs_arena = GetArenaForAllocation();
+  auto* rhs_arena = other->GetArenaForAllocation();
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   _impl_.items_.InternalSwap(&other->_impl_.items_);
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.canonical_path_, lhs_arena,
+      &other->_impl_.canonical_path_, rhs_arena
+  );
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata ListItemsResponse::GetMetadata() const {
