@@ -2024,7 +2024,11 @@ public class DateTimeUtils {
             return null;
         }
 
-        return period.multipliedBy(scalar);
+        try {
+            return period.multipliedBy(scalar);
+        } catch (ArithmeticException ex) {
+            throw new DateTimeOverflowException(ex);
+        }
     }
 
     /**
