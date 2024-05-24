@@ -2501,7 +2501,7 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             // ok
         }
 
-        TestCase.assertEquals(Duration.ofNanos(61728394L), DateTimeUtils.divide(d, 2.0));
+        TestCase.assertEquals(Duration.ofNanos(61728395L), DateTimeUtils.divide(d, 2.0));
         TestCase.assertEquals(Duration.ofNanos(0L), DateTimeUtils.divide(d, POS_INFINITY_DOUBLE));
         TestCase.assertEquals(Duration.ofNanos(0L), DateTimeUtils.divide(d, NEG_INFINITY_DOUBLE));
         TestCase.assertNull(DateTimeUtils.divide((Duration) null, 3.0));

@@ -1978,10 +1978,13 @@ public class DateTimeUtils {
 
     /**
      * Multiply a duration by a scalar.
+     * <p>
+     * Because the scalar is a double, the result may not be exact. In particular, the result will be rounded to the
+     * nearest nanosecond. In the case of a tie, the result will be rounded up.
      *
      * @param duration the duration to multiply
      * @param scalar the scalar to multiply by
-     * @return {@code null} if either input is {@code null}; otherwise the duration multiplied by the scalar
+     * @return {@code null} if either input is {@code null}; otherwise the duration multiplied by the scalar.
      */
     public static Duration multiply(final Duration duration, final double scalar) {
         if (duration == null || scalar == NULL_DOUBLE) {
@@ -1998,7 +2001,7 @@ public class DateTimeUtils {
             throw new DateTimeOverflowException("Product value is too large to be cast to a long");
         }
 
-        return Duration.ofNanos((long) product);
+        return Duration.ofNanos(Math.round(product));
     }
 
     /**
@@ -2093,6 +2096,9 @@ public class DateTimeUtils {
 
     /**
      * Divide a duration by a scalar.
+     * <p>
+     * Because the scalar is a double, the result may not be exact. In particular, the result will be rounded to the
+     * nearest nanosecond. In the case of a tie, the result will be rounded up.
      *
      * @param duration the duration to divide
      * @param scalar the scalar to divide by
@@ -2111,7 +2117,7 @@ public class DateTimeUtils {
             throw new DateTimeOverflowException("Scalar value is zero");
         }
 
-        return Duration.ofNanos((long) (duration.toNanos() / scalar));
+        return Duration.ofNanos(Math.round(duration.toNanos() / scalar));
     }
 
     /**
