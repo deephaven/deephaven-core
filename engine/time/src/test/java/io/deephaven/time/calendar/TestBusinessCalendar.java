@@ -789,6 +789,59 @@ public class TestBusinessCalendar extends TestCalendar {
         assertEquals(targetLong.size(), bCalendar.numberBusinessDates(startLong, endLong));
     }
 
+    public void testBusinessDatesValidateCacheIteration() {
+        // Construct a very simple calendar for counting business days that is easy to reason about
+
+        final LocalDate firstValidDateLocal = LocalDate.of(2000, 1, 1);
+        final LocalDate lastValidDateLocal = LocalDate.of(2030, 12, 31);
+        final Set<DayOfWeek> weekendDaysLocal = Set.of(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY);
+        final Map<LocalDate, CalendarDay<Instant>> holidaysLocal = new HashMap<>();
+        final BusinessCalendar bc = new BusinessCalendar("Test", "Test", timeZone, firstValidDateLocal,
+                lastValidDateLocal, schedule, weekendDaysLocal, holidaysLocal);
+
+        // short period -- no caching case
+
+        LocalDate start = LocalDate.of(2024, 5, 15);
+        LocalDate end = LocalDate.of(2024, 5, 29);
+
+        LocalDate[] target = {
+                LocalDate.of(2024, 5, 15),
+                LocalDate.of(2024, 5, 16),
+                LocalDate.of(2024, 5, 17),
+                LocalDate.of(2024, 5, 20),
+                LocalDate.of(2024, 5, 21),
+                LocalDate.of(2024, 5, 22),
+                LocalDate.of(2024, 5, 23),
+                LocalDate.of(2024, 5, 24),
+                LocalDate.of(2024, 5, 27),
+                LocalDate.of(2024, 5, 28),
+                LocalDate.of(2024, 5, 29),
+        };
+
+        assertEquals(target, bc.businessDates(start, end));
+        assertEquals(target.length, bc.numberBusinessDates(start, end));
+
+        // long period -- caching case
+
+        start = LocalDate.of(2024, 5, 15);
+        end = LocalDate.of(2025, 5, 29);
+
+        final ArrayList<LocalDate> targetList = new ArrayList<>();
+        LocalDate d = start;
+
+        while (!d.isAfter(end)) {
+            if (!weekendDaysLocal.contains(d.getDayOfWeek())) {
+                targetList.add(d);
+            }
+            d = d.plusDays(1);
+        }
+
+        target = targetList.toArray(target);
+
+        assertEquals(target, bc.businessDates(start, end));
+        assertEquals(target.length, bc.numberBusinessDates(start, end));
+    }
+
     public void testNonBusinessDates() {
 
         final LocalDate start = LocalDate.of(2023, 7, 3);

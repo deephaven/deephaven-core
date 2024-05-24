@@ -244,7 +244,6 @@ public class CalendarDay<T extends Comparable<T> & Temporal> {
     }
 
     @Override
-    @Override
     public boolean equals(Object o) {
         if (this == o)
             return true;
