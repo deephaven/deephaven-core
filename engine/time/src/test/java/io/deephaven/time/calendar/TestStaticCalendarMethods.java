@@ -107,8 +107,6 @@ public class TestStaticCalendarMethods extends BaseArrayTestCase {
         excludes.add("firstValidDate");
         excludes.add("lastValidDate");
         excludes.add("clearCache");
-        excludes.add("enableFastCache");
-        excludes.add("isFastCache");
 
         for (Method m1 : BusinessCalendar.class.getMethods()) {
             if (m1.getDeclaringClass() == Object.class ||
