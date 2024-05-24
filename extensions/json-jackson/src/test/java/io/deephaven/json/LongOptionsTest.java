@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static io.deephaven.json.TestHelper.parse;
+import static io.deephaven.json.TestHelper.process;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
@@ -43,9 +44,9 @@ public class LongOptionsTest {
     }
 
     @Test
-    void strictMissing() throws IOException {
+    void strictMissing() {
         try {
-            parse(LongValue.strict(), "", LongChunk.chunkWrap(new long[1]));
+            process(LongValue.strict(), "");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Missing not allowed");
@@ -53,9 +54,9 @@ public class LongOptionsTest {
     }
 
     @Test
-    void strictNull() throws IOException {
+    void strictNull() {
         try {
-            parse(LongValue.strict(), "null", LongChunk.chunkWrap(new long[1]));
+            process(LongValue.strict(), "null");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Null not allowed");
@@ -63,19 +64,20 @@ public class LongOptionsTest {
     }
 
     @Test
-    void strictOverflow() throws IOException {
+    void strictOverflow() {
         try {
-            parse(LongValue.strict(), "9223372036854775808", LongChunk.chunkWrap(new long[1]));
-        } catch (InputCoercionException e) {
+            process(LongValue.strict(), "9223372036854775808");
+            failBecauseExceptionWasNotThrown(IOException.class);
+        } catch (IOException e) {
             assertThat(e).hasMessageContaining(
                     "Numeric value (9223372036854775808) out of range of long (-9223372036854775808 - 9223372036854775807)");
         }
     }
 
     @Test
-    void standardString() throws IOException {
+    void standardString() {
         try {
-            parse(LongValue.standard(), "\"42\"", LongChunk.chunkWrap(new long[1]));
+            process(LongValue.standard(), "\"42\"");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("String not allowed");
@@ -83,9 +85,9 @@ public class LongOptionsTest {
     }
 
     @Test
-    void standardTrue() throws IOException {
+    void standardTrue() {
         try {
-            parse(LongValue.standard(), "true", LongChunk.chunkWrap(new long[1]));
+            process(LongValue.standard(), "true");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Bool not expected");
@@ -93,9 +95,9 @@ public class LongOptionsTest {
     }
 
     @Test
-    void standardFalse() throws IOException {
+    void standardFalse() {
         try {
-            parse(LongValue.standard(), "false", LongChunk.chunkWrap(new long[1]));
+            process(LongValue.standard(), "false");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Bool not expected");
@@ -103,9 +105,9 @@ public class LongOptionsTest {
     }
 
     @Test
-    void standardFloat() throws IOException {
+    void standardFloat() {
         try {
-            parse(LongValue.standard(), "42.0", LongChunk.chunkWrap(new long[1]));
+            process(LongValue.standard(), "42.0");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Decimal not allowed");
@@ -113,9 +115,9 @@ public class LongOptionsTest {
     }
 
     @Test
-    void standardObject() throws IOException {
+    void standardObject() {
         try {
-            parse(LongValue.standard(), "{}", LongChunk.chunkWrap(new long[1]));
+            process(LongValue.standard(), "{}");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Object not expected");
@@ -123,9 +125,9 @@ public class LongOptionsTest {
     }
 
     @Test
-    void standardArray() throws IOException {
+    void standardArray() {
         try {
-            parse(LongValue.standard(), "[]", LongChunk.chunkWrap(new long[1]));
+            process(LongValue.standard(), "[]");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Array not expected");

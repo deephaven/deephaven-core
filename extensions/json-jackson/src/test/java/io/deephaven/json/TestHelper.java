@@ -30,6 +30,31 @@ public class TestHelper {
 
     public static <T> void parse(ObjectProcessor<? super T> processor, List<T> rows, Chunk<?>... expectedCols)
             throws IOException {
+        final List<WritableChunk<?>> out = process(processor, rows);
+        try {
+            assertThat(out.size()).isEqualTo(expectedCols.length);
+            assertThat(out.stream().map(Chunk::getChunkType).collect(Collectors.toList()))
+                    .isEqualTo(Stream.of(expectedCols).map(Chunk::getChunkType).collect(Collectors.toList()));
+            for (int i = 0; i < expectedCols.length; ++i) {
+                check(out.get(i), expectedCols[i]);
+            }
+        } finally {
+            for (WritableChunk<?> wc : out) {
+                wc.close();
+            }
+        }
+    }
+
+    public static List<WritableChunk<?>> process(Value options, String jsonRows) throws IOException {
+        return process(JacksonProvider.of(options).stringProcessor(), List.of(jsonRows));
+    }
+
+    // public static List<WritableChunk<?>> parse(Value options, String jsonRows, Chunk<?> chunk) throws IOException {
+    // return process(JacksonProvider.of(options).stringProcessor(), List.of(jsonRows));
+    // }
+
+    public static <T> List<WritableChunk<?>> process(ObjectProcessor<? super T> processor, List<T> rows)
+            throws IOException {
         final List<WritableChunk<?>> out = processor
                 .outputTypes()
                 .stream()
@@ -37,9 +62,6 @@ public class TestHelper {
                 .map(x -> x.makeWritableChunk(rows.size()))
                 .collect(Collectors.toList());
         try {
-            assertThat(out.size()).isEqualTo(expectedCols.length);
-            assertThat(out.stream().map(Chunk::getChunkType).collect(Collectors.toList()))
-                    .isEqualTo(Stream.of(expectedCols).map(Chunk::getChunkType).collect(Collectors.toList()));
             for (WritableChunk<?> wc : out) {
                 wc.setSize(0);
             }
@@ -54,14 +76,13 @@ public class TestHelper {
                 } catch (UncheckedIOException e) {
                     throw e.getCause();
                 }
+                return out;
             }
-            for (int i = 0; i < expectedCols.length; ++i) {
-                check(out.get(i), expectedCols[i]);
-            }
-        } finally {
+        } catch (IOException | RuntimeException e) {
             for (WritableChunk<?> wc : out) {
                 wc.close();
             }
+            throw e;
         }
     }
 

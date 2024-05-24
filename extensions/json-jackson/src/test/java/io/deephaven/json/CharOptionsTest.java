@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import static io.deephaven.json.TestHelper.parse;
+import static io.deephaven.json.TestHelper.process;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
@@ -46,9 +47,9 @@ public class CharOptionsTest {
     }
 
     @Test
-    void strictMissing() throws IOException {
+    void strictMissing() {
         try {
-            parse(CharValue.strict(), "", CharChunk.chunkWrap(new char[1]));
+            process(CharValue.strict(), "");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Missing not allowed");
@@ -56,9 +57,9 @@ public class CharOptionsTest {
     }
 
     @Test
-    void strictNull() throws IOException {
+    void strictNull() {
         try {
-            parse(CharValue.strict(), "null", CharChunk.chunkWrap(new char[1]));
+            process(CharValue.strict(), "null");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Null not allowed");
@@ -67,9 +68,9 @@ public class CharOptionsTest {
 
 
     @Test
-    void standardInt() throws IOException {
+    void standardInt() {
         try {
-            parse(CharValue.standard(), "42", CharChunk.chunkWrap(new char[1]));
+            process(CharValue.standard(), "42");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Number int not expected");
@@ -77,9 +78,9 @@ public class CharOptionsTest {
     }
 
     @Test
-    void standardFloat() throws IOException {
+    void standardFloat() {
         try {
-            parse(CharValue.standard(), "42.42", CharChunk.chunkWrap(new char[1]));
+            process(CharValue.standard(), "42.42");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Decimal not expected");
@@ -88,9 +89,9 @@ public class CharOptionsTest {
 
 
     @Test
-    void standardTrue() throws IOException {
+    void standardTrue() {
         try {
-            parse(CharValue.standard(), "true", CharChunk.chunkWrap(new char[1]));
+            process(CharValue.standard(), "true");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Bool not expected");
@@ -98,9 +99,9 @@ public class CharOptionsTest {
     }
 
     @Test
-    void standardFalse() throws IOException {
+    void standardFalse() {
         try {
-            parse(CharValue.standard(), "false", CharChunk.chunkWrap(new char[1]));
+            process(CharValue.standard(), "false");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Bool not expected");
@@ -108,9 +109,9 @@ public class CharOptionsTest {
     }
 
     @Test
-    void standardObject() throws IOException {
+    void standardObject() {
         try {
-            parse(CharValue.standard(), "{}", CharChunk.chunkWrap(new char[1]));
+            process(CharValue.standard(), "{}");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Object not expected");
@@ -118,9 +119,9 @@ public class CharOptionsTest {
     }
 
     @Test
-    void standardArray() throws IOException {
+    void standardArray() {
         try {
-            parse(CharValue.standard(), "[]", CharChunk.chunkWrap(new char[1]));
+            process(CharValue.standard(), "[]");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Array not expected");

@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static io.deephaven.json.TestHelper.parse;
+import static io.deephaven.json.TestHelper.process;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
@@ -48,9 +49,9 @@ public class StringOptionsTest {
     }
 
     @Test
-    void strictMissing() throws IOException {
+    void strictMissing() {
         try {
-            parse(StringValue.strict(), "", ObjectChunk.chunkWrap(new String[1]));
+            process(StringValue.strict(), "");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Missing not allowed");
@@ -58,9 +59,9 @@ public class StringOptionsTest {
     }
 
     @Test
-    void strictNull() throws IOException {
+    void strictNull() {
         try {
-            parse(StringValue.strict(), "null", ObjectChunk.chunkWrap(new String[1]));
+            process(StringValue.strict(), "null");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Null not allowed");
@@ -69,9 +70,9 @@ public class StringOptionsTest {
 
 
     @Test
-    void standardInt() throws IOException {
+    void standardInt() {
         try {
-            parse(StringValue.standard(), "42", ObjectChunk.chunkWrap(new String[1]));
+            process(StringValue.standard(), "42");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Number int not allowed");
@@ -79,9 +80,9 @@ public class StringOptionsTest {
     }
 
     @Test
-    void standardFloat() throws IOException {
+    void standardFloat() {
         try {
-            parse(StringValue.standard(), "42.42", ObjectChunk.chunkWrap(new String[1]));
+            process(StringValue.standard(), "42.42");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Decimal not allowed");
@@ -90,9 +91,9 @@ public class StringOptionsTest {
 
 
     @Test
-    void standardTrue() throws IOException {
+    void standardTrue() {
         try {
-            parse(StringValue.standard(), "true", ObjectChunk.chunkWrap(new String[1]));
+            process(StringValue.standard(), "true");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Bool not expected");
@@ -100,9 +101,9 @@ public class StringOptionsTest {
     }
 
     @Test
-    void standardFalse() throws IOException {
+    void standardFalse() {
         try {
-            parse(StringValue.standard(), "false", ObjectChunk.chunkWrap(new String[1]));
+            process(StringValue.standard(), "false");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Bool not expected");
@@ -110,9 +111,9 @@ public class StringOptionsTest {
     }
 
     @Test
-    void standardObject() throws IOException {
+    void standardObject() {
         try {
-            parse(StringValue.standard(), "{}", ObjectChunk.chunkWrap(new String[1]));
+            process(StringValue.standard(), "{}");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Object not expected");
@@ -120,9 +121,9 @@ public class StringOptionsTest {
     }
 
     @Test
-    void standardArray() throws IOException {
+    void standardArray() {
         try {
-            parse(StringValue.standard(), "[]", ObjectChunk.chunkWrap(new String[1]));
+            process(StringValue.standard(), "[]");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Array not expected");

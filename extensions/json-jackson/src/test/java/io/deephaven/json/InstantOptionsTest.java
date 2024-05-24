@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.time.Instant;
 
 import static io.deephaven.json.TestHelper.parse;
+import static io.deephaven.json.TestHelper.process;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
@@ -42,7 +43,7 @@ public class InstantOptionsTest {
     @Test
     void strictNull() throws IOException {
         try {
-            parse(InstantValue.strict(), "null", LongChunk.chunkWrap(new long[1]));
+            process(InstantValue.strict(), "null");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Null not allowed");
@@ -52,7 +53,7 @@ public class InstantOptionsTest {
     @Test
     void strictMissing() throws IOException {
         try {
-            parse(InstantValue.strict(), "", LongChunk.chunkWrap(new long[1]));
+            process(InstantValue.strict(), "");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Missing not allowed");

@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 
 import static io.deephaven.json.TestHelper.parse;
+import static io.deephaven.json.TestHelper.process;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
@@ -34,9 +35,9 @@ public class LocalDateOptionsTest {
     }
 
     @Test
-    void strictNull() throws IOException {
+    void strictNull() {
         try {
-            parse(LocalDateValue.strict(), "null", ObjectChunk.chunkWrap(new LocalDate[1]));
+            process(LocalDateValue.strict(), "null");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Null not allowed");
@@ -44,9 +45,9 @@ public class LocalDateOptionsTest {
     }
 
     @Test
-    void strictMissing() throws IOException {
+    void strictMissing() {
         try {
-            parse(LocalDateValue.strict(), "", ObjectChunk.chunkWrap(new LocalDate[1]));
+            process(LocalDateValue.strict(), "");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Missing not allowed");

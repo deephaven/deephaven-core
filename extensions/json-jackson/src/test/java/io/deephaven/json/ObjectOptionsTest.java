@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static io.deephaven.json.TestHelper.parse;
+import static io.deephaven.json.TestHelper.process;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
@@ -200,5 +201,18 @@ public class ObjectOptionsTest {
                 .build();
         assertThat(JacksonProvider.of(objPlusOneMinusOneCount).named(Type.stringType()).names())
                 .containsExactly("column_1", "column_12");
+    }
+
+    @Test
+    void fieldException() {
+        try {
+            process(OBJECT_NAME_AGE_FIELD, "{\"name\": \"Devin\", \"age\": 43.42}");
+            failBecauseExceptionWasNotThrown(IOException.class);
+        } catch (IOException e) {
+            assertThat(e).hasMessageContaining("Unable to process field 'age'");
+            assertThat(e).hasCauseInstanceOf(IOException.class);
+            assertThat(e.getCause()).hasMessageContaining("Decimal not allowed");
+            assertThat(e.getCause()).hasNoCause();
+        }
     }
 }

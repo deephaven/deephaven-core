@@ -11,6 +11,9 @@ import java.io.IOException;
 import java.util.List;
 
 import static io.deephaven.json.TestHelper.parse;
+import static io.deephaven.json.TestHelper.process;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 public class TupleOptionsTest {
 
@@ -36,5 +39,18 @@ public class TupleOptionsTest {
                 "[\"foo\", 42]",
                 "[\"bar\", 43]"),
                 ObjectChunk.chunkWrap(new String[] {"foo", "bar"}));
+    }
+
+    @Test
+    void indexException() {
+        try {
+            process(STRING_INT_TUPLE, "[\"foo\", 43.43]");
+            failBecauseExceptionWasNotThrown(IOException.class);
+        } catch (IOException e) {
+            assertThat(e).hasMessageContaining("Unable to process tuple ix 1");
+            assertThat(e).hasCauseInstanceOf(IOException.class);
+            assertThat(e.getCause()).hasMessageContaining("Decimal not allowed");
+            assertThat(e.getCause()).hasNoCause();
+        }
     }
 }

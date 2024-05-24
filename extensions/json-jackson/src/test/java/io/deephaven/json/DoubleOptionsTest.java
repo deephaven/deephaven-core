@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static io.deephaven.json.TestHelper.parse;
+import static io.deephaven.json.TestHelper.process;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
@@ -42,9 +43,9 @@ public class DoubleOptionsTest {
     }
 
     @Test
-    void strictMissing() throws IOException {
+    void strictMissing() {
         try {
-            parse(DoubleValue.strict(), "", DoubleChunk.chunkWrap(new double[1]));
+            process(DoubleValue.strict(), "");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Missing not allowed");
@@ -52,9 +53,9 @@ public class DoubleOptionsTest {
     }
 
     @Test
-    void strictNull() throws IOException {
+    void strictNull() {
         try {
-            parse(DoubleValue.strict(), "null", DoubleChunk.chunkWrap(new double[1]));
+            process(DoubleValue.strict(), "null");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Null not allowed");
@@ -62,9 +63,9 @@ public class DoubleOptionsTest {
     }
 
     @Test
-    void standardString() throws IOException {
+    void standardString() {
         try {
-            parse(DoubleValue.standard(), "\"42\"", DoubleChunk.chunkWrap(new double[1]));
+            process(DoubleValue.standard(), "\"42\"");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("String not allowed");
@@ -72,9 +73,9 @@ public class DoubleOptionsTest {
     }
 
     @Test
-    void standardTrue() throws IOException {
+    void standardTrue() {
         try {
-            parse(DoubleValue.standard(), "true", DoubleChunk.chunkWrap(new double[1]));
+            process(DoubleValue.standard(), "true");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Bool not expected");
@@ -82,9 +83,9 @@ public class DoubleOptionsTest {
     }
 
     @Test
-    void standardFalse() throws IOException {
+    void standardFalse() {
         try {
-            parse(DoubleValue.standard(), "false", DoubleChunk.chunkWrap(new double[1]));
+            process(DoubleValue.standard(), "false");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Bool not expected");
@@ -92,9 +93,9 @@ public class DoubleOptionsTest {
     }
 
     @Test
-    void standardObject() throws IOException {
+    void standardObject() {
         try {
-            parse(DoubleValue.standard(), "{}", DoubleChunk.chunkWrap(new double[1]));
+            process(DoubleValue.standard(), "{}");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Object not expected");
@@ -102,9 +103,9 @@ public class DoubleOptionsTest {
     }
 
     @Test
-    void standardArray() throws IOException {
+    void standardArray() {
         try {
-            parse(DoubleValue.standard(), "[]", DoubleChunk.chunkWrap(new double[1]));
+            process(DoubleValue.standard(), "[]");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Array not expected");

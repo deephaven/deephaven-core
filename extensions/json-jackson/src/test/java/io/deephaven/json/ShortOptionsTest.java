@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static io.deephaven.json.TestHelper.parse;
+import static io.deephaven.json.TestHelper.process;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
@@ -48,9 +49,9 @@ public class ShortOptionsTest {
     }
 
     @Test
-    void strictMissing() throws IOException {
+    void strictMissing() {
         try {
-            parse(ShortValue.strict(), "", ShortChunk.chunkWrap(new short[1]));
+            process(ShortValue.strict(), "");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Missing not allowed");
@@ -58,9 +59,9 @@ public class ShortOptionsTest {
     }
 
     @Test
-    void strictNull() throws IOException {
+    void strictNull() {
         try {
-            parse(ShortValue.strict(), "null", ShortChunk.chunkWrap(new short[1]));
+            process(ShortValue.strict(), "null");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Null not allowed");
@@ -68,19 +69,20 @@ public class ShortOptionsTest {
     }
 
     @Test
-    void standardOverflow() throws IOException {
+    void standardOverflow() {
         try {
-            parse(ShortValue.standard(), "2147483648", ShortChunk.chunkWrap(new short[1]));
-        } catch (InputCoercionException e) {
+            process(ShortValue.standard(), "2147483648");
+            failBecauseExceptionWasNotThrown(IOException.class);
+        } catch (IOException e) {
             assertThat(e).hasMessageContaining(
                     "Numeric value (2147483648) out of range of int (-2147483648 - 2147483647)");
         }
     }
 
     @Test
-    void standardString() throws IOException {
+    void standardString() {
         try {
-            parse(ShortValue.standard(), "\"42\"", ShortChunk.chunkWrap(new short[1]));
+            process(ShortValue.standard(), "\"42\"");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("String not allowed");
@@ -88,9 +90,9 @@ public class ShortOptionsTest {
     }
 
     @Test
-    void standardTrue() throws IOException {
+    void standardTrue() {
         try {
-            parse(ShortValue.standard(), "true", ShortChunk.chunkWrap(new short[1]));
+            process(ShortValue.standard(), "true");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Bool not expected");
@@ -98,9 +100,9 @@ public class ShortOptionsTest {
     }
 
     @Test
-    void standardFalse() throws IOException {
+    void standardFalse() {
         try {
-            parse(ShortValue.standard(), "false", ShortChunk.chunkWrap(new short[1]));
+            process(ShortValue.standard(), "false");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Bool not expected");
@@ -108,9 +110,9 @@ public class ShortOptionsTest {
     }
 
     @Test
-    void standardFloat() throws IOException {
+    void standardFloat() {
         try {
-            parse(ShortValue.standard(), "42.0", ShortChunk.chunkWrap(new short[1]));
+            process(ShortValue.standard(), "42.0");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Decimal not allowed");
@@ -118,9 +120,9 @@ public class ShortOptionsTest {
     }
 
     @Test
-    void standardObject() throws IOException {
+    void standardObject() {
         try {
-            parse(ShortValue.standard(), "{}", ShortChunk.chunkWrap(new short[1]));
+            process(ShortValue.standard(), "{}");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Object not expected");
@@ -128,9 +130,9 @@ public class ShortOptionsTest {
     }
 
     @Test
-    void standardArray() throws IOException {
+    void standardArray() {
         try {
-            parse(ShortValue.standard(), "[]", ShortChunk.chunkWrap(new short[1]));
+            process(ShortValue.standard(), "[]");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Array not expected");

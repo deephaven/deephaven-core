@@ -29,15 +29,16 @@ public final class JacksonConfiguration {
 
     /**
      * Constructs a Deephaven-configured json factory builder. This currently includes
-     * {@link StreamReadFeature#USE_FAST_DOUBLE_PARSER} and {@link StreamReadFeature#USE_FAST_BIG_NUMBER_PARSER}. The
-     * specific configuration may change in the future.
+     * {@link StreamReadFeature#USE_FAST_DOUBLE_PARSER}, {@link StreamReadFeature#USE_FAST_BIG_NUMBER_PARSER}, and
+     * {@link StreamReadFeature#INCLUDE_SOURCE_IN_LOCATION}. The specific configuration may change in the future.
      *
      * @return the Deephaven-configured json factory builder
      */
     public static JsonFactoryBuilder defaultFactoryBuilder() {
         return new JsonFactoryBuilder()
                 .enable(StreamReadFeature.USE_FAST_DOUBLE_PARSER)
-                .enable(StreamReadFeature.USE_FAST_BIG_NUMBER_PARSER);
+                .enable(StreamReadFeature.USE_FAST_BIG_NUMBER_PARSER)
+                .enable(StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION);
     }
 
     // Not currently public, but javadoc still useful to ensure internal callers don't modify.
