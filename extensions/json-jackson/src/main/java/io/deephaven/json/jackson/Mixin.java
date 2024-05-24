@@ -30,6 +30,7 @@ import io.deephaven.json.StringValue;
 import io.deephaven.json.TupleValue;
 import io.deephaven.json.TypedObjectValue;
 import io.deephaven.json.Value;
+import io.deephaven.json.jackson.Exceptions.ValueAwareException;
 import io.deephaven.processor.ObjectProcessor;
 import io.deephaven.qst.type.Type;
 
@@ -376,5 +377,91 @@ abstract class Mixin<T extends Value> implements JacksonProvider {
         public AnyMixin visit(AnyValue any) {
             return new AnyMixin(any, factory);
         }
+    }
+
+    final void checkNumberAllowed(JsonParser parser) throws IOException {
+        if (!allowNumberInt() && !allowDecimal()) {
+            throw new ValueAwareException("Number not allowed", parser.currentLocation(), options);
+        }
+    }
+
+    final void checkNumberIntAllowed(JsonParser parser) throws IOException {
+        if (!allowNumberInt()) {
+            throw new ValueAwareException("Number int not allowed", parser.currentLocation(), options);
+        }
+    }
+
+    final void checkDecimalAllowed(JsonParser parser) throws IOException {
+        if (!allowDecimal()) {
+            throw new ValueAwareException("Decimal not allowed", parser.currentLocation(), options);
+        }
+    }
+
+    final void checkBoolAllowed(JsonParser parser) throws IOException {
+        if (!allowBool()) {
+            throw new ValueAwareException("Bool not expected", parser.currentLocation(), options);
+        }
+    }
+
+    final void checkStringAllowed(JsonParser parser) throws IOException {
+        if (!allowString()) {
+            throw new ValueAwareException("String not allowed", parser.currentLocation(), options);
+        }
+    }
+
+    final void checkObjectAllowed(JsonParser parser) throws IOException {
+        if (!allowObject()) {
+            throw new ValueAwareException("Object not allowed", parser.currentLocation(), options);
+        }
+    }
+
+    final void checkArrayAllowed(JsonParser parser) throws IOException {
+        if (!allowArray()) {
+            throw new ValueAwareException("Array not allowed", parser.currentLocation(), options);
+        }
+    }
+
+    final void checkNullAllowed(JsonParser parser) throws IOException {
+        if (!allowNull()) {
+            throw new ValueAwareException("Null not allowed", parser.currentLocation(), options);
+        }
+    }
+
+    final void checkMissingAllowed(JsonParser parser) throws IOException {
+        if (!allowMissing()) {
+            throw new ValueAwareException("Missing not allowed", parser.currentLocation(), options);
+        }
+    }
+
+    final IOException unexpectedToken(JsonParser parser) throws ValueAwareException {
+        final String msg;
+        switch (parser.currentToken()) {
+            case VALUE_TRUE:
+            case VALUE_FALSE:
+                msg = "Bool not expected";
+                break;
+            case START_OBJECT:
+                msg = "Object not expected";
+                break;
+            case START_ARRAY:
+                msg = "Array not expected";
+                break;
+            case VALUE_NUMBER_INT:
+                msg = "Number int not expected";
+                break;
+            case VALUE_NUMBER_FLOAT:
+                msg = "Decimal not expected";
+                break;
+            case FIELD_NAME:
+            case VALUE_STRING:
+                msg = "String not expected";
+                break;
+            case VALUE_NULL:
+                msg = "Null not expected";
+                break;
+            default:
+                msg = parser.currentToken() + " not expected";
+        }
+        throw new ValueAwareException(msg, parser.currentLocation(), options);
     }
 }

@@ -8,6 +8,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import io.deephaven.json.TupleValue;
 import io.deephaven.json.Value;
+import io.deephaven.json.jackson.Exceptions.ValueAwareException;
 import io.deephaven.json.jackson.RepeaterProcessor.Context;
 import io.deephaven.qst.type.Type;
 
@@ -102,7 +103,7 @@ final class TupleMixin extends Mixin<TupleValue> {
                     processNullTuple(parser);
                     return;
                 default:
-                    throw Parsing.mismatch(parser, Object.class);
+                    throw unexpectedToken(parser);
             }
         }
 
@@ -112,29 +113,40 @@ final class TupleMixin extends Mixin<TupleValue> {
         }
 
         private void processTuple(JsonParser parser) throws IOException {
+            int ix = 0;
             for (ValueProcessor value : values) {
                 parser.nextToken();
-                value.processCurrentValue(parser);
+                try {
+                    value.processCurrentValue(parser);
+                } catch (IOException | RuntimeException e) {
+                    throw new ValueAwareException(String.format("Unable to process tuple ix %d", ix),
+                            parser.currentLocation(), e, options);
+                }
+                ++ix;
             }
             parser.nextToken();
             assertCurrentToken(parser, JsonToken.END_ARRAY);
         }
 
         private void processNullTuple(JsonParser parser) throws IOException {
-            if (!allowNull()) {
-                throw Parsing.mismatch(parser, Object.class);
-            }
+            checkNullAllowed(parser);
+            int ix = 0;
             // Note: we are treating a null tuple the same as a tuple of null objects
             // null ~= [null, ..., null]
             for (ValueProcessor value : values) {
-                value.processCurrentValue(parser);
+                // Note: _not_ incrementing to nextToken
+                try {
+                    value.processCurrentValue(parser);
+                } catch (IOException | RuntimeException e) {
+                    throw new ValueAwareException(String.format("Unable to process tuple ix %d", ix),
+                            parser.currentLocation(), e, options);
+                }
+                ++ix;
             }
         }
 
         private void parseFromMissing(JsonParser parser) throws IOException {
-            if (!allowMissing()) {
-                throw Parsing.mismatchMissing(parser, Object.class);
-            }
+            checkMissingAllowed(parser);
             // Note: we are treating a missing tuple the same as a tuple of missing objects (which, is technically
             // impossible w/ native json, but it's the semantics we are exposing).
             // <missing> ~= [<missing>, ..., <missing>]
@@ -165,9 +177,7 @@ final class TupleMixin extends Mixin<TupleValue> {
 
         @Override
         public void processNullRepeater(JsonParser parser) throws IOException {
-            if (!allowNull()) {
-                throw Parsing.mismatch(parser, Object.class);
-            }
+            checkNullAllowed(parser);
             for (RepeaterProcessor value : values) {
                 value.processNullRepeater(parser);
             }
@@ -175,9 +185,7 @@ final class TupleMixin extends Mixin<TupleValue> {
 
         @Override
         public void processMissingRepeater(JsonParser parser) throws IOException {
-            if (!allowMissing()) {
-                throw Parsing.mismatchMissing(parser, Object.class);
-            }
+            checkMissingAllowed(parser);
             for (RepeaterProcessor value : values) {
                 value.processMissingRepeater(parser);
             }
@@ -201,7 +209,7 @@ final class TupleMixin extends Mixin<TupleValue> {
                     processNullTuple(parser);
                     break;
                 default:
-                    throw Parsing.mismatch(parser, Object.class);
+                    throw Exceptions.notAllowed(parser);
             }
             ++index;
         }

@@ -63,7 +63,7 @@ final class BoolMixin extends Mixin<BoolValue> implements ToByte {
             case FIELD_NAME:
                 return parseFromString(parser);
         }
-        throw Parsing.mismatch(parser, Boolean.class);
+        throw unexpectedToken(parser);
     }
 
     @Override
@@ -91,7 +91,7 @@ final class BoolMixin extends Mixin<BoolValue> implements ToByte {
                 case FIELD_NAME:
                     return parseFromStringBoolean(parser);
             }
-            throw Parsing.mismatch(parser, Boolean.class);
+            throw unexpectedToken(parser);
         }
 
         @Override
@@ -101,13 +101,11 @@ final class BoolMixin extends Mixin<BoolValue> implements ToByte {
     }
 
     private byte parseFromString(JsonParser parser) throws IOException {
-        if (!allowString()) {
-            throw Parsing.mismatch(parser, Boolean.class);
-        }
+        checkStringAllowed(parser);
         if (!allowNull()) {
             final byte res = Parsing.parseStringAsByteBool(parser, BooleanUtils.NULL_BOOLEAN_AS_BYTE);
             if (res == BooleanUtils.NULL_BOOLEAN_AS_BYTE) {
-                throw Parsing.mismatch(parser, Boolean.class);
+                throw Exceptions.notAllowed(parser, this);
             }
             return res;
         }
@@ -115,27 +113,21 @@ final class BoolMixin extends Mixin<BoolValue> implements ToByte {
     }
 
     private byte parseFromNull(JsonParser parser) throws IOException {
-        if (!allowNull()) {
-            throw Parsing.mismatch(parser, Boolean.class);
-        }
+        checkNullAllowed(parser);
         return onNullByte;
     }
 
     private byte parseFromMissing(JsonParser parser) throws IOException {
-        if (!allowMissing()) {
-            throw Parsing.mismatchMissing(parser, Boolean.class);
-        }
+        checkMissingAllowed(parser);
         return onMissingByte;
     }
 
     private Boolean parseFromStringBoolean(JsonParser parser) throws IOException {
-        if (!allowString()) {
-            throw Parsing.mismatch(parser, Boolean.class);
-        }
+        checkStringAllowed(parser);
         if (!allowNull()) {
             final Boolean result = Parsing.parseStringAsBoolean(parser, null);
             if (result == null) {
-                throw Parsing.mismatch(parser, Boolean.class);
+                throw Exceptions.notAllowed(parser, this);
             }
             return result;
         }
@@ -143,16 +135,12 @@ final class BoolMixin extends Mixin<BoolValue> implements ToByte {
     }
 
     private Boolean parseFromNullBoolean(JsonParser parser) throws IOException {
-        if (!allowNull()) {
-            throw Parsing.mismatch(parser, Boolean.class);
-        }
+        checkNullAllowed(parser);
         return onNull;
     }
 
     private Boolean parseFromMissingBoolean(JsonParser parser) throws IOException {
-        if (!allowMissing()) {
-            throw Parsing.mismatchMissing(parser, Boolean.class);
-        }
+        checkMissingAllowed(parser);
         return onMissing;
     }
 }

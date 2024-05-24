@@ -33,7 +33,6 @@ interface ValueProcessor extends ContextAware {
     // com.fasterxml.jackson.databind.DeserializationContext),
     // but not functional (want to destructure efficiently)
 
-
     /**
      * Called when the JSON value is present; the current token should be one of {@link JsonToken#START_OBJECT},
      * {@link JsonToken#START_ARRAY}, {@link JsonToken#VALUE_STRING}, {@link JsonToken#VALUE_NUMBER_INT},

@@ -55,7 +55,7 @@ final class StringMixin extends Mixin<StringValue> implements ToObject<String> {
             case VALUE_NULL:
                 return parseFromNull(parser);
         }
-        throw Parsing.mismatch(parser, String.class);
+        throw unexpectedToken(parser);
     }
 
     @Override
@@ -69,44 +69,32 @@ final class StringMixin extends Mixin<StringValue> implements ToObject<String> {
     }
 
     private String parseFromString(JsonParser parser) throws IOException {
-        if (!allowString()) {
-            throw Parsing.mismatch(parser, String.class);
-        }
+        checkStringAllowed(parser);
         return Parsing.parseStringAsString(parser);
     }
 
     private String parseFromInt(JsonParser parser) throws IOException {
-        if (!allowNumberInt()) {
-            throw Parsing.mismatch(parser, String.class);
-        }
+        checkNumberIntAllowed(parser);
         return Parsing.parseIntAsString(parser);
     }
 
     private String parseFromDecimal(JsonParser parser) throws IOException {
-        if (!allowDecimal()) {
-            throw Parsing.mismatch(parser, String.class);
-        }
+        checkDecimalAllowed(parser);
         return Parsing.parseDecimalAsString(parser);
     }
 
     private String parseFromBool(JsonParser parser) throws IOException {
-        if (!allowBool()) {
-            throw Parsing.mismatch(parser, String.class);
-        }
+        checkBoolAllowed(parser);
         return Parsing.parseBoolAsString(parser);
     }
 
     private String parseFromNull(JsonParser parser) throws IOException {
-        if (!allowNull()) {
-            throw Parsing.mismatch(parser, String.class);
-        }
+        checkNullAllowed(parser);
         return options.onNull().orElse(null);
     }
 
     private String parseFromMissing(JsonParser parser) throws IOException {
-        if (!allowMissing()) {
-            throw Parsing.mismatchMissing(parser, String.class);
-        }
+        checkMissingAllowed(parser);
         return options.onMissing().orElse(null);
     }
 }

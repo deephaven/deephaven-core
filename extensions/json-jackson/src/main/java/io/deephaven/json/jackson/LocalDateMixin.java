@@ -50,7 +50,7 @@ final class LocalDateMixin extends Mixin<LocalDateValue> implements ToObject<Loc
             case VALUE_NULL:
                 return parseFromNull(parser);
         }
-        throw Parsing.mismatch(parser, LocalDateValue.class);
+        throw unexpectedToken(parser);
     }
 
     @Override
@@ -70,16 +70,12 @@ final class LocalDateMixin extends Mixin<LocalDateValue> implements ToObject<Loc
     }
 
     private LocalDate parseFromNull(JsonParser parser) throws IOException {
-        if (!allowNull()) {
-            throw Parsing.mismatch(parser, LocalDate.class);
-        }
+        checkNullAllowed(parser);
         return options.onNull().orElse(null);
     }
 
     private LocalDate parseFromMissing(JsonParser parser) throws IOException {
-        if (!allowMissing()) {
-            throw Parsing.mismatchMissing(parser, LocalDate.class);
-        }
+        checkMissingAllowed(parser);
         return options.onMissing().orElse(null);
     }
 }

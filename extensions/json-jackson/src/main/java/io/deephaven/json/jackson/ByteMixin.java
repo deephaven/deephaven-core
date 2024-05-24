@@ -55,7 +55,7 @@ final class ByteMixin extends Mixin<ByteValue> implements ToByte {
             case VALUE_NULL:
                 return parseFromNull(parser);
         }
-        throw Parsing.mismatch(parser, int.class);
+        throw unexpectedToken(parser);
     }
 
     @Override
@@ -99,39 +99,29 @@ final class ByteMixin extends Mixin<ByteValue> implements ToByte {
     }
 
     private byte parseFromInt(JsonParser parser) throws IOException {
-        if (!allowNumberInt()) {
-            throw Parsing.mismatch(parser, byte.class);
-        }
+        checkNumberIntAllowed(parser);
         return Parsing.parseIntAsByte(parser);
     }
 
     private byte parseFromDecimal(JsonParser parser) throws IOException {
-        if (!allowDecimal()) {
-            throw Parsing.mismatch(parser, byte.class);
-        }
+        checkDecimalAllowed(parser);
         return Parsing.parseDecimalAsByte(parser);
     }
 
     private byte parseFromString(JsonParser parser) throws IOException {
-        if (!allowString()) {
-            throw Parsing.mismatch(parser, byte.class);
-        }
+        checkStringAllowed(parser);
         return allowDecimal()
                 ? Parsing.parseDecimalStringAsByte(parser)
                 : Parsing.parseStringAsByte(parser);
     }
 
     private byte parseFromNull(JsonParser parser) throws IOException {
-        if (!allowNull()) {
-            throw Parsing.mismatch(parser, byte.class);
-        }
+        checkNullAllowed(parser);
         return options.onNull().orElse(QueryConstants.NULL_BYTE);
     }
 
     private byte parseFromMissing(JsonParser parser) throws IOException {
-        if (!allowMissing()) {
-            throw Parsing.mismatchMissing(parser, byte.class);
-        }
+        checkMissingAllowed(parser);
         return options.onMissing().orElse(QueryConstants.NULL_BYTE);
     }
 }

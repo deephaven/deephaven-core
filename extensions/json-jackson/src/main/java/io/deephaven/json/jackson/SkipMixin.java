@@ -64,54 +64,38 @@ final class SkipMixin extends Mixin<SkipValue> implements ValueProcessor {
     public void processCurrentValue(JsonParser parser) throws IOException {
         switch (parser.currentToken()) {
             case START_OBJECT:
-                if (!allowObject()) {
-                    throw Parsing.mismatch(parser, void.class);
-                }
+                checkObjectAllowed(parser);
                 parser.skipChildren();
                 break;
             case START_ARRAY:
-                if (!allowArray()) {
-                    throw Parsing.mismatch(parser, void.class);
-                }
+                checkArrayAllowed(parser);
                 parser.skipChildren();
                 break;
             case VALUE_STRING:
             case FIELD_NAME:
-                if (!allowString()) {
-                    throw Parsing.mismatch(parser, void.class);
-                }
+                checkStringAllowed(parser);
                 break;
             case VALUE_NUMBER_INT:
-                if (!allowNumberInt()) {
-                    throw Parsing.mismatch(parser, void.class);
-                }
+                checkNumberIntAllowed(parser);
                 break;
             case VALUE_NUMBER_FLOAT:
-                if (!allowDecimal()) {
-                    throw Parsing.mismatch(parser, void.class);
-                }
+                checkDecimalAllowed(parser);
                 break;
             case VALUE_TRUE:
             case VALUE_FALSE:
-                if (!allowBool()) {
-                    throw Parsing.mismatch(parser, void.class);
-                }
+                checkBoolAllowed(parser);
                 break;
             case VALUE_NULL:
-                if (!allowNull()) {
-                    throw Parsing.mismatch(parser, void.class);
-                }
+                checkNullAllowed(parser);
                 break;
             default:
-                throw Parsing.mismatch(parser, void.class);
+                throw unexpectedToken(parser);
         }
     }
 
     @Override
     public void processMissing(JsonParser parser) throws IOException {
-        if (!allowMissing()) {
-            throw Parsing.mismatchMissing(parser, void.class);
-        }
+        checkMissingAllowed(parser);
     }
 
     private final class SkipArray implements RepeaterProcessor, Context {
@@ -131,14 +115,14 @@ final class SkipMixin extends Mixin<SkipValue> implements ValueProcessor {
         @Override
         public void processNullRepeater(JsonParser parser) throws IOException {
             if (!allowNull) {
-                throw Parsing.mismatch(parser, void.class);
+                throw Exceptions.notAllowed(parser);
             }
         }
 
         @Override
         public void processMissingRepeater(JsonParser parser) throws IOException {
             if (!allowMissing) {
-                throw Parsing.mismatch(parser, void.class);
+                throw Exceptions.notAllowed(parser);
             }
         }
 
@@ -170,7 +154,6 @@ final class SkipMixin extends Mixin<SkipValue> implements ValueProcessor {
         @Override
         public void processElement(JsonParser parser) throws IOException {
             processCurrentValue(parser);
-
         }
 
         @Override

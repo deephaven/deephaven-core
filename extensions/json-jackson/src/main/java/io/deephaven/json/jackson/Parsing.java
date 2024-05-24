@@ -7,9 +7,7 @@ import ch.randelshofer.fastdoubleparser.JavaBigDecimalParser;
 import ch.randelshofer.fastdoubleparser.JavaBigIntegerParser;
 import ch.randelshofer.fastdoubleparser.JavaDoubleParser;
 import ch.randelshofer.fastdoubleparser.JavaFloatParser;
-import com.fasterxml.jackson.core.JsonLocation;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.StreamReadFeature;
 import io.deephaven.util.BooleanUtils;
@@ -47,23 +45,6 @@ final class Parsing {
         return parser.hasTextCharacters()
                 ? CharBuffer.wrap(parser.getTextCharacters(), parser.getTextOffset(), parser.getTextLength())
                 : parser.getText();
-    }
-
-    static class UnexpectedToken extends JsonProcessingException {
-        public UnexpectedToken(String msg, JsonLocation loc) {
-            super(msg, loc);
-        }
-    }
-
-    static IOException mismatch(JsonParser parser, Class<?> clazz) {
-        final JsonLocation location = parser.currentLocation();
-        final String msg = String.format("Unexpected token '%s'", parser.currentToken());
-        return new UnexpectedToken(msg, location);
-    }
-
-    static IOException mismatchMissing(JsonParser parser, Class<?> clazz) {
-        final JsonLocation location = parser.currentLocation();
-        return new UnexpectedToken("Unexpected missing token", location);
     }
 
     static byte parseStringAsByteBool(JsonParser parser, byte onNull) throws IOException {

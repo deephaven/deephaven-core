@@ -122,12 +122,10 @@ final class TypedObjectMixin extends Mixin<TypedObjectValue> {
             case FIELD_NAME:
                 return parser.getText();
             case VALUE_NULL:
-                if (!allowNull()) {
-                    throw Parsing.mismatch(parser, String.class);
-                }
+                checkNullAllowed(parser);
                 return null;
             default:
-                throw Parsing.mismatch(parser, String.class);
+                throw Exceptions.notAllowed(parser, this);
         }
     }
 
@@ -227,15 +225,13 @@ final class TypedObjectMixin extends Mixin<TypedObjectValue> {
                     processNullObject(parser);
                     break;
                 default:
-                    throw Parsing.mismatch(parser, Object.class);
+                    throw unexpectedToken(parser);
             }
         }
 
         @Override
         public void processMissing(JsonParser parser) throws IOException {
-            if (!allowMissing()) {
-                throw Parsing.mismatchMissing(parser, Object.class);
-            }
+            checkMissingAllowed(parser);
             // onMissingType()?
             typeOut.add(null);
             for (Processor processor : processors.values()) {
@@ -244,9 +240,7 @@ final class TypedObjectMixin extends Mixin<TypedObjectValue> {
         }
 
         private void processNullObject(JsonParser parser) throws IOException {
-            if (!allowNull()) {
-                throw Parsing.mismatch(parser, Object.class);
-            }
+            checkNullAllowed(parser);
             // onNullType()?
             typeOut.add(null);
             for (Processor processor : processors.values()) {

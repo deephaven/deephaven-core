@@ -11,7 +11,6 @@ import io.deephaven.time.DateTimeUtils;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.time.Instant;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -100,37 +99,27 @@ final class InstantNumberMixin extends Mixin<InstantNumberValue> {
         public final long parseValue(JsonParser parser) throws IOException {
             switch (parser.currentToken()) {
                 case VALUE_NUMBER_INT:
-                    if (!allowNumberInt()) {
-                        throw Parsing.mismatch(parser, Instant.class);
-                    }
+                    checkNumberIntAllowed(parser);
                     return parseFromInt(parser);
                 case VALUE_NUMBER_FLOAT:
-                    if (!allowDecimal()) {
-                        throw Parsing.mismatch(parser, Instant.class);
-                    }
+                    checkDecimalAllowed(parser);
                     return parseFromDecimal(parser);
                 case VALUE_STRING:
                 case FIELD_NAME:
-                    if (!allowString()) {
-                        throw Parsing.mismatch(parser, Instant.class);
-                    }
+                    checkStringAllowed(parser);
                     return allowDecimal()
                             ? parseFromDecimalString(parser)
                             : parseFromString(parser);
                 case VALUE_NULL:
-                    if (!allowNull()) {
-                        throw Parsing.mismatch(parser, Instant.class);
-                    }
+                    checkNullAllowed(parser);
                     return onNull;
             }
-            throw Parsing.mismatch(parser, Instant.class);
+            throw unexpectedToken(parser);
         }
 
         @Override
         public final long parseMissing(JsonParser parser) throws IOException {
-            if (!allowMissing()) {
-                throw Parsing.mismatchMissing(parser, Instant.class);
-            }
+            checkMissingAllowed(parser);
             return onMissing;
         }
     }

@@ -55,7 +55,7 @@ final class ShortMixin extends Mixin<ShortValue> implements ToShort {
             case VALUE_NULL:
                 return parseFromNull(parser);
         }
-        throw Parsing.mismatch(parser, int.class);
+        throw unexpectedToken(parser);
     }
 
     @Override
@@ -99,39 +99,29 @@ final class ShortMixin extends Mixin<ShortValue> implements ToShort {
     }
 
     private short parseFromInt(JsonParser parser) throws IOException {
-        if (!allowNumberInt()) {
-            throw Parsing.mismatch(parser, short.class);
-        }
+        checkNumberIntAllowed(parser);
         return Parsing.parseIntAsShort(parser);
     }
 
     private short parseFromDecimal(JsonParser parser) throws IOException {
-        if (!allowDecimal()) {
-            throw Parsing.mismatch(parser, short.class);
-        }
+        checkDecimalAllowed(parser);
         return Parsing.parseDecimalAsShort(parser);
     }
 
     private short parseFromString(JsonParser parser) throws IOException {
-        if (!allowString()) {
-            throw Parsing.mismatch(parser, short.class);
-        }
+        checkStringAllowed(parser);
         return allowDecimal()
                 ? Parsing.parseDecimalStringAsShort(parser)
                 : Parsing.parseStringAsShort(parser);
     }
 
     private short parseFromNull(JsonParser parser) throws IOException {
-        if (!allowNull()) {
-            throw Parsing.mismatch(parser, short.class);
-        }
+        checkNullAllowed(parser);
         return options.onNull().orElse(QueryConstants.NULL_SHORT);
     }
 
     private short parseFromMissing(JsonParser parser) throws IOException {
-        if (!allowMissing()) {
-            throw Parsing.mismatchMissing(parser, short.class);
-        }
+        checkMissingAllowed(parser);
         return options.onMissing().orElse(QueryConstants.NULL_SHORT);
     }
 }

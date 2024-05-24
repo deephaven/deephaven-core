@@ -47,7 +47,7 @@ public class FloatOptionsTest {
             parse(FloatValue.strict(), "", FloatChunk.chunkWrap(new float[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
-            assertThat(e).hasMessageContaining("Unexpected missing token");
+            assertThat(e).hasMessageContaining("Missing not allowed");
         }
     }
 
@@ -57,7 +57,7 @@ public class FloatOptionsTest {
             parse(FloatValue.strict(), "null", FloatChunk.chunkWrap(new float[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
-            assertThat(e).hasMessageContaining("Unexpected token 'VALUE_NULL'");
+            assertThat(e).hasMessageContaining("Null not allowed");
         }
     }
 
@@ -67,7 +67,7 @@ public class FloatOptionsTest {
             parse(FloatValue.standard(), "\"42\"", FloatChunk.chunkWrap(new float[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
-            assertThat(e).hasMessageContaining("Unexpected token 'VALUE_STRING'");
+            assertThat(e).hasMessageContaining("String not allowed");
         }
     }
 
@@ -77,7 +77,7 @@ public class FloatOptionsTest {
             parse(FloatValue.standard(), "true", FloatChunk.chunkWrap(new float[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
-            assertThat(e).hasMessageContaining("Unexpected token 'VALUE_TRUE'");
+            assertThat(e).hasMessageContaining("Bool not expected");
         }
     }
 
@@ -87,7 +87,7 @@ public class FloatOptionsTest {
             parse(FloatValue.standard(), "false", FloatChunk.chunkWrap(new float[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
-            assertThat(e).hasMessageContaining("Unexpected token 'VALUE_FALSE'");
+            assertThat(e).hasMessageContaining("Bool not expected");
         }
     }
 
@@ -97,7 +97,7 @@ public class FloatOptionsTest {
             parse(FloatValue.standard(), "{}", FloatChunk.chunkWrap(new float[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
-            assertThat(e).hasMessageContaining("Unexpected token 'START_OBJECT'");
+            assertThat(e).hasMessageContaining("Object not expected");
         }
     }
 
@@ -107,7 +107,7 @@ public class FloatOptionsTest {
             parse(FloatValue.standard(), "[]", FloatChunk.chunkWrap(new float[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
-            assertThat(e).hasMessageContaining("Unexpected token 'START_ARRAY'");
+            assertThat(e).hasMessageContaining("Array not expected");
         }
     }
 

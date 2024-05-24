@@ -53,7 +53,7 @@ public class StringOptionsTest {
             parse(StringValue.strict(), "", ObjectChunk.chunkWrap(new String[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
-            assertThat(e).hasMessageContaining("Unexpected missing token");
+            assertThat(e).hasMessageContaining("Missing not allowed");
         }
     }
 
@@ -63,7 +63,7 @@ public class StringOptionsTest {
             parse(StringValue.strict(), "null", ObjectChunk.chunkWrap(new String[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
-            assertThat(e).hasMessageContaining("Unexpected token 'VALUE_NULL'");
+            assertThat(e).hasMessageContaining("Null not allowed");
         }
     }
 
@@ -74,7 +74,7 @@ public class StringOptionsTest {
             parse(StringValue.standard(), "42", ObjectChunk.chunkWrap(new String[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
-            assertThat(e).hasMessageContaining("Unexpected token 'VALUE_NUMBER_INT'");
+            assertThat(e).hasMessageContaining("Number int not allowed");
         }
     }
 
@@ -84,7 +84,7 @@ public class StringOptionsTest {
             parse(StringValue.standard(), "42.42", ObjectChunk.chunkWrap(new String[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
-            assertThat(e).hasMessageContaining("Unexpected token 'VALUE_NUMBER_FLOAT'");
+            assertThat(e).hasMessageContaining("Decimal not allowed");
         }
     }
 
@@ -95,7 +95,7 @@ public class StringOptionsTest {
             parse(StringValue.standard(), "true", ObjectChunk.chunkWrap(new String[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
-            assertThat(e).hasMessageContaining("Unexpected token 'VALUE_TRUE'");
+            assertThat(e).hasMessageContaining("Bool not expected");
         }
     }
 
@@ -105,7 +105,7 @@ public class StringOptionsTest {
             parse(StringValue.standard(), "false", ObjectChunk.chunkWrap(new String[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
-            assertThat(e).hasMessageContaining("Unexpected token 'VALUE_FALSE'");
+            assertThat(e).hasMessageContaining("Bool not expected");
         }
     }
 
@@ -115,7 +115,7 @@ public class StringOptionsTest {
             parse(StringValue.standard(), "{}", ObjectChunk.chunkWrap(new String[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
-            assertThat(e).hasMessageContaining("Unexpected token 'START_OBJECT'");
+            assertThat(e).hasMessageContaining("Object not expected");
         }
     }
 
@@ -125,7 +125,7 @@ public class StringOptionsTest {
             parse(StringValue.standard(), "[]", ObjectChunk.chunkWrap(new String[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
-            assertThat(e).hasMessageContaining("Unexpected token 'START_ARRAY'");
+            assertThat(e).hasMessageContaining("Array not expected");
         }
     }
 

@@ -51,7 +51,7 @@ public class CharOptionsTest {
             parse(CharValue.strict(), "", CharChunk.chunkWrap(new char[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
-            assertThat(e).hasMessageContaining("Unexpected missing token");
+            assertThat(e).hasMessageContaining("Missing not allowed");
         }
     }
 
@@ -61,7 +61,7 @@ public class CharOptionsTest {
             parse(CharValue.strict(), "null", CharChunk.chunkWrap(new char[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
-            assertThat(e).hasMessageContaining("Unexpected token 'VALUE_NULL'");
+            assertThat(e).hasMessageContaining("Null not allowed");
         }
     }
 
@@ -72,7 +72,7 @@ public class CharOptionsTest {
             parse(CharValue.standard(), "42", CharChunk.chunkWrap(new char[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
-            assertThat(e).hasMessageContaining("Unexpected token 'VALUE_NUMBER_INT'");
+            assertThat(e).hasMessageContaining("Number int not expected");
         }
     }
 
@@ -82,7 +82,7 @@ public class CharOptionsTest {
             parse(CharValue.standard(), "42.42", CharChunk.chunkWrap(new char[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
-            assertThat(e).hasMessageContaining("Unexpected token 'VALUE_NUMBER_FLOAT'");
+            assertThat(e).hasMessageContaining("Decimal not expected");
         }
     }
 
@@ -93,7 +93,7 @@ public class CharOptionsTest {
             parse(CharValue.standard(), "true", CharChunk.chunkWrap(new char[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
-            assertThat(e).hasMessageContaining("Unexpected token 'VALUE_TRUE'");
+            assertThat(e).hasMessageContaining("Bool not expected");
         }
     }
 
@@ -103,7 +103,7 @@ public class CharOptionsTest {
             parse(CharValue.standard(), "false", CharChunk.chunkWrap(new char[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
-            assertThat(e).hasMessageContaining("Unexpected token 'VALUE_FALSE'");
+            assertThat(e).hasMessageContaining("Bool not expected");
         }
     }
 
@@ -113,7 +113,7 @@ public class CharOptionsTest {
             parse(CharValue.standard(), "{}", CharChunk.chunkWrap(new char[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
-            assertThat(e).hasMessageContaining("Unexpected token 'START_OBJECT'");
+            assertThat(e).hasMessageContaining("Object not expected");
         }
     }
 
@@ -123,7 +123,7 @@ public class CharOptionsTest {
             parse(CharValue.standard(), "[]", CharChunk.chunkWrap(new char[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
-            assertThat(e).hasMessageContaining("Unexpected token 'START_ARRAY'");
+            assertThat(e).hasMessageContaining("Array not expected");
         }
     }
 }

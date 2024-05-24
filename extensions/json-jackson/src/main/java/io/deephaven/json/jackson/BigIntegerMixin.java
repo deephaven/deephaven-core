@@ -53,7 +53,7 @@ final class BigIntegerMixin extends Mixin<BigIntegerValue> implements ToObject<B
             case VALUE_NULL:
                 return parseFromNull(parser);
         }
-        throw Parsing.mismatch(parser, BigInteger.class);
+        throw unexpectedToken(parser);
     }
 
     @Override
@@ -68,39 +68,29 @@ final class BigIntegerMixin extends Mixin<BigIntegerValue> implements ToObject<B
     }
 
     private BigInteger parseFromInt(JsonParser parser) throws IOException {
-        if (!allowNumberInt()) {
-            throw Parsing.mismatch(parser, BigInteger.class);
-        }
+        checkNumberIntAllowed(parser);
         return Parsing.parseIntAsBigInteger(parser);
     }
 
     private BigInteger parseFromDecimal(JsonParser parser) throws IOException {
-        if (!allowDecimal()) {
-            throw Parsing.mismatch(parser, BigInteger.class);
-        }
+        checkDecimalAllowed(parser);
         return Parsing.parseDecimalAsBigInteger(parser);
     }
 
     private BigInteger parseFromString(JsonParser parser) throws IOException {
-        if (!allowString()) {
-            throw Parsing.mismatch(parser, BigInteger.class);
-        }
+        checkStringAllowed(parser);
         return allowDecimal()
                 ? Parsing.parseDecimalStringAsBigInteger(parser)
                 : Parsing.parseStringAsBigInteger(parser);
     }
 
     private BigInteger parseFromNull(JsonParser parser) throws IOException {
-        if (!allowNull()) {
-            throw Parsing.mismatch(parser, BigInteger.class);
-        }
+        checkNullAllowed(parser);
         return options.onNull().orElse(null);
     }
 
     private BigInteger parseFromMissing(JsonParser parser) throws IOException {
-        if (!allowMissing()) {
-            throw Parsing.mismatchMissing(parser, BigInteger.class);
-        }
+        checkMissingAllowed(parser);
         return options.onMissing().orElse(null);
     }
 }

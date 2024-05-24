@@ -72,7 +72,7 @@ abstract class RepeaterProcessorBase<T> implements RepeaterProcessor, Context {
     @Override
     public final void processMissingRepeater(JsonParser parser) throws IOException {
         if (!allowMissing) {
-            throw Parsing.mismatchMissing(parser, void.class);
+            throw Exceptions.missingNotAllowed(parser);
         }
         out.add(onMissing);
     }
@@ -80,7 +80,7 @@ abstract class RepeaterProcessorBase<T> implements RepeaterProcessor, Context {
     @Override
     public final void processNullRepeater(JsonParser parser) throws IOException {
         if (!allowNull) {
-            throw Parsing.mismatch(parser, void.class);
+            throw Exceptions.notAllowed(parser);
         }
         out.add(onNull);
     }

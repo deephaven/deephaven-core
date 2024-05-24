@@ -82,7 +82,7 @@ final class ValueInnerRepeaterProcessor implements RepeaterProcessor, Context {
     @Override
     public void processNullRepeater(JsonParser parser) throws IOException {
         if (!allowNull) {
-            throw Parsing.mismatch(parser, Object.class);
+            throw Exceptions.notAllowed(parser);
         }
         for (WritableObjectChunk<?, ?> wc : out) {
             wc.add(null);
@@ -92,7 +92,7 @@ final class ValueInnerRepeaterProcessor implements RepeaterProcessor, Context {
     @Override
     public void processMissingRepeater(JsonParser parser) throws IOException {
         if (!allowMissing) {
-            throw Parsing.mismatchMissing(parser, Object.class);
+            throw Exceptions.missingNotAllowed(parser);
         }
         for (WritableObjectChunk<?, ?> wc : out) {
             wc.add(null);

@@ -39,7 +39,7 @@ public class LocalDateOptionsTest {
             parse(LocalDateValue.strict(), "null", ObjectChunk.chunkWrap(new LocalDate[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
-            assertThat(e).hasMessageContaining("Unexpected token 'VALUE_NULL'");
+            assertThat(e).hasMessageContaining("Null not allowed");
         }
     }
 
@@ -49,7 +49,7 @@ public class LocalDateOptionsTest {
             parse(LocalDateValue.strict(), "", ObjectChunk.chunkWrap(new LocalDate[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
-            assertThat(e).hasMessageContaining("Unexpected missing token");
+            assertThat(e).hasMessageContaining("Missing not allowed");
         }
     }
 

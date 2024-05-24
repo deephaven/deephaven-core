@@ -52,7 +52,7 @@ final class LongMixin extends Mixin<LongValue> implements LongValueProcessor.ToL
             case VALUE_NULL:
                 return parseFromNull(parser);
         }
-        throw Parsing.mismatch(parser, long.class);
+        throw unexpectedToken(parser);
     }
 
     @Override
@@ -66,39 +66,29 @@ final class LongMixin extends Mixin<LongValue> implements LongValueProcessor.ToL
     }
 
     private long parseFromInt(JsonParser parser) throws IOException {
-        if (!allowNumberInt()) {
-            throw Parsing.mismatch(parser, long.class);
-        }
+        checkNumberIntAllowed(parser);
         return Parsing.parseIntAsLong(parser);
     }
 
     private long parseFromDecimal(JsonParser parser) throws IOException {
-        if (!allowDecimal()) {
-            throw Parsing.mismatch(parser, long.class);
-        }
+        checkDecimalAllowed(parser);
         return Parsing.parseDecimalAsLong(parser);
     }
 
     private long parseFromString(JsonParser parser) throws IOException {
-        if (!allowString()) {
-            throw Parsing.mismatch(parser, long.class);
-        }
+        checkStringAllowed(parser);
         return allowDecimal()
                 ? Parsing.parseDecimalStringAsLong(parser)
                 : Parsing.parseStringAsLong(parser);
     }
 
     private long parseFromNull(JsonParser parser) throws IOException {
-        if (!allowNull()) {
-            throw Parsing.mismatch(parser, long.class);
-        }
+        checkNullAllowed(parser);
         return options.onNull().orElse(QueryConstants.NULL_LONG);
     }
 
     private long parseFromMissing(JsonParser parser) throws IOException {
-        if (!allowMissing()) {
-            throw Parsing.mismatchMissing(parser, long.class);
-        }
+        checkMissingAllowed(parser);
         return options.onMissing().orElse(QueryConstants.NULL_LONG);
     }
 }

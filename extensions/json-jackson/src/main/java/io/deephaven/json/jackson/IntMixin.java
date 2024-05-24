@@ -56,7 +56,7 @@ final class IntMixin extends Mixin<IntValue> implements ToInt {
             case VALUE_NULL:
                 return parseFromNull(parser);
         }
-        throw Parsing.mismatch(parser, int.class);
+        throw unexpectedToken(parser);
     }
 
     @Override
@@ -100,39 +100,29 @@ final class IntMixin extends Mixin<IntValue> implements ToInt {
     }
 
     private int parseFromInt(JsonParser parser) throws IOException {
-        if (!allowNumberInt()) {
-            throw Parsing.mismatch(parser, int.class);
-        }
+        checkNumberIntAllowed(parser);
         return Parsing.parseIntAsInt(parser);
     }
 
     private int parseFromDecimal(JsonParser parser) throws IOException {
-        if (!allowDecimal()) {
-            throw Parsing.mismatch(parser, int.class);
-        }
+        checkDecimalAllowed(parser);
         return Parsing.parseDecimalAsInt(parser);
     }
 
     private int parseFromString(JsonParser parser) throws IOException {
-        if (!allowString()) {
-            throw Parsing.mismatch(parser, int.class);
-        }
+        checkStringAllowed(parser);
         return allowDecimal()
                 ? Parsing.parseDecimalStringAsInt(parser)
                 : Parsing.parseStringAsInt(parser);
     }
 
     private int parseFromNull(JsonParser parser) throws IOException {
-        if (!allowNull()) {
-            throw Parsing.mismatch(parser, int.class);
-        }
+        checkNullAllowed(parser);
         return options.onNull().orElse(QueryConstants.NULL_INT);
     }
 
     private int parseFromMissing(JsonParser parser) throws IOException {
-        if (!allowMissing()) {
-            throw Parsing.mismatchMissing(parser, int.class);
-        }
+        checkMissingAllowed(parser);
         return options.onMissing().orElse(QueryConstants.NULL_INT);
     }
 }

@@ -55,7 +55,7 @@ final class DoubleMixin extends Mixin<DoubleValue> implements ToDouble {
             case VALUE_NULL:
                 return parseFromNull(parser);
         }
-        throw Parsing.mismatch(parser, double.class);
+        throw unexpectedToken(parser);
     }
 
     @Override
@@ -99,31 +99,23 @@ final class DoubleMixin extends Mixin<DoubleValue> implements ToDouble {
     }
 
     private double parseFromNumber(JsonParser parser) throws IOException {
-        if (!allowDecimal() && !allowNumberInt()) {
-            throw Parsing.mismatch(parser, double.class);
-        }
+        checkNumberAllowed(parser);
         // TODO: improve after https://github.com/FasterXML/jackson-core/issues/1229
         return Parsing.parseNumberAsDouble(parser);
     }
 
     private double parseFromString(JsonParser parser) throws IOException {
-        if (!allowString()) {
-            throw Parsing.mismatch(parser, double.class);
-        }
+        checkStringAllowed(parser);
         return Parsing.parseStringAsDouble(parser);
     }
 
     private double parseFromNull(JsonParser parser) throws IOException {
-        if (!allowNull()) {
-            throw Parsing.mismatch(parser, double.class);
-        }
+        checkNullAllowed(parser);
         return options.onNull().orElse(QueryConstants.NULL_DOUBLE);
     }
 
     private double parseFromMissing(JsonParser parser) throws IOException {
-        if (!allowMissing()) {
-            throw Parsing.mismatchMissing(parser, double.class);
-        }
+        checkMissingAllowed(parser);
         return options.onMissing().orElse(QueryConstants.NULL_DOUBLE);
     }
 }

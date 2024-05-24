@@ -45,7 +45,7 @@ public class InstantOptionsTest {
             parse(InstantValue.strict(), "null", LongChunk.chunkWrap(new long[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
-            assertThat(e).hasMessageContaining("Unexpected token 'VALUE_NULL'");
+            assertThat(e).hasMessageContaining("Null not allowed");
         }
     }
 
@@ -55,7 +55,7 @@ public class InstantOptionsTest {
             parse(InstantValue.strict(), "", LongChunk.chunkWrap(new long[1]));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
-            assertThat(e).hasMessageContaining("Unexpected missing token");
+            assertThat(e).hasMessageContaining("Missing not allowed");
         }
     }
 

@@ -51,7 +51,7 @@ final class CharMixin extends Mixin<CharValue> implements ToChar {
             case VALUE_NULL:
                 return parseFromNull(parser);
         }
-        throw Parsing.mismatch(parser, int.class);
+        throw unexpectedToken(parser);
     }
 
     @Override
@@ -95,23 +95,17 @@ final class CharMixin extends Mixin<CharValue> implements ToChar {
     }
 
     private char parseFromString(JsonParser parser) throws IOException {
-        if (!allowString()) {
-            throw Parsing.mismatch(parser, char.class);
-        }
+        checkStringAllowed(parser);
         return Parsing.parseStringAsChar(parser);
     }
 
     private char parseFromNull(JsonParser parser) throws IOException {
-        if (!allowNull()) {
-            throw Parsing.mismatch(parser, char.class);
-        }
+        checkNullAllowed(parser);
         return options.onNull().orElse(QueryConstants.NULL_CHAR);
     }
 
     private char parseFromMissing(JsonParser parser) throws IOException {
-        if (!allowMissing()) {
-            throw Parsing.mismatchMissing(parser, char.class);
-        }
+        checkMissingAllowed(parser);
         return options.onMissing().orElse(QueryConstants.NULL_CHAR);
     }
 }

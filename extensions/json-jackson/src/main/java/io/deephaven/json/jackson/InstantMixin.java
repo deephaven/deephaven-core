@@ -11,7 +11,6 @@ import io.deephaven.qst.type.Type;
 import io.deephaven.time.DateTimeUtils;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
 import java.util.List;
@@ -57,7 +56,7 @@ final class InstantMixin extends Mixin<InstantValue> implements ToLong {
             case VALUE_NULL:
                 return parseFromNull(parser);
         }
-        throw Parsing.mismatch(parser, Instant.class);
+        throw unexpectedToken(parser);
     }
 
     @Override
@@ -78,16 +77,12 @@ final class InstantMixin extends Mixin<InstantValue> implements ToLong {
     }
 
     private long parseFromNull(JsonParser parser) throws IOException {
-        if (!allowNull()) {
-            throw Parsing.mismatch(parser, Instant.class);
-        }
+        checkNullAllowed(parser);
         return onNull;
     }
 
     private long parseFromMissing(JsonParser parser) throws IOException {
-        if (!allowMissing()) {
-            throw Parsing.mismatchMissing(parser, Instant.class);
-        }
+        checkMissingAllowed(parser);
         return onMissing;
     }
 }

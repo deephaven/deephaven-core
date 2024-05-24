@@ -9,11 +9,13 @@ import com.fasterxml.jackson.core.JsonToken;
 import io.deephaven.json.ObjectField;
 import io.deephaven.json.ObjectField.RepeatedBehavior;
 import io.deephaven.json.ObjectValue;
+import io.deephaven.json.jackson.Exceptions.ValueAwareException;
 import io.deephaven.json.jackson.RepeaterProcessor.Context;
 import io.deephaven.qst.type.Type;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -27,27 +29,27 @@ import java.util.stream.Stream;
 
 final class ObjectMixin extends Mixin<ObjectValue> {
 
+    private final Map<ObjectField, Mixin<?>> mixins;
+    private final int numOutputs;
+
     public ObjectMixin(ObjectValue options, JsonFactory factory) {
         super(factory, options);
+        final LinkedHashMap<ObjectField, Mixin<?>> map = new LinkedHashMap<>(options.fields().size());
+        for (ObjectField field : options.fields()) {
+            map.put(field, mixin(field.options()));
+        }
+        mixins = Collections.unmodifiableMap(map);
+        numOutputs = mixins.values().stream().mapToInt(Mixin::numColumns).sum();
     }
 
     @Override
     public Stream<Type<?>> outputTypesImpl() {
-        return options.fields()
-                .stream()
-                .map(ObjectField::options)
-                .map(this::mixin)
-                .flatMap(Mixin::outputTypesImpl);
+        return mixins.values().stream().flatMap(Mixin::outputTypesImpl);
     }
 
     @Override
     public int numColumns() {
-        return options.fields()
-                .stream()
-                .map(ObjectField::options)
-                .map(this::mixin)
-                .mapToInt(Mixin::numColumns)
-                .sum();
+        return numOutputs;
     }
 
     @Override
@@ -60,7 +62,7 @@ final class ObjectMixin extends Mixin<ObjectValue> {
         final Map<ObjectField, ValueProcessor> processors = new LinkedHashMap<>(options.fields().size());
         int ix = 0;
         for (ObjectField field : options.fields()) {
-            final Mixin<?> opts = mixin(field.options());
+            final Mixin<?> opts = mixins.get(field);
             final int numTypes = opts.numColumns();
             final ValueProcessor fieldProcessor = opts.processor(context + "/" + field.name());
             processors.put(field, fieldProcessor);
@@ -77,10 +79,9 @@ final class ObjectMixin extends Mixin<ObjectValue> {
         final Map<ObjectField, RepeaterProcessor> processors = new LinkedHashMap<>(options.fields().size());
         int ix = 0;
         for (ObjectField field : options.fields()) {
-            final Mixin<?> opts = mixin(field.options());
+            final Mixin<?> opts = mixins.get(field);
             final int numTypes = opts.numColumns();
-            final RepeaterProcessor fieldProcessor =
-                    opts.repeaterProcessor(allowMissing, allowNull);
+            final RepeaterProcessor fieldProcessor = opts.repeaterProcessor(allowMissing, allowNull);
             processors.put(field, fieldProcessor);
             ix += numTypes;
         }
@@ -160,33 +161,29 @@ final class ObjectMixin extends Mixin<ObjectValue> {
                     processNullObject(parser);
                     return;
                 default:
-                    throw Parsing.mismatch(parser, Object.class);
+                    throw unexpectedToken(parser);
             }
         }
 
         @Override
         public void processMissing(JsonParser parser) throws IOException {
-            if (!allowMissing()) {
-                throw Parsing.mismatchMissing(parser, Object.class);
-            }
-            for (ValueProcessor value : fields.values()) {
-                value.processMissing(parser);
+            checkMissingAllowed(parser);
+            for (Entry<ObjectField, ValueProcessor> entry : fields.entrySet()) {
+                processMissingField(entry.getKey(), entry.getValue(), parser);
             }
         }
 
         private void processNullObject(JsonParser parser) throws IOException {
-            if (!allowNull()) {
-                throw Parsing.mismatch(parser, Object.class);
-            }
-            for (ValueProcessor value : fields.values()) {
-                value.processCurrentValue(parser);
+            checkNullAllowed(parser);
+            for (Entry<ObjectField, ValueProcessor> entry : fields.entrySet()) {
+                processField(entry.getKey(), entry.getValue(), parser);
             }
         }
 
         private void processEmptyObject(JsonParser parser) throws IOException {
             // This logic should be equivalent to processObjectFields, but where we know there are no fields
-            for (ValueProcessor value : fields.values()) {
-                value.processMissing(parser);
+            for (Entry<ObjectField, ValueProcessor> entry : fields.entrySet()) {
+                processMissingField(entry.getKey(), entry.getValue(), parser);
             }
         }
 
@@ -201,19 +198,18 @@ final class ObjectMixin extends Mixin<ObjectValue> {
             final ObjectField field = lookupField(fieldName);
             if (field == null) {
                 if (!options.allowUnknownFields()) {
-                    throw new IOException(
-                            String.format("Unexpected field '%s' and allowUnknownFields == false", fieldName));
+                    throw new ValueAwareException(String.format("Unknown field '%s' not allowed", fieldName),
+                            parser.currentLocation(), options);
                 }
                 parser.skipChildren();
             } else if (visited.add(field)) {
                 // First time seeing field
-                processor(field).processCurrentValue(parser);
+                processField(field, processor(field), parser);
             } else if (field.repeatedBehavior() == RepeatedBehavior.USE_FIRST) {
                 parser.skipChildren();
             } else {
-                throw new IOException(
-                        String.format("Field '%s' has already been visited and repeatedBehavior == %s", fieldName,
-                                field.repeatedBehavior()));
+                throw new ValueAwareException(String.format("Field '%s' has already been visited", fieldName),
+                        parser.currentLocation(), options);
             }
         }
 
@@ -224,8 +220,28 @@ final class ObjectMixin extends Mixin<ObjectValue> {
             }
             for (Entry<ObjectField, ValueProcessor> e : fields.entrySet()) {
                 if (!visited.contains(e.getKey())) {
-                    e.getValue().processMissing(parser);
+                    processMissingField(e.getKey(), e.getValue(), parser);
                 }
+            }
+        }
+
+        private void processField(ObjectField field, ValueProcessor processor, JsonParser parser)
+                throws ValueAwareException {
+            try {
+                processor.processCurrentValue(parser);
+            } catch (IOException | RuntimeException e) {
+                throw new ValueAwareException(String.format("Unable to process field '%s'", field.name()),
+                        parser.currentLocation(), e, options);
+            }
+        }
+
+        private void processMissingField(ObjectField field, ValueProcessor processor, JsonParser parser)
+                throws ValueAwareException {
+            try {
+                processor.processMissing(parser);
+            } catch (IOException | RuntimeException e) {
+                throw new ValueAwareException(String.format("Unable to process field '%s'", field.name()),
+                        parser.currentLocation(), e, options);
             }
         }
     }
@@ -328,7 +344,7 @@ final class ObjectMixin extends Mixin<ObjectValue> {
                     processNullObject(parser);
                     break;
                 default:
-                    throw Parsing.mismatch(parser, Object.class);
+                    throw unexpectedToken(parser);
             }
         }
 
@@ -362,8 +378,9 @@ final class ObjectMixin extends Mixin<ObjectValue> {
             final ObjectField field = lookupField(fieldName);
             if (field == null) {
                 if (!options.allowUnknownFields()) {
-                    throw new IOException(
-                            String.format("Unexpected field '%s' and allowUnknownFields == false", fieldName));
+                    throw new ValueAwareException(
+                            String.format("Unexpected field '%s' and allowUnknownFields == false", fieldName),
+                            parser.currentLocation(), options);
                 }
                 parser.skipChildren();
             } else if (visited.add(field)) {
@@ -372,9 +389,10 @@ final class ObjectMixin extends Mixin<ObjectValue> {
             } else if (field.repeatedBehavior() == RepeatedBehavior.USE_FIRST) {
                 parser.skipChildren();
             } else {
-                throw new IOException(
-                        String.format("Field '%s' has already been visited and repeatedBehavior == %s",
-                                fieldName, field.repeatedBehavior()));
+                throw new ValueAwareException(
+                        String.format("Field '%s' has already been visited and repeatedBehavior == %s", fieldName,
+                                field.repeatedBehavior()),
+                        parser.currentLocation(), options);
             }
         }
 
