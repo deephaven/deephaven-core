@@ -120,11 +120,15 @@ public class CalendarDay<T extends Comparable<T> & Temporal> {
      * @return length of the day in nanoseconds
      */
     public long businessNanos() {
-        if (businessNanos < 0) {
-            businessNanos = Arrays.stream(businessTimeRanges).map(TimeRange::nanos).reduce(0L, Long::sum);
+        // Only read volatile 1x
+        long bn = businessNanos;
+
+        if (bn < 0) {
+            bn = Arrays.stream(businessTimeRanges).map(TimeRange::nanos).reduce(0L, Long::sum);
+            businessNanos = bn;
         }
 
-        return businessNanos;
+        return bn;
     }
 
     /**
@@ -240,13 +244,14 @@ public class CalendarDay<T extends Comparable<T> & Temporal> {
     }
 
     @Override
+    @Override
     public boolean equals(Object o) {
         if (this == o)
             return true;
         if (!(o instanceof CalendarDay))
             return false;
         CalendarDay<?> that = (CalendarDay<?>) o;
-        return businessNanos == that.businessNanos && Arrays.equals(businessTimeRanges, that.businessTimeRanges);
+        return Arrays.equals(businessTimeRanges, that.businessTimeRanges);
     }
 
     @Override
