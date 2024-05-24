@@ -318,12 +318,6 @@ public class RunChartDownsample implements Function<Table, Table> {
         }
 
         @Override
-        protected void destroy() {
-            super.destroy();
-            states.values().forEach(BucketState::close);
-        }
-
-        @Override
         public void onUpdate(final TableUpdate upstream) {
             try (final DownsampleChunkContext context =
                     new DownsampleChunkContext(xColumnSource, valueColumnSources, CHUNK_SIZE)) {
@@ -684,7 +678,6 @@ public class RunChartDownsample implements Function<Table, Table> {
                     // if it has no keys at all, remove it so we quit checking it
                     iterator.remove();
                     releasePosition(bucket.getOffset());
-                    bucket.close();
                 } else {
                     bucket.rescanIfNeeded(context);
                 }

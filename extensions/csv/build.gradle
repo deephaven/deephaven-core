@@ -21,8 +21,7 @@ dependencies {
 
     testImplementation depCommonsCompress
     testImplementation depCommonsIo
-    testImplementation project(':engine-test-utils'),
-            TestTools.projectDependency(project, 'engine-base')
+    testImplementation project(':engine-test-utils')
 
     Classpaths.inheritJUnitClassic(project, 'testImplementation')
 

@@ -20,7 +20,8 @@ dependencies {
     Classpaths.inheritJavaParser(project, 'implementation')
     implementation project(':open-api-lang-parser')
 
-    api(project(':java-client-barrage-dagger')) {
+    api(project(':java-client-barrage'))
+    api(project(':java-client-session-dagger')) {
         because 'downstream dagger compile, see deephaven-core#1722'
     }
     implementation 'org.hdrhistogram:HdrHistogram:2.1.12'
@@ -89,27 +90,13 @@ dependencies {
 
     implementation 'dev.dirs:directories:26'
 
-    testImplementation 'io.grpc:grpc-testing'
-    testImplementation('io.grpc:grpc-inprocess')
-
-    testImplementation project(':proto:proto-backplane-grpc')
-
-    testImplementation project(':base-test-utils')
-    testImplementation project(':engine-context')
-    testImplementation TestTools.projectDependency(project, 'engine-context')
-    testImplementation TestTools.projectDependency(project, 'Util')
-
-    testImplementation project(':server-test')
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
-    Classpaths.inheritAssertJ(project)
+    testImplementation project(':server-test-utils')
 
     runtimeOnly project(':Numerics'), project(':extensions-kafka')
     Classpaths.inheritAssertJ(project)
 
     testRuntimeOnly project(':log-to-slf4j')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
-
-    Classpaths.inheritImmutables(project, true)
 
     runtimeOnly project(':authentication:example-providers:psk')
 }

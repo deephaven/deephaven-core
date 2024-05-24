@@ -15,8 +15,7 @@ dependencies {
     Classpaths.inheritArrow(project, 'arrow-vector', 'implementation')
     Classpaths.inheritArrow(project, 'arrow-compression', 'implementation')
 
-    testImplementation TestTools.projectDependency(project, 'engine-table'),
-            TestTools.projectDependency(project, 'Util')
+    testImplementation TestTools.projectDependency(project, 'engine-table')
 
     Classpaths.inheritSlf4j(project, 'slf4j-api', 'implementation')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')

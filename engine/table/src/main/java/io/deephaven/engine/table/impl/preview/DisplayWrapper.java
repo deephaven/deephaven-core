@@ -50,4 +50,9 @@ public class DisplayWrapper implements Serializable {
 
         return false;
     }
+
+    @Override
+    public int hashCode() {
+        return displayString.hashCode();
+    }
 }

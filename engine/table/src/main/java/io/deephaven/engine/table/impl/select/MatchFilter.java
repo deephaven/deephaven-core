@@ -5,8 +5,6 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.api.literal.Literal;
 import io.deephaven.base.string.cache.CompressedString;
-import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -15,9 +13,10 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
+import io.deephaven.engine.table.impl.preview.DisplayWrapper;
 import io.deephaven.engine.table.impl.DependencyStreamProvider;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
-import io.deephaven.engine.table.impl.preview.DisplayWrapper;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.SafeCloseable;
@@ -82,6 +81,11 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
         this(CaseSensitivity.MatchCase, matchType, columnName, null, values);
     }
 
+    /**
+     * @deprecated this method is non-obvious in using IgnoreCase by default. Use
+     *             {@link MatchFilter#MatchFilter(MatchType, String, Object...)} instead.
+     */
+    @Deprecated(forRemoval = true)
     public MatchFilter(
             @NotNull final String columnName,
             @NotNull final Object... values) {
@@ -117,14 +121,12 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
     }
 
     public MatchFilter renameFilter(String newName) {
-        io.deephaven.engine.table.impl.select.MatchFilter.MatchType matchType =
-                invertMatch ? io.deephaven.engine.table.impl.select.MatchFilter.MatchType.Inverted
-                        : io.deephaven.engine.table.impl.select.MatchFilter.MatchType.Regular;
-        CaseSensitivity sensitivity = (caseInsensitive) ? CaseSensitivity.IgnoreCase : CaseSensitivity.MatchCase;
         if (strValues == null) {
-            return new MatchFilter(matchType, newName, values);
+            return new MatchFilter(getMatchType(), newName, values);
         } else {
-            return new MatchFilter(sensitivity, matchType, newName, strValues);
+            return new MatchFilter(
+                    caseInsensitive ? CaseSensitivity.IgnoreCase : CaseSensitivity.MatchCase,
+                    getMatchType(), newName, strValues);
         }
     }
 
@@ -155,7 +157,14 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
     }
 
     @Override
-    public synchronized void init(TableDefinition tableDefinition) {
+    public void init(@NotNull TableDefinition tableDefinition) {
+        init(tableDefinition, QueryCompilerRequestProcessor.immediate());
+    }
+
+    @Override
+    public synchronized void init(
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
         if (initialized) {
             return;
         }
@@ -169,12 +178,12 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
             return;
         }
         final List<Object> valueList = new ArrayList<>();
-        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
+        final Map<String, Object> queryScopeVariables = compilationProcessor.getQueryScopeVariables();
         final ColumnTypeConvertor convertor =
                 ColumnTypeConvertorFactory.getConvertor(column.getDataType(), column.getName());
         for (String strValue : strValues) {
-            if (queryScope != null && queryScope.hasParamName(strValue)) {
-                Object paramValue = queryScope.readParamValue(strValue);
+            if (queryScopeVariables.containsKey(strValue)) {
+                Object paramValue = queryScopeVariables.get(strValue);
                 if (paramValue != null && paramValue.getClass().isArray()) {
                     ArrayTypeUtils.ArrayAccessor<?> accessor = ArrayTypeUtils.getArrayAccessor(paramValue);
                     for (int ai = 0; ai < accessor.length(); ++ai) {
@@ -495,10 +504,12 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
 
     @Override
     public String toString() {
-        if (strValues == null) {
-            return columnName + (invertMatch ? " not" : "") + " in " + Arrays.toString(values);
-        }
-        return columnName + (invertMatch ? " not" : "") + " in " + Arrays.toString(strValues);
+        return strValues == null ? toString(values) : toString(strValues);
+    }
+
+    private String toString(Object[] x) {
+        return columnName + (caseInsensitive ? " icase" : "") + (invertMatch ? " not" : "") + " in "
+                + Arrays.toString(x);
     }
 
     @Override

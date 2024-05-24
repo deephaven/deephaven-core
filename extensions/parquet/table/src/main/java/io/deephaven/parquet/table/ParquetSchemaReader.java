@@ -4,12 +4,25 @@
 package io.deephaven.parquet.table;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.api.util.NameValidator;
+import io.deephaven.base.ClassUtil;
+import io.deephaven.base.Pair;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.parquet.table.metadata.CodecInfo;
 import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
 import io.deephaven.parquet.base.ParquetFileReader;
+import io.deephaven.util.SimpleTypeMap;
+import io.deephaven.vector.ByteVector;
+import io.deephaven.vector.CharVector;
+import io.deephaven.vector.DoubleVector;
+import io.deephaven.vector.FloatVector;
+import io.deephaven.vector.IntVector;
+import io.deephaven.vector.LongVector;
+import io.deephaven.vector.ObjectVector;
+import io.deephaven.vector.ShortVector;
 import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import io.deephaven.util.codec.SimpleByteArrayCodec;
 import io.deephaven.util.codec.UTF8StringAsByteArrayCodec;
@@ -21,7 +34,6 @@ import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -80,30 +92,6 @@ public class ParquetSchemaReader {
             codecType = null;
             codecComponentType = null;
         }
-    }
-
-    /**
-     * Obtain schema information from a parquet file
-     *
-     * @param filePath Location for input parquet file
-     * @param readInstructions Parquet read instructions specifying transformations like column mappings and codecs.
-     *        Note a new read instructions based on this one may be returned by this method to provide necessary
-     *        transformations, eg, replacing unsupported characters like ' ' (space) in column names.
-     * @param consumer A ColumnDefinitionConsumer whose accept method would be called for each column in the file
-     * @return Parquet read instructions, either the ones supplied or a new object based on the supplied with necessary
-     *         transformations added.
-     */
-    public static ParquetInstructions readParquetSchema(
-            @NotNull final String filePath,
-            @NotNull final ParquetInstructions readInstructions,
-            @NotNull final ColumnDefinitionConsumer consumer,
-            @NotNull final BiFunction<String, Set<String>, String> legalizeColumnNameFunc) throws IOException {
-        final ParquetFileReader parquetFileReader =
-                ParquetTools.getParquetFileReaderChecked(new File(filePath), readInstructions);
-        final ParquetMetadata parquetMetadata =
-                new ParquetMetadataConverter().fromParquetMetadata(parquetFileReader.fileMetaData);
-        return readParquetSchema(parquetFileReader.getSchema(), parquetMetadata.getFileMetaData().getKeyValueMetaData(),
-                readInstructions, consumer, legalizeColumnNameFunc);
     }
 
     public static Optional<TableInfo> parseMetadata(@NotNull final Map<String, String> keyValueMetadata) {
@@ -280,6 +268,92 @@ public class ParquetSchemaReader {
         return (instructionsBuilder.getValue() == null)
                 ? readInstructions
                 : instructionsBuilder.getValue().build();
+    }
+
+    /**
+     * Convert schema information from a {@link ParquetMetadata} into {@link ColumnDefinition ColumnDefinitions}.
+     *
+     * @param schema Parquet schema. DO NOT RELY ON {@link ParquetMetadataConverter} FOR THIS! USE
+     *        {@link ParquetFileReader}!
+     * @param keyValueMetadata Parquet key-value metadata map
+     * @param readInstructionsIn Input conversion {@link ParquetInstructions}
+     * @return A {@link Pair} with {@link ColumnDefinition ColumnDefinitions} and adjusted {@link ParquetInstructions}
+     */
+    public static Pair<List<ColumnDefinition<?>>, ParquetInstructions> convertSchema(
+            @NotNull final MessageType schema,
+            @NotNull final Map<String, String> keyValueMetadata,
+            @NotNull final ParquetInstructions readInstructionsIn) {
+        final ArrayList<ColumnDefinition<?>> cols = new ArrayList<>();
+        final ParquetSchemaReader.ColumnDefinitionConsumer colConsumer = makeSchemaReaderConsumer(cols);
+        return new Pair<>(cols, ParquetSchemaReader.readParquetSchema(
+                schema,
+                keyValueMetadata,
+                readInstructionsIn,
+                colConsumer,
+                (final String colName, final Set<String> takenNames) -> NameValidator.legalizeColumnName(colName,
+                        s -> s.replace(" ", "_"), takenNames)));
+    }
+
+    private static ParquetSchemaReader.ColumnDefinitionConsumer makeSchemaReaderConsumer(
+            final ArrayList<ColumnDefinition<?>> colsOut) {
+        return (final ParquetSchemaReader.ParquetMessageDefinition parquetColDef) -> {
+            Class<?> baseType;
+            if (parquetColDef.baseType == boolean.class) {
+                baseType = Boolean.class;
+            } else {
+                baseType = parquetColDef.baseType;
+            }
+            ColumnDefinition<?> colDef;
+            if (parquetColDef.codecType != null && !parquetColDef.codecType.isEmpty()) {
+                final Class<?> componentType =
+                        (parquetColDef.codecComponentType != null && !parquetColDef.codecComponentType.isEmpty())
+                                ? loadClass(parquetColDef.name, "codecComponentType", parquetColDef.codecComponentType)
+                                : null;
+                final Class<?> dataType = loadClass(parquetColDef.name, "codecType", parquetColDef.codecType);
+                colDef = ColumnDefinition.fromGenericType(parquetColDef.name, dataType, componentType);
+            } else if (parquetColDef.dhSpecialType != null) {
+                if (parquetColDef.dhSpecialType == ColumnTypeInfo.SpecialType.StringSet) {
+                    colDef = ColumnDefinition.fromGenericType(parquetColDef.name, StringSet.class, null);
+                } else if (parquetColDef.dhSpecialType == ColumnTypeInfo.SpecialType.Vector) {
+                    final Class<?> vectorType = VECTOR_TYPE_MAP.get(baseType);
+                    if (vectorType != null) {
+                        colDef = ColumnDefinition.fromGenericType(parquetColDef.name, vectorType, baseType);
+                    } else {
+                        colDef = ColumnDefinition.fromGenericType(parquetColDef.name, ObjectVector.class, baseType);
+                    }
+                } else {
+                    throw new UncheckedDeephavenException("Unhandled dbSpecialType=" + parquetColDef.dhSpecialType);
+                }
+            } else {
+                if (parquetColDef.isArray) {
+                    if (baseType == byte.class && parquetColDef.noLogicalType) {
+                        colDef = ColumnDefinition.fromGenericType(parquetColDef.name, byte[].class, byte.class);
+                    } else {
+                        // TODO: ParquetInstruction.loadAsVector
+                        final Class<?> componentType = baseType;
+                        // On Java 12, replace by: dataType = componentType.arrayType();
+                        final Class<?> dataType = java.lang.reflect.Array.newInstance(componentType, 0).getClass();
+                        colDef = ColumnDefinition.fromGenericType(parquetColDef.name, dataType, componentType);
+                    }
+                } else {
+                    colDef = ColumnDefinition.fromGenericType(parquetColDef.name, baseType, null);
+                }
+            }
+            colsOut.add(colDef);
+        };
+    }
+
+    private static final SimpleTypeMap<Class<?>> VECTOR_TYPE_MAP = SimpleTypeMap.create(
+            null, CharVector.class, ByteVector.class, ShortVector.class, IntVector.class, LongVector.class,
+            FloatVector.class, DoubleVector.class, ObjectVector.class);
+
+    private static Class<?> loadClass(final String colName, final String desc, final String className) {
+        try {
+            return ClassUtil.lookupClass(className);
+        } catch (ClassNotFoundException e) {
+            throw new UncheckedDeephavenException(
+                    "Column " + colName + " with " + desc + "=" + className + " that can't be found in classloader");
+        }
     }
 
     private static LogicalTypeAnnotation.LogicalTypeAnnotationVisitor<Class<?>> getVisitor(

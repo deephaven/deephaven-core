@@ -16,6 +16,7 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.MatchPair;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
@@ -159,9 +160,10 @@ public class ObjectRollingFormulaOperator<T> extends BaseRollingFormulaOperator 
             @NotNull final String formula,
             @NotNull final String paramToken,
             @NotNull final Map<Class<?>, FormulaColumn> formulaColumnMap,
-            @NotNull final TableDefinition tableDef) {
+            @NotNull final TableDefinition tableDef,
+            @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
         super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, formula,
-                paramToken, formulaColumnMap, tableDef);
+                paramToken, formulaColumnMap, tableDef, compilationProcessor);
     }
 
     protected ObjectRollingFormulaOperator(

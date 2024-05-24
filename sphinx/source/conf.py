@@ -17,7 +17,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'Deephaven'
-copyright = '2021, Deephaven Data Labs'
+copyright = '2024, Deephaven Data Labs'
 author = 'Deephaven Data Labs'
 
 # The full version, including alpha/beta/rc tags

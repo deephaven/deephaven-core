@@ -11,9 +11,20 @@ import org.apache.parquet.schema.PrimitiveType;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.function.Function;
 
 public interface ColumnChunkReader {
+    /**
+     * @return The name of the column this ColumnChunk represents.
+     */
+    String columnName();
+
+    /**
+     * @return The URI of the file this column chunk reader is reading from.
+     */
+    URI getURI();
+
     /**
      * @return The number of rows in this ColumnChunk, or -1 if it's unknown.
      */
@@ -117,4 +128,5 @@ public interface ColumnChunkReader {
      * @return The channel provider for this column chunk reader.
      */
     SeekableChannelsProvider getChannelsProvider();
+
 }

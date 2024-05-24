@@ -120,12 +120,6 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
         return (ParquetTableLocation) getTableLocation();
     }
 
-    @Override
-    @Nullable
-    public <METADATA_TYPE> METADATA_TYPE getMetadata(@NotNull final ColumnDefinition<?> columnDefinition) {
-        return null;
-    }
-
     private <SOURCE, REGION_TYPE> REGION_TYPE makeColumnRegion(
             @NotNull final Function<ColumnDefinition<?>, SOURCE[]> sourceArrayFactory,
             @NotNull final ColumnDefinition<?> columnDefinition,
@@ -474,7 +468,6 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
 
         @Override
         public Optional<ToPage<ATTR, ?>> visit(final LogicalTypeAnnotation.IntLogicalTypeAnnotation intLogicalType) {
-
             if (intLogicalType.isSigned()) {
                 switch (intLogicalType.getBitWidth()) {
                     case 8:
@@ -492,10 +485,9 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                     case 16:
                         return Optional.of(ToCharPageFromInt.create(componentType));
                     case 32:
-                        return Optional.of(ToLongPage.create(componentType));
+                        return Optional.of(ToLongPageFromUnsignedInt.create(componentType));
                 }
             }
-
             return Optional.empty();
         }
 

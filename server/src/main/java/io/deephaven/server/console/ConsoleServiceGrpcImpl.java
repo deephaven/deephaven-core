@@ -157,6 +157,8 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             GrpcUtil.safelyError(responseObserver, Code.FAILED_PRECONDITION, "Remote console disabled");
             return;
         }
+        // Session close logic implicitly handled in
+        // io.deephaven.server.session.SessionServiceGrpcImpl.SessionServiceInterceptor
         final LogsClient client =
                 new LogsClient(request, (ServerCallStreamObserver<LogSubscriptionData>) responseObserver);
         client.start();

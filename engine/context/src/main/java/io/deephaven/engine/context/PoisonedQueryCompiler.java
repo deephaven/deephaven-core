@@ -3,14 +3,11 @@
 //
 package io.deephaven.engine.context;
 
+import io.deephaven.util.CompletionStageFuture;
 import io.deephaven.util.ExecutionContextRegistrationException;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
-import java.util.Map;
-
-public class PoisonedQueryCompiler extends QueryCompiler {
+public class PoisonedQueryCompiler implements QueryCompiler {
 
     public static final PoisonedQueryCompiler INSTANCE = new PoisonedQueryCompiler();
 
@@ -21,18 +18,9 @@ public class PoisonedQueryCompiler extends QueryCompiler {
     }
 
     @Override
-    public File getFakeClassDestination() {
-        return fail();
-    }
-
-    @Override
-    public void setParentClassLoader(ClassLoader parentClassLoader) {
+    public void compile(
+            @NotNull final QueryCompilerRequest[] requests,
+            @NotNull final CompletionStageFuture.Resolver<Class<?>>[] resolvers) {
         fail();
-    }
-
-    @Override
-    public Class<?> compile(@NotNull String className, @NotNull String classBody, @NotNull String packageNameRoot,
-            @Nullable StringBuilder codeLog, @NotNull Map<String, Class<?>> parameterClasses) {
-        return fail();
     }
 }

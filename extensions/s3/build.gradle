@@ -11,11 +11,11 @@ dependencies {
     implementation project(':Base')
     implementation project(':Util')
     implementation project(':Configuration')
+    implementation project(':log-factory')
 
     implementation platform('software.amazon.awssdk:bom:2.23.19')
     implementation 'software.amazon.awssdk:s3'
     implementation 'software.amazon.awssdk:aws-crt-client'
-    //implementation 'software.amazon.awssdk:netty-nio-client'
 
     compileOnly depAnnotations
 
@@ -31,6 +31,7 @@ dependencies {
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
+    testImplementation 'software.amazon.awssdk:s3-transfer-manager'
     testImplementation "org.testcontainers:testcontainers:1.19.4"
     testImplementation "org.testcontainers:junit-jupiter:1.19.4"
     testImplementation "org.testcontainers:localstack:1.19.4"

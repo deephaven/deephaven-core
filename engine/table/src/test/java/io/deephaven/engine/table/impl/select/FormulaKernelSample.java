@@ -106,7 +106,7 @@ public class FormulaKernelSample implements io.deephaven.engine.table.impl.selec
         try {
             return plus(plus(multiply(I, II), multiply(q.intValue(), ii)), II_.get(longCast(minus(i, 1))));
         } catch (java.lang.Exception __e) {
-            throw new io.deephaven.engine.table.impl.select.FormulaEvaluationException("In formula: " + "plus(plus(multiply(I, II), multiply(q.intValue(), ii)), II_.get(longCast(minus(i, 1))))", __e);
+            throw new io.deephaven.engine.table.impl.select.FormulaEvaluationException("In formula: " + "I * II + q * ii + II_[i - 1]", __e);
         }
     }
 

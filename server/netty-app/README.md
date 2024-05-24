@@ -1,5 +1,11 @@
 # Native packaging for Deephaven Netty server
 
+This build is not actively maintained or tested, but should still work. As this build uses the grpc-netty server
+implementation, it can not be used for serving static web content and does not provide any grpc-web proxies. As
+such, it can only be used in an environment where the Deephaven Web IDE will not be used, or where the IDE is
+hosted on a different server, with some grpc-web proxy (such as [Envoy](https://www.envoyproxy.io/)) between the
+Deephaven server and the browser.
+
 ### Build
 
 ```shell
@@ -47,19 +53,7 @@ Finally, Gradle can be used to update the build and run the application in a sin
 
 ### Configuration / SSL
 
-By default, the server starts up on all interfaces with plaintext port 8080 (port 443 when SSL is enabled), a token
-expiration duration of 5 minutes, a scheduler pool size of 4, and a max inbound message size of 100 MiB.
-
-To bring up a SSL-enabled server on port 8443 with a development key and certificate, you can run:
-```shell
-./gradlew server-netty-app:run -Pgroovy -PdevCerts
-```
-
-SSL configuration can be applied manually with the properties "ssl.identity.type", "ssl.identity.certChainPath",
-"ssl.identity.privateKeyPath", "ssl.trust.type", and "ssl.trust.path". Furthermore, outbound Deephaven-to-Deephaven
-connections can be explicitly configured separately if desired, with the same properties prefixed with "outbound.".
-See the javadocs on `io.deephaven.server.netty.NettyConfig` and `io.deephaven.server.runner.Main.parseSSLConfig` for
-more information.
+See [the configuration section for the jetty-app](../jetty-app/README.md#configuration) for flags that are supported here.
 
 ### SSL examples
 
