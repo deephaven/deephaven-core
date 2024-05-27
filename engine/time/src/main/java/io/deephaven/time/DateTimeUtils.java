@@ -955,6 +955,21 @@ public class DateTimeUtils {
     }
 
     /**
+     * Get the {@link LocalDate} portion of a {@link LocalDateTime}.
+     *
+     * @param localDateTime the local date time to convert
+     * @return the {@link LocalDate}, or {@code null} if {@code localDateTime} is {@code null}
+     */
+    @Nullable
+    public static LocalDate toLocalDate(@Nullable final LocalDateTime localDateTime) {
+        if (localDateTime == null) {
+            return null;
+        }
+
+        return localDateTime.toLocalDate();
+    }
+
+    /**
      * Converts an {@link Instant} to a {@link LocalTime} with the specified {@link ZoneId}.
      *
      * @param instant the instant to convert
@@ -981,6 +996,20 @@ public class DateTimeUtils {
             return null;
         }
         return dateTime.toLocalTime();
+    }
+
+    /**
+     * Get the {@link LocalTime} portion of a {@link LocalDateTime}.
+     *
+     * @param localDateTime the local date time to convert
+     * @return the {@link LocalTime}, or {@code null} if {@code localDateTime} is {@code null}
+     */
+    @Nullable
+    public static LocalTime toLocalTime(@Nullable final LocalDateTime localDateTime) {
+        if (localDateTime == null) {
+            return null;
+        }
+        return localDateTime.toLocalTime();
     }
 
     /**
