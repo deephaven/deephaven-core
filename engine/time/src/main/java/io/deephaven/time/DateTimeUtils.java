@@ -924,6 +924,52 @@ public class DateTimeUtils {
     }
 
     /**
+     * Converts an {@link Instant} to a {@link LocalDateTime} with the specified {@link ZoneId}.
+     *
+     * @param instant the instant to convert
+     * @param timeZone the time zone
+     * @return the {@link LocalDateTime}, or {@code null} if any input is {@code null}
+     */
+    @Nullable
+    public static LocalDateTime toLocalDateTime(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
+        if (instant == null || timeZone == null) {
+            return null;
+        }
+        return toZonedDateTime(instant, timeZone).toLocalDateTime();
+    }
+
+    /**
+     * Get the {@link LocalDateTime} portion of a {@link ZonedDateTime}.
+     *
+     * @param dateTime the zoned date time to convert
+     * @return the {@link LocalDateTime}, or {@code null} if {@code dateTime} is {@code null}
+     */
+    @Nullable
+    public static LocalDateTime toLocalDateTime(@Nullable final ZonedDateTime dateTime) {
+        if (dateTime == null) {
+            return null;
+        }
+        return dateTime.toLocalDateTime();
+    }
+
+    /**
+     * Converts a {@link LocalDate} and {@link LocalTime} pair to a {@link LocalDateTime}.
+     *
+     * @param localDate the local date to convert
+     * @param localTime the local time to convert
+     * @return the {@link LocalDateTime}, or {@code null} if {@code localDateTime} is {@code null}
+     */
+    @Nullable
+    public static LocalDateTime toLocalDateTime(
+            @Nullable final LocalDate localDate,
+            @Nullable final LocalTime localTime) {
+        if (localDate == null || localTime == null) {
+            return null;
+        }
+        return LocalDateTime.of(localDate, localTime);
+    }
+
+    /**
      * Converts an {@link Instant} to a {@link LocalDate} with the specified {@link ZoneId}.
      *
      * @param instant the instant to convert
@@ -2891,7 +2937,8 @@ public class DateTimeUtils {
      *        milliseconds from the start of the day. On days when daylight savings time events occur, results may be
      *        different from what is expected based upon the local time. For example, on daylight savings time change
      *        days, 9:30AM may be earlier or later in the day based upon if the daylight savings time adjustment is
-     *        forwards or backwards. On non DST days, the result is the same regardless of the value of {@code asLocalTime}.
+     *        forwards or backwards. On non DST days, the result is the same regardless of the value of
+     *        {@code asLocalTime}.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of milliseconds that
      *         have elapsed since the start of the day
      */
@@ -2914,7 +2961,8 @@ public class DateTimeUtils {
      *        milliseconds from the start of the day. On days when daylight savings time events occur, results may be
      *        different from what is expected based upon the local time. For example, on daylight savings time change
      *        days, 9:30AM may be earlier or later in the day based upon if the daylight savings time adjustment is
-     *        forwards or backwards. On non DST days, the result is the same regardless of the value of {@code asLocalTime}.
+     *        forwards or backwards. On non DST days, the result is the same regardless of the value of
+     *        {@code asLocalTime}.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of milliseconds that
      *         have elapsed since the start of the day
      */
@@ -2987,12 +3035,13 @@ public class DateTimeUtils {
      * Returns the number of seconds that have elapsed since the start of the day.
      *
      * @param dateTime time
-     * @param asLocalTime If {@code true}, returns the number of seconds from the start of the day according to the local
-     *        time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of seconds
-     *        from the start of the day. On days when daylight savings time events occur, results may be different from
-     *        what is expected based upon the local time. For example, on daylight savings time change days, 9:30AM may
-     *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
-     *        backwards. On non DST days, the result is the same regardless of the value of {@code asLocalTime}.
+     * @param asLocalTime If {@code true}, returns the number of seconds from the start of the day according to the
+     *        local time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of
+     *        seconds from the start of the day. On days when daylight savings time events occur, results may be
+     *        different from what is expected based upon the local time. For example, on daylight savings time change
+     *        days, 9:30AM may be earlier or later in the day based upon if the daylight savings time adjustment is
+     *        forwards or backwards. On non DST days, the result is the same regardless of the value of
+     *        {@code asLocalTime}.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of seconds that have
      *         elapsed since the start of the day
      */
@@ -3042,12 +3091,12 @@ public class DateTimeUtils {
      *
      * @param instant time
      * @param timeZone time zone
-     * @param asLocalTime If {@code true}, returns the number of minutes from the start of the day according to the local
-     *        time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of minutes
-     *        from the start of the day. On days when daylight savings time events occur, results may be different from
-     *        what is expected based upon the local time. For example, on daylight savings time change days, 9:30AM may
-     *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
-     *        backwards. On non DST days, the result is the same as if asLocalTime is false.
+     * @param asLocalTime If {@code true}, returns the number of minutes from the start of the day according to the
+     *        local time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of
+     *        minutes from the start of the day. On days when daylight savings time events occur, results may be
+     *        different from what is expected based upon the local time. For example, on daylight savings time change
+     *        days, 9:30AM may be earlier or later in the day based upon if the daylight savings time adjustment is
+     *        forwards or backwards. On non DST days, the result is the same as if asLocalTime is false.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of minutes that have
      *         elapsed since the start of the day
      */
@@ -3065,12 +3114,13 @@ public class DateTimeUtils {
      * Returns the number of minutes that have elapsed since the start of the day.
      *
      * @param dateTime time
-     * @param asLocalTime If {@code true}, returns the number of minutes from the start of the day according to the local
-     *        time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of minutes
-     *        from the start of the day. On days when daylight savings time events occur, results may be different from
-     *        what is expected based upon the local time. For example, on daylight savings time change days, 9:30AM may
-     *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
-     *        backwards. On non DST days, the result is the same regardless of the value of {@code asLocalTime}.
+     * @param asLocalTime If {@code true}, returns the number of minutes from the start of the day according to the
+     *        local time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of
+     *        minutes from the start of the day. On days when daylight savings time events occur, results may be
+     *        different from what is expected based upon the local time. For example, on daylight savings time change
+     *        days, 9:30AM may be earlier or later in the day based upon if the daylight savings time adjustment is
+     *        forwards or backwards. On non DST days, the result is the same regardless of the value of
+     *        {@code asLocalTime}.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of minutes that have
      *         elapsed since the start of the day
      */
