@@ -24,6 +24,7 @@ jobs:
           header: pr-title-lint-error
           message: |
             Pull Request titles must follow the [Conventional Commits specification](https://www.conventionalcommits.org/en/v1.0.0/).
+            Breaking changes that are expected to impact users must include "BREAKING CHANGE: <description>" at the end of the PR description. 
 
             Details:
 
