@@ -2823,10 +2823,27 @@ public class DateTimeUtils {
     /**
      * Returns the number of nanoseconds that have elapsed since the start of the day.
      *
-     * @param localTime time
+     * @param localDateTime local date time
      * @return {@link QueryConstants#NULL_LONG} if input is {@code null}; otherwise, number of nanoseconds that have
      *         elapsed since the start of the day
      */
+    @ScriptApi
+    public static long nanosOfDay(@Nullable final LocalDateTime localDateTime) {
+        if (localDateTime == null) {
+            return NULL_LONG;
+        }
+
+        return localDateTime.toLocalTime().toNanoOfDay();
+    }
+
+    /**
+     * Returns the number of nanoseconds that have elapsed since the start of the day.
+     *
+     * @param localTime local time
+     * @return {@link QueryConstants#NULL_LONG} if input is {@code null}; otherwise, number of nanoseconds that have
+     *         elapsed since the start of the day
+     */
+    @ScriptApi
     public static long nanosOfDay(@Nullable final LocalTime localTime) {
         if (localTime == null) {
             return NULL_LONG;
@@ -2884,16 +2901,33 @@ public class DateTimeUtils {
     /**
      * Returns the number of milliseconds that have elapsed since the start of the day.
      *
-     * @param localTime time
+     * @param localDateTime local date time
      * @return {@link QueryConstants#NULL_INT} if input is {@code null}; otherwise, number of milliseconds that have
      *         elapsed since the start of the day
      */
+    @ScriptApi
+    public static int millisOfDay(@Nullable final LocalDateTime localDateTime) {
+        if (localDateTime == null) {
+            return NULL_INT;
+        }
+
+        return (int) nanosToMillis(localDateTime.toLocalTime().toNanoOfDay());
+    }
+
+    /**
+     * Returns the number of milliseconds that have elapsed since the start of the day.
+     *
+     * @param localTime local time
+     * @return {@link QueryConstants#NULL_INT} if input is {@code null}; otherwise, number of milliseconds that have
+     *         elapsed since the start of the day
+     */
+    @ScriptApi
     public static int millisOfDay(@Nullable final LocalTime localTime) {
         if (localTime == null) {
             return NULL_INT;
         }
 
-        return (int) nanosToMillis(nanosOfDay(localTime));
+        return (int) nanosToMillis(localTime.toNanoOfDay());
     }
 
     /**
@@ -2945,16 +2979,33 @@ public class DateTimeUtils {
     /**
      * Returns the number of seconds that have elapsed since the start of the day.
      *
-     * @param localTime time
+     * @param localDateTime local date time
      * @return {@link QueryConstants#NULL_INT} if input is {@code null}; otherwise, number of seconds that have elapsed
      *         since the start of the day
      */
+    @ScriptApi
+    public static int secondOfDay(@Nullable final LocalDateTime localDateTime) {
+        if (localDateTime == null) {
+            return NULL_INT;
+        }
+
+        return localDateTime.toLocalTime().toSecondOfDay();
+    }
+
+    /**
+     * Returns the number of seconds that have elapsed since the start of the day.
+     *
+     * @param localTime local time
+     * @return {@link QueryConstants#NULL_INT} if input is {@code null}; otherwise, number of seconds that have elapsed
+     *         since the start of the day
+     */
+    @ScriptApi
     public static int secondOfDay(@Nullable final LocalTime localTime) {
         if (localTime == null) {
             return NULL_INT;
         }
 
-        return (int) nanosToSeconds(nanosOfDay(localTime));
+        return localTime.toSecondOfDay();
     }
 
     /**
@@ -3006,10 +3057,27 @@ public class DateTimeUtils {
     /**
      * Returns the number of minutes that have elapsed since the start of the day.
      *
-     * @param localTime time
+     * @param localDateTime local date time
      * @return {@link QueryConstants#NULL_INT} if input is {@code null}; otherwise, number of minutes that have elapsed
      *         since the start of the day
      */
+    @ScriptApi
+    public static int minuteOfDay(@Nullable final LocalDateTime localDateTime) {
+        if (localDateTime == null) {
+            return NULL_INT;
+        }
+
+        return secondOfDay(localDateTime) / 60;
+    }
+
+    /**
+     * Returns the number of minutes that have elapsed since the start of the day.
+     *
+     * @param localTime local time
+     * @return {@link QueryConstants#NULL_INT} if input is {@code null}; otherwise, number of minutes that have elapsed
+     *         since the start of the day
+     */
+    @ScriptApi
     public static int minuteOfDay(@Nullable final LocalTime localTime) {
         if (localTime == null) {
             return NULL_INT;
@@ -3067,16 +3135,33 @@ public class DateTimeUtils {
     /**
      * Returns the number of hours that have elapsed since the start of the day.
      *
-     * @param localTime time
+     * @param localDateTime local date time
      * @return {@link QueryConstants#NULL_INT} if input is {@code null}; otherwise, number of hours that have elapsed
      *         since the start of the day
      */
+    @ScriptApi
+    public static int hourOfDay(@Nullable final LocalDateTime localDateTime) {
+        if (localDateTime == null) {
+            return NULL_INT;
+        }
+
+        return localDateTime.getHour();
+    }
+
+    /**
+     * Returns the number of hours that have elapsed since the start of the day.
+     *
+     * @param localTime local time
+     * @return {@link QueryConstants#NULL_INT} if input is {@code null}; otherwise, number of hours that have elapsed
+     *         since the start of the day
+     */
+    @ScriptApi
     public static int hourOfDay(@Nullable final LocalTime localTime) {
         if (localTime == null) {
             return NULL_INT;
         }
 
-        return minuteOfDay(localTime) / 60;
+        return localTime.getHour();
     }
 
     /**
