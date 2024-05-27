@@ -2775,45 +2775,45 @@ public class DateTimeUtils {
      *
      * @param instant time
      * @param timeZone time zone
-     * @param localTime if {@code true}, returns the number of nanos from the start of the day according to the local
+     * @param asLocalTime If {@code true}, returns the number of nanos from the start of the day according to the local
      *        time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of nanos
      *        from the start of the day. On days when daylight savings time events occur, results may be different from
      *        what is expected based upon the local time. For example, on daylight savings time change days, 9:30AM may
      *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
-     *        backwards. On non DST days, the result is the same as if localTime is false.
+     *        backwards. On non DST days, the result is the same regardless of the value of {@code asLocalTime}.
      * @return {@link QueryConstants#NULL_LONG} if either input is {@code null}; otherwise, number of nanoseconds that
      *         have elapsed since the start of the day
      */
     @ScriptApi
     public static long nanosOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone,
-            final boolean localTime) {
+            final boolean asLocalTime) {
         if (instant == null || timeZone == null) {
             return NULL_LONG;
         }
 
-        return nanosOfDay(toZonedDateTime(instant, timeZone), localTime);
+        return nanosOfDay(toZonedDateTime(instant, timeZone), asLocalTime);
     }
 
     /**
      * Returns the number of nanoseconds that have elapsed since the start of the day.
      *
      * @param dateTime time
-     * @param localTime if {@code true}, returns the number of nanos from the start of the day according to the local
+     * @param asLocalTime If {@code true}, returns the number of nanos from the start of the day according to the local
      *        time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of nanos
      *        from the start of the day. On days when daylight savings time events occur, results may be different from
      *        what is expected based upon the local time. For example, on daylight savings time change days, 9:30AM may
      *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
-     *        backwards. On non DST days, the result is the same as if localTime is false.
+     *        backwards. On non DST days, the result is the same regardless of the value of {@code asLocalTime}.
      * @return {@link QueryConstants#NULL_LONG} if either input is {@code null}; otherwise, number of nanoseconds that
      *         have elapsed since the start of the day
      */
     @ScriptApi
-    public static long nanosOfDay(@Nullable final ZonedDateTime dateTime, final boolean localTime) {
+    public static long nanosOfDay(@Nullable final ZonedDateTime dateTime, final boolean asLocalTime) {
         if (dateTime == null) {
             return NULL_LONG;
         }
 
-        if (localTime) {
+        if (asLocalTime) {
             return dateTime.toLocalTime().toNanoOfDay();
         } else {
             return epochNanos(dateTime) - epochNanos(atMidnight(dateTime));
@@ -2840,45 +2840,45 @@ public class DateTimeUtils {
      *
      * @param instant time
      * @param timeZone time zone
-     * @param localTime if {@code true}, returns the number of milliseconds from the start of the day according to the
+     * @param asLocalTime If {@code true}, returns the number of milliseconds from the start of the day according to the
      *        local time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of
      *        milliseconds from the start of the day. On days when daylight savings time events occur, results may be
      *        different from what is expected based upon the local time. For example, on daylight savings time change
      *        days, 9:30AM may be earlier or later in the day based upon if the daylight savings time adjustment is
-     *        forwards or backwards. On non DST days, the result is the same as if localTime is false.
+     *        forwards or backwards. On non DST days, the result is the same regardless of the value of {@code asLocalTime}.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of milliseconds that
      *         have elapsed since the start of the day
      */
     @ScriptApi
     public static int millisOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone,
-            final boolean localTime) {
+            final boolean asLocalTime) {
         if (instant == null || timeZone == null) {
             return NULL_INT;
         }
 
-        return (int) nanosToMillis(nanosOfDay(instant, timeZone, localTime));
+        return (int) nanosToMillis(nanosOfDay(instant, timeZone, asLocalTime));
     }
 
     /**
      * Returns the number of milliseconds that have elapsed since the start of the day.
      *
      * @param dateTime time
-     * @param localTime if {@code true}, returns the number of milliseconds from the start of the day according to the
+     * @param asLocalTime If {@code true}, returns the number of milliseconds from the start of the day according to the
      *        local time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of
      *        milliseconds from the start of the day. On days when daylight savings time events occur, results may be
      *        different from what is expected based upon the local time. For example, on daylight savings time change
      *        days, 9:30AM may be earlier or later in the day based upon if the daylight savings time adjustment is
-     *        forwards or backwards. On non DST days, the result is the same as if localTime is false.
+     *        forwards or backwards. On non DST days, the result is the same regardless of the value of {@code asLocalTime}.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of milliseconds that
      *         have elapsed since the start of the day
      */
     @ScriptApi
-    public static int millisOfDay(@Nullable final ZonedDateTime dateTime, final boolean localTime) {
+    public static int millisOfDay(@Nullable final ZonedDateTime dateTime, final boolean asLocalTime) {
         if (dateTime == null) {
             return NULL_INT;
         }
 
-        return (int) nanosToMillis(nanosOfDay(dateTime, localTime));
+        return (int) nanosToMillis(nanosOfDay(dateTime, asLocalTime));
     }
 
     /**
@@ -2901,45 +2901,45 @@ public class DateTimeUtils {
      *
      * @param instant time
      * @param timeZone time zone
-     * @param localTime if {@code true}, returns the number of nanos from the start of the day according to the local
+     * @param asLocalTime If {@code true}, returns the number of nanos from the start of the day according to the local
      *        time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of nanos
      *        from the start of the day. On days when daylight savings time events occur, results may be different from
      *        what is expected based upon the local time. For example, on daylight savings time change days, 9:30AM may
      *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
-     *        backwards. On non DST days, the result is the same as if localTime is false.
+     *        backwards. On non DST days, the result is the same regardless of the value of {@code asLocalTime}.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of seconds that have
      *         elapsed since the start of the day
      */
     @ScriptApi
     public static int secondOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone,
-            final boolean localTime) {
+            final boolean asLocalTime) {
         if (instant == null || timeZone == null) {
             return NULL_INT;
         }
 
-        return (int) nanosToSeconds(nanosOfDay(instant, timeZone, localTime));
+        return (int) nanosToSeconds(nanosOfDay(instant, timeZone, asLocalTime));
     }
 
     /**
      * Returns the number of seconds that have elapsed since the start of the day.
      *
      * @param dateTime time
-     * @param localTime if {@code true}, returns the number of seconds from the start of the day according to the local
+     * @param asLocalTime If {@code true}, returns the number of seconds from the start of the day according to the local
      *        time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of seconds
      *        from the start of the day. On days when daylight savings time events occur, results may be different from
      *        what is expected based upon the local time. For example, on daylight savings time change days, 9:30AM may
      *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
-     *        backwards. On non DST days, the result is the same as if localTime is false.
+     *        backwards. On non DST days, the result is the same regardless of the value of {@code asLocalTime}.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of seconds that have
      *         elapsed since the start of the day
      */
     @ScriptApi
-    public static int secondOfDay(@Nullable final ZonedDateTime dateTime, final boolean localTime) {
+    public static int secondOfDay(@Nullable final ZonedDateTime dateTime, final boolean asLocalTime) {
         if (dateTime == null) {
             return NULL_INT;
         }
 
-        return (int) nanosToSeconds(nanosOfDay(dateTime, localTime));
+        return (int) nanosToSeconds(nanosOfDay(dateTime, asLocalTime));
     }
 
     /**
@@ -2962,45 +2962,45 @@ public class DateTimeUtils {
      *
      * @param instant time
      * @param timeZone time zone
-     * @param localTime if {@code true}, returns the number of minutes from the start of the day according to the local
+     * @param asLocalTime If {@code true}, returns the number of minutes from the start of the day according to the local
      *        time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of minutes
      *        from the start of the day. On days when daylight savings time events occur, results may be different from
      *        what is expected based upon the local time. For example, on daylight savings time change days, 9:30AM may
      *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
-     *        backwards. On non DST days, the result is the same as if localTime is false.
+     *        backwards. On non DST days, the result is the same as if asLocalTime is false.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of minutes that have
      *         elapsed since the start of the day
      */
     @ScriptApi
     public static int minuteOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone,
-            final boolean localTime) {
+            final boolean asLocalTime) {
         if (instant == null || timeZone == null) {
             return NULL_INT;
         }
 
-        return secondOfDay(instant, timeZone, localTime) / 60;
+        return secondOfDay(instant, timeZone, asLocalTime) / 60;
     }
 
     /**
      * Returns the number of minutes that have elapsed since the start of the day.
      *
      * @param dateTime time
-     * @param localTime if {@code true}, returns the number of minutes from the start of the day according to the local
+     * @param asLocalTime If {@code true}, returns the number of minutes from the start of the day according to the local
      *        time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of minutes
      *        from the start of the day. On days when daylight savings time events occur, results may be different from
      *        what is expected based upon the local time. For example, on daylight savings time change days, 9:30AM may
      *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
-     *        backwards. On non DST days, the result is the same as if localTime is false.
+     *        backwards. On non DST days, the result is the same regardless of the value of {@code asLocalTime}.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of minutes that have
      *         elapsed since the start of the day
      */
     @ScriptApi
-    public static int minuteOfDay(@Nullable final ZonedDateTime dateTime, final boolean localTime) {
+    public static int minuteOfDay(@Nullable final ZonedDateTime dateTime, final boolean asLocalTime) {
         if (dateTime == null) {
             return NULL_INT;
         }
 
-        return secondOfDay(dateTime, localTime) / 60;
+        return secondOfDay(dateTime, asLocalTime) / 60;
     }
 
     /**
@@ -3023,45 +3023,45 @@ public class DateTimeUtils {
      *
      * @param instant time
      * @param timeZone time zone
-     * @param localTime if {@code true}, returns the number of hours from the start of the day according to the local
+     * @param asLocalTime If {@code true}, returns the number of hours from the start of the day according to the local
      *        time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of hours
      *        from the start of the day. On days when daylight savings time events occur, results may be different from
      *        what is expected based upon the local time. For example, on daylight savings time change days, 9:30AM may
      *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
-     *        backwards. On non DST days, the result is the same as if localTime is false.
+     *        backwards. On non DST days, the result is the same regardless of the value of {@code asLocalTime}.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of hours that have
      *         elapsed since the start of the day
      */
     @ScriptApi
     public static int hourOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone,
-            final boolean localTime) {
+            final boolean asLocalTime) {
         if (instant == null || timeZone == null) {
             return NULL_INT;
         }
 
-        return hourOfDay(toZonedDateTime(instant, timeZone), localTime);
+        return hourOfDay(toZonedDateTime(instant, timeZone), asLocalTime);
     }
 
     /**
      * Returns the number of hours that have elapsed since the start of the day.
      *
      * @param dateTime time
-     * @param localTime if {@code true}, returns the number of hours from the start of the day according to the local
+     * @param asLocalTime If {@code true}, returns the number of hours from the start of the day according to the local
      *        time. In this case, 9:30AM always returns the same value. If {@code false}, returns the number of hours
      *        from the start of the day. On days when daylight savings time events occur, results may be different from
      *        what is expected based upon the local time. For example, on daylight savings time change days, 9:30AM may
      *        be earlier or later in the day based upon if the daylight savings time adjustment is forwards or
-     *        backwards. On non DST days, the result is the same as if localTime is false.
+     *        backwards. On non DST days, the result is the same regardless of the value of {@code asLocalTime}.
      * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of hours that have
      *         elapsed since the start of the day
      */
     @ScriptApi
-    public static int hourOfDay(@Nullable final ZonedDateTime dateTime, final boolean localTime) {
+    public static int hourOfDay(@Nullable final ZonedDateTime dateTime, final boolean asLocalTime) {
         if (dateTime == null) {
             return NULL_INT;
         }
 
-        return minuteOfDay(dateTime, localTime) / 60;
+        return minuteOfDay(dateTime, asLocalTime) / 60;
     }
 
     /**
