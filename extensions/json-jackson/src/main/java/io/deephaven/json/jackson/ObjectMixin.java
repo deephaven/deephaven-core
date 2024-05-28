@@ -54,11 +54,15 @@ final class ObjectMixin extends Mixin<ObjectValue> {
 
     @Override
     public Stream<List<String>> paths() {
-        return prefixWithKeys(options.fields());
+        return prefixWithKeys(mixins);
     }
 
     @Override
     public ValueProcessor processor(String context) {
+        return processor(context, false);
+    }
+
+    public ValueProcessor processor(String context, boolean isDiscriminatedObject) {
         final Map<ObjectField, ValueProcessor> processors = new LinkedHashMap<>(options.fields().size());
         int ix = 0;
         for (ObjectField field : options.fields()) {
@@ -71,7 +75,7 @@ final class ObjectMixin extends Mixin<ObjectValue> {
         if (ix != numColumns()) {
             throw new IllegalStateException();
         }
-        return processorImpl(processors);
+        return processorImpl(processors, isDiscriminatedObject);
     }
 
     @Override
@@ -95,20 +99,22 @@ final class ObjectMixin extends Mixin<ObjectValue> {
         return options.fields().stream().allMatch(ObjectField::caseSensitive);
     }
 
-    ObjectValueFieldProcessor processorImpl(Map<ObjectField, ValueProcessor> fields) {
-        return new ObjectValueFieldProcessor(fields);
+    ObjectValueFieldProcessor processorImpl(Map<ObjectField, ValueProcessor> fields, boolean isDiscriminatedObject) {
+        return new ObjectValueFieldProcessor(fields, isDiscriminatedObject);
     }
 
     final class ObjectValueFieldProcessor extends ContextAwareDelegateBase implements ValueProcessor, FieldProcessor {
         private final Map<ObjectField, ValueProcessor> fields;
         private final Map<String, ObjectField> map;
+        private final boolean isDiscriminatedObject;
 
-        ObjectValueFieldProcessor(Map<ObjectField, ValueProcessor> fields) {
+        ObjectValueFieldProcessor(Map<ObjectField, ValueProcessor> fields, boolean isDiscriminatedObject) {
             super(fields.values());
             this.fields = fields;
             this.map = allCaseSensitive()
                     ? new HashMap<>()
                     : new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+            this.isDiscriminatedObject = isDiscriminatedObject;
             for (Entry<ObjectField, ValueProcessor> e : fields.entrySet()) {
                 final ObjectField field = e.getKey();
                 map.put(field.name(), field);
@@ -140,11 +146,11 @@ final class ObjectMixin extends Mixin<ObjectValue> {
 
         @Override
         public void processCurrentValue(JsonParser parser) throws IOException {
-            // see com.fasterxml.jackson.databind.JsonDeserializer.deserialize(com.fasterxml.jackson.core.JsonParser,
-            // com.fasterxml.jackson.databind.DeserializationContext)
-            // for notes on FIELD_NAME
             switch (parser.currentToken()) {
                 case START_OBJECT:
+                    if (isDiscriminatedObject) {
+                        throw unexpectedToken(parser);
+                    }
                     if (parser.nextToken() == JsonToken.END_OBJECT) {
                         processEmptyObject(parser);
                         return;
@@ -152,12 +158,25 @@ final class ObjectMixin extends Mixin<ObjectValue> {
                     if (!parser.hasToken(JsonToken.FIELD_NAME)) {
                         throw new IllegalStateException();
                     }
-                    // fall-through
-                case FIELD_NAME:
                     processObjectFields(parser);
                     return;
                 case VALUE_NULL:
+                    if (isDiscriminatedObject) {
+                        throw unexpectedToken(parser);
+                    }
                     processNullObject(parser);
+                    return;
+                case FIELD_NAME:
+                    if (!isDiscriminatedObject) {
+                        throw unexpectedToken(parser);
+                    }
+                    processObjectFields(parser);
+                    return;
+                case END_OBJECT:
+                    if (!isDiscriminatedObject) {
+                        throw unexpectedToken(parser);
+                    }
+                    processEmptyObject(parser);
                     return;
                 default:
                     throw unexpectedToken(parser);

@@ -11,11 +11,13 @@ import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.json.ObjectField;
 import io.deephaven.json.ObjectValue;
 import io.deephaven.json.TypedObjectValue;
+import io.deephaven.json.jackson.Exceptions.ValueAwareException;
 import io.deephaven.qst.type.Type;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,25 +28,36 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 final class TypedObjectMixin extends Mixin<TypedObjectValue> {
+
+    private final Map<ObjectField, Mixin<?>> sharedFields;
+    private final Map<String, ObjectMixin> combinedFields;
+    private final int numSharedColumns;
+    private final int numSpecificColumns;
+
     public TypedObjectMixin(TypedObjectValue options, JsonFactory factory) {
         super(factory, options);
+        {
+            final LinkedHashMap<ObjectField, Mixin<?>> map = new LinkedHashMap<>(options.sharedFields().size());
+            for (ObjectField sharedField : options.sharedFields()) {
+                map.put(sharedField, mixin(sharedField.options()));
+            }
+            sharedFields = Collections.unmodifiableMap(map);
+        }
+        {
+            final LinkedHashMap<String, ObjectMixin> map = new LinkedHashMap<>(options.objects().size());
+            for (Entry<String, ObjectValue> e : options.objects().entrySet()) {
+                map.put(e.getKey(), new ObjectMixin(combinedObject(e.getValue()), factory));
+            }
+            combinedFields = Collections.unmodifiableMap(map);
+        }
+        numSharedColumns = sharedFields.values().stream().mapToInt(Mixin::numColumns).sum();
+        numSpecificColumns =
+                combinedFields.values().stream().mapToInt(ObjectMixin::numColumns).map(x -> x - numSharedColumns).sum();
     }
 
     @Override
     public int numColumns() {
-        return 1
-                + options.sharedFields()
-                        .stream()
-                        .map(ObjectField::options)
-                        .map(this::mixin)
-                        .mapToInt(Mixin::numColumns)
-                        .sum()
-                + options.objects()
-                        .values()
-                        .stream()
-                        .map(this::mixin)
-                        .mapToInt(Mixin::numColumns)
-                        .sum();
+        return 1 + numSharedColumns + numSpecificColumns;
     }
 
     @Override
@@ -52,9 +65,8 @@ final class TypedObjectMixin extends Mixin<TypedObjectValue> {
         return Stream.concat(
                 Stream.of(List.of(options.typeFieldName())),
                 Stream.concat(
-                        prefixWithKeys(options.sharedFields()),
-                        prefixWithKeys(options.objects().values().stream().map(ObjectValue::fields)
-                                .flatMap(Collection::stream).collect(Collectors.toList()))));
+                        prefixWithKeys(sharedFields),
+                        prefixWithKeysAndSkip(combinedFields, numSharedColumns)));
     }
 
     @Override
@@ -62,19 +74,17 @@ final class TypedObjectMixin extends Mixin<TypedObjectValue> {
         return Stream.concat(
                 Stream.of(Type.stringType()),
                 Stream.concat(
-                        options.sharedFields().stream().map(ObjectField::options).map(this::mixin)
-                                .flatMap(Mixin::outputTypesImpl),
-                        options.objects().values().stream().map(this::mixin).flatMap(Mixin::outputTypesImpl)));
+                        sharedFields.values().stream().flatMap(Mixin::outputTypesImpl),
+                        combinedFields.values().stream().map(Mixin::outputTypesImpl)
+                                .flatMap(x -> x.skip(numSharedColumns))));
     }
 
     @Override
     public ValueProcessor processor(String context) {
-        final Map<String, Processor> processors = new LinkedHashMap<>(options.objects().size());
-        for (Entry<String, ObjectValue> e : options.objects().entrySet()) {
+        final Map<String, Processor> processors = new LinkedHashMap<>(combinedFields.size());
+        for (Entry<String, ObjectMixin> e : combinedFields.entrySet()) {
             final String type = e.getKey();
-            final ObjectValue specificOpts = e.getValue();
-            final ObjectValue combinedObject = combinedObject(specificOpts);
-            final ValueProcessor processor = mixin(combinedObject).processor(context + "[" + type + "]");
+            final ValueProcessor processor = e.getValue().processor(context + "[" + type + "]", true);
             processors.put(type, new Processor(processor));
         }
         return new DiscriminatedProcessor(processors);
@@ -83,19 +93,6 @@ final class TypedObjectMixin extends Mixin<TypedObjectValue> {
     @Override
     RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
         throw new UnsupportedOperationException();
-    }
-
-    private static <T> List<T> concat(List<T> x, List<T> y) {
-        if (x.isEmpty()) {
-            return y;
-        }
-        if (y.isEmpty()) {
-            return x;
-        }
-        final List<T> out = new ArrayList<>(x.size() + y.size());
-        out.addAll(x);
-        out.addAll(y);
-        return out;
     }
 
     private ObjectValue combinedObject(ObjectValue objectOpts) {
@@ -113,92 +110,95 @@ final class TypedObjectMixin extends Mixin<TypedObjectValue> {
     }
 
     private String parseTypeField(JsonParser parser) throws IOException {
-        final String currentFieldName = parser.currentName();
-        if (!options.typeFieldName().equals(currentFieldName)) {
-            throw new IOException("Can only process when first field in object is the type");
+        final String actualFieldName = parser.currentName();
+        if (!options.typeFieldName().equals(actualFieldName)) {
+            throw new ValueAwareException(String.format("Expected the first field to be '%s', is '%s'",
+                    options.typeFieldName(), actualFieldName), parser.currentLocation(), options);
         }
         switch (parser.nextToken()) {
             case VALUE_STRING:
             case FIELD_NAME:
                 return parser.getText();
             case VALUE_NULL:
-                checkNullAllowed(parser);
                 return null;
             default:
-                throw Exceptions.notAllowed(parser, this);
+                throw unexpectedToken(parser);
         }
     }
 
     private static class Processor {
-        private final ValueProcessor valueProcessor;
+        private final ValueProcessor combinedProcessor;
+        private final List<WritableChunk<?>> buffer;
         private List<WritableChunk<?>> specificOut;
 
-        public Processor(ValueProcessor valueProcessor) {
-            this.valueProcessor = Objects.requireNonNull(valueProcessor);
+        Processor(ValueProcessor combinedProcessor) {
+            this.combinedProcessor = Objects.requireNonNull(combinedProcessor);
+            this.buffer = new ArrayList<>(combinedProcessor.numColumns());
         }
 
         void setContext(List<WritableChunk<?>> sharedOut, List<WritableChunk<?>> specifiedOut) {
             this.specificOut = Objects.requireNonNull(specifiedOut);
-            valueProcessor.setContext(concat(sharedOut, specifiedOut));
+            buffer.clear();
+            buffer.addAll(sharedOut);
+            buffer.addAll(specifiedOut);
+            combinedProcessor.setContext(buffer);
         }
 
         void clearContext() {
-            valueProcessor.clearContext();
+            combinedProcessor.clearContext();
+            buffer.clear();
             specificOut = null;
         }
 
-        ValueProcessor processor() {
-            return valueProcessor;
+        ValueProcessor combinedProcessor() {
+            return combinedProcessor;
         }
 
         void notApplicable() {
             // only skip specific fields
             for (WritableChunk<?> wc : specificOut) {
-                final int size = wc.size();
-                wc.fillWithNullValue(size, 1);
-                wc.setSize(size + 1);
+                addNullValue(wc);
             }
         }
     }
 
     private class DiscriminatedProcessor implements ValueProcessor {
 
-        private WritableObjectChunk<String, ?> typeOut;
-        private List<WritableChunk<?>> sharedFields;
-        private final Map<String, Processor> processors;
-        private final int numColumns;
+        private final Map<String, Processor> combinedProcessors;
 
-        public DiscriminatedProcessor(Map<String, Processor> processors) {
-            this.processors = Objects.requireNonNull(processors);
-            this.numColumns = TypedObjectMixin.this.numColumns();
+        private WritableObjectChunk<String, ?> typeChunk;
+        private List<WritableChunk<?>> sharedChunks;
+
+        public DiscriminatedProcessor(Map<String, Processor> combinedProcessors) {
+            this.combinedProcessors = Objects.requireNonNull(combinedProcessors);
         }
 
         @Override
         public void setContext(List<WritableChunk<?>> out) {
-            typeOut = out.get(0).asWritableObjectChunk();
-            sharedFields = out.subList(1, 1 + options.sharedFields().size());
-            int outIx = 1 + sharedFields.size();
-            for (Processor value : processors.values()) {
-                final int numColumns = value.processor().numColumns();
-                final int numSpecificFields = numColumns - options.sharedFields().size();
-                final List<WritableChunk<?>> specificChunks = out.subList(outIx, outIx + numSpecificFields);
-                value.setContext(sharedFields, specificChunks);
-                outIx += numSpecificFields;
+            typeChunk = out.get(0).asWritableObjectChunk();
+            sharedChunks = out.subList(1, 1 + numSharedColumns);
+            int outIx = 1 + sharedChunks.size();
+            for (Processor combinedProcessor : combinedProcessors.values()) {
+                final int numColumns = combinedProcessor.combinedProcessor().numColumns();
+                final int numSpecificColumns = numColumns - numSharedColumns;
+                final List<WritableChunk<?>> specificChunks = out.subList(outIx, outIx + numSpecificColumns);
+                combinedProcessor.setContext(sharedChunks, specificChunks);
+                outIx += numSpecificColumns;
             }
         }
 
         @Override
         public void clearContext() {
-            typeOut = null;
-            sharedFields = null;
-            for (Processor value : processors.values()) {
-                value.clearContext();
+            typeChunk = null;
+            sharedChunks = null;
+            for (Processor combinedProcessor : combinedProcessors.values()) {
+                combinedProcessor.clearContext();
             }
         }
 
         @Override
         public int numColumns() {
-            return numColumns;
+            return TypedObjectMixin.this.numColumns();
         }
 
         @Override
@@ -217,13 +217,11 @@ final class TypedObjectMixin extends Mixin<TypedObjectValue> {
                     if (!parser.hasToken(JsonToken.FIELD_NAME)) {
                         throw new IllegalStateException();
                     }
-                    // fall-through
-                case FIELD_NAME:
                     processObjectFields(parser);
-                    break;
+                    return;
                 case VALUE_NULL:
                     processNullObject(parser);
-                    break;
+                    return;
                 default:
                     throw unexpectedToken(parser);
             }
@@ -232,54 +230,61 @@ final class TypedObjectMixin extends Mixin<TypedObjectValue> {
         @Override
         public void processMissing(JsonParser parser) throws IOException {
             checkMissingAllowed(parser);
-            // onMissingType()?
-            typeOut.add(null);
-            for (Processor processor : processors.values()) {
+            typeChunk.add(options.onMissing().orElse(null));
+            for (WritableChunk<?> sharedChunk : sharedChunks) {
+                addNullValue(sharedChunk);
+            }
+            for (Processor processor : combinedProcessors.values()) {
                 processor.notApplicable();
             }
         }
 
         private void processNullObject(JsonParser parser) throws IOException {
             checkNullAllowed(parser);
-            // onNullType()?
-            typeOut.add(null);
-            for (Processor processor : processors.values()) {
+            typeChunk.add(options.onNull().orElse(null));
+            for (WritableChunk<?> sharedChunk : sharedChunks) {
+                addNullValue(sharedChunk);
+            }
+            for (Processor processor : combinedProcessors.values()) {
                 processor.notApplicable();
             }
         }
 
         private void processEmptyObject(JsonParser parser) throws IOException {
-            // this logic should be equivalent to processObjectFields w/ no fields
-            // suggests that maybe this branch should be an error b/c we _need_ type field?
-            throw new IOException("no field");
+            throw new ValueAwareException("Expected a non-empty object", parser.currentLocation(), options);
         }
 
         private void processObjectFields(JsonParser parser) throws IOException {
             final String typeFieldValue = parseTypeField(parser);
-            if (!options.allowUnknownTypes()) {
-                if (!processors.containsKey(typeFieldValue)) {
-                    throw new IOException(String.format("Unmapped type '%s'", typeFieldValue));
-                }
-            }
-            typeOut.add(typeFieldValue);
-            if (parser.nextToken() == JsonToken.END_OBJECT) {
-                for (Processor processor : processors.values()) {
-                    processor.notApplicable();
-                }
-                return;
-            }
-            if (!parser.hasToken(JsonToken.FIELD_NAME)) {
-                throw new IllegalStateException();
-            }
-            for (Entry<String, Processor> e : processors.entrySet()) {
+            typeChunk.add(typeFieldValue);
+            parser.nextToken();
+            boolean foundProcessor = false;
+            for (Entry<String, Processor> e : combinedProcessors.entrySet()) {
                 final String processorType = e.getKey();
                 final Processor processor = e.getValue();
                 if (processorType.equals(typeFieldValue)) {
-                    processor.processor().processCurrentValue(parser);
+                    processor.combinedProcessor().processCurrentValue(parser);
+                    foundProcessor = true;
                 } else {
                     processor.notApplicable();
                 }
             }
+            if (!foundProcessor) {
+                if (!options.allowUnknownTypes()) {
+                    throw new ValueAwareException(String.format("Unknown type '%s' not allowed", typeFieldValue),
+                            parser.currentLocation(), options);
+                }
+                for (WritableChunk<?> sharedChunk : sharedChunks) {
+                    addNullValue(sharedChunk);
+                }
+                FieldProcessor.skipFields(parser);
+            }
         }
+    }
+
+    private static void addNullValue(WritableChunk<?> writableChunk) {
+        final int size = writableChunk.size();
+        writableChunk.fillWithNullValue(size, 1);
+        writableChunk.setSize(size + 1);
     }
 }

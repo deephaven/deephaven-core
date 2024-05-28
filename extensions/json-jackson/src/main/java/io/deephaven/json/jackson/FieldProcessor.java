@@ -27,5 +27,14 @@ interface FieldProcessor {
         assertCurrentToken(parser, JsonToken.END_OBJECT);
     }
 
+    static void skipFields(JsonParser parser) throws IOException {
+        while (parser.hasToken(JsonToken.FIELD_NAME)) {
+            parser.nextToken();
+            parser.skipChildren();
+            parser.nextToken();
+        }
+        assertCurrentToken(parser, JsonToken.END_OBJECT);
+    }
+
     void process(String fieldName, JsonParser parser) throws IOException;
 }

@@ -4,12 +4,15 @@
 package io.deephaven.json;
 
 import io.deephaven.annotations.BuildableStyle;
+import io.deephaven.json.ImmutableTypedObjectValue.Builder;
+import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -130,6 +133,17 @@ public abstract class TypedObjectValue extends ValueRestrictedUniverseBase {
         return JsonValueTypes.objectOrNull();
     }
 
+    /**
+     * The output type value to use when {@link JsonValueTypes#NULL} is encountered. {@link #allowedTypes()} must
+     * contain {@link JsonValueTypes#NULL}.
+     */
+    public abstract Optional<String> onNull();
+
+    /**
+     * The output type value to use when a value is missing. {@link #allowMissing()} must be {@code true}.
+     */
+    public abstract Optional<String> onMissing();
+
     @Override
     final Set<JsonValueTypes> universe() {
         return JsonValueTypes.objectOrNull();
@@ -153,6 +167,10 @@ public abstract class TypedObjectValue extends ValueRestrictedUniverseBase {
         Builder putObjects(String key, ObjectValue value);
 
         Builder allowUnknownTypes(boolean allowUnknownTypes);
+
+        Builder onNull(String onNull);
+
+        Builder onMissing(String onMissing);
     }
 
     private static ObjectValue without(ObjectValue options, Set<ObjectField> excludedFields) {
@@ -166,5 +184,19 @@ public abstract class TypedObjectValue extends ValueRestrictedUniverseBase {
             }
         }
         return builder.build();
+    }
+
+    @Check
+    final void checkOnNull() {
+        if (!allowedTypes().contains(JsonValueTypes.NULL) && onNull().isPresent()) {
+            throw new IllegalArgumentException("onNull set, but NULL is not allowed");
+        }
+    }
+
+    @Check
+    final void checkOnMissing() {
+        if (!allowMissing() && onMissing().isPresent()) {
+            throw new IllegalArgumentException("onMissing set, but allowMissing is false");
+        }
     }
 }

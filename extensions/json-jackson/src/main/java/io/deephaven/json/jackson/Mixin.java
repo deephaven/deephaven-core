@@ -42,8 +42,9 @@ import java.nio.CharBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -210,11 +211,20 @@ abstract class Mixin<T extends Value> implements JacksonProvider {
         return Stream.concat(Stream.of(prefix), path.stream()).collect(Collectors.toList());
     }
 
-    Stream<List<String>> prefixWithKeys(Collection<ObjectField> fields) {
+    static Stream<List<String>> prefixWithKeys(Map<ObjectField, Mixin<?>> fields) {
         final List<Stream<List<String>>> paths = new ArrayList<>(fields.size());
-        for (ObjectField field : fields) {
+        for (Entry<ObjectField, Mixin<?>> e : fields.entrySet()) {
+            final Stream<List<String>> prefixedPaths = e.getValue().paths().map(x -> prefixWith(e.getKey().name(), x));
+            paths.add(prefixedPaths);
+        }
+        return paths.stream().flatMap(Function.identity());
+    }
+
+    static Stream<List<String>> prefixWithKeysAndSkip(Map<String, ? extends Mixin<?>> fields, int skip) {
+        final List<Stream<List<String>>> paths = new ArrayList<>(fields.size());
+        for (Entry<String, ? extends Mixin<?>> e : fields.entrySet()) {
             final Stream<List<String>> prefixedPaths =
-                    mixin(field.options()).paths().map(x -> prefixWith(field.name(), x));
+                    e.getValue().paths().map(x -> prefixWith(e.getKey(), x)).skip(skip);
             paths.add(prefixedPaths);
         }
         return paths.stream().flatMap(Function.identity());
