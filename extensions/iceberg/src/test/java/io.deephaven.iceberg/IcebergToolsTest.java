@@ -13,7 +13,6 @@ import io.deephaven.iceberg.TestCatalog.IcebergTestFileIO;
 import io.deephaven.iceberg.util.IcebergCatalogAdapter;
 import io.deephaven.iceberg.util.IcebergInstructions;
 import io.deephaven.iceberg.util.IcebergTools;
-import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.time.DateTimeUtils;
 import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.Namespace;
@@ -38,7 +37,6 @@ import java.util.concurrent.TimeoutException;
 
 public abstract class IcebergToolsTest {
     IcebergInstructions instructions;
-    IcebergInstructions instructionsS3Only;
 
     public abstract S3AsyncClient s3AsyncClient();
 
@@ -67,15 +65,8 @@ public abstract class IcebergToolsTest {
 
         final S3Instructions s3Instructions = s3Instructions(S3Instructions.builder()).build();
 
-        final ParquetInstructions parquetInstructions = ParquetInstructions.builder()
-                .setSpecialInstructions(s3Instructions)
-                .build();
-
-        instructionsS3Only = IcebergInstructions.builder()
-                .s3Instructions(s3Instructions)
-                .build();
         instructions = IcebergInstructions.builder()
-                .parquetInstructions(parquetInstructions)
+                .s3Instructions(s3Instructions)
                 .build();
     }
 
@@ -113,7 +104,7 @@ public abstract class IcebergToolsTest {
     @Test
     public void testListTables() {
         final IcebergCatalogAdapter adapter =
-                IcebergTools.createAdapter(resourceCatalog, resourceFileIO, instructionsS3Only);
+                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
 
         final Namespace ns = Namespace.of("sales");
 
@@ -128,7 +119,7 @@ public abstract class IcebergToolsTest {
     @Test
     public void testListTableSnapshots() {
         final IcebergCatalogAdapter adapter =
-                IcebergTools.createAdapter(resourceCatalog, resourceFileIO, instructionsS3Only);
+                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
 
         final Collection<Long> snapshots = adapter.listTableSnapshots(TableIdentifier.of("sales", "sales_multi"));
 
@@ -146,11 +137,11 @@ public abstract class IcebergToolsTest {
                 warehousePath);
 
         final IcebergCatalogAdapter adapter =
-                IcebergTools.createAdapter(resourceCatalog, resourceFileIO, instructionsS3Only);
+                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
 
         final Namespace ns = Namespace.of("sales");
         final TableIdentifier tableId = TableIdentifier.of(ns, "sales_partitioned");
-        final io.deephaven.engine.table.Table table = adapter.snapshotTable(tableId);
+        final io.deephaven.engine.table.Table table = adapter.snapshotTable(tableId, instructions);
 
         // Verify we retrieved all the rows.
         Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
@@ -162,11 +153,11 @@ public abstract class IcebergToolsTest {
                 warehousePath);
 
         final IcebergCatalogAdapter adapter =
-                IcebergTools.createAdapter(resourceCatalog, resourceFileIO, instructionsS3Only);
+                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
 
         final Namespace ns = Namespace.of("sales");
         final TableIdentifier tableId = TableIdentifier.of(ns, "sales_multi");
-        final io.deephaven.engine.table.Table table = adapter.snapshotTable(tableId);
+        final io.deephaven.engine.table.Table table = adapter.snapshotTable(tableId, instructions);
 
         Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
     }
@@ -177,11 +168,11 @@ public abstract class IcebergToolsTest {
                 warehousePath);
 
         final IcebergCatalogAdapter adapter =
-                IcebergTools.createAdapter(resourceCatalog, resourceFileIO, instructionsS3Only);
+                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
 
         final Namespace ns = Namespace.of("sales");
         final TableIdentifier tableId = TableIdentifier.of(ns, "sales_single");
-        final io.deephaven.engine.table.Table table = adapter.snapshotTable(tableId);
+        final io.deephaven.engine.table.Table table = adapter.snapshotTable(tableId, instructions);
 
         // Verify we retrieved all the rows.
         Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
@@ -192,11 +183,11 @@ public abstract class IcebergToolsTest {
         uploadParquetFiles(new File(IcebergToolsTest.class.getResource("/warehouse/sales/sales_partitioned").getPath()),
                 warehousePath);
 
-        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog, resourceFileIO, instructions);
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
 
         final Namespace ns = Namespace.of("sales");
         final TableIdentifier tableId = TableIdentifier.of(ns, "sales_partitioned");
-        final io.deephaven.engine.table.Table table = adapter.snapshotTable(tableId);
+        final io.deephaven.engine.table.Table table = adapter.snapshotTable(tableId, instructions);
 
         // Verify we retrieved all the rows.
         Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
@@ -218,15 +209,15 @@ public abstract class IcebergToolsTest {
 
         final IcebergInstructions localInstructions = IcebergInstructions.builder()
                 .tableDefinition(tableDef)
-                .s3Instructions(instructionsS3Only.s3Instructions().get())
+                .s3Instructions(instructions.s3Instructions().get())
                 .build();
 
         final IcebergCatalogAdapter adapter =
-                IcebergTools.createAdapter(resourceCatalog, resourceFileIO, localInstructions);
+                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
 
         final Namespace ns = Namespace.of("sales");
         final TableIdentifier tableId = TableIdentifier.of(ns, "sales_partitioned");
-        final io.deephaven.engine.table.Table table = adapter.snapshotTable(tableId);
+        final io.deephaven.engine.table.Table table = adapter.snapshotTable(tableId, localInstructions);
 
         // Verify we retrieved all the rows.
         Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
@@ -245,16 +236,16 @@ public abstract class IcebergToolsTest {
 
         final IcebergInstructions localInstructions = IcebergInstructions.builder()
                 .tableDefinition(tableDef)
-                .s3Instructions(instructionsS3Only.s3Instructions().get())
+                .s3Instructions(instructions.s3Instructions().get())
                 .build();
 
         final IcebergCatalogAdapter adapter =
-                IcebergTools.createAdapter(resourceCatalog, resourceFileIO, localInstructions);
+                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
 
         final Namespace ns = Namespace.of("sales");
         final TableIdentifier tableId = TableIdentifier.of(ns, "sales_partitioned");
         try {
-            final io.deephaven.engine.table.Table table = adapter.snapshotTable(tableId);
+            final io.deephaven.engine.table.Table table = adapter.snapshotTable(tableId, localInstructions);
             TableTools.showWithRowSet(table, 100, DateTimeUtils.timeZone(), System.out);
             Assert.statementNeverExecuted("Expected an exception for missing columns");
         } catch (final TableDefinition.IncompatibleTableDefinitionException e) {
@@ -278,7 +269,7 @@ public abstract class IcebergToolsTest {
 
         final IcebergInstructions localInstructions = IcebergInstructions.builder()
                 .tableDefinition(tableDef)
-                .s3Instructions(instructionsS3Only.s3Instructions().get())
+                .s3Instructions(instructions.s3Instructions().get())
                 .putColumnRenameMap("Region", "RegionName")
                 .putColumnRenameMap("Item_Type", "ItemType")
                 .putColumnRenameMap("Units_Sold", "UnitsSold")
@@ -289,11 +280,11 @@ public abstract class IcebergToolsTest {
                 .build();
 
         final IcebergCatalogAdapter adapter =
-                IcebergTools.createAdapter(resourceCatalog, resourceFileIO, localInstructions);
+                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
 
         final Namespace ns = Namespace.of("sales");
         final TableIdentifier tableId = TableIdentifier.of(ns, "sales_partitioned");
-        final io.deephaven.engine.table.Table table = adapter.snapshotTable(tableId);
+        final io.deephaven.engine.table.Table table = adapter.snapshotTable(tableId, localInstructions);
 
         // Verify we retrieved all the rows.
         Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
@@ -312,16 +303,16 @@ public abstract class IcebergToolsTest {
 
         final IcebergInstructions localInstructions = IcebergInstructions.builder()
                 .tableDefinition(tableDef)
-                .s3Instructions(instructionsS3Only.s3Instructions().get())
+                .s3Instructions(instructions.s3Instructions().get())
                 .build();
 
         final IcebergCatalogAdapter adapter =
-                IcebergTools.createAdapter(resourceCatalog, resourceFileIO, localInstructions);
+                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
 
         final Namespace ns = Namespace.of("sales");
         final TableIdentifier tableId = TableIdentifier.of(ns, "sales_partitioned");
         try {
-            final io.deephaven.engine.table.Table table = adapter.snapshotTable(tableId);
+            final io.deephaven.engine.table.Table table = adapter.snapshotTable(tableId, localInstructions);
             Assert.statementNeverExecuted("Expected an exception for missing columns");
         } catch (final TableDefinition.IncompatibleTableDefinitionException e) {
             Assert.eqTrue(e.getMessage().startsWith("Table definition incompatibilities"), "Exception message");
@@ -334,17 +325,17 @@ public abstract class IcebergToolsTest {
                 warehousePath);
 
         final IcebergInstructions localInstructions = IcebergInstructions.builder()
-                .s3Instructions(instructionsS3Only.s3Instructions().get())
+                .s3Instructions(instructions.s3Instructions().get())
                 .putColumnRenameMap("RegionName", "Region")
                 .putColumnRenameMap("ItemType", "Item_Type")
                 .build();
 
         final IcebergCatalogAdapter adapter =
-                IcebergTools.createAdapter(resourceCatalog, resourceFileIO, localInstructions);
+                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
 
         final Namespace ns = Namespace.of("sales");
         final TableIdentifier tableId = TableIdentifier.of(ns, "sales_partitioned");
-        final io.deephaven.engine.table.Table table = adapter.snapshotTable(tableId);
+        final io.deephaven.engine.table.Table table = adapter.snapshotTable(tableId, localInstructions);
 
         // Verify we retrieved all the rows.
         Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
@@ -357,18 +348,18 @@ public abstract class IcebergToolsTest {
                 warehousePath);
 
         final IcebergInstructions localInstructions = IcebergInstructions.builder()
-                .s3Instructions(instructionsS3Only.s3Instructions().get())
+                .s3Instructions(instructions.s3Instructions().get())
                 .putColumnRenameMap("VendorID", "vendor_id")
                 .putColumnRenameMap("month", "__month")
                 .putColumnRenameMap("year", "__year")
                 .build();
 
         final IcebergCatalogAdapter adapter =
-                IcebergTools.createAdapter(resourceCatalog, resourceFileIO, localInstructions);
+                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
 
         final Namespace ns = Namespace.of("sales");
         final TableIdentifier tableId = TableIdentifier.of(ns, "sales_partitioned");
-        final io.deephaven.engine.table.Table table = adapter.snapshotTable(tableId);
+        final io.deephaven.engine.table.Table table = adapter.snapshotTable(tableId, localInstructions);
 
         // Verify we retrieved all the rows.
         Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
@@ -379,23 +370,23 @@ public abstract class IcebergToolsTest {
         uploadParquetFiles(new File(IcebergToolsTest.class.getResource("/warehouse/sales/sales_multi").getPath()),
                 warehousePath);
 
-        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog, resourceFileIO, instructions);
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
 
         final Namespace ns = Namespace.of("sales");
         final TableIdentifier tableId = TableIdentifier.of(ns, "sales_multi");
         final List<Long> snapshots = adapter.listTableSnapshots(tableId);
 
         // Verify we retrieved all the rows.
-        final io.deephaven.engine.table.Table table0 = adapter.snapshotTable(tableId, snapshots.get(0));
+        final io.deephaven.engine.table.Table table0 = adapter.snapshotTable(tableId, snapshots.get(0), instructions);
         Assert.eq(table0.size(), "table0.size()", 18266, "18266 rows in the table");
 
-        final io.deephaven.engine.table.Table table1 = adapter.snapshotTable(tableId, snapshots.get(1));
+        final io.deephaven.engine.table.Table table1 = adapter.snapshotTable(tableId, snapshots.get(1), instructions);
         Assert.eq(table1.size(), "table1.size()", 54373, "54373 rows in the table");
 
-        final io.deephaven.engine.table.Table table2 = adapter.snapshotTable(tableId, snapshots.get(2));
+        final io.deephaven.engine.table.Table table2 = adapter.snapshotTable(tableId, snapshots.get(2), instructions);
         Assert.eq(table2.size(), "table2.size()", 72603, "72603 rows in the table");
 
-        final io.deephaven.engine.table.Table table3 = adapter.snapshotTable(tableId, snapshots.get(3));
+        final io.deephaven.engine.table.Table table3 = adapter.snapshotTable(tableId, snapshots.get(3), instructions);
         Assert.eq(table3.size(), "table3.size()", 100_000, "100_000 rows in the table");
     }
 }

@@ -66,15 +66,16 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
         if (format == org.apache.iceberg.FileFormat.PARQUET) {
             if (parquetInstructions == null) {
                 // Start with user-supplied instructions (if provided).
-                final ParquetInstructions.Builder builder = instructions.parquetInstructions().isPresent()
-                        ? new ParquetInstructions.Builder(instructions.parquetInstructions().get())
-                        : new ParquetInstructions.Builder();
+                final ParquetInstructions.Builder builder = new ParquetInstructions.Builder();
 
-                if (instructions.columnRenameMap() != null) {
+                // Add any column rename mappings.
+                if (!instructions.columnRenameMap().isEmpty()) {
                     for (Map.Entry<String, String> entry : instructions.columnRenameMap().entrySet()) {
                         builder.addColumnNameMapping(entry.getKey(), entry.getValue());
                     }
                 }
+
+                // Add the S3 instructions.
                 if (instructions.s3Instructions().isPresent()) {
                     builder.setSpecialInstructions(instructions.s3Instructions().get());
                 }

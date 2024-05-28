@@ -3,8 +3,6 @@
 //
 package io.deephaven.iceberg.util;
 
-import io.deephaven.extensions.s3.Credentials;
-import io.deephaven.extensions.s3.S3Instructions;
 import org.apache.iceberg.CatalogProperties;
 import org.apache.iceberg.CatalogUtil;
 import org.apache.iceberg.aws.AwsClientProperties;
@@ -28,9 +26,8 @@ public class IcebergTools {
     @SuppressWarnings("unused")
     public static IcebergCatalogAdapter createAdapter(
             final Catalog catalog,
-            final FileIO fileIO,
-            final IcebergInstructions instructions) {
-        return new IcebergCatalogAdapter(catalog, fileIO, instructions);
+            final FileIO fileIO) {
+        return new IcebergCatalogAdapter(catalog, fileIO);
     }
 
     private IcebergTools() {}
@@ -43,9 +40,7 @@ public class IcebergTools {
             @Nullable final String region,
             @Nullable final String accessKeyId,
             @Nullable final String secretAccessKey,
-            @Nullable final String endpointOverride,
-            @Nullable final IcebergInstructions specialInstructions) {
-
+            @Nullable final String endpointOverride) {
 
         // Set up the properties map for the Iceberg catalog
         final Map<String, String> properties = new HashMap<>();
@@ -74,29 +69,7 @@ public class IcebergTools {
         final String catalogName = name != null ? name : "IcebergCatalog-" + catalogURI;
         catalog.initialize(catalogName, properties);
 
-        // If the user did not supply custom read instructions, let's create some defaults.
-        final IcebergInstructions instructions = specialInstructions != null
-                ? specialInstructions
-                : buildInstructions(properties);
-
-        return new IcebergCatalogAdapter(catalog, fileIO, instructions);
+        return new IcebergCatalogAdapter(catalog, fileIO);
     }
 
-    private static IcebergInstructions buildInstructions(final Map<String, String> properties) {
-        final S3Instructions.Builder builder = S3Instructions.builder();
-        if (properties.containsKey(S3FileIOProperties.ACCESS_KEY_ID)
-                && properties.containsKey(S3FileIOProperties.SECRET_ACCESS_KEY)) {
-            builder.credentials(Credentials.basic(properties.get(S3FileIOProperties.ACCESS_KEY_ID),
-                    properties.get(S3FileIOProperties.SECRET_ACCESS_KEY)));
-        }
-        if (properties.containsKey(AwsClientProperties.CLIENT_REGION)) {
-            builder.regionName(properties.get(AwsClientProperties.CLIENT_REGION));
-        }
-        if (properties.containsKey(S3FileIOProperties.ENDPOINT)) {
-            builder.endpointOverride(properties.get(S3FileIOProperties.ENDPOINT));
-        }
-        return IcebergInstructions.builder()
-                .s3Instructions(builder.build())
-                .build();
-    }
 }

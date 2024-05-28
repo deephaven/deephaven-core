@@ -6,8 +6,6 @@ package io.deephaven.iceberg.util;
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.extensions.s3.S3Instructions;
-import io.deephaven.parquet.table.ParquetInstructions;
-import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 
 import java.util.Map;
@@ -30,15 +28,9 @@ public abstract class IcebergInstructions {
     public abstract Optional<TableDefinition> tableDefinition();
 
     /**
-     * The {@link S3Instructions} to use for reading the Iceberg data files. This is mutually exclusive with
-     * {@link #parquetInstructions()} which can be used to provide custom instructions for reading the data files.
+     * The {@link S3Instructions} to use for reading the Iceberg data files.
      */
     public abstract Optional<S3Instructions> s3Instructions();
-
-    /**
-     * The {@link ParquetInstructions} to use for reading the Iceberg data files.
-     */
-    public abstract Optional<ParquetInstructions> parquetInstructions();
 
     /**
      * The {@link Map} to use for reading the Iceberg data files.
@@ -53,21 +45,11 @@ public abstract class IcebergInstructions {
         Builder s3Instructions(S3Instructions s3Instructions);
 
         @SuppressWarnings("unused")
-        Builder parquetInstructions(ParquetInstructions parquetInstructions);
-
-        @SuppressWarnings("unused")
         Builder putColumnRenameMap(String key, String value);
 
         @SuppressWarnings("unused")
         Builder putAllColumnRenameMap(Map<String, ? extends String> entries);
 
         IcebergInstructions build();
-    }
-
-    @Check
-    final void checkInstructions() {
-        if (s3Instructions().isPresent() && parquetInstructions().isPresent()) {
-            throw new IllegalArgumentException("Only one of s3Instructions or parquetInstructions may be provided");
-        }
     }
 }
