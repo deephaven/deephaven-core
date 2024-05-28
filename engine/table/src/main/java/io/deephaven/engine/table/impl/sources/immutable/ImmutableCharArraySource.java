@@ -126,7 +126,7 @@ public class ImmutableCharArraySource extends AbstractColumnSource<Character>
             chunk.copyFromTypedArray(data, (int) start, destPosition.getAndAdd(length), length);
             // endregion copyFromTypedArrayImmutable
         });
-        chunk.setSize(destPosition.intValue());
+        chunk.setSize(destPosition.get());
     }
     // endregion fillChunkByRanges
 
@@ -144,7 +144,7 @@ public class ImmutableCharArraySource extends AbstractColumnSource<Character>
             chunk.set(destPosition.getAndIncrement(), getUnsafe(key));
             // endregion conversion
         });
-        chunk.setSize(destPosition.intValue());
+        chunk.setSize(destPosition.get());
     }
     // endregion fillChunkByKeys
 

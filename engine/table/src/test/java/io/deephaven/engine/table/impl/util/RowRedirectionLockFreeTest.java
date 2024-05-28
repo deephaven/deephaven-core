@@ -219,11 +219,11 @@ public class RowRedirectionLockFreeTest {
             // A bit of a waste because we only look at the first 'numKeysToInsert' keys, but that's ok.
             updateGraph.runWithinUnitTestCycle(() -> {
                 final long step = updateGraph.clock().currentStep();
-                keysInThisGeneration.setValue((int) ((step - initialStep) * 1000 + 1000));
+                keysInThisGeneration.set((int) ((step - initialStep) * 1000 + 1000));
                 final Random rng = new Random(step);
-                final int numKeysToInsert = rng.nextInt(keysInThisGeneration.intValue());
+                final int numKeysToInsert = rng.nextInt(keysInThisGeneration.get());
                 // A bit of a waste because we only look at the first 'numKeysToInsert' keys, but that's ok.
-                long[] keys = fillAndShuffle(rng, keysInThisGeneration.intValue());
+                long[] keys = fillAndShuffle(rng, keysInThisGeneration.get());
                 final WritableRowRedirectionLockFree ix = index;
                 for (int ii1 = 0; ii1 < numKeysToInsert; ++ii1) {
                     final long key = keys[ii1];
@@ -239,7 +239,7 @@ public class RowRedirectionLockFreeTest {
             // waste some time doing something else
             final WritableRowRedirectionLockFree privateIndex =
                     new RowRedirectionLockFreeFactory().createRowRedirection(10);
-            for (long ii = 0; ii < keysInThisGeneration.intValue() * 4L; ++ii) {
+            for (long ii = 0; ii < keysInThisGeneration.get() * 4L; ++ii) {
                 privateIndex.put(ii, ii);
             }
         }

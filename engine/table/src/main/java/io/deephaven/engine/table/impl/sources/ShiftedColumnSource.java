@@ -90,11 +90,11 @@ public class ShiftedColumnSource<T> extends AbstractColumnSource<T>
             if (shift < 0) {
                 posIndex.removeRange(0, -shift - 1);
                 int sz = (int) (origSize - posIndex.size());
-                nullAtBeginningOrEnd.setValue(sz);
+                nullAtBeginningOrEnd.set(sz);
             } else if (shift > 0) {
                 posIndex.removeRange(useRowSet.size() - shift, useRowSet.size());
                 int sz = (int) (origSize - posIndex.size());
-                nullAtBeginningOrEnd.setValue(-(sz));
+                nullAtBeginningOrEnd.set(-(sz));
             }
             posIndex.shiftInPlace(shift);
             return useRowSet.subSetForPositions(posIndex);
@@ -652,11 +652,11 @@ public class ShiftedColumnSource<T> extends AbstractColumnSource<T>
 
                 final MutableInt nullCountAtBeginningOrEnd = new MutableInt(0);
                 innerRowSequence = cs.buildRedirectedKeys(usePrev, rowSequence, nullCountAtBeginningOrEnd);
-                if (nullCountAtBeginningOrEnd.intValue() < 0) {
+                if (nullCountAtBeginningOrEnd.get() < 0) {
                     beginningNullCount = 0;
-                    endingNullCount = -nullCountAtBeginningOrEnd.intValue();
+                    endingNullCount = -nullCountAtBeginningOrEnd.get();
                 } else {
-                    beginningNullCount = nullCountAtBeginningOrEnd.intValue();
+                    beginningNullCount = nullCountAtBeginningOrEnd.get();
                     endingNullCount = 0;
                 }
 

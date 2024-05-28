@@ -75,7 +75,7 @@ public class TestTableUpdateValidator extends QueryTableTestBase {
         final QueryTable table1 = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(), intCol("x", 1, 2, 3));
         QueryScope.addParam("mult", mult);
         try {
-            final Table table2 = table1.updateView("Y=x*mult.intValue()");
+            final Table table2 = table1.updateView("Y=x*mult.get()");
             final QueryTable table3 = TableUpdateValidator.make((QueryTable) table2).getResultTable();
 
             ControlledUpdateGraph updateGraph = table1.updateGraph.cast();
@@ -91,7 +91,7 @@ public class TestTableUpdateValidator extends QueryTableTestBase {
             table3.removeUpdateListener(listener);
 
             // next should fail because we set mult
-            mult.setValue(3);
+            mult.set(3);
 
             updateGraph.runWithinUnitTestCycle(() -> {
                 addToTable(table1, i(6), intCol("x", 5));

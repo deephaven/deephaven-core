@@ -668,10 +668,10 @@ public class QueryTableSelectUpdateTest {
                                 .select("Time", "Diff = Time_[i]")),
         };
 
-        final int maxSteps = numSteps.intValue();
-        for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
+        final int maxSteps = numSteps.get();
+        for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
             if (RefreshingTableTestCase.printTableUpdates) {
-                System.out.println("Step = " + numSteps.intValue());
+                System.out.println("Step = " + numSteps.get());
             }
             RefreshingTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
         }
@@ -748,10 +748,10 @@ public class QueryTableSelectUpdateTest {
                         "Concat=UC + FC")),
         };
 
-        final int maxSteps = numSteps.intValue();
-        for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
+        final int maxSteps = numSteps.get();
+        for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
             if (RefreshingTableTestCase.printTableUpdates) {
-                System.out.println("Step = " + numSteps.intValue());
+                System.out.println("Step = " + numSteps.get());
             }
             RefreshingTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
         }

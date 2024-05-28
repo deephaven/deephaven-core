@@ -217,16 +217,16 @@ public class ColumnsToRowsTransform {
             }
 
             querySource.getColumnSourceMap().forEach((name, cs) -> {
-                sourceColumns[columnIndex.intValue()] = name;
+                sourceColumns[columnIndex.get()] = name;
                 if (allTransposeSet.contains(name)) {
                     for (int cc = 0; cc < transposeSet.size(); ++cc) {
                         if (transposeSet.get(cc).contains(name)) {
-                            resultColumnSets[columnIndex.intValue()] = result.newModifiedColumnSet(valueColumns[cc]);
+                            resultColumnSets[columnIndex.get()] = result.newModifiedColumnSet(valueColumns[cc]);
                             sourcesForRow[transposeIndex[cc]++].add(name);
                         }
                     }
                 } else {
-                    resultColumnSets[columnIndex.intValue()] = result.newModifiedColumnSet(name);
+                    resultColumnSets[columnIndex.get()] = result.newModifiedColumnSet(name);
                 }
                 columnIndex.increment();
             });
@@ -355,7 +355,7 @@ public class ColumnsToRowsTransform {
             final WritableObjectChunk<String, ?> objectChunk = destination.asWritableObjectChunk();
             destination.setSize(rowSequence.intSize());
             rowSequence.forAllRowKeys(idx -> {
-                objectChunk.set(outputPosition.intValue(), getLabel(idx));
+                objectChunk.set(outputPosition.get(), getLabel(idx));
                 outputPosition.increment();
             });
         }
@@ -582,7 +582,7 @@ public class ColumnsToRowsTransform {
             rowSequence.forAllRowKeys(idx -> {
                 final int sourceColumn = (int) (idx & mask);
                 final long sourceIndex = idx >> bits;
-                context.outputPositions[sourceColumn].add(outputPosition.intValue());
+                context.outputPositions[sourceColumn].add(outputPosition.get());
                 outputPosition.increment();
                 context.innerKeys[sourceColumn].add(sourceIndex);
             });

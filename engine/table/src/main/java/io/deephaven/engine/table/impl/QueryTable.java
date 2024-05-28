@@ -2010,7 +2010,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                             continue;
                         }
 
-                        if (mcsPairIdx.intValue() == movePosition) {
+                        if (mcsPairIdx.get() == movePosition) {
                             moveColumns.run();
                         }
 
@@ -2019,7 +2019,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                         newColumns.put(newName.name(), columnSource);
                     }
 
-                    if (mcsPairIdx.intValue() <= movePosition) {
+                    if (mcsPairIdx.get() <= movePosition) {
                         moveColumns.run();
                     }
 

@@ -655,8 +655,8 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             this.constituentDefinition = constituentDefinition;
             final MutableInt hashAccumulator = new MutableInt(31 + constituentColumnName.hashCode());
             constituentDefinition.getColumnStream().map(ColumnDefinition::getName).sorted().forEach(
-                    cn -> hashAccumulator.setValue(31 * hashAccumulator.intValue() + cn.hashCode()));
-            hashCode = hashAccumulator.intValue();
+                    cn -> hashAccumulator.set(31 * hashAccumulator.get() + cn.hashCode()));
+            hashCode = hashAccumulator.get();
         }
 
         @Override

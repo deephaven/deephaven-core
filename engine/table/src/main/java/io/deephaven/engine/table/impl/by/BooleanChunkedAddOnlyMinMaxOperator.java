@@ -44,7 +44,7 @@ class BooleanChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregation
                 }
             }
         }
-        chunkNonNull.setValue(nonNull);
+        chunkNonNull.set(nonNull);
         return value;
     }
 
@@ -61,7 +61,7 @@ class BooleanChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregation
                 }
             }
         }
-        chunkNonNull.setValue(nonNull);
+        chunkNonNull.set(nonNull);
         return value;
     }
 
@@ -115,7 +115,7 @@ class BooleanChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregation
         final int chunkEnd = chunkStart + chunkSize;
         final Boolean chunkValue = minimum ? min(values, chunkNonNull, chunkStart, chunkEnd)
                 : max(values, chunkNonNull, chunkStart, chunkEnd);
-        if (chunkNonNull.intValue() == 0) {
+        if (chunkNonNull.get() == 0) {
             return false;
         }
 

@@ -19,7 +19,6 @@ import io.deephaven.engine.table.impl.sources.immutable.ImmutableIntArraySource;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
@@ -275,7 +274,7 @@ public abstract class UpdateByStateManagerTypedBase extends UpdateByStateManager
     public boolean doRehash(boolean fullRehash, MutableInt rehashCredits, int nextChunkSize,
             WritableIntChunk<RowKeys> outputPositions) {
         if (rehashPointer > 0) {
-            final int requiredRehash = nextChunkSize - rehashCredits.intValue();
+            final int requiredRehash = nextChunkSize - rehashCredits.get();
             if (requiredRehash <= 0) {
                 return false;
             }
@@ -301,8 +300,8 @@ public abstract class UpdateByStateManagerTypedBase extends UpdateByStateManager
         }
 
         // we can't give the caller credit for rehashes with the old table, we need to begin migrating things again
-        if (rehashCredits.intValue() > 0) {
-            rehashCredits.setValue(0);
+        if (rehashCredits.get() > 0) {
+            rehashCredits.set(0);
         }
 
         if (fullRehash) {

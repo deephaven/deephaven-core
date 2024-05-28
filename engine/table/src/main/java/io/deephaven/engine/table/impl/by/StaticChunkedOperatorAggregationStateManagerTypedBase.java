@@ -78,7 +78,7 @@ public abstract class StaticChunkedOperatorAggregationStateManagerTypedBase
 
     @Override
     public void onNextChunk(int size) {
-        outputPositionToHashSlot.ensureCapacity(outputPosition.intValue() + size);
+        outputPositionToHashSlot.ensureCapacity(outputPosition.get() + size);
     }
 
     @Override

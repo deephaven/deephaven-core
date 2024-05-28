@@ -86,8 +86,8 @@ class ByteChunkedAvgOperator implements IterativeChunkedAggregationOperator {
         final ByteChunk<? extends Values> asByteChunk = values.asByteChunk();
         final long chunkSum = SumByteChunk.sumByteChunk(asByteChunk, chunkStart, chunkSize, chunkNonNull);
 
-        if (chunkNonNull.intValue() > 0) {
-            final long newCount = nonNullCount.addNonNullUnsafe(destination, chunkNonNull.intValue());
+        if (chunkNonNull.get() > 0) {
+            final long newCount = nonNullCount.addNonNullUnsafe(destination, chunkNonNull.get());
             final long newSum = plusLong(runningSum.getUnsafe(destination), chunkSum);
             runningSum.set(destination, newSum);
             resultColumn.set(destination, (double) newSum / newCount);
@@ -103,11 +103,11 @@ class ByteChunkedAvgOperator implements IterativeChunkedAggregationOperator {
         final MutableInt chunkNonNull = new MutableInt(0);
         final long chunkSum = SumByteChunk.sumByteChunk(values, chunkStart, chunkSize, chunkNonNull);
 
-        if (chunkNonNull.intValue() == 0) {
+        if (chunkNonNull.get() == 0) {
             return false;
         }
 
-        final long newCount = nonNullCount.addNonNullUnsafe(destination, -chunkNonNull.intValue());
+        final long newCount = nonNullCount.addNonNullUnsafe(destination, -chunkNonNull.get());
         final long newSum = minusLong(runningSum.getUnsafe(destination), chunkSum);
         runningSum.set(destination, newSum);
         resultColumn.set(destination, (double) newSum / newCount);

@@ -85,8 +85,8 @@ class ShortChunkedVarOperator implements IterativeChunkedAggregationOperator {
         final MutableInt chunkNonNull = new MutableInt();
         final double sum = SumShortChunk.sum2ShortChunk(values, chunkStart, chunkSize, chunkNonNull, sum2);
 
-        if (chunkNonNull.intValue() > 0) {
-            final long nonNullCount = nonNullCounter.addNonNullUnsafe(destination, chunkNonNull.intValue());
+        if (chunkNonNull.get() > 0) {
+            final long nonNullCount = nonNullCounter.addNonNullUnsafe(destination, chunkNonNull.get());
             final double newSum = plusDouble(sumSource.getUnsafe(destination), sum);
             final double newSum2 = plusDouble(sum2Source.getUnsafe(destination), sum2.doubleValue());
 
@@ -110,11 +110,11 @@ class ShortChunkedVarOperator implements IterativeChunkedAggregationOperator {
         final MutableInt chunkNonNull = new MutableInt();
         final double sum = SumShortChunk.sum2ShortChunk(values, chunkStart, chunkSize, chunkNonNull, sum2);
 
-        if (chunkNonNull.intValue() == 0) {
+        if (chunkNonNull.get() == 0) {
             return false;
         }
 
-        final long nonNullCount = nonNullCounter.addNonNullUnsafe(destination, -chunkNonNull.intValue());
+        final long nonNullCount = nonNullCounter.addNonNullUnsafe(destination, -chunkNonNull.get());
 
         final double newSum;
         final double newSum2;

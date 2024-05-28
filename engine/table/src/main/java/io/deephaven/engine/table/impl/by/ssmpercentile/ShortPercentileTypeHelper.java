@@ -74,9 +74,9 @@ public class ShortPercentileTypeHelper implements SsmChunkedPercentileOperator.P
         final long hiCount = ssmLo.getMaxCount();
         if (result > startPosition && ShortComparisons.eq(asShortChunk.get(result - 1), hiValue)
                 && counts.get(result - 1) > hiCount) {
-            leftOvers.setValue((int) (counts.get(result - 1) - hiCount));
+            leftOvers.set((int) (counts.get(result - 1) - hiCount));
         } else {
-            leftOvers.setValue(0);
+            leftOvers.set(0);
         }
 
         return result - startPosition;

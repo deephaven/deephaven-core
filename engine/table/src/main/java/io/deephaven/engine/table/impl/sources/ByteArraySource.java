@@ -331,7 +331,7 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]>
             if (from > maxIndex) {
                 // the whole region is beyond us
                 final int sz = LongSizedDataStructure.intSize("int cast", to - from + 1);
-                destination.fillWithNullValue(destOffset.intValue(), sz);
+                destination.fillWithNullValue(destOffset.get(), sz);
                 destOffset.add(sz);
                 return;
             }
@@ -347,34 +347,34 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]>
             if (fromBlock == toBlock) {
                 final int sz = LongSizedDataStructure.intSize("int cast", to - from + 1);
                 // region copyFromArray
-                destination.copyFromArray(getBlock(fromBlock), fromOffsetInBlock, destOffset.intValue(), sz);
+                destination.copyFromArray(getBlock(fromBlock), fromOffsetInBlock, destOffset.get(), sz);
                 // endregion copyFromArray
                 destOffset.add(sz);
             } else {
                 final int sz = BLOCK_SIZE - fromOffsetInBlock;
                 // region copyFromArray
-                destination.copyFromArray(getBlock(fromBlock), fromOffsetInBlock, destOffset.intValue(), sz);
+                destination.copyFromArray(getBlock(fromBlock), fromOffsetInBlock, destOffset.get(), sz);
                 // endregion copyFromArray
                 destOffset.add(sz);
                 for (int blockNo = fromBlock + 1; blockNo < toBlock; ++blockNo) {
                     // region copyFromArray
-                    destination.copyFromArray(getBlock(blockNo), 0, destOffset.intValue(), BLOCK_SIZE);
+                    destination.copyFromArray(getBlock(blockNo), 0, destOffset.get(), BLOCK_SIZE);
                     // endregion copyFromArray
                     destOffset.add(BLOCK_SIZE);
                 }
                 int restSz = (int) (to & INDEX_MASK) + 1;
                 // region copyFromArray
-                destination.copyFromArray(getBlock(toBlock), 0, destOffset.intValue(), restSz);
+                destination.copyFromArray(getBlock(toBlock), 0, destOffset.get(), restSz);
                 // endregion copyFromArray
                 destOffset.add(restSz);
             }
 
             if (valuesAtEnd > 0) {
-                destination.fillWithNullValue(destOffset.intValue(), valuesAtEnd);
+                destination.fillWithNullValue(destOffset.get(), valuesAtEnd);
                 destOffset.add(valuesAtEnd);
             }
         });
-        destination.setSize(destOffset.intValue());
+        destination.setSize(destOffset.get());
     }
     // endregion fillChunk
 
@@ -411,11 +411,11 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]>
             if (inUse != null) {
                 // region conditionalCopy
                 effectiveContext.copyKernel.conditionalCopy(destination, getBlock(blockNo), getPrevBlock(blockNo),
-                        inUse, srcOffset, destOffset.intValue(), length);
+                        inUse, srcOffset, destOffset.get(), length);
                 // endregion conditionalCopy
             } else {
                 // region copyFromArray
-                destination.copyFromArray(getBlock(blockNo), srcOffset, destOffset.intValue(), length);
+                destination.copyFromArray(getBlock(blockNo), srcOffset, destOffset.get(), length);
                 // endregion copyFromArray
             }
             destOffset.add(length);
@@ -426,7 +426,7 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]>
             if (from > maxIndex) {
                 // the whole region is beyond us
                 final int sz = LongSizedDataStructure.intSize("int cast", to - from + 1);
-                destination.fillWithNullValue(destOffset.intValue(), sz);
+                destination.fillWithNullValue(destOffset.get(), sz);
                 destOffset.add(sz);
                 return;
             } else if (to > maxIndex) {
@@ -454,11 +454,11 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]>
             }
 
             if (valuesAtEnd > 0) {
-                destination.fillWithNullValue(destOffset.intValue(), valuesAtEnd);
+                destination.fillWithNullValue(destOffset.get(), valuesAtEnd);
                 destOffset.add(valuesAtEnd);
             }
         });
-        destination.setSize(destOffset.intValue());
+        destination.setSize(destOffset.get());
     }
     // endregion fillPrevChunk
 

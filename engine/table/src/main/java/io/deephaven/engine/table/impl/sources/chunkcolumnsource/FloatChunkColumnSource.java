@@ -110,7 +110,7 @@ public class FloatChunkColumnSource extends AbstractColumnSource<Float>
         destination.setSize(0);
         rowSequence.forAllRowKeyRanges((s, e) -> {
             while (s <= e) {
-                final int chunkIndex = getChunkIndex(s, searchStartChunkIndex.intValue());
+                final int chunkIndex = getChunkIndex(s, searchStartChunkIndex.get());
                 final int offsetWithinChunk = (int) (s - firstOffsetForData.get(chunkIndex));
                 Assert.geqZero(offsetWithinChunk, "offsetWithinChunk");
                 final FloatChunk<? extends Values> floatChunk = data.get(chunkIndex);
@@ -125,7 +125,7 @@ public class FloatChunkColumnSource extends AbstractColumnSource<Float>
                 s += length;
                 if (s <= e) {
                     // We have more of this range to gather from a subsequent chunk.
-                    searchStartChunkIndex.setValue(chunkIndex + 1);
+                    searchStartChunkIndex.set(chunkIndex + 1);
                 }
             }
         });

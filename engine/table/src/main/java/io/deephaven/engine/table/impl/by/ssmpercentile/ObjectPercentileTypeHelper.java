@@ -7,8 +7,6 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.by.ssmpercentile;
 
-import java.util.Objects;
-
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.WritableColumnSource;
@@ -75,9 +73,9 @@ public class ObjectPercentileTypeHelper implements SsmChunkedPercentileOperator.
         final long hiCount = ssmLo.getMaxCount();
         if (result > startPosition && ObjectComparisons.eq(asObjectChunk.get(result - 1), hiValue)
                 && counts.get(result - 1) > hiCount) {
-            leftOvers.setValue((int) (counts.get(result - 1) - hiCount));
+            leftOvers.set((int) (counts.get(result - 1) - hiCount));
         } else {
-            leftOvers.setValue(0);
+            leftOvers.set(0);
         }
 
         return result - startPosition;

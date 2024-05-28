@@ -650,8 +650,8 @@ public class BarrageStreamGeneratorImpl implements
 
             // These buffers must be aligned to an 8-byte boundary in order for efficient alignment in languages like
             // C++.
-            if (size.intValue() % 8 != 0) {
-                final int paddingBytes = (8 - (size.intValue() % 8));
+            if (size.get() % 8 != 0) {
+                final int paddingBytes = (8 - (size.get() % 8));
                 size.add(paddingBytes);
                 streams.add(new DrainableByteArrayInputStream(PADDING_BUFFER, 0, paddingBytes));
             }
@@ -684,7 +684,7 @@ public class BarrageStreamGeneratorImpl implements
             };
 
             numRows = columnVisitor.visit(view, offset, targetBatchSize, addStream, fieldNodeListener, bufferListener);
-            actualBatchSize.setValue(numRows);
+            actualBatchSize.set(numRows);
 
             final WritableChunk<Values> noChunk = nodeOffsets.get();
             RecordBatch.startNodesVector(header, noChunk.size());
@@ -715,7 +715,7 @@ public class BarrageStreamGeneratorImpl implements
         final int headerOffset = RecordBatch.endRecordBatch(header);
 
         header.finish(MessageHelper.wrapInMessage(header, headerOffset,
-                org.apache.arrow.flatbuf.MessageHeader.RecordBatch, size.intValue()));
+                org.apache.arrow.flatbuf.MessageHeader.RecordBatch, size.get()));
 
         // now create the proto header
         try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {
@@ -744,7 +744,7 @@ public class BarrageStreamGeneratorImpl implements
         }
 
         cos.writeTag(Flight.FlightData.DATA_BODY_FIELD_NUMBER, WireFormat.WIRETYPE_LENGTH_DELIMITED);
-        cos.writeUInt32NoTag(size.intValue());
+        cos.writeUInt32NoTag(size.get());
         cos.flush();
     }
 
@@ -784,7 +784,7 @@ public class BarrageStreamGeneratorImpl implements
                         getInputStream(view, offset, batchSize, actualBatchSize, metadata, columnVisitor);
                 int bytesToWrite = is.available();
 
-                if (actualBatchSize.intValue() == 0) {
+                if (actualBatchSize.get() == 0) {
                     throw new IllegalStateException("No data was written for a batch");
                 }
 
@@ -795,7 +795,7 @@ public class BarrageStreamGeneratorImpl implements
                     visitor.accept(is);
 
                     bytesWritten.add(bytesToWrite);
-                    offset += actualBatchSize.intValue();
+                    offset += actualBatchSize.get();
                     metadata = null;
                 } else {
                     // can't write this, so close the input stream and retry
@@ -804,7 +804,7 @@ public class BarrageStreamGeneratorImpl implements
                 }
 
                 // recompute the batch limit for the next message
-                int bytesPerRow = bytesToWrite / actualBatchSize.intValue();
+                int bytesPerRow = bytesToWrite / actualBatchSize.get();
                 if (bytesPerRow > 0) {
                     int rowLimit = maxMessageSize / bytesPerRow;
 

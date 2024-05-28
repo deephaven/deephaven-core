@@ -139,11 +139,11 @@ public class UpdateCoalescer {
         };
 
         final BiConsumer<Long, Long> consumeUntilWithExtraDelta = (endRange, extraDelta) -> {
-            while (outerIdx.intValue() < shifted.size() && watermarkKey.longValue() <= endRange) {
+            while (outerIdx.get() < shifted.size() && watermarkKey.longValue() <= endRange) {
                 final long outerBegin =
-                        Math.max(watermarkKey.longValue(), shifted.getBeginRange(outerIdx.intValue()));
-                final long outerEnd = shifted.getEndRange(outerIdx.intValue());
-                final long outerDelta = shifted.getShiftDelta(outerIdx.intValue());
+                        Math.max(watermarkKey.longValue(), shifted.getBeginRange(outerIdx.get()));
+                final long outerEnd = shifted.getEndRange(outerIdx.get());
+                final long outerDelta = shifted.getShiftDelta(outerIdx.get());
 
                 // Shift before the outer shift.
                 final long headerEnd = Math.min(endRange, outerBegin - 1 + (outerDelta < 0 ? outerDelta : 0));
@@ -173,7 +173,7 @@ public class UpdateCoalescer {
                 }
             }
 
-            if (outerIdx.intValue() == shifted.size() && watermarkKey.longValue() <= endRange && extraDelta != 0) {
+            if (outerIdx.get() == shifted.size() && watermarkKey.longValue() <= endRange && extraDelta != 0) {
                 fixShiftIfOverlap.accept(endRange, extraDelta);
                 newShifts.shiftRange(watermarkKey.longValue(), endRange, extraDelta);
             }

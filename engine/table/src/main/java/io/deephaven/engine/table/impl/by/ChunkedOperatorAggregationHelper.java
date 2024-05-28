@@ -221,7 +221,7 @@ public class ChunkedOperatorAggregationHelper {
             keyColumnsRaw[kci] = resultKeyColumnSource;
             if (input.isRefreshing()) {
                 // noinspection ConstantConditions,unchecked
-                keyColumnsCopied[kci] = ArrayBackedColumnSource.getMemoryColumnSource(outputPosition.intValue(),
+                keyColumnsCopied[kci] = ArrayBackedColumnSource.getMemoryColumnSource(outputPosition.get(),
                         keyColumnsRaw[kci].getType());
                 resultColumnSourceMap.put(keyNames[kci], keyColumnsCopied[kci]);
             } else {
@@ -232,7 +232,7 @@ public class ChunkedOperatorAggregationHelper {
 
         @SuppressWarnings("resource")
         final TrackingWritableRowSet resultRowSet = (initialRowsBuilder == null
-                ? RowSetFactory.flat(outputPosition.intValue())
+                ? RowSetFactory.flat(outputPosition.get())
                 : initialRowsBuilder.build()).toTracking();
         if (input.isRefreshing()) {
             copyKeyColumns(keyColumnsRaw, keyColumnsCopied, resultRowSet);
@@ -240,7 +240,7 @@ public class ChunkedOperatorAggregationHelper {
 
         // Construct the result table
         final QueryTable result = new QueryTable(resultRowSet, resultColumnSourceMap);
-        ac.propagateInitialStateToOperators(result, outputPosition.intValue());
+        ac.propagateInitialStateToOperators(result, outputPosition.get());
 
         if (snapshotControl != null) {
             assert keyColumnsCopied != null;
@@ -467,7 +467,7 @@ public class ChunkedOperatorAggregationHelper {
                 reincarnatedStatesBuilder = new EmptyRandomBuilder();
                 emptiedStatesBuilder = new EmptyRandomBuilder();
             }
-            modifiedStatesBuilder = new BitmapRandomBuilder(outputPosition.intValue());
+            modifiedStatesBuilder = new BitmapRandomBuilder(outputPosition.get());
             modifiedOperators = new boolean[ac.size()];
 
             toClose = new SafeCloseableList();
@@ -546,7 +546,7 @@ public class ChunkedOperatorAggregationHelper {
                 @NotNull final WritableColumnSource<?>[] keyColumnsCopied,
                 @NotNull final ModifiedColumnSet resultModifiedColumnSet,
                 @NotNull final UnaryOperator<ModifiedColumnSet>[] resultModifiedColumnSetFactories) {
-            final int firstStateToAdd = outputPosition.intValue();
+            final int firstStateToAdd = outputPosition.get();
             ac.resetOperatorsForStep(upstream, firstStateToAdd);
 
             if (upstream.removed().isNonempty()) {
@@ -644,7 +644,7 @@ public class ChunkedOperatorAggregationHelper {
             final TableUpdateImpl downstream = new TableUpdateImpl();
             downstream.shifted = RowSetShiftData.EMPTY;
 
-            try (final RowSet newStates = makeNewStatesRowSet(firstStateToAdd, outputPosition.intValue() - 1)) {
+            try (final RowSet newStates = makeNewStatesRowSet(firstStateToAdd, outputPosition.get() - 1)) {
                 downstream.added = reincarnatedStatesBuilder.build();
                 downstream.removed = emptiedStatesBuilder.build();
 
@@ -775,7 +775,7 @@ public class ChunkedOperatorAggregationHelper {
 
         private void propagateInsertsToOperators(@NotNull final RowSequence keyIndicesToInsertChunk,
                 @NotNull final WritableIntChunk<RowKeys> slotsToAddTo) {
-            ac.ensureCapacity(outputPosition.intValue());
+            ac.ensureCapacity(outputPosition.get());
 
             final boolean permute = findSlotRuns(sortKernelContext, hashedRunContext, runStarts, runLengths,
                     chunkPositions, slotsToAddTo,
@@ -1791,7 +1791,7 @@ public class ChunkedOperatorAggregationHelper {
             }
 
             try (final RowSet empty = RowSetFactory.empty()) {
-                doIndexedAddition(ac, () -> empty, outputPosition.intValue(), 0);
+                doIndexedAddition(ac, () -> empty, outputPosition.get(), 0);
             }
             return stateManager;
         }
@@ -1803,7 +1803,7 @@ public class ChunkedOperatorAggregationHelper {
             @NotNull final MutableInt outputPosition,
             @NotNull final Supplier<OperatorAggregationStateManager> stateManagerSupplier,
             final boolean usePrev) {
-        outputPosition.setValue(0);
+        outputPosition.set(0);
         final OperatorAggregationStateManager stateManager = stateManagerSupplier.get();
 
         if (initialKeys.isEmpty()) {
@@ -1895,7 +1895,7 @@ public class ChunkedOperatorAggregationHelper {
                     initialRowsBuilder.addRowKeysChunk(outputPositions);
                 }
 
-                ac.ensureCapacity(outputPosition.intValue());
+                ac.ensureCapacity(outputPosition.get());
 
                 final boolean permute = findSlotRuns(sortKernelContext, hashedRunContext, runStarts, runLengths,
                         chunkPosition, outputPositions,
@@ -1981,7 +1981,7 @@ public class ChunkedOperatorAggregationHelper {
                     initialRowsBuilder.addRowKeysChunk(outputPositions);
                 }
             }
-            Assert.eq(outputPosition.intValue(), "outputPosition.intValue()", indexEntryCount, "indexEntryCount");
+            Assert.eq(outputPosition.get(), "outputPosition.get()", indexEntryCount, "indexEntryCount");
         }
 
         try (final CloseableIterator<RowSet> groupRowSetIterator =

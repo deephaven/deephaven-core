@@ -29,11 +29,11 @@ public final class ByteChunkFiller implements ChunkFiller {
         final MutableInt destPos = new MutableInt(0);
         keys.forAllRowKeyRanges((start, end) -> {
             for (long v = start; v <= end; ++v) {
-                typedDest.set(destPos.intValue(), src.getByte(v));
+                typedDest.set(destPos.get(), src.getByte(v));
                 destPos.increment();
             }
         });
-        typedDest.setSize(destPos.intValue());
+        typedDest.setSize(destPos.get());
     }
 
     @Override
@@ -42,10 +42,10 @@ public final class ByteChunkFiller implements ChunkFiller {
         final WritableByteChunk<? super Values> typedDest = dest.asWritableByteChunk();
         final MutableInt destPos = new MutableInt(0);
         keys.forAllRowKeys(v -> {
-            typedDest.set(destPos.intValue(), src.getByte(v));
+            typedDest.set(destPos.get(), src.getByte(v));
             destPos.increment();
         });
-        typedDest.setSize(destPos.intValue());
+        typedDest.setSize(destPos.get());
     }
 
     @Override
@@ -68,11 +68,11 @@ public final class ByteChunkFiller implements ChunkFiller {
         final MutableInt destPos = new MutableInt(0);
         keys.forAllRowKeyRanges((start, end) -> {
             for (long v = start; v <= end; ++v) {
-                typedDest.set(destPos.intValue(), src.getPrevByte(v));
+                typedDest.set(destPos.get(), src.getPrevByte(v));
                 destPos.increment();
             }
         });
-        typedDest.setSize(destPos.intValue());
+        typedDest.setSize(destPos.get());
     }
 
     @Override
@@ -81,10 +81,10 @@ public final class ByteChunkFiller implements ChunkFiller {
         final WritableByteChunk<? super Values> typedDest = dest.asWritableByteChunk();
         final MutableInt destPos = new MutableInt(0);
         keys.forAllRowKeys(v -> {
-            typedDest.set(destPos.intValue(), src.getPrevByte(v));
+            typedDest.set(destPos.get(), src.getPrevByte(v));
             destPos.increment();
         });
-        typedDest.setSize(destPos.intValue());
+        typedDest.setSize(destPos.get());
     }
 
     @Override

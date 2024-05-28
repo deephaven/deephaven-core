@@ -119,7 +119,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
 
     @Override
     public void onNextChunk(int size) {
-        outputPositionToHashSlot.ensureCapacity(nextOutputPosition.intValue() + size, false);
+        outputPositionToHashSlot.ensureCapacity(nextOutputPosition.get() + size, false);
     }
 
     @Override

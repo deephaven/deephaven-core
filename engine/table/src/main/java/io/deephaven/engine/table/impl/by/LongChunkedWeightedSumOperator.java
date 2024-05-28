@@ -141,8 +141,8 @@ class LongChunkedWeightedSumOperator implements IterativeChunkedAggregationOpera
             weightedSum += weight * component;
         }
 
-        normalOut.setValue(normal);
-        weightedSumOut.setValue(weightedSum);
+        normalOut.set(normal);
+        weightedSumOut.set(weightedSum);
     }
 
     private boolean addChunk(LongChunk<? extends Values> longValues, LongChunk<? extends Values> weightValues,
@@ -152,8 +152,8 @@ class LongChunkedWeightedSumOperator implements IterativeChunkedAggregationOpera
 
         sumChunks(longValues, weightValues, start, length, normalOut, weightedSumOut);
 
-        final int newNormal = normalOut.intValue();
-        final int newWeightedSum = weightedSumOut.intValue();
+        final int newNormal = normalOut.get();
+        final int newWeightedSum = weightedSumOut.get();
 
         final long totalNormal;
         final long existingNormal = normalCount.getUnsafe(destination);
@@ -184,8 +184,8 @@ class LongChunkedWeightedSumOperator implements IterativeChunkedAggregationOpera
 
         sumChunks(doubleValues, weightValues, start, length, normalOut, weightedSumOut);
 
-        final int newNormal = normalOut.intValue();
-        final int newWeightedSum = weightedSumOut.intValue();
+        final int newNormal = normalOut.get();
+        final int newWeightedSum = weightedSumOut.get();
 
         final long totalNormal;
         final long existingNormal = normalCount.getUnsafe(destination);
@@ -230,13 +230,13 @@ class LongChunkedWeightedSumOperator implements IterativeChunkedAggregationOpera
 
         sumChunks(prevDoubleValues, prevWeightValues, start, length, normalOut, weightedSumOut);
 
-        final int prevNormal = normalOut.intValue();
-        final int prevWeightedSum = weightedSumOut.intValue();
+        final int prevNormal = normalOut.get();
+        final int prevWeightedSum = weightedSumOut.get();
 
         sumChunks(newDoubleValues, newWeightValues, start, length, normalOut, weightedSumOut);
 
-        final int newNormal = normalOut.intValue();
-        final int newWeightedSum = weightedSumOut.intValue();
+        final int newNormal = normalOut.get();
+        final int newWeightedSum = weightedSumOut.get();
 
         final long totalNormal;
         final long existingNormal = normalCount.getUnsafe(destination);

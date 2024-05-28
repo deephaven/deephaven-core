@@ -101,13 +101,13 @@ class BigDecimalChunkedVarOperator implements IterativeChunkedAggregationOperato
         final BigDecimal sum =
                 SumBigDecimalChunk.sum2BigDecimalChunk(values, chunkStart, chunkSize, chunkNonNull, sum2);
 
-        if (chunkNonNull.intValue() <= 0) {
+        if (chunkNonNull.get() <= 0) {
             return false;
         }
 
         final BigDecimal newSum = plus(sumSource.getUnsafe(destination), sum);
         final BigDecimal newSum2 = plus(sum2Source.getUnsafe(destination), sum2.getValue());
-        final long nonNullCount = nonNullCounter.addNonNullUnsafe(destination, chunkNonNull.intValue());
+        final long nonNullCount = nonNullCounter.addNonNullUnsafe(destination, chunkNonNull.get());
         doUpdate(destination, newSum, newSum2, nonNullCount);
         return true;
     }
@@ -119,13 +119,13 @@ class BigDecimalChunkedVarOperator implements IterativeChunkedAggregationOperato
         final BigDecimal sum =
                 SumBigDecimalChunk.sum2BigDecimalChunk(values, chunkStart, chunkSize, chunkNonNull, sum2);
 
-        if (chunkNonNull.intValue() <= 0) {
+        if (chunkNonNull.get() <= 0) {
             return false;
         }
 
         final BigDecimal newSum = plus(sumSource.getUnsafe(destination), sum.negate());
         final BigDecimal newSum2 = plus(sum2Source.getUnsafe(destination), sum2.getValue().negate());
-        final long nonNullCount = nonNullCounter.addNonNull(destination, -chunkNonNull.intValue());
+        final long nonNullCount = nonNullCounter.addNonNull(destination, -chunkNonNull.get());
         doUpdate(destination, newSum, newSum2, nonNullCount);
         return true;
     }

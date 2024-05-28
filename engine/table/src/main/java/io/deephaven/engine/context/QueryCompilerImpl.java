@@ -970,7 +970,7 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
                         .collect(Collectors.toList()))
                 .call();
 
-        final boolean wantRetry = numFailures.intValue() > 0 && numFailures.intValue() != endExclusive - startInclusive;
+        final boolean wantRetry = numFailures.get() > 0 && numFailures.get() != endExclusive - startInclusive;
 
         // The above has compiled into e.g.
         // /tmp/workspace/cache/classes/temporaryCompilationDirectory12345/io/deephaven/test/cm12862183232603186v52_0/{various

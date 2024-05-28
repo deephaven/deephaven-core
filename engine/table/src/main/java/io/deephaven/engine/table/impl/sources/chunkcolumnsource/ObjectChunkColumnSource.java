@@ -18,7 +18,6 @@ import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
@@ -110,7 +109,7 @@ public class ObjectChunkColumnSource<T> extends AbstractColumnSource<T>
         destination.setSize(0);
         rowSequence.forAllRowKeyRanges((s, e) -> {
             while (s <= e) {
-                final int chunkIndex = getChunkIndex(s, searchStartChunkIndex.intValue());
+                final int chunkIndex = getChunkIndex(s, searchStartChunkIndex.get());
                 final int offsetWithinChunk = (int) (s - firstOffsetForData.get(chunkIndex));
                 Assert.geqZero(offsetWithinChunk, "offsetWithinChunk");
                 final ObjectChunk<T, ? extends Values> ObjectChunk = data.get(chunkIndex);
@@ -125,7 +124,7 @@ public class ObjectChunkColumnSource<T> extends AbstractColumnSource<T>
                 s += length;
                 if (s <= e) {
                     // We have more of this range to gather from a subsequent chunk.
-                    searchStartChunkIndex.setValue(chunkIndex + 1);
+                    searchStartChunkIndex.set(chunkIndex + 1);
                 }
             }
         });

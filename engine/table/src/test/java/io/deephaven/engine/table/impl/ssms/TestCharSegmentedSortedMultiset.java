@@ -323,8 +323,8 @@ public class TestCharSegmentedSortedMultiset extends RefreshingTableTestCase {
 
                 final MutableInt offset = new MutableInt(0);
                 checkMap.forEach((key, count) -> {
-                    assertEquals((char) key, keys.get(offset.intValue()));
-                    assertEquals((long) count, counts.get(offset.intValue()));
+                    assertEquals((char) key, keys.get(offset.get()));
+                    assertEquals((long) count, counts.get(offset.get()));
                     offset.increment();
                 });
             }

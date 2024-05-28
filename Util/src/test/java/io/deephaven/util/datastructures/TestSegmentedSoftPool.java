@@ -51,8 +51,8 @@ public class TestSegmentedSoftPool {
         final SegmentedSoftPool<Integer> pool = new SegmentedSoftPool<>(10,
                 () -> {
                     counter.increment();
-                    sumAllocated.add(counter.intValue());
-                    return counter.intValue();
+                    sumAllocated.add(counter.get());
+                    return counter.get();
                 },
                 sumCleared::add);
 
@@ -64,7 +64,7 @@ public class TestSegmentedSoftPool {
 
         IntStream.range(0, 1000).boxed().forEach(II -> TestCase.assertEquals(II, pool.take()));
         IntStream.range(0, 1000).boxed().forEach(pool::give);
-        TestCase.assertEquals(sumAllocated.intValue(), sumCleared.intValue());
+        TestCase.assertEquals(sumAllocated.get(), sumCleared.get());
     }
 
     private static final BitSet OUTSTANDING_INSTANCES = new BitSet(1_000_000);

@@ -693,7 +693,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         final int size = 100;
         final Random random = new Random(seed);
-        final int maxSteps = numSteps.intValue();
+        final int maxSteps = numSteps.get();
 
         final QueryTable table = getTable(size, random,
                 columnInfos = initColumnInfos(new String[] {"Sym", "intCol", "boolCol", "boolCol2", "doubleCol"},
@@ -769,8 +769,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                 showWithRowSet(table);
             }
 
-            for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
-                final int i = numSteps.intValue();
+            for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
+                final int i = numSteps.get();
                 if (RefreshingTableTestCase.printTableUpdates) {
                     System.out.println("Step = " + i);
                 }

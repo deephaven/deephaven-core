@@ -85,7 +85,7 @@ public class CharTestSource extends AbstractColumnSource<Character>
 
                 @Override
                 public void accept(final long v) {
-                    data.put(v, vcs.get(ii.intValue()));
+                    data.put(v, vcs.get(ii.get()));
                     ii.increment();
                 }
             });
@@ -96,7 +96,7 @@ public class CharTestSource extends AbstractColumnSource<Character>
 
                 @Override
                 public void accept(final long v) {
-                    data.put(v, TypeUtils.unbox(vcs.get(ii.intValue())));
+                    data.put(v, TypeUtils.unbox(vcs.get(ii.get())));
                     ii.increment();
                 }
             });

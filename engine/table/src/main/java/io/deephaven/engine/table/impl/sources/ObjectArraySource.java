@@ -256,7 +256,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
             if (from > maxIndex) {
                 // the whole region is beyond us
                 final int sz = LongSizedDataStructure.intSize("int cast", to - from + 1);
-                destination.fillWithNullValue(destOffset.intValue(), sz);
+                destination.fillWithNullValue(destOffset.get(), sz);
                 destOffset.add(sz);
                 return;
             }
@@ -271,27 +271,27 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
             final int fromOffsetInBlock = (int) (from & INDEX_MASK);
             if (fromBlock == toBlock) {
                 final int sz = LongSizedDataStructure.intSize("int cast", to - from + 1);
-                destination.copyFromArray(getBlock(fromBlock), fromOffsetInBlock, destOffset.intValue(), sz);
+                destination.copyFromArray(getBlock(fromBlock), fromOffsetInBlock, destOffset.get(), sz);
                 destOffset.add(sz);
             } else {
                 final int sz = BLOCK_SIZE - fromOffsetInBlock;
-                destination.copyFromArray(getBlock(fromBlock), fromOffsetInBlock, destOffset.intValue(), sz);
+                destination.copyFromArray(getBlock(fromBlock), fromOffsetInBlock, destOffset.get(), sz);
                 destOffset.add(sz);
                 for (int blockNo = fromBlock + 1; blockNo < toBlock; ++blockNo) {
-                    destination.copyFromArray(getBlock(blockNo), 0, destOffset.intValue(), BLOCK_SIZE);
+                    destination.copyFromArray(getBlock(blockNo), 0, destOffset.get(), BLOCK_SIZE);
                     destOffset.add(BLOCK_SIZE);
                 }
                 int restSz = (int) (to & INDEX_MASK) + 1;
-                destination.copyFromArray(getBlock(toBlock), 0, destOffset.intValue(), restSz);
+                destination.copyFromArray(getBlock(toBlock), 0, destOffset.get(), restSz);
                 destOffset.add(restSz);
             }
 
             if (valuesAtEnd > 0) {
-                destination.fillWithNullValue(destOffset.intValue(), valuesAtEnd);
+                destination.fillWithNullValue(destOffset.get(), valuesAtEnd);
                 destOffset.add(valuesAtEnd);
             }
         });
-        destination.setSize(destOffset.intValue());
+        destination.setSize(destOffset.get());
     }
 
     private interface CopyFromBlockFunctor {
@@ -320,9 +320,9 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
             final long[] inUse = prevInUse[blockNo];
             if (inUse != null) {
                 effectiveContext.copyKernel.conditionalCopy(destination, getBlock(blockNo), getPrevBlock(blockNo),
-                        inUse, srcOffset, destOffset.intValue(), length);
+                        inUse, srcOffset, destOffset.get(), length);
             } else {
-                destination.copyFromArray(getBlock(blockNo), srcOffset, destOffset.intValue(), length);
+                destination.copyFromArray(getBlock(blockNo), srcOffset, destOffset.get(), length);
             }
             destOffset.add(length);
         };
@@ -332,7 +332,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
             if (from > maxIndex) {
                 // the whole region is beyond us
                 final int sz = LongSizedDataStructure.intSize("int cast", to - from + 1);
-                destination.fillWithNullValue(destOffset.intValue(), sz);
+                destination.fillWithNullValue(destOffset.get(), sz);
                 destOffset.add(sz);
                 return;
             } else if (to > maxIndex) {
@@ -360,11 +360,11 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]>
             }
 
             if (valuesAtEnd > 0) {
-                destination.fillWithNullValue(destOffset.intValue(), valuesAtEnd);
+                destination.fillWithNullValue(destOffset.get(), valuesAtEnd);
                 destOffset.add(valuesAtEnd);
             }
         });
-        destination.setSize(destOffset.intValue());
+        destination.setSize(destOffset.get());
     }
 
     @Override

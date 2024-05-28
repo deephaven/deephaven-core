@@ -413,7 +413,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
     }
 
     private void testSortIncremental(final String ctxt, final int size, int seed, MutableInt numSteps) {
-        final int maxSteps = numSteps.intValue();
+        final int maxSteps = numSteps.get();
         final Random random = new Random(seed);
         final ColumnInfo<?, ?>[] columnInfo = getIncrementalColumnInfo();
         final QueryTable queryTable = getTable(size, random, columnInfo);
@@ -457,8 +457,8 @@ public class QueryTableSortTest extends QueryTableTestBase {
                 EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.desc(ColumnName.of("bigD"))))),
         };
 
-        for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
-            simulateShiftAwareStep(ctxt + " step == " + numSteps.intValue(), size, random, queryTable, columnInfo, en);
+        for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
+            simulateShiftAwareStep(ctxt + " step == " + numSteps.get(), size, random, queryTable, columnInfo, en);
         }
     }
 

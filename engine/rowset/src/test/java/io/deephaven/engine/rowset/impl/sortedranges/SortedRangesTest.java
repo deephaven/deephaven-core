@@ -1204,13 +1204,13 @@ public class SortedRangesTest {
         sar.getKeysForPositions(iterator, new LongConsumer() {
             @Override
             public void accept(final long v) {
-                final int miValue = mi.intValue();
+                final int miValue = mi.get();
                 final String m = "v==" + v + ", miValue==" + miValue;
                 assertEquals(m, sar.get(positions[miValue]), v);
                 mi.increment();
             }
         });
-        assertEquals(positions.length, mi.intValue());
+        assertEquals(positions.length, mi.get());
     }
 
     private static class IterOfLongAdaptor implements PrimitiveIterator.OfLong {
@@ -1256,13 +1256,13 @@ public class SortedRangesTest {
                 sar.getKeysForPositions(iterator, new LongConsumer() {
                     @Override
                     public void accept(final long v) {
-                        final int miValue = mi.intValue();
+                        final int miValue = mi.get();
                         final String m2 = m + " && v==" + v + ", miValue==" + miValue;
                         assertEquals(m2, sar.get(positions.get(miValue)), v);
                         mi.increment();
                     }
                 });
-                assertEquals(positions.size(), mi.intValue());
+                assertEquals(positions.size(), mi.get());
             }
         }
     }
@@ -2060,9 +2060,9 @@ public class SortedRangesTest {
             if (v == -1) {
                 return true;
             }
-            final int j = sr.unpackedBinarySearch(v, pos.intValue());
+            final int j = sr.unpackedBinarySearch(v, pos.get());
             assertTrue(m + " && v==" + v, j >= 0);
-            pos.setValue(j);
+            pos.set(j);
             return true;
         });
     }

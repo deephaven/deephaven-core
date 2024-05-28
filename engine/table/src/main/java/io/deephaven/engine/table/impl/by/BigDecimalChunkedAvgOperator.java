@@ -75,11 +75,11 @@ class BigDecimalChunkedAvgOperator implements IterativeChunkedAggregationOperato
         final BigDecimal chunkSum =
                 SumBigDecimalChunk.sumBigDecimalChunk(values, chunkStart, chunkSize, chunkNonNullCount);
 
-        if (chunkNonNullCount.intValue() <= 0) {
+        if (chunkNonNullCount.get() <= 0) {
             return false;
         }
 
-        final long newCount = nonNullCount.addNonNullUnsafe(destination, chunkNonNullCount.intValue());
+        final long newCount = nonNullCount.addNonNullUnsafe(destination, chunkNonNullCount.get());
         final BigDecimal newSum;
         final BigDecimal oldSum = runningSum.getUnsafe(destination);
         if (oldSum == null) {
@@ -99,11 +99,11 @@ class BigDecimalChunkedAvgOperator implements IterativeChunkedAggregationOperato
         final BigDecimal chunkSum =
                 SumBigDecimalChunk.sumBigDecimalChunk(values, chunkStart, chunkSize, chunkNonNullCount);
 
-        if (chunkNonNullCount.intValue() <= 0) {
+        if (chunkNonNullCount.get() <= 0) {
             return false;
         }
 
-        final long newCount = nonNullCount.addNonNullUnsafe(destination, -chunkNonNullCount.intValue());
+        final long newCount = nonNullCount.addNonNullUnsafe(destination, -chunkNonNullCount.get());
         if (newCount == 0) {
             resultColumn.set(destination, null);
             runningSum.set(destination, null);

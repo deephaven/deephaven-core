@@ -415,21 +415,21 @@ public class BitShiftingColumnSource<T> extends AbstractColumnSource<T> implemen
                             usePrev ? shiftState.getPrevShifted(rowKey) : shiftState.getShifted(rowKey);
                     if (innerIndexKey != lastInnerIndexKey) {
                         if (lastInnerIndexKey != RowSequence.NULL_ROW_KEY) {
-                            uniqueIndices.set(currentRunPosition.intValue(), lastInnerIndexKey);
-                            runLengths.set(currentRunPosition.intValue(), currentRunLength.intValue());
+                            uniqueIndices.set(currentRunPosition.get(), lastInnerIndexKey);
+                            runLengths.set(currentRunPosition.get(), currentRunLength.get());
                             currentRunPosition.increment();
                         }
-                        currentRunLength.setValue(1);
+                        currentRunLength.set(1);
                         currentRunInnerIndexKey.setValue(innerIndexKey);
                     } else {
                         currentRunLength.increment();
                     }
                 });
 
-                uniqueIndices.set(currentRunPosition.intValue(), currentRunInnerIndexKey.longValue());
-                runLengths.set(currentRunPosition.intValue(), currentRunLength.intValue());
-                uniqueIndices.setSize(currentRunPosition.intValue() + 1);
-                runLengths.setSize(currentRunPosition.intValue() + 1);
+                uniqueIndices.set(currentRunPosition.get(), currentRunInnerIndexKey.longValue());
+                runLengths.set(currentRunPosition.get(), currentRunLength.get());
+                uniqueIndices.setSize(currentRunPosition.get() + 1);
+                runLengths.setSize(currentRunPosition.get() + 1);
 
                 keysAndLengthsReusable = shared;
             }

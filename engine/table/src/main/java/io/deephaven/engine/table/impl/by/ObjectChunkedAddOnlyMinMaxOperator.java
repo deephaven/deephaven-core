@@ -55,7 +55,7 @@ class ObjectChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationO
                 }
             }
         }
-        chunkNonNull.setValue(nonNull);
+        chunkNonNull.set(nonNull);
         return value;
     }
 
@@ -72,7 +72,7 @@ class ObjectChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationO
                 }
             }
         }
-        chunkNonNull.setValue(nonNull);
+        chunkNonNull.set(nonNull);
         return value;
     }
 
@@ -139,7 +139,7 @@ class ObjectChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationO
         final int chunkEnd = chunkStart + chunkSize;
         final Object chunkValue = minimum ? min(values, chunkNonNull, chunkStart, chunkEnd)
                 : max(values, chunkNonNull, chunkStart, chunkEnd);
-        if (chunkNonNull.intValue() == 0) {
+        if (chunkNonNull.get() == 0) {
             return false;
         }
 

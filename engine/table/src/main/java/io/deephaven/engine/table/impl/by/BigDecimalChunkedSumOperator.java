@@ -104,7 +104,7 @@ public class BigDecimalChunkedSumOperator implements IterativeChunkedAggregation
         final MutableInt chunkNonNull = new MutableInt(0);
         final BigDecimal partialSum = doSum(values, chunkStart, chunkSize, chunkNonNull);
 
-        if (chunkNonNull.intValue() <= 0) {
+        if (chunkNonNull.get() <= 0) {
             return false;
         }
         final BigDecimal oldValue = resultColumn.getUnsafe(destination);
@@ -112,7 +112,7 @@ public class BigDecimalChunkedSumOperator implements IterativeChunkedAggregation
         if (changed) {
             resultColumn.set(destination, plus(oldValue, partialSum));
         }
-        nonNullCount.addNonNullUnsafe(destination, chunkNonNull.intValue());
+        nonNullCount.addNonNullUnsafe(destination, chunkNonNull.get());
         return changed;
     }
 
@@ -121,10 +121,10 @@ public class BigDecimalChunkedSumOperator implements IterativeChunkedAggregation
         final MutableInt chunkNonNull = new MutableInt(0);
         final BigDecimal partialSum = doSum(values, chunkStart, chunkSize, chunkNonNull);
 
-        if (chunkNonNull.intValue() <= 0) {
+        if (chunkNonNull.get() <= 0) {
             return false;
         }
-        if (nonNullCount.addNonNullUnsafe(destination, -chunkNonNull.intValue()) == 0) {
+        if (nonNullCount.addNonNullUnsafe(destination, -chunkNonNull.get()) == 0) {
             resultColumn.set(destination, null);
         } else if (partialSum.equals(BigDecimal.ZERO)) {
             return false;
@@ -141,7 +141,7 @@ public class BigDecimalChunkedSumOperator implements IterativeChunkedAggregation
         final BigDecimal prePartialSum = doSum(preValues, chunkStart, chunkSize, preChunkNonNull);
         final BigDecimal postPartialSum = doSum(postValues, chunkStart, chunkSize, postChunkNonNull);
 
-        final int nullDifference = postChunkNonNull.intValue() - preChunkNonNull.intValue();
+        final int nullDifference = postChunkNonNull.get() - preChunkNonNull.get();
 
         if (nullDifference != 0) {
             final long newNonNull = nonNullCount.addNonNullUnsafe(destination, nullDifference);

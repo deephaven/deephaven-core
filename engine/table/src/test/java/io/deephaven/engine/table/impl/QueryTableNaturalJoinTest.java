@@ -123,12 +123,12 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                     final int ii = (int) ll;
                     if (ii % 2 == 0) {
                         // make something that exists go away
-                        rightModifications[position.intValue()] = Integer.toString(ii * 10 + 2);
+                        rightModifications[position.get()] = Integer.toString(ii * 10 + 2);
                     } else {
                         // make something that did not exist come back
-                        rightModifications[position.intValue()] = Integer.toString(ii * 10);
+                        rightModifications[position.get()] = Integer.toString(ii * 10);
                     }
-                    rightModifySentinel[position.intValue()] = ii * 100 + 25;
+                    rightModifySentinel[position.get()] = ii * 100 + 25;
                     position.increment();
                 });
 
@@ -275,7 +275,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             boolean leftIndexed, boolean rightIndexed, JoinIncrement joinIncrement, long seed, MutableInt numSteps,
             JoinControl control) {
         final Random random = new Random(seed);
-        final int maxSteps = numSteps.intValue();
+        final int maxSteps = numSteps.get();
 
         final ColumnInfo<?, ?>[] rightColumnInfo;
         final UniqueIntGenerator rightIntGenerator =
@@ -346,9 +346,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final int leftStepSize = (int) Math.ceil(Math.sqrt(leftSize));
         final int rightStepSize = (int) Math.ceil(Math.sqrt(rightSize));
 
-        for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
+        for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
             if (printTableUpdates) {
-                System.out.println("Step = " + numSteps.intValue() + ", leftSize=" + leftSize + ", rightSize="
+                System.out.println("Step = " + numSteps.get() + ", leftSize=" + leftSize + ", rightSize="
                         + rightSize + ", seed = " + seed + ", joinIncrement=" + joinIncrement);
                 System.out.println("Left Table:" + leftTable.size());
                 TableTools.showWithRowSet(leftTable, 100);

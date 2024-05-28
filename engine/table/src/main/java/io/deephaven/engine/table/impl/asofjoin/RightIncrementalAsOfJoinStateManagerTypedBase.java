@@ -909,7 +909,7 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
      */
     public boolean doRehash(boolean fullRehash, MutableInt rehashCredits, int nextChunkSize) {
         if (rehashPointer > 0) {
-            final int requiredRehash = nextChunkSize - rehashCredits.intValue();
+            final int requiredRehash = nextChunkSize - rehashCredits.get();
             if (requiredRehash <= 0) {
                 return false;
             }
@@ -935,8 +935,8 @@ public abstract class RightIncrementalAsOfJoinStateManagerTypedBase extends Righ
         }
 
         // we can't give the caller credit for rehashes with the old table, we need to begin migrating things again
-        if (rehashCredits.intValue() > 0) {
-            rehashCredits.setValue(0);
+        if (rehashCredits.get() > 0) {
+            rehashCredits.set(0);
         }
 
         if (fullRehash) {

@@ -125,14 +125,14 @@ public class TestDataIndexer extends RefreshingTableTestCase {
                 .computeLocked(() -> merged.update("HiLo = intCol > 50 ? `Hi` : `Lo`"));
         addIndexValidator(updated, "updated");
 
-        final int maxSteps = numSteps.intValue(); // 8;
+        final int maxSteps = numSteps.get(); // 8;
 
         if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println("Initial QueryTable: ");
             TableTools.showWithRowSet(queryTable);
         }
 
-        for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
+        for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
             ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
                 generateTableUpdates(size, random, queryTable, columnInfo);
             });

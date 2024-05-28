@@ -21,8 +21,6 @@ import io.deephaven.util.mutable.MutableInt;
 
 import java.util.Arrays;
 
-import static io.deephaven.base.ArrayUtil.MAX_ARRAY_SIZE;
-
 public class StaticSymbolTableChunkedOperatorAggregationStateManager implements OperatorAggregationStateManager {
     private static final int CHUNK_SIZE = ChunkedOperatorAggregationHelper.CHUNK_SIZE;
 
@@ -106,7 +104,7 @@ public class StaticSymbolTableChunkedOperatorAggregationStateManager implements 
             }
         }
 
-        nextOutputPosition.setValue(nextPosition);
+        nextOutputPosition.set(nextPosition);
     }
 
     private void updateKeyHashTableSources(final WritableLongChunk<RowKeys> symbolTableValues,

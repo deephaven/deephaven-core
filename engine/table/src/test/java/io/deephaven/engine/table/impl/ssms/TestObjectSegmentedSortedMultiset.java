@@ -14,9 +14,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
-import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
-import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.liveness.LivenessScope;
@@ -314,8 +312,8 @@ public class TestObjectSegmentedSortedMultiset extends RefreshingTableTestCase {
 
                 final MutableInt offset = new MutableInt(0);
                 checkMap.forEach((key, count) -> {
-                    assertEquals((Object) key, keys.get(offset.intValue()));
-                    assertEquals((long) count, counts.get(offset.intValue()));
+                    assertEquals((Object) key, keys.get(offset.get()));
+                    assertEquals((long) count, counts.get(offset.get()));
                     offset.increment();
                 });
             }

@@ -221,7 +221,7 @@ public final class SimpleReferenceManager<T, R extends SimpleReference<T>> {
     public int size() {
         final MutableInt size = new MutableInt(0);
         forEach((ref, source) -> size.increment());
-        return size.intValue();
+        return size.get();
     }
 
     /**

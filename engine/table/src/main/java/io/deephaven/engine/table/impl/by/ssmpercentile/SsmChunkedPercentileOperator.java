@@ -246,7 +246,7 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
         int loPivot;
         if (ssmLo.size() > 0) {
             loPivot = percentileTypeHelper.pivot(ssmLo, valueCopy, counts, startPosition, runLength, leftOvers);
-            Assert.leq(leftOvers.intValue(), "leftOvers.intValue()", ssmHi.totalSize(), "ssmHi.totalSize()");
+            Assert.leq(leftOvers.get(), "leftOvers.get()", ssmHi.totalSize(), "ssmHi.totalSize()");
         } else {
             loPivot = 0;
         }
@@ -256,14 +256,14 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
                     context.valueResettable.resetFromChunk(valueCopy, startPosition, loPivot);
             final WritableIntChunk<ChunkLengths> loCountSlice =
                     context.countResettable.resetFromChunk(counts, startPosition, loPivot);
-            if (leftOvers.intValue() > 0) {
-                counts.set(startPosition + loPivot - 1, counts.get(startPosition + loPivot - 1) - leftOvers.intValue());
+            if (leftOvers.get() > 0) {
+                counts.set(startPosition + loPivot - 1, counts.get(startPosition + loPivot - 1) - leftOvers.get());
             }
             ssmLo.remove(removeContext, loValueSlice, loCountSlice);
         }
 
-        if (leftOvers.intValue() > 0) {
-            counts.set(startPosition + loPivot - 1, leftOvers.intValue());
+        if (leftOvers.get() > 0) {
+            counts.set(startPosition + loPivot - 1, leftOvers.get());
             loPivot--;
         }
 

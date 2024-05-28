@@ -11,7 +11,6 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.ProbeContext;
-import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.mutable.MutableInt;
 
 import static io.deephaven.engine.table.impl.util.TypedHasherUtil.*;
@@ -170,7 +169,7 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
      */
     public boolean doRehash(MutableInt rehashCredits, int nextChunkSize) {
         if (rehashPointer > 0) {
-            final int requiredRehash = nextChunkSize - rehashCredits.intValue();
+            final int requiredRehash = nextChunkSize - rehashCredits.get();
             if (requiredRehash <= 0) {
                 return false;
             }
@@ -196,8 +195,8 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
         }
 
         // we can't give the caller credit for rehashes with the old table, we need to begin migrating things again
-        if (rehashCredits.intValue() > 0) {
-            rehashCredits.setValue(0);
+        if (rehashCredits.get() > 0) {
+            rehashCredits.set(0);
         }
 
         if (fullRehash) {

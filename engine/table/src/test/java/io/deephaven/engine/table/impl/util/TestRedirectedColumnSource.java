@@ -75,7 +75,7 @@ public class TestRedirectedColumnSource {
         final MutableInt pos = new MutableInt();
         rs.forAllRowKeys(k -> {
             final String s = (String) cs.get(k);
-            assertEquals("offset=" + (pos.intValue() + offset) + ", k=" + k, s, chunk.get(pos.intValue()));
+            assertEquals("offset=" + (pos.get() + offset) + ", k=" + k, s, chunk.get(pos.get()));
             pos.increment();
         });
     }
@@ -155,7 +155,7 @@ public class TestRedirectedColumnSource {
         final byte[] expecteds = new byte[6];
         final MutableInt idx = new MutableInt();
         Stream.of(true, null, false, null, null, null).forEach(boolVal -> {
-            expecteds[idx.intValue()] = BooleanUtils.booleanAsByte(boolVal);
+            expecteds[idx.get()] = BooleanUtils.booleanAsByte(boolVal);
             idx.increment();
         });
         assertArrayEquals(expecteds, byteList.toArray());

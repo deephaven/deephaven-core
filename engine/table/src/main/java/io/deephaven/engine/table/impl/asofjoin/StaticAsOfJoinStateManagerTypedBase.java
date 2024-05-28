@@ -273,7 +273,7 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
         try (final ProbeContext pc = makeProbeContext(leftSources, leftRowSet.size())) {
             final MutableInt slotCount = new MutableInt();
             probeTable(pc, leftRowSet, false, leftSources, new LeftProbeHandler(slots, slotCount, foundBuilder));
-            return slotCount.intValue();
+            return slotCount.get();
         }
     }
 

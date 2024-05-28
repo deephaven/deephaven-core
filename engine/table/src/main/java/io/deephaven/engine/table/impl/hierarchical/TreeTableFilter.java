@@ -243,7 +243,7 @@ public class TreeTableFilter {
                                     childRowsToProcessIter.getNextRowSequenceWithLength(CHUNK_SIZE);
                             final ObjectChunk<?, ? extends Values> parentIds =
                                     getIds(usePrev, parentIdSource, parentIdGetContext, boxer, chunkChildRows);
-                            chunkOffset.setValue(0);
+                            chunkOffset.set(0);
                             chunkChildRows.forAllRowKeys((final long childRow) -> {
                                 final Object parentId = parentIds.get(chunkOffset.getAndIncrement());
                                 expectedParents.computeIfAbsent(parentId, pid -> RowSetFactory.builderRandom())
@@ -372,7 +372,7 @@ public class TreeTableFilter {
                 final RowSequence chunkRowsToCheck = rowsToCheckIter.getNextRowSequenceWithLength(CHUNK_SIZE);
                 final ObjectChunk<?, ? extends Values> ids =
                         getIds(false, idSource, idGetContext, boxer, chunkRowsToCheck);
-                chunkOffset.setValue(0);
+                chunkOffset.set(0);
                 chunkRowsToCheck.forAllRowKeys((final long rowKeyToCheck) -> {
                     final Object id = ids.get(chunkOffset.getAndIncrement());
                     if (id != null && parentIdToChildRows.containsKey(id)) {
@@ -433,7 +433,7 @@ public class TreeTableFilter {
                 final RowSequence chunkChildRows = childRowsIter.getNextRowSequenceWithLength(CHUNK_SIZE);
                 final ObjectChunk<?, ? extends Values> parentIds =
                         getIds(usePrev, parentIdSource, parentIdGetContext, boxer, chunkChildRows);
-                chunkOffset.setValue(0);
+                chunkOffset.set(0);
                 chunkChildRows.forAllRowKeys((final long childRowKey) -> {
                     final Object parentId = parentIds.get(chunkOffset.getAndIncrement());
                     if (parentId != null) {

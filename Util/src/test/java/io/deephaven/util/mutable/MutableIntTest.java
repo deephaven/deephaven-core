@@ -11,21 +11,21 @@ public class MutableIntTest {
 
     @Test
     public void intValue() {
-        assertEquals(123, new MutableInt(123).intValue());
+        assertEquals(123, new MutableInt(123).get());
     }
 
     @Test
     public void setValue() {
         MutableInt v = new MutableInt(321);
-        v.setValue(999);
-        assertEquals(999, v.intValue());
+        v.set(999);
+        assertEquals(999, v.get());
     }
 
     @Test
     public void add() {
         MutableInt v = new MutableInt(1000);
         v.add(10);
-        assertEquals(1010, v.intValue());
+        assertEquals(1010, v.get());
     }
 
     @Test
@@ -33,7 +33,7 @@ public class MutableIntTest {
         MutableInt v = new MutableInt(1000);
         int result = v.addAndGet(10);
         assertEquals(1010, result);
-        assertEquals(1010, v.intValue());
+        assertEquals(1010, v.get());
     }
 
     @Test
@@ -41,7 +41,7 @@ public class MutableIntTest {
         MutableInt v = new MutableInt(1000);
         int result = v.getAndAdd(10);
         assertEquals(1000, result);
-        assertEquals(1010, v.intValue());
+        assertEquals(1010, v.get());
     }
 
     @Test
@@ -49,21 +49,21 @@ public class MutableIntTest {
         MutableInt v = new MutableInt(1000);
         int result = v.getAndIncrement();
         assertEquals(1000, result);
-        assertEquals(1001, v.intValue());
+        assertEquals(1001, v.get());
     }
 
     @Test
     public void increment() {
         MutableInt v = new MutableInt(1000);
         v.increment();
-        assertEquals(1001, v.intValue());
+        assertEquals(1001, v.get());
     }
 
     @Test
     public void decrement() {
         MutableInt v = new MutableInt(1000);
         v.decrement();
-        assertEquals(999, v.intValue());
+        assertEquals(999, v.get());
     }
 
     @Test
@@ -71,13 +71,13 @@ public class MutableIntTest {
         MutableInt v = new MutableInt(1000);
         int result = v.incrementAndGet();
         assertEquals(1001, result);
-        assertEquals(1001, v.intValue());
+        assertEquals(1001, v.get());
     }
 
     @Test
     public void subtract() {
         MutableInt v = new MutableInt(1000);
         v.subtract(10);
-        assertEquals(990, v.intValue());
+        assertEquals(990, v.get());
     }
 }

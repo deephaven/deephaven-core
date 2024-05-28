@@ -519,7 +519,7 @@ public abstract class RowSequenceTestBase {
             final MutableInt idx = new MutableInt(0);
             final RowSet ix = rowSequence.asRowSet();
             assertTrue(msg, ix.forEachRowKey((value) -> {
-                assertEquals(msg + " && value==" + value, expectedIndices.get(idx.intValue()), value);
+                assertEquals(msg + " && value==" + value, expectedIndices.get(idx.get()), value);
                 idx.add(1);
                 return true;
             }));

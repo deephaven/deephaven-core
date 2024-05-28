@@ -70,9 +70,9 @@ public class CharPercentileTypeHelper implements SsmChunkedPercentileOperator.Pe
         final long hiCount = ssmLo.getMaxCount();
         if (result > startPosition && CharComparisons.eq(asCharChunk.get(result - 1), hiValue)
                 && counts.get(result - 1) > hiCount) {
-            leftOvers.setValue((int) (counts.get(result - 1) - hiCount));
+            leftOvers.set((int) (counts.get(result - 1) - hiCount));
         } else {
-            leftOvers.setValue(0);
+            leftOvers.set(0);
         }
 
         return result - startPosition;

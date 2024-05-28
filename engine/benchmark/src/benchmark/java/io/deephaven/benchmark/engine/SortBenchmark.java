@@ -141,7 +141,7 @@ public class SortBenchmark {
 
         inputTable.getDefinition().getColumnNameSet().forEach(columnName -> {
             if (!columnName.equals(sortCol)) {
-                sortColumns[ci.intValue()] = columnName;
+                sortColumns[ci.get()] = columnName;
                 ci.increment();
             }
         });

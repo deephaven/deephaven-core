@@ -716,7 +716,7 @@ public abstract class FlightMessageRoundTripTest {
             }
         });
 
-        Assert.eq(seenTables.intValue(), "seenTables.intValue()", 2);
+        Assert.eq(seenTables.get(), "seenTables.get()", 2);
     }
 
     @Test
@@ -749,7 +749,7 @@ public abstract class FlightMessageRoundTripTest {
             }
         });
 
-        Assert.eq(seenTables.intValue(), "seenTables.intValue()", 2);
+        Assert.eq(seenTables.get(), "seenTables.get()", 2);
     }
 
     @Test
@@ -881,13 +881,13 @@ public abstract class FlightMessageRoundTripTest {
         ExecutionContext.getContext().getQueryScope().putParam(tableName, table);
 
         // export from query scope to our session; this transforms the table
-        assertEquals(0, numTransforms.intValue());
+        assertEquals(0, numTransforms.get());
         try (final TableHandle handle = clientSession.execute(TicketTable.fromQueryScopeField(tableName))) {
             // place the transformed table into the scope; wait on the future to ensure the server-side operation
             // completes
             clientSession.publish(resultTableName, handle).get();
         }
-        assertEquals(1, numTransforms.intValue());
+        assertEquals(1, numTransforms.get());
 
         // check that the table was transformed
         Object result = ExecutionContext.getContext().getQueryScope().readParamValue(resultTableName, null);

@@ -177,7 +177,7 @@ public abstract class QueryTableTestBase extends RefreshingTableTestCase {
         final int[] result = new int[table.intSize()];
         final MutableInt pos = new MutableInt();
         table.integerColumnIterator(column).forEachRemaining((int value) -> {
-            result[pos.intValue()] = value;
+            result[pos.get()] = value;
             pos.increment();
         });
         return result;

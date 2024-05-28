@@ -141,7 +141,7 @@ public class ImmutableLongArraySource extends AbstractColumnSource<Long>
             chunk.copyFromTypedArray(data, (int) start, destPosition.getAndAdd(length), length);
             // endregion copyFromTypedArrayImmutable
         });
-        chunk.setSize(destPosition.intValue());
+        chunk.setSize(destPosition.get());
     }
     <R> void fillChunkByRanges(
             @NotNull final WritableChunk<? super Values> destination,
@@ -160,7 +160,7 @@ public class ImmutableLongArraySource extends AbstractColumnSource<Long>
            }
             // endregion copyFromTypedArrayImmutable
         });
-        chunk.setSize(destPosition.intValue());
+        chunk.setSize(destPosition.get());
     }
     // endregion fillChunkByRanges
 
@@ -178,7 +178,7 @@ public class ImmutableLongArraySource extends AbstractColumnSource<Long>
             chunk.set(destPosition.getAndIncrement(), getUnsafe(key));
             // endregion conversion
         });
-        chunk.setSize(destPosition.intValue());
+        chunk.setSize(destPosition.get());
     }
     <R> void fillChunkByKeys(
             @NotNull final WritableChunk<? super Values> destination,
@@ -193,7 +193,7 @@ public class ImmutableLongArraySource extends AbstractColumnSource<Long>
             chunk.set(destPosition.getAndIncrement(),converter.apply( getUnsafe(key)));
             // endregion conversion
         });
-        chunk.setSize(destPosition.intValue());
+        chunk.setSize(destPosition.get());
     }
     // endregion fillChunkByKeys
 

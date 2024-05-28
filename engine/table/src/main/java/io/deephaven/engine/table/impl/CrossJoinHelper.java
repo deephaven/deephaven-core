@@ -545,9 +545,9 @@ public class CrossJoinHelper {
                                         return;
                                     }
 
-                                    for (; currLeftShiftIdx.intValue() < upstreamLeft.shifted().size(); currLeftShiftIdx
+                                    for (; currLeftShiftIdx.get() < upstreamLeft.shifted().size(); currLeftShiftIdx
                                             .increment()) {
-                                        final int shiftIdx = currLeftShiftIdx.intValue();
+                                        final int shiftIdx = currLeftShiftIdx.get();
                                         final long beginRange =
                                                 upstreamLeft.shifted().getBeginRange(shiftIdx) << prevRightBits;
                                         final long endRange =

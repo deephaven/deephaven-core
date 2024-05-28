@@ -81,7 +81,7 @@ public class LongChunkedSumOperator implements IterativeChunkedAggregationOperat
     private boolean addChunk(LongChunk<? extends Values> values, long destination, int chunkStart, int chunkSize) {
         final MutableInt nonNullCount = new MutableInt(0);
         final long sum = doSum(chunkStart, chunkSize, nonNullCount, values);
-        return updateInternal(destination, sum, nonNullCount.intValue());
+        return updateInternal(destination, sum, nonNullCount.get());
     }
 
     @Override
@@ -111,13 +111,13 @@ public class LongChunkedSumOperator implements IterativeChunkedAggregationOperat
         final MutableInt newNonNullCount = new MutableInt(0);
         final long oldSum = doSum(chunkStart, chunkSize, oldNonNullCount, oldValues);
         final long newSum = doSum(chunkStart, chunkSize, newNonNullCount, newValues);
-        return updateInternal(destination, newSum - oldSum, oldNonNullCount.intValue(), newNonNullCount.intValue());
+        return updateInternal(destination, newSum - oldSum, oldNonNullCount.get(), newNonNullCount.get());
     }
 
     private boolean removeChunk(LongChunk<? extends Values> values, long destination, int chunkStart, int chunkSize) {
         final MutableInt nonNullCount = new MutableInt(0);
         final long sum = doSum(chunkStart, chunkSize, nonNullCount, values);
-        return updateInternal(destination, -sum, -nonNullCount.intValue());
+        return updateInternal(destination, -sum, -nonNullCount.get());
     }
 
     private long doSum(int chunkStart, int chunkSize, MutableInt nonNullCount,

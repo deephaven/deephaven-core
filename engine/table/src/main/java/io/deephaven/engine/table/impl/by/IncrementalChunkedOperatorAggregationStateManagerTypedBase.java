@@ -172,7 +172,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerTypedBase
 
         @Override
         public void onNextChunk(final int size) {
-            outputPositionToHashSlot.ensureCapacity(outputPosition.intValue() + size);
+            outputPositionToHashSlot.ensureCapacity(outputPosition.get() + size);
         }
 
         @Override

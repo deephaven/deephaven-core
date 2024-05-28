@@ -78,13 +78,13 @@ class FloatChunkedAvgOperator extends FpChunkedNonNormalCounter implements Itera
         final double sum = SumFloatChunk.sumFloatChunk(values, chunkStart, chunkSize, chunkNormalCount, chunkNanCount,
                 chunkInfinityCount, chunkMinusInfinityCount);
 
-        final long totalNormal = nonNullCounter.addNonNullUnsafe(destination, chunkNormalCount.intValue());
-        final long totalNanCount = updateNanCount(destination, chunkNanCount.intValue());
-        final long totalPositiveInfinityCount = updatePositiveInfinityCount(destination, chunkInfinityCount.intValue());
+        final long totalNormal = nonNullCounter.addNonNullUnsafe(destination, chunkNormalCount.get());
+        final long totalNanCount = updateNanCount(destination, chunkNanCount.get());
+        final long totalPositiveInfinityCount = updatePositiveInfinityCount(destination, chunkInfinityCount.get());
         final long totalNegativeInfinityCount =
-                updateNegativeInfinityCount(destination, chunkMinusInfinityCount.intValue());
+                updateNegativeInfinityCount(destination, chunkMinusInfinityCount.get());
 
-        if (chunkNormalCount.intValue() > 0) {
+        if (chunkNormalCount.get() > 0) {
             final double newSum = plusDouble(runningSum.getUnsafe(destination), sum);
             runningSum.set(destination, newSum);
             updateResultWithNewSum(destination, totalNormal, totalNanCount, totalPositiveInfinityCount,
@@ -104,20 +104,20 @@ class FloatChunkedAvgOperator extends FpChunkedNonNormalCounter implements Itera
 
         final double sum = SumFloatChunk.sumFloatChunk(values, chunkStart, chunkSize, chunkNormalCount, chunkNanCount,
                 chunkInfinityCount, chunkMinusInfinityCount);
-        if (chunkNormalCount.intValue() == 0 && chunkNanCount.intValue() == 0 && chunkInfinityCount.intValue() == 0
-                && chunkMinusInfinityCount.intValue() == 0) {
+        if (chunkNormalCount.get() == 0 && chunkNanCount.get() == 0 && chunkInfinityCount.get() == 0
+                && chunkMinusInfinityCount.get() == 0) {
             return false;
         }
 
-        final long totalNormal = nonNullCounter.addNonNull(destination, -chunkNormalCount.intValue());
-        final long totalNanCount = updateNanCount(destination, -chunkNanCount.intValue());
+        final long totalNormal = nonNullCounter.addNonNull(destination, -chunkNormalCount.get());
+        final long totalNanCount = updateNanCount(destination, -chunkNanCount.get());
         final long totalPositiveInfinityCount =
-                updatePositiveInfinityCount(destination, -chunkInfinityCount.intValue());
+                updatePositiveInfinityCount(destination, -chunkInfinityCount.get());
         final long totalNegativeInfinityCount =
-                updateNegativeInfinityCount(destination, -chunkMinusInfinityCount.intValue());
+                updateNegativeInfinityCount(destination, -chunkMinusInfinityCount.get());
 
         final double newSum;
-        if (chunkNormalCount.intValue() > 0) {
+        if (chunkNormalCount.get() > 0) {
             newSum = plusDouble(runningSum.getUnsafe(destination), -sum);
             runningSum.set(destination, newSum);
             updateResultWithNewSum(destination, totalNormal, totalNanCount, totalPositiveInfinityCount,

@@ -535,12 +535,12 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
                         rightGroup = crossJoinManager.getRightRowSetFromLeftRow(lastLeftIndex.longValue());
                     }
 
-                    final int alreadyWritten = postMapOffset.intValue();
-                    final int inRightGroup = preMapOffset.intValue();
+                    final int alreadyWritten = postMapOffset.get();
+                    final int inRightGroup = preMapOffset.get();
                     rightGroup.getKeysForPositions(
                             ChunkStream.of(mappedKeys, alreadyWritten, inRightGroup - alreadyWritten).iterator(),
                             destKey -> {
-                                mappedKeys.set(postMapOffset.intValue(), destKey);
+                                mappedKeys.set(postMapOffset.get(), destKey);
                                 postMapOffset.increment();
                             });
                     if (usePrev && rightIsLive) {
@@ -557,12 +557,12 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
                         lastLeftIndex.setValue(leftIndex);
                         uniqueLeftSideValues.increment();
                     }
-                    mappedKeys.set(preMapOffset.intValue(),
+                    mappedKeys.set(preMapOffset.get(),
                             usePrev ? crossJoinManager.getPrevMasked(ii) : crossJoinManager.getMasked(ii));
                     preMapOffset.increment();
                 });
                 flush.run();
-                uniqueLeftCount = uniqueLeftSideValues.intValue();
+                uniqueLeftCount = uniqueLeftSideValues.get();
 
                 mappedKeysReusable = shared;
             }

@@ -310,7 +310,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
             final MutableInt numSteps) {
         final int leftSize = (int) Math.ceil(Math.sqrt(size));
 
-        final int maxSteps = numSteps.intValue();
+        final int maxSteps = numSteps.get();
         final Random random = new Random(seed);
 
         final int numGroups = (int) Math.max(4, Math.ceil(Math.sqrt(leftSize)));
@@ -341,9 +341,9 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
                 EvalNugget.from(() -> doLeftOuterJoin(leftTicking, rightStatic)),
         };
 
-        for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
+        for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
             if (printTableUpdates) {
-                System.out.println("Size = " + size + ", seed=" + seed + ", step = " + numSteps.intValue());
+                System.out.println("Size = " + size + ", seed=" + seed + ", step = " + numSteps.get());
             }
             // left size is sqrt right table size; which is a good update size for the right table
             final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
@@ -359,7 +359,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
                             random, rightTicking, rightColumns);
                 }
             });
-            TstUtils.validate(ctxt + " step == " + numSteps.intValue(), en);
+            TstUtils.validate(ctxt + " step == " + numSteps.get(), en);
         }
     }
 
@@ -1497,7 +1497,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
 
     protected void testIncrementalWithKeyColumns(final String ctxt, final int initialSize, final int seed,
             final boolean useArrays, final MutableInt numSteps, JoinControl joinControl) {
-        final int maxSteps = numSteps.intValue();
+        final int maxSteps = numSteps.get();
         final Random random = new Random(seed);
 
         final int numGroups = (int) Math.max(4, Math.ceil(Math.sqrt(initialSize)));
@@ -1534,8 +1534,8 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         }
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
-            System.out.println("Seed = " + seed + ", size = " + initialSize + ", step = " + numSteps.intValue());
+        for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
+            System.out.println("Seed = " + seed + ", size = " + initialSize + ", step = " + numSteps.get());
 
             updateGraph.runWithinUnitTestCycle(() -> {
                 final int stepInstructions = random.nextInt();
@@ -1549,7 +1549,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
                 }
             });
 
-            TstUtils.validate(ctxt + " step == " + numSteps.intValue(), en);
+            TstUtils.validate(ctxt + " step == " + numSteps.get(), en);
         }
     }
 
@@ -1607,43 +1607,43 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         }
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
-            final long rightOffset = numSteps.intValue();
+        for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
+            final long rightOffset = numSteps.get();
 
             updateGraph.runWithinUnitTestCycle(() -> {
-                addToTable(leftTicking, i(numSteps.intValue()), longCol("intCol", numSteps.intValue()));
+                addToTable(leftTicking, i(numSteps.get()), longCol("intCol", numSteps.get()));
                 TableUpdateImpl up = new TableUpdateImpl();
                 up.shifted = RowSetShiftData.EMPTY;
-                up.added = i(numSteps.intValue());
+                up.added = i(numSteps.get());
                 up.removed = i();
                 up.modified = i();
                 up.modifiedColumnSet = ModifiedColumnSet.ALL;
                 leftTicking.notifyListeners(up);
 
-                final long[] data = new long[numSteps.intValue() + 1];
-                for (int i = 0; i <= numSteps.intValue(); ++i) {
+                final long[] data = new long[numSteps.get() + 1];
+                for (int i = 0; i <= numSteps.get(); ++i) {
                     data[i] = i;
                 }
-                addToTable(rightTicking, RowSetFactory.fromRange(rightOffset, rightOffset + numSteps.intValue()),
+                addToTable(rightTicking, RowSetFactory.fromRange(rightOffset, rightOffset + numSteps.get()),
                         longCol("intCol", data));
                 TstUtils.removeRows(rightTicking, i(rightOffset - 1));
 
                 up = new TableUpdateImpl();
                 final RowSetShiftData.Builder shifted = new RowSetShiftData.Builder();
-                shifted.shiftRange(0, numSteps.intValue() + rightOffset, 1);
+                shifted.shiftRange(0, numSteps.get() + rightOffset, 1);
                 up.shifted = shifted.build();
-                up.added = i(rightOffset + numSteps.intValue());
+                up.added = i(rightOffset + numSteps.get());
                 up.removed = i();
-                if (numSteps.intValue() == 0) {
+                if (numSteps.get() == 0) {
                     up.modified = RowSetFactory.empty();
                 } else {
-                    up.modified = RowSetFactory.fromRange(rightOffset, rightOffset + numSteps.intValue() - 1);
+                    up.modified = RowSetFactory.fromRange(rightOffset, rightOffset + numSteps.get() - 1);
                 }
                 up.modifiedColumnSet = ModifiedColumnSet.ALL;
                 rightTicking.notifyListeners(up);
             });
 
-            TstUtils.validate(" step == " + numSteps.intValue(), en);
+            TstUtils.validate(" step == " + numSteps.get(), en);
         }
     }
 

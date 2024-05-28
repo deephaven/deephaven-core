@@ -92,8 +92,8 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
                 && (leq(nextValue = valuesToInsert.get(ripos), maxInsert) || lastLeaf)) {
             if (gt(leafValues[rlpos], nextValue)) {
                 // we're not going to find nextValue in this leaf, so we skip over it
-                valuesToInsert.set(wipos.intValue(), nextValue);
-                counts.set(wipos.intValue(), counts.get(ripos));
+                valuesToInsert.set(wipos.get(), nextValue);
+                counts.set(wipos.get(), counts.get(ripos));
                 wipos.increment();
                 ripos++;
             } else {
@@ -109,9 +109,9 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
                             : upperBound(valuesToInsert, ripos, valuesToInsert.size(), maxInsert);
 
                     // noinspection unchecked
-                    valuesToInsert.copyFromTypedChunk((WritableLongChunk) valuesToInsert, ripos, wipos.intValue(),
+                    valuesToInsert.copyFromTypedChunk((WritableLongChunk) valuesToInsert, ripos, wipos.get(),
                             lastInsert - ripos);
-                    counts.copyFromTypedChunk(counts, ripos, wipos.intValue(), lastInsert - ripos);
+                    counts.copyFromTypedChunk(counts, ripos, wipos.get(), lastInsert - ripos);
                     wipos.add(lastInsert - ripos);
                     ripos = lastInsert;
                 }
@@ -402,7 +402,7 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
             final MutableInt wipos = new MutableInt(0);
             final int ripos = insertExistingIntoLeaf(valuesToInsert, counts, 0, wipos, size, directoryValues,
                     directoryCount, NULL_LONG, true);
-            maybeCompact(valuesToInsert, counts, ripos, wipos.intValue());
+            maybeCompact(valuesToInsert, counts, ripos, wipos.get());
             return;
         }
 
@@ -422,7 +422,7 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
                 break;
             }
         }
-        maybeCompact(valuesToInsert, counts, ripos, wipos.intValue());
+        maybeCompact(valuesToInsert, counts, ripos, wipos.get());
     }
 
     private void insert(WritableLongChunk<? extends Values> valuesToInsert, WritableIntChunk<ChunkLengths> counts) {
@@ -872,10 +872,10 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
             final int consumed = removeFromLeaf(removeContext, valuesToRemove, counts, 0, valuesToRemove.size(),
                     directoryValues, directoryCount, sz);
             assert consumed == valuesToRemove.size();
-            if (sz.intValue() == 0) {
+            if (sz.get() == 0) {
                 clear();
             } else {
-                size = sz.intValue();
+                size = sz.get();
             }
         } else {
             removeContext.ensureLeafCount((leafCount + 1) / 2);
@@ -891,9 +891,9 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
                 final MutableInt sz = new MutableInt(leafSizes[nextLeaf]);
                 rpos = removeFromLeaf(removeContext, valuesToRemove, counts, rpos, valuesToRemove.size(),
                         leafValues[nextLeaf], leafCounts[nextLeaf], sz);
-                size -= leafSizes[nextLeaf] - sz.intValue();
-                leafSizes[nextLeaf] = sz.intValue();
-                if (sz.intValue() == 0) {
+                size -= leafSizes[nextLeaf] - sz.get();
+                leafSizes[nextLeaf] = sz.get();
+                if (sz.get() == 0) {
                     cl = markLeafForRemoval(removeContext, nextLeaf, cl);
                 } else {
                     // we figure out if we can be pulled back into the prior leaf
@@ -1096,8 +1096,8 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
         int cl = -1;
         while (ripos < end) {
             final long removeValue = valuesToRemove.get(ripos);
-            rlpos = upperBound(leafValues, rlpos, sz.intValue(), removeValue);
-            if (rlpos == sz.intValue()) {
+            rlpos = upperBound(leafValues, rlpos, sz.get(), removeValue);
+            if (rlpos == sz.get()) {
                 break;
             }
             leafCounts[rlpos] -= counts.get(ripos);
@@ -1127,12 +1127,12 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
                 }
             }
         }
-        if (cl == 0 && removeContext.compactionLengths[0] == sz.intValue()) {
+        if (cl == 0 && removeContext.compactionLengths[0] == sz.get()) {
             // we've removed everything, so no need to compact
-            sz.setValue(0);
+            sz.set(0);
             return ripos;
         }
-        final int removed = compactValues(removeContext, leafValues, leafCounts, sz.intValue(), cl);
+        final int removed = compactValues(removeContext, leafValues, leafCounts, sz.get(), cl);
         sz.subtract(removed);
         return ripos;
     }

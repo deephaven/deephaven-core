@@ -275,7 +275,7 @@ public class WritableRowRedirectionLockFree implements WritableRowRedirection {
         final MutableInt offset = new MutableInt();
         final LongChunk<? extends RowKeys> innerRowKeysTyped = innerRowKeys.asLongChunk();
         outerRowKeys.forAllRowKeys(outerRowKey -> {
-            updates.put(outerRowKey, innerRowKeysTyped.get(offset.intValue()));
+            updates.put(outerRowKey, innerRowKeysTyped.get(offset.get()));
             offset.increment();
         });
     }

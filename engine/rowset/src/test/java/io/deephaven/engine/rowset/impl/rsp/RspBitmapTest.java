@@ -3454,7 +3454,7 @@ public class RspBitmapTest {
             rb2.addRange(start, end);
             return true;
         });
-        assertEquals(2, rangeCount.intValue());
+        assertEquals(2, rangeCount.get());
         assertEquals(rb, rb2);
     }
 

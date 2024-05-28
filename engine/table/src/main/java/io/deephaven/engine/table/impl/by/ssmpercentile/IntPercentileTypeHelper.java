@@ -14,7 +14,6 @@ import io.deephaven.util.compare.IntComparisons;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.IntChunk;
 import io.deephaven.engine.table.impl.ssms.IntSegmentedSortedMultiset;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.util.mutable.MutableInt;
@@ -74,9 +73,9 @@ public class IntPercentileTypeHelper implements SsmChunkedPercentileOperator.Per
         final long hiCount = ssmLo.getMaxCount();
         if (result > startPosition && IntComparisons.eq(asIntChunk.get(result - 1), hiValue)
                 && counts.get(result - 1) > hiCount) {
-            leftOvers.setValue((int) (counts.get(result - 1) - hiCount));
+            leftOvers.set((int) (counts.get(result - 1) - hiCount));
         } else {
-            leftOvers.setValue(0);
+            leftOvers.set(0);
         }
 
         return result - startPosition;

@@ -451,9 +451,9 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         void runTest(final Runnable simulateSourceStep) {
             createTable();
             createNuggets();
-            final int maxSteps = numSteps.intValue();
+            final int maxSteps = numSteps.get();
             final RemoteNugget[] nuggetsToValidate = nuggets.toArray(new RemoteNugget[0]);
-            for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
+            for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
                 for (int rt = 0; rt < numConsumerCoalesce; ++rt) {
                     // coalesce updates in producer
                     for (int pt = 0; pt < numProducerCoalesce; ++pt) {
@@ -473,7 +473,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                 TstUtils.validate("", nuggetsToValidate);
 
                 if (sourceTable.size() >= size) {
-                    numSteps.setValue(maxSteps); // pretend we finished
+                    numSteps.set(maxSteps); // pretend we finished
                     return;
                 }
             }
@@ -751,13 +751,13 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         void runTest() {
             createTable();
             createNuggets();
-            final int maxSteps = numSteps.intValue();
+            final int maxSteps = numSteps.get();
             final RemoteNugget[] nuggetsToValidate = nuggets.toArray(new RemoteNugget[0]);
-            for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
+            for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
                 for (int rt = 0; rt < numConsumerCoalesce; ++rt) {
                     // coalesce updates in producer
                     for (int pt = 0; pt < numProducerCoalesce; ++pt) {
-                        maybeChangeSub(numSteps.intValue(), rt, pt);
+                        maybeChangeSub(numSteps.get(), rt, pt);
 
                         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
                         updateGraph.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(

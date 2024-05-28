@@ -81,7 +81,7 @@ public class TestColumnIterators {
                     .filter((final Character value) -> !(Objects.equals(value,
                             box(data.get(nextValueIndex.getAndIncrement())))))
                     .count());
-            nextValueIndex.setValue(0);
+            nextValueIndex.set(0);
             assertEquals(0, chunked3.stream()
                     .filter((final Character value) -> !(Objects.equals(value,
                             box(data.get(nextValueIndex.getAndIncrement())))))
@@ -119,7 +119,7 @@ public class TestColumnIterators {
                     .filter((final Byte value) -> !(Objects.equals(value,
                             box(data.get(nextValueIndex.getAndIncrement())))))
                     .count());
-            nextValueIndex.setValue(0);
+            nextValueIndex.set(0);
             assertEquals(0, chunked3.stream()
                     .filter((final Byte value) -> !(Objects.equals(value,
                             box(data.get(nextValueIndex.getAndIncrement())))))
@@ -157,7 +157,7 @@ public class TestColumnIterators {
                     .filter((final Short value) -> !(Objects.equals(value,
                             box(data.get(nextValueIndex.getAndIncrement())))))
                     .count());
-            nextValueIndex.setValue(0);
+            nextValueIndex.set(0);
             assertEquals(0, chunked3.stream()
                     .filter((final Short value) -> !(Objects.equals(value,
                             box(data.get(nextValueIndex.getAndIncrement())))))
@@ -195,7 +195,7 @@ public class TestColumnIterators {
                     .filter((final Integer value) -> !(Objects.equals(value,
                             box(data.get(nextValueIndex.getAndIncrement())))))
                     .count());
-            nextValueIndex.setValue(0);
+            nextValueIndex.set(0);
             assertEquals(0, chunked3.stream()
                     .filter((final Integer value) -> !(Objects.equals(value,
                             box(data.get(nextValueIndex.getAndIncrement())))))
@@ -233,7 +233,7 @@ public class TestColumnIterators {
                     .filter((final Long value) -> !(Objects.equals(value,
                             box(data.get(nextValueIndex.getAndIncrement())))))
                     .count());
-            nextValueIndex.setValue(0);
+            nextValueIndex.set(0);
             assertEquals(0, chunked3.stream()
                     .filter((final Long value) -> !(Objects.equals(value,
                             box(data.get(nextValueIndex.getAndIncrement())))))
@@ -271,7 +271,7 @@ public class TestColumnIterators {
                     .filter((final Float value) -> !(Objects.equals(value,
                             box(data.get(nextValueIndex.getAndIncrement())))))
                     .count());
-            nextValueIndex.setValue(0);
+            nextValueIndex.set(0);
             assertEquals(0, chunked3.stream()
                     .filter((final Float value) -> !(Objects.equals(value,
                             box(data.get(nextValueIndex.getAndIncrement())))))
@@ -309,7 +309,7 @@ public class TestColumnIterators {
                     .filter((final Double value) -> !(Objects.equals(value,
                             box(data.get(nextValueIndex.getAndIncrement())))))
                     .count());
-            nextValueIndex.setValue(0);
+            nextValueIndex.set(0);
             assertEquals(0, chunked3.stream()
                     .filter((final Double value) -> !(Objects.equals(value,
                             box(data.get(nextValueIndex.getAndIncrement())))))
@@ -343,7 +343,7 @@ public class TestColumnIterators {
                     .filter((final Boolean value) -> !(Objects.equals(value,
                             data.get(nextValueIndex.getAndIncrement()))))
                     .count());
-            nextValueIndex.setValue(0);
+            nextValueIndex.set(0);
             assertEquals(0, chunked2.stream()
                     .filter((final Boolean value) -> !(Objects.equals(value,
                             data.get(nextValueIndex.getAndIncrement()))))
@@ -377,7 +377,7 @@ public class TestColumnIterators {
                     .filter((final String value) -> !(Objects.equals(value,
                             data.get(nextValueIndex.getAndIncrement()))))
                     .count());
-            nextValueIndex.setValue(0);
+            nextValueIndex.set(0);
             assertEquals(0, chunked2.stream()
                     .filter((final String value) -> !(Objects.equals(value,
                             data.get(nextValueIndex.getAndIncrement()))))

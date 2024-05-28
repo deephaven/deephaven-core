@@ -227,7 +227,7 @@ public interface ReleaseTracker<RESOURCE_TYPE> {
                     "Leaked " + leaks.size() + " resources (" + dupDetector.size() + " unique traces):\n");
             final MutableInt i = new MutableInt();
             dupDetector.entrySet().stream().limit(maxUniqueTraces).forEach(entry -> {
-                sb.append("    Leak #").append(i.intValue());
+                sb.append("    Leak #").append(i.get());
                 if (entry.getValue() > 0L) {
                     sb.append(", detected " + entry.getValue() + " times, was acquired:\n");
                 } else {

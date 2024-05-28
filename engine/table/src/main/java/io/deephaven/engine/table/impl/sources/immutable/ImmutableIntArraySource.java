@@ -130,7 +130,7 @@ public class ImmutableIntArraySource extends AbstractColumnSource<Integer>
             chunk.copyFromTypedArray(data, (int) start, destPosition.getAndAdd(length), length);
             // endregion copyFromTypedArrayImmutable
         });
-        chunk.setSize(destPosition.intValue());
+        chunk.setSize(destPosition.get());
     }
     // endregion fillChunkByRanges
 
@@ -148,7 +148,7 @@ public class ImmutableIntArraySource extends AbstractColumnSource<Integer>
             chunk.set(destPosition.getAndIncrement(), getUnsafe(key));
             // endregion conversion
         });
-        chunk.setSize(destPosition.intValue());
+        chunk.setSize(destPosition.get());
     }
     // endregion fillChunkByKeys
 

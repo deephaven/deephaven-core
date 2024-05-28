@@ -170,8 +170,8 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
             weightedSum += weight * component;
         }
 
-        nansOut.setValue(nans);
-        normalOut.setValue(normal);
+        nansOut.set(nans);
+        normalOut.set(normal);
         sumOfWeightsOut.setValue(sumOfWeights);
         weightedSumOut.setValue(weightedSum);
     }
@@ -185,8 +185,8 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
 
         sumChunks(doubleValues, weightValues, start, length, nanOut, normalOut, sumOfWeightsOut, weightedSumOut);
 
-        final int newNans = nanOut.intValue();
-        final int newNormal = normalOut.intValue();
+        final int newNans = nanOut.get();
+        final int newNormal = normalOut.get();
         final double newSumOfWeights = sumOfWeightsOut.doubleValue();
         final double newWeightedSum = weightedSumOut.doubleValue();
 
@@ -259,8 +259,8 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
 
         sumChunks(doubleValues, weightValues, start, length, nanOut, normalOut, sumOfWeightsOut, weightedSumOut);
 
-        final int newNans = nanOut.intValue();
-        final int newNormal = normalOut.intValue();
+        final int newNans = nanOut.get();
+        final int newNormal = normalOut.get();
         final double newSumOfWeights = sumOfWeightsOut.doubleValue();
         final double newWeightedSum = weightedSumOut.doubleValue();
 
@@ -331,15 +331,15 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
         sumChunks(prevDoubleValues, prevWeightValues, start, length, nanOut, normalOut, sumOfWeightsOut,
                 weightedSumOut);
 
-        final int prevNans = nanOut.intValue();
-        final int prevNormal = normalOut.intValue();
+        final int prevNans = nanOut.get();
+        final int prevNormal = normalOut.get();
         final double prevSumOfWeights = sumOfWeightsOut.doubleValue();
         final double prevWeightedSum = weightedSumOut.doubleValue();
 
         sumChunks(newDoubleValues, newWeightValues, start, length, nanOut, normalOut, sumOfWeightsOut, weightedSumOut);
 
-        final int newNans = nanOut.intValue();
-        final int newNormal = normalOut.intValue();
+        final int newNans = nanOut.get();
+        final int newNormal = normalOut.get();
         final double newSumOfWeights = sumOfWeightsOut.doubleValue();
         final double newWeightedSum = weightedSumOut.doubleValue();
 

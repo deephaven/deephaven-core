@@ -20,7 +20,6 @@ import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableObjectArraySource;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
@@ -226,7 +225,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     public boolean doRehash(boolean fullRehash, MutableInt rehashCredits, int nextChunkSize,
             NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         if (rehashPointer > 0) {
-            final int requiredRehash = nextChunkSize - rehashCredits.intValue();
+            final int requiredRehash = nextChunkSize - rehashCredits.get();
             if (requiredRehash <= 0) {
                 return false;
             }
@@ -252,8 +251,8 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         }
 
         // we can't give the caller credit for rehashes with the old table, we need to begin migrating things again
-        if (rehashCredits.intValue() > 0) {
-            rehashCredits.setValue(0);
+        if (rehashCredits.get() > 0) {
+            rehashCredits.set(0);
         }
 
         if (fullRehash) {

@@ -158,8 +158,8 @@ class DoubleChunkedWeightedSumOperator implements IterativeChunkedAggregationOpe
             weightedSum += weight * component;
         }
 
-        nansOut.setValue(nans);
-        normalOut.setValue(normal);
+        nansOut.set(nans);
+        normalOut.set(normal);
         weightedSumOut.setValue(weightedSum);
     }
 
@@ -171,8 +171,8 @@ class DoubleChunkedWeightedSumOperator implements IterativeChunkedAggregationOpe
 
         sumChunks(doubleValues, weightValues, start, length, nanOut, normalOut, weightedSumOut);
 
-        final int newNans = nanOut.intValue();
-        final int newNormal = normalOut.intValue();
+        final int newNans = nanOut.get();
+        final int newNormal = normalOut.get();
         final double newWeightedSum = weightedSumOut.doubleValue();
 
         final long totalNans;
@@ -238,8 +238,8 @@ class DoubleChunkedWeightedSumOperator implements IterativeChunkedAggregationOpe
 
         sumChunks(doubleValues, weightValues, start, length, nanOut, normalOut, weightedSumOut);
 
-        final int newNans = nanOut.intValue();
-        final int newNormal = normalOut.intValue();
+        final int newNans = nanOut.get();
+        final int newNormal = normalOut.get();
         final double newWeightedSum = weightedSumOut.doubleValue();
 
         final long totalNans;
@@ -300,14 +300,14 @@ class DoubleChunkedWeightedSumOperator implements IterativeChunkedAggregationOpe
 
         sumChunks(prevDoubleValues, prevWeightValues, start, length, nanOut, normalOut, weightedSumOut);
 
-        final int prevNans = nanOut.intValue();
-        final int prevNormal = normalOut.intValue();
+        final int prevNans = nanOut.get();
+        final int prevNormal = normalOut.get();
         final double prevWeightedSum = weightedSumOut.doubleValue();
 
         sumChunks(newDoubleValues, newWeightValues, start, length, nanOut, normalOut, weightedSumOut);
 
-        final int newNans = nanOut.intValue();
-        final int newNormal = normalOut.intValue();
+        final int newNans = nanOut.get();
+        final int newNormal = normalOut.get();
         final double newWeightedSum = weightedSumOut.doubleValue();
 
 

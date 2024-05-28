@@ -187,7 +187,7 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
     public long rangesCountUpperBound() {
         final MutableInt mi = new MutableInt(0);
         wrappedOK.forAllRowKeyRanges((final long start, final long end) -> mi.increment());
-        return mi.intValue();
+        return mi.get();
     }
 
     private void shiftIndicesChunk(WritableLongChunk<? super OrderedRowKeys> chunkToFill) {

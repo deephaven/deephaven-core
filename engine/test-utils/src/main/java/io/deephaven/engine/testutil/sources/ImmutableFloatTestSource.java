@@ -77,7 +77,7 @@ public class ImmutableFloatTestSource extends AbstractColumnSource<Float>
                 public void accept(final long v) {
                     // the unit test framework will ask us to add things, we need to conveniently ignore it
                     if (!data.containsKey(v)) {
-                        data.put(v, vcs.get(ii.intValue()));
+                        data.put(v, vcs.get(ii.get()));
                     }
                     ii.increment();
                 }
@@ -91,7 +91,7 @@ public class ImmutableFloatTestSource extends AbstractColumnSource<Float>
                 public void accept(final long v) {
                     // the unit test framework will ask us to add things, we need to conveniently ignore it
                     if (!data.containsKey(v)) {
-                        data.put(v, TypeUtils.unbox(vcs.get(ii.intValue())));
+                        data.put(v, TypeUtils.unbox(vcs.get(ii.get())));
                     }
                     ii.increment();
                 }

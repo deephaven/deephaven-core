@@ -913,11 +913,11 @@ public class TstUtils {
         boolean failed = false;
         MutableInt maxSteps = new MutableInt(initialSteps);
         for (int seed = initialSeed; seed < maxSeed; ++seed) {
-            if (maxSteps.intValue() <= 0) {
+            if (maxSteps.get() <= 0) {
                 System.out.println("Best Run: bestSeed=" + bestSeed + " bestSteps=" + bestSteps);
                 return;
             }
-            System.out.println("Running: seed=" + seed + " numSteps=" + maxSteps.intValue() + " bestSeed=" + bestSeed
+            System.out.println("Running: seed=" + seed + " numSteps=" + maxSteps.get() + " bestSeed=" + bestSeed
                     + " bestSteps=" + bestSteps);
             if (seed != initialSeed) {
                 try {
@@ -938,9 +938,9 @@ public class TstUtils {
             } catch (Exception | Error e) {
                 failed = true;
                 bestSeed = seed;
-                bestSteps = maxSteps.intValue() + 1;
+                bestSteps = maxSteps.get() + 1;
                 e.printStackTrace();
-                System.out.println("Candidate: seed=" + seed + " numSteps=" + (maxSteps.intValue() + 1));
+                System.out.println("Candidate: seed=" + seed + " numSteps=" + (maxSteps.get() + 1));
             }
         }
 
