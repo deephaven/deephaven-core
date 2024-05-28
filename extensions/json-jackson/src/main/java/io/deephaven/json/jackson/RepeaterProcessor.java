@@ -54,7 +54,7 @@ interface RepeaterProcessor extends ContextAware {
 
         void processElement(JsonParser parser) throws IOException;
 
-        // While a traditional arrays can't have missing elements, when an object is an array, a field may be missing:
+        // While traditional arrays can't have missing elements, when an object is an array, a field may be missing:
         // [ { "foo": 1, "bar": 2 }, {"bar": 3} ]
         void processElementMissing(JsonParser parser) throws IOException;
 

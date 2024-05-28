@@ -102,7 +102,6 @@ final class ObjectMixin extends Mixin<ObjectValue> {
     final class ObjectValueFieldProcessor extends ContextAwareDelegateBase implements ValueProcessor, FieldProcessor {
         private final Map<ObjectField, ValueProcessor> fields;
         private final Map<String, ObjectField> map;
-        private final Set<ObjectField> visited;
 
         ObjectValueFieldProcessor(Map<ObjectField, ValueProcessor> fields) {
             super(fields.values());
@@ -187,10 +186,25 @@ final class ObjectMixin extends Mixin<ObjectValue> {
             }
         }
 
+        // -----------------------------------------------------------------------------------------------------------
+
+        private final Set<ObjectField> visited;
+
         private void processObjectFields(JsonParser parser) throws IOException {
-            visited.clear();
-            FieldProcessor.processFields(parser, this);
-            processMissingFields(parser);
+            try {
+                FieldProcessor.processFields(parser, this);
+                if (visited.size() == fields.size()) {
+                    // All fields visited, none missing
+                    return;
+                }
+                for (Entry<ObjectField, ValueProcessor> e : fields.entrySet()) {
+                    if (!visited.contains(e.getKey())) {
+                        processMissingField(e.getKey(), e.getValue(), parser);
+                    }
+                }
+            } finally {
+                visited.clear();
+            }
         }
 
         @Override
@@ -213,17 +227,7 @@ final class ObjectMixin extends Mixin<ObjectValue> {
             }
         }
 
-        void processMissingFields(JsonParser parser) throws IOException {
-            if (visited.size() == fields.size()) {
-                // All fields visited, none missing
-                return;
-            }
-            for (Entry<ObjectField, ValueProcessor> e : fields.entrySet()) {
-                if (!visited.contains(e.getKey())) {
-                    processMissingField(e.getKey(), e.getValue(), parser);
-                }
-            }
-        }
+        // -----------------------------------------------------------------------------------------------------------
 
         private void processField(ObjectField field, ValueProcessor processor, JsonParser parser)
                 throws ValueAwareException {
@@ -363,15 +367,26 @@ final class ObjectMixin extends Mixin<ObjectValue> {
             }
         }
 
-        private void processObjectFields(JsonParser parser) throws IOException {
-            visited.clear();
-            FieldProcessor.processFields(parser, this);
-            processMissingFields(parser);
-        }
-
         // -----------------------------------------------------------------------------------------------------------
 
         private final Set<ObjectField> visited;
+
+        private void processObjectFields(JsonParser parser) throws IOException {
+            try {
+                FieldProcessor.processFields(parser, this);
+                if (visited.size() == fields.size()) {
+                    // All fields visited, none missing
+                    return;
+                }
+                for (Entry<ObjectField, Context> e : contexts.entrySet()) {
+                    if (!visited.contains(e.getKey())) {
+                        e.getValue().processElementMissing(parser);
+                    }
+                }
+            } finally {
+                visited.clear();
+            }
+        }
 
         @Override
         public void process(String fieldName, JsonParser parser) throws IOException {
@@ -393,18 +408,6 @@ final class ObjectMixin extends Mixin<ObjectValue> {
                         String.format("Field '%s' has already been visited and repeatedBehavior == %s", fieldName,
                                 field.repeatedBehavior()),
                         parser.currentLocation(), options);
-            }
-        }
-
-        void processMissingFields(JsonParser parser) throws IOException {
-            if (visited.size() == fields.size()) {
-                // All fields visited, none missing
-                return;
-            }
-            for (Entry<ObjectField, Context> e : contexts.entrySet()) {
-                if (!visited.contains(e.getKey())) {
-                    e.getValue().processElementMissing(parser);
-                }
             }
         }
 

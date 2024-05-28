@@ -185,9 +185,9 @@ public interface ObjectProcessor<T> {
     interface Provider {
 
         /**
-         * The base input types for {@link #processor(Type)}.
+         * The supported input types for {@link #processor(Type)}.
          *
-         * @return the input types
+         * @return the supported input types
          */
         Set<Type<?>> inputTypes();
 
