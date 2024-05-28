@@ -4,519 +4,596 @@
 #include "deephaven/proto/partitionedtable.pb.h"
 
 #include <algorithm>
-
-#include <google/protobuf/io/coded_stream.h>
-#include <google/protobuf/extension_set.h>
-#include <google/protobuf/wire_format_lite.h>
-#include <google/protobuf/descriptor.h>
-#include <google/protobuf/generated_message_reflection.h>
-#include <google/protobuf/reflection_ops.h>
-#include <google/protobuf/wire_format.h>
+#include "google/protobuf/io/coded_stream.h"
+#include "google/protobuf/extension_set.h"
+#include "google/protobuf/wire_format_lite.h"
+#include "google/protobuf/descriptor.h"
+#include "google/protobuf/generated_message_reflection.h"
+#include "google/protobuf/reflection_ops.h"
+#include "google/protobuf/wire_format.h"
+#include "google/protobuf/generated_message_tctable_impl.h"
 // @@protoc_insertion_point(includes)
-#include <google/protobuf/port_def.inc>
 
+// Must be included last.
+#include "google/protobuf/port_def.inc"
 PROTOBUF_PRAGMA_INIT_SEG
-
-namespace _pb = ::PROTOBUF_NAMESPACE_ID;
-namespace _pbi = _pb::internal;
-
+namespace _pb = ::google::protobuf;
+namespace _pbi = ::google::protobuf::internal;
+namespace _fl = ::google::protobuf::internal::field_layout;
 namespace io {
 namespace deephaven {
 namespace proto {
 namespace backplane {
 namespace grpc {
-PROTOBUF_CONSTEXPR PartitionByRequest::PartitionByRequest(
-    ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.key_column_names_)*/{}
-  , /*decltype(_impl_.table_id_)*/nullptr
-  , /*decltype(_impl_.result_id_)*/nullptr
-  , /*decltype(_impl_.drop_keys_)*/false
-  , /*decltype(_impl_._cached_size_)*/{}} {}
-struct PartitionByRequestDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR PartitionByRequestDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
-  ~PartitionByRequestDefaultTypeInternal() {}
-  union {
-    PartitionByRequest _instance;
-  };
-};
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 PartitionByRequestDefaultTypeInternal _PartitionByRequest_default_instance_;
-PROTOBUF_CONSTEXPR PartitionByResponse::PartitionByResponse(
-    ::_pbi::ConstantInitialized) {}
-struct PartitionByResponseDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR PartitionByResponseDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
-  ~PartitionByResponseDefaultTypeInternal() {}
-  union {
-    PartitionByResponse _instance;
-  };
-};
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 PartitionByResponseDefaultTypeInternal _PartitionByResponse_default_instance_;
-PROTOBUF_CONSTEXPR MergeRequest::MergeRequest(
-    ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.partitioned_table_)*/nullptr
-  , /*decltype(_impl_.result_id_)*/nullptr
-  , /*decltype(_impl_._cached_size_)*/{}} {}
-struct MergeRequestDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR MergeRequestDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
-  ~MergeRequestDefaultTypeInternal() {}
-  union {
-    MergeRequest _instance;
-  };
-};
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 MergeRequestDefaultTypeInternal _MergeRequest_default_instance_;
-PROTOBUF_CONSTEXPR GetTableRequest::GetTableRequest(
-    ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.partitioned_table_)*/nullptr
-  , /*decltype(_impl_.key_table_ticket_)*/nullptr
-  , /*decltype(_impl_.result_id_)*/nullptr
-  , /*decltype(_impl_._cached_size_)*/{}} {}
-struct GetTableRequestDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR GetTableRequestDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
-  ~GetTableRequestDefaultTypeInternal() {}
-  union {
-    GetTableRequest _instance;
-  };
-};
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 GetTableRequestDefaultTypeInternal _GetTableRequest_default_instance_;
-PROTOBUF_CONSTEXPR PartitionedTableDescriptor::PartitionedTableDescriptor(
-    ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.key_column_names_)*/{}
-  , /*decltype(_impl_.constituent_definition_schema_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
-  , /*decltype(_impl_.constituent_column_name_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
-  , /*decltype(_impl_.unique_keys_)*/false
-  , /*decltype(_impl_.constituent_changes_permitted_)*/false
-  , /*decltype(_impl_._cached_size_)*/{}} {}
+
+inline constexpr PartitionedTableDescriptor::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : key_column_names_{},
+        constituent_definition_schema_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        constituent_column_name_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        unique_keys_{false},
+        constituent_changes_permitted_{false},
+        _cached_size_{0} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR PartitionedTableDescriptor::PartitionedTableDescriptor(::_pbi::ConstantInitialized)
+    : _impl_(::_pbi::ConstantInitialized()) {}
 struct PartitionedTableDescriptorDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR PartitionedTableDescriptorDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
+  PROTOBUF_CONSTEXPR PartitionedTableDescriptorDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
   ~PartitionedTableDescriptorDefaultTypeInternal() {}
   union {
     PartitionedTableDescriptor _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 PartitionedTableDescriptorDefaultTypeInternal _PartitionedTableDescriptor_default_instance_;
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 PartitionedTableDescriptorDefaultTypeInternal _PartitionedTableDescriptor_default_instance_;
+      template <typename>
+PROTOBUF_CONSTEXPR PartitionByResponse::PartitionByResponse(::_pbi::ConstantInitialized) {}
+struct PartitionByResponseDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR PartitionByResponseDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~PartitionByResponseDefaultTypeInternal() {}
+  union {
+    PartitionByResponse _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 PartitionByResponseDefaultTypeInternal _PartitionByResponse_default_instance_;
+
+inline constexpr PartitionByRequest::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : _cached_size_{0},
+        key_column_names_{},
+        table_id_{nullptr},
+        result_id_{nullptr},
+        drop_keys_{false} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR PartitionByRequest::PartitionByRequest(::_pbi::ConstantInitialized)
+    : _impl_(::_pbi::ConstantInitialized()) {}
+struct PartitionByRequestDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR PartitionByRequestDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~PartitionByRequestDefaultTypeInternal() {}
+  union {
+    PartitionByRequest _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 PartitionByRequestDefaultTypeInternal _PartitionByRequest_default_instance_;
+
+inline constexpr MergeRequest::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : _cached_size_{0},
+        partitioned_table_{nullptr},
+        result_id_{nullptr} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR MergeRequest::MergeRequest(::_pbi::ConstantInitialized)
+    : _impl_(::_pbi::ConstantInitialized()) {}
+struct MergeRequestDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR MergeRequestDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~MergeRequestDefaultTypeInternal() {}
+  union {
+    MergeRequest _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 MergeRequestDefaultTypeInternal _MergeRequest_default_instance_;
+
+inline constexpr GetTableRequest::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : _cached_size_{0},
+        partitioned_table_{nullptr},
+        key_table_ticket_{nullptr},
+        result_id_{nullptr} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR GetTableRequest::GetTableRequest(::_pbi::ConstantInitialized)
+    : _impl_(::_pbi::ConstantInitialized()) {}
+struct GetTableRequestDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR GetTableRequestDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~GetTableRequestDefaultTypeInternal() {}
+  union {
+    GetTableRequest _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 GetTableRequestDefaultTypeInternal _GetTableRequest_default_instance_;
 }  // namespace grpc
 }  // namespace backplane
 }  // namespace proto
 }  // namespace deephaven
 }  // namespace io
 static ::_pb::Metadata file_level_metadata_deephaven_2fproto_2fpartitionedtable_2eproto[5];
-static constexpr ::_pb::EnumDescriptor const** file_level_enum_descriptors_deephaven_2fproto_2fpartitionedtable_2eproto = nullptr;
-static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_deephaven_2fproto_2fpartitionedtable_2eproto = nullptr;
-
-const uint32_t TableStruct_deephaven_2fproto_2fpartitionedtable_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::PartitionByRequest, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::PartitionByRequest, _impl_.table_id_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::PartitionByRequest, _impl_.result_id_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::PartitionByRequest, _impl_.key_column_names_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::PartitionByRequest, _impl_.drop_keys_),
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::PartitionByResponse, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::MergeRequest, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::MergeRequest, _impl_.partitioned_table_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::MergeRequest, _impl_.result_id_),
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::GetTableRequest, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::GetTableRequest, _impl_.partitioned_table_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::GetTableRequest, _impl_.key_table_ticket_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::GetTableRequest, _impl_.result_id_),
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::PartitionedTableDescriptor, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::PartitionedTableDescriptor, _impl_.key_column_names_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::PartitionedTableDescriptor, _impl_.constituent_column_name_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::PartitionedTableDescriptor, _impl_.unique_keys_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::PartitionedTableDescriptor, _impl_.constituent_definition_schema_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::PartitionedTableDescriptor, _impl_.constituent_changes_permitted_),
+static constexpr const ::_pb::EnumDescriptor**
+    file_level_enum_descriptors_deephaven_2fproto_2fpartitionedtable_2eproto = nullptr;
+static constexpr const ::_pb::ServiceDescriptor**
+    file_level_service_descriptors_deephaven_2fproto_2fpartitionedtable_2eproto = nullptr;
+const ::uint32_t TableStruct_deephaven_2fproto_2fpartitionedtable_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(
+    protodesc_cold) = {
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::PartitionByRequest, _impl_._has_bits_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::PartitionByRequest, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::PartitionByRequest, _impl_.table_id_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::PartitionByRequest, _impl_.result_id_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::PartitionByRequest, _impl_.key_column_names_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::PartitionByRequest, _impl_.drop_keys_),
+    0,
+    1,
+    ~0u,
+    ~0u,
+    ~0u,  // no _has_bits_
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::PartitionByResponse, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::MergeRequest, _impl_._has_bits_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::MergeRequest, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::MergeRequest, _impl_.partitioned_table_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::MergeRequest, _impl_.result_id_),
+    0,
+    1,
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::GetTableRequest, _impl_._has_bits_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::GetTableRequest, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::GetTableRequest, _impl_.partitioned_table_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::GetTableRequest, _impl_.key_table_ticket_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::GetTableRequest, _impl_.result_id_),
+    0,
+    1,
+    2,
+    ~0u,  // no _has_bits_
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::PartitionedTableDescriptor, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::PartitionedTableDescriptor, _impl_.key_column_names_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::PartitionedTableDescriptor, _impl_.constituent_column_name_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::PartitionedTableDescriptor, _impl_.unique_keys_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::PartitionedTableDescriptor, _impl_.constituent_definition_schema_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::PartitionedTableDescriptor, _impl_.constituent_changes_permitted_),
 };
-static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
-  { 0, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::PartitionByRequest)},
-  { 10, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::PartitionByResponse)},
-  { 16, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::MergeRequest)},
-  { 24, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::GetTableRequest)},
-  { 33, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::PartitionedTableDescriptor)},
+
+static const ::_pbi::MigrationSchema
+    schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
+        {0, 12, -1, sizeof(::io::deephaven::proto::backplane::grpc::PartitionByRequest)},
+        {16, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::PartitionByResponse)},
+        {24, 34, -1, sizeof(::io::deephaven::proto::backplane::grpc::MergeRequest)},
+        {36, 47, -1, sizeof(::io::deephaven::proto::backplane::grpc::GetTableRequest)},
+        {50, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::PartitionedTableDescriptor)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
-  &::io::deephaven::proto::backplane::grpc::_PartitionByRequest_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_PartitionByResponse_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_MergeRequest_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_GetTableRequest_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_PartitionedTableDescriptor_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_PartitionByRequest_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_PartitionByResponse_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_MergeRequest_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_GetTableRequest_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_PartitionedTableDescriptor_default_instance_._instance,
 };
-
-const char descriptor_table_protodef_deephaven_2fproto_2fpartitionedtable_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
-  "\n&deephaven/proto/partitionedtable.proto"
-  "\022!io.deephaven.proto.backplane.grpc\032\033dee"
-  "phaven/proto/table.proto\032\034deephaven/prot"
-  "o/ticket.proto\"\274\001\n\022PartitionByRequest\022;\n"
-  "\010table_id\030\001 \001(\0132).io.deephaven.proto.bac"
-  "kplane.grpc.Ticket\022<\n\tresult_id\030\002 \001(\0132)."
-  "io.deephaven.proto.backplane.grpc.Ticket"
-  "\022\030\n\020key_column_names\030\003 \003(\t\022\021\n\tdrop_keys\030"
-  "\004 \001(\010\"\025\n\023PartitionByResponse\"\222\001\n\014MergeRe"
-  "quest\022D\n\021partitioned_table\030\001 \001(\0132).io.de"
-  "ephaven.proto.backplane.grpc.Ticket\022<\n\tr"
-  "esult_id\030\002 \001(\0132).io.deephaven.proto.back"
-  "plane.grpc.Ticket\"\332\001\n\017GetTableRequest\022D\n"
-  "\021partitioned_table\030\001 \001(\0132).io.deephaven."
-  "proto.backplane.grpc.Ticket\022C\n\020key_table"
-  "_ticket\030\002 \001(\0132).io.deephaven.proto.backp"
-  "lane.grpc.Ticket\022<\n\tresult_id\030\004 \001(\0132).io"
-  ".deephaven.proto.backplane.grpc.Ticket\"\272"
-  "\001\n\032PartitionedTableDescriptor\022\030\n\020key_col"
-  "umn_names\030\001 \003(\t\022\037\n\027constituent_column_na"
-  "me\030\004 \001(\t\022\023\n\013unique_keys\030\002 \001(\010\022%\n\035constit"
-  "uent_definition_schema\030\003 \001(\014\022%\n\035constitu"
-  "ent_changes_permitted\030\005 \001(\0102\226\003\n\027Partitio"
-  "nedTableService\022|\n\013PartitionBy\0225.io.deep"
-  "haven.proto.backplane.grpc.PartitionByRe"
-  "quest\0326.io.deephaven.proto.backplane.grp"
-  "c.PartitionByResponse\022z\n\005Merge\022/.io.deep"
-  "haven.proto.backplane.grpc.MergeRequest\032"
-  "@.io.deephaven.proto.backplane.grpc.Expo"
-  "rtedTableCreationResponse\022\200\001\n\010GetTable\0222"
-  ".io.deephaven.proto.backplane.grpc.GetTa"
-  "bleRequest\032@.io.deephaven.proto.backplan"
-  "e.grpc.ExportedTableCreationResponseBLH\001"
-  "P\001ZFgithub.com/deephaven/deephaven-core/"
-  "go/internal/proto/partitionedtableb\006prot"
-  "o3"
-  ;
-static const ::_pbi::DescriptorTable* const descriptor_table_deephaven_2fproto_2fpartitionedtable_2eproto_deps[2] = {
-  &::descriptor_table_deephaven_2fproto_2ftable_2eproto,
-  &::descriptor_table_deephaven_2fproto_2fticket_2eproto,
+const char descriptor_table_protodef_deephaven_2fproto_2fpartitionedtable_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
+    "\n&deephaven/proto/partitionedtable.proto"
+    "\022!io.deephaven.proto.backplane.grpc\032\033dee"
+    "phaven/proto/table.proto\032\034deephaven/prot"
+    "o/ticket.proto\"\274\001\n\022PartitionByRequest\022;\n"
+    "\010table_id\030\001 \001(\0132).io.deephaven.proto.bac"
+    "kplane.grpc.Ticket\022<\n\tresult_id\030\002 \001(\0132)."
+    "io.deephaven.proto.backplane.grpc.Ticket"
+    "\022\030\n\020key_column_names\030\003 \003(\t\022\021\n\tdrop_keys\030"
+    "\004 \001(\010\"\025\n\023PartitionByResponse\"\222\001\n\014MergeRe"
+    "quest\022D\n\021partitioned_table\030\001 \001(\0132).io.de"
+    "ephaven.proto.backplane.grpc.Ticket\022<\n\tr"
+    "esult_id\030\002 \001(\0132).io.deephaven.proto.back"
+    "plane.grpc.Ticket\"\332\001\n\017GetTableRequest\022D\n"
+    "\021partitioned_table\030\001 \001(\0132).io.deephaven."
+    "proto.backplane.grpc.Ticket\022C\n\020key_table"
+    "_ticket\030\002 \001(\0132).io.deephaven.proto.backp"
+    "lane.grpc.Ticket\022<\n\tresult_id\030\004 \001(\0132).io"
+    ".deephaven.proto.backplane.grpc.Ticket\"\272"
+    "\001\n\032PartitionedTableDescriptor\022\030\n\020key_col"
+    "umn_names\030\001 \003(\t\022\037\n\027constituent_column_na"
+    "me\030\004 \001(\t\022\023\n\013unique_keys\030\002 \001(\010\022%\n\035constit"
+    "uent_definition_schema\030\003 \001(\014\022%\n\035constitu"
+    "ent_changes_permitted\030\005 \001(\0102\226\003\n\027Partitio"
+    "nedTableService\022|\n\013PartitionBy\0225.io.deep"
+    "haven.proto.backplane.grpc.PartitionByRe"
+    "quest\0326.io.deephaven.proto.backplane.grp"
+    "c.PartitionByResponse\022z\n\005Merge\022/.io.deep"
+    "haven.proto.backplane.grpc.MergeRequest\032"
+    "@.io.deephaven.proto.backplane.grpc.Expo"
+    "rtedTableCreationResponse\022\200\001\n\010GetTable\0222"
+    ".io.deephaven.proto.backplane.grpc.GetTa"
+    "bleRequest\032@.io.deephaven.proto.backplan"
+    "e.grpc.ExportedTableCreationResponseBLH\001"
+    "P\001ZFgithub.com/deephaven/deephaven-core/"
+    "go/internal/proto/partitionedtableb\006prot"
+    "o3"
 };
-static ::_pbi::once_flag descriptor_table_deephaven_2fproto_2fpartitionedtable_2eproto_once;
+static const ::_pbi::DescriptorTable* const descriptor_table_deephaven_2fproto_2fpartitionedtable_2eproto_deps[2] =
+    {
+        &::descriptor_table_deephaven_2fproto_2ftable_2eproto,
+        &::descriptor_table_deephaven_2fproto_2fticket_2eproto,
+};
+static ::absl::once_flag descriptor_table_deephaven_2fproto_2fpartitionedtable_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_deephaven_2fproto_2fpartitionedtable_2eproto = {
-    false, false, 1402, descriptor_table_protodef_deephaven_2fproto_2fpartitionedtable_2eproto,
+    false,
+    false,
+    1402,
+    descriptor_table_protodef_deephaven_2fproto_2fpartitionedtable_2eproto,
     "deephaven/proto/partitionedtable.proto",
-    &descriptor_table_deephaven_2fproto_2fpartitionedtable_2eproto_once, descriptor_table_deephaven_2fproto_2fpartitionedtable_2eproto_deps, 2, 5,
-    schemas, file_default_instances, TableStruct_deephaven_2fproto_2fpartitionedtable_2eproto::offsets,
-    file_level_metadata_deephaven_2fproto_2fpartitionedtable_2eproto, file_level_enum_descriptors_deephaven_2fproto_2fpartitionedtable_2eproto,
+    &descriptor_table_deephaven_2fproto_2fpartitionedtable_2eproto_once,
+    descriptor_table_deephaven_2fproto_2fpartitionedtable_2eproto_deps,
+    2,
+    5,
+    schemas,
+    file_default_instances,
+    TableStruct_deephaven_2fproto_2fpartitionedtable_2eproto::offsets,
+    file_level_metadata_deephaven_2fproto_2fpartitionedtable_2eproto,
+    file_level_enum_descriptors_deephaven_2fproto_2fpartitionedtable_2eproto,
     file_level_service_descriptors_deephaven_2fproto_2fpartitionedtable_2eproto,
 };
+
+// This function exists to be marked as weak.
+// It can significantly speed up compilation by breaking up LLVM's SCC
+// in the .pb.cc translation units. Large translation units see a
+// reduction of more than 35% of walltime for optimized builds. Without
+// the weak attribute all the messages in the file, including all the
+// vtables and everything they use become part of the same SCC through
+// a cycle like:
+// GetMetadata -> descriptor table -> default instances ->
+//   vtables -> GetMetadata
+// By adding a weak function here we break the connection from the
+// individual vtables back into the descriptor table.
 PROTOBUF_ATTRIBUTE_WEAK const ::_pbi::DescriptorTable* descriptor_table_deephaven_2fproto_2fpartitionedtable_2eproto_getter() {
   return &descriptor_table_deephaven_2fproto_2fpartitionedtable_2eproto;
 }
-
 // Force running AddDescriptors() at dynamic initialization time.
-PROTOBUF_ATTRIBUTE_INIT_PRIORITY2 static ::_pbi::AddDescriptorsRunner dynamic_init_dummy_deephaven_2fproto_2fpartitionedtable_2eproto(&descriptor_table_deephaven_2fproto_2fpartitionedtable_2eproto);
+PROTOBUF_ATTRIBUTE_INIT_PRIORITY2
+static ::_pbi::AddDescriptorsRunner dynamic_init_dummy_deephaven_2fproto_2fpartitionedtable_2eproto(&descriptor_table_deephaven_2fproto_2fpartitionedtable_2eproto);
 namespace io {
 namespace deephaven {
 namespace proto {
 namespace backplane {
 namespace grpc {
-
 // ===================================================================
 
 class PartitionByRequest::_Internal {
  public:
+  using HasBits = decltype(std::declval<PartitionByRequest>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+    8 * PROTOBUF_FIELD_OFFSET(PartitionByRequest, _impl_._has_bits_);
   static const ::io::deephaven::proto::backplane::grpc::Ticket& table_id(const PartitionByRequest* msg);
+  static void set_has_table_id(HasBits* has_bits) {
+    (*has_bits)[0] |= 1u;
+  }
   static const ::io::deephaven::proto::backplane::grpc::Ticket& result_id(const PartitionByRequest* msg);
+  static void set_has_result_id(HasBits* has_bits) {
+    (*has_bits)[0] |= 2u;
+  }
 };
 
-const ::io::deephaven::proto::backplane::grpc::Ticket&
-PartitionByRequest::_Internal::table_id(const PartitionByRequest* msg) {
+const ::io::deephaven::proto::backplane::grpc::Ticket& PartitionByRequest::_Internal::table_id(const PartitionByRequest* msg) {
   return *msg->_impl_.table_id_;
 }
-const ::io::deephaven::proto::backplane::grpc::Ticket&
-PartitionByRequest::_Internal::result_id(const PartitionByRequest* msg) {
+const ::io::deephaven::proto::backplane::grpc::Ticket& PartitionByRequest::_Internal::result_id(const PartitionByRequest* msg) {
   return *msg->_impl_.result_id_;
 }
 void PartitionByRequest::clear_table_id() {
-  if (GetArenaForAllocation() == nullptr && _impl_.table_id_ != nullptr) {
-    delete _impl_.table_id_;
-  }
-  _impl_.table_id_ = nullptr;
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  if (_impl_.table_id_ != nullptr) _impl_.table_id_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000001u;
 }
 void PartitionByRequest::clear_result_id() {
-  if (GetArenaForAllocation() == nullptr && _impl_.result_id_ != nullptr) {
-    delete _impl_.result_id_;
-  }
-  _impl_.result_id_ = nullptr;
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  if (_impl_.result_id_ != nullptr) _impl_.result_id_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000002u;
 }
-PartitionByRequest::PartitionByRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor(arena, is_message_owned);
+PartitionByRequest::PartitionByRequest(::google::protobuf::Arena* arena)
+    : ::google::protobuf::Message(arena) {
+  SharedCtor(arena);
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.PartitionByRequest)
 }
-PartitionByRequest::PartitionByRequest(const PartitionByRequest& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message() {
-  PartitionByRequest* const _this = this; (void)_this;
-  new (&_impl_) Impl_{
-      decltype(_impl_.key_column_names_){from._impl_.key_column_names_}
-    , decltype(_impl_.table_id_){nullptr}
-    , decltype(_impl_.result_id_){nullptr}
-    , decltype(_impl_.drop_keys_){}
-    , /*decltype(_impl_._cached_size_)*/{}};
+inline PROTOBUF_NDEBUG_INLINE PartitionByRequest::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
+    const Impl_& from)
+      : _has_bits_{from._has_bits_},
+        _cached_size_{0},
+        key_column_names_{visibility, arena, from.key_column_names_} {}
 
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  if (from._internal_has_table_id()) {
-    _this->_impl_.table_id_ = new ::io::deephaven::proto::backplane::grpc::Ticket(*from._impl_.table_id_);
-  }
-  if (from._internal_has_result_id()) {
-    _this->_impl_.result_id_ = new ::io::deephaven::proto::backplane::grpc::Ticket(*from._impl_.result_id_);
-  }
-  _this->_impl_.drop_keys_ = from._impl_.drop_keys_;
+PartitionByRequest::PartitionByRequest(
+    ::google::protobuf::Arena* arena,
+    const PartitionByRequest& from)
+    : ::google::protobuf::Message(arena) {
+  PartitionByRequest* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_);
+  ::uint32_t cached_has_bits = _impl_._has_bits_[0];
+  _impl_.table_id_ = (cached_has_bits & 0x00000001u)
+                ? CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::Ticket>(arena, *from._impl_.table_id_)
+                : nullptr;
+  _impl_.result_id_ = (cached_has_bits & 0x00000002u)
+                ? CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::Ticket>(arena, *from._impl_.result_id_)
+                : nullptr;
+  _impl_.drop_keys_ = from._impl_.drop_keys_;
+
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.PartitionByRequest)
 }
+inline PROTOBUF_NDEBUG_INLINE PartitionByRequest::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* arena)
+      : _cached_size_{0},
+        key_column_names_{visibility, arena} {}
 
-inline void PartitionByRequest::SharedCtor(
-    ::_pb::Arena* arena, bool is_message_owned) {
-  (void)arena;
-  (void)is_message_owned;
-  new (&_impl_) Impl_{
-      decltype(_impl_.key_column_names_){arena}
-    , decltype(_impl_.table_id_){nullptr}
-    , decltype(_impl_.result_id_){nullptr}
-    , decltype(_impl_.drop_keys_){false}
-    , /*decltype(_impl_._cached_size_)*/{}
-  };
+inline void PartitionByRequest::SharedCtor(::_pb::Arena* arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  ::memset(reinterpret_cast<char *>(&_impl_) +
+               offsetof(Impl_, table_id_),
+           0,
+           offsetof(Impl_, drop_keys_) -
+               offsetof(Impl_, table_id_) +
+               sizeof(Impl_::drop_keys_));
 }
-
 PartitionByRequest::~PartitionByRequest() {
   // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.PartitionByRequest)
-  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
-  (void)arena;
-    return;
-  }
+  _internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
   SharedDtor();
 }
-
 inline void PartitionByRequest::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  _impl_.key_column_names_.~RepeatedPtrField();
-  if (this != internal_default_instance()) delete _impl_.table_id_;
-  if (this != internal_default_instance()) delete _impl_.result_id_;
+  ABSL_DCHECK(GetArena() == nullptr);
+  delete _impl_.table_id_;
+  delete _impl_.result_id_;
+  _impl_.~Impl_();
 }
 
-void PartitionByRequest::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
-
-void PartitionByRequest::Clear() {
+PROTOBUF_NOINLINE void PartitionByRequest::Clear() {
 // @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.PartitionByRequest)
-  uint32_t cached_has_bits = 0;
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
   _impl_.key_column_names_.Clear();
-  if (GetArenaForAllocation() == nullptr && _impl_.table_id_ != nullptr) {
-    delete _impl_.table_id_;
-  }
-  _impl_.table_id_ = nullptr;
-  if (GetArenaForAllocation() == nullptr && _impl_.result_id_ != nullptr) {
-    delete _impl_.result_id_;
-  }
-  _impl_.result_id_ = nullptr;
-  _impl_.drop_keys_ = false;
-  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
-}
-
-const char* PartitionByRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
-#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  while (!ctx->Done(&ptr)) {
-    uint32_t tag;
-    ptr = ::_pbi::ReadTag(ptr, &tag);
-    switch (tag >> 3) {
-      // .io.deephaven.proto.backplane.grpc.Ticket table_id = 1;
-      case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
-          ptr = ctx->ParseMessage(_internal_mutable_table_id(), ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      // .io.deephaven.proto.backplane.grpc.Ticket result_id = 2;
-      case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
-          ptr = ctx->ParseMessage(_internal_mutable_result_id(), ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      // repeated string key_column_names = 3;
-      case 3:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
-          ptr -= 1;
-          do {
-            ptr += 1;
-            auto str = _internal_add_key_column_names();
-            ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
-            CHK_(ptr);
-            CHK_(::_pbi::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.PartitionByRequest.key_column_names"));
-            if (!ctx->DataAvailable(ptr)) break;
-          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<26>(ptr));
-        } else
-          goto handle_unusual;
-        continue;
-      // bool drop_keys = 4;
-      case 4:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 32)) {
-          _impl_.drop_keys_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      default:
-        goto handle_unusual;
-    }  // switch
-  handle_unusual:
-    if ((tag == 0) || ((tag & 7) == 4)) {
-      CHK_(ptr);
-      ctx->SetLastTag(tag);
-      goto message_done;
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000003u) {
+    if (cached_has_bits & 0x00000001u) {
+      ABSL_DCHECK(_impl_.table_id_ != nullptr);
+      _impl_.table_id_->Clear();
     }
-    ptr = UnknownFieldParse(
-        tag,
-        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-        ptr, ctx);
-    CHK_(ptr != nullptr);
-  }  // while
-message_done:
-  return ptr;
-failure:
-  ptr = nullptr;
-  goto message_done;
-#undef CHK_
+    if (cached_has_bits & 0x00000002u) {
+      ABSL_DCHECK(_impl_.result_id_ != nullptr);
+      _impl_.result_id_->Clear();
+    }
+  }
+  _impl_.drop_keys_ = false;
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
 }
 
-uint8_t* PartitionByRequest::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.PartitionByRequest)
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+const char* PartitionByRequest::_InternalParse(
+    const char* ptr, ::_pbi::ParseContext* ctx) {
+  ptr = ::_pbi::TcParser::ParseLoop(this, ptr, ctx, &_table_.header);
+  return ptr;
+}
 
+
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<2, 4, 2, 77, 2> PartitionByRequest::_table_ = {
+  {
+    PROTOBUF_FIELD_OFFSET(PartitionByRequest, _impl_._has_bits_),
+    0, // no _extensions_
+    4, 24,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967280,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    4,  // num_field_entries
+    2,  // num_aux_entries
+    offsetof(decltype(_table_), aux_entries),
+    &_PartitionByRequest_default_instance_._instance,
+    ::_pbi::TcParser::GenericFallback,  // fallback
+  }, {{
+    // bool drop_keys = 4;
+    {::_pbi::TcParser::SingularVarintNoZag1<bool, offsetof(PartitionByRequest, _impl_.drop_keys_), 63>(),
+     {32, 63, 0, PROTOBUF_FIELD_OFFSET(PartitionByRequest, _impl_.drop_keys_)}},
+    // .io.deephaven.proto.backplane.grpc.Ticket table_id = 1;
+    {::_pbi::TcParser::FastMtS1,
+     {10, 0, 0, PROTOBUF_FIELD_OFFSET(PartitionByRequest, _impl_.table_id_)}},
+    // .io.deephaven.proto.backplane.grpc.Ticket result_id = 2;
+    {::_pbi::TcParser::FastMtS1,
+     {18, 1, 1, PROTOBUF_FIELD_OFFSET(PartitionByRequest, _impl_.result_id_)}},
+    // repeated string key_column_names = 3;
+    {::_pbi::TcParser::FastUR1,
+     {26, 63, 0, PROTOBUF_FIELD_OFFSET(PartitionByRequest, _impl_.key_column_names_)}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // .io.deephaven.proto.backplane.grpc.Ticket table_id = 1;
+    {PROTOBUF_FIELD_OFFSET(PartitionByRequest, _impl_.table_id_), _Internal::kHasBitsOffset + 0, 0,
+    (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
+    // .io.deephaven.proto.backplane.grpc.Ticket result_id = 2;
+    {PROTOBUF_FIELD_OFFSET(PartitionByRequest, _impl_.result_id_), _Internal::kHasBitsOffset + 1, 1,
+    (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
+    // repeated string key_column_names = 3;
+    {PROTOBUF_FIELD_OFFSET(PartitionByRequest, _impl_.key_column_names_), -1, 0,
+    (0 | ::_fl::kFcRepeated | ::_fl::kUtf8String | ::_fl::kRepSString)},
+    // bool drop_keys = 4;
+    {PROTOBUF_FIELD_OFFSET(PartitionByRequest, _impl_.drop_keys_), -1, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kBool)},
+  }}, {{
+    {::_pbi::TcParser::GetTable<::io::deephaven::proto::backplane::grpc::Ticket>()},
+    {::_pbi::TcParser::GetTable<::io::deephaven::proto::backplane::grpc::Ticket>()},
+  }}, {{
+    "\64\0\0\20\0\0\0\0"
+    "io.deephaven.proto.backplane.grpc.PartitionByRequest"
+    "key_column_names"
+  }},
+};
+
+::uint8_t* PartitionByRequest::_InternalSerialize(
+    ::uint8_t* target,
+    ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.PartitionByRequest)
+  ::uint32_t cached_has_bits = 0;
+  (void)cached_has_bits;
+
+  cached_has_bits = _impl_._has_bits_[0];
   // .io.deephaven.proto.backplane.grpc.Ticket table_id = 1;
-  if (this->_internal_has_table_id()) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(1, _Internal::table_id(this),
+  if (cached_has_bits & 0x00000001u) {
+    target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+        1, _Internal::table_id(this),
         _Internal::table_id(this).GetCachedSize(), target, stream);
   }
 
   // .io.deephaven.proto.backplane.grpc.Ticket result_id = 2;
-  if (this->_internal_has_result_id()) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(2, _Internal::result_id(this),
+  if (cached_has_bits & 0x00000002u) {
+    target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+        2, _Internal::result_id(this),
         _Internal::result_id(this).GetCachedSize(), target, stream);
   }
 
   // repeated string key_column_names = 3;
-  for (int i = 0, n = this->_internal_key_column_names_size(); i < n; i++) {
-    const auto& s = this->_internal_key_column_names(i);
-    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      s.data(), static_cast<int>(s.length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "io.deephaven.proto.backplane.grpc.PartitionByRequest.key_column_names");
+  for (int i = 0, n = this->_internal_key_column_names_size(); i < n; ++i) {
+    const auto& s = this->_internal_key_column_names().Get(i);
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+        s.data(), static_cast<int>(s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "io.deephaven.proto.backplane.grpc.PartitionByRequest.key_column_names");
     target = stream->WriteString(3, s, target);
   }
 
   // bool drop_keys = 4;
   if (this->_internal_drop_keys() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteBoolToArray(4, this->_internal_drop_keys(), target);
+    target = ::_pbi::WireFormatLite::WriteBoolToArray(
+        4, this->_internal_drop_keys(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
   }
   // @@protoc_insertion_point(serialize_to_array_end:io.deephaven.proto.backplane.grpc.PartitionByRequest)
   return target;
 }
 
-size_t PartitionByRequest::ByteSizeLong() const {
+::size_t PartitionByRequest::ByteSizeLong() const {
 // @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.PartitionByRequest)
-  size_t total_size = 0;
+  ::size_t total_size = 0;
 
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
   // repeated string key_column_names = 3;
-  total_size += 1 *
-      ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(_impl_.key_column_names_.size());
-  for (int i = 0, n = _impl_.key_column_names_.size(); i < n; i++) {
-    total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-      _impl_.key_column_names_.Get(i));
+  total_size += 1 * ::google::protobuf::internal::FromIntSize(_internal_key_column_names().size());
+  for (int i = 0, n = _internal_key_column_names().size(); i < n; ++i) {
+    total_size += ::google::protobuf::internal::WireFormatLite::StringSize(
+        _internal_key_column_names().Get(i));
   }
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000003u) {
+    // .io.deephaven.proto.backplane.grpc.Ticket table_id = 1;
+    if (cached_has_bits & 0x00000001u) {
+      total_size +=
+          1 + ::google::protobuf::internal::WireFormatLite::MessageSize(*_impl_.table_id_);
+    }
 
-  // .io.deephaven.proto.backplane.grpc.Ticket table_id = 1;
-  if (this->_internal_has_table_id()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *_impl_.table_id_);
+    // .io.deephaven.proto.backplane.grpc.Ticket result_id = 2;
+    if (cached_has_bits & 0x00000002u) {
+      total_size +=
+          1 + ::google::protobuf::internal::WireFormatLite::MessageSize(*_impl_.result_id_);
+    }
+
   }
-
-  // .io.deephaven.proto.backplane.grpc.Ticket result_id = 2;
-  if (this->_internal_has_result_id()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *_impl_.result_id_);
-  }
-
   // bool drop_keys = 4;
   if (this->_internal_drop_keys() != 0) {
-    total_size += 1 + 1;
+    total_size += 2;
   }
 
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData PartitionByRequest::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
-    PartitionByRequest::MergeImpl
+const ::google::protobuf::Message::ClassData PartitionByRequest::_class_data_ = {
+    PartitionByRequest::MergeImpl,
+    nullptr,  // OnDemandRegisterArenaDtor
 };
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*PartitionByRequest::GetClassData() const { return &_class_data_; }
+const ::google::protobuf::Message::ClassData* PartitionByRequest::GetClassData() const {
+  return &_class_data_;
+}
 
-
-void PartitionByRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+void PartitionByRequest::MergeImpl(::google::protobuf::Message& to_msg, const ::google::protobuf::Message& from_msg) {
   auto* const _this = static_cast<PartitionByRequest*>(&to_msg);
   auto& from = static_cast<const PartitionByRequest&>(from_msg);
   // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.PartitionByRequest)
-  GOOGLE_DCHECK_NE(&from, _this);
-  uint32_t cached_has_bits = 0;
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  _this->_impl_.key_column_names_.MergeFrom(from._impl_.key_column_names_);
-  if (from._internal_has_table_id()) {
-    _this->_internal_mutable_table_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
-        from._internal_table_id());
-  }
-  if (from._internal_has_result_id()) {
-    _this->_internal_mutable_result_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
-        from._internal_result_id());
+  _this->_internal_mutable_key_column_names()->MergeFrom(from._internal_key_column_names());
+  cached_has_bits = from._impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000003u) {
+    if (cached_has_bits & 0x00000001u) {
+      _this->_internal_mutable_table_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
+          from._internal_table_id());
+    }
+    if (cached_has_bits & 0x00000002u) {
+      _this->_internal_mutable_result_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
+          from._internal_result_id());
+    }
   }
   if (from._internal_drop_keys() != 0) {
     _this->_internal_set_drop_keys(from._internal_drop_keys());
   }
-  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void PartitionByRequest::CopyFrom(const PartitionByRequest& from) {
@@ -526,15 +603,19 @@ void PartitionByRequest::CopyFrom(const PartitionByRequest& from) {
   MergeFrom(from);
 }
 
-bool PartitionByRequest::IsInitialized() const {
+PROTOBUF_NOINLINE bool PartitionByRequest::IsInitialized() const {
   return true;
 }
 
-void PartitionByRequest::InternalSwap(PartitionByRequest* other) {
+::_pbi::CachedSize* PartitionByRequest::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
+void PartitionByRequest::InternalSwap(PartitionByRequest* PROTOBUF_RESTRICT other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
   _impl_.key_column_names_.InternalSwap(&other->_impl_.key_column_names_);
-  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+  ::google::protobuf::internal::memswap<
       PROTOBUF_FIELD_OFFSET(PartitionByRequest, _impl_.drop_keys_)
       + sizeof(PartitionByRequest::_impl_.drop_keys_)
       - PROTOBUF_FIELD_OFFSET(PartitionByRequest, _impl_.table_id_)>(
@@ -542,27 +623,30 @@ void PartitionByRequest::InternalSwap(PartitionByRequest* other) {
           reinterpret_cast<char*>(&other->_impl_.table_id_));
 }
 
-::PROTOBUF_NAMESPACE_ID::Metadata PartitionByRequest::GetMetadata() const {
+::google::protobuf::Metadata PartitionByRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2fpartitionedtable_2eproto_getter, &descriptor_table_deephaven_2fproto_2fpartitionedtable_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fpartitionedtable_2eproto[0]);
 }
-
 // ===================================================================
 
 class PartitionByResponse::_Internal {
  public:
 };
 
-PartitionByResponse::PartitionByResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase(arena, is_message_owned) {
+PartitionByResponse::PartitionByResponse(::google::protobuf::Arena* arena)
+    : ::google::protobuf::internal::ZeroFieldsBase(arena) {
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.PartitionByResponse)
 }
-PartitionByResponse::PartitionByResponse(const PartitionByResponse& from)
-  : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase() {
-  PartitionByResponse* const _this = this; (void)_this;
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+PartitionByResponse::PartitionByResponse(
+    ::google::protobuf::Arena* arena,
+    const PartitionByResponse& from)
+    : ::google::protobuf::internal::ZeroFieldsBase(arena) {
+  PartitionByResponse* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.PartitionByResponse)
 }
 
@@ -570,245 +654,255 @@ PartitionByResponse::PartitionByResponse(const PartitionByResponse& from)
 
 
 
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData PartitionByResponse::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::CopyImpl,
-    ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::MergeImpl,
-};
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*PartitionByResponse::GetClassData() const { return &_class_data_; }
 
 
 
 
-
-
-
-::PROTOBUF_NAMESPACE_ID::Metadata PartitionByResponse::GetMetadata() const {
+::google::protobuf::Metadata PartitionByResponse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2fpartitionedtable_2eproto_getter, &descriptor_table_deephaven_2fproto_2fpartitionedtable_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fpartitionedtable_2eproto[1]);
 }
-
 // ===================================================================
 
 class MergeRequest::_Internal {
  public:
+  using HasBits = decltype(std::declval<MergeRequest>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+    8 * PROTOBUF_FIELD_OFFSET(MergeRequest, _impl_._has_bits_);
   static const ::io::deephaven::proto::backplane::grpc::Ticket& partitioned_table(const MergeRequest* msg);
+  static void set_has_partitioned_table(HasBits* has_bits) {
+    (*has_bits)[0] |= 1u;
+  }
   static const ::io::deephaven::proto::backplane::grpc::Ticket& result_id(const MergeRequest* msg);
+  static void set_has_result_id(HasBits* has_bits) {
+    (*has_bits)[0] |= 2u;
+  }
 };
 
-const ::io::deephaven::proto::backplane::grpc::Ticket&
-MergeRequest::_Internal::partitioned_table(const MergeRequest* msg) {
+const ::io::deephaven::proto::backplane::grpc::Ticket& MergeRequest::_Internal::partitioned_table(const MergeRequest* msg) {
   return *msg->_impl_.partitioned_table_;
 }
-const ::io::deephaven::proto::backplane::grpc::Ticket&
-MergeRequest::_Internal::result_id(const MergeRequest* msg) {
+const ::io::deephaven::proto::backplane::grpc::Ticket& MergeRequest::_Internal::result_id(const MergeRequest* msg) {
   return *msg->_impl_.result_id_;
 }
 void MergeRequest::clear_partitioned_table() {
-  if (GetArenaForAllocation() == nullptr && _impl_.partitioned_table_ != nullptr) {
-    delete _impl_.partitioned_table_;
-  }
-  _impl_.partitioned_table_ = nullptr;
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  if (_impl_.partitioned_table_ != nullptr) _impl_.partitioned_table_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000001u;
 }
 void MergeRequest::clear_result_id() {
-  if (GetArenaForAllocation() == nullptr && _impl_.result_id_ != nullptr) {
-    delete _impl_.result_id_;
-  }
-  _impl_.result_id_ = nullptr;
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  if (_impl_.result_id_ != nullptr) _impl_.result_id_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000002u;
 }
-MergeRequest::MergeRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor(arena, is_message_owned);
+MergeRequest::MergeRequest(::google::protobuf::Arena* arena)
+    : ::google::protobuf::Message(arena) {
+  SharedCtor(arena);
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.MergeRequest)
 }
-MergeRequest::MergeRequest(const MergeRequest& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message() {
-  MergeRequest* const _this = this; (void)_this;
-  new (&_impl_) Impl_{
-      decltype(_impl_.partitioned_table_){nullptr}
-    , decltype(_impl_.result_id_){nullptr}
-    , /*decltype(_impl_._cached_size_)*/{}};
+inline PROTOBUF_NDEBUG_INLINE MergeRequest::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
+    const Impl_& from)
+      : _has_bits_{from._has_bits_},
+        _cached_size_{0} {}
 
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  if (from._internal_has_partitioned_table()) {
-    _this->_impl_.partitioned_table_ = new ::io::deephaven::proto::backplane::grpc::Ticket(*from._impl_.partitioned_table_);
-  }
-  if (from._internal_has_result_id()) {
-    _this->_impl_.result_id_ = new ::io::deephaven::proto::backplane::grpc::Ticket(*from._impl_.result_id_);
-  }
+MergeRequest::MergeRequest(
+    ::google::protobuf::Arena* arena,
+    const MergeRequest& from)
+    : ::google::protobuf::Message(arena) {
+  MergeRequest* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_);
+  ::uint32_t cached_has_bits = _impl_._has_bits_[0];
+  _impl_.partitioned_table_ = (cached_has_bits & 0x00000001u)
+                ? CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::Ticket>(arena, *from._impl_.partitioned_table_)
+                : nullptr;
+  _impl_.result_id_ = (cached_has_bits & 0x00000002u)
+                ? CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::Ticket>(arena, *from._impl_.result_id_)
+                : nullptr;
+
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.MergeRequest)
 }
+inline PROTOBUF_NDEBUG_INLINE MergeRequest::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* arena)
+      : _cached_size_{0} {}
 
-inline void MergeRequest::SharedCtor(
-    ::_pb::Arena* arena, bool is_message_owned) {
-  (void)arena;
-  (void)is_message_owned;
-  new (&_impl_) Impl_{
-      decltype(_impl_.partitioned_table_){nullptr}
-    , decltype(_impl_.result_id_){nullptr}
-    , /*decltype(_impl_._cached_size_)*/{}
-  };
+inline void MergeRequest::SharedCtor(::_pb::Arena* arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  ::memset(reinterpret_cast<char *>(&_impl_) +
+               offsetof(Impl_, partitioned_table_),
+           0,
+           offsetof(Impl_, result_id_) -
+               offsetof(Impl_, partitioned_table_) +
+               sizeof(Impl_::result_id_));
 }
-
 MergeRequest::~MergeRequest() {
   // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.MergeRequest)
-  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
-  (void)arena;
-    return;
-  }
+  _internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
   SharedDtor();
 }
-
 inline void MergeRequest::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  if (this != internal_default_instance()) delete _impl_.partitioned_table_;
-  if (this != internal_default_instance()) delete _impl_.result_id_;
+  ABSL_DCHECK(GetArena() == nullptr);
+  delete _impl_.partitioned_table_;
+  delete _impl_.result_id_;
+  _impl_.~Impl_();
 }
 
-void MergeRequest::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
-
-void MergeRequest::Clear() {
+PROTOBUF_NOINLINE void MergeRequest::Clear() {
 // @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.MergeRequest)
-  uint32_t cached_has_bits = 0;
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  if (GetArenaForAllocation() == nullptr && _impl_.partitioned_table_ != nullptr) {
-    delete _impl_.partitioned_table_;
-  }
-  _impl_.partitioned_table_ = nullptr;
-  if (GetArenaForAllocation() == nullptr && _impl_.result_id_ != nullptr) {
-    delete _impl_.result_id_;
-  }
-  _impl_.result_id_ = nullptr;
-  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
-}
-
-const char* MergeRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
-#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  while (!ctx->Done(&ptr)) {
-    uint32_t tag;
-    ptr = ::_pbi::ReadTag(ptr, &tag);
-    switch (tag >> 3) {
-      // .io.deephaven.proto.backplane.grpc.Ticket partitioned_table = 1;
-      case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
-          ptr = ctx->ParseMessage(_internal_mutable_partitioned_table(), ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      // .io.deephaven.proto.backplane.grpc.Ticket result_id = 2;
-      case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
-          ptr = ctx->ParseMessage(_internal_mutable_result_id(), ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      default:
-        goto handle_unusual;
-    }  // switch
-  handle_unusual:
-    if ((tag == 0) || ((tag & 7) == 4)) {
-      CHK_(ptr);
-      ctx->SetLastTag(tag);
-      goto message_done;
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000003u) {
+    if (cached_has_bits & 0x00000001u) {
+      ABSL_DCHECK(_impl_.partitioned_table_ != nullptr);
+      _impl_.partitioned_table_->Clear();
     }
-    ptr = UnknownFieldParse(
-        tag,
-        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-        ptr, ctx);
-    CHK_(ptr != nullptr);
-  }  // while
-message_done:
-  return ptr;
-failure:
-  ptr = nullptr;
-  goto message_done;
-#undef CHK_
+    if (cached_has_bits & 0x00000002u) {
+      ABSL_DCHECK(_impl_.result_id_ != nullptr);
+      _impl_.result_id_->Clear();
+    }
+  }
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
 }
 
-uint8_t* MergeRequest::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.MergeRequest)
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+const char* MergeRequest::_InternalParse(
+    const char* ptr, ::_pbi::ParseContext* ctx) {
+  ptr = ::_pbi::TcParser::ParseLoop(this, ptr, ctx, &_table_.header);
+  return ptr;
+}
 
+
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<1, 2, 2, 0, 2> MergeRequest::_table_ = {
+  {
+    PROTOBUF_FIELD_OFFSET(MergeRequest, _impl_._has_bits_),
+    0, // no _extensions_
+    2, 8,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967292,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    2,  // num_field_entries
+    2,  // num_aux_entries
+    offsetof(decltype(_table_), aux_entries),
+    &_MergeRequest_default_instance_._instance,
+    ::_pbi::TcParser::GenericFallback,  // fallback
+  }, {{
+    // .io.deephaven.proto.backplane.grpc.Ticket result_id = 2;
+    {::_pbi::TcParser::FastMtS1,
+     {18, 1, 1, PROTOBUF_FIELD_OFFSET(MergeRequest, _impl_.result_id_)}},
+    // .io.deephaven.proto.backplane.grpc.Ticket partitioned_table = 1;
+    {::_pbi::TcParser::FastMtS1,
+     {10, 0, 0, PROTOBUF_FIELD_OFFSET(MergeRequest, _impl_.partitioned_table_)}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // .io.deephaven.proto.backplane.grpc.Ticket partitioned_table = 1;
+    {PROTOBUF_FIELD_OFFSET(MergeRequest, _impl_.partitioned_table_), _Internal::kHasBitsOffset + 0, 0,
+    (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
+    // .io.deephaven.proto.backplane.grpc.Ticket result_id = 2;
+    {PROTOBUF_FIELD_OFFSET(MergeRequest, _impl_.result_id_), _Internal::kHasBitsOffset + 1, 1,
+    (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
+  }}, {{
+    {::_pbi::TcParser::GetTable<::io::deephaven::proto::backplane::grpc::Ticket>()},
+    {::_pbi::TcParser::GetTable<::io::deephaven::proto::backplane::grpc::Ticket>()},
+  }}, {{
+  }},
+};
+
+::uint8_t* MergeRequest::_InternalSerialize(
+    ::uint8_t* target,
+    ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.MergeRequest)
+  ::uint32_t cached_has_bits = 0;
+  (void)cached_has_bits;
+
+  cached_has_bits = _impl_._has_bits_[0];
   // .io.deephaven.proto.backplane.grpc.Ticket partitioned_table = 1;
-  if (this->_internal_has_partitioned_table()) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(1, _Internal::partitioned_table(this),
+  if (cached_has_bits & 0x00000001u) {
+    target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+        1, _Internal::partitioned_table(this),
         _Internal::partitioned_table(this).GetCachedSize(), target, stream);
   }
 
   // .io.deephaven.proto.backplane.grpc.Ticket result_id = 2;
-  if (this->_internal_has_result_id()) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(2, _Internal::result_id(this),
+  if (cached_has_bits & 0x00000002u) {
+    target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+        2, _Internal::result_id(this),
         _Internal::result_id(this).GetCachedSize(), target, stream);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
   }
   // @@protoc_insertion_point(serialize_to_array_end:io.deephaven.proto.backplane.grpc.MergeRequest)
   return target;
 }
 
-size_t MergeRequest::ByteSizeLong() const {
+::size_t MergeRequest::ByteSizeLong() const {
 // @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.MergeRequest)
-  size_t total_size = 0;
+  ::size_t total_size = 0;
 
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // .io.deephaven.proto.backplane.grpc.Ticket partitioned_table = 1;
-  if (this->_internal_has_partitioned_table()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *_impl_.partitioned_table_);
-  }
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000003u) {
+    // .io.deephaven.proto.backplane.grpc.Ticket partitioned_table = 1;
+    if (cached_has_bits & 0x00000001u) {
+      total_size +=
+          1 + ::google::protobuf::internal::WireFormatLite::MessageSize(*_impl_.partitioned_table_);
+    }
 
-  // .io.deephaven.proto.backplane.grpc.Ticket result_id = 2;
-  if (this->_internal_has_result_id()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *_impl_.result_id_);
-  }
+    // .io.deephaven.proto.backplane.grpc.Ticket result_id = 2;
+    if (cached_has_bits & 0x00000002u) {
+      total_size +=
+          1 + ::google::protobuf::internal::WireFormatLite::MessageSize(*_impl_.result_id_);
+    }
 
+  }
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData MergeRequest::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
-    MergeRequest::MergeImpl
+const ::google::protobuf::Message::ClassData MergeRequest::_class_data_ = {
+    MergeRequest::MergeImpl,
+    nullptr,  // OnDemandRegisterArenaDtor
 };
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*MergeRequest::GetClassData() const { return &_class_data_; }
+const ::google::protobuf::Message::ClassData* MergeRequest::GetClassData() const {
+  return &_class_data_;
+}
 
-
-void MergeRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+void MergeRequest::MergeImpl(::google::protobuf::Message& to_msg, const ::google::protobuf::Message& from_msg) {
   auto* const _this = static_cast<MergeRequest*>(&to_msg);
   auto& from = static_cast<const MergeRequest&>(from_msg);
   // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.MergeRequest)
-  GOOGLE_DCHECK_NE(&from, _this);
-  uint32_t cached_has_bits = 0;
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (from._internal_has_partitioned_table()) {
-    _this->_internal_mutable_partitioned_table()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
-        from._internal_partitioned_table());
+  cached_has_bits = from._impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000003u) {
+    if (cached_has_bits & 0x00000001u) {
+      _this->_internal_mutable_partitioned_table()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
+          from._internal_partitioned_table());
+    }
+    if (cached_has_bits & 0x00000002u) {
+      _this->_internal_mutable_result_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
+          from._internal_result_id());
+    }
   }
-  if (from._internal_has_result_id()) {
-    _this->_internal_mutable_result_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
-        from._internal_result_id());
-  }
-  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void MergeRequest::CopyFrom(const MergeRequest& from) {
@@ -818,14 +912,18 @@ void MergeRequest::CopyFrom(const MergeRequest& from) {
   MergeFrom(from);
 }
 
-bool MergeRequest::IsInitialized() const {
+PROTOBUF_NOINLINE bool MergeRequest::IsInitialized() const {
   return true;
 }
 
-void MergeRequest::InternalSwap(MergeRequest* other) {
+::_pbi::CachedSize* MergeRequest::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
+void MergeRequest::InternalSwap(MergeRequest* PROTOBUF_RESTRICT other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  ::google::protobuf::internal::memswap<
       PROTOBUF_FIELD_OFFSET(MergeRequest, _impl_.result_id_)
       + sizeof(MergeRequest::_impl_.result_id_)
       - PROTOBUF_FIELD_OFFSET(MergeRequest, _impl_.partitioned_table_)>(
@@ -833,280 +931,296 @@ void MergeRequest::InternalSwap(MergeRequest* other) {
           reinterpret_cast<char*>(&other->_impl_.partitioned_table_));
 }
 
-::PROTOBUF_NAMESPACE_ID::Metadata MergeRequest::GetMetadata() const {
+::google::protobuf::Metadata MergeRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2fpartitionedtable_2eproto_getter, &descriptor_table_deephaven_2fproto_2fpartitionedtable_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fpartitionedtable_2eproto[2]);
 }
-
 // ===================================================================
 
 class GetTableRequest::_Internal {
  public:
+  using HasBits = decltype(std::declval<GetTableRequest>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+    8 * PROTOBUF_FIELD_OFFSET(GetTableRequest, _impl_._has_bits_);
   static const ::io::deephaven::proto::backplane::grpc::Ticket& partitioned_table(const GetTableRequest* msg);
+  static void set_has_partitioned_table(HasBits* has_bits) {
+    (*has_bits)[0] |= 1u;
+  }
   static const ::io::deephaven::proto::backplane::grpc::Ticket& key_table_ticket(const GetTableRequest* msg);
+  static void set_has_key_table_ticket(HasBits* has_bits) {
+    (*has_bits)[0] |= 2u;
+  }
   static const ::io::deephaven::proto::backplane::grpc::Ticket& result_id(const GetTableRequest* msg);
+  static void set_has_result_id(HasBits* has_bits) {
+    (*has_bits)[0] |= 4u;
+  }
 };
 
-const ::io::deephaven::proto::backplane::grpc::Ticket&
-GetTableRequest::_Internal::partitioned_table(const GetTableRequest* msg) {
+const ::io::deephaven::proto::backplane::grpc::Ticket& GetTableRequest::_Internal::partitioned_table(const GetTableRequest* msg) {
   return *msg->_impl_.partitioned_table_;
 }
-const ::io::deephaven::proto::backplane::grpc::Ticket&
-GetTableRequest::_Internal::key_table_ticket(const GetTableRequest* msg) {
+const ::io::deephaven::proto::backplane::grpc::Ticket& GetTableRequest::_Internal::key_table_ticket(const GetTableRequest* msg) {
   return *msg->_impl_.key_table_ticket_;
 }
-const ::io::deephaven::proto::backplane::grpc::Ticket&
-GetTableRequest::_Internal::result_id(const GetTableRequest* msg) {
+const ::io::deephaven::proto::backplane::grpc::Ticket& GetTableRequest::_Internal::result_id(const GetTableRequest* msg) {
   return *msg->_impl_.result_id_;
 }
 void GetTableRequest::clear_partitioned_table() {
-  if (GetArenaForAllocation() == nullptr && _impl_.partitioned_table_ != nullptr) {
-    delete _impl_.partitioned_table_;
-  }
-  _impl_.partitioned_table_ = nullptr;
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  if (_impl_.partitioned_table_ != nullptr) _impl_.partitioned_table_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000001u;
 }
 void GetTableRequest::clear_key_table_ticket() {
-  if (GetArenaForAllocation() == nullptr && _impl_.key_table_ticket_ != nullptr) {
-    delete _impl_.key_table_ticket_;
-  }
-  _impl_.key_table_ticket_ = nullptr;
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  if (_impl_.key_table_ticket_ != nullptr) _impl_.key_table_ticket_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000002u;
 }
 void GetTableRequest::clear_result_id() {
-  if (GetArenaForAllocation() == nullptr && _impl_.result_id_ != nullptr) {
-    delete _impl_.result_id_;
-  }
-  _impl_.result_id_ = nullptr;
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  if (_impl_.result_id_ != nullptr) _impl_.result_id_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000004u;
 }
-GetTableRequest::GetTableRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor(arena, is_message_owned);
+GetTableRequest::GetTableRequest(::google::protobuf::Arena* arena)
+    : ::google::protobuf::Message(arena) {
+  SharedCtor(arena);
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.GetTableRequest)
 }
-GetTableRequest::GetTableRequest(const GetTableRequest& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message() {
-  GetTableRequest* const _this = this; (void)_this;
-  new (&_impl_) Impl_{
-      decltype(_impl_.partitioned_table_){nullptr}
-    , decltype(_impl_.key_table_ticket_){nullptr}
-    , decltype(_impl_.result_id_){nullptr}
-    , /*decltype(_impl_._cached_size_)*/{}};
+inline PROTOBUF_NDEBUG_INLINE GetTableRequest::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
+    const Impl_& from)
+      : _has_bits_{from._has_bits_},
+        _cached_size_{0} {}
 
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  if (from._internal_has_partitioned_table()) {
-    _this->_impl_.partitioned_table_ = new ::io::deephaven::proto::backplane::grpc::Ticket(*from._impl_.partitioned_table_);
-  }
-  if (from._internal_has_key_table_ticket()) {
-    _this->_impl_.key_table_ticket_ = new ::io::deephaven::proto::backplane::grpc::Ticket(*from._impl_.key_table_ticket_);
-  }
-  if (from._internal_has_result_id()) {
-    _this->_impl_.result_id_ = new ::io::deephaven::proto::backplane::grpc::Ticket(*from._impl_.result_id_);
-  }
+GetTableRequest::GetTableRequest(
+    ::google::protobuf::Arena* arena,
+    const GetTableRequest& from)
+    : ::google::protobuf::Message(arena) {
+  GetTableRequest* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_);
+  ::uint32_t cached_has_bits = _impl_._has_bits_[0];
+  _impl_.partitioned_table_ = (cached_has_bits & 0x00000001u)
+                ? CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::Ticket>(arena, *from._impl_.partitioned_table_)
+                : nullptr;
+  _impl_.key_table_ticket_ = (cached_has_bits & 0x00000002u)
+                ? CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::Ticket>(arena, *from._impl_.key_table_ticket_)
+                : nullptr;
+  _impl_.result_id_ = (cached_has_bits & 0x00000004u)
+                ? CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::Ticket>(arena, *from._impl_.result_id_)
+                : nullptr;
+
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.GetTableRequest)
 }
+inline PROTOBUF_NDEBUG_INLINE GetTableRequest::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* arena)
+      : _cached_size_{0} {}
 
-inline void GetTableRequest::SharedCtor(
-    ::_pb::Arena* arena, bool is_message_owned) {
-  (void)arena;
-  (void)is_message_owned;
-  new (&_impl_) Impl_{
-      decltype(_impl_.partitioned_table_){nullptr}
-    , decltype(_impl_.key_table_ticket_){nullptr}
-    , decltype(_impl_.result_id_){nullptr}
-    , /*decltype(_impl_._cached_size_)*/{}
-  };
+inline void GetTableRequest::SharedCtor(::_pb::Arena* arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  ::memset(reinterpret_cast<char *>(&_impl_) +
+               offsetof(Impl_, partitioned_table_),
+           0,
+           offsetof(Impl_, result_id_) -
+               offsetof(Impl_, partitioned_table_) +
+               sizeof(Impl_::result_id_));
 }
-
 GetTableRequest::~GetTableRequest() {
   // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.GetTableRequest)
-  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
-  (void)arena;
-    return;
-  }
+  _internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
   SharedDtor();
 }
-
 inline void GetTableRequest::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  if (this != internal_default_instance()) delete _impl_.partitioned_table_;
-  if (this != internal_default_instance()) delete _impl_.key_table_ticket_;
-  if (this != internal_default_instance()) delete _impl_.result_id_;
+  ABSL_DCHECK(GetArena() == nullptr);
+  delete _impl_.partitioned_table_;
+  delete _impl_.key_table_ticket_;
+  delete _impl_.result_id_;
+  _impl_.~Impl_();
 }
 
-void GetTableRequest::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
-
-void GetTableRequest::Clear() {
+PROTOBUF_NOINLINE void GetTableRequest::Clear() {
 // @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.GetTableRequest)
-  uint32_t cached_has_bits = 0;
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  if (GetArenaForAllocation() == nullptr && _impl_.partitioned_table_ != nullptr) {
-    delete _impl_.partitioned_table_;
-  }
-  _impl_.partitioned_table_ = nullptr;
-  if (GetArenaForAllocation() == nullptr && _impl_.key_table_ticket_ != nullptr) {
-    delete _impl_.key_table_ticket_;
-  }
-  _impl_.key_table_ticket_ = nullptr;
-  if (GetArenaForAllocation() == nullptr && _impl_.result_id_ != nullptr) {
-    delete _impl_.result_id_;
-  }
-  _impl_.result_id_ = nullptr;
-  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
-}
-
-const char* GetTableRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
-#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  while (!ctx->Done(&ptr)) {
-    uint32_t tag;
-    ptr = ::_pbi::ReadTag(ptr, &tag);
-    switch (tag >> 3) {
-      // .io.deephaven.proto.backplane.grpc.Ticket partitioned_table = 1;
-      case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
-          ptr = ctx->ParseMessage(_internal_mutable_partitioned_table(), ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      // .io.deephaven.proto.backplane.grpc.Ticket key_table_ticket = 2;
-      case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
-          ptr = ctx->ParseMessage(_internal_mutable_key_table_ticket(), ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      // .io.deephaven.proto.backplane.grpc.Ticket result_id = 4;
-      case 4:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 34)) {
-          ptr = ctx->ParseMessage(_internal_mutable_result_id(), ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      default:
-        goto handle_unusual;
-    }  // switch
-  handle_unusual:
-    if ((tag == 0) || ((tag & 7) == 4)) {
-      CHK_(ptr);
-      ctx->SetLastTag(tag);
-      goto message_done;
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000007u) {
+    if (cached_has_bits & 0x00000001u) {
+      ABSL_DCHECK(_impl_.partitioned_table_ != nullptr);
+      _impl_.partitioned_table_->Clear();
     }
-    ptr = UnknownFieldParse(
-        tag,
-        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-        ptr, ctx);
-    CHK_(ptr != nullptr);
-  }  // while
-message_done:
-  return ptr;
-failure:
-  ptr = nullptr;
-  goto message_done;
-#undef CHK_
+    if (cached_has_bits & 0x00000002u) {
+      ABSL_DCHECK(_impl_.key_table_ticket_ != nullptr);
+      _impl_.key_table_ticket_->Clear();
+    }
+    if (cached_has_bits & 0x00000004u) {
+      ABSL_DCHECK(_impl_.result_id_ != nullptr);
+      _impl_.result_id_->Clear();
+    }
+  }
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
 }
 
-uint8_t* GetTableRequest::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.GetTableRequest)
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+const char* GetTableRequest::_InternalParse(
+    const char* ptr, ::_pbi::ParseContext* ctx) {
+  ptr = ::_pbi::TcParser::ParseLoop(this, ptr, ctx, &_table_.header);
+  return ptr;
+}
 
+
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<2, 3, 3, 0, 2> GetTableRequest::_table_ = {
+  {
+    PROTOBUF_FIELD_OFFSET(GetTableRequest, _impl_._has_bits_),
+    0, // no _extensions_
+    4, 24,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967284,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    3,  // num_field_entries
+    3,  // num_aux_entries
+    offsetof(decltype(_table_), aux_entries),
+    &_GetTableRequest_default_instance_._instance,
+    ::_pbi::TcParser::GenericFallback,  // fallback
+  }, {{
+    // .io.deephaven.proto.backplane.grpc.Ticket result_id = 4;
+    {::_pbi::TcParser::FastMtS1,
+     {34, 2, 2, PROTOBUF_FIELD_OFFSET(GetTableRequest, _impl_.result_id_)}},
+    // .io.deephaven.proto.backplane.grpc.Ticket partitioned_table = 1;
+    {::_pbi::TcParser::FastMtS1,
+     {10, 0, 0, PROTOBUF_FIELD_OFFSET(GetTableRequest, _impl_.partitioned_table_)}},
+    // .io.deephaven.proto.backplane.grpc.Ticket key_table_ticket = 2;
+    {::_pbi::TcParser::FastMtS1,
+     {18, 1, 1, PROTOBUF_FIELD_OFFSET(GetTableRequest, _impl_.key_table_ticket_)}},
+    {::_pbi::TcParser::MiniParse, {}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // .io.deephaven.proto.backplane.grpc.Ticket partitioned_table = 1;
+    {PROTOBUF_FIELD_OFFSET(GetTableRequest, _impl_.partitioned_table_), _Internal::kHasBitsOffset + 0, 0,
+    (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
+    // .io.deephaven.proto.backplane.grpc.Ticket key_table_ticket = 2;
+    {PROTOBUF_FIELD_OFFSET(GetTableRequest, _impl_.key_table_ticket_), _Internal::kHasBitsOffset + 1, 1,
+    (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
+    // .io.deephaven.proto.backplane.grpc.Ticket result_id = 4;
+    {PROTOBUF_FIELD_OFFSET(GetTableRequest, _impl_.result_id_), _Internal::kHasBitsOffset + 2, 2,
+    (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
+  }}, {{
+    {::_pbi::TcParser::GetTable<::io::deephaven::proto::backplane::grpc::Ticket>()},
+    {::_pbi::TcParser::GetTable<::io::deephaven::proto::backplane::grpc::Ticket>()},
+    {::_pbi::TcParser::GetTable<::io::deephaven::proto::backplane::grpc::Ticket>()},
+  }}, {{
+  }},
+};
+
+::uint8_t* GetTableRequest::_InternalSerialize(
+    ::uint8_t* target,
+    ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.GetTableRequest)
+  ::uint32_t cached_has_bits = 0;
+  (void)cached_has_bits;
+
+  cached_has_bits = _impl_._has_bits_[0];
   // .io.deephaven.proto.backplane.grpc.Ticket partitioned_table = 1;
-  if (this->_internal_has_partitioned_table()) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(1, _Internal::partitioned_table(this),
+  if (cached_has_bits & 0x00000001u) {
+    target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+        1, _Internal::partitioned_table(this),
         _Internal::partitioned_table(this).GetCachedSize(), target, stream);
   }
 
   // .io.deephaven.proto.backplane.grpc.Ticket key_table_ticket = 2;
-  if (this->_internal_has_key_table_ticket()) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(2, _Internal::key_table_ticket(this),
+  if (cached_has_bits & 0x00000002u) {
+    target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+        2, _Internal::key_table_ticket(this),
         _Internal::key_table_ticket(this).GetCachedSize(), target, stream);
   }
 
   // .io.deephaven.proto.backplane.grpc.Ticket result_id = 4;
-  if (this->_internal_has_result_id()) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(4, _Internal::result_id(this),
+  if (cached_has_bits & 0x00000004u) {
+    target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+        4, _Internal::result_id(this),
         _Internal::result_id(this).GetCachedSize(), target, stream);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
   }
   // @@protoc_insertion_point(serialize_to_array_end:io.deephaven.proto.backplane.grpc.GetTableRequest)
   return target;
 }
 
-size_t GetTableRequest::ByteSizeLong() const {
+::size_t GetTableRequest::ByteSizeLong() const {
 // @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.GetTableRequest)
-  size_t total_size = 0;
+  ::size_t total_size = 0;
 
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // .io.deephaven.proto.backplane.grpc.Ticket partitioned_table = 1;
-  if (this->_internal_has_partitioned_table()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *_impl_.partitioned_table_);
-  }
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000007u) {
+    // .io.deephaven.proto.backplane.grpc.Ticket partitioned_table = 1;
+    if (cached_has_bits & 0x00000001u) {
+      total_size +=
+          1 + ::google::protobuf::internal::WireFormatLite::MessageSize(*_impl_.partitioned_table_);
+    }
 
-  // .io.deephaven.proto.backplane.grpc.Ticket key_table_ticket = 2;
-  if (this->_internal_has_key_table_ticket()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *_impl_.key_table_ticket_);
-  }
+    // .io.deephaven.proto.backplane.grpc.Ticket key_table_ticket = 2;
+    if (cached_has_bits & 0x00000002u) {
+      total_size +=
+          1 + ::google::protobuf::internal::WireFormatLite::MessageSize(*_impl_.key_table_ticket_);
+    }
 
-  // .io.deephaven.proto.backplane.grpc.Ticket result_id = 4;
-  if (this->_internal_has_result_id()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *_impl_.result_id_);
-  }
+    // .io.deephaven.proto.backplane.grpc.Ticket result_id = 4;
+    if (cached_has_bits & 0x00000004u) {
+      total_size +=
+          1 + ::google::protobuf::internal::WireFormatLite::MessageSize(*_impl_.result_id_);
+    }
 
+  }
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData GetTableRequest::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
-    GetTableRequest::MergeImpl
+const ::google::protobuf::Message::ClassData GetTableRequest::_class_data_ = {
+    GetTableRequest::MergeImpl,
+    nullptr,  // OnDemandRegisterArenaDtor
 };
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetTableRequest::GetClassData() const { return &_class_data_; }
+const ::google::protobuf::Message::ClassData* GetTableRequest::GetClassData() const {
+  return &_class_data_;
+}
 
-
-void GetTableRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+void GetTableRequest::MergeImpl(::google::protobuf::Message& to_msg, const ::google::protobuf::Message& from_msg) {
   auto* const _this = static_cast<GetTableRequest*>(&to_msg);
   auto& from = static_cast<const GetTableRequest&>(from_msg);
   // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.GetTableRequest)
-  GOOGLE_DCHECK_NE(&from, _this);
-  uint32_t cached_has_bits = 0;
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (from._internal_has_partitioned_table()) {
-    _this->_internal_mutable_partitioned_table()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
-        from._internal_partitioned_table());
+  cached_has_bits = from._impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000007u) {
+    if (cached_has_bits & 0x00000001u) {
+      _this->_internal_mutable_partitioned_table()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
+          from._internal_partitioned_table());
+    }
+    if (cached_has_bits & 0x00000002u) {
+      _this->_internal_mutable_key_table_ticket()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
+          from._internal_key_table_ticket());
+    }
+    if (cached_has_bits & 0x00000004u) {
+      _this->_internal_mutable_result_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
+          from._internal_result_id());
+    }
   }
-  if (from._internal_has_key_table_ticket()) {
-    _this->_internal_mutable_key_table_ticket()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
-        from._internal_key_table_ticket());
-  }
-  if (from._internal_has_result_id()) {
-    _this->_internal_mutable_result_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
-        from._internal_result_id());
-  }
-  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void GetTableRequest::CopyFrom(const GetTableRequest& from) {
@@ -1116,14 +1230,18 @@ void GetTableRequest::CopyFrom(const GetTableRequest& from) {
   MergeFrom(from);
 }
 
-bool GetTableRequest::IsInitialized() const {
+PROTOBUF_NOINLINE bool GetTableRequest::IsInitialized() const {
   return true;
 }
 
-void GetTableRequest::InternalSwap(GetTableRequest* other) {
+::_pbi::CachedSize* GetTableRequest::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
+void GetTableRequest::InternalSwap(GetTableRequest* PROTOBUF_RESTRICT other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  ::google::protobuf::internal::memswap<
       PROTOBUF_FIELD_OFFSET(GetTableRequest, _impl_.result_id_)
       + sizeof(GetTableRequest::_impl_.result_id_)
       - PROTOBUF_FIELD_OFFSET(GetTableRequest, _impl_.partitioned_table_)>(
@@ -1131,305 +1249,270 @@ void GetTableRequest::InternalSwap(GetTableRequest* other) {
           reinterpret_cast<char*>(&other->_impl_.partitioned_table_));
 }
 
-::PROTOBUF_NAMESPACE_ID::Metadata GetTableRequest::GetMetadata() const {
+::google::protobuf::Metadata GetTableRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2fpartitionedtable_2eproto_getter, &descriptor_table_deephaven_2fproto_2fpartitionedtable_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fpartitionedtable_2eproto[3]);
 }
-
 // ===================================================================
 
 class PartitionedTableDescriptor::_Internal {
  public:
 };
 
-PartitionedTableDescriptor::PartitionedTableDescriptor(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor(arena, is_message_owned);
+PartitionedTableDescriptor::PartitionedTableDescriptor(::google::protobuf::Arena* arena)
+    : ::google::protobuf::Message(arena) {
+  SharedCtor(arena);
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.PartitionedTableDescriptor)
 }
-PartitionedTableDescriptor::PartitionedTableDescriptor(const PartitionedTableDescriptor& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message() {
-  PartitionedTableDescriptor* const _this = this; (void)_this;
-  new (&_impl_) Impl_{
-      decltype(_impl_.key_column_names_){from._impl_.key_column_names_}
-    , decltype(_impl_.constituent_definition_schema_){}
-    , decltype(_impl_.constituent_column_name_){}
-    , decltype(_impl_.unique_keys_){}
-    , decltype(_impl_.constituent_changes_permitted_){}
-    , /*decltype(_impl_._cached_size_)*/{}};
+inline PROTOBUF_NDEBUG_INLINE PartitionedTableDescriptor::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
+    const Impl_& from)
+      : key_column_names_{visibility, arena, from.key_column_names_},
+        constituent_definition_schema_(arena, from.constituent_definition_schema_),
+        constituent_column_name_(arena, from.constituent_column_name_),
+        _cached_size_{0} {}
 
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  _impl_.constituent_definition_schema_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.constituent_definition_schema_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_constituent_definition_schema().empty()) {
-    _this->_impl_.constituent_definition_schema_.Set(from._internal_constituent_definition_schema(), 
-      _this->GetArenaForAllocation());
-  }
-  _impl_.constituent_column_name_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.constituent_column_name_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_constituent_column_name().empty()) {
-    _this->_impl_.constituent_column_name_.Set(from._internal_constituent_column_name(), 
-      _this->GetArenaForAllocation());
-  }
-  ::memcpy(&_impl_.unique_keys_, &from._impl_.unique_keys_,
-    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.constituent_changes_permitted_) -
-    reinterpret_cast<char*>(&_impl_.unique_keys_)) + sizeof(_impl_.constituent_changes_permitted_));
+PartitionedTableDescriptor::PartitionedTableDescriptor(
+    ::google::protobuf::Arena* arena,
+    const PartitionedTableDescriptor& from)
+    : ::google::protobuf::Message(arena) {
+  PartitionedTableDescriptor* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_);
+  ::memcpy(reinterpret_cast<char *>(&_impl_) +
+               offsetof(Impl_, unique_keys_),
+           reinterpret_cast<const char *>(&from._impl_) +
+               offsetof(Impl_, unique_keys_),
+           offsetof(Impl_, constituent_changes_permitted_) -
+               offsetof(Impl_, unique_keys_) +
+               sizeof(Impl_::constituent_changes_permitted_));
+
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.PartitionedTableDescriptor)
 }
+inline PROTOBUF_NDEBUG_INLINE PartitionedTableDescriptor::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* arena)
+      : key_column_names_{visibility, arena},
+        constituent_definition_schema_(arena),
+        constituent_column_name_(arena),
+        _cached_size_{0} {}
 
-inline void PartitionedTableDescriptor::SharedCtor(
-    ::_pb::Arena* arena, bool is_message_owned) {
-  (void)arena;
-  (void)is_message_owned;
-  new (&_impl_) Impl_{
-      decltype(_impl_.key_column_names_){arena}
-    , decltype(_impl_.constituent_definition_schema_){}
-    , decltype(_impl_.constituent_column_name_){}
-    , decltype(_impl_.unique_keys_){false}
-    , decltype(_impl_.constituent_changes_permitted_){false}
-    , /*decltype(_impl_._cached_size_)*/{}
-  };
-  _impl_.constituent_definition_schema_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.constituent_definition_schema_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  _impl_.constituent_column_name_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.constituent_column_name_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+inline void PartitionedTableDescriptor::SharedCtor(::_pb::Arena* arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  ::memset(reinterpret_cast<char *>(&_impl_) +
+               offsetof(Impl_, unique_keys_),
+           0,
+           offsetof(Impl_, constituent_changes_permitted_) -
+               offsetof(Impl_, unique_keys_) +
+               sizeof(Impl_::constituent_changes_permitted_));
 }
-
 PartitionedTableDescriptor::~PartitionedTableDescriptor() {
   // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.PartitionedTableDescriptor)
-  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
-  (void)arena;
-    return;
-  }
+  _internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
   SharedDtor();
 }
-
 inline void PartitionedTableDescriptor::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  _impl_.key_column_names_.~RepeatedPtrField();
+  ABSL_DCHECK(GetArena() == nullptr);
   _impl_.constituent_definition_schema_.Destroy();
   _impl_.constituent_column_name_.Destroy();
+  _impl_.~Impl_();
 }
 
-void PartitionedTableDescriptor::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
-
-void PartitionedTableDescriptor::Clear() {
+PROTOBUF_NOINLINE void PartitionedTableDescriptor::Clear() {
 // @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.PartitionedTableDescriptor)
-  uint32_t cached_has_bits = 0;
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
   _impl_.key_column_names_.Clear();
   _impl_.constituent_definition_schema_.ClearToEmpty();
   _impl_.constituent_column_name_.ClearToEmpty();
-  ::memset(&_impl_.unique_keys_, 0, static_cast<size_t>(
+  ::memset(&_impl_.unique_keys_, 0, static_cast<::size_t>(
       reinterpret_cast<char*>(&_impl_.constituent_changes_permitted_) -
       reinterpret_cast<char*>(&_impl_.unique_keys_)) + sizeof(_impl_.constituent_changes_permitted_));
-  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
 }
 
-const char* PartitionedTableDescriptor::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
-#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  while (!ctx->Done(&ptr)) {
-    uint32_t tag;
-    ptr = ::_pbi::ReadTag(ptr, &tag);
-    switch (tag >> 3) {
-      // repeated string key_column_names = 1;
-      case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
-          ptr -= 1;
-          do {
-            ptr += 1;
-            auto str = _internal_add_key_column_names();
-            ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
-            CHK_(ptr);
-            CHK_(::_pbi::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.PartitionedTableDescriptor.key_column_names"));
-            if (!ctx->DataAvailable(ptr)) break;
-          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<10>(ptr));
-        } else
-          goto handle_unusual;
-        continue;
-      // bool unique_keys = 2;
-      case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 16)) {
-          _impl_.unique_keys_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      // bytes constituent_definition_schema = 3;
-      case 3:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
-          auto str = _internal_mutable_constituent_definition_schema();
-          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      // string constituent_column_name = 4;
-      case 4:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 34)) {
-          auto str = _internal_mutable_constituent_column_name();
-          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
-          CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.PartitionedTableDescriptor.constituent_column_name"));
-        } else
-          goto handle_unusual;
-        continue;
-      // bool constituent_changes_permitted = 5;
-      case 5:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 40)) {
-          _impl_.constituent_changes_permitted_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      default:
-        goto handle_unusual;
-    }  // switch
-  handle_unusual:
-    if ((tag == 0) || ((tag & 7) == 4)) {
-      CHK_(ptr);
-      ctx->SetLastTag(tag);
-      goto message_done;
-    }
-    ptr = UnknownFieldParse(
-        tag,
-        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-        ptr, ctx);
-    CHK_(ptr != nullptr);
-  }  // while
-message_done:
+const char* PartitionedTableDescriptor::_InternalParse(
+    const char* ptr, ::_pbi::ParseContext* ctx) {
+  ptr = ::_pbi::TcParser::ParseLoop(this, ptr, ctx, &_table_.header);
   return ptr;
-failure:
-  ptr = nullptr;
-  goto message_done;
-#undef CHK_
 }
 
-uint8_t* PartitionedTableDescriptor::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<3, 5, 0, 108, 2> PartitionedTableDescriptor::_table_ = {
+  {
+    0,  // no _has_bits_
+    0, // no _extensions_
+    5, 56,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967264,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    5,  // num_field_entries
+    0,  // num_aux_entries
+    offsetof(decltype(_table_), field_names),  // no aux_entries
+    &_PartitionedTableDescriptor_default_instance_._instance,
+    ::_pbi::TcParser::GenericFallback,  // fallback
+  }, {{
+    {::_pbi::TcParser::MiniParse, {}},
+    // repeated string key_column_names = 1;
+    {::_pbi::TcParser::FastUR1,
+     {10, 63, 0, PROTOBUF_FIELD_OFFSET(PartitionedTableDescriptor, _impl_.key_column_names_)}},
+    // bool unique_keys = 2;
+    {::_pbi::TcParser::SingularVarintNoZag1<bool, offsetof(PartitionedTableDescriptor, _impl_.unique_keys_), 63>(),
+     {16, 63, 0, PROTOBUF_FIELD_OFFSET(PartitionedTableDescriptor, _impl_.unique_keys_)}},
+    // bytes constituent_definition_schema = 3;
+    {::_pbi::TcParser::FastBS1,
+     {26, 63, 0, PROTOBUF_FIELD_OFFSET(PartitionedTableDescriptor, _impl_.constituent_definition_schema_)}},
+    // string constituent_column_name = 4;
+    {::_pbi::TcParser::FastUS1,
+     {34, 63, 0, PROTOBUF_FIELD_OFFSET(PartitionedTableDescriptor, _impl_.constituent_column_name_)}},
+    // bool constituent_changes_permitted = 5;
+    {::_pbi::TcParser::SingularVarintNoZag1<bool, offsetof(PartitionedTableDescriptor, _impl_.constituent_changes_permitted_), 63>(),
+     {40, 63, 0, PROTOBUF_FIELD_OFFSET(PartitionedTableDescriptor, _impl_.constituent_changes_permitted_)}},
+    {::_pbi::TcParser::MiniParse, {}},
+    {::_pbi::TcParser::MiniParse, {}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // repeated string key_column_names = 1;
+    {PROTOBUF_FIELD_OFFSET(PartitionedTableDescriptor, _impl_.key_column_names_), 0, 0,
+    (0 | ::_fl::kFcRepeated | ::_fl::kUtf8String | ::_fl::kRepSString)},
+    // bool unique_keys = 2;
+    {PROTOBUF_FIELD_OFFSET(PartitionedTableDescriptor, _impl_.unique_keys_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kBool)},
+    // bytes constituent_definition_schema = 3;
+    {PROTOBUF_FIELD_OFFSET(PartitionedTableDescriptor, _impl_.constituent_definition_schema_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kBytes | ::_fl::kRepAString)},
+    // string constituent_column_name = 4;
+    {PROTOBUF_FIELD_OFFSET(PartitionedTableDescriptor, _impl_.constituent_column_name_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // bool constituent_changes_permitted = 5;
+    {PROTOBUF_FIELD_OFFSET(PartitionedTableDescriptor, _impl_.constituent_changes_permitted_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kBool)},
+  }},
+  // no aux_entries
+  {{
+    "\74\20\0\0\27\0\0\0"
+    "io.deephaven.proto.backplane.grpc.PartitionedTableDescriptor"
+    "key_column_names"
+    "constituent_column_name"
+  }},
+};
+
+::uint8_t* PartitionedTableDescriptor::_InternalSerialize(
+    ::uint8_t* target,
+    ::google::protobuf::io::EpsCopyOutputStream* stream) const {
   // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.PartitionedTableDescriptor)
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  ::uint32_t cached_has_bits = 0;
+  (void)cached_has_bits;
 
   // repeated string key_column_names = 1;
-  for (int i = 0, n = this->_internal_key_column_names_size(); i < n; i++) {
-    const auto& s = this->_internal_key_column_names(i);
-    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      s.data(), static_cast<int>(s.length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "io.deephaven.proto.backplane.grpc.PartitionedTableDescriptor.key_column_names");
+  for (int i = 0, n = this->_internal_key_column_names_size(); i < n; ++i) {
+    const auto& s = this->_internal_key_column_names().Get(i);
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+        s.data(), static_cast<int>(s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "io.deephaven.proto.backplane.grpc.PartitionedTableDescriptor.key_column_names");
     target = stream->WriteString(1, s, target);
   }
 
   // bool unique_keys = 2;
   if (this->_internal_unique_keys() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteBoolToArray(2, this->_internal_unique_keys(), target);
+    target = ::_pbi::WireFormatLite::WriteBoolToArray(
+        2, this->_internal_unique_keys(), target);
   }
 
   // bytes constituent_definition_schema = 3;
   if (!this->_internal_constituent_definition_schema().empty()) {
-    target = stream->WriteBytesMaybeAliased(
-        3, this->_internal_constituent_definition_schema(), target);
+    const std::string& _s = this->_internal_constituent_definition_schema();
+    target = stream->WriteBytesMaybeAliased(3, _s, target);
   }
 
   // string constituent_column_name = 4;
   if (!this->_internal_constituent_column_name().empty()) {
-    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_constituent_column_name().data(), static_cast<int>(this->_internal_constituent_column_name().length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "io.deephaven.proto.backplane.grpc.PartitionedTableDescriptor.constituent_column_name");
-    target = stream->WriteStringMaybeAliased(
-        4, this->_internal_constituent_column_name(), target);
+    const std::string& _s = this->_internal_constituent_column_name();
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+        _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "io.deephaven.proto.backplane.grpc.PartitionedTableDescriptor.constituent_column_name");
+    target = stream->WriteStringMaybeAliased(4, _s, target);
   }
 
   // bool constituent_changes_permitted = 5;
   if (this->_internal_constituent_changes_permitted() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteBoolToArray(5, this->_internal_constituent_changes_permitted(), target);
+    target = ::_pbi::WireFormatLite::WriteBoolToArray(
+        5, this->_internal_constituent_changes_permitted(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
   }
   // @@protoc_insertion_point(serialize_to_array_end:io.deephaven.proto.backplane.grpc.PartitionedTableDescriptor)
   return target;
 }
 
-size_t PartitionedTableDescriptor::ByteSizeLong() const {
+::size_t PartitionedTableDescriptor::ByteSizeLong() const {
 // @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.PartitionedTableDescriptor)
-  size_t total_size = 0;
+  ::size_t total_size = 0;
 
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
   // repeated string key_column_names = 1;
-  total_size += 1 *
-      ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(_impl_.key_column_names_.size());
-  for (int i = 0, n = _impl_.key_column_names_.size(); i < n; i++) {
-    total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-      _impl_.key_column_names_.Get(i));
+  total_size += 1 * ::google::protobuf::internal::FromIntSize(_internal_key_column_names().size());
+  for (int i = 0, n = _internal_key_column_names().size(); i < n; ++i) {
+    total_size += ::google::protobuf::internal::WireFormatLite::StringSize(
+        _internal_key_column_names().Get(i));
   }
-
   // bytes constituent_definition_schema = 3;
   if (!this->_internal_constituent_definition_schema().empty()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
-        this->_internal_constituent_definition_schema());
+    total_size += 1 + ::google::protobuf::internal::WireFormatLite::BytesSize(
+                                    this->_internal_constituent_definition_schema());
   }
 
   // string constituent_column_name = 4;
   if (!this->_internal_constituent_column_name().empty()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_constituent_column_name());
+    total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                    this->_internal_constituent_column_name());
   }
 
   // bool unique_keys = 2;
   if (this->_internal_unique_keys() != 0) {
-    total_size += 1 + 1;
+    total_size += 2;
   }
 
   // bool constituent_changes_permitted = 5;
   if (this->_internal_constituent_changes_permitted() != 0) {
-    total_size += 1 + 1;
+    total_size += 2;
   }
 
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData PartitionedTableDescriptor::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
-    PartitionedTableDescriptor::MergeImpl
+const ::google::protobuf::Message::ClassData PartitionedTableDescriptor::_class_data_ = {
+    PartitionedTableDescriptor::MergeImpl,
+    nullptr,  // OnDemandRegisterArenaDtor
 };
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*PartitionedTableDescriptor::GetClassData() const { return &_class_data_; }
+const ::google::protobuf::Message::ClassData* PartitionedTableDescriptor::GetClassData() const {
+  return &_class_data_;
+}
 
-
-void PartitionedTableDescriptor::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+void PartitionedTableDescriptor::MergeImpl(::google::protobuf::Message& to_msg, const ::google::protobuf::Message& from_msg) {
   auto* const _this = static_cast<PartitionedTableDescriptor*>(&to_msg);
   auto& from = static_cast<const PartitionedTableDescriptor&>(from_msg);
   // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.PartitionedTableDescriptor)
-  GOOGLE_DCHECK_NE(&from, _this);
-  uint32_t cached_has_bits = 0;
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  _this->_impl_.key_column_names_.MergeFrom(from._impl_.key_column_names_);
+  _this->_internal_mutable_key_column_names()->MergeFrom(from._internal_key_column_names());
   if (!from._internal_constituent_definition_schema().empty()) {
     _this->_internal_set_constituent_definition_schema(from._internal_constituent_definition_schema());
   }
@@ -1442,7 +1525,7 @@ void PartitionedTableDescriptor::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_
   if (from._internal_constituent_changes_permitted() != 0) {
     _this->_internal_set_constituent_changes_permitted(from._internal_constituent_changes_permitted());
   }
-  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void PartitionedTableDescriptor::CopyFrom(const PartitionedTableDescriptor& from) {
@@ -1452,25 +1535,22 @@ void PartitionedTableDescriptor::CopyFrom(const PartitionedTableDescriptor& from
   MergeFrom(from);
 }
 
-bool PartitionedTableDescriptor::IsInitialized() const {
+PROTOBUF_NOINLINE bool PartitionedTableDescriptor::IsInitialized() const {
   return true;
 }
 
-void PartitionedTableDescriptor::InternalSwap(PartitionedTableDescriptor* other) {
+::_pbi::CachedSize* PartitionedTableDescriptor::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
+void PartitionedTableDescriptor::InternalSwap(PartitionedTableDescriptor* PROTOBUF_RESTRICT other) {
   using std::swap;
-  auto* lhs_arena = GetArenaForAllocation();
-  auto* rhs_arena = other->GetArenaForAllocation();
+  auto* arena = GetArena();
+  ABSL_DCHECK_EQ(arena, other->GetArena());
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   _impl_.key_column_names_.InternalSwap(&other->_impl_.key_column_names_);
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.constituent_definition_schema_, lhs_arena,
-      &other->_impl_.constituent_definition_schema_, rhs_arena
-  );
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.constituent_column_name_, lhs_arena,
-      &other->_impl_.constituent_column_name_, rhs_arena
-  );
-  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.constituent_definition_schema_, &other->_impl_.constituent_definition_schema_, arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.constituent_column_name_, &other->_impl_.constituent_column_name_, arena);
+  ::google::protobuf::internal::memswap<
       PROTOBUF_FIELD_OFFSET(PartitionedTableDescriptor, _impl_.constituent_changes_permitted_)
       + sizeof(PartitionedTableDescriptor::_impl_.constituent_changes_permitted_)
       - PROTOBUF_FIELD_OFFSET(PartitionedTableDescriptor, _impl_.unique_keys_)>(
@@ -1478,40 +1558,20 @@ void PartitionedTableDescriptor::InternalSwap(PartitionedTableDescriptor* other)
           reinterpret_cast<char*>(&other->_impl_.unique_keys_));
 }
 
-::PROTOBUF_NAMESPACE_ID::Metadata PartitionedTableDescriptor::GetMetadata() const {
+::google::protobuf::Metadata PartitionedTableDescriptor::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2fpartitionedtable_2eproto_getter, &descriptor_table_deephaven_2fproto_2fpartitionedtable_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fpartitionedtable_2eproto[4]);
 }
-
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace grpc
 }  // namespace backplane
 }  // namespace proto
 }  // namespace deephaven
 }  // namespace io
-PROTOBUF_NAMESPACE_OPEN
-template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::PartitionByRequest*
-Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::PartitionByRequest >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::PartitionByRequest >(arena);
-}
-template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::PartitionByResponse*
-Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::PartitionByResponse >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::PartitionByResponse >(arena);
-}
-template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::MergeRequest*
-Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::MergeRequest >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::MergeRequest >(arena);
-}
-template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::GetTableRequest*
-Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::GetTableRequest >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::GetTableRequest >(arena);
-}
-template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::PartitionedTableDescriptor*
-Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::PartitionedTableDescriptor >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::PartitionedTableDescriptor >(arena);
-}
-PROTOBUF_NAMESPACE_CLOSE
-
+namespace google {
+namespace protobuf {
+}  // namespace protobuf
+}  // namespace google
 // @@protoc_insertion_point(global_scope)
-#include <google/protobuf/port_undef.inc>
+#include "google/protobuf/port_undef.inc"
