@@ -28,7 +28,6 @@ final class JacksonSource {
     }
 
     public static JsonParser of(JsonFactory factory, Path path) throws IOException {
-        // TODO: suggest jackson build this in
         if (FileSystems.getDefault() == path.getFileSystem()) {
             return of(factory, path.toFile());
         }
@@ -48,28 +47,26 @@ final class JacksonSource {
         return factory.createParser(url);
     }
 
-    public static JsonParser of(JsonFactory factory, byte[] array, int pos, int len) throws IOException {
-        return factory.createParser(array, pos, len);
+    public static JsonParser of(JsonFactory factory, byte[] array, int offset, int len) throws IOException {
+        return factory.createParser(array, offset, len);
     }
 
     public static JsonParser of(JsonFactory factory, ByteBuffer buffer) throws IOException {
-        // TODO: suggest jackson build this in
         if (buffer.hasArray()) {
             return of(factory, buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
         }
         return of(factory, ByteBufferInputStream.of(buffer));
     }
 
-    public static JsonParser of(JsonFactory factory, char[] array, int pos, int len) throws IOException {
-        return factory.createParser(array, pos, len);
+    public static JsonParser of(JsonFactory factory, char[] array, int offset, int len) throws IOException {
+        return factory.createParser(array, offset, len);
     }
 
     public static JsonParser of(JsonFactory factory, CharBuffer buffer) throws IOException {
-        // TODO: suggest jackson build this in
         if (buffer.hasArray()) {
             return of(factory, buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
         }
-        // We could build CharBufferReader. Surprised it's not build into JDK.
-        throw new RuntimeException("Only supports CharBuffer when backed by array");
+        // We could be more efficient here with CharBufferReader. Surprised it's not build into JDK.
+        return of(factory, buffer.toString());
     }
 }

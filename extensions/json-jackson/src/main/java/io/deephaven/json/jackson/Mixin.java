@@ -38,6 +38,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -113,6 +114,9 @@ abstract class Mixin<T extends Value> implements JacksonProvider {
         if (ByteBuffer.class.isAssignableFrom(clazz)) {
             return (ObjectProcessor<? super X>) byteBufferProcessor();
         }
+        if (CharBuffer.class.isAssignableFrom(clazz)) {
+            return (ObjectProcessor<? super X>) charBufferProcessor();
+        }
         throw new IllegalArgumentException("Unable to create JSON processor from type " + inputType);
     }
 
@@ -149,6 +153,11 @@ abstract class Mixin<T extends Value> implements JacksonProvider {
     @Override
     public final ObjectProcessor<ByteBuffer> byteBufferProcessor() {
         return new ByteBufferIn();
+    }
+
+    @Override
+    public final ObjectProcessor<CharBuffer> charBufferProcessor() {
+        return new CharBufferIn();
     }
 
     final Mixin<?> mixin(Value options) {
@@ -234,6 +243,13 @@ abstract class Mixin<T extends Value> implements JacksonProvider {
     private class ByteBufferIn extends ObjectProcessorMixin<ByteBuffer> {
         @Override
         protected JsonParser createParser(ByteBuffer in) throws IOException {
+            return JacksonSource.of(factory, in);
+        }
+    }
+
+    private class CharBufferIn extends ObjectProcessorMixin<CharBuffer> {
+        @Override
+        protected JsonParser createParser(CharBuffer in) throws IOException {
             return JacksonSource.of(factory, in);
         }
     }

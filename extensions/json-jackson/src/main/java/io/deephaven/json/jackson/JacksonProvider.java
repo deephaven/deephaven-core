@@ -12,6 +12,7 @@ import io.deephaven.qst.type.Type;
 import java.io.File;
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
@@ -145,4 +146,11 @@ public interface JacksonProvider extends NamedObjectProcessor.Provider {
      * @return the object processor
      */
     ObjectProcessor<ByteBuffer> byteBufferProcessor();
+
+    /**
+     * Creates a {@link CharBuffer} json object processor.
+     *
+     * @return the object processor
+     */
+    ObjectProcessor<CharBuffer> charBufferProcessor();
 }
