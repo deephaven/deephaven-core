@@ -194,9 +194,9 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
 
                 result.manage(constituentTable);
             });
-            return initialLastRowKey == lastInsertedRowKey.longValue()
+            return initialLastRowKey == lastInsertedRowKey.get()
                     ? RowSetFactory.empty()
-                    : RowSetFactory.fromRange(initialLastRowKey + 1, lastInsertedRowKey.longValue());
+                    : RowSetFactory.fromRange(initialLastRowKey + 1, lastInsertedRowKey.get());
         }
 
         private Table makeConstituentTable(@NotNull final TableLocation tableLocation) {

@@ -59,7 +59,7 @@ public class SparseConstants {
         return !rowSet.forEachRowKeyRange((s, e) -> {
             long startBlock = s >> LOG_BLOCK_SIZE;
             final long endBlock = e >> LOG_BLOCK_SIZE;
-            final long lb = lastBlock.longValue();
+            final long lb = lastBlock.get();
             if (lb >= 0) {
                 if (startBlock == lb) {
                     if (startBlock == endBlock) {
@@ -68,9 +68,9 @@ public class SparseConstants {
                     startBlock++;
                 }
             }
-            lastBlock.setValue(endBlock);
+            lastBlock.set(endBlock);
             usedBlocks.add(endBlock - startBlock + 1);
-            return usedBlocks.longValue() <= acceptableBlocks;
+            return usedBlocks.get() <= acceptableBlocks;
         });
     }
 }

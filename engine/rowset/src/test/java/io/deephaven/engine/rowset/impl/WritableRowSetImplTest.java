@@ -2641,7 +2641,7 @@ public class WritableRowSetImplTest extends TestCase {
         final long target0 = 10070;
         final MutableLong target = new MutableLong(target0);
         final RowSet.TargetComparator comp =
-                (long key, int dir) -> Long.compare(target.longValue(), key) * dir;
+                (long key, int dir) -> Long.compare(target.get(), key) * dir;
         final long r = it.binarySearchValue(comp, 1);
         assertEquals(target0, r);
         assertEquals(target0, it.currentValue());
@@ -3114,14 +3114,14 @@ public class WritableRowSetImplTest extends TestCase {
             final RowSet.TargetComparator comp = new RowSet.TargetComparator() {
                 @Override
                 public int compareTargetTo(final long rKey, final int direction) {
-                    final long d = (target.longValue() - rKey) * direction;
+                    final long d = (target.get() - rKey) * direction;
                     return (d > 0) ? 1 : (d < 0) ? -1 : 0;
                 }
             };
             long v = sit.binarySearchValue(comp, 1);
             assertEquals(-1, v);
             assertTrue(sit.hasNext());
-            target.setValue(11);
+            target.set(11);
             v = sit.binarySearchValue(comp, 1);
             assertEquals(11, v);
             assertFalse(sit.hasNext());

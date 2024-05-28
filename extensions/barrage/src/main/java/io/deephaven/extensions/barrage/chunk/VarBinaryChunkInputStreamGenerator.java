@@ -280,11 +280,11 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             subset.forAllRowKeyRanges((s, e) -> {
                 numPayloadBytes.add(byteStorage.getPayloadSize((int) s, (int) e));
             });
-            final long payloadExtended = numPayloadBytes.longValue() & REMAINDER_MOD_8_MASK;
+            final long payloadExtended = numPayloadBytes.get() & REMAINDER_MOD_8_MASK;
             if (payloadExtended > 0) {
                 numPayloadBytes.add(8 - payloadExtended);
             }
-            listener.noteLogicalBuffer(numPayloadBytes.longValue());
+            listener.noteLogicalBuffer(numPayloadBytes.get());
         }
 
         @Override
@@ -314,7 +314,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
                     // then we must also align offset array
                     totalCachedSize.add(Integer.BYTES);
                 }
-                cachedSize = LongSizedDataStructure.intSize(DEBUG_NAME, totalCachedSize.longValue());
+                cachedSize = LongSizedDataStructure.intSize(DEBUG_NAME, totalCachedSize.get());
             }
             return cachedSize;
         }
@@ -384,7 +384,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
                     throw new UncheckedDeephavenException("couldn't drain data to OutputStream", err);
                 }
             });
-            bytesWritten += payloadLen.longValue();
+            bytesWritten += payloadLen.get();
 
             final long bytesExtended = bytesWritten & REMAINDER_MOD_8_MASK;
             if (bytesExtended > 0) {

@@ -64,7 +64,7 @@ public class TestRegionedColumnSourceObjectFixed extends TstRegionedColumnSource
         REUSABLE_VALUES = Stream.of("1234", "0000", "abcd", "ABCD", "love", "hate", "nine", "nein", "wxyz", "WXYZ").map(
                 s -> {
                     length.add(s.length());
-                    return new Value<>(s, objectToBytes(s), length.longValue());
+                    return new Value<>(s, objectToBytes(s), length.get());
                 }).toArray(Value[]::new);
     }
 

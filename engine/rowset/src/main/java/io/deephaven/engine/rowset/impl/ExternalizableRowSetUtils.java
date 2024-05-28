@@ -157,15 +157,15 @@ public class ExternalizableRowSetUtils {
 
         final MutableLong pending = new MutableLong(-1);
         final LongConsumer consume = v -> {
-            final long s = pending.longValue();
+            final long s = pending.get();
             if (s == -1) {
-                pending.setValue(v);
+                pending.set(v);
             } else if (v < 0) {
                 builder.appendRange(s, -v);
-                pending.setValue(-1);
+                pending.set(-1);
             } else {
                 builder.appendKey(s);
-                pending.setValue(v);
+                pending.set(v);
             }
         };
 
@@ -204,8 +204,8 @@ public class ExternalizableRowSetUtils {
             }
         } while (true);
 
-        if (pending.longValue() >= 0) {
-            builder.appendKey(pending.longValue());
+        if (pending.get() >= 0) {
+            builder.appendKey(pending.get());
         }
 
         return builder.build();

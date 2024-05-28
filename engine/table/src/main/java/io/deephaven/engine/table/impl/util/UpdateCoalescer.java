@@ -117,46 +117,46 @@ public class UpdateCoalescer {
             long minBegin = newShifts.getMinimumValidBeginForNextDelta(ttlDelta);
             if (ttlDelta < 0) {
                 final RowSet.SearchIterator revIter = rowSet.reverseIterator();
-                if (revIter.advance(watermarkKey.longValue() - 1)
+                if (revIter.advance(watermarkKey.get() - 1)
                         && revIter.currentValue() > newShifts.lastShiftEnd()) {
                     minBegin = Math.max(minBegin, revIter.currentValue() + 1 - ttlDelta);
                 }
             }
 
-            if (end < watermarkKey.longValue() || minBegin < watermarkKey.longValue()) {
+            if (end < watermarkKey.get() || minBegin < watermarkKey.get()) {
                 return;
             }
 
             // this means the previous shift overlaps this shift; let's figure out who wins
-            final long contestBegin = watermarkKey.longValue();
+            final long contestBegin = watermarkKey.get();
             final boolean currentValid = indexIter.advance(contestBegin);
             if (currentValid && indexIter.currentValue() < minBegin && indexIter.currentValue() <= end) {
                 newShifts.limitPreviousShiftFor(indexIter.currentValue(), ttlDelta);
-                watermarkKey.setValue(indexIter.currentValue());
+                watermarkKey.set(indexIter.currentValue());
             } else {
-                watermarkKey.setValue(Math.min(end + 1, minBegin));
+                watermarkKey.set(Math.min(end + 1, minBegin));
             }
         };
 
         final BiConsumer<Long, Long> consumeUntilWithExtraDelta = (endRange, extraDelta) -> {
-            while (outerIdx.get() < shifted.size() && watermarkKey.longValue() <= endRange) {
+            while (outerIdx.get() < shifted.size() && watermarkKey.get() <= endRange) {
                 final long outerBegin =
-                        Math.max(watermarkKey.longValue(), shifted.getBeginRange(outerIdx.get()));
+                        Math.max(watermarkKey.get(), shifted.getBeginRange(outerIdx.get()));
                 final long outerEnd = shifted.getEndRange(outerIdx.get());
                 final long outerDelta = shifted.getShiftDelta(outerIdx.get());
 
                 // Shift before the outer shift.
                 final long headerEnd = Math.min(endRange, outerBegin - 1 + (outerDelta < 0 ? outerDelta : 0));
-                if (watermarkKey.longValue() <= headerEnd && extraDelta != 0) {
+                if (watermarkKey.get() <= headerEnd && extraDelta != 0) {
                     fixShiftIfOverlap.accept(headerEnd, extraDelta);
-                    newShifts.shiftRange(watermarkKey.longValue(), headerEnd, extraDelta);
+                    newShifts.shiftRange(watermarkKey.get(), headerEnd, extraDelta);
                 }
                 final long maxWatermark =
                         endRange == Long.MAX_VALUE ? outerBegin : Math.min(endRange + 1, outerBegin);
-                watermarkKey.setValue(Math.max(watermarkKey.longValue(), maxWatermark));
+                watermarkKey.set(Math.max(watermarkKey.get(), maxWatermark));
 
                 // Does endRange occur before this outerIdx shift? If so pop-out we need to change extraDelta.
-                if (watermarkKey.longValue() > endRange) {
+                if (watermarkKey.get() > endRange) {
                     return;
                 }
 
@@ -164,8 +164,8 @@ public class UpdateCoalescer {
                 final long ttlDelta = outerDelta + extraDelta;
                 fixShiftIfOverlap.accept(myEnd, ttlDelta);
 
-                newShifts.shiftRange(watermarkKey.longValue(), myEnd, ttlDelta);
-                watermarkKey.setValue(myEnd + 1);
+                newShifts.shiftRange(watermarkKey.get(), myEnd, ttlDelta);
+                watermarkKey.set(myEnd + 1);
 
                 // Is this shift completely used up? If so, let's move on to the next!
                 if (myEnd == outerEnd) {
@@ -173,11 +173,11 @@ public class UpdateCoalescer {
                 }
             }
 
-            if (outerIdx.get() == shifted.size() && watermarkKey.longValue() <= endRange && extraDelta != 0) {
+            if (outerIdx.get() == shifted.size() && watermarkKey.get() <= endRange && extraDelta != 0) {
                 fixShiftIfOverlap.accept(endRange, extraDelta);
-                newShifts.shiftRange(watermarkKey.longValue(), endRange, extraDelta);
+                newShifts.shiftRange(watermarkKey.get(), endRange, extraDelta);
             }
-            watermarkKey.setValue(endRange + 1);
+            watermarkKey.set(endRange + 1);
         };
 
         final ShiftInversionHelper inverter = new ShiftInversionHelper(shifted);

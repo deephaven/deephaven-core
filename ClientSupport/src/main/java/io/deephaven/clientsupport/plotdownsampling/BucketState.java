@@ -224,24 +224,24 @@ public class BucketState {
                 RowSetUtils.forAllInvertedLongRanges(rowSet, nullsForCol, (first, last) -> {
                     if (first > 0) {
                         // Advance to (first - 1)
-                        keysIterator.getNextRowSequenceWithLength(first - 1 - position.longValue());
+                        keysIterator.getNextRowSequenceWithLength(first - 1 - position.get());
                         build.addKey(keysIterator.peekNextKey());
                         // Advance to first
                         keysIterator.getNextRowSequenceWithLength(1);
                         build.addKey(keysIterator.peekNextKey());
 
-                        position.setValue(first);
+                        position.set(first);
                     }
 
                     if (last < indexSize - 1) {
                         // Advance to last
-                        keysIterator.getNextRowSequenceWithLength(last - position.longValue());
+                        keysIterator.getNextRowSequenceWithLength(last - position.get());
                         build.addKey(keysIterator.peekNextKey());
                         // Advance to (last + 1)
                         keysIterator.getNextRowSequenceWithLength(1);
                         build.addKey(keysIterator.peekNextKey());
 
-                        position.setValue(last + 1);
+                        position.set(last + 1);
                     }
                 });
             }

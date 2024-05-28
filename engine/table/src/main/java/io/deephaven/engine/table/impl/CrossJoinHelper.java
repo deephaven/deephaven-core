@@ -541,7 +541,7 @@ public class CrossJoinHelper {
                                 final LongConsumer processLeftShiftsUntil = (ii) -> {
                                     // note: if all rows shift, then each row shifts by a different amount and
                                     // rowsToShift is inclusive
-                                    if (!finishShifting.booleanValue() && watermark.longValue() >= ii || allRowsShift) {
+                                    if (!finishShifting.booleanValue() && watermark.get() >= ii || allRowsShift) {
                                         return;
                                     }
 
@@ -556,7 +556,7 @@ public class CrossJoinHelper {
                                         final long shiftDelta =
                                                 upstreamLeft.shifted().getShiftDelta(shiftIdx) << currRightBits;
 
-                                        if (endRange < watermark.longValue()) {
+                                        if (endRange < watermark.get()) {
                                             continue;
                                         }
                                         if (!finishShifting.booleanValue() && beginRange >= ii) {
@@ -564,7 +564,7 @@ public class CrossJoinHelper {
                                         }
 
                                         final long maxTouched = Math.min(ii - 1, endRange);
-                                        final long minTouched = Math.max(watermark.longValue(), beginRange);
+                                        final long minTouched = Math.max(watermark.get(), beginRange);
                                         if (!rsIt.advance(minTouched)) {
                                             break;
                                         }
@@ -574,7 +574,7 @@ public class CrossJoinHelper {
                                             toRemoveFromResultRowSet.appendRange(s, e);
                                             toInsertIntoResultRowSet.appendRange(s + shiftDelta, e + shiftDelta);
                                         });
-                                        watermark.setValue(maxTouched + 1);
+                                        watermark.set(maxTouched + 1);
 
                                         if (!finishShifting.booleanValue() && maxTouched != endRange) {
                                             break;
@@ -651,7 +651,7 @@ public class CrossJoinHelper {
                                         shiftBuilder.shiftRange(prevOffset, prevOffset + prevCardinality - 1,
                                                 currOffset - prevOffset);
                                     }
-                                    watermark.setValue((pi + 1) << prevRightBits);
+                                    watermark.set((pi + 1) << prevRightBits);
                                 });
                                 // finish processing all shifts
                                 finishShifting.setTrue();
@@ -1039,7 +1039,7 @@ public class CrossJoinHelper {
             } else {
                 leftTable.getRowSet().forAllRowKeys((currIdx) -> {
                     final long currResultIdx = currIdx << crossJoinState.getNumShiftBits();
-                    currRightShift.setValue(furtherShiftIndex(currRight, currRightShift.longValue(), currResultIdx));
+                    currRightShift.set(furtherShiftIndex(currRight, currRightShift.get(), currResultIdx));
                     builder.appendRowSequence(currRight);
                 });
                 crossJoinState.setRightEmpty(false);

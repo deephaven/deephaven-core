@@ -522,17 +522,17 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
                 final MutableLong lastLeftIndex = new MutableLong(RowSequence.NULL_ROW_KEY);
 
                 final Runnable flush = () -> {
-                    if (lastLeftIndex.longValue() == RowSequence.NULL_ROW_KEY) {
+                    if (lastLeftIndex.get() == RowSequence.NULL_ROW_KEY) {
                         return;
                     }
 
                     RowSet rightGroup;
                     if (usePrev) {
                         final TrackingRowSet fromTable =
-                                crossJoinManager.getRightRowSetFromPrevLeftRow(lastLeftIndex.longValue());
+                                crossJoinManager.getRightRowSetFromPrevLeftRow(lastLeftIndex.get());
                         rightGroup = rightIsLive ? fromTable.copyPrev() : fromTable;
                     } else {
-                        rightGroup = crossJoinManager.getRightRowSetFromLeftRow(lastLeftIndex.longValue());
+                        rightGroup = crossJoinManager.getRightRowSetFromLeftRow(lastLeftIndex.get());
                     }
 
                     final int alreadyWritten = postMapOffset.get();
@@ -552,9 +552,9 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
                 rowSequence.forAllRowKeys(ii -> {
                     final long leftIndex =
                             usePrev ? crossJoinManager.getPrevShifted(ii) : crossJoinManager.getShifted(ii);
-                    if (leftIndex != lastLeftIndex.longValue()) {
+                    if (leftIndex != lastLeftIndex.get()) {
                         flush.run();
-                        lastLeftIndex.setValue(leftIndex);
+                        lastLeftIndex.set(leftIndex);
                         uniqueLeftSideValues.increment();
                     }
                     mappedKeys.set(preMapOffset.get(),

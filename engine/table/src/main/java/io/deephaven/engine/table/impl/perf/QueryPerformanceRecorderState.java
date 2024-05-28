@@ -126,7 +126,7 @@ public abstract class QueryPerformanceRecorderState {
         } finally {
             final long endThreadAllocatedBytes = ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes();
             final MutableLong poolAllocatedBytesForCurrentThread = POOL_ALLOCATED_BYTES.get();
-            poolAllocatedBytesForCurrentThread.setValue(plus(poolAllocatedBytesForCurrentThread.longValue(),
+            poolAllocatedBytesForCurrentThread.set(plus(poolAllocatedBytesForCurrentThread.get(),
                     minus(endThreadAllocatedBytes, startThreadAllocatedBytes)));
         }
     }
@@ -138,7 +138,7 @@ public abstract class QueryPerformanceRecorderState {
      * @return The total bytes of pool-allocated memory attributed to this thread.
      */
     static long getPoolAllocatedBytesForCurrentThread() {
-        return POOL_ALLOCATED_BYTES.get().longValue();
+        return POOL_ALLOCATED_BYTES.get().get();
     }
 
     /**

@@ -727,7 +727,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             final long endPosUnpackedValue = Math.abs(endPosUnpackedData);
             int c = comp.directionToTargetFrom(endPosUnpackedValue);
             if (c >= 0) {
-                outData.setValue(endPosUnpackedData);
+                outData.set(endPosUnpackedData);
                 return sar.count - 1;
             }
             int maxPos = sar.count - 1;
@@ -735,7 +735,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             c = comp.directionToTargetFrom(startPosUnpackedValue);
             if (c <= 0) {
                 if (c == 0) {
-                    outData.setValue(startPosUnpackedValue);
+                    outData.set(startPosUnpackedValue);
                     return startPos;
                 }
                 return startPos - 1;
@@ -756,10 +756,10 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     maxPos = midPos;
                     continue;
                 }
-                outData.setValue(midPosUnpackedData);
+                outData.set(midPosUnpackedData);
                 return midPos;
             }
-            outData.setValue(minPosUnpackedData);
+            outData.set(minPosUnpackedData);
             return minPos;
         }
 
@@ -803,7 +803,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 currRangeStart = currRangeEnd;
                 return currRangeStart;
             }
-            final long data = outValue.longValue();
+            final long data = outValue.get();
             final boolean neg = data < 0;
             if (neg) {
                 currRangeStart = currRangeEnd = -data;

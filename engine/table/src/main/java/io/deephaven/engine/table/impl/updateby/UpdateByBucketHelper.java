@@ -283,7 +283,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
                 nullCount++;
                 continue;
             }
-            if (ts < lastTimestamp.longValue()) {
+            if (ts < lastTimestamp.get()) {
                 throw (new TableDataException(
                         "Timestamp values in UpdateBy operators must not decrease"));
             }
@@ -292,7 +292,7 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
             ssaKeys.add(keysChunk.get(i));
 
             // store the current ts for comparison
-            lastTimestamp.setValue(ts);
+            lastTimestamp.set(ts);
         }
         return nullCount;
     }

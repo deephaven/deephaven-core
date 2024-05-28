@@ -1055,14 +1055,14 @@ public class SortedRangesTest {
         long prev = -1L;
         final MutableLong mutVal = new MutableLong(-1L);
         final RowSet.TargetComparator comp =
-                (final long key, final int dir) -> Long.signum(dir * (mutVal.longValue() - key));
+                (final long key, final int dir) -> Long.signum(dir * (mutVal.get() - key));
         for (long[] segment : segments0) {
             final long start = segment[0];
             final long end = segment[1];
             final String m = "start==" + start + " && end==" + end;
             for (long v = start - 1; v <= end + 1; ++v) {
                 final String m2 = m + " && v==" + v;
-                mutVal.setValue(v);
+                mutVal.set(v);
                 long result = sit.binarySearchValue(comp, 1);
                 searchRangeCheck(m2, start, end, v, prev, result);
                 final RowSet.SearchIterator brandNewIter = sar.getSearchIterator();
@@ -1192,7 +1192,7 @@ public class SortedRangesTest {
             card.add(end - start + 1);
             return true;
         });
-        return card.longValue();
+        return card.get();
     }
 
     @Test
@@ -2179,7 +2179,7 @@ public class SortedRangesTest {
             assertEquals("v==" + v, !inSr2, sr3.contains(v));
             return true;
         });
-        assertEquals(card.longValue(), sr3.getCardinality());
+        assertEquals(card.get(), sr3.getCardinality());
     }
 
     @Test
@@ -2308,7 +2308,7 @@ public class SortedRangesTest {
                     assertEquals(m2 + " && v==" + v, inSr2, intersect.ixContainsRange(v, v));
                     return true;
                 });
-                assertEquals(m, card.longValue(), intersect.ixCardinality());
+                assertEquals(m, card.get(), intersect.ixCardinality());
                 intersect.ixForEachLong((final long v) -> {
                     assertTrue(m2 + " && v==" + v, sr1.contains(v));
                     assertTrue(m2 + " && v==" + v, sr2.contains(v));

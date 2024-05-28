@@ -383,7 +383,7 @@ public class BarrageStreamGeneratorImpl implements
                         this, 0, 0, actualBatchSize, metadata, generator::appendAddColumns);
                 bytesWritten.add(is.available());
                 visitor.accept(is);
-                generator.writeConsumer.onWrite(bytesWritten.longValue(), System.nanoTime() - startTm);
+                generator.writeConsumer.onWrite(bytesWritten.get(), System.nanoTime() - startTm);
                 return;
             }
 
@@ -403,7 +403,7 @@ public class BarrageStreamGeneratorImpl implements
                     modViewport.close();
                 }
             }
-            generator.writeConsumer.onWrite(bytesWritten.longValue(), System.nanoTime() - startTm);
+            generator.writeConsumer.onWrite(bytesWritten.get(), System.nanoTime() - startTm);
         }
 
         private int batchSize() {
@@ -530,7 +530,7 @@ public class BarrageStreamGeneratorImpl implements
             }
             addRowOffsets.close();
             addRowKeys.close();
-            generator.writeConsumer.onWrite(bytesWritten.longValue(), System.nanoTime() - startTm);
+            generator.writeConsumer.onWrite(bytesWritten.get(), System.nanoTime() - startTm);
         }
 
         private int batchSize() {
@@ -699,7 +699,7 @@ public class BarrageStreamGeneratorImpl implements
             RecordBatch.startBuffersVector(header, biChunk.size());
             for (int i = biChunk.size() - 1; i >= 0; --i) {
                 totalBufferLength.subtract(biChunk.get(i));
-                Buffer.createBuffer(header, totalBufferLength.longValue(), biChunk.get(i));
+                Buffer.createBuffer(header, totalBufferLength.get(), biChunk.get(i));
             }
             buffersOffset = header.endVector();
         }

@@ -178,10 +178,10 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
             BaseTable.initializeWithSnapshot(logPrefix, snapshotControl, (usePrev, beforeClockValue) -> {
                 snapshotControl.setListenerAndResult(listener, NOOP_NOTIFICATION_STEP_RECEIVER);
                 final TrackingRowSet rowSet = table.getRowSet();
-                initSize.setValue(usePrev ? rowSet.sizePrev() : rowSet.size());
+                initSize.set(usePrev ? rowSet.sizePrev() : rowSet.size());
                 return true;
             });
-            sendUpdateMessage(ticket, initSize.longValue(), null);
+            sendUpdateMessage(ticket, initSize.get(), null);
         } catch (final SnapshotUnsuccessfulException err) {
             if (err.getCause() instanceof TableAlreadyFailedException) {
                 sendUpdateMessage(ticket, -1, Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,

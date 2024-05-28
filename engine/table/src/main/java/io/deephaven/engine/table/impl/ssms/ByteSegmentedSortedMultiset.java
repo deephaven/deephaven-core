@@ -1522,7 +1522,7 @@ public final class ByteSegmentedSortedMultiset implements SegmentedSortedMultiSe
         if (leafCount == 1) {
             // we need to move this many entries (the last one may be partial)
             totalUniqueToMove = countFront(directoryCount, size, remaining, leftOverMutable);
-            if (remaining.longValue() > 0) {
+            if (remaining.get() > 0) {
                 throw new IllegalStateException();
             }
             if (totalUniqueToMove == size) {
@@ -1532,7 +1532,7 @@ public final class ByteSegmentedSortedMultiset implements SegmentedSortedMultiSe
                 partialUnique = totalUniqueToMove;
             }
         } else {
-            while (remaining.longValue() > 0) {
+            while (remaining.get() > 0) {
                 final int uniqueToMove = countFront(leafCounts[rleaf], leafSizes[rleaf], remaining, leftOverMutable);
                 totalUniqueToMove += uniqueToMove;
                 if (uniqueToMove == leafSizes[rleaf]) {
@@ -1544,7 +1544,7 @@ public final class ByteSegmentedSortedMultiset implements SegmentedSortedMultiSe
         }
         final boolean appendToExtra = destination.prepareAppend(partialUnique, rleaf);
 
-        final long leftOver = leftOverMutable.longValue();
+        final long leftOver = leftOverMutable.get();
         if (rleaf > 0) {
             int wleaf = destination.leafCount;
             // we can move full leaves to start
@@ -1893,14 +1893,14 @@ public final class ByteSegmentedSortedMultiset implements SegmentedSortedMultiSe
     }
 
     private static int countFront(long[] counts, int sz, MutableLong valuesToMove, MutableLong leftOvers) {
-        leftOvers.setValue(0);
+        leftOvers.set(0);
         int rpos = 0;
         // figure out how many values we must move
-        while (valuesToMove.longValue() > 0 && rpos < sz) {
+        while (valuesToMove.get() > 0 && rpos < sz) {
             final long slotCount = counts[rpos];
-            if (valuesToMove.longValue() < slotCount) {
-                leftOvers.setValue(slotCount - valuesToMove.longValue());
-                valuesToMove.setValue(0);
+            if (valuesToMove.get() < slotCount) {
+                leftOvers.set(slotCount - valuesToMove.get());
+                valuesToMove.set(0);
             } else {
                 valuesToMove.subtract(slotCount);
             }
@@ -1957,7 +1957,7 @@ public final class ByteSegmentedSortedMultiset implements SegmentedSortedMultiSe
         if (leafCount == 1) {
             // we need to move this many entries (the last one may be partial)
             totalUniqueToMove = countBack(directoryCount, size, remaining, leftOverMutable);
-            Assert.eqZero(remaining.longValue(), "remaining.longValue()");
+            Assert.eqZero(remaining.get(), "remaining.get()");
             Assert.leq(totalUniqueToMove, "totalUniqueToMove", count, "count");
             if (totalUniqueToMove == size) {
                 // we are moving the entire leaf
@@ -1968,7 +1968,7 @@ public final class ByteSegmentedSortedMultiset implements SegmentedSortedMultiSe
                 slotsInPartialLeaf = totalUniqueToMove;
             }
         } else {
-            while (remaining.longValue() > 0) {
+            while (remaining.get() > 0) {
                 final int uniqueToMove = countBack(leafCounts[rleaf], leafSizes[rleaf], remaining, leftOverMutable);
                 Assert.leq(totalUniqueToMove, "totalUniqueToMove", count, "count");
                 totalUniqueToMove += uniqueToMove;
@@ -1981,7 +1981,7 @@ public final class ByteSegmentedSortedMultiset implements SegmentedSortedMultiSe
             }
         }
 
-        final long leftOver = leftOverMutable.longValue();
+        final long leftOver = leftOverMutable.get();
 
         final boolean extraLeaf = destination.preparePrepend(slotsInPartialLeaf, completeLeavesToMove);
         if (slotsInPartialLeaf > 0) {
@@ -2136,14 +2136,14 @@ public final class ByteSegmentedSortedMultiset implements SegmentedSortedMultiSe
     }
 
     private static int countBack(long[] counts, int sz, MutableLong valuesToMove, MutableLong leftOvers) {
-        leftOvers.setValue(0);
+        leftOvers.set(0);
         int rpos = sz;
         // figure out how many values we must move
-        while (valuesToMove.longValue() > 0 && rpos > 0) {
+        while (valuesToMove.get() > 0 && rpos > 0) {
             final long slotCount = counts[--rpos];
-            if (valuesToMove.longValue() < slotCount) {
-                leftOvers.setValue(slotCount - valuesToMove.longValue());
-                valuesToMove.setValue(0);
+            if (valuesToMove.get() < slotCount) {
+                leftOvers.set(slotCount - valuesToMove.get());
+                valuesToMove.set(0);
             } else {
                 valuesToMove.subtract(slotCount);
             }

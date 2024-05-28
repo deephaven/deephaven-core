@@ -22,11 +22,11 @@ public class MutableLong {
         this.value = value;
     }
 
-    public long longValue() {
+    public long get() {
         return value;
     }
 
-    public void setValue(long value) {
+    public void set(long value) {
         this.value = value;
     }
 

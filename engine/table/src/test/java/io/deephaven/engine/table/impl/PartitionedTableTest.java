@@ -856,7 +856,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         final Table underlying;
         try (final SafeCloseable ignored = ExecutionContext.makeExecutionContext(false).open()) {
             underlying = base.update(
-                    "Constituent=emptyTable(1000 * step.longValue()).update(\"JJ=ii * \" + II + \" * step.longValue()\")");
+                    "Constituent=emptyTable(1000 * step.get()).update(\"JJ=ii * \" + II + \" * step.get()\")");
         }
 
         final PartitionedTable partitioned = PartitionedTableFactory.of(underlying);
@@ -869,7 +869,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         modifiedColumnSet.setAll("II");
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         while (step.incrementAndGet() <= 100) {
-            final boolean evenStep = step.longValue() % 2 == 0;
+            final boolean evenStep = step.get() % 2 == 0;
             updateGraph.runWithinUnitTestCycle(() -> {
                 base.notifyListeners(new TableUpdateImpl(
                         RowSetFactory.empty(),
@@ -882,11 +882,11 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
             final Table[] tables = LongStream.range(0, 10).mapToObj((final long II) -> {
                 final boolean evenPos = II % 2 == 0;
                 if (evenStep == evenPos) {
-                    return emptyTable(1000 * step.longValue())
-                            .updateView("JJ = ii * " + II + " * step.longValue()");
+                    return emptyTable(1000 * step.get())
+                            .updateView("JJ = ii * " + II + " * step.get()");
                 } else {
-                    return emptyTable(1000 * (step.longValue() - 1))
-                            .updateView("JJ = ii * " + II + " * (step.longValue() - 1)");
+                    return emptyTable(1000 * (step.get() - 1))
+                            .updateView("JJ = ii * " + II + " * (step.get() - 1)");
                 }
             }).toArray(Table[]::new);
             final Table matching = TableTools.merge(tables);

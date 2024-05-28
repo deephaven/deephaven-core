@@ -113,14 +113,14 @@ class UpdateByWindowRollingTicks extends UpdateByWindowRollingBase {
             long head = s - revTicks + 1;
             long tail = e + fwdTicks;
 
-            if (tail < minPos.longValue() || head > maxPos) {
+            if (tail < minPos.get() || head > maxPos) {
                 // ignore this range
                 return;
             }
-            head = Math.max(head, minPos.longValue());
+            head = Math.max(head, minPos.get());
             tail = Math.min(tail, maxPos);
             builder.appendRange(head, tail);
-            minPos.setValue(tail + 1);
+            minPos.set(tail + 1);
         });
 
         try (final RowSet positions = builder.build()) {

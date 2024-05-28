@@ -3616,7 +3616,7 @@ public class RspBitmapTest {
         rb = rb.addRange(start2, end2);
         final MutableLong prev = new MutableLong(-1);
         final LongAbortableConsumer lac = (final long v) -> {
-            final long p = prev.longValue();
+            final long p = prev.get();
             final String m = "p==" + p + " && v==" + v;
             assertTrue(m, v <= end2);
             assertTrue(m, p < v);
@@ -3627,12 +3627,12 @@ public class RspBitmapTest {
             } else {
                 assertEquals(m, p + 1, v);
             }
-            prev.setValue(v);
+            prev.set(v);
             return true;
         };
         rb.forEachLong(lac);
         final RspIterator rit = rb.getIterator();
-        prev.setValue(-1);
+        prev.set(-1);
         rit.forEachLong(lac);
     }
 

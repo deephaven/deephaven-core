@@ -383,13 +383,13 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
             int i = fromIndex;
             while (true) {
                 if (i == arr.size - 1) {
-                    prevCardMu.setValue(prevCard);
+                    prevCardMu.set(prevCard);
                     return i;
                 }
                 final long spanCard = arr.getSpanCardinalityAtIndex(i);
                 final long card = prevCard + spanCard;
                 if (cardTarget <= card) {
-                    prevCardMu.setValue(prevCard);
+                    prevCardMu.set(prevCard);
                     return i;
                 }
                 ++i;
@@ -427,7 +427,7 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
                     currEndOffset = currStartOffset + boundedNumberOfKeys - 1;
                 } else {
                     currCardBeforeEndIdx =
-                            (prevCardMu != null) ? prevCardMu.longValue() : arr.cardinalityBeforeWithAcc(currEndIdx);
+                            (prevCardMu != null) ? prevCardMu.get() : arr.cardinalityBeforeWithAcc(currEndIdx);
                     final long spanCardAtStartIdx = arr.getSpanCardinalityAtIndexMaybeAcc(currStartIdx);
                     final long cardAtStartIdx = currCardBeforeStartIdx + spanCardAtStartIdx;
                     final long firstSpanCount = spanCardAtStartIdx - currStartOffset;
@@ -467,7 +467,7 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
             currEndIdx =
                     endIndex(currStartIdx, currStartOffset, currCardBeforeStartIdx, boundedNumberOfKeys, prevCardMu);
             currCardBeforeEndIdx =
-                    (prevCardMu != null) ? prevCardMu.longValue() : arr.cardinalityBeforeWithAcc(currEndIdx);
+                    (prevCardMu != null) ? prevCardMu.get() : arr.cardinalityBeforeWithAcc(currEndIdx);
             final long keysBeforeLastSpan =
                     keysAvailableInStartSpan + currCardBeforeEndIdx - currCardBeforeStartIdx
                             - currStartIdxSpanCardinality;

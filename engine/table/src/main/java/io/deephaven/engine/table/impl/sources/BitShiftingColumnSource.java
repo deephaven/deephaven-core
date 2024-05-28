@@ -410,7 +410,7 @@ public class BitShiftingColumnSource<T> extends AbstractColumnSource<T> implemen
                 final MutableLong currentRunInnerIndexKey = new MutableLong(RowSequence.NULL_ROW_KEY);
 
                 rowSequence.forAllRowKeys((final long rowKey) -> {
-                    final long lastInnerIndexKey = currentRunInnerIndexKey.longValue();
+                    final long lastInnerIndexKey = currentRunInnerIndexKey.get();
                     final long innerIndexKey =
                             usePrev ? shiftState.getPrevShifted(rowKey) : shiftState.getShifted(rowKey);
                     if (innerIndexKey != lastInnerIndexKey) {
@@ -420,13 +420,13 @@ public class BitShiftingColumnSource<T> extends AbstractColumnSource<T> implemen
                             currentRunPosition.increment();
                         }
                         currentRunLength.set(1);
-                        currentRunInnerIndexKey.setValue(innerIndexKey);
+                        currentRunInnerIndexKey.set(innerIndexKey);
                     } else {
                         currentRunLength.increment();
                     }
                 });
 
-                uniqueIndices.set(currentRunPosition.get(), currentRunInnerIndexKey.longValue());
+                uniqueIndices.set(currentRunPosition.get(), currentRunInnerIndexKey.get());
                 runLengths.set(currentRunPosition.get(), currentRunLength.get());
                 uniqueIndices.setSize(currentRunPosition.get() + 1);
                 runLengths.setSize(currentRunPosition.get() + 1);

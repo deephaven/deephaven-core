@@ -8,7 +8,6 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.ColumnSource;
@@ -145,10 +144,10 @@ public final class RedirectionLayer extends SelectAndViewAnalyzer {
             final RowSet.Iterator freeIt = freeValues.iterator();
             upstream.added().forAllRowKeys(outerKey -> {
                 final long innerKey = freeIt.hasNext() ? freeIt.nextLong() : ++maxInnerIndex;
-                lastAllocated.setValue(innerKey);
+                lastAllocated.set(innerKey);
                 rowRedirection.put(outerKey, innerKey);
             });
-            freeValues.removeRange(0, lastAllocated.longValue());
+            freeValues.removeRange(0, lastAllocated.get());
         }
 
         onCompletion.onLayerCompleted(REDIRECTION_LAYER_INDEX);

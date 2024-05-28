@@ -62,7 +62,7 @@ public class TestRegionedColumnSourceObjectVariable extends TstRegionedColumnSou
                 Stream.of("12345", "000", "abcdefg", "ABC", "love", "hate", "nineteen", "ninety", "tuvwxyz", "Z").map(
                         s -> {
                             length.add(s.length());
-                            return new Value<>(s, objectToBytes(s), length.longValue());
+                            return new Value<>(s, objectToBytes(s), length.get());
                         }).toArray(Value[]::new);
     }
 

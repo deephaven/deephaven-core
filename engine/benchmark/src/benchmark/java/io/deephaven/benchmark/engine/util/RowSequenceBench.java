@@ -75,16 +75,16 @@ public class RowSequenceBench {
     long fixedCost() {
         final MutableLong accum = new MutableLong(0);
         fixedCostOk.forEachRowKey((final long v) -> {
-            accum.setValue(accum.longValue() ^ v);
+            accum.set(accum.get() ^ v);
             return true;
         });
         indicesChunk.setSize(chunkSz);
         fixedCostOk.fillRowKeyChunk(indicesChunk);
         final int sz = indicesChunk.size();
         for (int i = 0; i < sz; ++i) {
-            accum.setValue(accum.longValue() ^ indicesChunk.get(i));
+            accum.set(accum.get() ^ indicesChunk.get(i));
         }
-        return accum.longValue();
+        return accum.get();
     }
 
     @Benchmark

@@ -173,9 +173,9 @@ public class SortedIntGenerator implements TestDataGenerator<Integer, Integer> {
         currentRowSet.forAllRowKeys(idx -> {
             final int value = currentValues.get(idx);
             // region check sorted assertion
-            Assert.leq(lastValue.longValue(), "lastValue", value, "value");
+            Assert.leq(lastValue.get(), "lastValue", value, "value");
             // endregion check sorted assertion
-            lastValue.setValue(value);
+            lastValue.set(value);
         });
     }
 }

@@ -1269,24 +1269,24 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
             final long leftId = leftColumn.getLong(ii);
             final long rightId = rightColumn.getLong(ii);
             if (lastSharedKey.getValue() != null && lastSharedKey.getValue().equals(sharedKey)) {
-                Assert.leq(lastLeftId.longValue(), "lastLeftId.longValue()", leftId, "leftId");
-                if (lastLeftId.longValue() == leftId) {
-                    Assert.lt(lastRightId.longValue(), "lastRightId.longValue()", rightId, "rightId");
+                Assert.leq(lastLeftId.get(), "lastLeftId.longValue()", leftId, "leftId");
+                if (lastLeftId.get() == leftId) {
+                    Assert.lt(lastRightId.get(), "lastRightId.longValue()", rightId, "rightId");
                 }
             } else {
                 lastSharedKey.setValue(sharedKey);
-                lastLeftId.setValue(leftId);
+                lastLeftId.set(leftId);
             }
-            lastRightId.setValue(rightId);
+            lastRightId.set(rightId);
 
             final MutableLong remainingCount = expectedByKey.get(sharedKey);
             Assert.neqNull(remainingCount, "remainingCount");
-            Assert.gtZero(remainingCount.longValue(), "remainingCount.longValue()");
+            Assert.gtZero(remainingCount.get(), "remainingCount.longValue()");
             remainingCount.decrement();
         });
 
         for (final Map.Entry<String, MutableLong> entry : expectedByKey.entrySet()) {
-            Assert.eqZero(entry.getValue().longValue(), "entry.getValue().longValue");
+            Assert.eqZero(entry.getValue().get(), "entry.getValue().longValue");
         }
     }
 

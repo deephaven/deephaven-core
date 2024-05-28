@@ -615,7 +615,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         }
         final MutableLong redirectionOffset = new MutableLong(0);
         buildTable(false, (BuildContext) bc, leftRowSet, leftSources, (chunkOk, sourceKeyChunks) -> {
-            addLeftSide(chunkOk, sourceKeyChunks, leftRedirections, redirectionOffset.longValue());
+            addLeftSide(chunkOk, sourceKeyChunks, leftRedirections, redirectionOffset.get());
             redirectionOffset.add(chunkOk.size());
         }, modifiedSlotTracker);
     }

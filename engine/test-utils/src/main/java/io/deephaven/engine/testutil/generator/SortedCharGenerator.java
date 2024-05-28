@@ -169,9 +169,9 @@ public class SortedCharGenerator implements TestDataGenerator<Character, Charact
         currentRowSet.forAllRowKeys(idx -> {
             final char value = currentValues.get(idx);
             // region check sorted assertion
-            Assert.leq(lastValue.longValue(), "lastValue", value, "value");
+            Assert.leq(lastValue.get(), "lastValue", value, "value");
             // endregion check sorted assertion
-            lastValue.setValue(value);
+            lastValue.set(value);
         });
     }
 }

@@ -192,7 +192,7 @@ public class TestModelFarm extends RefreshingTableTestCase {
                     @Override
                     public void loadData(MutableLong data, long index, boolean usePrev) {
                         final ColumnSource<Long> columnSource = table().getColumnSource("Value", long.class);
-                        data.setValue(usePrev ? columnSource.getPrevLong(index) : columnSource.getLong(index));
+                        data.set(usePrev ? columnSource.getPrevLong(index) : columnSource.getLong(index));
                     }
                 },
                 nKeys);
