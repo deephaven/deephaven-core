@@ -4638,7 +4638,7 @@ public class DateTimeUtils {
 
                 long sign1 = 0;
 
-                if (sign1Str == null || sign1Str.equals("") || sign1Str.equals("+")) {
+                if (sign1Str == null || sign1Str.isEmpty() || sign1Str.equals("+")) {
                     sign1 = 1;
                 } else if (sign1Str.equals("-")) {
                     sign1 = -1;
@@ -4648,7 +4648,7 @@ public class DateTimeUtils {
 
                 long sign2 = 0;
 
-                if (sign2Str == null || sign2Str.equals("") || sign2Str.equals("+")) {
+                if (sign2Str == null || sign2Str.isEmpty() || sign2Str.equals("+")) {
                     sign2 = 1;
                 } else if (sign2Str.equals("-")) {
                     sign2 = -1;
