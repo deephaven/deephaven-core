@@ -146,7 +146,7 @@ public interface ObjectProcessor<T> {
      *
      * @return the number of outputs
      */
-    default int size() {
+    default int numOutputs() {
         return outputTypes().size();
     }
 
@@ -199,7 +199,8 @@ public interface ObjectProcessor<T> {
         List<Type<?>> outputTypes();
 
         /**
-         * The number of output types for the processors. Equivalent to the processors' {@link ObjectProcessor#size()}.
+         * The number of output types for the processors. Equivalent to the processors'
+         * {@link ObjectProcessor#numOutputs()}.
          *
          * @return the number of output types
          */

@@ -7,6 +7,7 @@ import io.deephaven.chunk.ObjectChunk;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.List;
 
 import static io.deephaven.json.TestHelper.parse;
@@ -14,44 +15,44 @@ import static io.deephaven.json.TestHelper.process;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
-public class StringValueTest {
+public class BigDecimalValueTest {
 
     @Test
     void standard() throws IOException {
-        parse(StringValue.standard(), "\"foo\"", ObjectChunk.chunkWrap(new String[] {"foo"}));
+        parse(BigDecimalValue.standard(), "42.42", ObjectChunk.chunkWrap(new BigDecimal[] {new BigDecimal("42.42")}));
     }
 
     @Test
     void standardMissing() throws IOException {
-        parse(StringValue.standard(), "", ObjectChunk.chunkWrap(new String[] {null}));
+        parse(BigDecimalValue.standard(), "", ObjectChunk.chunkWrap(new BigDecimal[] {null}));
     }
 
     @Test
     void standardNull() throws IOException {
-        parse(StringValue.standard(), "null", ObjectChunk.chunkWrap(new String[] {null}));
+        parse(BigDecimalValue.standard(), "null", ObjectChunk.chunkWrap(new BigDecimal[] {null}));
     }
-
 
     @Test
     void customMissing() throws IOException {
-        parse(StringValue.builder().onMissing("<missing>").build(), "",
-                ObjectChunk.chunkWrap(new String[] {"<missing>"}));
+        parse(BigDecimalValue.builder().onMissing(BigDecimal.valueOf(-1)).build(), "",
+                ObjectChunk.chunkWrap(new BigDecimal[] {BigDecimal.valueOf(-1)}));
     }
 
     @Test
     void customNull() throws IOException {
-        parse(StringValue.builder().onNull("<null>").build(), "null", ObjectChunk.chunkWrap(new String[] {"<null>"}));
+        parse(BigDecimalValue.builder().onNull(BigDecimal.valueOf(-2)).build(), "null",
+                ObjectChunk.chunkWrap(new BigDecimal[] {BigDecimal.valueOf(-2)}));
     }
 
     @Test
     void strict() throws IOException {
-        parse(StringValue.strict(), "\"foo\"", ObjectChunk.chunkWrap(new String[] {"foo"}));
+        parse(BigDecimalValue.strict(), "42.42", ObjectChunk.chunkWrap(new BigDecimal[] {new BigDecimal("42.42")}));
     }
 
     @Test
     void strictMissing() {
         try {
-            process(StringValue.strict(), "");
+            process(BigDecimalValue.strict(), "");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Missing not allowed");
@@ -61,39 +62,27 @@ public class StringValueTest {
     @Test
     void strictNull() {
         try {
-            process(StringValue.strict(), "null");
+            process(BigDecimalValue.strict(), "null");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Null not allowed");
         }
     }
 
-
     @Test
-    void standardInt() {
+    void standardString() {
         try {
-            process(StringValue.standard(), "42");
+            process(BigDecimalValue.standard(), "\"42\"");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
-            assertThat(e).hasMessageContaining("Number int not allowed");
+            assertThat(e).hasMessageContaining("String not allowed");
         }
     }
-
-    @Test
-    void standardDecimal() {
-        try {
-            process(StringValue.standard(), "42.42");
-            failBecauseExceptionWasNotThrown(IOException.class);
-        } catch (IOException e) {
-            assertThat(e).hasMessageContaining("Decimal not allowed");
-        }
-    }
-
 
     @Test
     void standardTrue() {
         try {
-            process(StringValue.standard(), "true");
+            process(BigDecimalValue.standard(), "true");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Bool not expected");
@@ -103,7 +92,7 @@ public class StringValueTest {
     @Test
     void standardFalse() {
         try {
-            process(StringValue.standard(), "false");
+            process(BigDecimalValue.standard(), "false");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Bool not expected");
@@ -113,7 +102,7 @@ public class StringValueTest {
     @Test
     void standardObject() {
         try {
-            process(StringValue.standard(), "{}");
+            process(BigDecimalValue.standard(), "{}");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Object not expected");
@@ -123,7 +112,7 @@ public class StringValueTest {
     @Test
     void standardArray() {
         try {
-            process(StringValue.standard(), "[]");
+            process(BigDecimalValue.standard(), "[]");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Array not expected");
@@ -132,7 +121,7 @@ public class StringValueTest {
 
     @Test
     void lenientString() throws IOException {
-        parse(StringValue.lenient(), List.of("42", "42.42", "true", "false"),
-                ObjectChunk.chunkWrap(new String[] {"42", "42.42", "true", "false"}));
+        parse(BigDecimalValue.lenient(), List.of("\"42.42\"", "\"43.999\""),
+                ObjectChunk.chunkWrap(new BigDecimal[] {new BigDecimal("42.42"), new BigDecimal("43.999")}));
     }
 }

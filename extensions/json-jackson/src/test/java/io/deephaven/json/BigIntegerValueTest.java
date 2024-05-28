@@ -3,11 +3,11 @@
 //
 package io.deephaven.json;
 
-import io.deephaven.chunk.IntChunk;
-import io.deephaven.util.QueryConstants;
+import io.deephaven.chunk.ObjectChunk;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.List;
 
 import static io.deephaven.json.TestHelper.parse;
@@ -15,42 +15,44 @@ import static io.deephaven.json.TestHelper.process;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
-public class IntValueTest {
+public class BigIntegerValueTest {
 
     @Test
     void standard() throws IOException {
-        parse(IntValue.standard(), "42", IntChunk.chunkWrap(new int[] {42}));
+        parse(BigIntegerValue.standard(false), "42", ObjectChunk.chunkWrap(new BigInteger[] {BigInteger.valueOf(42)}));
     }
 
     @Test
     void standardMissing() throws IOException {
-        parse(IntValue.standard(), "", IntChunk.chunkWrap(new int[] {QueryConstants.NULL_INT}));
+        parse(BigIntegerValue.standard(false), "", ObjectChunk.chunkWrap(new BigInteger[] {null}));
     }
 
     @Test
     void standardNull() throws IOException {
-        parse(IntValue.standard(), "null", IntChunk.chunkWrap(new int[] {QueryConstants.NULL_INT}));
+        parse(BigIntegerValue.standard(false), "null", ObjectChunk.chunkWrap(new BigInteger[] {null}));
     }
 
     @Test
     void customMissing() throws IOException {
-        parse(IntValue.builder().onMissing(-1).build(), "", IntChunk.chunkWrap(new int[] {-1}));
+        parse(BigIntegerValue.builder().onMissing(BigInteger.valueOf(-1)).build(), "",
+                ObjectChunk.chunkWrap(new BigInteger[] {BigInteger.valueOf(-1)}));
     }
 
     @Test
     void customNull() throws IOException {
-        parse(IntValue.builder().onNull(-2).build(), "null", IntChunk.chunkWrap(new int[] {-2}));
+        parse(BigIntegerValue.builder().onNull(BigInteger.valueOf(-2)).build(), "null",
+                ObjectChunk.chunkWrap(new BigInteger[] {BigInteger.valueOf(-2)}));
     }
 
     @Test
     void strict() throws IOException {
-        parse(IntValue.strict(), "42", IntChunk.chunkWrap(new int[] {42}));
+        parse(BigIntegerValue.strict(false), "42", ObjectChunk.chunkWrap(new BigInteger[] {BigInteger.valueOf(42)}));
     }
 
     @Test
     void strictMissing() {
         try {
-            process(IntValue.strict(), "");
+            process(BigIntegerValue.strict(false), "");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Missing not allowed");
@@ -60,7 +62,7 @@ public class IntValueTest {
     @Test
     void strictNull() {
         try {
-            process(IntValue.strict(), "null");
+            process(BigIntegerValue.strict(false), "null");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Null not allowed");
@@ -68,20 +70,9 @@ public class IntValueTest {
     }
 
     @Test
-    void standardOverflow() {
-        try {
-            process(IntValue.standard(), "2147483648");
-            failBecauseExceptionWasNotThrown(IOException.class);
-        } catch (IOException e) {
-            assertThat(e).hasMessageContaining(
-                    "Numeric value (2147483648) out of range of int (-2147483648 - 2147483647)");
-        }
-    }
-
-    @Test
     void standardString() {
         try {
-            process(IntValue.standard(), "\"42\"");
+            process(BigIntegerValue.standard(false), "\"42\"");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("String not allowed");
@@ -91,7 +82,7 @@ public class IntValueTest {
     @Test
     void standardTrue() {
         try {
-            process(IntValue.standard(), "true");
+            process(BigIntegerValue.standard(false), "true");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Bool not expected");
@@ -101,7 +92,7 @@ public class IntValueTest {
     @Test
     void standardFalse() {
         try {
-            process(IntValue.standard(), "false");
+            process(BigIntegerValue.standard(false), "false");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Bool not expected");
@@ -111,7 +102,7 @@ public class IntValueTest {
     @Test
     void standardDecimal() {
         try {
-            process(IntValue.standard(), "42.0");
+            process(BigIntegerValue.standard(false), "42.42");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Decimal not allowed");
@@ -121,7 +112,7 @@ public class IntValueTest {
     @Test
     void standardObject() {
         try {
-            process(IntValue.standard(), "{}");
+            process(BigIntegerValue.standard(false), "{}");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Object not expected");
@@ -131,7 +122,7 @@ public class IntValueTest {
     @Test
     void standardArray() {
         try {
-            process(IntValue.standard(), "[]");
+            process(BigIntegerValue.standard(false), "[]");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Array not expected");
@@ -140,41 +131,19 @@ public class IntValueTest {
 
     @Test
     void lenientString() throws IOException {
-        parse(IntValue.lenient(), List.of("\"42\"", "\"43\""), IntChunk.chunkWrap(new int[] {42, 43}));
+        parse(BigIntegerValue.lenient(false), List.of("\"42\"", "\"43\""),
+                ObjectChunk.chunkWrap(new BigInteger[] {BigInteger.valueOf(42), BigInteger.valueOf(43)}));
     }
 
     @Test
     void allowDecimal() throws IOException {
-        parse(IntValue.builder()
-                .allowedTypes(JsonValueTypes.INT, JsonValueTypes.DECIMAL)
-                .build(), List.of("42.42", "43.999"), IntChunk.chunkWrap(new int[] {42, 43}));
+        parse(BigIntegerValue.standard(true), List.of("42.42", "43.999"),
+                ObjectChunk.chunkWrap(new BigInteger[] {BigInteger.valueOf(42), BigInteger.valueOf(43)}));
     }
 
     @Test
     void allowDecimalString() throws IOException {
-        parse(IntValue.builder()
-                .allowedTypes(JsonValueTypes.STRING, JsonValueTypes.INT, JsonValueTypes.DECIMAL)
-                .build(),
-                List.of("\"42.42\"", "\"43.999\""), IntChunk.chunkWrap(new int[] {42, 43}));
-    }
-
-    @Test
-    void decimalStringLimitsNearMinValue() throws IOException {
-        for (int i = 0; i < 100; ++i) {
-            parse(IntValue.builder().allowedTypes(JsonValueTypes.STRING, JsonValueTypes.DECIMAL, JsonValueTypes.INT)
-                    .build(),
-                    List.of(String.format("\"%d.0\"", Integer.MIN_VALUE + i)),
-                    IntChunk.chunkWrap(new int[] {Integer.MIN_VALUE + i}));
-        }
-    }
-
-    @Test
-    void decimalStringLimitsNearMaxValue() throws IOException {
-        for (int i = 0; i < 100; ++i) {
-            parse(IntValue.builder().allowedTypes(JsonValueTypes.STRING, JsonValueTypes.DECIMAL, JsonValueTypes.INT)
-                    .build(),
-                    List.of(String.format("\"%d.0\"", Integer.MAX_VALUE - i)),
-                    IntChunk.chunkWrap(new int[] {Integer.MAX_VALUE - i}));
-        }
+        parse(BigIntegerValue.lenient(true), List.of("\"42.42\"", "\"43.999\""),
+                ObjectChunk.chunkWrap(new BigInteger[] {BigInteger.valueOf(42), BigInteger.valueOf(43)}));
     }
 }

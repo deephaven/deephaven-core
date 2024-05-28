@@ -109,7 +109,7 @@ public class ShortValueTest {
     }
 
     @Test
-    void standardFloat() {
+    void standardDecimal() {
         try {
             process(ShortValue.standard(), "42.0");
             failBecauseExceptionWasNotThrown(IOException.class);

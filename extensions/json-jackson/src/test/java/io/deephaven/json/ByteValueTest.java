@@ -109,7 +109,7 @@ public class ByteValueTest {
     }
 
     @Test
-    void standardFloat() {
+    void standardDecimal() {
         try {
             process(ByteValue.standard(), "42.0");
             failBecauseExceptionWasNotThrown(IOException.class);

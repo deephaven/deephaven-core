@@ -27,11 +27,6 @@ final class Exceptions {
                 mixin.options);
     }
 
-    static IOException missingNotAllowed(JsonParser parser, Mixin<?> mixin) {
-        final JsonLocation location = parser.currentLocation();
-        return new ValueAwareException("Missing token not allowed", location, mixin.options);
-    }
-
     public static class ValueAwareException extends JsonProcessingException {
 
         private final Value value;

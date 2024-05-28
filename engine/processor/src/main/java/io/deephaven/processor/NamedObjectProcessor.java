@@ -29,7 +29,7 @@ public abstract class NamedObjectProcessor<T> {
     }
 
     public static <T> NamedObjectProcessor<T> prefix(ObjectProcessor<T> processor, String prefix) {
-        final int size = processor.size();
+        final int size = processor.numOutputs();
         if (size == 1) {
             return of(processor, prefix);
         }
@@ -85,10 +85,10 @@ public abstract class NamedObjectProcessor<T> {
 
     @Check
     final void checkSizes() {
-        if (names().size() != processor().size()) {
+        if (names().size() != processor().numOutputs()) {
             throw new IllegalArgumentException(
                     String.format("Unmatched sizes; names().size()=%d, processor().size()=%d",
-                            names().size(), processor().size()));
+                            names().size(), processor().numOutputs()));
         }
     }
 }

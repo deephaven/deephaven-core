@@ -49,9 +49,6 @@ public class TestHelper {
         return process(JacksonProvider.of(options).stringProcessor(), List.of(jsonRows));
     }
 
-    // public static List<WritableChunk<?>> parse(Value options, String jsonRows, Chunk<?> chunk) throws IOException {
-    // return process(JacksonProvider.of(options).stringProcessor(), List.of(jsonRows));
-    // }
 
     public static <T> List<WritableChunk<?>> process(ObjectProcessor<? super T> processor, List<T> rows)
             throws IOException {

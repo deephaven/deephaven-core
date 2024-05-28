@@ -26,7 +26,7 @@ abstract class ObjectProcessorJsonValue<X> implements ObjectProcessor<X> {
     }
 
     @Override
-    public final int size() {
+    public final int numOutputs() {
         return processor.numColumns();
     }
 

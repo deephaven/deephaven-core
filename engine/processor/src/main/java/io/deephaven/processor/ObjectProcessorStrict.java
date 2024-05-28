@@ -27,16 +27,16 @@ final class ObjectProcessorStrict<T> implements ObjectProcessor<T> {
     ObjectProcessorStrict(ObjectProcessor<T> delegate) {
         this.delegate = Objects.requireNonNull(delegate);
         this.outputTypes = List.copyOf(delegate.outputTypes());
-        if (delegate.size() != outputTypes.size()) {
+        if (delegate.numOutputs() != outputTypes.size()) {
             throw new IllegalArgumentException(
-                    String.format("Inconsistent size. delegate.size()=%d, delegate.outputTypes().size()=%d",
-                            delegate.size(), outputTypes.size()));
+                    String.format("Inconsistent size. delegate.numOutputs()=%d, delegate.outputTypes().size()=%d",
+                            delegate.numOutputs(), outputTypes.size()));
         }
     }
 
     @Override
-    public int size() {
-        return delegate.size();
+    public int numOutputs() {
+        return delegate.numOutputs();
     }
 
     @Override
@@ -50,7 +50,7 @@ final class ObjectProcessorStrict<T> implements ObjectProcessor<T> {
 
     @Override
     public void processAll(ObjectChunk<? extends T, ?> in, List<WritableChunk<?>> out) {
-        final int numColumns = delegate.size();
+        final int numColumns = delegate.numOutputs();
         if (numColumns != out.size()) {
             throw new IllegalArgumentException(String.format(
                     "Improper number of out chunks. Expected delegate.outputTypes().size() == out.size(). delegate.outputTypes().size()=%d, out.size()=%d",

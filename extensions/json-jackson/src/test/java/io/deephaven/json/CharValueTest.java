@@ -78,7 +78,7 @@ public class CharValueTest {
     }
 
     @Test
-    void standardFloat() {
+    void standardDecimal() {
         try {
             process(CharValue.standard(), "42.42");
             failBecauseExceptionWasNotThrown(IOException.class);
