@@ -313,8 +313,8 @@ public class DateTimeUtils {
      * @return the current clock
      * @see #setClock(Clock)
      */
-    @NotNull
     @ScriptApi
+    @NotNull
     public static Clock currentClock() {
         return Objects.requireNonNullElse(clock, Clock.system());
     }
@@ -543,6 +543,7 @@ public class DateTimeUtils {
      * @throws DateTimeException if {@code timeZone} has an invalid format
      * @throws ZoneRulesException if {@code timeZone} cannot be found
      */
+    @ScriptApi
     @Nullable
     public static ZoneId timeZone(@Nullable String timeZone) {
         if (timeZone == null) {
@@ -558,6 +559,7 @@ public class DateTimeUtils {
      * @return the system default time zone
      * @see ZoneId#systemDefault()
      */
+    @ScriptApi
     public static ZoneId timeZone() {
         return ZoneId.systemDefault();
     }
@@ -569,6 +571,7 @@ public class DateTimeUtils {
      * @param timeZone the time zone id name
      * @throws IllegalArgumentException if the alias already exists or the time zone is invalid
      */
+    @ScriptApi
     public static void timeZoneAliasAdd(@NotNull final String alias, @NotNull final String timeZone) {
         TimeZoneAliases.addAlias(alias, timeZone);
     }
@@ -579,6 +582,7 @@ public class DateTimeUtils {
      * @param alias the alias name
      * @return whether {@code alias} was present
      */
+    @ScriptApi
     public static boolean timeZoneAliasRm(@NotNull final String alias) {
         return TimeZoneAliases.rmAlias(alias);
     }
@@ -930,6 +934,7 @@ public class DateTimeUtils {
      * @param timeZone the time zone
      * @return the {@link LocalDateTime}, or {@code null} if any input is {@code null}
      */
+    @ScriptApi
     @Nullable
     public static LocalDateTime toLocalDateTime(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
         if (instant == null || timeZone == null) {
@@ -944,6 +949,7 @@ public class DateTimeUtils {
      * @param dateTime the zoned date time to convert
      * @return the {@link LocalDateTime}, or {@code null} if {@code dateTime} is {@code null}
      */
+    @ScriptApi
     @Nullable
     public static LocalDateTime toLocalDateTime(@Nullable final ZonedDateTime dateTime) {
         if (dateTime == null) {
@@ -959,6 +965,7 @@ public class DateTimeUtils {
      * @param localTime the local time to convert
      * @return the {@link LocalDateTime}, or {@code null} if {@code localDateTime} is {@code null}
      */
+    @ScriptApi
     @Nullable
     public static LocalDateTime toLocalDateTime(
             @Nullable final LocalDate localDate,
@@ -976,6 +983,7 @@ public class DateTimeUtils {
      * @param timeZone the time zone
      * @return the {@link LocalDate}, or {@code null} if any input is {@code null}
      */
+    @ScriptApi
     @Nullable
     public static LocalDate toLocalDate(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
         if (instant == null || timeZone == null) {
@@ -991,6 +999,7 @@ public class DateTimeUtils {
      * @param dateTime the zoned date time to convert
      * @return the {@link LocalDate}, or {@code null} if {@code dateTime} is {@code null}
      */
+    @ScriptApi
     @Nullable
     public static LocalDate toLocalDate(@Nullable final ZonedDateTime dateTime) {
         if (dateTime == null) {
@@ -1006,6 +1015,7 @@ public class DateTimeUtils {
      * @param localDateTime the local date time to convert
      * @return the {@link LocalDate}, or {@code null} if {@code localDateTime} is {@code null}
      */
+    @ScriptApi
     @Nullable
     public static LocalDate toLocalDate(@Nullable final LocalDateTime localDateTime) {
         if (localDateTime == null) {
@@ -1022,6 +1032,7 @@ public class DateTimeUtils {
      * @param timeZone the time zone
      * @return the {@link LocalTime}, or {@code null} if any input is {@code null}
      */
+    @ScriptApi
     @Nullable
     public static LocalTime toLocalTime(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
         if (instant == null || timeZone == null) {
@@ -1036,6 +1047,7 @@ public class DateTimeUtils {
      * @param dateTime the zoned date time to convert
      * @return the {@link LocalTime}, or {@code null} if {@code dateTime} is {@code null}
      */
+    @ScriptApi
     @Nullable
     public static LocalTime toLocalTime(@Nullable final ZonedDateTime dateTime) {
         if (dateTime == null) {
@@ -1050,6 +1062,7 @@ public class DateTimeUtils {
      * @param localDateTime the local date time to convert
      * @return the {@link LocalTime}, or {@code null} if {@code localDateTime} is {@code null}
      */
+    @ScriptApi
     @Nullable
     public static LocalTime toLocalTime(@Nullable final LocalDateTime localDateTime) {
         if (localDateTime == null) {
@@ -1064,6 +1077,7 @@ public class DateTimeUtils {
      * @param millis milliseconds from midnight
      * @return the {@link LocalTime}, or {@code null} if any input is {@link QueryConstants#NULL_INT NULL_INT}
      */
+    @ScriptApi
     public static @Nullable LocalTime millisOfDayToLocalTime(final int millis) {
         if (millis == NULL_INT) {
             return null;
@@ -1077,6 +1091,7 @@ public class DateTimeUtils {
      * @param micros microseconds from midnight
      * @return the {@link LocalTime}, or {@code null} if any input is {@link QueryConstants#NULL_LONG NULL_LONG}
      */
+    @ScriptApi
     public static @Nullable LocalTime microsOfDayToLocalTime(final long micros) {
         if (micros == NULL_LONG) {
             return null;
@@ -1090,6 +1105,7 @@ public class DateTimeUtils {
      * @param nanos nanoseconds from midnight
      * @return the {@link LocalTime}, or {@code null} if any input is {@link QueryConstants#NULL_LONG NULL_LONG}
      */
+    @ScriptApi
     public static @Nullable LocalTime nanosOfDayToLocalTime(final long nanos) {
         if (nanos == NULL_LONG) {
             return null;
@@ -1105,6 +1121,7 @@ public class DateTimeUtils {
      * @deprecated
      */
     @Deprecated
+    @ScriptApi
     @Nullable
     public static Date toDate(@Nullable final Instant instant) {
         if (instant == null) {
@@ -1121,6 +1138,7 @@ public class DateTimeUtils {
      * @deprecated
      */
     @Deprecated
+    @ScriptApi
     @Nullable
     public static Date toDate(@Nullable final ZonedDateTime dateTime) {
         if (dateTime == null) {
@@ -1264,6 +1282,7 @@ public class DateTimeUtils {
      * @param date date to compute the Epoch offset for
      * @return days since Epoch, or a {@link QueryConstants#NULL_LONG NULL_LONG} value if the instant is {@code null}
      */
+    @ScriptApi
     public static long epochDays(@Nullable final LocalDate date) {
         if (date == null) {
             return NULL_LONG;
@@ -1277,6 +1296,7 @@ public class DateTimeUtils {
      * @param date date to compute the Epoch offset for
      * @return days since Epoch, or a {@link QueryConstants#NULL_INT NULL_INT} value if the instant is {@code null}
      */
+    @ScriptApi
     public static int epochDaysAsInt(@Nullable final LocalDate date) {
         if (date == null) {
             return NULL_INT;
@@ -1480,6 +1500,7 @@ public class DateTimeUtils {
      * @return {@code null} if the input is {@link QueryConstants#NULL_LONG}; otherwise the input days from the Epoch
      *         converted to a {@link LocalDate}
      */
+    @ScriptApi
     public static @Nullable LocalDate epochDaysToLocalDate(final long days) {
         return days == NULL_LONG ? null : LocalDate.ofEpochDay(days);
     }
@@ -1491,6 +1512,7 @@ public class DateTimeUtils {
      * @return {@code null} if the input is {@link QueryConstants#NULL_INT}; otherwise the input days from the Epoch
      *         converted to a {@link LocalDate}
      */
+    @ScriptApi
     public static @Nullable LocalDate epochDaysAsIntToLocalDate(final int days) {
         return days == NULL_INT ? null : LocalDate.ofEpochDay(days);
     }
