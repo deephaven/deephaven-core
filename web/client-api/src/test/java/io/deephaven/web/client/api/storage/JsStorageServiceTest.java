@@ -104,27 +104,30 @@ public class JsStorageServiceTest extends AbstractAsyncGwtTestCase {
                                         assertEquals("hello, world", c);
                                         return null;
                                     });
-                                }), storageService.loadFile("layouts/myFile.txt", "8ebc5e3a62ac2f344d41429607bcdc4c").then(contents -> {
-                            delayTestFinish(20_013);
+                                }), storageService.loadFile("layouts/myFile.txt", "8ebc5e3a62ac2f344d41429607bcdc4c")
+                                        .then(contents -> {
+                                            delayTestFinish(20_013);
 
-                            return contents.text().then(c -> {
-                                fail("should not have resolved");
-                                return null;
-                            }, error -> {
-                                assertTrue(error.toString()
-                                        .contains("No contents available, please use provided etag"));
-                                return null;
-                            });
-                        }), storageService.loadFile("layouts/myFile.txt", "definitely-the-wrong-hash").then(contents -> {
-                            delayTestFinish(20_014);
+                                            return contents.text().then(c -> {
+                                                fail("should not have resolved");
+                                                return null;
+                                            }, error -> {
+                                                assertTrue(error.toString()
+                                                        .contains("No contents available, please use provided etag"));
+                                                return null;
+                                            });
+                                        }),
+                                storageService.loadFile("layouts/myFile.txt", "definitely-the-wrong-hash")
+                                        .then(contents -> {
+                                            delayTestFinish(20_014);
 
-                            return contents.text().then(c -> {
-                                delayTestFinish(20_015);
+                                            return contents.text().then(c -> {
+                                                delayTestFinish(20_015);
 
-                                assertEquals("hello, world", c);
-                                return null;
-                            });
-                        }));
+                                                assertEquals("hello, world", c);
+                                                return null;
+                                            });
+                                        }));
                     })).then(ignore -> {
                         finishTest();
                         return null;
