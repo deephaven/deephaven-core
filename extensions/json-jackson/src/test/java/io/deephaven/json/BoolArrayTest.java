@@ -10,20 +10,21 @@ import java.io.IOException;
 
 import static io.deephaven.json.TestHelper.parse;
 
-public class LongArrayOptionsTest {
+public class BoolArrayTest {
 
     @Test
     void standard() throws IOException {
-        parse(LongValue.standard().array(), "[42, 43]", ObjectChunk.chunkWrap(new Object[] {new long[] {42, 43}}));
+        parse(BoolValue.standard().array(), "[true, null, false]",
+                ObjectChunk.chunkWrap(new Object[] {new Boolean[] {true, null, false}}));
     }
 
     @Test
     void standardMissing() throws IOException {
-        parse(LongValue.standard().array(), "", ObjectChunk.chunkWrap(new Object[] {null}));
+        parse(BoolValue.standard().array(), "", ObjectChunk.chunkWrap(new Object[] {null}));
     }
 
     @Test
     void standardNull() throws IOException {
-        parse(LongValue.standard().array(), "null", ObjectChunk.chunkWrap(new Object[] {null}));
+        parse(BoolValue.standard().array(), "null", ObjectChunk.chunkWrap(new Object[] {null}));
     }
 }

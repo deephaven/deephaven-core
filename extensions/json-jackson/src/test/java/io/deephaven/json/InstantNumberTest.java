@@ -11,7 +11,7 @@ import java.io.IOException;
 
 import static io.deephaven.json.TestHelper.parse;
 
-public class InstantNumberOptionsTest {
+public class InstantNumberTest {
     private static final long WITH_SECONDS = 1703292532000000000L;
     private static final long WITH_MILLIS = 1703292532123000000L;
     private static final long WITH_MICROS = 1703292532123456000L;

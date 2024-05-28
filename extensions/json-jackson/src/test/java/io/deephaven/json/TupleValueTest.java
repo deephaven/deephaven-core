@@ -15,7 +15,7 @@ import static io.deephaven.json.TestHelper.process;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
-public class TupleOptionsTest {
+public class TupleValueTest {
 
     private static final TupleValue STRING_INT_TUPLE =
             TupleValue.of(StringValue.standard(), IntValue.standard());

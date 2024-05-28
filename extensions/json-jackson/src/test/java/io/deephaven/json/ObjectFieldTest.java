@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
-public class ObjectFieldOptionsTest {
+public class ObjectFieldTest {
     @Test
     void basic() {
         final ObjectField field = ObjectField.of("Foo", IntValue.standard());

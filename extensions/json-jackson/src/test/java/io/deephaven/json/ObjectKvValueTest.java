@@ -15,7 +15,7 @@ import java.util.List;
 import static io.deephaven.json.TestHelper.parse;
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ObjectKvOptionsTest {
+public class ObjectKvValueTest {
 
     private static final ObjectKvValue STRING_INT_KV =
             ObjectKvValue.standard(IntValue.standard());

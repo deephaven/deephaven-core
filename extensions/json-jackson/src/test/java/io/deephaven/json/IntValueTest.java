@@ -3,8 +3,7 @@
 //
 package io.deephaven.json;
 
-import com.fasterxml.jackson.core.exc.InputCoercionException;
-import io.deephaven.chunk.ByteChunk;
+import io.deephaven.chunk.IntChunk;
 import io.deephaven.util.QueryConstants;
 import org.junit.jupiter.api.Test;
 
@@ -16,42 +15,42 @@ import static io.deephaven.json.TestHelper.process;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
-public class ByteOptionsTest {
+public class IntValueTest {
 
     @Test
     void standard() throws IOException {
-        parse(ByteValue.standard(), "42", ByteChunk.chunkWrap(new byte[] {42}));
+        parse(IntValue.standard(), "42", IntChunk.chunkWrap(new int[] {42}));
     }
 
     @Test
     void standardMissing() throws IOException {
-        parse(ByteValue.standard(), "", ByteChunk.chunkWrap(new byte[] {QueryConstants.NULL_BYTE}));
+        parse(IntValue.standard(), "", IntChunk.chunkWrap(new int[] {QueryConstants.NULL_INT}));
     }
 
     @Test
     void standardNull() throws IOException {
-        parse(ByteValue.standard(), "null", ByteChunk.chunkWrap(new byte[] {QueryConstants.NULL_BYTE}));
+        parse(IntValue.standard(), "null", IntChunk.chunkWrap(new int[] {QueryConstants.NULL_INT}));
     }
 
     @Test
     void customMissing() throws IOException {
-        parse(ByteValue.builder().onMissing((byte) -1).build(), "", ByteChunk.chunkWrap(new byte[] {-1}));
+        parse(IntValue.builder().onMissing(-1).build(), "", IntChunk.chunkWrap(new int[] {-1}));
     }
 
     @Test
     void customNull() throws IOException {
-        parse(ByteValue.builder().onNull((byte) -2).build(), "null", ByteChunk.chunkWrap(new byte[] {-2}));
+        parse(IntValue.builder().onNull(-2).build(), "null", IntChunk.chunkWrap(new int[] {-2}));
     }
 
     @Test
     void strict() throws IOException {
-        parse(ByteValue.strict(), "42", ByteChunk.chunkWrap(new byte[] {42}));
+        parse(IntValue.strict(), "42", IntChunk.chunkWrap(new int[] {42}));
     }
 
     @Test
     void strictMissing() {
         try {
-            process(ByteValue.strict(), "");
+            process(IntValue.strict(), "");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Missing not allowed");
@@ -61,7 +60,7 @@ public class ByteOptionsTest {
     @Test
     void strictNull() {
         try {
-            process(ByteValue.strict(), "null");
+            process(IntValue.strict(), "null");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Null not allowed");
@@ -71,7 +70,7 @@ public class ByteOptionsTest {
     @Test
     void standardOverflow() {
         try {
-            process(ByteValue.standard(), "2147483648");
+            process(IntValue.standard(), "2147483648");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining(
@@ -82,7 +81,7 @@ public class ByteOptionsTest {
     @Test
     void standardString() {
         try {
-            process(ByteValue.standard(), "\"42\"");
+            process(IntValue.standard(), "\"42\"");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("String not allowed");
@@ -92,7 +91,7 @@ public class ByteOptionsTest {
     @Test
     void standardTrue() {
         try {
-            process(ByteValue.standard(), "true");
+            process(IntValue.standard(), "true");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Bool not expected");
@@ -102,7 +101,7 @@ public class ByteOptionsTest {
     @Test
     void standardFalse() {
         try {
-            process(ByteValue.standard(), "false");
+            process(IntValue.standard(), "false");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Bool not expected");
@@ -112,7 +111,7 @@ public class ByteOptionsTest {
     @Test
     void standardFloat() {
         try {
-            process(ByteValue.standard(), "42.0");
+            process(IntValue.standard(), "42.0");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Decimal not allowed");
@@ -122,7 +121,7 @@ public class ByteOptionsTest {
     @Test
     void standardObject() {
         try {
-            process(ByteValue.standard(), "{}");
+            process(IntValue.standard(), "{}");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Object not expected");
@@ -132,7 +131,7 @@ public class ByteOptionsTest {
     @Test
     void standardArray() {
         try {
-            process(ByteValue.standard(), "[]");
+            process(IntValue.standard(), "[]");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Array not expected");
@@ -141,41 +140,41 @@ public class ByteOptionsTest {
 
     @Test
     void lenientString() throws IOException {
-        parse(ByteValue.lenient(), List.of("\"42\"", "\"43\""), ByteChunk.chunkWrap(new byte[] {42, 43}));
+        parse(IntValue.lenient(), List.of("\"42\"", "\"43\""), IntChunk.chunkWrap(new int[] {42, 43}));
     }
 
     @Test
     void allowDecimal() throws IOException {
-        parse(ByteValue.builder()
+        parse(IntValue.builder()
                 .allowedTypes(JsonValueTypes.INT, JsonValueTypes.DECIMAL)
-                .build(), List.of("42.42", "43.999"), ByteChunk.chunkWrap(new byte[] {42, 43}));
+                .build(), List.of("42.42", "43.999"), IntChunk.chunkWrap(new int[] {42, 43}));
     }
 
     @Test
     void allowDecimalString() throws IOException {
-        parse(ByteValue.builder()
+        parse(IntValue.builder()
                 .allowedTypes(JsonValueTypes.STRING, JsonValueTypes.INT, JsonValueTypes.DECIMAL)
                 .build(),
-                List.of("\"42.42\"", "\"43.999\""), ByteChunk.chunkWrap(new byte[] {42, 43}));
+                List.of("\"42.42\"", "\"43.999\""), IntChunk.chunkWrap(new int[] {42, 43}));
     }
 
     @Test
     void decimalStringLimitsNearMinValue() throws IOException {
         for (int i = 0; i < 100; ++i) {
-            parse(ByteValue.builder().allowedTypes(JsonValueTypes.STRING, JsonValueTypes.DECIMAL, JsonValueTypes.INT)
+            parse(IntValue.builder().allowedTypes(JsonValueTypes.STRING, JsonValueTypes.DECIMAL, JsonValueTypes.INT)
                     .build(),
-                    List.of(String.format("\"%d.0\"", Byte.MIN_VALUE + i)),
-                    ByteChunk.chunkWrap(new byte[] {(byte) (Byte.MIN_VALUE + i)}));
+                    List.of(String.format("\"%d.0\"", Integer.MIN_VALUE + i)),
+                    IntChunk.chunkWrap(new int[] {Integer.MIN_VALUE + i}));
         }
     }
 
     @Test
     void decimalStringLimitsNearMaxValue() throws IOException {
         for (int i = 0; i < 100; ++i) {
-            parse(ByteValue.builder().allowedTypes(JsonValueTypes.STRING, JsonValueTypes.DECIMAL, JsonValueTypes.INT)
+            parse(IntValue.builder().allowedTypes(JsonValueTypes.STRING, JsonValueTypes.DECIMAL, JsonValueTypes.INT)
                     .build(),
-                    List.of(String.format("\"%d.0\"", Byte.MAX_VALUE - i)),
-                    ByteChunk.chunkWrap(new byte[] {(byte) (Byte.MAX_VALUE - i)}));
+                    List.of(String.format("\"%d.0\"", Integer.MAX_VALUE - i)),
+                    IntChunk.chunkWrap(new int[] {Integer.MAX_VALUE - i}));
         }
     }
 }

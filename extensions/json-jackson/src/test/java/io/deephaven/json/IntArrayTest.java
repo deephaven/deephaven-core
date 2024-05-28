@@ -10,20 +10,20 @@ import java.io.IOException;
 
 import static io.deephaven.json.TestHelper.parse;
 
-public class IntArrayOptionsTest {
+public class IntArrayTest {
 
     @Test
     void standard() throws IOException {
         parse(IntValue.standard().array(), "[42, 43]", ObjectChunk.chunkWrap(new Object[] {new int[] {42, 43}}));
     }
 
-    // @Test
-    // void standardMissing() throws IOException {
-    // parse(IntOptions.standard().array(), "", ObjectChunk.chunkWrap(new Object[] { null }));
-    // }
-    //
-    // @Test
-    // void standardNull() throws IOException {
-    // parse(IntOptions.standard().array(), "null", ObjectChunk.chunkWrap(new Object[] { null }));
-    // }
+    @Test
+    void standardMissing() throws IOException {
+        parse(IntValue.standard().array(), "", ObjectChunk.chunkWrap(new Object[] {null}));
+    }
+
+    @Test
+    void standardNull() throws IOException {
+        parse(IntValue.standard().array(), "null", ObjectChunk.chunkWrap(new Object[] {null}));
+    }
 }

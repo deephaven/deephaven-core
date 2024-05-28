@@ -9,7 +9,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TypedObjectValueTest {
+public class TypedObjectValueBuilderTest {
 
     public static final ObjectValue TRADE = ObjectValue.builder()
             .putFields("symbol", StringValue.strict())

@@ -28,7 +28,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-public class JacksonAnyOptionsTest {
+public class JacksonAnyValueTest {
 
     @Test
     void anyMissing() throws IOException {

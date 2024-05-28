@@ -18,7 +18,7 @@ import static io.deephaven.json.TestHelper.process;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
-public class ObjectOptionsTest {
+public class ObjectValueTest {
 
     public static final ObjectValue OBJECT_AGE_FIELD = ObjectValue.builder()
             .putFields("age", IntValue.standard())

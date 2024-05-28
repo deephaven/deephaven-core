@@ -14,7 +14,7 @@ import java.util.List;
 
 import static io.deephaven.json.TestHelper.parse;
 
-public class TypedObjectOptionsTest {
+public class TypedObjectValueTest {
     private static final ObjectValue QUOTE_OBJECT = ObjectValue.builder()
             .putFields("symbol", StringValue.strict())
             .putFields("bid", DoubleValue.standard())

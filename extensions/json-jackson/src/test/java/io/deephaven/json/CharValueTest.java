@@ -3,49 +3,53 @@
 //
 package io.deephaven.json;
 
-import io.deephaven.chunk.FloatChunk;
+import io.deephaven.chunk.CharChunk;
 import io.deephaven.util.QueryConstants;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.List;
 
 import static io.deephaven.json.TestHelper.parse;
 import static io.deephaven.json.TestHelper.process;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
-public class FloatOptionsTest {
+public class CharValueTest {
 
     @Test
     void standard() throws IOException {
-        parse(FloatValue.standard(), List.of("42", "42.42"), FloatChunk.chunkWrap(new float[] {42, 42.42f}));
+        parse(CharValue.standard(), "\"c\"", CharChunk.chunkWrap(new char[] {'c'}));
     }
 
     @Test
     void standardMissing() throws IOException {
-        parse(FloatValue.standard(), "", FloatChunk.chunkWrap(new float[] {QueryConstants.NULL_FLOAT}));
+        parse(CharValue.standard(), "", CharChunk.chunkWrap(new char[] {QueryConstants.NULL_CHAR}));
     }
 
     @Test
     void standardNull() throws IOException {
-        parse(FloatValue.standard(), "null", FloatChunk.chunkWrap(new float[] {QueryConstants.NULL_FLOAT}));
+        parse(CharValue.standard(), "null", CharChunk.chunkWrap(new char[] {QueryConstants.NULL_CHAR}));
     }
 
     @Test
     void customMissing() throws IOException {
-        parse(FloatValue.builder().onMissing(-1.0f).build(), "", FloatChunk.chunkWrap(new float[] {-1}));
+        parse(CharValue.builder().onMissing('m').build(), "", CharChunk.chunkWrap(new char[] {'m'}));
+    }
+
+    @Test
+    void customNull() throws IOException {
+        parse(CharValue.builder().onNull('n').build(), "null", CharChunk.chunkWrap(new char[] {'n'}));
     }
 
     @Test
     void strict() throws IOException {
-        parse(FloatValue.strict(), "42", FloatChunk.chunkWrap(new float[] {42}));
+        parse(CharValue.strict(), "\"c\"", CharChunk.chunkWrap(new char[] {'c'}));
     }
 
     @Test
     void strictMissing() {
         try {
-            process(FloatValue.strict(), "");
+            process(CharValue.strict(), "");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Missing not allowed");
@@ -55,27 +59,39 @@ public class FloatOptionsTest {
     @Test
     void strictNull() {
         try {
-            process(FloatValue.strict(), "null");
+            process(CharValue.strict(), "null");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Null not allowed");
         }
     }
 
+
     @Test
-    void standardString() {
+    void standardInt() {
         try {
-            process(FloatValue.standard(), "\"42\"");
+            process(CharValue.standard(), "42");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
-            assertThat(e).hasMessageContaining("String not allowed");
+            assertThat(e).hasMessageContaining("Number int not expected");
         }
     }
 
     @Test
+    void standardFloat() {
+        try {
+            process(CharValue.standard(), "42.42");
+            failBecauseExceptionWasNotThrown(IOException.class);
+        } catch (IOException e) {
+            assertThat(e).hasMessageContaining("Decimal not expected");
+        }
+    }
+
+
+    @Test
     void standardTrue() {
         try {
-            process(FloatValue.standard(), "true");
+            process(CharValue.standard(), "true");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Bool not expected");
@@ -85,7 +101,7 @@ public class FloatOptionsTest {
     @Test
     void standardFalse() {
         try {
-            process(FloatValue.standard(), "false");
+            process(CharValue.standard(), "false");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Bool not expected");
@@ -95,7 +111,7 @@ public class FloatOptionsTest {
     @Test
     void standardObject() {
         try {
-            process(FloatValue.standard(), "{}");
+            process(CharValue.standard(), "{}");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Object not expected");
@@ -105,15 +121,10 @@ public class FloatOptionsTest {
     @Test
     void standardArray() {
         try {
-            process(FloatValue.standard(), "[]");
+            process(CharValue.standard(), "[]");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Array not expected");
         }
-    }
-
-    @Test
-    void lenientString() throws IOException {
-        parse(FloatValue.lenient(), List.of("\"42\"", "\"42.42\""), FloatChunk.chunkWrap(new float[] {42, 42.42f}));
     }
 }

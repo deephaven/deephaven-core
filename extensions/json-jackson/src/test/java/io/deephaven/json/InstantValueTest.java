@@ -15,7 +15,7 @@ import static io.deephaven.json.TestHelper.process;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
-public class InstantOptionsTest {
+public class InstantValueTest {
 
     private static final String XYZ_STR = "2009-02-13T23:31:30.123456789";
     private static final long XYZ_NANOS = 1234567890L * 1_000_000_000 + 123456789;

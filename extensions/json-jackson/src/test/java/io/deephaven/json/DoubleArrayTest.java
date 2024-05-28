@@ -11,7 +11,7 @@ import java.io.IOException;
 
 import static io.deephaven.json.TestHelper.parse;
 
-public class DoubleArrayOptionsTest {
+public class DoubleArrayTest {
 
     @Test
     void standard() throws IOException {

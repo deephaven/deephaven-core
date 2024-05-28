@@ -14,7 +14,7 @@ import static io.deephaven.json.TestHelper.process;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
-public class LocalDateOptionsTest {
+public class LocalDateValueTest {
 
     private static final String XYZ_STR = "2009-02-13";
 

@@ -3,8 +3,7 @@
 //
 package io.deephaven.json;
 
-import com.fasterxml.jackson.core.exc.InputCoercionException;
-import io.deephaven.chunk.ShortChunk;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.util.QueryConstants;
 import org.junit.jupiter.api.Test;
 
@@ -16,42 +15,37 @@ import static io.deephaven.json.TestHelper.process;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
-public class ShortOptionsTest {
+public class LongValueTest {
 
     @Test
     void standard() throws IOException {
-        parse(ShortValue.standard(), "42", ShortChunk.chunkWrap(new short[] {42}));
+        parse(LongValue.standard(), List.of("42", "43"), LongChunk.chunkWrap(new long[] {42, 43}));
     }
 
     @Test
     void standardMissing() throws IOException {
-        parse(ShortValue.standard(), "", ShortChunk.chunkWrap(new short[] {QueryConstants.NULL_SHORT}));
+        parse(LongValue.standard(), "", LongChunk.chunkWrap(new long[] {QueryConstants.NULL_LONG}));
     }
 
     @Test
     void standardNull() throws IOException {
-        parse(ShortValue.standard(), "null", ShortChunk.chunkWrap(new short[] {QueryConstants.NULL_SHORT}));
+        parse(LongValue.standard(), "null", LongChunk.chunkWrap(new long[] {QueryConstants.NULL_LONG}));
     }
 
     @Test
     void customMissing() throws IOException {
-        parse(ShortValue.builder().onMissing((short) -1).build(), "", ShortChunk.chunkWrap(new short[] {-1}));
-    }
-
-    @Test
-    void customNull() throws IOException {
-        parse(ShortValue.builder().onNull((short) -2).build(), "null", ShortChunk.chunkWrap(new short[] {-2}));
+        parse(LongValue.builder().onMissing(-1L).build(), "", LongChunk.chunkWrap(new long[] {-1}));
     }
 
     @Test
     void strict() throws IOException {
-        parse(ShortValue.strict(), "42", ShortChunk.chunkWrap(new short[] {42}));
+        parse(LongValue.strict(), "42", LongChunk.chunkWrap(new long[] {42}));
     }
 
     @Test
     void strictMissing() {
         try {
-            process(ShortValue.strict(), "");
+            process(LongValue.strict(), "");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Missing not allowed");
@@ -61,7 +55,7 @@ public class ShortOptionsTest {
     @Test
     void strictNull() {
         try {
-            process(ShortValue.strict(), "null");
+            process(LongValue.strict(), "null");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Null not allowed");
@@ -69,20 +63,20 @@ public class ShortOptionsTest {
     }
 
     @Test
-    void standardOverflow() {
+    void strictOverflow() {
         try {
-            process(ShortValue.standard(), "2147483648");
+            process(LongValue.strict(), "9223372036854775808");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining(
-                    "Numeric value (2147483648) out of range of int (-2147483648 - 2147483647)");
+                    "Numeric value (9223372036854775808) out of range of long (-9223372036854775808 - 9223372036854775807)");
         }
     }
 
     @Test
     void standardString() {
         try {
-            process(ShortValue.standard(), "\"42\"");
+            process(LongValue.standard(), "\"42\"");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("String not allowed");
@@ -92,7 +86,7 @@ public class ShortOptionsTest {
     @Test
     void standardTrue() {
         try {
-            process(ShortValue.standard(), "true");
+            process(LongValue.standard(), "true");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Bool not expected");
@@ -102,7 +96,7 @@ public class ShortOptionsTest {
     @Test
     void standardFalse() {
         try {
-            process(ShortValue.standard(), "false");
+            process(LongValue.standard(), "false");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Bool not expected");
@@ -112,7 +106,7 @@ public class ShortOptionsTest {
     @Test
     void standardFloat() {
         try {
-            process(ShortValue.standard(), "42.0");
+            process(LongValue.standard(), "42.0");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Decimal not allowed");
@@ -122,7 +116,7 @@ public class ShortOptionsTest {
     @Test
     void standardObject() {
         try {
-            process(ShortValue.standard(), "{}");
+            process(LongValue.standard(), "{}");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Object not expected");
@@ -132,7 +126,7 @@ public class ShortOptionsTest {
     @Test
     void standardArray() {
         try {
-            process(ShortValue.standard(), "[]");
+            process(LongValue.standard(), "[]");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Array not expected");
@@ -141,41 +135,37 @@ public class ShortOptionsTest {
 
     @Test
     void lenientString() throws IOException {
-        parse(ShortValue.lenient(), List.of("\"42\"", "\"43\""), ShortChunk.chunkWrap(new short[] {42, 43}));
+        parse(LongValue.lenient(), List.of("\"42\"", "\"43\""), LongChunk.chunkWrap(new long[] {42, 43}));
     }
 
     @Test
     void allowDecimal() throws IOException {
-        parse(ShortValue.builder()
-                .allowedTypes(JsonValueTypes.INT, JsonValueTypes.DECIMAL)
-                .build(), List.of("42.42", "43.999"), ShortChunk.chunkWrap(new short[] {42, 43}));
+        parse(LongValue.builder().allowedTypes(JsonValueTypes.INT, JsonValueTypes.DECIMAL).build(),
+                List.of("42.42", "43.999"),
+                LongChunk.chunkWrap(new long[] {42, 43}));
     }
 
     @Test
     void allowDecimalString() throws IOException {
-        parse(ShortValue.builder()
-                .allowedTypes(JsonValueTypes.STRING, JsonValueTypes.INT, JsonValueTypes.DECIMAL)
-                .build(),
-                List.of("\"42.42\"", "\"43.999\""), ShortChunk.chunkWrap(new short[] {42, 43}));
+        parse(LongValue.builder().allowedTypes(JsonValueTypes.numberLike()).build(),
+                List.of("\"42.42\"", "\"43.999\""), LongChunk.chunkWrap(new long[] {42, 43}));
     }
 
     @Test
     void decimalStringLimitsNearMinValue() throws IOException {
         for (int i = 0; i < 100; ++i) {
-            parse(ShortValue.builder().allowedTypes(JsonValueTypes.STRING, JsonValueTypes.DECIMAL, JsonValueTypes.INT)
-                    .build(),
-                    List.of(String.format("\"%d.0\"", Short.MIN_VALUE + i)),
-                    ShortChunk.chunkWrap(new short[] {(short) (Short.MIN_VALUE + i)}));
+            parse(LongValue.builder().allowedTypes(JsonValueTypes.numberLike()).build(),
+                    List.of(String.format("\"%d.0\"", Long.MIN_VALUE + i)),
+                    LongChunk.chunkWrap(new long[] {Long.MIN_VALUE + i}));
         }
     }
 
     @Test
     void decimalStringLimitsNearMaxValue() throws IOException {
         for (int i = 0; i < 100; ++i) {
-            parse(ShortValue.builder().allowedTypes(JsonValueTypes.STRING, JsonValueTypes.DECIMAL, JsonValueTypes.INT)
-                    .build(),
-                    List.of(String.format("\"%d.0\"", Short.MAX_VALUE - i)),
-                    ShortChunk.chunkWrap(new short[] {(short) (Short.MAX_VALUE - i)}));
+            parse(LongValue.builder().allowedTypes(JsonValueTypes.numberLike()).build(),
+                    List.of(String.format("\"%d.0\"", Long.MAX_VALUE - i)),
+                    LongChunk.chunkWrap(new long[] {Long.MAX_VALUE - i}));
         }
     }
 }

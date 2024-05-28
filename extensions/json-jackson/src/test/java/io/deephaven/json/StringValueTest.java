@@ -14,7 +14,7 @@ import static io.deephaven.json.TestHelper.process;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
-public class StringOptionsTest {
+public class StringValueTest {
 
     @Test
     void standard() throws IOException {
