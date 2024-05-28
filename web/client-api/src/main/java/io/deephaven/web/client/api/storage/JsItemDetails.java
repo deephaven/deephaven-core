@@ -43,6 +43,10 @@ public class JsItemDetails {
 
     @JsProperty
     public String getBasename() {
+        // TODO (deephaven-core#5068) remove extra check
+        if (parentPath.equals("/")) {
+            return path.substring(1);
+        }
         return path.substring(parentPath.length() + 1);
     }
 
