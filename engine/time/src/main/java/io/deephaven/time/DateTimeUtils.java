@@ -856,9 +856,9 @@ public class DateTimeUtils {
      * @param date the date to convert
      * @return the {@link Instant}, or {@code null} if {@code date} is {@code null}
      */
+    @Deprecated
     @ScriptApi
     @Nullable
-    @Deprecated
     public static Instant toInstant(@Nullable final Date date) {
         if (date == null) {
             return null;
@@ -2785,8 +2785,8 @@ public class DateTimeUtils {
      *         have elapsed since the top of the day
      * @deprecated Use {@link #nanosOfDay(Instant, ZoneId, boolean)} instead. To be removed soon.
      */
-    @ScriptApi
     @Deprecated
+    @ScriptApi
     public static long nanosOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
         return nanosOfDay(instant, timeZone, false);
     }
@@ -2803,8 +2803,8 @@ public class DateTimeUtils {
      *         have elapsed since the top of the day
      * @deprecated Use {@link #nanosOfDay(ZonedDateTime, boolean)} instead. To be removed soon.
      */
-    @ScriptApi
     @Deprecated
+    @ScriptApi
     public static long nanosOfDay(@Nullable final ZonedDateTime dateTime) {
         return nanosOfDay(dateTime, false);
     }
@@ -2822,8 +2822,8 @@ public class DateTimeUtils {
      *         have elapsed since the top of the day
      * @deprecated Use {@link #millisOfDay(Instant, ZoneId, boolean)} instead. To be removed soon.
      */
-    @ScriptApi
     @Deprecated
+    @ScriptApi
     public static int millisOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
         return millisOfDay(instant, timeZone, false);
     }
@@ -2840,8 +2840,8 @@ public class DateTimeUtils {
      *         have elapsed since the top of the day
      * @deprecated Use {@link #millisOfDay(ZonedDateTime, boolean)} instead. To be removed soon.
      */
-    @ScriptApi
     @Deprecated
+    @ScriptApi
     public static int millisOfDay(@Nullable final ZonedDateTime dateTime) {
         return millisOfDay(dateTime, false);
     }
@@ -2859,8 +2859,8 @@ public class DateTimeUtils {
      *         elapsed since the top of the day
      * @deprecated Use {@link #secondOfDay(Instant, ZoneId, boolean)} instead. To be removed soon.
      */
-    @ScriptApi
     @Deprecated
+    @ScriptApi
     public static int secondOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
         return secondOfDay(instant, timeZone, false);
     }
@@ -2877,8 +2877,8 @@ public class DateTimeUtils {
      *         elapsed since the top of the day
      * @deprecated Use {@link #secondOfDay(ZonedDateTime, boolean)} instead. To be removed soon.
      */
-    @ScriptApi
     @Deprecated
+    @ScriptApi
     public static int secondOfDay(@Nullable final ZonedDateTime dateTime) {
         return secondOfDay(dateTime, false);
     }
@@ -2896,8 +2896,8 @@ public class DateTimeUtils {
      *         elapsed since the top of the day
      * @deprecated Use {@link #minuteOfDay(Instant, ZoneId, boolean)} instead. To be removed soon.
      */
-    @ScriptApi
     @Deprecated
+    @ScriptApi
     public static int minuteOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
         return minuteOfDay(instant, timeZone, false);
     }
@@ -2914,8 +2914,8 @@ public class DateTimeUtils {
      *         elapsed since the top of the day
      * @deprecated Use {@link #minuteOfDay(ZonedDateTime, boolean)} instead. To be removed soon.
      */
-    @ScriptApi
     @Deprecated
+    @ScriptApi
     public static int minuteOfDay(@Nullable final ZonedDateTime dateTime) {
         return minuteOfDay(dateTime, false);
     }
@@ -2933,8 +2933,8 @@ public class DateTimeUtils {
      *         elapsed since the top of the day
      * @deprecated Use {@link #hourOfDay(Instant, ZoneId, boolean)} instead. To be removed soon.
      */
-    @ScriptApi
     @Deprecated
+    @ScriptApi
     public static int hourOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
         return hourOfDay(instant, timeZone, false);
     }
@@ -2951,8 +2951,8 @@ public class DateTimeUtils {
      *         elapsed since the top of the day
      * @deprecated Use {@link #hourOfDay(ZonedDateTime, boolean)} instead. To be removed soon.
      */
-    @ScriptApi
     @Deprecated
+    @ScriptApi
     public static int hourOfDay(@Nullable final ZonedDateTime dateTime) {
         return hourOfDay(dateTime, false);
     }
