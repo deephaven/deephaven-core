@@ -1588,21 +1588,67 @@ public class DateTimeUtils {
     /**
      * Adds days to a {@link LocalDate}.
      *
-     * @param date starting date
+     * @param localDateTime starting local date time
      * @param days number of days to add
      * @return {@code null} if either input is {@code null} or {@link QueryConstants#NULL_LONG}; otherwise the starting
-     *         date plus the specified number of days
+     *         local date time plus the specified number of days
      * @throws DateTimeOverflowException if the resultant date time exceeds the supported range
      */
     @ScriptApi
     @Nullable
-    public static LocalDate plusDays(@Nullable final LocalDate date, final long days) {
-        if (date == null || days == NULL_LONG) {
+    public static LocalDateTime plusDays(@Nullable final LocalDateTime localDateTime, final long days) {
+        if (localDateTime == null || days == NULL_LONG) {
             return null;
         }
 
         try {
-            return date.plusDays(days);
+            return localDateTime.plusDays(days);
+        } catch (Exception ex) {
+            throw new DateTimeOverflowException(ex);
+        }
+    }
+
+    /**
+     * Adds days to a {@link LocalDate}.
+     *
+     * @param localDate starting local date
+     * @param days number of days to add
+     * @return {@code null} if either input is {@code null} or {@link QueryConstants#NULL_LONG}; otherwise the starting
+     *         local date plus the specified number of days
+     * @throws DateTimeOverflowException if the resultant localDate time exceeds the supported range
+     */
+    @ScriptApi
+    @Nullable
+    public static LocalDate plusDays(@Nullable final LocalDate localDate, final long days) {
+        if (localDate == null || days == NULL_LONG) {
+            return null;
+        }
+
+        try {
+            return localDate.plusDays(days);
+        } catch (Exception ex) {
+            throw new DateTimeOverflowException(ex);
+        }
+    }
+
+    /**
+     * Adds a time period to a {@link LocalDateTime}.
+     *
+     * @param localDateTime starting local date time
+     * @param period time period
+     * @return {@code null} if either input is {@code null}; otherwise the starting local date time plus the specified
+     *         time period
+     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range
+     */
+    @ScriptApi
+    @Nullable
+    public static LocalDateTime plus(@Nullable final LocalDateTime localDateTime, final Period period) {
+        if (localDateTime == null || period == null) {
+            return null;
+        }
+
+        try {
+            return localDateTime.plus(period);
         } catch (Exception ex) {
             throw new DateTimeOverflowException(ex);
         }
@@ -1611,20 +1657,21 @@ public class DateTimeUtils {
     /**
      * Adds a time period to a {@link LocalDate}.
      *
-     * @param date starting date
+     * @param localDate starting local date
      * @param period time period
-     * @return {@code null} if either input is {@code null}; otherwise the starting date plus the specified time period
+     * @return {@code null} if either input is {@code null}; otherwise the starting local date plus the specified time
+     *         period
      * @throws DateTimeOverflowException if the resultant date time exceeds the supported range
      */
     @ScriptApi
     @Nullable
-    public static LocalDate plus(@Nullable final LocalDate date, final Period period) {
-        if (date == null || period == null) {
+    public static LocalDate plus(@Nullable final LocalDate localDate, final Period period) {
+        if (localDate == null || period == null) {
             return null;
         }
 
         try {
-            return date.plus(period);
+            return localDate.plus(period);
         } catch (Exception ex) {
             throw new DateTimeOverflowException(ex);
         }
@@ -1771,21 +1818,67 @@ public class DateTimeUtils {
     /**
      * Subtracts days from a {@link LocalDate}.
      *
-     * @param date starting date
+     * @param localDateTime starting date
      * @param days number of days to subtract
      * @return {@code null} if either input is {@code null} or {@link QueryConstants#NULL_LONG}; otherwise the starting
-     *         date plus the specified number of days
+     *         local date time minus the specified number of days
      * @throws DateTimeOverflowException if the resultant date time exceeds the supported range
      */
     @ScriptApi
     @Nullable
-    public static LocalDate minusDays(@Nullable final LocalDate date, final long days) {
-        if (date == null || days == NULL_LONG) {
+    public static LocalDateTime minusDays(@Nullable final LocalDateTime localDateTime, final long days) {
+        if (localDateTime == null || days == NULL_LONG) {
             return null;
         }
 
         try {
-            return date.minusDays(days);
+            return localDateTime.minusDays(days);
+        } catch (Exception ex) {
+            throw new DateTimeOverflowException(ex);
+        }
+    }
+
+    /**
+     * Subtracts days from a {@link LocalDate}.
+     *
+     * @param localDate starting local date
+     * @param days number of days to subtract
+     * @return {@code null} if either input is {@code null} or {@link QueryConstants#NULL_LONG}; otherwise the starting
+     *         local date minus the specified number of days
+     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range
+     */
+    @ScriptApi
+    @Nullable
+    public static LocalDate minusDays(@Nullable final LocalDate localDate, final long days) {
+        if (localDate == null || days == NULL_LONG) {
+            return null;
+        }
+
+        try {
+            return localDate.minusDays(days);
+        } catch (Exception ex) {
+            throw new DateTimeOverflowException(ex);
+        }
+    }
+
+    /**
+     * Subtracts a time period from a {@link LocalDateTime}.
+     *
+     * @param localDateTime starting local date time
+     * @param period time period
+     * @return {@code null} if either input is {@code null}; otherwise the starting local date time minus the specified
+     *         time period
+     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range
+     */
+    @ScriptApi
+    @Nullable
+    public static LocalDateTime minus(@Nullable final LocalDateTime localDateTime, final Period period) {
+        if (localDateTime == null || period == null) {
+            return null;
+        }
+
+        try {
+            return localDateTime.minus(period);
         } catch (Exception ex) {
             throw new DateTimeOverflowException(ex);
         }
@@ -1794,20 +1887,21 @@ public class DateTimeUtils {
     /**
      * Subtracts a time period from a {@link LocalDate}.
      *
-     * @param date starting date
+     * @param localDate starting local date
      * @param period time period
-     * @return {@code null} if either input is {@code null}; otherwise the starting date minus the specified time period
+     * @return {@code null} if either input is {@code null}; otherwise the starting local date minus the specified time
+     *         period
      * @throws DateTimeOverflowException if the resultant date time exceeds the supported range
      */
     @ScriptApi
     @Nullable
-    public static LocalDate minus(@Nullable final LocalDate date, final Period period) {
-        if (date == null || period == null) {
+    public static LocalDate minus(@Nullable final LocalDate localDate, final Period period) {
+        if (localDate == null || period == null) {
             return null;
         }
 
         try {
-            return date.minus(period);
+            return localDate.minus(period);
         } catch (Exception ex) {
             throw new DateTimeOverflowException(ex);
         }
@@ -3244,18 +3338,33 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns athe day of the week for a {@link ZonedDateTime} in the specified time zone.
+     * Returns athe day of the week for a {@link ZonedDateTime}.
      *
-     * @param date date to find the day of the week of
-     * @return {@code null} if either input is {@code null}; otherwise, the day of the week
+     * @param localDateTime local date time to find the day of the week of
+     * @return {@code null} if {@code localDateTime} is {@code null}; otherwise, the day of the week
      */
     @ScriptApi
-    public static DayOfWeek dayOfWeek(@Nullable final LocalDate date) {
-        if (date == null) {
+    public static DayOfWeek dayOfWeek(@Nullable final LocalDateTime localDateTime) {
+        if (localDateTime == null) {
             return null;
         }
 
-        return date.getDayOfWeek();
+        return localDateTime.getDayOfWeek();
+    }
+
+    /**
+     * Returns the day of the week for a {@link LocalDate}.
+     *
+     * @param localDate local date to find the day of the week of
+     * @return {@code null} if {@code localDate} is {@code null}; otherwise, the day of the week
+     */
+    @ScriptApi
+    public static DayOfWeek dayOfWeek(@Nullable final LocalDate localDate) {
+        if (localDate == null) {
+            return null;
+        }
+
+        return localDate.getDayOfWeek();
     }
 
     /**
@@ -3290,19 +3399,35 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns a 1-based int value of the day of the week for a {@link ZonedDateTime} in the specified time zone, with 1
-     * being Monday and 7 being Sunday.
+     * Returns a 1-based int value of the day of the week for a {@link LocalDateTime}, with 1 being Monday and 7 being
+     * Sunday.
      *
-     * @param date date to find the day of the week of
-     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the day of the week
+     * @param localDateTime local date time to find the day of the week of
+     * @return {@link QueryConstants#NULL_INT} if {@code localDateTime} is {@code null}; otherwise, the day of the week
      */
     @ScriptApi
-    public static int dayOfWeekValue(@Nullable final LocalDate date) {
-        if (date == null) {
+    public static int dayOfWeekValue(@Nullable final LocalDateTime localDateTime) {
+        if (localDateTime == null) {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        return date.getDayOfWeek().getValue();
+        return localDateTime.getDayOfWeek().getValue();
+    }
+
+    /**
+     * Returns a 1-based int value of the day of the week for a {@link LocalDate}, with 1 being Monday and 7 being
+     * Sunday.
+     *
+     * @param localDate local date to find the day of the week of
+     * @return {@link QueryConstants#NULL_INT} if {@code localDate} is {@code null}; otherwise, the day of the week
+     */
+    @ScriptApi
+    public static int dayOfWeekValue(@Nullable final LocalDate localDate) {
+        if (localDate == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return localDate.getDayOfWeek().getValue();
     }
 
     /**
@@ -3339,19 +3464,36 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns a 1-based int value of the day of the month for a {@link ZonedDateTime} and specified time zone. The
-     * first day of the month returns 1, the second day returns 2, etc.
+     * Returns a 1-based int value of the day of the month for a {@link LocalDateTime}. The first day of the month
+     * returns 1, the second day returns 2, etc.
      *
-     * @param date date to find the day of the month of
-     * @return A {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the day of the month
+     * @param localDateTime local date time to find the day of the month of
+     * @return A {@link QueryConstants#NULL_INT} if {@code localDateTime} is {@code null}; otherwise, the day of the
+     *         month
      */
     @ScriptApi
-    public static int dayOfMonth(@Nullable final LocalDate date) {
-        if (date == null) {
+    public static int dayOfMonth(@Nullable final LocalDateTime localDateTime) {
+        if (localDateTime == null) {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        return date.getDayOfMonth();
+        return localDateTime.getDayOfMonth();
+    }
+
+    /**
+     * Returns a 1-based int value of the day of the month for a {@link LocalDate}. The first day of the month returns
+     * 1, the second day returns 2, etc.
+     *
+     * @param localDate local date to find the day of the month of
+     * @return A {@link QueryConstants#NULL_INT} if {@code localDate} is {@code null}; otherwise, the day of the month
+     */
+    @ScriptApi
+    public static int dayOfMonth(@Nullable final LocalDate localDate) {
+        if (localDate == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return localDate.getDayOfMonth();
     }
 
     /**
@@ -3388,19 +3530,35 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns a 1-based int value of the day of the year (Julian date) for a {@link ZonedDateTime} in the specified
-     * time zone. The first day of the year returns 1, the second day returns 2, etc.
+     * Returns a 1-based int value of the day of the year (Julian date) for a {@link LocalDateTime}. The first day of
+     * the year returns 1, the second day returns 2, etc.
      *
-     * @param date date to find the day of the year of
-     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the day of the year
+     * @param localDateTime local date time to find the day of the year of
+     * @return {@link QueryConstants#NULL_INT} if {@code localDateTime} is {@code null}; otherwise, the day of the year
      */
     @ScriptApi
-    public static int dayOfYear(@Nullable final LocalDate date) {
-        if (date == null) {
+    public static int dayOfYear(@Nullable final LocalDateTime localDateTime) {
+        if (localDateTime == null) {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        return date.getDayOfYear();
+        return localDateTime.getDayOfYear();
+    }
+
+    /**
+     * Returns a 1-based int value of the day of the year (Julian date) for a {@link LocalDate}. The first day of the
+     * year returns 1, the second day returns 2, etc.
+     *
+     * @param localDate local date to find the day of the year of
+     * @return {@link QueryConstants#NULL_INT} if {@code localDate} is {@code null}; otherwise, the day of the year
+     */
+    @ScriptApi
+    public static int dayOfYear(@Nullable final LocalDate localDate) {
+        if (localDate == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return localDate.getDayOfYear();
     }
 
     /**
@@ -3437,19 +3595,36 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns a 1-based int value of the month of the year (Julian date) for a {@link LocalDate}. January is 1,
+     * Returns a 1-based int value of the month of the year (Julian date) for a {@link LocalDateTime}. January is 1,
      * February is 2, etc.
      *
-     * @param date date to find the month of the year of
-     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the month of the year
+     * @param localDateTime local date time to find the month of the year of
+     * @return {@link QueryConstants#NULL_INT} if {@code localDateTime} is {@code null}; otherwise, the month of the
+     *         year
      */
     @ScriptApi
-    public static int monthOfYear(@Nullable final LocalDate date) {
-        if (date == null) {
+    public static int monthOfYear(@Nullable final LocalDateTime localDateTime) {
+        if (localDateTime == null) {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        return date.getMonthValue();
+        return localDateTime.getMonthValue();
+    }
+
+    /**
+     * Returns a 1-based int value of the month of the year (Julian date) for a {@link LocalDate}. January is 1,
+     * February is 2, etc.
+     *
+     * @param localDate local date to find the month of the year of
+     * @return {@link QueryConstants#NULL_INT} if {@code localDate} is {@code null}; otherwise, the month of the year
+     */
+    @ScriptApi
+    public static int monthOfYear(@Nullable final LocalDate localDate) {
+        if (localDate == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return localDate.getMonthValue();
     }
 
     /**
@@ -3486,18 +3661,33 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns the year for a {@link LocalDate}.
+     * Returns the year for a {@link LocalDateTime}.
      *
-     * @param date date to find the year of
-     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the year
+     * @param localDateTime local date to find the year of
+     * @return {@link QueryConstants#NULL_INT} if {@code localDateTime} is {@code null}; otherwise, the year
      */
     @ScriptApi
-    public static int year(@Nullable final LocalDate date) {
-        if (date == null) {
+    public static int year(@Nullable final LocalDateTime localDateTime) {
+        if (localDateTime == null) {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        return date.getYear();
+        return localDateTime.getYear();
+    }
+
+    /**
+     * Returns the year for a {@link LocalDate}.
+     *
+     * @param localDate local date to find the year of
+     * @return {@link QueryConstants#NULL_INT} if {@code localDate} is {@code null}; otherwise, the year
+     */
+    @ScriptApi
+    public static int year(@Nullable final LocalDate localDate) {
+        if (localDate == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return localDate.getYear();
     }
 
     /**
@@ -3532,19 +3722,35 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns the year of the century (two-digit year) for a {@link LocalDate} in the specified time zone.
+     * Returns the year of the century (two-digit year) for a {@link LocalDateTime}.
      *
-     * @param date date to find the year of
-     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, the year of the century
-     *         (two-digit year)
+     * @param localDateTime local date time to find the year of
+     * @return {@link QueryConstants#NULL_INT} if {@code localDateTime} is {@code null}; otherwise, the year of the
+     *         century (two-digit year)
      */
     @ScriptApi
-    public static int yearOfCentury(@Nullable final LocalDate date) {
-        if (date == null) {
+    public static int yearOfCentury(@Nullable final LocalDateTime localDateTime) {
+        if (localDateTime == null) {
             return io.deephaven.util.QueryConstants.NULL_INT;
         }
 
-        return year(date) % 100;
+        return year(localDateTime) % 100;
+    }
+
+    /**
+     * Returns the year of the century (two-digit year) for a {@link LocalDate}.
+     *
+     * @param localDate local date to find the year of
+     * @return {@link QueryConstants#NULL_INT} if {@code localDate} is {@code null}; otherwise, the year of the century
+     *         (two-digit year)
+     */
+    @ScriptApi
+    public static int yearOfCentury(@Nullable final LocalDate localDate) {
+        if (localDate == null) {
+            return io.deephaven.util.QueryConstants.NULL_INT;
+        }
+
+        return year(localDate) % 100;
     }
 
     /**
@@ -3583,19 +3789,37 @@ public class DateTimeUtils {
     /**
      * Returns an {@link ZonedDateTime} for the prior midnight in the specified time zone.
      *
-     * @param date date to compute the prior midnight for
+     * @param localDateTime local date time to compute the prior midnight for
      * @param timeZone time zone
      * @return {@code null} if either input is {@code null}; otherwise an {@link ZonedDateTime} representing the prior
      *         midnight in the specified time zone
      */
     @ScriptApi
     @Nullable
-    public static ZonedDateTime atMidnight(@Nullable final LocalDate date, @Nullable ZoneId timeZone) {
-        if (date == null || timeZone == null) {
+    public static ZonedDateTime atMidnight(@Nullable final LocalDateTime localDateTime, @Nullable ZoneId timeZone) {
+        if (localDateTime == null || timeZone == null) {
             return null;
         }
 
-        return date.atStartOfDay(timeZone);
+        return localDateTime.toLocalDate().atStartOfDay(timeZone);
+    }
+
+    /**
+     * Returns an {@link ZonedDateTime} for the prior midnight in the specified time zone.
+     *
+     * @param localDate local date to compute the prior midnight for
+     * @param timeZone time zone
+     * @return {@code null} if either input is {@code null}; otherwise an {@link ZonedDateTime} representing the prior
+     *         midnight in the specified time zone
+     */
+    @ScriptApi
+    @Nullable
+    public static ZonedDateTime atMidnight(@Nullable final LocalDate localDate, @Nullable ZoneId timeZone) {
+        if (localDate == null || timeZone == null) {
+            return null;
+        }
+
+        return localDate.atStartOfDay(timeZone);
     }
 
     /**
@@ -4119,19 +4343,35 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns a {@link LocalDate} formatted as a "yyyy-MM-dd" string.
+     * Returns a {@link LocalDateTime} formatted as a "yyyy-MM-dd" string.
      *
-     * @param date date to format as a string
+     * @param localDateTime local date time to format as a string
      * @return {@code null} if either input is {@code null}; otherwise, the time formatted as a "yyyy-MM-dd" string
      */
     @ScriptApi
     @Nullable
-    public static String formatDate(@Nullable final LocalDate date) {
-        if (date == null) {
+    public static String formatDate(@Nullable final LocalDateTime localDateTime) {
+        if (localDateTime == null) {
             return null;
         }
 
-        return ISO_LOCAL_DATE.format(date);
+        return ISO_LOCAL_DATE.format(localDateTime);
+    }
+
+    /**
+     * Returns a {@link LocalDate} formatted as a "yyyy-MM-dd" string.
+     *
+     * @param localDate local date to format as a string
+     * @return {@code null} if either input is {@code null}; otherwise, the time formatted as a "yyyy-MM-dd" string
+     */
+    @ScriptApi
+    @Nullable
+    public static String formatDate(@Nullable final LocalDate localDate) {
+        if (localDate == null) {
+            return null;
+        }
+
+        return ISO_LOCAL_DATE.format(localDate);
     }
 
     // endregion
