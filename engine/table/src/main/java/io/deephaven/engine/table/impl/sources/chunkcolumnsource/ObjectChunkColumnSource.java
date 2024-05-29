@@ -18,6 +18,7 @@ import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;

@@ -15,6 +15,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ObjectVectorDirect;
+import io.deephaven.vector.ObjectVector;
 import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.table.impl.by.SumIntChunk;
@@ -27,6 +28,7 @@ import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.mutable.MutableLong;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 
 public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMultiSet<Object>, ObjectVector {

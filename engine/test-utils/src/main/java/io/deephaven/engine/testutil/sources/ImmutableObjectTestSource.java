@@ -10,12 +10,15 @@ package io.deephaven.engine.testutil.sources;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
+import io.deephaven.util.type.TypeUtils;
 import io.deephaven.util.mutable.MutableInt;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 

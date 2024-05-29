@@ -7,6 +7,8 @@
 // @formatter:off
 package io.deephaven.engine.table.impl.by.ssmpercentile;
 
+import java.util.Objects;
+
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.WritableColumnSource;
