@@ -14,7 +14,10 @@ import io.deephaven.qst.type.Type;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.function.Function;
@@ -24,38 +27,47 @@ import static io.deephaven.json.jackson.Parsing.assertCurrentToken;
 
 final class TupleMixin extends Mixin<TupleValue> {
 
+    private final Map<String, Mixin<?>> mixins;
+    private final int numColumns;
+
     public TupleMixin(TupleValue options, JsonFactory factory) {
         super(factory, options);
+        final LinkedHashMap<String, Mixin<?>> map = new LinkedHashMap<>(options.namedValues().size());
+        for (Entry<String, Value> e : options.namedValues().entrySet()) {
+            map.put(e.getKey(), mixin(e.getValue()));
+        }
+        mixins = Collections.unmodifiableMap(map);
+        numColumns = mixins.values().stream().mapToInt(Mixin::numColumns).sum();
     }
 
     @Override
     public int numColumns() {
-        return options.namedValues().values().stream().map(this::mixin).mapToInt(Mixin::numColumns).sum();
+        return numColumns;
     }
 
     @Override
     public Stream<List<String>> paths() {
-        if (options.namedValues().size() == 1) {
-            return mixin(options.namedValues().get(0)).paths();
+        if (mixins.size() == 1) {
+            return mixins.values().iterator().next().paths();
         }
         final List<Stream<List<String>>> prefixed = new ArrayList<>();
-        for (Entry<String, Value> e : options.namedValues().entrySet()) {
-            prefixed.add(mixin(e.getValue()).paths().map(x -> prefixWith(e.getKey(), x)));
+        for (Entry<String, Mixin<?>> e : mixins.entrySet()) {
+            prefixed.add(e.getValue().paths().map(x -> prefixWith(e.getKey(), x)));
         }
         return prefixed.stream().flatMap(Function.identity());
     }
 
     @Override
     public Stream<Type<?>> outputTypesImpl() {
-        return options.namedValues().values().stream().map(this::mixin).flatMap(Mixin::outputTypesImpl);
+        return mixins.values().stream().flatMap(Mixin::outputTypesImpl);
     }
 
     @Override
     public ValueProcessor processor(String context) {
         final List<ValueProcessor> processors = new ArrayList<>(options.namedValues().size());
         int ix = 0;
-        for (Entry<String, Value> e : options.namedValues().entrySet()) {
-            final Mixin<?> mixin = mixin(e.getValue());
+        for (Entry<String, Mixin<?>> e : mixins.entrySet()) {
+            final Mixin<?> mixin = e.getValue();
             final int numTypes = mixin.numColumns();
             final ValueProcessor processor = mixin.processor(context + "[" + e.getKey() + "]");
             processors.add(processor);
@@ -69,13 +81,12 @@ final class TupleMixin extends Mixin<TupleValue> {
 
     @Override
     RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
-        final List<RepeaterProcessor> processors = new ArrayList<>(options.namedValues().size());
+        final List<RepeaterProcessor> processors = new ArrayList<>(mixins.size());
         int ix = 0;
-        for (Entry<String, Value> e : options.namedValues().entrySet()) {
-            final Mixin<?> mixin = mixin(e.getValue());
+        for (Entry<String, Mixin<?>> e : mixins.entrySet()) {
+            final Mixin<?> mixin = e.getValue();
             final int numTypes = mixin.numColumns();
-            final RepeaterProcessor processor =
-                    mixin.repeaterProcessor(allowMissing, allowNull);
+            final RepeaterProcessor processor = mixin.repeaterProcessor(allowMissing, allowNull);
             processors.add(processor);
             ix += numTypes;
         }

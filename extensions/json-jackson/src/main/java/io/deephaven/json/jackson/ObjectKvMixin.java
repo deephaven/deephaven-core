@@ -4,69 +4,113 @@
 package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParser;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.json.ObjectKvValue;
 import io.deephaven.qst.type.NativeArrayType;
 import io.deephaven.qst.type.Type;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.stream.Stream;
 
 final class ObjectKvMixin extends Mixin<ObjectKvValue> {
+    private final Mixin<?> key;
+    private final Mixin<?> value;
 
     public ObjectKvMixin(ObjectKvValue options, JsonFactory factory) {
         super(factory, options);
-    }
-
-    public Mixin<?> keyMixin() {
-        return mixin(options.key());
-    }
-
-    public Mixin<?> valueMixin() {
-        return mixin(options.value());
+        key = mixin(options.key());
+        value = mixin(options.value());
     }
 
     @Override
     public Stream<NativeArrayType<?, ?>> outputTypesImpl() {
-        return keyValueOutputTypes().map(Type::arrayType);
+        return Stream.concat(key.outputTypesImpl(), value.outputTypesImpl()).map(Type::arrayType);
     }
 
     @Override
     public int numColumns() {
-        return keyMixin().numColumns() + valueMixin().numColumns();
+        return key.numColumns() + value.numColumns();
     }
 
     @Override
     public Stream<List<String>> paths() {
         final Stream<List<String>> keyPath =
-                keyMixin().numColumns() == 1 && keyMixin().paths().findFirst().orElseThrow().isEmpty()
+                key.numColumns() == 1 && key.paths().findFirst().orElseThrow().isEmpty()
                         ? Stream.of(List.of("Key"))
-                        : keyMixin().paths();
+                        : key.paths();
         final Stream<List<String>> valuePath =
-                valueMixin().numColumns() == 1 && valueMixin().paths().findFirst().orElseThrow().isEmpty()
+                value.numColumns() == 1 && value.paths().findFirst().orElseThrow().isEmpty()
                         ? Stream.of(List.of("Value"))
-                        : valueMixin().paths();
+                        : value.paths();
         return Stream.concat(keyPath, valuePath);
     }
 
     @Override
-    public ValueProcessorKvImpl processor(String context) {
-        return innerProcessor();
-    }
-
-    Stream<Type<?>> keyValueOutputTypes() {
-        return Stream.concat(keyMixin().outputTypesImpl(), valueMixin().outputTypesImpl());
-    }
-
-    private ValueProcessorKvImpl innerProcessor() {
-        final Mixin<?> key = keyMixin();
-        final Mixin<?> value = valueMixin();
-        final RepeaterProcessor kp = key.repeaterProcessor(allowMissing(), allowNull());
-        final RepeaterProcessor vp = value.repeaterProcessor(allowMissing(), allowNull());
-        return new ValueProcessorKvImpl(kp, vp);
+    public ValueProcessor processor(String context) {
+        return new ValueProcessorKvImpl();
     }
 
     @Override
     RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
-        return new ValueInnerRepeaterProcessor(allowMissing, allowNull, innerProcessor());
+        return new ValueInnerRepeaterProcessor(allowMissing, allowNull, new ValueProcessorKvImpl());
+    }
+
+    private class ValueProcessorKvImpl implements ValueProcessor {
+
+        private final RepeaterProcessor keyProcessor;
+        private final RepeaterProcessor valueProcessor;
+
+        ValueProcessorKvImpl() {
+            this.keyProcessor = key.repeaterProcessor(allowMissing(), allowNull());
+            this.valueProcessor = value.repeaterProcessor(allowMissing(), allowNull());
+        }
+
+        @Override
+        public void setContext(List<WritableChunk<?>> out) {
+            final int keySize = keyProcessor.numColumns();
+            keyProcessor.setContext(out.subList(0, keySize));
+            valueProcessor.setContext(out.subList(keySize, keySize + valueProcessor.numColumns()));
+        }
+
+        @Override
+        public void clearContext() {
+            keyProcessor.clearContext();
+            valueProcessor.clearContext();
+        }
+
+        @Override
+        public int numColumns() {
+            return keyProcessor.numColumns() + valueProcessor.numColumns();
+        }
+
+        @Override
+        public Stream<Type<?>> columnTypes() {
+            return Stream.concat(keyProcessor.columnTypes(), valueProcessor.columnTypes());
+        }
+
+        @Override
+        public void processCurrentValue(JsonParser parser) throws IOException {
+            switch (parser.currentToken()) {
+                case START_OBJECT:
+                    RepeaterProcessor.processObjectKeyValues(parser, keyProcessor, valueProcessor);
+                    return;
+                case VALUE_NULL:
+                    checkNullAllowed(parser);
+                    keyProcessor.processNullRepeater(parser);
+                    valueProcessor.processNullRepeater(parser);
+                    return;
+                default:
+                    throw unexpectedToken(parser);
+            }
+        }
+
+        @Override
+        public void processMissing(JsonParser parser) throws IOException {
+            checkMissingAllowed(parser);
+            keyProcessor.processMissingRepeater(parser);
+            valueProcessor.processMissingRepeater(parser);
+        }
     }
 }
