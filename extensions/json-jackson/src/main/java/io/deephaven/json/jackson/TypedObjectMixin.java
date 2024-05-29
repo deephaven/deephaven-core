@@ -277,6 +277,8 @@ final class TypedObjectMixin extends Mixin<TypedObjectValue> {
                 for (WritableChunk<?> sharedChunk : sharedChunks) {
                     addNullValue(sharedChunk);
                 }
+                // We need to skip all the fields. parser.skipChildren() is not applicable here because we are already
+                // inside the object (as opposed to at START_OBJECT).
                 FieldProcessor.skipFields(parser);
             }
         }

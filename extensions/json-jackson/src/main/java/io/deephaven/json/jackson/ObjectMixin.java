@@ -62,7 +62,7 @@ final class ObjectMixin extends Mixin<ObjectValue> {
         return processor(context, false);
     }
 
-    public ValueProcessor processor(String context, boolean isDiscriminatedObject) {
+    public ValueProcessor processor(String context, boolean isDiscriminated) {
         final Map<ObjectField, ValueProcessor> processors = new LinkedHashMap<>(options.fields().size());
         int ix = 0;
         for (ObjectField field : options.fields()) {
@@ -75,7 +75,7 @@ final class ObjectMixin extends Mixin<ObjectValue> {
         if (ix != numColumns()) {
             throw new IllegalStateException();
         }
-        return processorImpl(processors, isDiscriminatedObject);
+        return processorImpl(processors, isDiscriminated);
     }
 
     @Override
@@ -106,15 +106,15 @@ final class ObjectMixin extends Mixin<ObjectValue> {
     final class ObjectValueFieldProcessor extends ContextAwareDelegateBase implements ValueProcessor, FieldProcessor {
         private final Map<ObjectField, ValueProcessor> fields;
         private final Map<String, ObjectField> map;
-        private final boolean isDiscriminatedObject;
+        private final boolean isDiscriminated;
 
-        ObjectValueFieldProcessor(Map<ObjectField, ValueProcessor> fields, boolean isDiscriminatedObject) {
+        ObjectValueFieldProcessor(Map<ObjectField, ValueProcessor> fields, boolean isDiscriminated) {
             super(fields.values());
             this.fields = fields;
             this.map = allCaseSensitive()
                     ? new HashMap<>()
                     : new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-            this.isDiscriminatedObject = isDiscriminatedObject;
+            this.isDiscriminated = isDiscriminated;
             for (Entry<ObjectField, ValueProcessor> e : fields.entrySet()) {
                 final ObjectField field = e.getKey();
                 map.put(field.name(), field);
@@ -146,9 +146,11 @@ final class ObjectMixin extends Mixin<ObjectValue> {
 
         @Override
         public void processCurrentValue(JsonParser parser) throws IOException {
+            // In the normal case, we expect to be at START_OBJECT or VALUE_NULL.
+            // In the discriminated case, we expect to already be inside an object (FIELD_NAME or END_OBJECT).
             switch (parser.currentToken()) {
                 case START_OBJECT:
-                    if (isDiscriminatedObject) {
+                    if (isDiscriminated) {
                         throw unexpectedToken(parser);
                     }
                     if (parser.nextToken() == JsonToken.END_OBJECT) {
@@ -161,19 +163,19 @@ final class ObjectMixin extends Mixin<ObjectValue> {
                     processObjectFields(parser);
                     return;
                 case VALUE_NULL:
-                    if (isDiscriminatedObject) {
+                    if (isDiscriminated) {
                         throw unexpectedToken(parser);
                     }
                     processNullObject(parser);
                     return;
                 case FIELD_NAME:
-                    if (!isDiscriminatedObject) {
+                    if (!isDiscriminated) {
                         throw unexpectedToken(parser);
                     }
                     processObjectFields(parser);
                     return;
                 case END_OBJECT:
-                    if (!isDiscriminatedObject) {
+                    if (!isDiscriminated) {
                         throw unexpectedToken(parser);
                     }
                     processEmptyObject(parser);

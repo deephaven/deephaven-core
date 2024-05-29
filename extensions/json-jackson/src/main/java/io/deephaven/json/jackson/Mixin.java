@@ -475,6 +475,8 @@ abstract class Mixin<T extends Value> implements JacksonProvider {
                 msg = "Decimal not expected";
                 break;
             case FIELD_NAME:
+                msg = "Field name not expected";
+                break;
             case VALUE_STRING:
                 msg = "String not expected";
                 break;

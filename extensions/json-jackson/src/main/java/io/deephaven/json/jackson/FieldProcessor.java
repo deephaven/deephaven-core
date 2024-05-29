@@ -11,11 +11,6 @@ import java.io.IOException;
 import static io.deephaven.json.jackson.Parsing.assertCurrentToken;
 
 interface FieldProcessor {
-    static void processObject(JsonParser parser, FieldProcessor fieldProcess) throws IOException {
-        Parsing.assertCurrentToken(parser, JsonToken.START_OBJECT);
-        parser.nextToken();
-        processFields(parser, fieldProcess);
-    }
 
     static void processFields(JsonParser parser, FieldProcessor fieldProcess) throws IOException {
         while (parser.hasToken(JsonToken.FIELD_NAME)) {
