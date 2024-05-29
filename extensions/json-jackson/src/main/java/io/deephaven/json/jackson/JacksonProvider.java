@@ -49,7 +49,7 @@ public interface JacksonProvider extends NamedObjectProcessor.Provider {
 
     /**
      * The supported types. Includes {@link String}, {@code byte[]}, {@code char[]}, {@link File}, {@link Path},
-     * {@link URL}, and {@link ByteBuffer}.
+     * {@link URL}, {@link ByteBuffer}, and {@link CharBuffer}.
      *
      * @return the supported types
      */
@@ -61,7 +61,8 @@ public interface JacksonProvider extends NamedObjectProcessor.Provider {
                 Type.ofCustom(File.class),
                 Type.ofCustom(Path.class),
                 Type.ofCustom(URL.class),
-                Type.ofCustom(ByteBuffer.class));
+                Type.ofCustom(ByteBuffer.class),
+                Type.ofCustom(CharBuffer.class));
     }
 
     /**
@@ -87,6 +88,7 @@ public interface JacksonProvider extends NamedObjectProcessor.Provider {
      * @see #pathProcessor()
      * @see #urlProcessor()
      * @see #byteBufferProcessor()
+     * @see #charBufferProcessor()
      */
     @Override
     <T> ObjectProcessor<? super T> processor(Type<T> inputType);

@@ -164,38 +164,6 @@ abstract class Mixin<T extends Value> implements JacksonProvider {
 
     abstract Stream<? extends Type<?>> outputTypesImpl();
 
-    final boolean allowNull() {
-        return options.allowedTypes().contains(JsonValueTypes.NULL);
-    }
-
-    final boolean allowMissing() {
-        return options.allowMissing();
-    }
-
-    final boolean allowString() {
-        return options.allowedTypes().contains(JsonValueTypes.STRING);
-    }
-
-    final boolean allowNumberInt() {
-        return options.allowedTypes().contains(JsonValueTypes.INT);
-    }
-
-    final boolean allowDecimal() {
-        return options.allowedTypes().contains(JsonValueTypes.DECIMAL);
-    }
-
-    final boolean allowBool() {
-        return options.allowedTypes().contains(JsonValueTypes.BOOL);
-    }
-
-    final boolean allowObject() {
-        return options.allowedTypes().contains(JsonValueTypes.OBJECT);
-    }
-
-    final boolean allowArray() {
-        return options.allowedTypes().contains(JsonValueTypes.ARRAY);
-    }
-
     static List<String> prefixWith(String prefix, List<String> path) {
         return Stream.concat(Stream.of(prefix), path.stream()).collect(Collectors.toList());
     }
@@ -394,6 +362,22 @@ abstract class Mixin<T extends Value> implements JacksonProvider {
         }
     }
 
+    final boolean allowNull() {
+        return options.allowedTypes().contains(JsonValueTypes.NULL);
+    }
+
+    final boolean allowMissing() {
+        return options.allowMissing();
+    }
+
+    final boolean allowNumberInt() {
+        return options.allowedTypes().contains(JsonValueTypes.INT);
+    }
+
+    final boolean allowDecimal() {
+        return options.allowedTypes().contains(JsonValueTypes.DECIMAL);
+    }
+
     final void checkNumberAllowed(JsonParser parser) throws IOException {
         if (!allowNumberInt() && !allowDecimal()) {
             throw new ValueAwareException("Number not allowed", parser.currentLocation(), options);
@@ -413,25 +397,25 @@ abstract class Mixin<T extends Value> implements JacksonProvider {
     }
 
     final void checkBoolAllowed(JsonParser parser) throws IOException {
-        if (!allowBool()) {
+        if (!options.allowedTypes().contains(JsonValueTypes.BOOL)) {
             throw new ValueAwareException("Bool not expected", parser.currentLocation(), options);
         }
     }
 
     final void checkStringAllowed(JsonParser parser) throws IOException {
-        if (!allowString()) {
+        if (!options.allowedTypes().contains(JsonValueTypes.STRING)) {
             throw new ValueAwareException("String not allowed", parser.currentLocation(), options);
         }
     }
 
     final void checkObjectAllowed(JsonParser parser) throws IOException {
-        if (!allowObject()) {
+        if (!options.allowedTypes().contains(JsonValueTypes.OBJECT)) {
             throw new ValueAwareException("Object not allowed", parser.currentLocation(), options);
         }
     }
 
     final void checkArrayAllowed(JsonParser parser) throws IOException {
-        if (!allowArray()) {
+        if (!options.allowedTypes().contains(JsonValueTypes.ARRAY)) {
             throw new ValueAwareException("Array not allowed", parser.currentLocation(), options);
         }
     }
