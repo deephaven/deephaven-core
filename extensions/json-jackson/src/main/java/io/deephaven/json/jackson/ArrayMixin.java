@@ -4,31 +4,33 @@
 package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParser;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.json.ArrayValue;
 import io.deephaven.qst.type.NativeArrayType;
 import io.deephaven.qst.type.Type;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.stream.Stream;
 
 final class ArrayMixin extends Mixin<ArrayValue> {
 
+    private final Mixin<?> element;
+
     public ArrayMixin(ArrayValue options, JsonFactory factory) {
         super(factory, options);
-    }
-
-    Mixin<?> element() {
-        return mixin(options.element());
+        element = mixin(options.element());
     }
 
     @Override
     public int numColumns() {
-        return element().numColumns();
+        return element.numColumns();
     }
 
     @Override
     public Stream<List<String>> paths() {
-        return element().paths();
+        return element.paths();
     }
 
     @Override
@@ -38,19 +40,15 @@ final class ArrayMixin extends Mixin<ArrayValue> {
 
     @Override
     public ValueProcessor processor(String context) {
-        return innerProcessor();
+        return new ArrayValueProcessor();
     }
 
-    Stream<? extends Type<?>> elementOutputTypes() {
-        return element().outputTypesImpl();
+    private Stream<? extends Type<?>> elementOutputTypes() {
+        return element.outputTypesImpl();
     }
 
-    RepeaterProcessor elementRepeater() {
-        return element().repeaterProcessor(allowMissing(), allowNull());
-    }
-
-    private ArrayValueProcessor innerProcessor() {
-        return new ArrayValueProcessor(elementRepeater());
+    private RepeaterProcessor elementRepeater() {
+        return element.repeaterProcessor(allowMissing(), allowNull());
     }
 
     @Override
@@ -60,6 +58,56 @@ final class ArrayMixin extends Mixin<ArrayValue> {
         // double[] (processor())
         // double[][] (repeater())
         // return new ArrayOfArrayRepeaterProcessor(allowMissing, allowNull);
-        return new ValueInnerRepeaterProcessor(allowMissing, allowNull, innerProcessor());
+        return new ValueInnerRepeaterProcessor(allowMissing, allowNull, new ArrayValueProcessor());
+    }
+
+    private class ArrayValueProcessor implements ValueProcessor {
+
+        private final RepeaterProcessor elementProcessor;
+
+        ArrayValueProcessor() {
+            this.elementProcessor = elementRepeater();
+        }
+
+        @Override
+        public void setContext(List<WritableChunk<?>> out) {
+            elementProcessor.setContext(out);
+        }
+
+        @Override
+        public void clearContext() {
+            elementProcessor.clearContext();
+        }
+
+        @Override
+        public int numColumns() {
+            return elementProcessor.numColumns();
+        }
+
+        @Override
+        public Stream<Type<?>> columnTypes() {
+            return elementProcessor.columnTypes();
+        }
+
+        @Override
+        public void processCurrentValue(JsonParser parser) throws IOException {
+            switch (parser.currentToken()) {
+                case START_ARRAY:
+                    RepeaterProcessor.processArray(parser, elementProcessor);
+                    return;
+                case VALUE_NULL:
+                    checkNullAllowed(parser);
+                    elementProcessor.processNullRepeater(parser);
+                    return;
+                default:
+                    throw unexpectedToken(parser);
+            }
+        }
+
+        @Override
+        public void processMissing(JsonParser parser) throws IOException {
+            checkMissingAllowed(parser);
+            elementProcessor.processMissingRepeater(parser);
+        }
     }
 }
