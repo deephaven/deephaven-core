@@ -251,6 +251,66 @@ class RollupTable(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "with_filters operation on RollupTable failed.") from e
 
+    def layout_hints(self, front: Union[str, List[str]] = None, back: Union[str, List[str]] = None,
+                     freeze: Union[str, List[str]] = None, hide: Union[str, List[str]] = None,
+                     column_groups: List[dict] = None, search_display_mode: SearchDisplayMode = None) -> Table:
+        """ Sets layout hints on the Table
+
+        Args:
+            front (Union[str, List[str]]): the columns to show at the front.
+            back (Union[str, List[str]]): the columns to show at the back.
+            freeze (Union[str, List[str]]): the columns to freeze to the front.
+                These will not be affected by horizontal scrolling.
+            hide (Union[str, List[str]]): the columns to hide.
+            column_groups (List[Dict]): A list of dicts specifying which columns should be grouped in the UI.
+                The dicts can specify the following:
+
+                * name (str): The group name
+                * children (List[str]): The column names in the group
+                * color (Optional[str]): The hex color string or Deephaven color name
+            search_display_mode (SearchDisplayMode): set the search bar to explicitly be accessible or inaccessible,
+                or use the system default. :attr:`SearchDisplayMode.SHOW` will show the search bar,
+                :attr:`SearchDisplayMode.HIDE` will hide the search bar, and :attr:`SearchDisplayMode.DEFAULT` will
+                use the default value configured by the user and system settings.
+
+        Returns:
+            a new table with the layout hints set
+
+        Raises:
+            DHError
+        """
+        try:
+            _j_layout_hint_builder = _JLayoutHintBuilder.get()
+
+            if front is not None:
+                _j_layout_hint_builder.atFront(to_sequence(front))
+
+            if back is not None:
+                _j_layout_hint_builder.atBack(to_sequence(back))
+
+            if freeze is not None:
+                _j_layout_hint_builder.freeze(to_sequence(freeze))
+
+            if hide is not None:
+                _j_layout_hint_builder.hide(to_sequence(hide))
+
+            if column_groups is not None:
+                for group in column_groups:
+                    _j_layout_hint_builder.columnGroup(group.get("name"), j_array_list(group.get("children")),
+                                                       group.get("color", ""))
+
+            if search_display_mode is not None:
+                _j_layout_hint_builder.setSearchBarAccess(search_display_mode.value)
+
+        except Exception as e:
+            raise DHError(e, "failed to create layout hints") from e
+
+        try:
+            return RollupTable(j_rollup_table=self.j_rollup_table.setLayoutHints(_j_layout_hint_builder.build()),
+                               include_constituents=self.include_constituents, aggs=self.aggs, by=self.by)
+        except Exception as e:
+            raise DHError(e, "failed to set layout hints on table") from e
+
 
 class TreeNodeOperationsRecorder(JObjectWrapper, _FormatOperationsRecorder,
                                  _SortOperationsRecorder, _FilterOperationsRecorder):
