@@ -6,11 +6,14 @@ package io.deephaven.json.jackson;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.json.InstantNumberValue;
+import io.deephaven.json.jackson.LongValueProcessor.ToLong;
+import io.deephaven.json.jackson.ObjectValueProcessor.ToObject;
 import io.deephaven.qst.type.Type;
 import io.deephaven.time.DateTimeUtils;
 
 import java.io.IOException;
 import java.math.BigInteger;
+import java.time.Instant;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -42,35 +45,36 @@ final class InstantNumberMixin extends Mixin<InstantNumberValue> {
 
     @Override
     public ValueProcessor processor(String context) {
-        return new LongValueProcessor(function());
+        return new LongValueProcessor(longFunction());
     }
 
     @Override
     RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
-        return new LongRepeaterImpl(function(), allowMissing, allowNull, Type.instantType().arrayType());
+        return new RepeaterGenericImpl<>(new ObjectImpl(), allowMissing, allowNull, null, null,
+                Type.instantType().arrayType());
     }
 
-    private LongValueProcessor.ToLong function() {
+    private LongValueProcessor.ToLong longFunction() {
         switch (options.format()) {
             case EPOCH_SECONDS:
-                return new Impl(9);
+                return new LongImpl(9);
             case EPOCH_MILLIS:
-                return new Impl(6);
+                return new LongImpl(6);
             case EPOCH_MICROS:
-                return new Impl(3);
+                return new LongImpl(3);
             case EPOCH_NANOS:
-                return new Impl(0);
+                return new LongImpl(0);
             default:
                 throw new IllegalStateException();
         }
     }
 
-    private class Impl implements LongValueProcessor.ToLong {
+    private class LongImpl implements LongValueProcessor.ToLong {
 
         private final int scaled;
         private final int mult;
 
-        Impl(int scaled) {
+        LongImpl(int scaled) {
             this.scaled = scaled;
             this.mult = BigInteger.valueOf(10).pow(scaled).intValueExact();
         }
@@ -121,6 +125,25 @@ final class InstantNumberMixin extends Mixin<InstantNumberValue> {
         public final long parseMissing(JsonParser parser) throws IOException {
             checkMissingAllowed(parser);
             return onMissing;
+        }
+    }
+
+    private class ObjectImpl implements ToObject<Instant> {
+
+        private final ToLong longImpl;
+
+        public ObjectImpl() {
+            this.longImpl = longFunction();
+        }
+
+        @Override
+        public Instant parseValue(JsonParser parser) throws IOException {
+            return DateTimeUtils.epochNanosToInstant(longImpl.parseValue(parser));
+        }
+
+        @Override
+        public Instant parseMissing(JsonParser parser) throws IOException {
+            return DateTimeUtils.epochNanosToInstant(longImpl.parseValue(parser));
         }
     }
 }

@@ -10,6 +10,7 @@ import io.deephaven.util.QueryConstants;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.List;
 
 import static io.deephaven.json.TestHelper.parse;
@@ -55,7 +56,9 @@ public class ObjectKvValueTest {
     void kvObjectKey() throws IOException {
         parse(ObjectKvValue.builder().key(InstantValue.standard()).value(SkipValue.lenient()).build(), List.of(
                 "{\"2009-02-13T23:31:30.123456788Z\": null, \"2009-02-13T23:31:30.123456789Z\": null}"),
-                ObjectChunk.chunkWrap(new Object[] {new long[] {1234567890123456788L, 1234567890123456789L}}));
+                ObjectChunk.chunkWrap(new Object[] {new Instant[] {
+                        Instant.parse("2009-02-13T23:31:30.123456788Z"),
+                        Instant.parse("2009-02-13T23:31:30.123456789Z")}}));
     }
 
     @Test

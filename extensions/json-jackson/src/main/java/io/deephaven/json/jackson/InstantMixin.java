@@ -7,10 +7,12 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.json.InstantValue;
 import io.deephaven.json.jackson.LongValueProcessor.ToLong;
+import io.deephaven.json.jackson.ObjectValueProcessor.ToObject;
 import io.deephaven.qst.type.Type;
 import io.deephaven.time.DateTimeUtils;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.time.temporal.ChronoField;
 import java.time.temporal.TemporalAccessor;
 import java.util.List;
@@ -66,7 +68,27 @@ final class InstantMixin extends Mixin<InstantValue> implements ToLong {
 
     @Override
     RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
-        return new LongRepeaterImpl(this, allowMissing, allowNull, Type.instantType().arrayType());
+        return new RepeaterGenericImpl<>(new ToObjectImpl(), allowMissing, allowNull, null, null,
+                Type.instantType().arrayType());
+    }
+
+    class ToObjectImpl implements ToObject<Instant> {
+        @Override
+        public Instant parseValue(JsonParser parser) throws IOException {
+            switch (parser.currentToken()) {
+                case VALUE_STRING:
+                case FIELD_NAME:
+                    return parseFromStringToInstant(parser);
+                case VALUE_NULL:
+                    return parseFromNullToInstant(parser);
+            }
+            throw unexpectedToken(parser);
+        }
+
+        @Override
+        public Instant parseMissing(JsonParser parser) throws IOException {
+            return parseFromMissingToInstant(parser);
+        }
     }
 
     private long parseFromString(JsonParser parser) throws IOException {
@@ -84,5 +106,19 @@ final class InstantMixin extends Mixin<InstantValue> implements ToLong {
     private long parseFromMissing(JsonParser parser) throws IOException {
         checkMissingAllowed(parser);
         return onMissing;
+    }
+
+    private Instant parseFromStringToInstant(JsonParser parser) throws IOException {
+        return Instant.from(options.dateTimeFormatter().parse(Parsing.textAsCharSequence(parser)));
+    }
+
+    private Instant parseFromNullToInstant(JsonParser parser) throws IOException {
+        checkNullAllowed(parser);
+        return options.onNull().orElse(null);
+    }
+
+    private Instant parseFromMissingToInstant(JsonParser parser) throws IOException {
+        checkMissingAllowed(parser);
+        return options.onMissing().orElse(null);
     }
 }

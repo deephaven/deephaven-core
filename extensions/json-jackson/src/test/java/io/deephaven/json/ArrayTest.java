@@ -4,11 +4,13 @@
 package io.deephaven.json;
 
 import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.json.InstantNumberValue.Format;
 import io.deephaven.util.QueryConstants;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Map;
 
 import static io.deephaven.json.TestHelper.parse;
@@ -78,7 +80,16 @@ public class ArrayTest {
         // ["2009-02-13T23:31:30.123456789Z", null]
         parse(InstantValue.standard().array(),
                 "[\"2009-02-13T23:31:30.123456789Z\", null]",
-                ObjectChunk.chunkWrap(new Object[] {new long[] {1234567890123456789L, QueryConstants.NULL_LONG}}));
+                ObjectChunk.chunkWrap(
+                        new Object[] {new Instant[] {Instant.parse("2009-02-13T23:31:30.123456789Z"), null}}));
+    }
+
+    @Test
+    void instantNumber() throws IOException {
+        // [1234567, null]
+        parse(Format.EPOCH_SECONDS.standard(false).array(),
+                "[1234567, null]",
+                ObjectChunk.chunkWrap(new Object[] {new Instant[] {Instant.ofEpochSecond(1234567), null}}));
     }
 
     @Test
