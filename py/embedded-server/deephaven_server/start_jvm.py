@@ -36,52 +36,21 @@ DEFAULT_JVM_PROPERTIES = {
     'logback.configurationFile': 'logback-minimal.xml',
 }
 DEFAULT_JVM_ARGS = [
+    # Disable the JVM's signal handling for interactive python consoles - if python will
+    # not be handling signals like ctrl-c (for KeyboardInterrupt), this should be safe to
+    # remove for a small performance gain.
+    '-Xrs',
+
     # Disable JIT in certain cases
     '-XX:+UnlockDiagnosticVMOptions',
     f"-XX:CompilerDirectivesFile={_compiler_directives()}",
     f"-XX:VMOptionsFile={_default_vmoptions()}",
 ]
 
-def _merge_with_default_jvm_args(jvm_args: Optional[List[str]] = None) -> List[str]:
-    """ Merge the default JVM args with the user-provided JVM args."""
-    if not jvm_args:
-        return DEFAULT_JVM_ARGS
-
-    result_args = DEFAULT_JVM_ARGS.copy()
-
-    # Remove any conflicting options
-    for jvm_arg in jvm_args:
-        try:
-            # -XX boolean options
-            if jvm_arg.startswith("-XX:+") or jvm_arg.startswith("-XX:-"):
-                opt = jvm_arg[5:]
-                result_args = [arg for arg in result_args if not arg.endswith(opt)]
-            # -XX numeric/string options
-            elif jvm_arg.startswith("-XX:"):
-                opt, val, *_ = jvm_arg[4:].split('=', 1)
-                result_args = [arg for arg in result_args if arg.startswith("-XX:") and opt != arg[4:].split('=', 1)[0]]
-            # -X options
-            elif jvm_arg.startswith("-X"):
-                opt = jvm_arg[2:].split(':', 1)[0]
-                result_args = [arg for arg in result_args if not arg.startswith("-X") or opt != arg[2:].split(':', 1)[0]]
-            # JVM system properties
-            elif jvm_arg.startswith("-D"):
-                opt, val = jvm_arg[2:].split('=', 1)
-                result_args = [arg for arg in result_args if not arg.startswith("-D") or opt != arg[2:].split('=', 1)[0]]
-            # JPMS - Java Platform Module System options
-            elif jvm_arg.startswith("--add-opens=") or jvm_arg.startswith("--add-exports="):
-                ...
-        except ValueError:
-            # Ignore any errors in parsing the JVM args to avoid unnecessary surprises in case a new JVM option format is added in the future
-            pass
-
-    # Append the user-provided JVM args to make sure they override the defaults
-    result_args.extend(jvm_args)
-    return result_args
-
 # Provide a util func to start the JVM, will use its own defaults if none are offered
 def start_jvm(
         jvm_args: Optional[List[str]] = None,
+        default_jvm_args: Optional[List[str]] = None,
         jvm_properties: Optional[Dict[str, str]] = None,
         java_home: Optional[str] = None,
         extra_classpath: Optional[List[str]] = None,
@@ -90,7 +59,8 @@ def start_jvm(
 ) -> None:
     """ This function uses the default DH property file to embed the Deephaven server and starts a Deephaven Python
     Script session. """
-    jvm_args = _merge_with_default_jvm_args(jvm_args=jvm_args)
+    default_jvm_args = default_jvm_args or DEFAULT_JVM_ARGS
+    jvm_args = default_jvm_args + jvm_args if jvm_args else default_jvm_args
 
     jvm_properties = jvm_properties or DEFAULT_JVM_PROPERTIES
     java_home = java_home or os.environ.get('JAVA_HOME', None)

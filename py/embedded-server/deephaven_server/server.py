@@ -120,7 +120,7 @@ class Server:
         port: Optional[int] = None,
         jvm_args: Optional[List[str]] = None,
         extra_classpath: Optional[List[str]] = None,
-        sig_handled_by: Literal["python", "java"] = "python",
+        default_jvm_args: Optional[List[str]] = None,
     ):
         """
         Creates a Deephaven embedded server. Only one instance can be created at this time.
@@ -128,12 +128,12 @@ class Server:
         Args:
             host (Optional[str]): The host to bind the server to, defaults to None, meaning local host.
             port (Optional[int]): The port to bind the server to, defaults to None, meaning 10000.
-            jvm_args (Optional[List[str]]): The JVM arguments to use. Defaults to None. Deephaven has a set of default
-                JVM arguments. When provided, the user's JVM arguments will be merged with the default JVM arguments. If
-                there are conflicting options, the user's JVM arguments will override the default JVM arguments.
-                TODO provide a list of default JVM arguments?
+            jvm_args (Optional[List[str]]): The common, user specific JVM arguments, such as JVM heap size, the
+                authentication handler to use, and other related JVM options. Defaults to None.
             extra_classpath (Optional[List[str]]): The extra classpath to use.
-            sig_handled_by (Literal["python", "java"]): The signal handling to be done by Python or Java, defaults to "Python".
+            default_jvm_args (Optional[List[str]]): The advanced JVM arguments to use instead of the default ones that
+                Deephaven recommends, such as a specific garbage collector and related tuning parameters, or whether to
+                let Python or Java to handle signals. Defaults to None.
         """
         # TODO deephaven-core#2453 consider providing @dataclass for arguments
 
@@ -145,15 +145,8 @@ class Server:
         if extra_classpath is None:
             extra_classpath = []
 
-        if sig_handled_by == "python":
-            # Disable the JVM's signal handling for interactive python consoles - if python will
-            # not be handling signals like ctrl-c (for KeyboardInterrupt), this should be safe to
-            # remove for a small performance gain.
-            jvm_args = jvm_args or []
-            jvm_args.append("-Xrs")
-
         # given the jvm args, ensure that the jvm has started
-        start_jvm(jvm_args=jvm_args, extra_classpath=extra_classpath)
+        start_jvm(jvm_args=jvm_args, default_jvm_args=default_jvm_args, extra_classpath=extra_classpath)
 
         # it is now safe to import jpy
         import jpy
