@@ -78,7 +78,7 @@ final class ByteMixin extends Mixin<ByteValue> implements ToByte {
         @Override
         public void processElementImpl(JsonParser parser, int index) throws IOException {
             final int newSize = index + 1;
-            final WritableByteChunk<?> chunk = this.chunk.ensureCapacityPreserve(newSize);
+            final WritableByteChunk<?> chunk = this.chunk.ensureCapacityPreserve(Maths.nextArrayCapacity(newSize));
             chunk.set(index, ByteMixin.this.parseValue(parser));
             chunk.setSize(newSize);
         }
@@ -86,7 +86,7 @@ final class ByteMixin extends Mixin<ByteValue> implements ToByte {
         @Override
         public void processElementMissingImpl(JsonParser parser, int index) throws IOException {
             final int newSize = index + 1;
-            final WritableByteChunk<?> chunk = this.chunk.ensureCapacityPreserve(newSize);
+            final WritableByteChunk<?> chunk = this.chunk.ensureCapacityPreserve(Maths.nextArrayCapacity(newSize));
             chunk.set(index, ByteMixin.this.parseMissing(parser));
             chunk.setSize(newSize);
         }

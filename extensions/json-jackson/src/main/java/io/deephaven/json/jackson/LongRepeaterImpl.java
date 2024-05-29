@@ -27,7 +27,7 @@ final class LongRepeaterImpl extends RepeaterProcessorBase<long[]> {
     @Override
     public void processElementImpl(JsonParser parser, int index) throws IOException {
         final int newSize = index + 1;
-        final WritableLongChunk<?> chunk = this.chunk.ensureCapacityPreserve(newSize);
+        final WritableLongChunk<?> chunk = this.chunk.ensureCapacityPreserve(Maths.nextArrayCapacity(newSize));
         chunk.set(index, toLong.parseValue(parser));
         chunk.setSize(newSize);
     }
@@ -35,7 +35,7 @@ final class LongRepeaterImpl extends RepeaterProcessorBase<long[]> {
     @Override
     public void processElementMissingImpl(JsonParser parser, int index) throws IOException {
         final int newSize = index + 1;
-        final WritableLongChunk<?> chunk = this.chunk.ensureCapacityPreserve(newSize);
+        final WritableLongChunk<?> chunk = this.chunk.ensureCapacityPreserve(Maths.nextArrayCapacity(newSize));
         chunk.set(index, toLong.parseMissing(parser));
         chunk.setSize(newSize);
     }
