@@ -22,7 +22,8 @@ def cli():
 @click.option("--port", default=None, type=int, help="The port to bind to.")
 @click.option("--jvm-args", default=None, help="The JVM arguments to use.")
 @click.option("--extra-classpath", default=None, help="The extra classpath to use.")
-def server(host, port, jvm_args, extra_classpath):
+@click.option("--sig-handled-by", type=click.Choice(["python", "java"]), default="python", help="The signal handling to be done by Python or Java.")
+def server(host, port, jvm_args, extra_classpath, sig_handled_by):
     """
     Start the Deephaven server.
     """
@@ -36,7 +37,7 @@ def server(host, port, jvm_args, extra_classpath):
         extra_classpath = ""
     extra_classpath = extra_classpath.split()
 
-    s = Server(host=host, port=port, jvm_args=jvm_args, extra_classpath=extra_classpath)
+    s = Server(host=host, port=port, jvm_args=jvm_args, extra_classpath=extra_classpath, sig_handled_by=sig_handled_by)
     s.start()
 
     target_url_or_default = s.server_config.target_url_or_default

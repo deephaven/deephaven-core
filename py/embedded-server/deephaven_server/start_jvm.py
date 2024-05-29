@@ -51,29 +51,31 @@ def _merge_with_default_jvm_args(jvm_args: Optional[List[str]] = None) -> List[s
 
     # Remove any conflicting options
     for jvm_arg in jvm_args:
-        # -XX boolean options
-        if jvm_arg.startswith("-XX:+") or jvm_arg.startswith("-XX:-"):
-            opt = jvm_arg[5:]
-            result_args = [arg for arg in result_args if not arg.endswith(opt)]
-            # result_args.append(jvm_arg)
-        # -XX numeric/string options
-        elif jvm_arg.startswith("-XX:"):
-            opt, val, *_ = jvm_arg[4:].split('=', 1)
-            result_args = [arg for arg in result_args if arg.startswith("-XX:") and opt != arg[4:].split('=', 1)[0]]
-            # result_args.append(jvm_arg)
-        # -X options
-        elif jvm_arg.startswith("-X"):
-            opt, val = jvm_arg[2:].split(':', 1)
-            result_args = [arg for arg in result_args if not arg.startswith("-X") or opt != arg[2:].split(':', 1)[0]]
-        # JVM system properties
-        elif jvm_arg.startswith("-D"):
-            opt, val = jvm_arg[2:].split('=', 1)
-            result_args = [arg for arg in result_args if not arg.startswith("-D") or opt != arg[2:].split('=', 1)[0]]
-        # JPMS - Java Platform Module System options
-        elif jvm_arg.startswith("--add-opens=") or jvm_arg.startswith("--add-exports="):
-            ...
+        try:
+            # -XX boolean options
+            if jvm_arg.startswith("-XX:+") or jvm_arg.startswith("-XX:-"):
+                opt = jvm_arg[5:]
+                result_args = [arg for arg in result_args if not arg.endswith(opt)]
+            # -XX numeric/string options
+            elif jvm_arg.startswith("-XX:"):
+                opt, val, *_ = jvm_arg[4:].split('=', 1)
+                result_args = [arg for arg in result_args if arg.startswith("-XX:") and opt != arg[4:].split('=', 1)[0]]
+            # -X options
+            elif jvm_arg.startswith("-X"):
+                opt = jvm_arg[2:].split(':', 1)[0]
+                result_args = [arg for arg in result_args if not arg.startswith("-X") or opt != arg[2:].split(':', 1)[0]]
+            # JVM system properties
+            elif jvm_arg.startswith("-D"):
+                opt, val = jvm_arg[2:].split('=', 1)
+                result_args = [arg for arg in result_args if not arg.startswith("-D") or opt != arg[2:].split('=', 1)[0]]
+            # JPMS - Java Platform Module System options
+            elif jvm_arg.startswith("--add-opens=") or jvm_arg.startswith("--add-exports="):
+                ...
+        except ValueError:
+            # Ignore any errors in parsing the JVM args to avoid unnecessary surprises in case a new JVM option format is added in the future
+            pass
 
-    # Append the user-provided JVM args
+    # Append the user-provided JVM args to make sure they override the defaults
     result_args.extend(jvm_args)
     return result_args
 
