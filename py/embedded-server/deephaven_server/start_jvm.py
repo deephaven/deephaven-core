@@ -6,6 +6,7 @@ import glob
 import itertools
 import os
 import pathlib
+from typing import Optional, List, Dict
 
 from deephaven_internal import jvm
 
@@ -35,41 +36,76 @@ DEFAULT_JVM_PROPERTIES = {
     'logback.configurationFile': 'logback-minimal.xml',
 }
 DEFAULT_JVM_ARGS = [
-    # Disable the JVM's signal handling for interactive python consoles - if python will
-    # not be handling signals like ctrl-c (for KeyboardInterrupt), this should be safe to
-    # remove for a small performance gain.
-    '-Xrs',
-
     # Disable JIT in certain cases
     '-XX:+UnlockDiagnosticVMOptions',
     f"-XX:CompilerDirectivesFile={_compiler_directives()}",
     f"-XX:VMOptionsFile={_default_vmoptions()}",
 ]
 
+def _merge_with_default_jvm_args(jvm_args: Optional[List[str]] = None) -> List[str]:
+    """ Merge the default JVM args with the user-provided JVM args."""
+    if not jvm_args:
+        return DEFAULT_JVM_ARGS
+
+    result_args = DEFAULT_JVM_ARGS.copy()
+
+    # Remove any conflicting options
+    for jvm_arg in jvm_args:
+        # -XX boolean options
+        if jvm_arg.startswith("-XX:+") or jvm_arg.startswith("-XX:-"):
+            opt = jvm_arg[5:]
+            result_args = [arg for arg in result_args if not arg.endswith(opt)]
+            # result_args.append(jvm_arg)
+        # -XX numeric/string options
+        elif jvm_arg.startswith("-XX:"):
+            opt, val, *_ = jvm_arg[4:].split('=', 1)
+            result_args = [arg for arg in result_args if arg.startswith("-XX:") and opt != arg[4:].split('=', 1)[0]]
+            # result_args.append(jvm_arg)
+        # -X options
+        elif jvm_arg.startswith("-X"):
+            opt, val = jvm_arg[2:].split(':', 1)
+            result_args = [arg for arg in result_args if not arg.startswith("-X") or opt != arg[2:].split(':', 1)[0]]
+        # JVM system properties
+        elif jvm_arg.startswith("-D"):
+            opt, val = jvm_arg[2:].split('=', 1)
+            result_args = [arg for arg in result_args if not arg.startswith("-D") or opt != arg[2:].split('=', 1)[0]]
+        # JPMS - Java Platform Module System options
+        elif jvm_arg.startswith("--add-opens=") or jvm_arg.startswith("--add-exports="):
+            ...
+
+    # Append the user-provided JVM args
+    result_args.extend(jvm_args)
+    return result_args
+
 # Provide a util func to start the JVM, will use its own defaults if none are offered
 def start_jvm(
-        jvm_args = None,
-        jvm_properties = None,
-        java_home = None,
-        extra_classpath = [],
-        propfile: str = None,
-        config = None):
+        jvm_args: Optional[List[str]] = None,
+        jvm_properties: Optional[Dict[str, str]] = None,
+        java_home: Optional[str] = None,
+        extra_classpath: Optional[List[str]] = None,
+        prop_file: str = None,
+        config = None,
+) -> None:
     """ This function uses the default DH property file to embed the Deephaven server and starts a Deephaven Python
     Script session. """
-    jvm_args = jvm_args or DEFAULT_JVM_ARGS
+    jvm_args = _merge_with_default_jvm_args(jvm_args=jvm_args)
+
     jvm_properties = jvm_properties or DEFAULT_JVM_PROPERTIES
     java_home = java_home or os.environ.get('JAVA_HOME', None)
 
     system_properties = dict()
-    if propfile:
+    if prop_file:
         # Build jvm system properties starting with defaults we accept as args
-        system_properties.update({ 'Configuration.rootFile': propfile })
+        system_properties.update({ 'Configuration.rootFile': prop_file})
 
     # Append user-created args, allowing them to override these values
     system_properties.update(jvm_properties)
 
     # Expand the classpath, so a user can resolve wildcards
-    expanded_classpath = list(itertools.chain.from_iterable(glob.iglob(e, recursive=True) for e in extra_classpath))
+    if extra_classpath is None:
+        expanded_classpath = []
+    else:
+        expanded_classpath = list(itertools.chain.from_iterable(glob.iglob(e, recursive=True) for e in extra_classpath))
 
     # The full classpath is the classpath needed for our server + the expanded extra classpath
     jvm_classpath = [str(jar) for jar in _jars()] + expanded_classpath

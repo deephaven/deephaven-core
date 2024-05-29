@@ -1,16 +1,15 @@
 #
 # Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
+""" This module supports embedding a Deephaven server in Python."""
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Literal
 import sys
 
 from .start_jvm import start_jvm
 
 # These classes are explicitly not JObjectWrapper, as that would require importing deephaven and jpy
 # before the JVM was running.
-
-
 class ServerConfig:
     """
     Represents the configuration of a Deephaven server.
@@ -70,6 +69,7 @@ class AuthenticationHandler:
         return list(self.j_authentication_handler.urls(target_url).toArray())
 
 
+
 class Server:
     """
     Represents a Deephaven server that can be created from Python.
@@ -120,19 +120,37 @@ class Server:
         port: Optional[int] = None,
         jvm_args: Optional[List[str]] = None,
         extra_classpath: Optional[List[str]] = None,
+        sig_handled_by: Literal["python", "java"] = "python",
     ):
         """
         Creates a Deephaven embedded server. Only one instance can be created at this time.
+
+        Args:
+            host (Optional[str]): The host to bind the server to, defaults to None, meaning local host.
+            port (Optional[int]): The port to bind the server to, defaults to None, meaning 10000.
+            jvm_args (Optional[List[str]]): The JVM arguments to use. Defaults to None. Deephaven has a set of default
+                JVM arguments. When provided, the user's JVM arguments will be merged with the default JVM arguments. If
+                there are conflicting options, the user's JVM arguments will override the default JVM arguments.
+                TODO provide a list of default JVM arguments?
+            extra_classpath (Optional[List[str]]): The extra classpath to use.
+            sig_handled_by (Literal["python", "java"]): The signal handling to be done by Python or Java, defaults to "Python".
         """
         # TODO deephaven-core#2453 consider providing @dataclass for arguments
 
         # If the server was already created, emit an error to warn away from trying again
         if Server.instance is not None:
             from deephaven import DHError
-
             raise DHError("Cannot create more than one instance of the server")
+
         if extra_classpath is None:
             extra_classpath = []
+
+        if sig_handled_by == "python":
+            # Disable the JVM's signal handling for interactive python consoles - if python will
+            # not be handling signals like ctrl-c (for KeyboardInterrupt), this should be safe to
+            # remove for a small performance gain.
+            jvm_args = jvm_args or []
+            jvm_args.append("-Xrs")
 
         # given the jvm args, ensure that the jvm has started
         start_jvm(jvm_args=jvm_args, extra_classpath=extra_classpath)
