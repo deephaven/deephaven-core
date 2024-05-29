@@ -10,13 +10,13 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.json.ObjectField;
 import io.deephaven.json.ObjectValue;
+import io.deephaven.json.StringValue;
 import io.deephaven.json.TypedObjectValue;
 import io.deephaven.json.jackson.Exceptions.ValueAwareException;
 import io.deephaven.qst.type.Type;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -24,11 +24,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.TreeSet;
 import java.util.stream.Stream;
 
 final class TypedObjectMixin extends Mixin<TypedObjectValue> {
 
+    private final TreeSet<String> typeFieldAliases;
     private final Map<ObjectField, Mixin<?>> sharedFields;
     private final Map<String, ObjectMixin> combinedFields;
     private final int numSharedColumns;
@@ -36,6 +37,10 @@ final class TypedObjectMixin extends Mixin<TypedObjectValue> {
 
     public TypedObjectMixin(TypedObjectValue options, JsonFactory factory) {
         super(factory, options);
+        if (!(options.typeField().options() instanceof StringValue)) {
+            throw new IllegalArgumentException("Only string-valued type fields are currently supported");
+        }
+        typeFieldAliases = options.typeField().caseSensitive() ? null : new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
         {
             final LinkedHashMap<ObjectField, Mixin<?>> map = new LinkedHashMap<>(options.sharedFields().size());
             for (ObjectField sharedField : options.sharedFields()) {
@@ -45,25 +50,25 @@ final class TypedObjectMixin extends Mixin<TypedObjectValue> {
         }
         {
             final LinkedHashMap<String, ObjectMixin> map = new LinkedHashMap<>(options.objects().size());
-            for (Entry<String, ObjectValue> e : options.objects().entrySet()) {
-                map.put(e.getKey(), new ObjectMixin(combinedObject(e.getValue()), factory));
+            for (Entry<Object, ObjectValue> e : options.objects().entrySet()) {
+                map.put((String) e.getKey(), new ObjectMixin(combinedObject(e.getValue()), factory));
             }
             combinedFields = Collections.unmodifiableMap(map);
         }
-        numSharedColumns = sharedFields.values().stream().mapToInt(Mixin::numColumns).sum();
+        numSharedColumns = sharedFields.values().stream().mapToInt(Mixin::outputSize).sum();
         numSpecificColumns =
-                combinedFields.values().stream().mapToInt(ObjectMixin::numColumns).map(x -> x - numSharedColumns).sum();
+                combinedFields.values().stream().mapToInt(ObjectMixin::outputSize).map(x -> x - numSharedColumns).sum();
     }
 
     @Override
-    public int numColumns() {
+    public int outputSize() {
         return 1 + numSharedColumns + numSpecificColumns;
     }
 
     @Override
     public Stream<List<String>> paths() {
         return Stream.concat(
-                Stream.of(List.of(options.typeFieldName())),
+                Stream.of(List.of(options.typeField().name())),
                 Stream.concat(
                         prefixWithKeys(sharedFields),
                         prefixWithKeysAndSkip(combinedFields, numSharedColumns)));
@@ -109,15 +114,25 @@ final class TypedObjectMixin extends Mixin<TypedObjectValue> {
                 .build();
     }
 
+    private boolean matchesTypeField(String name) {
+        if (options.typeField().caseSensitive()) {
+            return options.typeField().name().equals(name) || options.typeField().aliases().contains(name);
+        } else {
+            return options.typeField().name().equalsIgnoreCase(name) || typeFieldAliases.contains(name);
+        }
+    }
+
     private String parseTypeField(JsonParser parser) throws IOException {
-        final String actualFieldName = parser.currentName();
-        if (!options.typeFieldName().equals(actualFieldName)) {
+        final String firstFieldName = parser.currentName();
+        if (!matchesTypeField(firstFieldName)) {
             throw new ValueAwareException(String.format("Expected the first field to be '%s', is '%s'",
-                    options.typeFieldName(), actualFieldName), parser.currentLocation(), options);
+                    options.typeField().name(), firstFieldName), parser.currentLocation(), options);
         }
         switch (parser.nextToken()) {
             case VALUE_STRING:
             case FIELD_NAME:
+                return parser.getText();
+            case VALUE_NUMBER_INT:
                 return parser.getText();
             case VALUE_NULL:
                 return null;
@@ -198,7 +213,7 @@ final class TypedObjectMixin extends Mixin<TypedObjectValue> {
 
         @Override
         public int numColumns() {
-            return TypedObjectMixin.this.numColumns();
+            return TypedObjectMixin.this.outputSize();
         }
 
         @Override

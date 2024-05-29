@@ -21,7 +21,7 @@ final class SkipMixin extends Mixin<SkipValue> implements ValueProcessor {
     }
 
     @Override
-    public int numColumns() {
+    public int outputSize() {
         return 0;
     }
 

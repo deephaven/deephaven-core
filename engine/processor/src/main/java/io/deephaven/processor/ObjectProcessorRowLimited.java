@@ -49,8 +49,8 @@ final class ObjectProcessorRowLimited<T> implements ObjectProcessor<T> {
     }
 
     @Override
-    public int numOutputs() {
-        return delegate.numOutputs();
+    public int outputSize() {
+        return delegate.outputSize();
     }
 
     @Override

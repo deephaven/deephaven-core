@@ -22,7 +22,7 @@ final class LocalDateMixin extends Mixin<LocalDateValue> implements ToObject<Loc
     }
 
     @Override
-    public int numColumns() {
+    public int outputSize() {
         return 1;
     }
 

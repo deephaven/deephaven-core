@@ -4,11 +4,13 @@
 package io.deephaven.json;
 
 import io.deephaven.chunk.DoubleChunk;
+import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.json.jackson.JacksonProvider;
 import io.deephaven.qst.type.Type;
 import io.deephaven.util.QueryConstants;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -42,12 +44,13 @@ public class TypedObjectValueTest {
             .build();
 
     private static final TypedObjectValue QUOTE_OR_TRADE_OBJECT =
-            TypedObjectValue.builder("type", new LinkedHashMap<>() {
+            TypedObjectValue.builder(new LinkedHashMap<>() {
                 {
                     put("quote", QUOTE_OBJECT);
                     put("trade", TRADE_OBJECT);
                 }
             })
+                    .typeFieldName("type")
                     .onNull("<null>")
                     .onMissing("<missing>")
                     .build();
@@ -174,6 +177,37 @@ public class TypedObjectValueTest {
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Array not expected");
         }
+    }
+
+    // Disabled; this may be a feature we want to spec out in the future
+    @Test
+    @Disabled
+    void intAsDiscriminator() throws IOException {
+        // Note: need to pass
+        final TypedObjectValue tov = TypedObjectValue.builder(new LinkedHashMap<>() {
+            {
+                put(1, QUOTE_OBJECT);
+                put(2, TRADE_OBJECT);
+            }
+        }).typeField(ObjectField.of("id", IntValue.standard())).build();
+
+        parse(tov, List.of(
+                "{\"id\": 1, \"symbol\": {\"name\": \"foo\", \"id\": 42}, \"quote\":{\"bid\": 1.01, \"ask\": 1.05}}",
+                "{\"id\": 2, \"symbol\": {\"name\": \"bar\", \"id\": 43}, \"price\": 42.42, \"size\": 123}",
+                "{\"id\": 3}",
+                "{\"id\": 4, \"symbol\": {\"name\": \"bar\", \"id\": 43}, \"price\": 42.42, \"size\": 123}"),
+                IntChunk.chunkWrap(new int[] {1, 2, 3, 4}), // id
+                ObjectChunk.chunkWrap(new String[] {"foo", "bar", null, null}), // symbol/symbol
+                LongChunk.chunkWrap(new long[] {42, 43, QueryConstants.NULL_LONG, QueryConstants.NULL_LONG}), // symbol/symbol_id
+                DoubleChunk.chunkWrap(new double[] {1.01, QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE,
+                        QueryConstants.NULL_DOUBLE}), // quote: quote/bid
+                DoubleChunk.chunkWrap(new double[] {1.05, QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE,
+                        QueryConstants.NULL_DOUBLE}), // quote: quote/ask
+                DoubleChunk.chunkWrap(new double[] {QueryConstants.NULL_DOUBLE, 42.42, QueryConstants.NULL_DOUBLE,
+                        QueryConstants.NULL_DOUBLE}), // trade: price
+                DoubleChunk.chunkWrap(new double[] {QueryConstants.NULL_DOUBLE, 123, QueryConstants.NULL_DOUBLE,
+                        QueryConstants.NULL_DOUBLE})); // trade: size
+
     }
 
     @Test

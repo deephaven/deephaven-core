@@ -20,7 +20,7 @@ final class LongMixin extends Mixin<LongValue> implements LongValueProcessor.ToL
     }
 
     @Override
-    public int numColumns() {
+    public int outputSize() {
         return 1;
     }
 

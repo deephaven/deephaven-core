@@ -21,7 +21,7 @@ final class BigDecimalMixin extends Mixin<BigDecimalValue> implements ToObject<B
     }
 
     @Override
-    public int numColumns() {
+    public int outputSize() {
         return 1;
     }
 

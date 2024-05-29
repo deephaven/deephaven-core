@@ -37,11 +37,11 @@ final class TupleMixin extends Mixin<TupleValue> {
             map.put(e.getKey(), Mixin.of(e.getValue(), factory));
         }
         mixins = Collections.unmodifiableMap(map);
-        numColumns = mixins.values().stream().mapToInt(Mixin::numColumns).sum();
+        numColumns = mixins.values().stream().mapToInt(Mixin::outputSize).sum();
     }
 
     @Override
-    public int numColumns() {
+    public int outputSize() {
         return numColumns;
     }
 
@@ -68,12 +68,12 @@ final class TupleMixin extends Mixin<TupleValue> {
         int ix = 0;
         for (Entry<String, Mixin<?>> e : mixins.entrySet()) {
             final Mixin<?> mixin = e.getValue();
-            final int numTypes = mixin.numColumns();
+            final int numTypes = mixin.outputSize();
             final ValueProcessor processor = mixin.processor(context + "[" + e.getKey() + "]");
             processors.add(processor);
             ix += numTypes;
         }
-        if (ix != numColumns()) {
+        if (ix != outputSize()) {
             throw new IllegalStateException();
         }
         return new TupleProcessor(processors);
@@ -85,12 +85,12 @@ final class TupleMixin extends Mixin<TupleValue> {
         int ix = 0;
         for (Entry<String, Mixin<?>> e : mixins.entrySet()) {
             final Mixin<?> mixin = e.getValue();
-            final int numTypes = mixin.numColumns();
+            final int numTypes = mixin.outputSize();
             final RepeaterProcessor processor = mixin.repeaterProcessor(allowMissing, allowNull);
             processors.add(processor);
             ix += numTypes;
         }
-        if (ix != numColumns()) {
+        if (ix != outputSize()) {
             throw new IllegalStateException();
         }
         return new TupleArrayProcessor(processors);
@@ -158,11 +158,18 @@ final class TupleMixin extends Mixin<TupleValue> {
 
         private void parseFromMissing(JsonParser parser) throws IOException {
             checkMissingAllowed(parser);
+            int ix = 0;
             // Note: we are treating a missing tuple the same as a tuple of missing objects (which, is technically
             // impossible w/ native json, but it's the semantics we are exposing).
             // <missing> ~= [<missing>, ..., <missing>]
             for (ValueProcessor value : values) {
-                value.processMissing(parser);
+                try {
+                    value.processMissing(parser);
+                } catch (IOException | RuntimeException e) {
+                    throw new ValueAwareException(String.format("Unable to process tuple ix %d", ix),
+                            parser.currentLocation(), e, options);
+                }
+                ++ix;
             }
         }
     }
@@ -170,7 +177,6 @@ final class TupleMixin extends Mixin<TupleValue> {
     final class TupleArrayProcessor extends ContextAwareDelegateBase implements RepeaterProcessor, Context {
         private final List<RepeaterProcessor> values;
         private final List<Context> contexts;
-        private int index;
 
         public TupleArrayProcessor(List<RepeaterProcessor> values) {
             super(values);
@@ -207,7 +213,6 @@ final class TupleMixin extends Mixin<TupleValue> {
             for (Context context : contexts) {
                 context.start(parser);
             }
-            index = 0;
         }
 
         @Override
@@ -222,7 +227,6 @@ final class TupleMixin extends Mixin<TupleValue> {
                 default:
                     throw Exceptions.notAllowed(parser);
             }
-            ++index;
         }
 
         private void processTuple(JsonParser parser) throws IOException {
@@ -250,7 +254,6 @@ final class TupleMixin extends Mixin<TupleValue> {
             for (Context context : contexts) {
                 context.processElementMissing(parser);
             }
-            ++index;
         }
 
         @Override

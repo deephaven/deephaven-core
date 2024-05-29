@@ -28,7 +28,7 @@ final class InstantMixin extends Mixin<InstantValue> implements ToLong {
     }
 
     @Override
-    public int numColumns() {
+    public int outputSize() {
         return 1;
     }
 

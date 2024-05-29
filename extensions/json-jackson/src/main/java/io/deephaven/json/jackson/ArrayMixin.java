@@ -24,8 +24,8 @@ final class ArrayMixin extends Mixin<ArrayValue> {
     }
 
     @Override
-    public int numColumns() {
-        return element.numColumns();
+    public int outputSize() {
+        return element.outputSize();
     }
 
     @Override

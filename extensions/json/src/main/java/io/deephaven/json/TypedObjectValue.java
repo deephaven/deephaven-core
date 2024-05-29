@@ -4,7 +4,6 @@
 package io.deephaven.json;
 
 import io.deephaven.annotations.BuildableStyle;
-import io.deephaven.json.ImmutableTypedObjectValue.Builder;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
@@ -50,16 +49,14 @@ public abstract class TypedObjectValue extends ValueRestrictedUniverseBase {
     }
 
     /**
-     * Creates a new builder with the {@link #typeFieldName()} set to {@code typeFieldName}, {@link #sharedFields()}
-     * inferred from {@code objects} based on {@link ObjectField} equality, and {@link #objects()} set to
-     * {@code objects} with the shared fields removed.
+     * Creates a new builder with {@link #sharedFields()} inferred from {@code objects} based on {@link ObjectField}
+     * equality, and {@link #objects()} set to {@code objects} with the shared fields removed.
      *
-     * @param typeFieldName the type field name
      * @param objects the objects
      * @return the builder
      */
-    public static Builder builder(String typeFieldName, Map<String, ObjectValue> objects) {
-        final Builder builder = builder().typeFieldName(typeFieldName);
+    public static Builder builder(Map<Object, ObjectValue> objects) {
+        final Builder builder = builder();
         final Set<ObjectField> sharedFields = new LinkedHashSet<>();
         final ObjectValue first = objects.values().iterator().next();
         for (ObjectField field : first.fields()) {
@@ -74,7 +71,7 @@ public abstract class TypedObjectValue extends ValueRestrictedUniverseBase {
                 sharedFields.add(field);
             }
         }
-        for (Entry<String, ObjectValue> e : objects.entrySet()) {
+        for (Entry<Object, ObjectValue> e : objects.entrySet()) {
             builder.putObjects(e.getKey(), without(e.getValue(), sharedFields));
         }
         return builder.addAllSharedFields(sharedFields);
@@ -88,8 +85,8 @@ public abstract class TypedObjectValue extends ValueRestrictedUniverseBase {
      * @param objects the objects
      * @return the typed object
      */
-    public static TypedObjectValue standard(String typeFieldName, Map<String, ObjectValue> objects) {
-        return builder(typeFieldName, objects).build();
+    public static TypedObjectValue standard(String typeFieldName, Map<Object, ObjectValue> objects) {
+        return builder(objects).typeFieldName(typeFieldName).build();
     }
 
     /**
@@ -100,20 +97,29 @@ public abstract class TypedObjectValue extends ValueRestrictedUniverseBase {
      * @param objects the objects
      * @return the typed object
      */
-    public static TypedObjectValue strict(String typeFieldName, Map<String, ObjectValue> objects) {
-        return builder(typeFieldName, objects)
+    public static TypedObjectValue strict(String typeFieldName, Map<Object, ObjectValue> objects) {
+        return builder(objects)
+                .typeFieldName(typeFieldName)
                 .allowUnknownTypes(false)
                 .allowMissing(false)
                 .allowedTypes(JsonValueTypes.object())
                 .build();
     }
 
-    public abstract String typeFieldName();
+    /**
+     * The type field.
+     */
+    public abstract ObjectField typeField();
 
+    /**
+     * The shared fields.
+     */
     public abstract Set<ObjectField> sharedFields();
 
-    // canonical name
-    public abstract Map<String, ObjectValue> objects();
+    /**
+     * The discriminated objects.
+     */
+    public abstract Map<Object, ObjectValue> objects();
 
     /**
      * If unknown fields are allowed. By default is {@code true}.
@@ -156,7 +162,11 @@ public abstract class TypedObjectValue extends ValueRestrictedUniverseBase {
 
     public interface Builder extends Value.Builder<TypedObjectValue, Builder> {
 
-        Builder typeFieldName(String typeFieldName);
+        default Builder typeFieldName(String typeFieldName) {
+            return typeField(ObjectField.of(typeFieldName, StringValue.standard()));
+        }
+
+        Builder typeField(ObjectField typeField);
 
         Builder addSharedFields(ObjectField element);
 
@@ -164,7 +174,7 @@ public abstract class TypedObjectValue extends ValueRestrictedUniverseBase {
 
         Builder addAllSharedFields(Iterable<? extends ObjectField> elements);
 
-        Builder putObjects(String key, ObjectValue value);
+        Builder putObjects(Object key, ObjectValue value);
 
         Builder allowUnknownTypes(boolean allowUnknownTypes);
 

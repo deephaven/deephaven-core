@@ -27,16 +27,16 @@ final class ObjectProcessorStrict<T> implements ObjectProcessor<T> {
     ObjectProcessorStrict(ObjectProcessor<T> delegate) {
         this.delegate = Objects.requireNonNull(delegate);
         this.outputTypes = List.copyOf(delegate.outputTypes());
-        if (delegate.numOutputs() != outputTypes.size()) {
+        if (delegate.outputSize() != outputTypes.size()) {
             throw new IllegalArgumentException(
-                    String.format("Inconsistent size. delegate.numOutputs()=%d, delegate.outputTypes().size()=%d",
-                            delegate.numOutputs(), outputTypes.size()));
+                    String.format("Inconsistent size. delegate.outputSize()=%d, delegate.outputTypes().size()=%d",
+                            delegate.outputSize(), outputTypes.size()));
         }
     }
 
     @Override
-    public int numOutputs() {
-        return delegate.numOutputs();
+    public int outputSize() {
+        return delegate.outputSize();
     }
 
     @Override
@@ -50,10 +50,10 @@ final class ObjectProcessorStrict<T> implements ObjectProcessor<T> {
 
     @Override
     public void processAll(ObjectChunk<? extends T, ?> in, List<WritableChunk<?>> out) {
-        final int numColumns = delegate.numOutputs();
+        final int numColumns = delegate.outputSize();
         if (numColumns != out.size()) {
             throw new IllegalArgumentException(String.format(
-                    "Improper number of out chunks. Expected delegate.outputTypes().size() == out.size(). delegate.outputTypes().size()=%d, out.size()=%d",
+                    "Improper number of out chunks. Expected delegate.outputSize() == out.size(). delegate.outputSize()=%d, out.size()=%d",
                     numColumns, out.size()));
         }
         final List<Type<?>> delegateOutputTypes = delegate.outputTypes();

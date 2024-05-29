@@ -146,7 +146,7 @@ public interface ObjectProcessor<T> {
      *
      * @return the number of outputs
      */
-    default int numOutputs() {
+    default int outputSize() {
         return outputTypes().size();
     }
 
@@ -200,11 +200,11 @@ public interface ObjectProcessor<T> {
 
         /**
          * The number of output types for the processors. Equivalent to the processors'
-         * {@link ObjectProcessor#numOutputs()}.
+         * {@link ObjectProcessor#outputSize()}.
          *
          * @return the number of output types
          */
-        int size();
+        int outputSize();
 
         /**
          * Creates an object processor that can process the {@code inputType}. This will successfully create a processor

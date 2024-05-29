@@ -20,7 +20,7 @@ final class AnyMixin extends Mixin<AnyValue> {
     }
 
     @Override
-    public int numColumns() {
+    public int outputSize() {
         return 1;
     }
 

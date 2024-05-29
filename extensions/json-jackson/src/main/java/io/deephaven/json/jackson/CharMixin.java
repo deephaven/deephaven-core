@@ -23,7 +23,7 @@ final class CharMixin extends Mixin<CharValue> implements ToChar {
     }
 
     @Override
-    public int numColumns() {
+    public int outputSize() {
         return 1;
     }
 

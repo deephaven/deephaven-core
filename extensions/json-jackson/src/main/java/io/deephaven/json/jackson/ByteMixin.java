@@ -23,7 +23,7 @@ final class ByteMixin extends Mixin<ByteValue> implements ToByte {
     }
 
     @Override
-    public int numColumns() {
+    public int outputSize() {
         return 1;
     }
 

@@ -20,7 +20,7 @@ final class StringMixin extends Mixin<StringValue> implements ToObject<String> {
     }
 
     @Override
-    public int numColumns() {
+    public int outputSize() {
         return 1;
     }
 

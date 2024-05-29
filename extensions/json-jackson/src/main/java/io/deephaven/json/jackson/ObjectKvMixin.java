@@ -30,18 +30,18 @@ final class ObjectKvMixin extends Mixin<ObjectKvValue> {
     }
 
     @Override
-    public int numColumns() {
-        return key.numColumns() + value.numColumns();
+    public int outputSize() {
+        return key.outputSize() + value.outputSize();
     }
 
     @Override
     public Stream<List<String>> paths() {
         final Stream<List<String>> keyPath =
-                key.numColumns() == 1 && key.paths().findFirst().orElseThrow().isEmpty()
+                key.outputSize() == 1 && key.paths().findFirst().orElseThrow().isEmpty()
                         ? Stream.of(List.of("Key"))
                         : key.paths();
         final Stream<List<String>> valuePath =
-                value.numColumns() == 1 && value.paths().findFirst().orElseThrow().isEmpty()
+                value.outputSize() == 1 && value.paths().findFirst().orElseThrow().isEmpty()
                         ? Stream.of(List.of("Value"))
                         : value.paths();
         return Stream.concat(keyPath, valuePath);

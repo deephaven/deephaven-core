@@ -23,7 +23,7 @@ final class ShortMixin extends Mixin<ShortValue> implements ToShort {
     }
 
     @Override
-    public int numColumns() {
+    public int outputSize() {
         return 1;
     }
 

@@ -103,7 +103,7 @@ public class ObjectProcessorStrictTest {
     }
 
     @Test
-    public void testNotEnoughOutputNumOutputs() {
+    public void testNotEnoughOutputOutputSize() {
         ObjectProcessor<Object> delegate = ObjectProcessor.noop(List.of(Type.intType()), false);
         ObjectProcessor<Object> strict = ObjectProcessor.strict(delegate);
         try (
@@ -173,7 +173,7 @@ public class ObjectProcessorStrictTest {
             private final List<Type<?>> outputTypes = new ArrayList<>(List.of(Type.intType()));
 
             @Override
-            public int numOutputs() {
+            public int outputSize() {
                 return 1;
             }
 
@@ -227,11 +227,11 @@ public class ObjectProcessorStrictTest {
     }
 
     @Test
-    public void testBadDelegateNumOutputs() {
+    public void testBadDelegateOutputSize() {
         try {
             ObjectProcessor.strict(new ObjectProcessor<>() {
                 @Override
-                public int numOutputs() {
+                public int outputSize() {
                     return 2;
                 }
 
@@ -248,7 +248,7 @@ public class ObjectProcessorStrictTest {
             failBecauseExceptionWasNotThrown(IllegalAccessException.class);
         } catch (IllegalArgumentException e) {
             assertThat(e).hasMessageContaining(
-                    "Inconsistent size. delegate.numOutputs()=2, delegate.outputTypes().size()=1");
+                    "Inconsistent size. delegate.outputSize()=2, delegate.outputTypes().size()=1");
         }
     }
 }

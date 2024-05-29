@@ -24,7 +24,7 @@ final class IntMixin extends Mixin<IntValue> implements ToInt {
     }
 
     @Override
-    public int numColumns() {
+    public int outputSize() {
         return 1;
     }
 

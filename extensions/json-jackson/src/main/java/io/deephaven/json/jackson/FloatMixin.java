@@ -24,7 +24,7 @@ final class FloatMixin extends Mixin<FloatValue> implements ToFloat {
     }
 
     @Override
-    public int numColumns() {
+    public int outputSize() {
         return 1;
     }
 

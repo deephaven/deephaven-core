@@ -26,7 +26,7 @@ final class InstantNumberMixin extends Mixin<InstantNumberValue> {
     }
 
     @Override
-    public int numColumns() {
+    public int outputSize() {
         return 1;
     }
 

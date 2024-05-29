@@ -24,7 +24,7 @@ final class DoubleMixin extends Mixin<DoubleValue> implements ToDouble {
     }
 
     @Override
-    public int numColumns() {
+    public int outputSize() {
         return 1;
     }
 

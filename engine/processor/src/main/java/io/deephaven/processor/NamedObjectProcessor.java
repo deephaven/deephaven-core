@@ -28,14 +28,6 @@ public abstract class NamedObjectProcessor<T> {
         return NamedObjectProcessor.<T>builder().processor(processor).addAllNames(names).build();
     }
 
-    public static <T> NamedObjectProcessor<T> prefix(ObjectProcessor<T> processor, String prefix) {
-        final int size = processor.numOutputs();
-        if (size == 1) {
-            return of(processor, prefix);
-        }
-        return of(processor, IntStream.range(0, size).mapToObj(ix -> prefix + "_" + ix).collect(Collectors.toList()));
-    }
-
     /**
      * The name for each output of {@link #processor()}.
      */
@@ -85,10 +77,10 @@ public abstract class NamedObjectProcessor<T> {
 
     @Check
     final void checkSizes() {
-        if (names().size() != processor().numOutputs()) {
+        if (names().size() != processor().outputSize()) {
             throw new IllegalArgumentException(
-                    String.format("Unmatched sizes; names().size()=%d, processor().size()=%d",
-                            names().size(), processor().numOutputs()));
+                    String.format("Unmatched sizes; names().size()=%d, processor().outputSize()=%d",
+                            names().size(), processor().outputSize()));
         }
     }
 }

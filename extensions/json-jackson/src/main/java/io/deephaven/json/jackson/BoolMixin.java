@@ -31,7 +31,7 @@ final class BoolMixin extends Mixin<BoolValue> implements ToByte {
     }
 
     @Override
-    public int numColumns() {
+    public int outputSize() {
         return 1;
     }
 

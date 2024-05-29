@@ -71,11 +71,6 @@ abstract class Mixin<T extends Value> implements JacksonProvider {
     }
 
     @Override
-    public final int size() {
-        return numColumns();
-    }
-
-    @Override
     public final List<Type<?>> outputTypes() {
         return outputTypesImpl().collect(Collectors.toList());
     }
@@ -164,8 +159,6 @@ abstract class Mixin<T extends Value> implements JacksonProvider {
     abstract ValueProcessor processor(String context);
 
     abstract RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull);
-
-    abstract int numColumns();
 
     abstract Stream<List<String>> paths();
 

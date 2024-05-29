@@ -39,7 +39,7 @@ final class ObjectMixin extends Mixin<ObjectValue> {
             map.put(field, Mixin.of(field.options(), factory));
         }
         mixins = Collections.unmodifiableMap(map);
-        numOutputs = mixins.values().stream().mapToInt(Mixin::numColumns).sum();
+        numOutputs = mixins.values().stream().mapToInt(Mixin::outputSize).sum();
     }
 
     @Override
@@ -48,7 +48,7 @@ final class ObjectMixin extends Mixin<ObjectValue> {
     }
 
     @Override
-    public int numColumns() {
+    public int outputSize() {
         return numOutputs;
     }
 
@@ -67,12 +67,12 @@ final class ObjectMixin extends Mixin<ObjectValue> {
         int ix = 0;
         for (ObjectField field : options.fields()) {
             final Mixin<?> opts = mixins.get(field);
-            final int numTypes = opts.numColumns();
+            final int numTypes = opts.outputSize();
             final ValueProcessor fieldProcessor = opts.processor(context + "/" + field.name());
             processors.put(field, fieldProcessor);
             ix += numTypes;
         }
-        if (ix != numColumns()) {
+        if (ix != outputSize()) {
             throw new IllegalStateException();
         }
         return processorImpl(processors, isDiscriminated);
@@ -84,12 +84,12 @@ final class ObjectMixin extends Mixin<ObjectValue> {
         int ix = 0;
         for (ObjectField field : options.fields()) {
             final Mixin<?> opts = mixins.get(field);
-            final int numTypes = opts.numColumns();
+            final int numTypes = opts.outputSize();
             final RepeaterProcessor fieldProcessor = opts.repeaterProcessor(allowMissing, allowNull);
             processors.put(field, fieldProcessor);
             ix += numTypes;
         }
-        if (ix != numColumns()) {
+        if (ix != outputSize()) {
             throw new IllegalStateException();
         }
         return new ObjectValueRepeaterProcessor(processors);

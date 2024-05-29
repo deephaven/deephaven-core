@@ -38,8 +38,10 @@ public class TypedObjectValueBuilderTest {
 
     @Test
     void builderHelper() {
-        final TypedObjectValue combined =
-                TypedObjectValue.builder("type", Map.of("quote", QUOTE, "trade", TRADE)).build();
+        final TypedObjectValue combined = TypedObjectValue
+                .builder(Map.of("quote", QUOTE, "trade", TRADE))
+                .typeFieldName("type")
+                .build();
         assertThat(combined).isEqualTo(COMBINED);
     }
 }
