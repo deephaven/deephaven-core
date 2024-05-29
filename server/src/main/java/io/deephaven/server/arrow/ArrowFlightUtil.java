@@ -505,7 +505,7 @@ public class ArrowFlightUtil {
                             description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
                     try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
-                        final SessionState.ExportObject<BaseTable<?>> tableExport =
+                        final SessionState.ExportObject<?> tableExport =
                                 ticketRouter.resolve(session, snapshotRequest.ticketAsByteBuffer(), "table");
 
                         final BarragePerformanceLog.SnapshotMetricsHelper metrics =
