@@ -9,9 +9,9 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.util.mutable.MutableInt;
-import io.deephaven.util.mutable.MutableLong;
 import it.unimi.dsi.fastutil.longs.Long2CharOpenHashMap;
+import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.commons.lang3.mutable.MutableLong;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -169,9 +169,9 @@ public class SortedCharGenerator implements TestDataGenerator<Character, Charact
         currentRowSet.forAllRowKeys(idx -> {
             final char value = currentValues.get(idx);
             // region check sorted assertion
-            Assert.leq(lastValue.get(), "lastValue", value, "value");
+            Assert.leq(lastValue.longValue(), "lastValue", value, "value");
             // endregion check sorted assertion
-            lastValue.set(value);
+            lastValue.setValue(value);
         });
     }
 }
