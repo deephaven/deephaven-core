@@ -94,8 +94,8 @@ public class ArrowFlightUtil {
                     .submit(() -> {
                         metrics.queueNanos = System.nanoTime() - queueStartTm;
                         Object export = tableExport.get();
-                        if (export instanceof UncoalescedTable) {
-                            export = ((UncoalescedTable<?>) export).coalesce();
+                        if (export instanceof Table) {
+                            export = ((Table) export).coalesce();
                         }
                         if (!(export instanceof BaseTable)) {
                             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Ticket ("
@@ -519,8 +519,8 @@ public class ArrowFlightUtil {
                                 .submit(() -> {
                                     metrics.queueNanos = System.nanoTime() - queueStartTm;
                                     Object export = tableExport.get();
-                                    if (export instanceof UncoalescedTable) {
-                                        export = ((UncoalescedTable<?>) export).coalesce();
+                                    if (export instanceof Table) {
+                                        export = ((Table) export).coalesce();
                                     }
                                     if (!(export instanceof BaseTable)) {
                                         throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Ticket ("
@@ -703,11 +703,8 @@ public class ArrowFlightUtil {
                 }
 
                 Object export = parent.get();
-                if (export instanceof UncoalescedTable) {
-                    export = ((UncoalescedTable<?>) export).coalesce();
-                }
-                if (export instanceof QueryTable) {
-                    final QueryTable table = (QueryTable) export;
+                if (export instanceof Table) {
+                    final QueryTable table = (QueryTable) ((Table) export).coalesce();
 
                     if (table.isFailed()) {
                         throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
