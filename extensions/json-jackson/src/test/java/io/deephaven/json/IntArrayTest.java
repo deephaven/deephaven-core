@@ -26,4 +26,42 @@ public class IntArrayTest {
     void standardNull() throws IOException {
         parse(IntValue.standard().array(), "null", ObjectChunk.chunkWrap(new Object[] {null}));
     }
+
+    @Test
+    void doubleNestedArray() throws IOException {
+        parse(IntValue.standard().array().array(), "[null, [], [42, 43]]",
+                ObjectChunk.chunkWrap(new Object[] {new int[][] {
+                        null,
+                        new int[] {},
+                        new int[] {42, 43}}}));
+    }
+
+    @Test
+    void tripleNestedArray() throws IOException {
+        parse(IntValue.standard().array().array().array(), "[null, [], [null, [], [42, 43]]]",
+                ObjectChunk.chunkWrap(new Object[] {new int[][][] {
+                        null,
+                        new int[][] {},
+                        new int[][] {
+                                null,
+                                new int[] {},
+                                new int[] {42, 43}}
+                }}));
+    }
+
+    @Test
+    void quadNestedArray() throws IOException {
+        parse(IntValue.standard().array().array().array().array(), "[null, [], [null, [], [null, [], [42, 43]]]]",
+                ObjectChunk.chunkWrap(new Object[] {new int[][][][] {
+                        null,
+                        new int[][][] {},
+                        new int[][][] {
+                                null,
+                                new int[][] {},
+                                new int[][] {
+                                        null,
+                                        new int[] {},
+                                        new int[] {42, 43}}
+                        }}}));
+    }
 }
