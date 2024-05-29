@@ -12,7 +12,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-public class JsStorageServiceTest extends AbstractAsyncGwtTestCase {
+public class JsStorageServiceTestGwt extends AbstractAsyncGwtTestCase {
 
     public void testStorageService() {
         setupDhInternal().then(ignore -> {
