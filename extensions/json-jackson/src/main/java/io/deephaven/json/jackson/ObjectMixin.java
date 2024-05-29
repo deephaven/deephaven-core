@@ -36,7 +36,7 @@ final class ObjectMixin extends Mixin<ObjectValue> {
         super(factory, options);
         final LinkedHashMap<ObjectField, Mixin<?>> map = new LinkedHashMap<>(options.fields().size());
         for (ObjectField field : options.fields()) {
-            map.put(field, mixin(field.options()));
+            map.put(field, Mixin.of(field.options(), factory));
         }
         mixins = Collections.unmodifiableMap(map);
         numOutputs = mixins.values().stream().mapToInt(Mixin::numColumns).sum();

@@ -39,7 +39,7 @@ final class TypedObjectMixin extends Mixin<TypedObjectValue> {
         {
             final LinkedHashMap<ObjectField, Mixin<?>> map = new LinkedHashMap<>(options.sharedFields().size());
             for (ObjectField sharedField : options.sharedFields()) {
-                map.put(sharedField, mixin(sharedField.options()));
+                map.put(sharedField, Mixin.of(sharedField.options(), factory));
             }
             sharedFields = Collections.unmodifiableMap(map);
         }

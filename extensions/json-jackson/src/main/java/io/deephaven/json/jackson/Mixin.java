@@ -161,10 +161,6 @@ abstract class Mixin<T extends Value> implements JacksonProvider {
         return new CharBufferIn();
     }
 
-    final Mixin<?> mixin(Value options) {
-        return of(options, factory);
-    }
-
     abstract ValueProcessor processor(String context);
 
     abstract RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull);

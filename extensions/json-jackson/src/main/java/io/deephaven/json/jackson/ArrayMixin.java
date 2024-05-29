@@ -20,7 +20,7 @@ final class ArrayMixin extends Mixin<ArrayValue> {
 
     public ArrayMixin(ArrayValue options, JsonFactory factory) {
         super(factory, options);
-        element = mixin(options.element());
+        element = Mixin.of(options.element(), factory);
     }
 
     @Override

@@ -34,7 +34,7 @@ final class TupleMixin extends Mixin<TupleValue> {
         super(factory, options);
         final LinkedHashMap<String, Mixin<?>> map = new LinkedHashMap<>(options.namedValues().size());
         for (Entry<String, Value> e : options.namedValues().entrySet()) {
-            map.put(e.getKey(), mixin(e.getValue()));
+            map.put(e.getKey(), Mixin.of(e.getValue(), factory));
         }
         mixins = Collections.unmodifiableMap(map);
         numColumns = mixins.values().stream().mapToInt(Mixin::numColumns).sum();

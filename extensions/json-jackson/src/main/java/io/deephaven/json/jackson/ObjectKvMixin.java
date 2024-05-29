@@ -20,8 +20,8 @@ final class ObjectKvMixin extends Mixin<ObjectKvValue> {
 
     public ObjectKvMixin(ObjectKvValue options, JsonFactory factory) {
         super(factory, options);
-        key = mixin(options.key());
-        value = mixin(options.value());
+        key = Mixin.of(options.key(), factory);
+        value = Mixin.of(options.value(), factory);
     }
 
     @Override
