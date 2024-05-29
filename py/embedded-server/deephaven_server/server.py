@@ -3,7 +3,7 @@
 #
 """ This module supports embedding a Deephaven server in Python."""
 
-from typing import Dict, List, Optional, Literal
+from typing import List, Optional
 import sys
 
 from .start_jvm import start_jvm
