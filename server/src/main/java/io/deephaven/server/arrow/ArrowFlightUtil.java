@@ -19,7 +19,6 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.UncoalescedTable;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
