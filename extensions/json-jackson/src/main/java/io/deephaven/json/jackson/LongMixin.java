@@ -5,11 +5,14 @@ package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.sized.SizedLongChunk;
 import io.deephaven.json.LongValue;
 import io.deephaven.qst.type.Type;
 import io.deephaven.util.QueryConstants;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -62,7 +65,37 @@ final class LongMixin extends Mixin<LongValue> implements LongValueProcessor.ToL
 
     @Override
     RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
-        return new LongRepeaterImpl(this, allowMissing, allowNull, Type.longType().arrayType());
+        return new LongRepeaterImpl(allowMissing, allowNull);
+    }
+
+    final class LongRepeaterImpl extends RepeaterProcessorBase<long[]> {
+        private final SizedLongChunk<?> chunk = new SizedLongChunk<>(0);
+
+        public LongRepeaterImpl(boolean allowMissing, boolean allowNull) {
+            super(allowMissing, allowNull, null, null, Type.longType().arrayType());
+        }
+
+        @Override
+        public void processElementImpl(JsonParser parser, int index) throws IOException {
+            final int newSize = index + 1;
+            final WritableLongChunk<?> chunk = this.chunk.ensureCapacityPreserve(Maths.nextArrayCapacity(newSize));
+            chunk.set(index, LongMixin.this.parseValue(parser));
+            chunk.setSize(newSize);
+        }
+
+        @Override
+        public void processElementMissingImpl(JsonParser parser, int index) throws IOException {
+            final int newSize = index + 1;
+            final WritableLongChunk<?> chunk = this.chunk.ensureCapacityPreserve(Maths.nextArrayCapacity(newSize));
+            chunk.set(index, LongMixin.this.parseMissing(parser));
+            chunk.setSize(newSize);
+        }
+
+        @Override
+        public long[] doneImpl(JsonParser parser, int length) {
+            final WritableLongChunk<?> chunk = this.chunk.get();
+            return Arrays.copyOfRange(chunk.array(), chunk.arrayOffset(), chunk.arrayOffset() + length);
+        }
     }
 
     private long parseFromInt(JsonParser parser) throws IOException {
