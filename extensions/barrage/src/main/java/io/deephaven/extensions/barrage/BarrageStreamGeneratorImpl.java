@@ -237,7 +237,7 @@ public class BarrageStreamGeneratorImpl implements
             final boolean reverseViewport,
             @Nullable final RowSet keyspaceViewport,
             @Nullable final BitSet subscribedColumns) {
-        return new SubView(this, options, isInitialSnapshot, viewport, reverseViewport, keyspaceViewport,
+        return new SubView(options, isInitialSnapshot, viewport, reverseViewport, keyspaceViewport,
                 subscribedColumns);
     }
 
@@ -253,8 +253,7 @@ public class BarrageStreamGeneratorImpl implements
         return getSubView(options, isInitialSnapshot, null, false, null, null);
     }
 
-    public static final class SubView implements View {
-        private final BarrageStreamGeneratorImpl generator;
+    public final class SubView implements View {
         private final BarrageSubscriptionOptions options;
         private final boolean isInitialSnapshot;
         private final RowSet viewport;
@@ -267,14 +266,12 @@ public class BarrageStreamGeneratorImpl implements
         private final RowSet addRowKeys;
         private final RowSet[] modRowOffsets;
 
-        public SubView(final BarrageStreamGeneratorImpl generator,
-                final BarrageSubscriptionOptions options,
+        public SubView(final BarrageSubscriptionOptions options,
                 final boolean isInitialSnapshot,
                 @Nullable final RowSet viewport,
                 final boolean reverseViewport,
                 @Nullable final RowSet keyspaceViewport,
                 @Nullable final BitSet subscribedColumns) {
-            this.generator = generator;
             this.options = options;
             this.isInitialSnapshot = isInitialSnapshot;
             this.viewport = viewport;
@@ -283,15 +280,15 @@ public class BarrageStreamGeneratorImpl implements
             this.subscribedColumns = subscribedColumns;
 
             if (keyspaceViewport != null) {
-                this.modRowOffsets = new WritableRowSet[generator.modColumnData.length];
+                this.modRowOffsets = new WritableRowSet[modColumnData.length];
             } else {
                 this.modRowOffsets = null;
             }
 
             // precompute the modified column indexes, and calculate total rows needed
             long numModRows = 0;
-            for (int ii = 0; ii < generator.modColumnData.length; ++ii) {
-                final ModColumnData mcd = generator.modColumnData[ii];
+            for (int ii = 0; ii < modColumnData.length; ++ii) {
+                final ModColumnData mcd = modColumnData[ii];
 
                 if (keyspaceViewport != null) {
                     try (WritableRowSet intersect = keyspaceViewport.intersect(mcd.rowsModified.original)) {
@@ -305,15 +302,15 @@ public class BarrageStreamGeneratorImpl implements
             this.numModRows = numModRows;
 
             if (keyspaceViewport != null) {
-                addRowKeys = keyspaceViewport.intersect(generator.rowsIncluded.original);
-                addRowOffsets = generator.rowsIncluded.original.invert(addRowKeys);
-            } else if (!generator.rowsAdded.original.equals(generator.rowsIncluded.original)) {
+                addRowKeys = keyspaceViewport.intersect(rowsIncluded.original);
+                addRowOffsets = rowsIncluded.original.invert(addRowKeys);
+            } else if (!rowsAdded.original.equals(rowsIncluded.original)) {
                 // there are scoped rows included in the chunks that need to be removed
-                addRowKeys = generator.rowsAdded.original.copy();
-                addRowOffsets = generator.rowsIncluded.original.invert(addRowKeys);
+                addRowKeys = rowsAdded.original.copy();
+                addRowOffsets = rowsIncluded.original.invert(addRowKeys);
             } else {
-                addRowKeys = generator.rowsAdded.original.copy();
-                addRowOffsets = RowSetFactory.flat(generator.rowsAdded.original.size());
+                addRowKeys = rowsAdded.original.copy();
+                addRowOffsets = RowSetFactory.flat(rowsAdded.original.size());
             }
 
             this.numAddRows = addRowOffsets.size();
@@ -322,7 +319,7 @@ public class BarrageStreamGeneratorImpl implements
         @Override
         public void forEachStream(Consumer<InputStream> visitor) throws IOException {
             final long startTm = System.nanoTime();
-            ByteBuffer metadata = generator.getSubscriptionMetadata(this);
+            ByteBuffer metadata = getSubscriptionMetadata();
             MutableLong bytesWritten = new MutableLong(0L);
 
             // batch size is maximum, will write fewer rows when needed
@@ -332,21 +329,21 @@ public class BarrageStreamGeneratorImpl implements
 
             if (numAddRows == 0 && numModRows == 0) {
                 // we still need to send a message containing metadata when there are no rows
-                final InputStream is = generator.getInputStream(
-                        this, 0, 0, actualBatchSize, metadata, generator::appendAddColumns);
+                final InputStream is = getInputStream(this, 0, 0, actualBatchSize, metadata,
+                        BarrageStreamGeneratorImpl.this::appendAddColumns);
                 bytesWritten.add(is.available());
                 visitor.accept(is);
-                generator.writeConsumer.onWrite(bytesWritten.get(), System.nanoTime() - startTm);
+                writeConsumer.onWrite(bytesWritten.get(), System.nanoTime() - startTm);
                 return;
             }
 
             // send the add batches (if any)
-            generator.processBatches(visitor, this, numAddRows, maxBatchSize, metadata, generator::appendAddColumns,
-                    bytesWritten);
+            processBatches(visitor, this, numAddRows, maxBatchSize, metadata,
+                    BarrageStreamGeneratorImpl.this::appendAddColumns, bytesWritten);
 
             // send the mod batches (if any) but don't send metadata twice
-            generator.processBatches(visitor, this, numModRows, maxBatchSize, numAddRows > 0 ? null : metadata,
-                    generator::appendModColumns, bytesWritten);
+            processBatches(visitor, this, numModRows, maxBatchSize, numAddRows > 0 ? null : metadata,
+                    BarrageStreamGeneratorImpl.this::appendModColumns, bytesWritten);
 
             // clean up the helper indexes
             addRowOffsets.close();
@@ -356,7 +353,7 @@ public class BarrageStreamGeneratorImpl implements
                     modViewport.close();
                 }
             }
-            generator.writeConsumer.onWrite(bytesWritten.get(), System.nanoTime() - startTm);
+            writeConsumer.onWrite(bytesWritten.get(), System.nanoTime() - startTm);
         }
 
         private int batchSize() {
@@ -394,6 +391,84 @@ public class BarrageStreamGeneratorImpl implements
             }
             return modRowOffsets[col];
         }
+
+        private ByteBuffer getSubscriptionMetadata() throws IOException {
+            final FlatBufferBuilder metadata = new FlatBufferBuilder();
+
+            int effectiveViewportOffset = 0;
+            if (isSnapshot && isViewport()) {
+                try (final RowSetGenerator viewportGen = new RowSetGenerator(viewport)) {
+                    effectiveViewportOffset = viewportGen.addToFlatBuffer(metadata);
+                }
+            }
+
+            int effectiveColumnSetOffset = 0;
+            if (isSnapshot && subscribedColumns != null) {
+                effectiveColumnSetOffset = new BitSetGenerator(subscribedColumns).addToFlatBuffer(metadata);
+            }
+
+            final int rowsAddedOffset;
+            if (isSnapshot && !isInitialSnapshot) {
+                // client's don't need/want to receive the full RowSet on every snapshot
+                rowsAddedOffset = EmptyRowSetGenerator.INSTANCE.addToFlatBuffer(metadata);
+            } else {
+                rowsAddedOffset = rowsAdded.addToFlatBuffer(metadata);
+            }
+
+            final int rowsRemovedOffset = rowsRemoved.addToFlatBuffer(metadata);
+            final int shiftDataOffset = shifted.addToFlatBuffer(metadata);
+
+            // Added Chunk Data:
+            int addedRowsIncludedOffset = 0;
+
+            // don't send `rowsIncluded` when identical to `rowsAdded`, client will infer they are the same
+            if (isSnapshot || !addRowKeys.equals(rowsAdded.original)) {
+                addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(addRowKeys, metadata);
+            }
+
+            // now add mod-column streams, and write the mod column indexes
+            TIntArrayList modOffsets = new TIntArrayList(modColumnData.length);
+            for (final ModColumnData mcd : modColumnData) {
+                final int myModRowOffset;
+                if (keyspaceViewport != null) {
+                    myModRowOffset = mcd.rowsModified.addToFlatBuffer(keyspaceViewport, metadata);
+                } else {
+                    myModRowOffset = mcd.rowsModified.addToFlatBuffer(metadata);
+                }
+                modOffsets.add(BarrageModColumnMetadata.createBarrageModColumnMetadata(metadata, myModRowOffset));
+            }
+
+            BarrageUpdateMetadata.startModColumnNodesVector(metadata, modOffsets.size());
+            modOffsets.forEachDescending(offset -> {
+                metadata.addOffset(offset);
+                return true;
+            });
+            final int nodesOffset = metadata.endVector();
+
+            BarrageUpdateMetadata.startBarrageUpdateMetadata(metadata);
+            BarrageUpdateMetadata.addIsSnapshot(metadata, isSnapshot);
+            BarrageUpdateMetadata.addFirstSeq(metadata, firstSeq);
+            BarrageUpdateMetadata.addLastSeq(metadata, lastSeq);
+            BarrageUpdateMetadata.addEffectiveViewport(metadata, effectiveViewportOffset);
+            BarrageUpdateMetadata.addEffectiveColumnSet(metadata, effectiveColumnSetOffset);
+            BarrageUpdateMetadata.addAddedRows(metadata, rowsAddedOffset);
+            BarrageUpdateMetadata.addRemovedRows(metadata, rowsRemovedOffset);
+            BarrageUpdateMetadata.addShiftData(metadata, shiftDataOffset);
+            BarrageUpdateMetadata.addAddedRowsIncluded(metadata, addedRowsIncludedOffset);
+            BarrageUpdateMetadata.addModColumnNodes(metadata, nodesOffset);
+            BarrageUpdateMetadata.addEffectiveReverseViewport(metadata, reverseViewport);
+            metadata.finish(BarrageUpdateMetadata.endBarrageUpdateMetadata(metadata));
+
+            final FlatBufferBuilder header = new FlatBufferBuilder();
+            final int payloadOffset = BarrageMessageWrapper.createMsgPayloadVector(header, metadata.dataBuffer());
+            BarrageMessageWrapper.startBarrageMessageWrapper(header);
+            BarrageMessageWrapper.addMagic(header, BarrageUtil.FLATBUFFER_MAGIC);
+            BarrageMessageWrapper.addMsgType(header, BarrageMessageType.BarrageUpdateMetadata);
+            BarrageMessageWrapper.addMsgPayload(header, payloadOffset);
+            header.finish(BarrageMessageWrapper.endBarrageMessageWrapper(header));
+
+            return header.dataBuffer().slice();
+        }
     }
 
     /**
@@ -412,7 +487,7 @@ public class BarrageStreamGeneratorImpl implements
             final boolean reverseViewport,
             @Nullable final RowSet keyspaceViewport,
             @Nullable final BitSet snapshotColumns) {
-        return new SnapshotView(this, options, viewport, reverseViewport, keyspaceViewport, snapshotColumns);
+        return new SnapshotView(options, viewport, reverseViewport, keyspaceViewport, snapshotColumns);
     }
 
     /**
@@ -426,8 +501,7 @@ public class BarrageStreamGeneratorImpl implements
         return getSnapshotView(options, null, false, null, null);
     }
 
-    public static final class SnapshotView implements View {
-        private final BarrageStreamGeneratorImpl generator;
+    public final class SnapshotView implements View {
         private final BarrageSnapshotOptions options;
         private final RowSet viewport;
         private final boolean reverseViewport;
@@ -436,13 +510,11 @@ public class BarrageStreamGeneratorImpl implements
         private final RowSet addRowKeys;
         private final RowSet addRowOffsets;
 
-        public SnapshotView(final BarrageStreamGeneratorImpl generator,
-                final BarrageSnapshotOptions options,
+        public SnapshotView(final BarrageSnapshotOptions options,
                 @Nullable final RowSet viewport,
                 final boolean reverseViewport,
                 @Nullable final RowSet keyspaceViewport,
                 @Nullable final BitSet subscribedColumns) {
-            this.generator = generator;
             this.options = options;
             this.viewport = viewport;
             this.reverseViewport = reverseViewport;
@@ -451,10 +523,10 @@ public class BarrageStreamGeneratorImpl implements
 
             // precompute add row offsets
             if (keyspaceViewport != null) {
-                addRowKeys = keyspaceViewport.intersect(generator.rowsIncluded.original);
-                addRowOffsets = generator.rowsIncluded.original.invert(addRowKeys);
+                addRowKeys = keyspaceViewport.intersect(rowsIncluded.original);
+                addRowOffsets = rowsIncluded.original.invert(addRowKeys);
             } else {
-                addRowKeys = generator.rowsAdded.original.copy();
+                addRowKeys = rowsAdded.original.copy();
                 addRowOffsets = RowSetFactory.flat(addRowKeys.size());
             }
 
@@ -464,7 +536,7 @@ public class BarrageStreamGeneratorImpl implements
         @Override
         public void forEachStream(Consumer<InputStream> visitor) throws IOException {
             final long startTm = System.nanoTime();
-            ByteBuffer metadata = generator.getSnapshotMetadata(this);
+            ByteBuffer metadata = getSnapshotMetadata();
             MutableLong bytesWritten = new MutableLong(0L);
 
             // batch size is maximum, will write fewer rows when needed
@@ -472,16 +544,16 @@ public class BarrageStreamGeneratorImpl implements
             final MutableInt actualBatchSize = new MutableInt();
             if (numAddRows == 0) {
                 // we still need to send a message containing metadata when there are no rows
-                visitor.accept(generator.getInputStream(
-                        this, 0, 0, actualBatchSize, metadata, generator::appendAddColumns));
+                visitor.accept(getInputStream(this, 0, 0, actualBatchSize, metadata,
+                        BarrageStreamGeneratorImpl.this::appendAddColumns));
             } else {
                 // send the add batches
-                generator.processBatches(visitor, this, numAddRows, maxBatchSize, metadata, generator::appendAddColumns,
-                        bytesWritten);
+                processBatches(visitor, this, numAddRows, maxBatchSize, metadata,
+                        BarrageStreamGeneratorImpl.this::appendAddColumns, bytesWritten);
             }
             addRowOffsets.close();
             addRowKeys.close();
-            generator.writeConsumer.onWrite(bytesWritten.get(), System.nanoTime() - startTm);
+            writeConsumer.onWrite(bytesWritten.get(), System.nanoTime() - startTm);
         }
 
         private int batchSize() {
@@ -515,6 +587,58 @@ public class BarrageStreamGeneratorImpl implements
         @Override
         public RowSet modRowOffsets(int col) {
             throw new UnsupportedOperationException("asked for mod row on SnapshotView");
+        }
+
+        private ByteBuffer getSnapshotMetadata() throws IOException {
+            final FlatBufferBuilder metadata = new FlatBufferBuilder();
+
+            int effectiveViewportOffset = 0;
+            if (isViewport()) {
+                try (final RowSetGenerator viewportGen = new RowSetGenerator(viewport)) {
+                    effectiveViewportOffset = viewportGen.addToFlatBuffer(metadata);
+                }
+            }
+
+            int effectiveColumnSetOffset = 0;
+            if (subscribedColumns != null) {
+                effectiveColumnSetOffset = new BitSetGenerator(subscribedColumns).addToFlatBuffer(metadata);
+            }
+
+            final int rowsAddedOffset = rowsAdded.addToFlatBuffer(metadata);
+
+            // no shifts in a snapshot, but need to provide a valid structure
+            final int shiftDataOffset = shifted.addToFlatBuffer(metadata);
+
+            // Added Chunk Data:
+            int addedRowsIncludedOffset = 0;
+            // don't send `rowsIncluded` when identical to `rowsAdded`, client will infer they are the same
+            if (isSnapshot || !addRowKeys.equals(rowsAdded.original)) {
+                addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(addRowKeys, metadata);
+            }
+
+            BarrageUpdateMetadata.startBarrageUpdateMetadata(metadata);
+            BarrageUpdateMetadata.addIsSnapshot(metadata, isSnapshot);
+            BarrageUpdateMetadata.addFirstSeq(metadata, firstSeq);
+            BarrageUpdateMetadata.addLastSeq(metadata, lastSeq);
+            BarrageUpdateMetadata.addEffectiveViewport(metadata, effectiveViewportOffset);
+            BarrageUpdateMetadata.addEffectiveColumnSet(metadata, effectiveColumnSetOffset);
+            BarrageUpdateMetadata.addAddedRows(metadata, rowsAddedOffset);
+            BarrageUpdateMetadata.addRemovedRows(metadata, 0);
+            BarrageUpdateMetadata.addShiftData(metadata, shiftDataOffset);
+            BarrageUpdateMetadata.addAddedRowsIncluded(metadata, addedRowsIncludedOffset);
+            BarrageUpdateMetadata.addModColumnNodes(metadata, 0);
+            BarrageUpdateMetadata.addEffectiveReverseViewport(metadata, reverseViewport);
+            metadata.finish(BarrageUpdateMetadata.endBarrageUpdateMetadata(metadata));
+
+            final FlatBufferBuilder header = new FlatBufferBuilder();
+            final int payloadOffset = BarrageMessageWrapper.createMsgPayloadVector(header, metadata.dataBuffer());
+            BarrageMessageWrapper.startBarrageMessageWrapper(header);
+            BarrageMessageWrapper.addMagic(header, BarrageUtil.FLATBUFFER_MAGIC);
+            BarrageMessageWrapper.addMsgType(header, BarrageMessageType.BarrageUpdateMetadata);
+            BarrageMessageWrapper.addMsgPayload(header, payloadOffset);
+            header.finish(BarrageMessageWrapper.endBarrageMessageWrapper(header));
+
+            return header.dataBuffer().slice();
         }
     }
 
@@ -979,136 +1103,6 @@ public class BarrageStreamGeneratorImpl implements
             }
         }
         return Math.toIntExact(numRows);
-    }
-
-    private ByteBuffer getSubscriptionMetadata(final SubView view) throws IOException {
-        final FlatBufferBuilder metadata = new FlatBufferBuilder();
-
-        int effectiveViewportOffset = 0;
-        if (isSnapshot && view.isViewport()) {
-            try (final RowSetGenerator viewportGen = new RowSetGenerator(view.viewport)) {
-                effectiveViewportOffset = viewportGen.addToFlatBuffer(metadata);
-            }
-        }
-
-        int effectiveColumnSetOffset = 0;
-        if (isSnapshot && view.subscribedColumns != null) {
-            effectiveColumnSetOffset = new BitSetGenerator(view.subscribedColumns).addToFlatBuffer(metadata);
-        }
-
-        final int rowsAddedOffset;
-        if (isSnapshot && !view.isInitialSnapshot) {
-            // client's don't need/want to receive the full RowSet on every snapshot
-            rowsAddedOffset = EmptyRowSetGenerator.INSTANCE.addToFlatBuffer(metadata);
-        } else {
-            rowsAddedOffset = rowsAdded.addToFlatBuffer(metadata);
-        }
-
-        final int rowsRemovedOffset = rowsRemoved.addToFlatBuffer(metadata);
-        final int shiftDataOffset = shifted.addToFlatBuffer(metadata);
-
-        // Added Chunk Data:
-        int addedRowsIncludedOffset = 0;
-
-        // don't send `rowsIncluded` when identical to `rowsAdded`, client will infer they are the same
-        if (isSnapshot || !view.addRowKeys.equals(rowsAdded.original)) {
-            addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(view.addRowKeys, metadata);
-        }
-
-        // now add mod-column streams, and write the mod column indexes
-        TIntArrayList modOffsets = new TIntArrayList(modColumnData.length);
-        for (final ModColumnData mcd : modColumnData) {
-            final int myModRowOffset;
-            if (view.keyspaceViewport != null) {
-                myModRowOffset = mcd.rowsModified.addToFlatBuffer(view.keyspaceViewport, metadata);
-            } else {
-                myModRowOffset = mcd.rowsModified.addToFlatBuffer(metadata);
-            }
-            modOffsets.add(BarrageModColumnMetadata.createBarrageModColumnMetadata(metadata, myModRowOffset));
-        }
-
-        BarrageUpdateMetadata.startModColumnNodesVector(metadata, modOffsets.size());
-        modOffsets.forEachDescending(offset -> {
-            metadata.addOffset(offset);
-            return true;
-        });
-        final int nodesOffset = metadata.endVector();
-
-        BarrageUpdateMetadata.startBarrageUpdateMetadata(metadata);
-        BarrageUpdateMetadata.addIsSnapshot(metadata, isSnapshot);
-        BarrageUpdateMetadata.addFirstSeq(metadata, firstSeq);
-        BarrageUpdateMetadata.addLastSeq(metadata, lastSeq);
-        BarrageUpdateMetadata.addEffectiveViewport(metadata, effectiveViewportOffset);
-        BarrageUpdateMetadata.addEffectiveColumnSet(metadata, effectiveColumnSetOffset);
-        BarrageUpdateMetadata.addAddedRows(metadata, rowsAddedOffset);
-        BarrageUpdateMetadata.addRemovedRows(metadata, rowsRemovedOffset);
-        BarrageUpdateMetadata.addShiftData(metadata, shiftDataOffset);
-        BarrageUpdateMetadata.addAddedRowsIncluded(metadata, addedRowsIncludedOffset);
-        BarrageUpdateMetadata.addModColumnNodes(metadata, nodesOffset);
-        BarrageUpdateMetadata.addEffectiveReverseViewport(metadata, view.reverseViewport);
-        metadata.finish(BarrageUpdateMetadata.endBarrageUpdateMetadata(metadata));
-
-        final FlatBufferBuilder header = new FlatBufferBuilder();
-        final int payloadOffset = BarrageMessageWrapper.createMsgPayloadVector(header, metadata.dataBuffer());
-        BarrageMessageWrapper.startBarrageMessageWrapper(header);
-        BarrageMessageWrapper.addMagic(header, BarrageUtil.FLATBUFFER_MAGIC);
-        BarrageMessageWrapper.addMsgType(header, BarrageMessageType.BarrageUpdateMetadata);
-        BarrageMessageWrapper.addMsgPayload(header, payloadOffset);
-        header.finish(BarrageMessageWrapper.endBarrageMessageWrapper(header));
-
-        return header.dataBuffer().slice();
-    }
-
-    private ByteBuffer getSnapshotMetadata(final SnapshotView view) throws IOException {
-        final FlatBufferBuilder metadata = new FlatBufferBuilder();
-
-        int effectiveViewportOffset = 0;
-        if (view.isViewport()) {
-            try (final RowSetGenerator viewportGen = new RowSetGenerator(view.viewport)) {
-                effectiveViewportOffset = viewportGen.addToFlatBuffer(metadata);
-            }
-        }
-
-        int effectiveColumnSetOffset = 0;
-        if (view.subscribedColumns != null) {
-            effectiveColumnSetOffset = new BitSetGenerator(view.subscribedColumns).addToFlatBuffer(metadata);
-        }
-
-        final int rowsAddedOffset = rowsAdded.addToFlatBuffer(metadata);
-
-        // no shifts in a snapshot, but need to provide a valid structure
-        final int shiftDataOffset = shifted.addToFlatBuffer(metadata);
-
-        // Added Chunk Data:
-        int addedRowsIncludedOffset = 0;
-        // don't send `rowsIncluded` when identical to `rowsAdded`, client will infer they are the same
-        if (isSnapshot || !view.addRowKeys.equals(rowsAdded.original)) {
-            addedRowsIncludedOffset = rowsIncluded.addToFlatBuffer(view.addRowKeys, metadata);
-        }
-
-        BarrageUpdateMetadata.startBarrageUpdateMetadata(metadata);
-        BarrageUpdateMetadata.addIsSnapshot(metadata, isSnapshot);
-        BarrageUpdateMetadata.addFirstSeq(metadata, firstSeq);
-        BarrageUpdateMetadata.addLastSeq(metadata, lastSeq);
-        BarrageUpdateMetadata.addEffectiveViewport(metadata, effectiveViewportOffset);
-        BarrageUpdateMetadata.addEffectiveColumnSet(metadata, effectiveColumnSetOffset);
-        BarrageUpdateMetadata.addAddedRows(metadata, rowsAddedOffset);
-        BarrageUpdateMetadata.addRemovedRows(metadata, 0);
-        BarrageUpdateMetadata.addShiftData(metadata, shiftDataOffset);
-        BarrageUpdateMetadata.addAddedRowsIncluded(metadata, addedRowsIncludedOffset);
-        BarrageUpdateMetadata.addModColumnNodes(metadata, 0);
-        BarrageUpdateMetadata.addEffectiveReverseViewport(metadata, view.reverseViewport);
-        metadata.finish(BarrageUpdateMetadata.endBarrageUpdateMetadata(metadata));
-
-        final FlatBufferBuilder header = new FlatBufferBuilder();
-        final int payloadOffset = BarrageMessageWrapper.createMsgPayloadVector(header, metadata.dataBuffer());
-        BarrageMessageWrapper.startBarrageMessageWrapper(header);
-        BarrageMessageWrapper.addMagic(header, BarrageUtil.FLATBUFFER_MAGIC);
-        BarrageMessageWrapper.addMsgType(header, BarrageMessageType.BarrageUpdateMetadata);
-        BarrageMessageWrapper.addMsgPayload(header, payloadOffset);
-        header.finish(BarrageMessageWrapper.endBarrageMessageWrapper(header));
-
-        return header.dataBuffer().slice();
     }
 
     public static abstract class ByteArrayGenerator {
