@@ -6,37 +6,14 @@ package io.deephaven.json.jackson;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.json.StringValue;
-import io.deephaven.json.jackson.ObjectValueProcessor.ToObject;
 import io.deephaven.qst.type.Type;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.stream.Stream;
 
-final class StringMixin extends Mixin<StringValue> implements ToObject<String> {
+final class StringMixin extends GenericObjectMixin<StringValue, String> {
 
     public StringMixin(StringValue options, JsonFactory factory) {
-        super(factory, options);
-    }
-
-    @Override
-    public int outputSize() {
-        return 1;
-    }
-
-    @Override
-    public Stream<List<String>> paths() {
-        return Stream.of(List.of());
-    }
-
-    @Override
-    public Stream<Type<?>> outputTypesImpl() {
-        return Stream.of(Type.stringType());
-    }
-
-    @Override
-    public ValueProcessor processor(String context) {
-        return new ObjectValueProcessor<>(this, Type.stringType());
+        super(factory, options, Type.stringType());
     }
 
     @Override
@@ -61,11 +38,6 @@ final class StringMixin extends Mixin<StringValue> implements ToObject<String> {
     @Override
     public String parseMissing(JsonParser parser) throws IOException {
         return parseFromMissing(parser);
-    }
-
-    @Override
-    RepeaterProcessor repeaterProcessor() {
-        return new RepeaterGenericImpl<>(this, null, null, Type.stringType().arrayType());
     }
 
     private String parseFromString(JsonParser parser) throws IOException {

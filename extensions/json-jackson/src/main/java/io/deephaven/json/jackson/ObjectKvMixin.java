@@ -7,7 +7,6 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.json.ObjectKvValue;
-import io.deephaven.qst.type.NativeArrayType;
 import io.deephaven.qst.type.Type;
 
 import java.io.IOException;
@@ -25,7 +24,7 @@ final class ObjectKvMixin extends Mixin<ObjectKvValue> {
     }
 
     @Override
-    public Stream<NativeArrayType<?, ?>> outputTypesImpl() {
+    public Stream<Type<?>> outputTypesImpl() {
         return Stream.concat(key.outputTypesImpl(), value.outputTypesImpl()).map(Type::arrayType);
     }
 
@@ -49,20 +48,20 @@ final class ObjectKvMixin extends Mixin<ObjectKvValue> {
 
     @Override
     public ValueProcessor processor(String context) {
-        return new ValueProcessorKvImpl();
+        return new ObjectKvMixinProcessor();
     }
 
     @Override
     RepeaterProcessor repeaterProcessor() {
-        return new ValueInnerRepeaterProcessor(new ValueProcessorKvImpl());
+        return new ValueInnerRepeaterProcessor(new ObjectKvMixinProcessor());
     }
 
-    private class ValueProcessorKvImpl implements ValueProcessor {
+    private class ObjectKvMixinProcessor extends ValueProcessorMixinBase {
 
         private final RepeaterProcessor keyProcessor;
         private final RepeaterProcessor valueProcessor;
 
-        ValueProcessorKvImpl() {
+        ObjectKvMixinProcessor() {
             this.keyProcessor = key.repeaterProcessor();
             this.valueProcessor = value.repeaterProcessor();
         }
@@ -81,17 +80,7 @@ final class ObjectKvMixin extends Mixin<ObjectKvValue> {
         }
 
         @Override
-        public int numColumns() {
-            return keyProcessor.numColumns() + valueProcessor.numColumns();
-        }
-
-        @Override
-        public Stream<Type<?>> columnTypes() {
-            return Stream.concat(keyProcessor.columnTypes(), valueProcessor.columnTypes());
-        }
-
-        @Override
-        public void processCurrentValue(JsonParser parser) throws IOException {
+        protected void processCurrentValueImpl(JsonParser parser) throws IOException {
             switch (parser.currentToken()) {
                 case START_OBJECT:
                     RepeaterProcessor.processObjectKeyValues(parser, keyProcessor, valueProcessor);
@@ -107,7 +96,7 @@ final class ObjectKvMixin extends Mixin<ObjectKvValue> {
         }
 
         @Override
-        public void processMissing(JsonParser parser) throws IOException {
+        protected void processMissingImpl(JsonParser parser) throws IOException {
             checkMissingAllowed(parser);
             keyProcessor.processMissingRepeater(parser);
             valueProcessor.processMissingRepeater(parser);

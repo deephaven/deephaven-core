@@ -4,6 +4,8 @@
 package io.deephaven.json;
 
 import io.deephaven.chunk.FloatChunk;
+import io.deephaven.json.jackson.JacksonProvider;
+import io.deephaven.qst.type.Type;
 import io.deephaven.util.QueryConstants;
 import org.junit.jupiter.api.Test;
 
@@ -16,6 +18,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 public class FloatValueTest {
+
+    @Test
+    void provider() {
+        final JacksonProvider provider = JacksonProvider.of(FloatValue.standard());
+        assertThat(provider.outputTypes()).containsExactly(Type.floatType());
+        assertThat(provider.stringProcessor().outputTypes()).containsExactly(Type.floatType());
+    }
+
+    @Test
+    void arrayProvider() {
+        final JacksonProvider provider = JacksonProvider.of(FloatValue.standard().array());
+        assertThat(provider.outputTypes()).containsExactly(Type.floatType().arrayType());
+        assertThat(provider.stringProcessor().outputTypes()).containsExactly(Type.floatType().arrayType());
+    }
 
     @Test
     void standard() throws IOException {

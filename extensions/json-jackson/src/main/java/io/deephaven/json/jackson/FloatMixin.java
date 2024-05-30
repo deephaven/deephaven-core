@@ -6,10 +6,10 @@ package io.deephaven.json.jackson;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.base.MathUtil;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableFloatChunk;
 import io.deephaven.chunk.sized.SizedFloatChunk;
 import io.deephaven.json.FloatValue;
-import io.deephaven.json.jackson.FloatValueProcessor.ToFloat;
 import io.deephaven.qst.type.Type;
 import io.deephaven.util.QueryConstants;
 
@@ -18,7 +18,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
-final class FloatMixin extends Mixin<FloatValue> implements ToFloat {
+final class FloatMixin extends Mixin<FloatValue> {
 
     public FloatMixin(FloatValue options, JsonFactory factory) {
         super(factory, options);
@@ -41,11 +41,10 @@ final class FloatMixin extends Mixin<FloatValue> implements ToFloat {
 
     @Override
     public ValueProcessor processor(String context) {
-        return new FloatValueProcessor(this);
+        return new FloatMixinProcessor();
     }
 
-    @Override
-    public float parseValue(JsonParser parser) throws IOException {
+    private float parseValue(JsonParser parser) throws IOException {
         switch (parser.currentToken()) {
             case VALUE_NUMBER_INT:
             case VALUE_NUMBER_FLOAT:
@@ -59,8 +58,7 @@ final class FloatMixin extends Mixin<FloatValue> implements ToFloat {
         throw unexpectedToken(parser);
     }
 
-    @Override
-    public float parseMissing(JsonParser parser) throws IOException {
+    private float parseMissing(JsonParser parser) throws IOException {
         return parseFromMissing(parser);
     }
 
@@ -117,5 +115,30 @@ final class FloatMixin extends Mixin<FloatValue> implements ToFloat {
     private float parseFromMissing(JsonParser parser) throws IOException {
         checkMissingAllowed(parser);
         return options.onMissing().orElse(QueryConstants.NULL_FLOAT);
+    }
+
+    final class FloatMixinProcessor extends ValueProcessorMixinBase {
+
+        private WritableFloatChunk<?> out;
+
+        @Override
+        public void setContext(List<WritableChunk<?>> out) {
+            this.out = out.get(0).asWritableFloatChunk();
+        }
+
+        @Override
+        public void clearContext() {
+            out = null;
+        }
+
+        @Override
+        protected void processCurrentValueImpl(JsonParser parser) throws IOException {
+            out.add(parseValue(parser));
+        }
+
+        @Override
+        protected void processMissingImpl(JsonParser parser) throws IOException {
+            out.add(parseMissing(parser));
+        }
     }
 }

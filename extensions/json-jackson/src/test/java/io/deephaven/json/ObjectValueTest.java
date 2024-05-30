@@ -11,6 +11,7 @@ import io.deephaven.util.QueryConstants;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.List;
 
 import static io.deephaven.json.TestHelper.parse;
@@ -28,6 +29,21 @@ public class ObjectValueTest {
             .putFields("name", StringValue.standard())
             .putFields("age", IntValue.standard())
             .build();
+
+    @Test
+    void provider() {
+        final JacksonProvider provider = JacksonProvider.of(OBJECT_NAME_AGE_FIELD);
+        assertThat(provider.outputTypes()).containsExactly(Type.stringType(), Type.intType());
+        assertThat(provider.stringProcessor().outputTypes()).containsExactly(Type.stringType(), Type.intType());
+    }
+
+    @Test
+    void arrayProvider() {
+        final JacksonProvider provider = JacksonProvider.of(OBJECT_NAME_AGE_FIELD.array());
+        assertThat(provider.outputTypes()).containsExactly(Type.stringType().arrayType(), Type.intType().arrayType());
+        assertThat(provider.stringProcessor().outputTypes()).containsExactly(Type.stringType().arrayType(),
+                Type.intType().arrayType());
+    }
 
     @Test
     void ofAge() throws IOException {

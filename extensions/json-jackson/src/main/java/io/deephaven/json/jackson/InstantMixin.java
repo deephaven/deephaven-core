@@ -5,9 +5,9 @@ package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.json.InstantValue;
-import io.deephaven.json.jackson.LongValueProcessor.ToLong;
-import io.deephaven.json.jackson.ObjectValueProcessor.ToObject;
 import io.deephaven.qst.type.Type;
 import io.deephaven.time.DateTimeUtils;
 
@@ -18,7 +18,7 @@ import java.time.temporal.TemporalAccessor;
 import java.util.List;
 import java.util.stream.Stream;
 
-final class InstantMixin extends Mixin<InstantValue> implements ToLong {
+final class InstantMixin extends Mixin<InstantValue> {
 
     private final long onNull;
     private final long onMissing;
@@ -46,11 +46,10 @@ final class InstantMixin extends Mixin<InstantValue> implements ToLong {
 
     @Override
     public ValueProcessor processor(String context) {
-        return new LongValueProcessor(this);
+        return new InstantMixinProcessor();
     }
 
-    @Override
-    public long parseValue(JsonParser parser) throws IOException {
+    private long parseValue(JsonParser parser) throws IOException {
         switch (parser.currentToken()) {
             case VALUE_STRING:
             case FIELD_NAME:
@@ -61,8 +60,7 @@ final class InstantMixin extends Mixin<InstantValue> implements ToLong {
         throw unexpectedToken(parser);
     }
 
-    @Override
-    public long parseMissing(JsonParser parser) throws IOException {
+    private long parseMissing(JsonParser parser) throws IOException {
         return parseFromMissing(parser);
     }
 
@@ -120,5 +118,29 @@ final class InstantMixin extends Mixin<InstantValue> implements ToLong {
     private Instant parseFromMissingToInstant(JsonParser parser) throws IOException {
         checkMissingAllowed(parser);
         return options.onMissing().orElse(null);
+    }
+
+    private class InstantMixinProcessor extends ValueProcessorMixinBase {
+        private WritableLongChunk<?> out;
+
+        @Override
+        public final void setContext(List<WritableChunk<?>> out) {
+            this.out = out.get(0).asWritableLongChunk();
+        }
+
+        @Override
+        public final void clearContext() {
+            out = null;
+        }
+
+        @Override
+        protected void processCurrentValueImpl(JsonParser parser) throws IOException {
+            out.add(parseValue(parser));
+        }
+
+        @Override
+        protected void processMissingImpl(JsonParser parser) throws IOException {
+            out.add(parseMissing(parser));
+        }
     }
 }

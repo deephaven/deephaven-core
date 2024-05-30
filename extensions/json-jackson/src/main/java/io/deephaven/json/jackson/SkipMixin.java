@@ -26,6 +26,11 @@ final class SkipMixin extends Mixin<SkipValue> implements ValueProcessor {
     }
 
     @Override
+    public int numColumns() {
+        return 0;
+    }
+
+    @Override
     public Stream<List<String>> paths() {
         return Stream.empty();
     }

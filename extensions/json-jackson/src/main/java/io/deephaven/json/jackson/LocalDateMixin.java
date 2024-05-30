@@ -6,39 +6,16 @@ package io.deephaven.json.jackson;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.json.LocalDateValue;
-import io.deephaven.json.jackson.ObjectValueProcessor.ToObject;
 import io.deephaven.qst.type.Type;
 
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAccessor;
-import java.util.List;
-import java.util.stream.Stream;
 
-final class LocalDateMixin extends Mixin<LocalDateValue> implements ToObject<LocalDate> {
+final class LocalDateMixin extends GenericObjectMixin<LocalDateValue, LocalDate> {
 
     public LocalDateMixin(LocalDateValue options, JsonFactory factory) {
-        super(factory, options);
-    }
-
-    @Override
-    public int outputSize() {
-        return 1;
-    }
-
-    @Override
-    public Stream<List<String>> paths() {
-        return Stream.of(List.of());
-    }
-
-    @Override
-    public Stream<Type<?>> outputTypesImpl() {
-        return Stream.of(Type.ofCustom(LocalDate.class));
-    }
-
-    @Override
-    public ValueProcessor processor(String context) {
-        return new ObjectValueProcessor<>(this, Type.ofCustom(LocalDate.class));
+        super(factory, options, Type.ofCustom(LocalDate.class));
     }
 
     @Override
@@ -56,12 +33,6 @@ final class LocalDateMixin extends Mixin<LocalDateValue> implements ToObject<Loc
     @Override
     public LocalDate parseMissing(JsonParser parser) throws IOException {
         return parseFromMissing(parser);
-    }
-
-    @Override
-    RepeaterProcessor repeaterProcessor() {
-        return new RepeaterGenericImpl<>(this, null, null,
-                Type.ofCustom(LocalDate.class).arrayType());
     }
 
     private LocalDate parseFromString(JsonParser parser) throws IOException {

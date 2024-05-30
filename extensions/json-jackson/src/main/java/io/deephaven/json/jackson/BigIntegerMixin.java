@@ -6,38 +6,15 @@ package io.deephaven.json.jackson;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.json.BigIntegerValue;
-import io.deephaven.json.jackson.ObjectValueProcessor.ToObject;
 import io.deephaven.qst.type.Type;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.util.List;
-import java.util.stream.Stream;
 
-final class BigIntegerMixin extends Mixin<BigIntegerValue> implements ToObject<BigInteger> {
+final class BigIntegerMixin extends GenericObjectMixin<BigIntegerValue, BigInteger> {
 
     public BigIntegerMixin(BigIntegerValue options, JsonFactory factory) {
-        super(factory, options);
-    }
-
-    @Override
-    public int outputSize() {
-        return 1;
-    }
-
-    @Override
-    public Stream<List<String>> paths() {
-        return Stream.of(List.of());
-    }
-
-    @Override
-    public Stream<Type<?>> outputTypesImpl() {
-        return Stream.of(Type.ofCustom(BigInteger.class));
-    }
-
-    @Override
-    public ValueProcessor processor(String context) {
-        return new ObjectValueProcessor<>(this, Type.ofCustom(BigInteger.class));
+        super(factory, options, Type.ofCustom(BigInteger.class));
     }
 
     @Override
@@ -59,12 +36,6 @@ final class BigIntegerMixin extends Mixin<BigIntegerValue> implements ToObject<B
     @Override
     public BigInteger parseMissing(JsonParser parser) throws IOException {
         return parseFromMissing(parser);
-    }
-
-    @Override
-    RepeaterProcessor repeaterProcessor() {
-        return new RepeaterGenericImpl<>(this, null, null,
-                Type.ofCustom(BigInteger.class).arrayType());
     }
 
     private BigInteger parseFromInt(JsonParser parser) throws IOException {

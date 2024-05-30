@@ -6,10 +6,10 @@ package io.deephaven.json.jackson;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.base.MathUtil;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.chunk.sized.SizedShortChunk;
 import io.deephaven.json.ShortValue;
-import io.deephaven.json.jackson.ShortValueProcessor.ToShort;
 import io.deephaven.qst.type.Type;
 import io.deephaven.util.QueryConstants;
 
@@ -18,7 +18,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
-final class ShortMixin extends Mixin<ShortValue> implements ToShort {
+final class ShortMixin extends Mixin<ShortValue> {
     public ShortMixin(ShortValue options, JsonFactory factory) {
         super(factory, options);
     }
@@ -40,11 +40,10 @@ final class ShortMixin extends Mixin<ShortValue> implements ToShort {
 
     @Override
     public ValueProcessor processor(String context) {
-        return new ShortValueProcessor(this);
+        return new ShortMixinProcessor();
     }
 
-    @Override
-    public short parseValue(JsonParser parser) throws IOException {
+    private short parseValue(JsonParser parser) throws IOException {
         switch (parser.currentToken()) {
             case VALUE_NUMBER_INT:
                 return parseFromInt(parser);
@@ -59,8 +58,7 @@ final class ShortMixin extends Mixin<ShortValue> implements ToShort {
         throw unexpectedToken(parser);
     }
 
-    @Override
-    public short parseMissing(JsonParser parser) throws IOException {
+    private short parseMissing(JsonParser parser) throws IOException {
         return parseFromMissing(parser);
     }
 
@@ -124,5 +122,30 @@ final class ShortMixin extends Mixin<ShortValue> implements ToShort {
     private short parseFromMissing(JsonParser parser) throws IOException {
         checkMissingAllowed(parser);
         return options.onMissing().orElse(QueryConstants.NULL_SHORT);
+    }
+
+    final class ShortMixinProcessor extends ValueProcessorMixinBase {
+
+        private WritableShortChunk<?> out;
+
+        @Override
+        public void setContext(List<WritableChunk<?>> out) {
+            this.out = out.get(0).asWritableShortChunk();
+        }
+
+        @Override
+        public void clearContext() {
+            out = null;
+        }
+
+        @Override
+        protected void processCurrentValueImpl(JsonParser parser) throws IOException {
+            out.add(parseValue(parser));
+        }
+
+        @Override
+        protected void processMissingImpl(JsonParser parser) throws IOException {
+            out.add(parseMissing(parser));
+        }
     }
 }

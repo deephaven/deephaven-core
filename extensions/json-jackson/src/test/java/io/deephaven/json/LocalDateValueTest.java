@@ -4,6 +4,8 @@
 package io.deephaven.json;
 
 import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.json.jackson.JacksonProvider;
+import io.deephaven.qst.type.Type;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -17,6 +19,21 @@ import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 public class LocalDateValueTest {
 
     private static final String XYZ_STR = "2009-02-13";
+
+    @Test
+    void provider() {
+        final JacksonProvider provider = JacksonProvider.of(LocalDateValue.standard());
+        assertThat(provider.outputTypes()).containsExactly(Type.ofCustom(LocalDate.class));
+        assertThat(provider.stringProcessor().outputTypes()).containsExactly(Type.ofCustom(LocalDate.class));
+    }
+
+    @Test
+    void arrayProvider() {
+        final JacksonProvider provider = JacksonProvider.of(LocalDateValue.standard().array());
+        assertThat(provider.outputTypes()).containsExactly(Type.ofCustom(LocalDate.class).arrayType());
+        assertThat(provider.stringProcessor().outputTypes())
+                .containsExactly(Type.ofCustom(LocalDate.class).arrayType());
+    }
 
     @Test
     void iso8601() throws IOException {

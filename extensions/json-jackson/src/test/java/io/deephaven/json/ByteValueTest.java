@@ -4,6 +4,8 @@
 package io.deephaven.json;
 
 import io.deephaven.chunk.ByteChunk;
+import io.deephaven.json.jackson.JacksonProvider;
+import io.deephaven.qst.type.Type;
 import io.deephaven.util.QueryConstants;
 import org.junit.jupiter.api.Test;
 
@@ -16,6 +18,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 public class ByteValueTest {
+
+    @Test
+    void provider() {
+        final JacksonProvider provider = JacksonProvider.of(ByteValue.standard());
+        assertThat(provider.outputTypes()).containsExactly(Type.byteType());
+        assertThat(provider.stringProcessor().outputTypes()).containsExactly(Type.byteType());
+    }
+
+    @Test
+    void arrayProvider() {
+        final JacksonProvider provider = JacksonProvider.of(ByteValue.standard().array());
+        assertThat(provider.outputTypes()).containsExactly(Type.byteType().arrayType());
+        assertThat(provider.stringProcessor().outputTypes()).containsExactly(Type.byteType().arrayType());
+    }
 
     @Test
     void standard() throws IOException {
@@ -68,13 +84,29 @@ public class ByteValueTest {
     }
 
     @Test
-    void standardOverflow() {
+    void standardUnderflow() {
         try {
-            process(ByteValue.standard(), "2147483648");
+            process(ByteValue.standard(), "-129");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
-            assertThat(e).hasMessageContaining(
-                    "Numeric value (2147483648) out of range of int (-2147483648 - 2147483647)");
+            assertThat(e).hasMessageContaining("Unable to process current value for ByteValue");
+            assertThat(e).hasCauseInstanceOf(IOException.class);
+            assertThat(e.getCause()).hasMessageContaining(
+                    "Numeric value (-129) out of range of Java byte");
+        }
+    }
+
+    @Test
+    void standardOverflow() {
+        // Jackson has non-standard byte processing
+        try {
+            process(ByteValue.standard(), "256");
+            failBecauseExceptionWasNotThrown(IOException.class);
+        } catch (IOException e) {
+            assertThat(e).hasMessageContaining("Unable to process current value for ByteValue");
+            assertThat(e).hasCauseInstanceOf(IOException.class);
+            assertThat(e.getCause()).hasMessageContaining(
+                    "Numeric value (256) out of range of Java byte");
         }
     }
 

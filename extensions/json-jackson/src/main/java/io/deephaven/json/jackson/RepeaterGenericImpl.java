@@ -7,7 +7,6 @@ import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.base.MathUtil;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.sized.SizedObjectChunk;
-import io.deephaven.json.jackson.ObjectValueProcessor.ToObject;
 import io.deephaven.qst.type.NativeArrayType;
 
 import java.io.IOException;

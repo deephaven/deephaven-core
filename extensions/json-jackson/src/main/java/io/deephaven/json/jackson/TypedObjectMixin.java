@@ -39,8 +39,13 @@ final class TypedObjectMixin extends Mixin<TypedObjectValue> {
         if (!(options.typeField().options() instanceof StringValue)) {
             throw new IllegalArgumentException("Only string-valued type fields are currently supported");
         }
-        if (!(options.onNull().orElse(null) instanceof String)) {
-
+        final Object onNull = options.onNull().orElse(null);
+        if (onNull != null && !(onNull instanceof String)) {
+            throw new IllegalArgumentException("Only String onNull values are currently supported");
+        }
+        final Object onMissing = options.onMissing().orElse(null);
+        if (onMissing != null && !(onMissing instanceof String)) {
+            throw new IllegalArgumentException("Only String onMissing values are currently supported");
         }
         typeFieldAliases = options.typeField().caseSensitive() ? null : new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
         {
@@ -179,7 +184,7 @@ final class TypedObjectMixin extends Mixin<TypedObjectValue> {
         }
     }
 
-    private class DiscriminatedProcessor implements ValueProcessor {
+    private class DiscriminatedProcessor extends ValueProcessorMixinBase {
 
         private final Map<String, Processor> combinedProcessors;
 
@@ -214,17 +219,7 @@ final class TypedObjectMixin extends Mixin<TypedObjectValue> {
         }
 
         @Override
-        public int numColumns() {
-            return TypedObjectMixin.this.outputSize();
-        }
-
-        @Override
-        public Stream<Type<?>> columnTypes() {
-            return outputTypesImpl();
-        }
-
-        @Override
-        public void processCurrentValue(JsonParser parser) throws IOException {
+        protected void processCurrentValueImpl(JsonParser parser) throws IOException {
             switch (parser.currentToken()) {
                 case START_OBJECT:
                     if (parser.nextToken() == JsonToken.END_OBJECT) {
@@ -245,7 +240,7 @@ final class TypedObjectMixin extends Mixin<TypedObjectValue> {
         }
 
         @Override
-        public void processMissing(JsonParser parser) throws IOException {
+        protected void processMissingImpl(JsonParser parser) throws IOException {
             checkMissingAllowed(parser);
             typeChunk.add((String) options.onMissing().orElse(null));
             // We are _not_ trying to pass along the potential "on missing" value for each individual chunk; the

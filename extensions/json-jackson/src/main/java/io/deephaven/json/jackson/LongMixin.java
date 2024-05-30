@@ -6,6 +6,7 @@ package io.deephaven.json.jackson;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.base.MathUtil;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.sized.SizedLongChunk;
 import io.deephaven.json.LongValue;
@@ -17,7 +18,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
-final class LongMixin extends Mixin<LongValue> implements LongValueProcessor.ToLong {
+final class LongMixin extends Mixin<LongValue> {
 
     public LongMixin(LongValue options, JsonFactory config) {
         super(config, options);
@@ -40,11 +41,10 @@ final class LongMixin extends Mixin<LongValue> implements LongValueProcessor.ToL
 
     @Override
     public ValueProcessor processor(String context) {
-        return new LongValueProcessor(this);
+        return new LongMixinProcessor();
     }
 
-    @Override
-    public long parseValue(JsonParser parser) throws IOException {
+    private long parseValue(JsonParser parser) throws IOException {
         switch (parser.currentToken()) {
             case VALUE_NUMBER_INT:
                 return parseFromInt(parser);
@@ -59,8 +59,7 @@ final class LongMixin extends Mixin<LongValue> implements LongValueProcessor.ToL
         throw unexpectedToken(parser);
     }
 
-    @Override
-    public long parseMissing(JsonParser parser) throws IOException {
+    private long parseMissing(JsonParser parser) throws IOException {
         return parseFromMissing(parser);
     }
 
@@ -124,5 +123,29 @@ final class LongMixin extends Mixin<LongValue> implements LongValueProcessor.ToL
     private long parseFromMissing(JsonParser parser) throws IOException {
         checkMissingAllowed(parser);
         return options.onMissing().orElse(QueryConstants.NULL_LONG);
+    }
+
+    private class LongMixinProcessor extends ValueProcessorMixinBase {
+        private WritableLongChunk<?> out;
+
+        @Override
+        public void setContext(List<WritableChunk<?>> out) {
+            this.out = out.get(0).asWritableLongChunk();
+        }
+
+        @Override
+        public void clearContext() {
+            out = null;
+        }
+
+        @Override
+        protected void processCurrentValueImpl(JsonParser parser) throws IOException {
+            out.add(parseValue(parser));
+        }
+
+        @Override
+        protected void processMissingImpl(JsonParser parser) throws IOException {
+            out.add(parseMissing(parser));
+        }
     }
 }

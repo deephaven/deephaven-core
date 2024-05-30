@@ -4,6 +4,8 @@
 package io.deephaven.json;
 
 import io.deephaven.chunk.IntChunk;
+import io.deephaven.json.jackson.JacksonProvider;
+import io.deephaven.qst.type.Type;
 import io.deephaven.util.QueryConstants;
 import org.junit.jupiter.api.Test;
 
@@ -16,6 +18,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 public class IntValueTest {
+
+    @Test
+    void provider() {
+        final JacksonProvider provider = JacksonProvider.of(IntValue.standard());
+        assertThat(provider.outputTypes()).containsExactly(Type.intType());
+        assertThat(provider.stringProcessor().outputTypes()).containsExactly(Type.intType());
+    }
+
+    @Test
+    void arrayProvider() {
+        final JacksonProvider provider = JacksonProvider.of(IntValue.standard().array());
+        assertThat(provider.outputTypes()).containsExactly(Type.intType().arrayType());
+        assertThat(provider.stringProcessor().outputTypes()).containsExactly(Type.intType().arrayType());
+    }
 
     @Test
     void standard() throws IOException {
@@ -68,12 +84,27 @@ public class IntValueTest {
     }
 
     @Test
-    void standardOverflow() {
+    void standardUnderflow() {
         try {
-            process(IntValue.standard(), "2147483648");
+            process(IntValue.standard(), Long.toString(Integer.MIN_VALUE - 1L));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
-            assertThat(e).hasMessageContaining(
+            assertThat(e).hasMessageContaining("Unable to process current value for IntValue");
+            assertThat(e).hasCauseInstanceOf(IOException.class);
+            assertThat(e.getCause()).hasMessageContaining(
+                    "Numeric value (-2147483649) out of range of int (-2147483648 - 2147483647)");
+        }
+    }
+
+    @Test
+    void standardOverflow() {
+        try {
+            process(IntValue.standard(), Long.toString(Integer.MAX_VALUE + 1L));
+            failBecauseExceptionWasNotThrown(IOException.class);
+        } catch (IOException e) {
+            assertThat(e).hasMessageContaining("Unable to process current value for IntValue");
+            assertThat(e).hasCauseInstanceOf(IOException.class);
+            assertThat(e.getCause()).hasMessageContaining(
                     "Numeric value (2147483648) out of range of int (-2147483648 - 2147483647)");
         }
     }

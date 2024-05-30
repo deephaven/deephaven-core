@@ -23,6 +23,10 @@ public class ValueAwareException extends JsonProcessingException {
         this.value = Objects.requireNonNull(valueContext);
     }
 
+    public Value value() {
+        return value;
+    }
+
     @Override
     protected String getMessageSuffix() {
         return " for " + value;

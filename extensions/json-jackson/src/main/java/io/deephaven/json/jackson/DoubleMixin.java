@@ -6,10 +6,10 @@ package io.deephaven.json.jackson;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.base.MathUtil;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableDoubleChunk;
 import io.deephaven.chunk.sized.SizedDoubleChunk;
 import io.deephaven.json.DoubleValue;
-import io.deephaven.json.jackson.DoubleValueProcessor.ToDouble;
 import io.deephaven.qst.type.Type;
 import io.deephaven.util.QueryConstants;
 
@@ -18,7 +18,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
-final class DoubleMixin extends Mixin<DoubleValue> implements ToDouble {
+final class DoubleMixin extends Mixin<DoubleValue> {
 
     public DoubleMixin(DoubleValue options, JsonFactory factory) {
         super(factory, options);
@@ -41,11 +41,10 @@ final class DoubleMixin extends Mixin<DoubleValue> implements ToDouble {
 
     @Override
     public ValueProcessor processor(String context) {
-        return new DoubleValueProcessor(this);
+        return new DoubleMixinProcessor();
     }
 
-    @Override
-    public double parseValue(JsonParser parser) throws IOException {
+    private double parseValue(JsonParser parser) throws IOException {
         switch (parser.currentToken()) {
             case VALUE_NUMBER_INT:
             case VALUE_NUMBER_FLOAT:
@@ -59,8 +58,7 @@ final class DoubleMixin extends Mixin<DoubleValue> implements ToDouble {
         throw unexpectedToken(parser);
     }
 
-    @Override
-    public double parseMissing(JsonParser parser) throws IOException {
+    private double parseMissing(JsonParser parser) throws IOException {
         return parseFromMissing(parser);
     }
 
@@ -118,5 +116,30 @@ final class DoubleMixin extends Mixin<DoubleValue> implements ToDouble {
     private double parseFromMissing(JsonParser parser) throws IOException {
         checkMissingAllowed(parser);
         return options.onMissing().orElse(QueryConstants.NULL_DOUBLE);
+    }
+
+    final class DoubleMixinProcessor extends ValueProcessorMixinBase {
+
+        private WritableDoubleChunk<?> out;
+
+        @Override
+        public void setContext(List<WritableChunk<?>> out) {
+            this.out = out.get(0).asWritableDoubleChunk();
+        }
+
+        @Override
+        public void clearContext() {
+            out = null;
+        }
+
+        @Override
+        protected void processCurrentValueImpl(JsonParser parser) throws IOException {
+            out.add(parseValue(parser));
+        }
+
+        @Override
+        protected void processMissingImpl(JsonParser parser) throws IOException {
+            out.add(parseMissing(parser));
+        }
     }
 }

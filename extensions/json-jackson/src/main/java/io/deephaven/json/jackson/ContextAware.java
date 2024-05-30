@@ -14,9 +14,7 @@ interface ContextAware {
 
     void clearContext();
 
-    default int numColumns() {
-        return (int) columnTypes().count();
-    }
+    int numColumns();
 
     Stream<Type<?>> columnTypes();
 }

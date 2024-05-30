@@ -4,6 +4,8 @@
 package io.deephaven.json;
 
 import io.deephaven.chunk.ShortChunk;
+import io.deephaven.json.jackson.JacksonProvider;
+import io.deephaven.qst.type.Type;
 import io.deephaven.util.QueryConstants;
 import org.junit.jupiter.api.Test;
 
@@ -16,6 +18,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 public class ShortValueTest {
+
+    @Test
+    void provider() {
+        final JacksonProvider provider = JacksonProvider.of(ShortValue.standard());
+        assertThat(provider.outputTypes()).containsExactly(Type.shortType());
+        assertThat(provider.stringProcessor().outputTypes()).containsExactly(Type.shortType());
+    }
+
+    @Test
+    void arrayProvider() {
+        final JacksonProvider provider = JacksonProvider.of(ShortValue.standard().array());
+        assertThat(provider.outputTypes()).containsExactly(Type.shortType().arrayType());
+        assertThat(provider.stringProcessor().outputTypes()).containsExactly(Type.shortType().arrayType());
+    }
 
     @Test
     void standard() throws IOException {
@@ -68,13 +84,28 @@ public class ShortValueTest {
     }
 
     @Test
-    void standardOverflow() {
+    void standardUnderflow() {
         try {
-            process(ShortValue.standard(), "2147483648");
+            process(ShortValue.standard(), Integer.toString(Short.MIN_VALUE - 1));
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
-            assertThat(e).hasMessageContaining(
-                    "Numeric value (2147483648) out of range of int (-2147483648 - 2147483647)");
+            assertThat(e).hasMessageContaining("Unable to process current value for ShortValue");
+            assertThat(e).hasCauseInstanceOf(IOException.class);
+            assertThat(e.getCause()).hasMessageContaining(
+                    "Numeric value (-32769) out of range of Java short");
+        }
+    }
+
+    @Test
+    void standardOverflow() {
+        try {
+            process(ShortValue.standard(), Integer.toString(Short.MAX_VALUE + 1));
+            failBecauseExceptionWasNotThrown(IOException.class);
+        } catch (IOException e) {
+            assertThat(e).hasMessageContaining("Unable to process current value for ShortValue");
+            assertThat(e).hasCauseInstanceOf(IOException.class);
+            assertThat(e.getCause()).hasMessageContaining(
+                    "Numeric value (32768) out of range of Java short");
         }
     }
 

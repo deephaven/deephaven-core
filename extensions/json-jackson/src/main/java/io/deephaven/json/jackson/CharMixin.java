@@ -7,9 +7,9 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.base.MathUtil;
 import io.deephaven.chunk.WritableCharChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.sized.SizedCharChunk;
 import io.deephaven.json.CharValue;
-import io.deephaven.json.jackson.CharValueProcessor.ToChar;
 import io.deephaven.qst.type.Type;
 import io.deephaven.util.QueryConstants;
 
@@ -18,7 +18,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
-final class CharMixin extends Mixin<CharValue> implements ToChar {
+final class CharMixin extends Mixin<CharValue> {
     public CharMixin(CharValue options, JsonFactory factory) {
         super(factory, options);
     }
@@ -40,11 +40,10 @@ final class CharMixin extends Mixin<CharValue> implements ToChar {
 
     @Override
     public ValueProcessor processor(String context) {
-        return new CharValueProcessor(this);
+        return new CharMixinProcessor();
     }
 
-    @Override
-    public char parseValue(JsonParser parser) throws IOException {
+    private char parseValue(JsonParser parser) throws IOException {
         switch (parser.currentToken()) {
             case VALUE_STRING:
             case FIELD_NAME:
@@ -55,8 +54,7 @@ final class CharMixin extends Mixin<CharValue> implements ToChar {
         throw unexpectedToken(parser);
     }
 
-    @Override
-    public char parseMissing(JsonParser parser) throws IOException {
+    private char parseMissing(JsonParser parser) throws IOException {
         return parseFromMissing(parser);
     }
 
@@ -108,5 +106,29 @@ final class CharMixin extends Mixin<CharValue> implements ToChar {
     private char parseFromMissing(JsonParser parser) throws IOException {
         checkMissingAllowed(parser);
         return options.onMissing().orElse(QueryConstants.NULL_CHAR);
+    }
+
+    private class CharMixinProcessor extends ValueProcessorMixinBase {
+        private WritableCharChunk<?> out;
+
+        @Override
+        public void setContext(List<WritableChunk<?>> out) {
+            this.out = out.get(0).asWritableCharChunk();
+        }
+
+        @Override
+        public void clearContext() {
+            out = null;
+        }
+
+        @Override
+        protected void processCurrentValueImpl(JsonParser parser) throws IOException {
+            out.add(parseValue(parser));
+        }
+
+        @Override
+        protected void processMissingImpl(JsonParser parser) throws IOException {
+            out.add(parseMissing(parser));
+        }
     }
 }

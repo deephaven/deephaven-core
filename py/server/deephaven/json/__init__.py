@@ -10,9 +10,6 @@ of JSON. This module can also service other use cases where the JSON structuring
 JSON value from a Deephaven structure).
 """
 
-# todo: should be on the classpath by default, but doesn't have to be
-# todo: would be nice if this code could live in the JSON jar
-
 import jpy
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -51,8 +48,6 @@ __all__ = [
     "FieldOptions",
 ]
 
-# https://deephaven.atlassian.net/browse/DH-15061
-# It is important that ValueOptions gets imported before the others.
 _JValue = jpy.get_type("io.deephaven.json.Value")
 _JObjectValue = jpy.get_type("io.deephaven.json.ObjectValue")
 _JTypedObjectValue = jpy.get_type("io.deephaven.json.TypedObjectValue")
@@ -95,7 +90,7 @@ _EPOCH_NANOS = _JInstantNumberValueFormat.EPOCH_NANOS
 
 
 class JsonOptions(JObjectWrapper):
-    """The JSON options object. Provides a named object processor provider."""
+    """The JSON options object."""
 
     j_object_type = _JValue
 
@@ -107,8 +102,6 @@ class JsonOptions(JObjectWrapper):
         return self.j_options
 
 
-# todo use type alias instead of Any in the future
-# todo named tuple
 JsonValueType = Union[
     JsonOptions,
     dtypes.DType,

@@ -4,6 +4,8 @@
 package io.deephaven.json;
 
 import io.deephaven.chunk.ByteChunk;
+import io.deephaven.json.jackson.JacksonProvider;
+import io.deephaven.qst.type.Type;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.QueryConstants;
 import org.junit.jupiter.api.Test;
@@ -17,6 +19,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 public class BoolValueTest {
+
+    @Test
+    void provider() {
+        final JacksonProvider provider = JacksonProvider.of(BoolValue.standard());
+        assertThat(provider.outputTypes()).containsExactly(Type.booleanType().boxedType());
+        assertThat(provider.stringProcessor().outputTypes()).containsExactly(Type.booleanType().boxedType());
+    }
+
+    @Test
+    void arrayProvider() {
+        final JacksonProvider provider = JacksonProvider.of(BoolValue.standard().array());
+        assertThat(provider.outputTypes()).containsExactly(Type.booleanType().boxedType().arrayType());
+        assertThat(provider.stringProcessor().outputTypes())
+                .containsExactly(Type.booleanType().boxedType().arrayType());
+    }
 
     @Test
     void standard() throws IOException {

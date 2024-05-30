@@ -7,7 +7,6 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.json.ArrayValue;
-import io.deephaven.qst.type.NativeArrayType;
 import io.deephaven.qst.type.Type;
 
 import java.io.IOException;
@@ -34,13 +33,13 @@ final class ArrayMixin extends Mixin<ArrayValue> {
     }
 
     @Override
-    public Stream<NativeArrayType<?, ?>> outputTypesImpl() {
+    public Stream<Type<?>> outputTypesImpl() {
         return elementOutputTypes().map(Type::arrayType);
     }
 
     @Override
     public ValueProcessor processor(String context) {
-        return new ArrayValueProcessor();
+        return new ArrayMixinProcessor();
     }
 
     private Stream<? extends Type<?>> elementOutputTypes() {
@@ -58,14 +57,14 @@ final class ArrayMixin extends Mixin<ArrayValue> {
         // double[] (processor())
         // double[][] (repeater())
         // return new ArrayOfArrayRepeaterProcessor(allowMissing, allowNull);
-        return new ValueInnerRepeaterProcessor(new ArrayValueProcessor());
+        return new ValueInnerRepeaterProcessor(new ArrayMixinProcessor());
     }
 
-    private class ArrayValueProcessor implements ValueProcessor {
+    private class ArrayMixinProcessor implements ValueProcessor {
 
         private final RepeaterProcessor elementProcessor;
 
-        ArrayValueProcessor() {
+        ArrayMixinProcessor() {
             this.elementProcessor = elementRepeater();
         }
 

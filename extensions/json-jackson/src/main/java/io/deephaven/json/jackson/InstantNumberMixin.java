@@ -5,9 +5,9 @@ package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.json.InstantNumberValue;
-import io.deephaven.json.jackson.LongValueProcessor.ToLong;
-import io.deephaven.json.jackson.ObjectValueProcessor.ToObject;
 import io.deephaven.qst.type.Type;
 import io.deephaven.time.DateTimeUtils;
 
@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 final class InstantNumberMixin extends Mixin<InstantNumberValue> {
@@ -45,7 +46,7 @@ final class InstantNumberMixin extends Mixin<InstantNumberValue> {
 
     @Override
     public ValueProcessor processor(String context) {
-        return new LongValueProcessor(longFunction());
+        return new InstantNumberMixinProcessor(longFunction());
     }
 
     @Override
@@ -54,7 +55,7 @@ final class InstantNumberMixin extends Mixin<InstantNumberValue> {
                 Type.instantType().arrayType());
     }
 
-    private LongValueProcessor.ToLong longFunction() {
+    private LongImpl longFunction() {
         switch (options.format()) {
             case EPOCH_SECONDS:
                 return new LongImpl(9);
@@ -69,7 +70,7 @@ final class InstantNumberMixin extends Mixin<InstantNumberValue> {
         }
     }
 
-    private class LongImpl implements LongValueProcessor.ToLong {
+    private class LongImpl {
 
         private final int scaled;
         private final int mult;
@@ -99,7 +100,6 @@ final class InstantNumberMixin extends Mixin<InstantNumberValue> {
             return Parsing.parseDecimalStringAsScaledLong(parser, scaled);
         }
 
-        @Override
         public final long parseValue(JsonParser parser) throws IOException {
             switch (parser.currentToken()) {
                 case VALUE_NUMBER_INT:
@@ -121,7 +121,6 @@ final class InstantNumberMixin extends Mixin<InstantNumberValue> {
             throw unexpectedToken(parser);
         }
 
-        @Override
         public final long parseMissing(JsonParser parser) throws IOException {
             checkMissingAllowed(parser);
             return onMissing;
@@ -130,7 +129,7 @@ final class InstantNumberMixin extends Mixin<InstantNumberValue> {
 
     private class ObjectImpl implements ToObject<Instant> {
 
-        private final ToLong longImpl;
+        private final LongImpl longImpl;
 
         public ObjectImpl() {
             this.longImpl = longFunction();
@@ -144,6 +143,36 @@ final class InstantNumberMixin extends Mixin<InstantNumberValue> {
         @Override
         public Instant parseMissing(JsonParser parser) throws IOException {
             return DateTimeUtils.epochNanosToInstant(longImpl.parseValue(parser));
+        }
+    }
+
+    private class InstantNumberMixinProcessor extends ValueProcessorMixinBase {
+        private final LongImpl impl;
+
+        private WritableLongChunk<?> out;
+
+        public InstantNumberMixinProcessor(LongImpl impl) {
+            this.impl = Objects.requireNonNull(impl);
+        }
+
+        @Override
+        public final void setContext(List<WritableChunk<?>> out) {
+            this.out = out.get(0).asWritableLongChunk();
+        }
+
+        @Override
+        public final void clearContext() {
+            out = null;
+        }
+
+        @Override
+        protected void processCurrentValueImpl(JsonParser parser) throws IOException {
+            out.add(impl.parseValue(parser));
+        }
+
+        @Override
+        protected void processMissingImpl(JsonParser parser) throws IOException {
+            out.add(impl.parseMissing(parser));
         }
     }
 }

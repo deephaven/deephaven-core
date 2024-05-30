@@ -486,7 +486,7 @@ def simple_spec(col_name: str, data_type: DType = None) -> KeyValueSpec:
 
 
 def object_processor_spec(provider: jpy.JType) -> KeyValueSpec:
-    """Creates a kafka key or value spec implementation from a named object processor provider. It must be capable of
+    """Creates a kafka key-value spec implementation from a named object processor provider. It must be capable of
     supporting a byte array.
 
     Args:

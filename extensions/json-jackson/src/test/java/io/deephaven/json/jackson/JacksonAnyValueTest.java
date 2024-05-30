@@ -16,11 +16,13 @@ import io.deephaven.chunk.DoubleChunk;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.json.AnyValue;
+import io.deephaven.json.CharValue;
 import io.deephaven.json.DoubleValue;
 import io.deephaven.json.IntValue;
 import io.deephaven.json.ObjectValue;
 import io.deephaven.json.TestHelper;
 import io.deephaven.json.TupleValue;
+import io.deephaven.qst.type.Type;
 import io.deephaven.util.QueryConstants;
 import org.junit.jupiter.api.Test;
 
@@ -28,7 +30,23 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class JacksonAnyValueTest {
+
+    @Test
+    void provider() {
+        final JacksonProvider provider = JacksonProvider.of(AnyValue.of());
+        assertThat(provider.outputTypes()).containsExactly(Type.ofCustom(TreeNode.class));
+        assertThat(provider.stringProcessor().outputTypes()).containsExactly(Type.ofCustom(TreeNode.class));
+    }
+
+    @Test
+    void arrayProvider() {
+        final JacksonProvider provider = JacksonProvider.of(AnyValue.of().array());
+        assertThat(provider.outputTypes()).containsExactly(Type.ofCustom(TreeNode.class).arrayType());
+        assertThat(provider.stringProcessor().outputTypes()).containsExactly(Type.ofCustom(TreeNode.class).arrayType());
+    }
 
     @Test
     void anyMissing() throws IOException {

@@ -55,6 +55,16 @@ public class TypedObjectValueTest {
                     .onMissing("<missing>")
                     .build();
 
+
+    @Test
+    void provider() {
+        final JacksonProvider provider = JacksonProvider.of(QUOTE_OR_TRADE_OBJECT);
+        assertThat(provider.outputTypes()).containsExactly(Type.stringType(), Type.stringType(), Type.longType(),
+                Type.doubleType(), Type.doubleType(), Type.doubleType(), Type.doubleType());
+        assertThat(provider.stringProcessor().outputTypes()).containsExactly(Type.stringType(), Type.stringType(),
+                Type.longType(), Type.doubleType(), Type.doubleType(), Type.doubleType(), Type.doubleType());
+    }
+
     @Test
     void typeDiscriminationQuoteTrade() throws IOException {
         parse(QUOTE_OR_TRADE_OBJECT, List.of(

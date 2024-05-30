@@ -5,6 +5,8 @@ package io.deephaven.json;
 
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.json.jackson.JacksonProvider;
+import io.deephaven.qst.type.Type;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -22,6 +24,21 @@ public class TupleValueTest {
 
     private static final TupleValue STRING_SKIPINT_TUPLE =
             TupleValue.of(StringValue.standard(), IntValue.standard().skip());
+
+    @Test
+    void provider() {
+        final JacksonProvider provider = JacksonProvider.of(STRING_INT_TUPLE);
+        assertThat(provider.outputTypes()).containsExactly(Type.stringType(), Type.intType());
+        assertThat(provider.stringProcessor().outputTypes()).containsExactly(Type.stringType(), Type.intType());
+    }
+
+    @Test
+    void arrayProvider() {
+        final JacksonProvider provider = JacksonProvider.of(STRING_INT_TUPLE.array());
+        assertThat(provider.outputTypes()).containsExactly(Type.stringType().arrayType(), Type.intType().arrayType());
+        assertThat(provider.stringProcessor().outputTypes()).containsExactly(Type.stringType().arrayType(),
+                Type.intType().arrayType());
+    }
 
     @Test
     void stringIntTuple() throws IOException {

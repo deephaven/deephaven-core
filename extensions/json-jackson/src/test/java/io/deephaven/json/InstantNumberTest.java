@@ -5,17 +5,34 @@ package io.deephaven.json;
 
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.json.InstantNumberValue.Format;
+import io.deephaven.json.jackson.JacksonProvider;
+import io.deephaven.qst.type.Type;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
 import static io.deephaven.json.TestHelper.parse;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class InstantNumberTest {
     private static final long WITH_SECONDS = 1703292532000000000L;
     private static final long WITH_MILLIS = 1703292532123000000L;
     private static final long WITH_MICROS = 1703292532123456000L;
     private static final long WITH_NANOS = 1703292532123456789L;
+
+    @Test
+    void provider() {
+        final JacksonProvider provider = JacksonProvider.of(Format.EPOCH_SECONDS.standard(false));
+        assertThat(provider.outputTypes()).containsExactly(Type.instantType());
+        assertThat(provider.stringProcessor().outputTypes()).containsExactly(Type.instantType());
+    }
+
+    @Test
+    void arrayProvider() {
+        final JacksonProvider provider = JacksonProvider.of(Format.EPOCH_SECONDS.standard(false).array());
+        assertThat(provider.outputTypes()).containsExactly(Type.instantType().arrayType());
+        assertThat(provider.stringProcessor().outputTypes()).containsExactly(Type.instantType().arrayType());
+    }
 
     @Test
     void epochSeconds() throws IOException {

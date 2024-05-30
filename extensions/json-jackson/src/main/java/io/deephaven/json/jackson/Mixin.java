@@ -161,7 +161,7 @@ abstract class Mixin<T extends Value> implements JacksonProvider {
 
     abstract Stream<List<String>> paths();
 
-    abstract Stream<? extends Type<?>> outputTypesImpl();
+    abstract Stream<Type<?>> outputTypesImpl();
 
     static List<String> prefixWith(String prefix, List<String> path) {
         return Stream.concat(Stream.of(prefix), path.stream()).collect(Collectors.toList());
@@ -467,5 +467,55 @@ abstract class Mixin<T extends Value> implements JacksonProvider {
                 msg = parser.currentToken() + " not expected";
         }
         throw new ValueAwareException(msg, parser.currentLocation(), options);
+    }
+
+    abstract class ValueProcessorMixinBase implements ValueProcessor {
+        @Override
+        public final int numColumns() {
+            return Mixin.this.outputSize();
+        }
+
+        @Override
+        public final Stream<Type<?>> columnTypes() {
+            return Mixin.this.outputTypesImpl();
+        }
+
+        @Override
+        public final void processCurrentValue(JsonParser parser) throws IOException {
+            try {
+                processCurrentValueImpl(parser);
+            } catch (ValueAwareException e) {
+                if (options.equals(e.value())) {
+                    throw e;
+                } else {
+                    throw wrap(parser, e, "Unable to process current value");
+                }
+            } catch (IOException e) {
+                throw wrap(parser, e, "Unable to process current value");
+            }
+        }
+
+        @Override
+        public final void processMissing(JsonParser parser) throws IOException {
+            try {
+                processMissingImpl(parser);
+            } catch (ValueAwareException e) {
+                if (options.equals(e.value())) {
+                    throw e;
+                } else {
+                    throw wrap(parser, e, "Unable to process missing value");
+                }
+            } catch (IOException e) {
+                throw wrap(parser, e, "Unable to process missing value");
+            }
+        }
+
+        protected abstract void processCurrentValueImpl(JsonParser parser) throws IOException;
+
+        protected abstract void processMissingImpl(JsonParser parser) throws IOException;
+
+        private ValueAwareException wrap(JsonParser parser, IOException e, String msg) {
+            return new ValueAwareException(msg, parser.currentLocation(), e, options);
+        }
     }
 }

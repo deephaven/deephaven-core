@@ -4,10 +4,13 @@
 package io.deephaven.json;
 
 import io.deephaven.chunk.LongChunk;
+import io.deephaven.json.jackson.JacksonProvider;
+import io.deephaven.qst.type.Type;
 import io.deephaven.util.QueryConstants;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.List;
 
 import static io.deephaven.json.TestHelper.parse;
@@ -16,6 +19,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 public class LongValueTest {
+
+    @Test
+    void provider() {
+        final JacksonProvider provider = JacksonProvider.of(LongValue.standard());
+        assertThat(provider.outputTypes()).containsExactly(Type.longType());
+        assertThat(provider.stringProcessor().outputTypes()).containsExactly(Type.longType());
+    }
+
+    @Test
+    void arrayProvider() {
+        final JacksonProvider provider = JacksonProvider.of(LongValue.standard().array());
+        assertThat(provider.outputTypes()).containsExactly(Type.longType().arrayType());
+        assertThat(provider.stringProcessor().outputTypes()).containsExactly(Type.longType().arrayType());
+    }
 
     @Test
     void standard() throws IOException {
@@ -63,12 +80,27 @@ public class LongValueTest {
     }
 
     @Test
-    void strictOverflow() {
+    void standardUnderflow() {
         try {
-            process(LongValue.strict(), "9223372036854775808");
+            process(LongValue.standard(), BigInteger.valueOf(Long.MIN_VALUE).subtract(BigInteger.ONE).toString());
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
-            assertThat(e).hasMessageContaining(
+            assertThat(e).hasMessageContaining("Unable to process current value for LongValue");
+            assertThat(e).hasCauseInstanceOf(IOException.class);
+            assertThat(e.getCause()).hasMessageContaining(
+                    "Numeric value (-9223372036854775809) out of range of long (-9223372036854775808 - 9223372036854775807)");
+        }
+    }
+
+    @Test
+    void standardOverflow() {
+        try {
+            process(LongValue.standard(), BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.ONE).toString());
+            failBecauseExceptionWasNotThrown(IOException.class);
+        } catch (IOException e) {
+            assertThat(e).hasMessageContaining("Unable to process current value for LongValue");
+            assertThat(e).hasCauseInstanceOf(IOException.class);
+            assertThat(e.getCause()).hasMessageContaining(
                     "Numeric value (9223372036854775808) out of range of long (-9223372036854775808 - 9223372036854775807)");
         }
     }

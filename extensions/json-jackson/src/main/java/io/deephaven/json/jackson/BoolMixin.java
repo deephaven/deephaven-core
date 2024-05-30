@@ -5,9 +5,9 @@ package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
+import io.deephaven.chunk.WritableByteChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.json.BoolValue;
-import io.deephaven.json.jackson.ByteValueProcessor.ToByte;
-import io.deephaven.json.jackson.ObjectValueProcessor.ToObject;
 import io.deephaven.qst.type.Type;
 import io.deephaven.util.BooleanUtils;
 
@@ -15,7 +15,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Stream;
 
-final class BoolMixin extends Mixin<BoolValue> implements ToByte {
+final class BoolMixin extends Mixin<BoolValue> {
 
     private final Boolean onNull;
     private final Boolean onMissing;
@@ -47,11 +47,10 @@ final class BoolMixin extends Mixin<BoolValue> implements ToByte {
 
     @Override
     public ValueProcessor processor(String context) {
-        return new ByteValueProcessor(this);
+        return new BoolMixinProcessor();
     }
 
-    @Override
-    public byte parseValue(JsonParser parser) throws IOException {
+    private byte parseValue(JsonParser parser) throws IOException {
         switch (parser.currentToken()) {
             case VALUE_TRUE:
                 return BooleanUtils.TRUE_BOOLEAN_AS_BYTE;
@@ -66,8 +65,7 @@ final class BoolMixin extends Mixin<BoolValue> implements ToByte {
         throw unexpectedToken(parser);
     }
 
-    @Override
-    public byte parseMissing(JsonParser parser) throws IOException {
+    private byte parseMissing(JsonParser parser) throws IOException {
         return parseFromMissing(parser);
     }
 
@@ -142,5 +140,29 @@ final class BoolMixin extends Mixin<BoolValue> implements ToByte {
     private Boolean parseFromMissingBoolean(JsonParser parser) throws IOException {
         checkMissingAllowed(parser);
         return onMissing;
+    }
+
+    private class BoolMixinProcessor extends ValueProcessorMixinBase {
+        private WritableByteChunk<?> out;
+
+        @Override
+        public final void setContext(List<WritableChunk<?>> out) {
+            this.out = out.get(0).asWritableByteChunk();
+        }
+
+        @Override
+        public final void clearContext() {
+            out = null;
+        }
+
+        @Override
+        protected void processCurrentValueImpl(JsonParser parser) throws IOException {
+            out.add(parseValue(parser));
+        }
+
+        @Override
+        protected void processMissingImpl(JsonParser parser) throws IOException {
+            out.add(parseMissing(parser));
+        }
     }
 }

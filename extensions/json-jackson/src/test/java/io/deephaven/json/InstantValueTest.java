@@ -4,6 +4,9 @@
 package io.deephaven.json;
 
 import io.deephaven.chunk.LongChunk;
+import io.deephaven.json.InstantNumberValue.Format;
+import io.deephaven.json.jackson.JacksonProvider;
+import io.deephaven.qst.type.Type;
 import io.deephaven.util.QueryConstants;
 import org.junit.jupiter.api.Test;
 
@@ -19,6 +22,20 @@ public class InstantValueTest {
 
     private static final String XYZ_STR = "2009-02-13T23:31:30.123456789";
     private static final long XYZ_NANOS = 1234567890L * 1_000_000_000 + 123456789;
+
+    @Test
+    void provider() {
+        final JacksonProvider provider = JacksonProvider.of(InstantValue.standard());
+        assertThat(provider.outputTypes()).containsExactly(Type.instantType());
+        assertThat(provider.stringProcessor().outputTypes()).containsExactly(Type.instantType());
+    }
+
+    @Test
+    void arrayProvider() {
+        final JacksonProvider provider = JacksonProvider.of(InstantValue.standard().array());
+        assertThat(provider.outputTypes()).containsExactly(Type.instantType().arrayType());
+        assertThat(provider.stringProcessor().outputTypes()).containsExactly(Type.instantType().arrayType());
+    }
 
     @Test
     void iso8601() throws IOException {

@@ -4,6 +4,8 @@
 package io.deephaven.json;
 
 import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.json.jackson.JacksonProvider;
+import io.deephaven.qst.type.Type;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -16,6 +18,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 public class BigDecimalValueTest {
+
+    @Test
+    void provider() {
+        final JacksonProvider provider = JacksonProvider.of(BigDecimalValue.standard());
+        assertThat(provider.outputTypes()).containsExactly(Type.ofCustom(BigDecimal.class));
+        assertThat(provider.stringProcessor().outputTypes()).containsExactly(Type.ofCustom(BigDecimal.class));
+    }
+
+    @Test
+    void arrayProvider() {
+        final JacksonProvider provider = JacksonProvider.of(BigDecimalValue.standard().array());
+        assertThat(provider.outputTypes()).containsExactly(Type.ofCustom(BigDecimal.class).arrayType());
+        assertThat(provider.stringProcessor().outputTypes())
+                .containsExactly(Type.ofCustom(BigDecimal.class).arrayType());
+    }
 
     @Test
     void standard() throws IOException {

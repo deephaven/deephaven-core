@@ -4,6 +4,8 @@
 package io.deephaven.json;
 
 import io.deephaven.chunk.CharChunk;
+import io.deephaven.json.jackson.JacksonProvider;
+import io.deephaven.qst.type.Type;
 import io.deephaven.util.QueryConstants;
 import org.junit.jupiter.api.Test;
 
@@ -15,6 +17,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 public class CharValueTest {
+
+    @Test
+    void provider() {
+        final JacksonProvider provider = JacksonProvider.of(CharValue.standard());
+        assertThat(provider.outputTypes()).containsExactly(Type.charType());
+        assertThat(provider.stringProcessor().outputTypes()).containsExactly(Type.charType());
+    }
+
+    @Test
+    void arrayProvider() {
+        final JacksonProvider provider = JacksonProvider.of(CharValue.standard().array());
+        assertThat(provider.outputTypes()).containsExactly(Type.charType().arrayType());
+        assertThat(provider.stringProcessor().outputTypes()).containsExactly(Type.charType().arrayType());
+    }
 
     @Test
     void standard() throws IOException {
@@ -125,6 +141,18 @@ public class CharValueTest {
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
             assertThat(e).hasMessageContaining("Array not expected");
+        }
+    }
+
+    @Test
+    void stringTooBig() {
+        try {
+            process(CharValue.standard(), "\"ABC\"");
+            failBecauseExceptionWasNotThrown(IOException.class);
+        } catch (IOException e) {
+            assertThat(e).hasMessageContaining("Unable to process current value for CharValue");
+            assertThat(e).hasCauseInstanceOf(IOException.class);
+            assertThat(e.getCause()).hasMessageContaining("Expected char to be string of length 1");
         }
     }
 }
