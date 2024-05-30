@@ -143,12 +143,12 @@ public abstract class TypedObjectValue extends ValueRestrictedUniverseBase {
      * The output type value to use when {@link JsonValueTypes#NULL} is encountered. {@link #allowedTypes()} must
      * contain {@link JsonValueTypes#NULL}.
      */
-    public abstract Optional<String> onNull();
+    public abstract Optional<Object> onNull();
 
     /**
      * The output type value to use when a value is missing. {@link #allowMissing()} must be {@code true}.
      */
-    public abstract Optional<String> onMissing();
+    public abstract Optional<Object> onMissing();
 
     @Override
     final Set<JsonValueTypes> universe() {
@@ -178,9 +178,9 @@ public abstract class TypedObjectValue extends ValueRestrictedUniverseBase {
 
         Builder allowUnknownTypes(boolean allowUnknownTypes);
 
-        Builder onNull(String onNull);
+        Builder onNull(Object onNull);
 
-        Builder onMissing(String onMissing);
+        Builder onMissing(Object onMissing);
     }
 
     private static ObjectValue without(ObjectValue options, Set<ObjectField> excludedFields) {

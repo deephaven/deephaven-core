@@ -22,6 +22,8 @@ from typing import Dict, List, Union, Tuple, Optional, Literal, Any
 from deephaven import dtypes
 from deephaven._wrapper import JObjectWrapper
 from deephaven.time import to_j_instant
+from deephaven._jpy import strict_cast
+
 
 __all__ = [
     "string_",
@@ -51,34 +53,31 @@ __all__ = [
 
 # https://deephaven.atlassian.net/browse/DH-15061
 # It is important that ValueOptions gets imported before the others.
-_JValueOptions = jpy.get_type("io.deephaven.json.Value")
-_JObjectOptions = jpy.get_type("io.deephaven.json.ObjectValue")
-_JArrayOptions = jpy.get_type("io.deephaven.json.ArrayValue")
-_JObjectKvOptions = jpy.get_type("io.deephaven.json.ObjectKvValue")
-_JTupleOptions = jpy.get_type("io.deephaven.json.TupleValue")
-_JObjectFieldOptions = jpy.get_type("io.deephaven.json.ObjectField")
-_JRepeatedFieldBehavior = jpy.get_type(
-    "io.deephaven.json.ObjectField$RepeatedBehavior"
-)
+_JValue = jpy.get_type("io.deephaven.json.Value")
+_JObjectValue = jpy.get_type("io.deephaven.json.ObjectValue")
+_JTypedObjectValue = jpy.get_type("io.deephaven.json.TypedObjectValue")
+_JArrayValue = jpy.get_type("io.deephaven.json.ArrayValue")
+_JObjectKvValue = jpy.get_type("io.deephaven.json.ObjectKvValue")
+_JTupleValue = jpy.get_type("io.deephaven.json.TupleValue")
+_JObjectField = jpy.get_type("io.deephaven.json.ObjectField")
+_JRepeatedFieldBehavior = jpy.get_type("io.deephaven.json.ObjectField$RepeatedBehavior")
 _JJsonValueTypes = jpy.get_type("io.deephaven.json.JsonValueTypes")
-_JBoolOptions = jpy.get_type("io.deephaven.json.BoolValue")
-_JCharOptions = jpy.get_type("io.deephaven.json.CharValue")
-_JByteOptions = jpy.get_type("io.deephaven.json.ByteValue")
-_JShortOptions = jpy.get_type("io.deephaven.json.ShortValue")
-_JIntOptions = jpy.get_type("io.deephaven.json.IntValue")
-_JLongOptions = jpy.get_type("io.deephaven.json.LongValue")
-_JFloatOptions = jpy.get_type("io.deephaven.json.FloatValue")
-_JDoubleOptions = jpy.get_type("io.deephaven.json.DoubleValue")
-_JStringOptions = jpy.get_type("io.deephaven.json.StringValue")
-_JSkipOptions = jpy.get_type("io.deephaven.json.SkipValue")
-_JInstantOptions = jpy.get_type("io.deephaven.json.InstantValue")
-_JInstantNumberOptions = jpy.get_type("io.deephaven.json.InstantNumberValue")
-_JInstantNumberOptionsFormat = jpy.get_type(
-    "io.deephaven.json.InstantNumberValue$Format"
-)
-_JBigIntegerOptions = jpy.get_type("io.deephaven.json.BigIntegerValue")
-_JBigDecimalOptions = jpy.get_type("io.deephaven.json.BigDecimalValue")
-_JAnyOptions = jpy.get_type("io.deephaven.json.AnyValue")
+_JBoolValue = jpy.get_type("io.deephaven.json.BoolValue")
+_JCharValue = jpy.get_type("io.deephaven.json.CharValue")
+_JByteValue = jpy.get_type("io.deephaven.json.ByteValue")
+_JShortValue = jpy.get_type("io.deephaven.json.ShortValue")
+_JIntValue = jpy.get_type("io.deephaven.json.IntValue")
+_JLongValue = jpy.get_type("io.deephaven.json.LongValue")
+_JFloatValue = jpy.get_type("io.deephaven.json.FloatValue")
+_JDoubleValue = jpy.get_type("io.deephaven.json.DoubleValue")
+_JStringValue = jpy.get_type("io.deephaven.json.StringValue")
+_JSkipValue = jpy.get_type("io.deephaven.json.SkipValue")
+_JInstantValue = jpy.get_type("io.deephaven.json.InstantValue")
+_JInstantNumberValue = jpy.get_type("io.deephaven.json.InstantNumberValue")
+_JInstantNumberValueFormat = jpy.get_type("io.deephaven.json.InstantNumberValue$Format")
+_JBigIntegerValue = jpy.get_type("io.deephaven.json.BigIntegerValue")
+_JBigDecimalValue = jpy.get_type("io.deephaven.json.BigDecimalValue")
+_JAnyValue = jpy.get_type("io.deephaven.json.AnyValue")
 
 
 _VALUE_STRING = _JJsonValueTypes.STRING
@@ -89,16 +88,16 @@ _VALUE_BOOL = _JJsonValueTypes.BOOL
 _VALUE_OBJECT = _JJsonValueTypes.OBJECT
 _VALUE_ARRAY = _JJsonValueTypes.ARRAY
 
-_EPOCH_SECONDS = _JInstantNumberOptionsFormat.EPOCH_SECONDS
-_EPOCH_MILLIS = _JInstantNumberOptionsFormat.EPOCH_MILLIS
-_EPOCH_MICROS = _JInstantNumberOptionsFormat.EPOCH_MICROS
-_EPOCH_NANOS = _JInstantNumberOptionsFormat.EPOCH_NANOS
+_EPOCH_SECONDS = _JInstantNumberValueFormat.EPOCH_SECONDS
+_EPOCH_MILLIS = _JInstantNumberValueFormat.EPOCH_MILLIS
+_EPOCH_MICROS = _JInstantNumberValueFormat.EPOCH_MICROS
+_EPOCH_NANOS = _JInstantNumberValueFormat.EPOCH_NANOS
 
 
 class JsonOptions(JObjectWrapper):
     """The JSON options object. Provides a named object processor provider."""
 
-    j_object_type = _JValueOptions
+    j_object_type = _JValue
 
     def __init__(self, j_options: jpy.JType):
         self.j_options = j_options
@@ -170,7 +169,7 @@ class FieldOptions:
 
     def _j_field_options(self, name: str) -> jpy.JType:
         builder = (
-            _JObjectFieldOptions.builder()
+            _JObjectField.builder()
             .name(name)
             .options(json(self.value).j_options)
             .repeatedBehavior(self.repeated_behavior.value)
@@ -248,7 +247,7 @@ def object_(
     Returns:
         the object options
     """
-    builder = _JObjectOptions.builder()
+    builder = _JObjectValue.builder()
     _build(builder, allow_missing, allow_null, allow_object=True)
     builder.allowUnknownFields(allow_unknown_fields)
     for field_name, field_opts in fields.items():
@@ -263,6 +262,87 @@ def object_(
         )
         # noinspection PyProtectedMember
         builder.addFields(field_opts._j_field_options(field_name))
+    return JsonOptions(builder.build())
+
+
+def typed_object_(
+    type_field: str,
+    shared_fields: Dict[str, Union[JsonValueType, FieldOptions]],
+    objects: Dict[str, JsonValueType],
+    allow_unknown_types: bool = True,
+    allow_missing: bool = True,
+    allow_null: bool = True,
+    on_missing: Optional[str] = None,
+    on_null: Optional[str] = None,
+) -> JsonOptions:
+    """Creates a type-discriminated object options. For example, the JSON objects
+
+    .. code-block:: json
+        { "type": "trade", "symbol": "FOO", "price": 70.03, "size": 42 }
+
+    .. code-block:: json
+        { "type": "quote", "symbol": "BAR", "bid": 10.01, "ask": 10.05 }
+
+    might be modelled as a type-discriminated object with "type" as the type field, "symbol" as a shared field, with a
+    "trade" object containing a "bid" and an "ask" field, and with a "quote" object containing a "price" and a "size"
+    field:
+
+    .. code-block:: python
+        typed_object_(
+            "type",
+            {"symbol": str},
+            {
+                "quote": {
+                    "price": float,
+                    "size": int
+                },
+                "trade": {
+                    "bid": float,
+                    "ask": float
+                }
+            }
+        )
+
+    Args:
+        type_field (str): the type-discriminating field
+        shared_fields (Dict[str, Union[JsonValueType, FieldOptions]]): the shared fields
+        objects (Dict[str, Union[JsonValueType, FieldOptions]]): the individual objects, keyed by their
+            type-discriminated value. The values must be object options.
+        allow_unknown_types (bool): if unknown types are allow, by default is True
+        allow_missing (bool): if the object is allowed to be missing, by default is True
+        allow_null (bool): if the object is allowed to be a JSON null type, by default is True
+        on_missing (Optional[str]): the type value to use when the JSON value is missing and allow_missing is True,
+            default is None
+        on_null (Optional[str]): the type value to use when the JSON value is null and allow_null is True, default is
+            None
+
+    Returns:
+        the object options
+    """
+    builder = _JTypedObjectValue.builder()
+    _build(builder, allow_missing, allow_null, allow_object=True)
+    builder.typeFieldName(type_field)
+    builder.allowUnknownTypes(allow_unknown_types)
+    if on_missing:
+        builder.onMissing(on_missing)
+    if on_null:
+        builder.onNull(on_null)
+    for shared_field_name, shared_field_opts in shared_fields.items():
+        shared_field_opts = (
+            shared_field_opts
+            if isinstance(shared_field_opts, FieldOptions)
+            else FieldOptions(
+                shared_field_opts,
+                repeated_behavior=RepeatedFieldBehavior.ERROR,
+                case_sensitive=True,
+            )
+        )
+        # noinspection PyProtectedMember
+        builder.addSharedFields(shared_field_opts._j_field_options(shared_field_name))
+    for object_name, object_type in objects.items():
+        builder.putObjects(
+            object_name, strict_cast(json(object_type).j_options, _JObjectValue)
+        )
     return JsonOptions(builder.build())
 
 
@@ -300,7 +380,7 @@ def array_(
     Returns:
         the array options
     """
-    builder = _JArrayOptions.builder()
+    builder = _JArrayValue.builder()
     builder.element(json(element).j_options)
     _build(builder, allow_missing, allow_null, allow_array=True)
     return JsonOptions(builder.build())
@@ -338,7 +418,7 @@ def object_kv_(
     Returns:
         the object kv options
     """
-    builder = _JObjectKvOptions.builder()
+    builder = _JObjectKvValue.builder()
     builder.key(json(key_type).j_options)
     builder.value(json(value_type).j_options)
     _build(builder, allow_missing, allow_null, allow_object=True)
@@ -389,7 +469,7 @@ def tuple_(
         kvs = values.items()
     else:
         raise TypeError(f"Invalid tuple type: {type(values)}")
-    builder = _JTupleOptions.builder()
+    builder = _JTupleValue.builder()
     _build(
         builder,
         allow_missing,
@@ -439,7 +519,7 @@ def bool_(
     Returns:
         the bool options
     """
-    builder = _JBoolOptions.builder()
+    builder = _JBoolValue.builder()
     _build(
         builder,
         allow_missing,
@@ -479,7 +559,7 @@ def char_(
     Returns:
         the char options
     """
-    builder = _JCharOptions.builder()
+    builder = _JCharValue.builder()
     _build(
         builder,
         allow_missing,
@@ -522,7 +602,7 @@ def byte_(
     Returns:
         the byte options
     """
-    builder = _JByteOptions.builder()
+    builder = _JByteValue.builder()
     _build(
         builder,
         allow_missing,
@@ -567,7 +647,7 @@ def short_(
     Returns:
         the short options
     """
-    builder = _JShortOptions.builder()
+    builder = _JShortValue.builder()
     _build(
         builder,
         allow_missing,
@@ -612,7 +692,7 @@ def int_(
     Returns:
         the int options
     """
-    builder = _JIntOptions.builder()
+    builder = _JIntValue.builder()
     _build(
         builder,
         allow_missing,
@@ -668,7 +748,7 @@ def long_(
     Returns:
         the long options
     """
-    builder = _JLongOptions.builder()
+    builder = _JLongValue.builder()
     _build(
         builder,
         allow_missing,
@@ -711,7 +791,7 @@ def float_(
     Returns:
         the float options
     """
-    builder = _JFloatOptions.builder()
+    builder = _JFloatValue.builder()
     _build(
         builder,
         allow_missing,
@@ -765,7 +845,7 @@ def double_(
     Returns:
         the double options
     """
-    builder = _JDoubleOptions.builder()
+    builder = _JDoubleValue.builder()
     _build(
         builder,
         allow_missing,
@@ -823,7 +903,7 @@ def string_(
     Returns:
         the double options
     """
-    builder = _JStringOptions.builder()
+    builder = _JStringValue.builder()
     _build(
         builder,
         allow_missing,
@@ -894,7 +974,7 @@ def instant_(
         the Instant options
     """
     if number_format:
-        builder = _JInstantNumberOptions.builder()
+        builder = _JInstantNumberValue.builder()
         if on_missing:
             builder.onMull(to_j_instant(on_missing))
         if on_null:
@@ -920,7 +1000,7 @@ def instant_(
     else:
         if allow_decimal:
             raise TypeError("allow_decimal is only valid when using number_format")
-        builder = _JInstantOptions.builder()
+        builder = _JInstantValue.builder()
         if on_missing:
             builder.onMull(to_j_instant(on_missing))
         if on_null:
@@ -960,7 +1040,7 @@ def big_integer_(
     Returns:
         the BigInteger options
     """
-    builder = _JBigIntegerOptions.builder()
+    builder = _JBigIntegerValue.builder()
     _build(
         builder,
         allow_missing,
@@ -996,7 +1076,7 @@ def big_decimal_(
     Returns:
         the BigDecimal options
     """
-    builder = _JBigDecimalOptions.builder()
+    builder = _JBigDecimalValue.builder()
     _build(
         builder,
         allow_missing,
@@ -1014,7 +1094,7 @@ def any_() -> JsonOptions:
     Returns:
         the "any" options
     """
-    return JsonOptions(_JAnyOptions.of())
+    return JsonOptions(_JAnyValue.of())
 
 
 def skip_(
@@ -1057,7 +1137,7 @@ def skip_(
     def _allow(x: Optional[bool]) -> bool:
         return x if x is not None else allow_by_default
 
-    builder = _JSkipOptions.builder()
+    builder = _JSkipValue.builder()
     _build(
         builder,
         allow_missing=_allow(allow_missing),

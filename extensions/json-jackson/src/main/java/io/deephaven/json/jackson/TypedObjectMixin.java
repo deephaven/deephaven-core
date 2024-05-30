@@ -39,6 +39,9 @@ final class TypedObjectMixin extends Mixin<TypedObjectValue> {
         if (!(options.typeField().options() instanceof StringValue)) {
             throw new IllegalArgumentException("Only string-valued type fields are currently supported");
         }
+        if (!(options.onNull().orElse(null) instanceof String)) {
+
+        }
         typeFieldAliases = options.typeField().caseSensitive() ? null : new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
         {
             final LinkedHashMap<ObjectField, Mixin<?>> map = new LinkedHashMap<>(options.sharedFields().size());
@@ -244,7 +247,7 @@ final class TypedObjectMixin extends Mixin<TypedObjectValue> {
         @Override
         public void processMissing(JsonParser parser) throws IOException {
             checkMissingAllowed(parser);
-            typeChunk.add(options.onMissing().orElse(null));
+            typeChunk.add((String) options.onMissing().orElse(null));
             // We are _not_ trying to pass along the potential "on missing" value for each individual chunk; the
             // individual columns may have "allowMissing = false", but as a higher level of control with
             // TypedObjectValue, we have already verified that we want to allow missing. As such, the discriminating
@@ -259,7 +262,7 @@ final class TypedObjectMixin extends Mixin<TypedObjectValue> {
 
         private void processNullObject(JsonParser parser) throws IOException {
             checkNullAllowed(parser);
-            typeChunk.add(options.onNull().orElse(null));
+            typeChunk.add((String) options.onNull().orElse(null));
             // We are _not_ trying to pass along the potential "on null" value for each individual chunk; the
             // individual columns may have "allowNull = false", but as a higher level of control with
             // TypedObjectValue, we have already verified that we want to allow null. As such, the discriminating
