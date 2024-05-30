@@ -824,21 +824,6 @@ public class BarrageStreamGeneratorImpl implements
         cos.flush();
     }
 
-    private static int createByteVector(final FlatBufferBuilder builder, final byte[] data, final int offset,
-            final int length) {
-        builder.startVector(1, length, 1);
-
-        if (length > 0) {
-            builder.prep(1, length - 1);
-
-            for (int i = length - 1; i >= 0; --i) {
-                builder.putByte(data[offset + i]);
-            }
-        }
-
-        return builder.endVector();
-    }
-
     private void processBatches(Consumer<InputStream> visitor, final View view,
             final long numRows, final int maxBatchSize, ByteBuffer metadata,
             final ColumnVisitor columnVisitor, final MutableLong bytesWritten) throws IOException {
@@ -1111,7 +1096,7 @@ public class BarrageStreamGeneratorImpl implements
         protected byte[] raw;
 
         protected int addToFlatBuffer(final FlatBufferBuilder builder) {
-            return createByteVector(builder, raw, 0, len);
+            return builder.createByteVector(raw, 0, len);
         }
     }
 
@@ -1163,7 +1148,7 @@ public class BarrageStreamGeneratorImpl implements
                 nlen = baos.size();
             }
 
-            return createByteVector(builder, nraw, 0, nlen);
+            return builder.createByteVector(nraw, 0, nlen);
         }
     }
 
@@ -1185,7 +1170,7 @@ public class BarrageStreamGeneratorImpl implements
             final byte[] nraw = mine.toByteArray();
             final int nBits = mine.previousSetBit(Integer.MAX_VALUE - 1) + 1;
             final int nlen = (int) ((long) nBits + 7) / 8;
-            return createByteVector(builder, nraw, 0, nlen);
+            return builder.createByteVector(nraw, 0, nlen);
         }
     }
 
