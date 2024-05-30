@@ -13,7 +13,7 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.benchmarking.BenchUtil;
 import io.deephaven.engine.rowset.impl.TstValues;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableLong;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.runner.RunnerException;
@@ -75,16 +75,16 @@ public class RowSequenceBench {
     long fixedCost() {
         final MutableLong accum = new MutableLong(0);
         fixedCostOk.forEachRowKey((final long v) -> {
-            accum.setValue(accum.longValue() ^ v);
+            accum.set(accum.get() ^ v);
             return true;
         });
         indicesChunk.setSize(chunkSz);
         fixedCostOk.fillRowKeyChunk(indicesChunk);
         final int sz = indicesChunk.size();
         for (int i = 0; i < sz; ++i) {
-            accum.setValue(accum.longValue() ^ indicesChunk.get(i));
+            accum.set(accum.get() ^ indicesChunk.get(i));
         }
-        return accum.getValue();
+        return accum.get();
     }
 
     @Benchmark

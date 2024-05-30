@@ -30,6 +30,7 @@ dependencies {
     implementation project(':log-factory')
     implementation project(':Configuration')
     implementation depCommonsLang3
+    implementation project(':Util')
 
     Classpaths.inheritCommonsText(project, 'implementation')
 

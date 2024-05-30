@@ -69,9 +69,9 @@ import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.annotations.VisibleForTesting;
+import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.vector.Vector;
 import org.apache.commons.lang3.mutable.Mutable;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -2010,7 +2010,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                             continue;
                         }
 
-                        if (mcsPairIdx.intValue() == movePosition) {
+                        if (mcsPairIdx.get() == movePosition) {
                             moveColumns.run();
                         }
 
@@ -2019,7 +2019,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                         newColumns.put(newName.name(), columnSource);
                     }
 
-                    if (mcsPairIdx.intValue() <= movePosition) {
+                    if (mcsPairIdx.get() <= movePosition) {
                         moveColumns.run();
                     }
 
