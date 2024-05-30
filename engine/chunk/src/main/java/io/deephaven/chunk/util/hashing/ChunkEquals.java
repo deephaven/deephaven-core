@@ -150,6 +150,14 @@ public interface ChunkEquals {
             WritableBooleanChunk destinations);
 
     static ChunkEquals makeEqual(ChunkType chunkType) {
+        return makeEqual(chunkType, ObjectComparison.EQUALS);
+    }
+
+    enum ObjectComparison {
+        IDENTITY, EQUALS, DEEP_EQUALS
+    }
+
+    static ChunkEquals makeEqual(ChunkType chunkType, ObjectComparison objectComparison) {
         switch (chunkType) {
             case Boolean:
                 return BooleanChunkEquals.INSTANCE;
@@ -168,7 +176,14 @@ public interface ChunkEquals {
             case Double:
                 return DoubleChunkEquals.INSTANCE;
             case Object:
-                return ObjectChunkEquals.INSTANCE;
+                switch (objectComparison) {
+                    case IDENTITY:
+                        return ObjectChunkIdentityEquals.INSTANCE;
+                    case EQUALS:
+                        return ObjectChunkEquals.INSTANCE;
+                    case DEEP_EQUALS:
+                        return ObjectChunkDeepEquals.INSTANCE;
+                }
         }
         throw new IllegalStateException();
     }
