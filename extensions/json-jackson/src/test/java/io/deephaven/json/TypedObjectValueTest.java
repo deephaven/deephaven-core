@@ -211,6 +211,59 @@ public class TypedObjectValueTest {
     }
 
     @Test
+    void intStringAsDiscriminator() throws IOException {
+        final TypedObjectValue tov = TypedObjectValue.builder(new LinkedHashMap<>() {
+            {
+                put("1", QUOTE_OBJECT);
+                put("2", TRADE_OBJECT);
+            }
+        }).typeFieldName("id").build();
+
+        parse(tov, List.of(
+                "{\"id\": 1, \"symbol\": {\"name\": \"foo\", \"id\": 42}, \"quote\":{\"bid\": 1.01, \"ask\": 1.05}}",
+                "{\"id\": 2, \"symbol\": {\"name\": \"bar\", \"id\": 43}, \"price\": 42.42, \"size\": 123}",
+                "{\"id\": 3}",
+                "{\"id\": 4, \"symbol\": {\"name\": \"bar\", \"id\": 43}, \"price\": 42.42, \"size\": 123}"),
+                ObjectChunk.chunkWrap(new String[] {"1", "2", "3", "4"}), // id
+                ObjectChunk.chunkWrap(new String[] {"foo", "bar", null, null}), // symbol/symbol
+                LongChunk.chunkWrap(new long[] {42, 43, QueryConstants.NULL_LONG, QueryConstants.NULL_LONG}), // symbol/symbol_id
+                DoubleChunk.chunkWrap(new double[] {1.01, QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE,
+                        QueryConstants.NULL_DOUBLE}), // quote: quote/bid
+                DoubleChunk.chunkWrap(new double[] {1.05, QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE,
+                        QueryConstants.NULL_DOUBLE}), // quote: quote/ask
+                DoubleChunk.chunkWrap(new double[] {QueryConstants.NULL_DOUBLE, 42.42, QueryConstants.NULL_DOUBLE,
+                        QueryConstants.NULL_DOUBLE}), // trade: price
+                DoubleChunk.chunkWrap(new double[] {QueryConstants.NULL_DOUBLE, 123, QueryConstants.NULL_DOUBLE,
+                        QueryConstants.NULL_DOUBLE})); // trade: size
+    }
+
+    @Test
+    void caseSensitiveDiscriminator() throws IOException {
+        final TypedObjectValue tov = TypedObjectValue.builder(new LinkedHashMap<>() {
+            {
+                put("q", QUOTE_OBJECT);
+                put("Q", TRADE_OBJECT);
+            }
+        }).typeFieldName("type").build();
+        parse(tov, List.of(
+                "{\"type\": \"q\", \"symbol\": {\"name\": \"foo\", \"id\": 42}, \"quote\":{\"bid\": 1.01, \"ask\": 1.05}}",
+                "{\"type\": \"Q\", \"symbol\": {\"name\": \"bar\", \"id\": 43}, \"price\": 42.42, \"size\": 123}",
+                "{\"type\": \"other\"}",
+                "{\"type\": \"other_mimic_trade\", \"symbol\": {\"name\": \"bar\", \"id\": 43}, \"price\": 42.42, \"size\": 123}"),
+                ObjectChunk.chunkWrap(new String[] {"q", "Q", "other", "other_mimic_trade"}), // type
+                ObjectChunk.chunkWrap(new String[] {"foo", "bar", null, null}), // symbol/symbol
+                LongChunk.chunkWrap(new long[] {42, 43, QueryConstants.NULL_LONG, QueryConstants.NULL_LONG}), // symbol/symbol_id
+                DoubleChunk.chunkWrap(new double[] {1.01, QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE,
+                        QueryConstants.NULL_DOUBLE}), // quote: quote/bid
+                DoubleChunk.chunkWrap(new double[] {1.05, QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE,
+                        QueryConstants.NULL_DOUBLE}), // quote: quote/ask
+                DoubleChunk.chunkWrap(new double[] {QueryConstants.NULL_DOUBLE, 42.42, QueryConstants.NULL_DOUBLE,
+                        QueryConstants.NULL_DOUBLE}), // trade: price
+                DoubleChunk.chunkWrap(new double[] {QueryConstants.NULL_DOUBLE, 123, QueryConstants.NULL_DOUBLE,
+                        QueryConstants.NULL_DOUBLE})); // trade: size
+    }
+
+    @Test
     void columnNames() {
         assertThat(JacksonProvider.of(QUOTE_OR_TRADE_OBJECT).named(Type.stringType()).names()).containsExactly(
                 "type",

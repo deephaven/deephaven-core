@@ -5,6 +5,7 @@ package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
+import io.deephaven.base.MathUtil;
 import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.chunk.sized.SizedShortChunk;
 import io.deephaven.json.ShortValue;
@@ -78,7 +79,7 @@ final class ShortMixin extends Mixin<ShortValue> implements ToShort {
         @Override
         public void processElementImpl(JsonParser parser, int index) throws IOException {
             final int newSize = index + 1;
-            final WritableShortChunk<?> chunk = this.chunk.ensureCapacityPreserve(Maths.nextArrayCapacity(newSize));
+            final WritableShortChunk<?> chunk = this.chunk.ensureCapacityPreserve(MathUtil.roundUpArraySize(newSize));
             chunk.set(index, ShortMixin.this.parseValue(parser));
             chunk.setSize(newSize);
         }
@@ -86,7 +87,7 @@ final class ShortMixin extends Mixin<ShortValue> implements ToShort {
         @Override
         public void processElementMissingImpl(JsonParser parser, int index) throws IOException {
             final int newSize = index + 1;
-            final WritableShortChunk<?> chunk = this.chunk.ensureCapacityPreserve(Maths.nextArrayCapacity(newSize));
+            final WritableShortChunk<?> chunk = this.chunk.ensureCapacityPreserve(MathUtil.roundUpArraySize(newSize));
             chunk.set(index, ShortMixin.this.parseMissing(parser));
             chunk.setSize(newSize);
         }

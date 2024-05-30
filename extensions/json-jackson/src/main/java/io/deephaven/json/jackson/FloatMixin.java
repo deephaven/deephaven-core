@@ -5,6 +5,7 @@ package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
+import io.deephaven.base.MathUtil;
 import io.deephaven.chunk.WritableFloatChunk;
 import io.deephaven.chunk.sized.SizedFloatChunk;
 import io.deephaven.json.FloatValue;
@@ -78,7 +79,7 @@ final class FloatMixin extends Mixin<FloatValue> implements ToFloat {
         @Override
         public void processElementImpl(JsonParser parser, int index) throws IOException {
             final int newSize = index + 1;
-            final WritableFloatChunk<?> chunk = this.chunk.ensureCapacityPreserve(Maths.nextArrayCapacity(newSize));
+            final WritableFloatChunk<?> chunk = this.chunk.ensureCapacityPreserve(MathUtil.roundUpArraySize(newSize));
             chunk.set(index, FloatMixin.this.parseValue(parser));
             chunk.setSize(newSize);
         }
@@ -86,7 +87,7 @@ final class FloatMixin extends Mixin<FloatValue> implements ToFloat {
         @Override
         public void processElementMissingImpl(JsonParser parser, int index) throws IOException {
             final int newSize = index + 1;
-            final WritableFloatChunk<?> chunk = this.chunk.ensureCapacityPreserve(Maths.nextArrayCapacity(newSize));
+            final WritableFloatChunk<?> chunk = this.chunk.ensureCapacityPreserve(MathUtil.roundUpArraySize(newSize));
             chunk.set(index, FloatMixin.this.parseMissing(parser));
             chunk.setSize(newSize);
         }

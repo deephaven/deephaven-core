@@ -5,6 +5,7 @@ package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
+import io.deephaven.base.MathUtil;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.sized.SizedLongChunk;
 import io.deephaven.json.LongValue;
@@ -78,7 +79,7 @@ final class LongMixin extends Mixin<LongValue> implements LongValueProcessor.ToL
         @Override
         public void processElementImpl(JsonParser parser, int index) throws IOException {
             final int newSize = index + 1;
-            final WritableLongChunk<?> chunk = this.chunk.ensureCapacityPreserve(Maths.nextArrayCapacity(newSize));
+            final WritableLongChunk<?> chunk = this.chunk.ensureCapacityPreserve(MathUtil.roundUpArraySize(newSize));
             chunk.set(index, LongMixin.this.parseValue(parser));
             chunk.setSize(newSize);
         }
@@ -86,7 +87,7 @@ final class LongMixin extends Mixin<LongValue> implements LongValueProcessor.ToL
         @Override
         public void processElementMissingImpl(JsonParser parser, int index) throws IOException {
             final int newSize = index + 1;
-            final WritableLongChunk<?> chunk = this.chunk.ensureCapacityPreserve(Maths.nextArrayCapacity(newSize));
+            final WritableLongChunk<?> chunk = this.chunk.ensureCapacityPreserve(MathUtil.roundUpArraySize(newSize));
             chunk.set(index, LongMixin.this.parseMissing(parser));
             chunk.setSize(newSize);
         }

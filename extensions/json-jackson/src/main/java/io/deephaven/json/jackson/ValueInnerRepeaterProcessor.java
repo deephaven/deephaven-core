@@ -4,6 +4,7 @@
 package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonParser;
+import io.deephaven.base.MathUtil;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
@@ -122,7 +123,7 @@ final class ValueInnerRepeaterProcessor implements RepeaterProcessor, Context {
             // noinspection unchecked
             final SizedObjectChunk<Object, ?> to = (SizedObjectChunk<Object, ?>) sizedObjectChunks.get(i);
             // we _could_ consider doing this in a chunked fashion. doing in simple fashion to initially test
-            to.ensureCapacityPreserve(Maths.nextArrayCapacity(newSize));
+            to.ensureCapacityPreserve(MathUtil.roundUpArraySize(newSize));
             to.get().set(ix, from.get(0));
             to.get().setSize(newSize);
             from.set(0, null);

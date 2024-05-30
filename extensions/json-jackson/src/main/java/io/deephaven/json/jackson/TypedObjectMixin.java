@@ -150,11 +150,11 @@ final class TypedObjectMixin extends Mixin<TypedObjectValue> {
             this.buffer = new ArrayList<>(combinedProcessor.numColumns());
         }
 
-        void setContext(List<WritableChunk<?>> sharedOut, List<WritableChunk<?>> specifiedOut) {
-            this.specificOut = Objects.requireNonNull(specifiedOut);
+        void setContext(List<WritableChunk<?>> sharedOut, List<WritableChunk<?>> specificOut) {
+            this.specificOut = Objects.requireNonNull(specificOut);
             buffer.clear();
             buffer.addAll(sharedOut);
-            buffer.addAll(specifiedOut);
+            buffer.addAll(specificOut);
             combinedProcessor.setContext(buffer);
         }
 
@@ -245,6 +245,10 @@ final class TypedObjectMixin extends Mixin<TypedObjectValue> {
         public void processMissing(JsonParser parser) throws IOException {
             checkMissingAllowed(parser);
             typeChunk.add(options.onMissing().orElse(null));
+            // We are _not_ trying to pass along the potential "on missing" value for each individual chunk; the
+            // individual columns may have "allowMissing = false", but as a higher level of control with
+            // TypedObjectValue, we have already verified that we want to allow missing. As such, the discriminating
+            // factor will be the typeChunk.
             for (WritableChunk<?> sharedChunk : sharedChunks) {
                 addNullValue(sharedChunk);
             }
@@ -256,6 +260,10 @@ final class TypedObjectMixin extends Mixin<TypedObjectValue> {
         private void processNullObject(JsonParser parser) throws IOException {
             checkNullAllowed(parser);
             typeChunk.add(options.onNull().orElse(null));
+            // We are _not_ trying to pass along the potential "on null" value for each individual chunk; the
+            // individual columns may have "allowNull = false", but as a higher level of control with
+            // TypedObjectValue, we have already verified that we want to allow null. As such, the discriminating
+            // factor will be the typeChunk.
             for (WritableChunk<?> sharedChunk : sharedChunks) {
                 addNullValue(sharedChunk);
             }
@@ -276,6 +284,9 @@ final class TypedObjectMixin extends Mixin<TypedObjectValue> {
             for (Entry<String, Processor> e : combinedProcessors.entrySet()) {
                 final String processorType = e.getKey();
                 final Processor processor = e.getValue();
+                // Note: we are not supporting case-insensitive _value_ matching at this point in time. We do allow the
+                // field _names_ to be case insensitive (see ObjectField#caseSensitive).
+                // See io.deephaven.json.TypedObjectValueTest#caseSensitiveDiscriminator
                 if (processorType.equals(typeFieldValue)) {
                     processor.combinedProcessor().processCurrentValue(parser);
                     foundProcessor = true;

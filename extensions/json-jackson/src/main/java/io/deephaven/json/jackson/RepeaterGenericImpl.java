@@ -4,6 +4,7 @@
 package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonParser;
+import io.deephaven.base.MathUtil;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.sized.SizedObjectChunk;
 import io.deephaven.json.jackson.ObjectValueProcessor.ToObject;
@@ -26,7 +27,7 @@ final class RepeaterGenericImpl<T> extends RepeaterProcessorBase<T[]> {
     @Override
     public void processElementImpl(JsonParser parser, int index) throws IOException {
         final int newSize = index + 1;
-        final WritableObjectChunk<T, ?> chunk = this.chunk.ensureCapacityPreserve(Maths.nextArrayCapacity(newSize));
+        final WritableObjectChunk<T, ?> chunk = this.chunk.ensureCapacityPreserve(MathUtil.roundUpArraySize(newSize));
         chunk.set(index, toObject.parseValue(parser));
         chunk.setSize(newSize);
     }
@@ -34,7 +35,7 @@ final class RepeaterGenericImpl<T> extends RepeaterProcessorBase<T[]> {
     @Override
     public void processElementMissingImpl(JsonParser parser, int index) throws IOException {
         final int newSize = index + 1;
-        final WritableObjectChunk<T, ?> chunk = this.chunk.ensureCapacityPreserve(Maths.nextArrayCapacity(newSize));
+        final WritableObjectChunk<T, ?> chunk = this.chunk.ensureCapacityPreserve(MathUtil.roundUpArraySize(newSize));
         chunk.set(index, toObject.parseMissing(parser));
         chunk.setSize(newSize);
     }

@@ -62,10 +62,11 @@ final class ObjectMixin extends Mixin<ObjectValue> {
     }
 
     public ValueProcessor processor(String context, boolean isDiscriminated) {
-        final Map<ObjectField, ValueProcessor> processors = new LinkedHashMap<>(options.fields().size());
+        final Map<ObjectField, ValueProcessor> processors = new LinkedHashMap<>(mixins.size());
         int ix = 0;
-        for (ObjectField field : options.fields()) {
-            final Mixin<?> opts = mixins.get(field);
+        for (Entry<ObjectField, Mixin<?>> e : mixins.entrySet()) {
+            final ObjectField field = e.getKey();
+            final Mixin<?> opts = e.getValue();
             final int numTypes = opts.outputSize();
             final ValueProcessor fieldProcessor = opts.processor(context + "/" + field.name());
             processors.put(field, fieldProcessor);
@@ -79,10 +80,11 @@ final class ObjectMixin extends Mixin<ObjectValue> {
 
     @Override
     RepeaterProcessor repeaterProcessor() {
-        final Map<ObjectField, RepeaterProcessor> processors = new LinkedHashMap<>(options.fields().size());
+        final Map<ObjectField, RepeaterProcessor> processors = new LinkedHashMap<>(mixins.size());
         int ix = 0;
-        for (ObjectField field : options.fields()) {
-            final Mixin<?> opts = mixins.get(field);
+        for (Entry<ObjectField, Mixin<?>> e : mixins.entrySet()) {
+            final ObjectField field = e.getKey();
+            final Mixin<?> opts = e.getValue();
             final int numTypes = opts.outputSize();
             final RepeaterProcessor fieldProcessor = opts.repeaterProcessor();
             processors.put(field, fieldProcessor);
@@ -347,26 +349,22 @@ final class ObjectMixin extends Mixin<ObjectValue> {
 
         @Override
         public void processElement(JsonParser parser) throws IOException {
-            // see
-            // com.fasterxml.jackson.databind.JsonDeserializer.deserialize(com.fasterxml.jackson.core.JsonParser,
-            // com.fasterxml.jackson.databind.DeserializationContext)
-            // for notes on FIELD_NAME
+            // Not supporting TypedObjectValue array (TypedObjectMixin#repeaterProcessor) yet, so don't need
+            // discrimination support here.
             switch (parser.currentToken()) {
                 case START_OBJECT:
                     if (parser.nextToken() == JsonToken.END_OBJECT) {
                         processEmptyObject(parser);
-                        break;
+                        return;
                     }
                     if (!parser.hasToken(JsonToken.FIELD_NAME)) {
                         throw new IllegalStateException();
                     }
-                    // fall-through
-                case FIELD_NAME:
                     processObjectFields(parser);
-                    break;
+                    return;
                 case VALUE_NULL:
                     processNullObject(parser);
-                    break;
+                    return;
                 default:
                     throw unexpectedToken(parser);
             }
