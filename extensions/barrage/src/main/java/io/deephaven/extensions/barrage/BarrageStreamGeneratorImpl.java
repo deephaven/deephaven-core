@@ -129,13 +129,19 @@ public class BarrageStreamGeneratorImpl implements
         }
     }
 
-    public static class ModColumnData {
+    public static class ModColumnGenerator implements SafeCloseable {
         private final RowSetGenerator rowsModified;
         private final ChunkListInputStreamGenerator data;
 
-        ModColumnData(final BarrageMessage.ModColumnData col) throws IOException {
+        ModColumnGenerator(final BarrageMessage.ModColumnData col) throws IOException {
             rowsModified = new RowSetGenerator(col.rowsModified);
             data = new ChunkListInputStreamGenerator(col.type, col.componentType, col.data, col.chunkType);
+        }
+
+        @Override
+        public void close() {
+            rowsModified.close();
+            data.close();
         }
     }
 
@@ -153,7 +159,7 @@ public class BarrageStreamGeneratorImpl implements
     private final RowSetShiftDataGenerator shifted;
 
     private final ChunkListInputStreamGenerator[] addColumnData;
-    private final ModColumnData[] modColumnData;
+    private final ModColumnGenerator[] modColumnData;
 
     /**
      * Create a barrage stream generator that can slice and dice the barrage message for delivery to clients.
@@ -182,9 +188,9 @@ public class BarrageStreamGeneratorImpl implements
                         columnData.data, columnData.chunkType);
             }
 
-            modColumnData = new ModColumnData[message.modColumnData.length];
+            modColumnData = new ModColumnGenerator[message.modColumnData.length];
             for (int i = 0; i < modColumnData.length; ++i) {
-                modColumnData[i] = new ModColumnData(message.modColumnData[i]);
+                modColumnData[i] = new ModColumnGenerator(message.modColumnData[i]);
             }
         } catch (final IOException e) {
             throw new UncheckedDeephavenException("unexpected IOException while creating barrage message stream", e);
@@ -207,15 +213,10 @@ public class BarrageStreamGeneratorImpl implements
         rowsRemoved.close();
 
         if (addColumnData != null) {
-            for (final ChunkListInputStreamGenerator in : addColumnData) {
-                in.close();
-            }
+            SafeCloseable.closeAll(addColumnData);
         }
         if (modColumnData != null) {
-            for (final ModColumnData mcd : modColumnData) {
-                mcd.rowsModified.close();
-                mcd.data.close();
-            }
+            SafeCloseable.closeAll(modColumnData);
         }
     }
 
@@ -288,7 +289,7 @@ public class BarrageStreamGeneratorImpl implements
             // precompute the modified column indexes, and calculate total rows needed
             long numModRows = 0;
             for (int ii = 0; ii < modColumnData.length; ++ii) {
-                final ModColumnData mcd = modColumnData[ii];
+                final ModColumnGenerator mcd = modColumnData[ii];
 
                 if (keyspaceViewport != null) {
                     try (WritableRowSet intersect = keyspaceViewport.intersect(mcd.rowsModified.original)) {
@@ -428,7 +429,7 @@ public class BarrageStreamGeneratorImpl implements
 
             // now add mod-column streams, and write the mod column indexes
             TIntArrayList modOffsets = new TIntArrayList(modColumnData.length);
-            for (final ModColumnData mcd : modColumnData) {
+            for (final ModColumnGenerator mcd : modColumnData) {
                 final int myModRowOffset;
                 if (keyspaceViewport != null) {
                     myModRowOffset = mcd.rowsModified.addToFlatBuffer(keyspaceViewport, metadata);
@@ -1008,7 +1009,7 @@ public class BarrageStreamGeneratorImpl implements
 
         // adjust the batch size if we would cross a chunk boundary
         for (int ii = 0; ii < modColumnData.length; ++ii) {
-            final ModColumnData mcd = modColumnData[ii];
+            final ModColumnGenerator mcd = modColumnData[ii];
             final List<ChunkInputStreamGenerator> generators = mcd.data.generators();
             if (generators.isEmpty()) {
                 continue;
@@ -1029,7 +1030,7 @@ public class BarrageStreamGeneratorImpl implements
         // now add mod-column streams, and write the mod column indexes
         long numRows = 0;
         for (int ii = 0; ii < modColumnData.length; ++ii) {
-            final ModColumnData mcd = modColumnData[ii];
+            final ModColumnGenerator mcd = modColumnData[ii];
             final ChunkInputStreamGenerator generator = mcd.data.generators().isEmpty()
                     ? null
                     : mcd.data.generators().get(columnChunkIdx[ii]);
