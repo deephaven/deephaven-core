@@ -40,6 +40,8 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
             @NotNull final IcebergInstructions instructions) {
         super(tableDef, table, tableSnapshot, fileIO, instructions);
 
+        //
+
         partitionColumns =
                 tableDef.getPartitioningColumns().stream().map(ColumnDefinition::getName).toArray(String[]::new);
         partitionColumnTypes = Arrays.stream(partitionColumns)

@@ -33,7 +33,8 @@ public abstract class IcebergInstructions {
     public abstract Optional<S3Instructions> s3Instructions();
 
     /**
-     * The {@link Map} to use for reading the Iceberg data files.
+     * A {@link Map map} of rename instructions from Iceberg to Deephaven column names to use when reading the Iceberg
+     * data files.
      */
     public abstract Map<String, String> columnRenameMap();
 

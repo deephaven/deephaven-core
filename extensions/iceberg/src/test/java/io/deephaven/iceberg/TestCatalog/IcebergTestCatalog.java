@@ -6,13 +6,16 @@ package io.deephaven.iceberg.TestCatalog;
 import org.apache.iceberg.*;
 import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.Namespace;
+import org.apache.iceberg.catalog.SupportsNamespaces;
 import org.apache.iceberg.catalog.TableIdentifier;
+import org.apache.iceberg.exceptions.NamespaceNotEmptyException;
+import org.apache.iceberg.exceptions.NoSuchNamespaceException;
 import org.apache.iceberg.io.FileIO;
 
 import java.io.File;
 import java.util.*;
 
-public class IcebergTestCatalog implements Catalog {
+public class IcebergTestCatalog implements Catalog, SupportsNamespaces {
     private final Map<Namespace, Map<TableIdentifier, Table>> namespaceTableMap;
     private final Map<TableIdentifier, Table> tableMap;
 
@@ -69,5 +72,35 @@ public class IcebergTestCatalog implements Catalog {
             return tableMap.get(tableIdentifier);
         }
         return null;
+    }
+
+    @Override
+    public void createNamespace(Namespace namespace, Map<String, String> map) {
+
+    }
+
+    @Override
+    public List<Namespace> listNamespaces(Namespace namespace) throws NoSuchNamespaceException {
+        return new ArrayList<>(namespaceTableMap.keySet());
+    }
+
+    @Override
+    public Map<String, String> loadNamespaceMetadata(Namespace namespace) throws NoSuchNamespaceException {
+        return Map.of();
+    }
+
+    @Override
+    public boolean dropNamespace(Namespace namespace) throws NamespaceNotEmptyException {
+        return false;
+    }
+
+    @Override
+    public boolean setProperties(Namespace namespace, Map<String, String> map) throws NoSuchNamespaceException {
+        return false;
+    }
+
+    @Override
+    public boolean removeProperties(Namespace namespace, Set<String> set) throws NoSuchNamespaceException {
+        return false;
     }
 }

@@ -45,7 +45,7 @@ public class IcebergTableParquetLocationKey extends ParquetTableLocationKey impl
     }
 
     @Override
-    public Object readInstructions() {
+    public ParquetInstructions readInstructions() {
         return readInstructions;
     }
 }

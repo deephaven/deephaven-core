@@ -54,7 +54,8 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
     final Map<URI, IcebergTableLocationKey> cache;
 
     /**
-     * The {@link ParquetInstructions} object that will be used to read any Parquet data files in this table.
+     * The {@link ParquetInstructions} object that will be used to read any Parquet data files in this table. Only
+     * accessed while synchronized on {@code this}.
      */
     ParquetInstructions parquetInstructions;
 
@@ -68,6 +69,9 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
                 // Start with user-supplied instructions (if provided).
                 final ParquetInstructions.Builder builder = new ParquetInstructions.Builder();
 
+                // Add the table definition.
+                builder.setTableDefinition(tableDef);
+
                 // Add any column rename mappings.
                 if (!instructions.columnRenameMap().isEmpty()) {
                     for (Map.Entry<String, String> entry : instructions.columnRenameMap().entrySet()) {
@@ -76,9 +80,8 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
                 }
 
                 // Add the S3 instructions.
-                if (instructions.s3Instructions().isPresent()) {
-                    builder.setSpecialInstructions(instructions.s3Instructions().get());
-                }
+                instructions.s3Instructions().ifPresent(builder::setSpecialInstructions);
+
                 parquetInstructions = builder.build();
             }
             return new IcebergTableParquetLocationKey(fileUri, 0, partitions, parquetInstructions);
