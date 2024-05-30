@@ -138,7 +138,7 @@ def rClientDoc = Docker.registerDockerTask(project, 'rClientDoc') {
                    ''')
         runCommand('''echo "status = tryCatch(" \
                            "   {" \
-                           "      install.packages('roxygen2', repos='http://cran.us.r-project.org'); " \
+                           "      install.packages('roxygen2', repos='https://cran.r-project.org'); " \
                            "      0" \
                            "   }," \
                            "  error=function(e) 1," \
