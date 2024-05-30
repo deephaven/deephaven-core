@@ -64,15 +64,15 @@ final class FloatMixin extends Mixin<FloatValue> implements ToFloat {
     }
 
     @Override
-    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
-        return new FloatRepeaterImpl(allowMissing, allowNull);
+    RepeaterProcessor repeaterProcessor() {
+        return new FloatRepeaterImpl();
     }
 
     final class FloatRepeaterImpl extends RepeaterProcessorBase<float[]> {
         private final SizedFloatChunk<?> chunk = new SizedFloatChunk<>(0);
 
-        public FloatRepeaterImpl(boolean allowMissing, boolean allowNull) {
-            super(allowMissing, allowNull, null, null, Type.floatType().arrayType());
+        public FloatRepeaterImpl() {
+            super(null, null, Type.floatType().arrayType());
         }
 
         @Override

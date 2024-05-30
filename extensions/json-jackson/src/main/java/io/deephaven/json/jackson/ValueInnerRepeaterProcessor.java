@@ -22,8 +22,6 @@ import java.util.stream.Stream;
 
 final class ValueInnerRepeaterProcessor implements RepeaterProcessor, Context {
 
-    private final boolean allowMissing;
-    private final boolean allowNull;
     private final ValueProcessor innerProcessor;
     private final List<WritableObjectChunk<?, ?>> innerChunks;
     private final List<SizedObjectChunk<?, ?>> sizedObjectChunks;
@@ -32,9 +30,7 @@ final class ValueInnerRepeaterProcessor implements RepeaterProcessor, Context {
 
     private List<WritableObjectChunk<Object[], ?>> out;
 
-    public ValueInnerRepeaterProcessor(boolean allowMissing, boolean allowNull, ValueProcessor innerProcessor) {
-        this.allowMissing = allowMissing;
-        this.allowNull = allowNull;
+    public ValueInnerRepeaterProcessor(ValueProcessor innerProcessor) {
         final List<WritableChunk<?>> innerChunks = innerProcessor.columnTypes()
                 .map(Type::arrayType)
                 .map(ObjectProcessor::chunkType)
@@ -81,9 +77,6 @@ final class ValueInnerRepeaterProcessor implements RepeaterProcessor, Context {
 
     @Override
     public void processNullRepeater(JsonParser parser) throws IOException {
-        if (!allowNull) {
-            throw Exceptions.notAllowed(parser);
-        }
         for (WritableObjectChunk<?, ?> wc : out) {
             wc.add(null);
         }
@@ -91,9 +84,6 @@ final class ValueInnerRepeaterProcessor implements RepeaterProcessor, Context {
 
     @Override
     public void processMissingRepeater(JsonParser parser) throws IOException {
-        if (!allowMissing) {
-            throw Exceptions.missingNotAllowed(parser);
-        }
         for (WritableObjectChunk<?, ?> wc : out) {
             wc.add(null);
         }

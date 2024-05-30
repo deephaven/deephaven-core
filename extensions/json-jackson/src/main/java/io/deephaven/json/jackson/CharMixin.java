@@ -60,15 +60,15 @@ final class CharMixin extends Mixin<CharValue> implements ToChar {
     }
 
     @Override
-    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
-        return new CharRepeaterImpl(allowMissing, allowNull);
+    RepeaterProcessor repeaterProcessor() {
+        return new CharRepeaterImpl();
     }
 
     final class CharRepeaterImpl extends RepeaterProcessorBase<char[]> {
         private final SizedCharChunk<?> chunk = new SizedCharChunk<>(0);
 
-        public CharRepeaterImpl(boolean allowMissing, boolean allowNull) {
-            super(allowMissing, allowNull, null, null, Type.charType().arrayType());
+        public CharRepeaterImpl() {
+            super(null, null, Type.charType().arrayType());
         }
 
         @Override

@@ -64,15 +64,15 @@ final class DoubleMixin extends Mixin<DoubleValue> implements ToDouble {
     }
 
     @Override
-    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
-        return new DoubleRepeaterImpl(allowMissing, allowNull);
+    RepeaterProcessor repeaterProcessor() {
+        return new DoubleRepeaterImpl();
     }
 
     final class DoubleRepeaterImpl extends RepeaterProcessorBase<double[]> {
         private final SizedDoubleChunk<?> chunk = new SizedDoubleChunk<>(0);
 
-        public DoubleRepeaterImpl(boolean allowMissing, boolean allowNull) {
-            super(allowMissing, allowNull, null, null, Type.doubleType().arrayType());
+        public DoubleRepeaterImpl() {
+            super(null, null, Type.doubleType().arrayType());
         }
 
         @Override

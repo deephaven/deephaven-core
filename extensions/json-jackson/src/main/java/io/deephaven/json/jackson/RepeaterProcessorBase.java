@@ -17,8 +17,6 @@ import java.util.stream.Stream;
 
 abstract class RepeaterProcessorBase<T> implements RepeaterProcessor, Context {
 
-    private final boolean allowMissing;
-    private final boolean allowNull;
     private final T onMissing;
     private final T onNull;
 
@@ -27,12 +25,9 @@ abstract class RepeaterProcessorBase<T> implements RepeaterProcessor, Context {
     private WritableObjectChunk<? super T, ?> out;
     private int ix;
 
-    public RepeaterProcessorBase(boolean allowMissing, boolean allowNull, T onMissing, T onNull,
-            NativeArrayType<T, ?> arrayType) {
+    public RepeaterProcessorBase(T onMissing, T onNull, NativeArrayType<T, ?> arrayType) {
         this.onMissing = onMissing;
         this.onNull = onNull;
-        this.allowNull = allowNull;
-        this.allowMissing = allowMissing;
         this.arrayType = Objects.requireNonNull(arrayType);
     }
 
@@ -71,17 +66,11 @@ abstract class RepeaterProcessorBase<T> implements RepeaterProcessor, Context {
 
     @Override
     public final void processMissingRepeater(JsonParser parser) throws IOException {
-        if (!allowMissing) {
-            throw Exceptions.missingNotAllowed(parser);
-        }
         out.add(onMissing);
     }
 
     @Override
     public final void processNullRepeater(JsonParser parser) throws IOException {
-        if (!allowNull) {
-            throw Exceptions.notAllowed(parser);
-        }
         out.add(onNull);
     }
 

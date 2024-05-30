@@ -30,7 +30,6 @@ import io.deephaven.json.StringValue;
 import io.deephaven.json.TupleValue;
 import io.deephaven.json.TypedObjectValue;
 import io.deephaven.json.Value;
-import io.deephaven.json.jackson.Exceptions.ValueAwareException;
 import io.deephaven.processor.ObjectProcessor;
 import io.deephaven.qst.type.Type;
 
@@ -158,7 +157,7 @@ abstract class Mixin<T extends Value> implements JacksonProvider {
 
     abstract ValueProcessor processor(String context);
 
-    abstract RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull);
+    abstract RepeaterProcessor repeaterProcessor();
 
     abstract Stream<List<String>> paths();
 
@@ -398,7 +397,7 @@ abstract class Mixin<T extends Value> implements JacksonProvider {
 
     final void checkBoolAllowed(JsonParser parser) throws IOException {
         if (!options.allowedTypes().contains(JsonValueTypes.BOOL)) {
-            throw new ValueAwareException("Bool not expected", parser.currentLocation(), options);
+            throw new ValueAwareException("Bool not allowed", parser.currentLocation(), options);
         }
     }
 
@@ -422,8 +421,12 @@ abstract class Mixin<T extends Value> implements JacksonProvider {
 
     final void checkNullAllowed(JsonParser parser) throws IOException {
         if (!allowNull()) {
-            throw new ValueAwareException("Null not allowed", parser.currentLocation(), options);
+            throw nullNotAllowed(parser);
         }
+    }
+
+    final ValueAwareException nullNotAllowed(JsonParser parser) {
+        return new ValueAwareException("Null not allowed", parser.currentLocation(), options);
     }
 
     final void checkMissingAllowed(JsonParser parser) throws IOException {

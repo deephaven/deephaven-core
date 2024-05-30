@@ -51,8 +51,8 @@ final class SkipMixin extends Mixin<SkipValue> implements ValueProcessor {
     }
 
     @Override
-    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
-        return new SkipArray(allowMissing, allowNull);
+    RepeaterProcessor repeaterProcessor() {
+        return new SkipArray();
     }
 
     @Override
@@ -99,13 +99,6 @@ final class SkipMixin extends Mixin<SkipValue> implements ValueProcessor {
     }
 
     private final class SkipArray implements RepeaterProcessor, Context {
-        private final boolean allowMissing;
-        private final boolean allowNull;
-
-        public SkipArray(boolean allowMissing, boolean allowNull) {
-            this.allowMissing = allowMissing;
-            this.allowNull = allowNull;
-        }
 
         @Override
         public Context context() {
@@ -113,18 +106,10 @@ final class SkipMixin extends Mixin<SkipValue> implements ValueProcessor {
         }
 
         @Override
-        public void processNullRepeater(JsonParser parser) throws IOException {
-            if (!allowNull) {
-                throw Exceptions.notAllowed(parser);
-            }
-        }
+        public void processNullRepeater(JsonParser parser) throws IOException {}
 
         @Override
-        public void processMissingRepeater(JsonParser parser) throws IOException {
-            if (!allowMissing) {
-                throw Exceptions.notAllowed(parser);
-            }
-        }
+        public void processMissingRepeater(JsonParser parser) throws IOException {}
 
         @Override
         public void setContext(List<WritableChunk<?>> out) {

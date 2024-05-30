@@ -61,8 +61,8 @@ final class BigDecimalMixin extends Mixin<BigDecimalValue> implements ToObject<B
     }
 
     @Override
-    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
-        return new RepeaterGenericImpl<>(this, allowMissing, allowNull, null, null,
+    RepeaterProcessor repeaterProcessor() {
+        return new RepeaterGenericImpl<>(this, null, null,
                 Type.ofCustom(BigDecimal.class).arrayType());
     }
 

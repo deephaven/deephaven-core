@@ -65,15 +65,15 @@ final class IntMixin extends Mixin<IntValue> implements ToInt {
     }
 
     @Override
-    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
-        return new IntRepeaterImpl(allowMissing, allowNull);
+    RepeaterProcessor repeaterProcessor() {
+        return new IntRepeaterImpl();
     }
 
     final class IntRepeaterImpl extends RepeaterProcessorBase<int[]> {
         private final SizedIntChunk<?> chunk = new SizedIntChunk<>(0);
 
-        public IntRepeaterImpl(boolean allowMissing, boolean allowNull) {
-            super(allowMissing, allowNull, null, null, Type.intType().arrayType());
+        public IntRepeaterImpl() {
+            super(null, null, Type.intType().arrayType());
         }
 
         @Override

@@ -8,7 +8,6 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import io.deephaven.json.TupleValue;
 import io.deephaven.json.Value;
-import io.deephaven.json.jackson.Exceptions.ValueAwareException;
 import io.deephaven.json.jackson.RepeaterProcessor.Context;
 import io.deephaven.qst.type.Type;
 
@@ -80,13 +79,13 @@ final class TupleMixin extends Mixin<TupleValue> {
     }
 
     @Override
-    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
+    RepeaterProcessor repeaterProcessor() {
         final List<RepeaterProcessor> processors = new ArrayList<>(mixins.size());
         int ix = 0;
         for (Entry<String, Mixin<?>> e : mixins.entrySet()) {
             final Mixin<?> mixin = e.getValue();
             final int numTypes = mixin.outputSize();
-            final RepeaterProcessor processor = mixin.repeaterProcessor(allowMissing, allowNull);
+            final RepeaterProcessor processor = mixin.repeaterProcessor();
             processors.add(processor);
             ix += numTypes;
         }
@@ -194,7 +193,6 @@ final class TupleMixin extends Mixin<TupleValue> {
 
         @Override
         public void processNullRepeater(JsonParser parser) throws IOException {
-            checkNullAllowed(parser);
             for (RepeaterProcessor value : values) {
                 value.processNullRepeater(parser);
             }
@@ -202,7 +200,6 @@ final class TupleMixin extends Mixin<TupleValue> {
 
         @Override
         public void processMissingRepeater(JsonParser parser) throws IOException {
-            checkMissingAllowed(parser);
             for (RepeaterProcessor value : values) {
                 value.processMissingRepeater(parser);
             }
@@ -225,7 +222,7 @@ final class TupleMixin extends Mixin<TupleValue> {
                     processNullTuple(parser);
                     break;
                 default:
-                    throw Exceptions.notAllowed(parser);
+                    throw unexpectedToken(parser);
             }
         }
 
@@ -239,6 +236,7 @@ final class TupleMixin extends Mixin<TupleValue> {
         }
 
         private void processNullTuple(JsonParser parser) throws IOException {
+            checkNullAllowed(parser);
             // Note: we are treating a null tuple the same as a tuple of null objects
             // null ~= [null, ..., null]
             for (Context context : contexts) {
@@ -248,6 +246,7 @@ final class TupleMixin extends Mixin<TupleValue> {
 
         @Override
         public void processElementMissing(JsonParser parser) throws IOException {
+            checkMissingAllowed(parser);
             // Note: we are treating a missing tuple the same as a tuple of missing objects (which, is technically
             // impossible w/ native json, but it's the semantics we are exposing).
             // <missing> ~= [<missing>, ..., <missing>]

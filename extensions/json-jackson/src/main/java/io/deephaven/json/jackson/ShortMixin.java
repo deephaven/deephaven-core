@@ -64,15 +64,15 @@ final class ShortMixin extends Mixin<ShortValue> implements ToShort {
     }
 
     @Override
-    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
-        return new ShortRepeaterImpl(allowMissing, allowNull);
+    RepeaterProcessor repeaterProcessor() {
+        return new ShortRepeaterImpl();
     }
 
     final class ShortRepeaterImpl extends RepeaterProcessorBase<short[]> {
         private final SizedShortChunk<?> chunk = new SizedShortChunk<>(0);
 
-        public ShortRepeaterImpl(boolean allowMissing, boolean allowNull) {
-            super(allowMissing, allowNull, null, null, Type.shortType().arrayType());
+        public ShortRepeaterImpl() {
+            super(null, null, Type.shortType().arrayType());
         }
 
         @Override

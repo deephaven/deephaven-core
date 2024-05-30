@@ -49,8 +49,8 @@ final class InstantNumberMixin extends Mixin<InstantNumberValue> {
     }
 
     @Override
-    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
-        return new RepeaterGenericImpl<>(new ObjectImpl(), allowMissing, allowNull, null, null,
+    RepeaterProcessor repeaterProcessor() {
+        return new RepeaterGenericImpl<>(new ObjectImpl(), null, null,
                 Type.instantType().arrayType());
     }
 

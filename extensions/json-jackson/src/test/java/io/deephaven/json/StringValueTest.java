@@ -96,7 +96,7 @@ public class StringValueTest {
             process(StringValue.standard(), "true");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
-            assertThat(e).hasMessageContaining("Bool not expected");
+            assertThat(e).hasMessageContaining("Bool not allowed");
         }
     }
 
@@ -106,7 +106,7 @@ public class StringValueTest {
             process(StringValue.standard(), "false");
             failBecauseExceptionWasNotThrown(IOException.class);
         } catch (IOException e) {
-            assertThat(e).hasMessageContaining("Bool not expected");
+            assertThat(e).hasMessageContaining("Bool not allowed");
         }
     }
 

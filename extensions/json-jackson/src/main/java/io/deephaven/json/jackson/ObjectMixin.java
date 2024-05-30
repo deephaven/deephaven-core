@@ -9,7 +9,6 @@ import com.fasterxml.jackson.core.JsonToken;
 import io.deephaven.json.ObjectField;
 import io.deephaven.json.ObjectField.RepeatedBehavior;
 import io.deephaven.json.ObjectValue;
-import io.deephaven.json.jackson.Exceptions.ValueAwareException;
 import io.deephaven.json.jackson.RepeaterProcessor.Context;
 import io.deephaven.qst.type.Type;
 
@@ -79,13 +78,13 @@ final class ObjectMixin extends Mixin<ObjectValue> {
     }
 
     @Override
-    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
+    RepeaterProcessor repeaterProcessor() {
         final Map<ObjectField, RepeaterProcessor> processors = new LinkedHashMap<>(options.fields().size());
         int ix = 0;
         for (ObjectField field : options.fields()) {
             final Mixin<?> opts = mixins.get(field);
             final int numTypes = opts.outputSize();
-            final RepeaterProcessor fieldProcessor = opts.repeaterProcessor(allowMissing, allowNull);
+            final RepeaterProcessor fieldProcessor = opts.repeaterProcessor();
             processors.put(field, fieldProcessor);
             ix += numTypes;
         }

@@ -40,8 +40,8 @@ final class AnyMixin extends Mixin<AnyValue> {
     }
 
     @Override
-    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
-        return new RepeaterGenericImpl<>(ToTreeNode.INSTANCE, allowMissing, allowNull, null, null,
+    RepeaterProcessor repeaterProcessor() {
+        return new RepeaterGenericImpl<>(ToTreeNode.INSTANCE, null, null,
                 Type.ofCustom(TreeNode.class).arrayType());
     }
 

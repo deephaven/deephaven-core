@@ -53,8 +53,8 @@ final class ObjectKvMixin extends Mixin<ObjectKvValue> {
     }
 
     @Override
-    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
-        return new ValueInnerRepeaterProcessor(allowMissing, allowNull, new ValueProcessorKvImpl());
+    RepeaterProcessor repeaterProcessor() {
+        return new ValueInnerRepeaterProcessor(new ValueProcessorKvImpl());
     }
 
     private class ValueProcessorKvImpl implements ValueProcessor {
@@ -63,8 +63,8 @@ final class ObjectKvMixin extends Mixin<ObjectKvValue> {
         private final RepeaterProcessor valueProcessor;
 
         ValueProcessorKvImpl() {
-            this.keyProcessor = key.repeaterProcessor(allowMissing(), allowNull());
-            this.valueProcessor = value.repeaterProcessor(allowMissing(), allowNull());
+            this.keyProcessor = key.repeaterProcessor();
+            this.valueProcessor = value.repeaterProcessor();
         }
 
         @Override

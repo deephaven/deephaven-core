@@ -64,8 +64,8 @@ final class StringMixin extends Mixin<StringValue> implements ToObject<String> {
     }
 
     @Override
-    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
-        return new RepeaterGenericImpl<>(this, allowMissing, allowNull, null, null, Type.stringType().arrayType());
+    RepeaterProcessor repeaterProcessor() {
+        return new RepeaterGenericImpl<>(this, null, null, Type.stringType().arrayType());
     }
 
     private String parseFromString(JsonParser parser) throws IOException {

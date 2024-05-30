@@ -64,15 +64,15 @@ final class LongMixin extends Mixin<LongValue> implements LongValueProcessor.ToL
     }
 
     @Override
-    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
-        return new LongRepeaterImpl(allowMissing, allowNull);
+    RepeaterProcessor repeaterProcessor() {
+        return new LongRepeaterImpl();
     }
 
     final class LongRepeaterImpl extends RepeaterProcessorBase<long[]> {
         private final SizedLongChunk<?> chunk = new SizedLongChunk<>(0);
 
-        public LongRepeaterImpl(boolean allowMissing, boolean allowNull) {
-            super(allowMissing, allowNull, null, null, Type.longType().arrayType());
+        public LongRepeaterImpl() {
+            super(null, null, Type.longType().arrayType());
         }
 
         @Override

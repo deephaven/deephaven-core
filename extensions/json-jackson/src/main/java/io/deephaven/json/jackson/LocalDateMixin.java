@@ -59,8 +59,8 @@ final class LocalDateMixin extends Mixin<LocalDateValue> implements ToObject<Loc
     }
 
     @Override
-    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
-        return new RepeaterGenericImpl<>(this, allowMissing, allowNull, null, null,
+    RepeaterProcessor repeaterProcessor() {
+        return new RepeaterGenericImpl<>(this, null, null,
                 Type.ofCustom(LocalDate.class).arrayType());
     }
 

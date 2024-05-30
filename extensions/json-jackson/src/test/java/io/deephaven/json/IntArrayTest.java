@@ -4,9 +4,11 @@
 package io.deephaven.json;
 
 import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.util.QueryConstants;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.List;
 
 import static io.deephaven.json.TestHelper.parse;
 import static io.deephaven.json.TestHelper.process;
@@ -146,5 +148,66 @@ public class IntArrayTest {
                                         new int[] {},
                                         new int[] {42, 43}}
                         }}}));
+    }
+
+    @Test
+    void innerStrict() throws IOException {
+        parse(ArrayValue.standard(IntValue.strict()), List.of("", "null", "[42, 43]"),
+                ObjectChunk.chunkWrap(new Object[] {null, null, new int[] {42, 43}}));
+        try {
+            process(ArrayValue.standard(IntValue.strict()), "[42, null]");
+            failBecauseExceptionWasNotThrown(IOException.class);
+        } catch (IOException e) {
+            assertThat(e).hasMessageContaining("Null not allowed for IntValue");
+        }
+    }
+
+    @Test
+    void arrayStrict() throws IOException {
+        parse(ArrayValue.strict(IntValue.standard()), "[42, null]",
+                ObjectChunk.chunkWrap(new Object[] {new int[] {42, QueryConstants.NULL_INT}}));
+        try {
+            process(ArrayValue.strict(IntValue.standard()), "");
+            failBecauseExceptionWasNotThrown(IOException.class);
+        } catch (IOException e) {
+            assertThat(e).hasMessageContaining("Missing not allowed for ArrayValue");
+        }
+        try {
+            process(ArrayValue.strict(IntValue.standard()), "null");
+            failBecauseExceptionWasNotThrown(IOException.class);
+        } catch (IOException e) {
+            assertThat(e).hasMessageContaining("Null not allowed for ArrayValue");
+        }
+    }
+
+    @Test
+    void doubleNestedArrayStrict() throws IOException {
+        parse(ArrayValue.strict(ArrayValue.standard(IntValue.standard())), "[null, [], [42, null]]", ObjectChunk
+                .chunkWrap(new Object[] {new int[][] {null, new int[] {}, new int[] {42, QueryConstants.NULL_INT}}}));
+        try {
+            process(ArrayValue.strict(ArrayValue.standard(IntValue.standard())), "");
+            failBecauseExceptionWasNotThrown(IOException.class);
+        } catch (IOException e) {
+            assertThat(e).hasMessageContaining("Missing not allowed for ArrayValue");
+        }
+        try {
+            process(ArrayValue.strict(ArrayValue.standard(IntValue.standard())), "null");
+            failBecauseExceptionWasNotThrown(IOException.class);
+        } catch (IOException e) {
+            assertThat(e).hasMessageContaining("Null not allowed for ArrayValue");
+        }
+    }
+
+    @Test
+    void doubleNestedInnerArrayStrict() throws IOException {
+        parse(ArrayValue.standard(ArrayValue.strict(IntValue.standard())), List.of("", "null", "[[], [42, null]]"),
+                ObjectChunk.chunkWrap(new Object[] {null, null,
+                        new int[][] {new int[] {}, new int[] {42, QueryConstants.NULL_INT}}}));
+        try {
+            process(ArrayValue.standard(ArrayValue.strict(IntValue.standard())), "[[], [42, null], null]");
+            failBecauseExceptionWasNotThrown(IOException.class);
+        } catch (IOException e) {
+            assertThat(e).hasMessageContaining("Null not allowed for ArrayValue");
+        }
     }
 }

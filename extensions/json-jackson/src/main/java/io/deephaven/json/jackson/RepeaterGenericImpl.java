@@ -17,9 +17,8 @@ final class RepeaterGenericImpl<T> extends RepeaterProcessorBase<T[]> {
     private final ToObject<T> toObject;
     private final SizedObjectChunk<T, ?> chunk;
 
-    public RepeaterGenericImpl(ToObject<T> toObject, boolean allowMissing, boolean allowNull, T[] onMissing,
-            T[] onNull, NativeArrayType<T[], T> arrayType) {
-        super(allowMissing, allowNull, onMissing, onNull, arrayType);
+    public RepeaterGenericImpl(ToObject<T> toObject, T[] onMissing, T[] onNull, NativeArrayType<T[], T> arrayType) {
+        super(onMissing, onNull, arrayType);
         this.toObject = Objects.requireNonNull(toObject);
         chunk = new SizedObjectChunk<>(0);
     }

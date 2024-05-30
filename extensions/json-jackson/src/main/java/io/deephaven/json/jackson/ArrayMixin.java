@@ -48,17 +48,17 @@ final class ArrayMixin extends Mixin<ArrayValue> {
     }
 
     private RepeaterProcessor elementRepeater() {
-        return element.repeaterProcessor(allowMissing(), allowNull());
+        return element.repeaterProcessor();
     }
 
     @Override
-    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
+    RepeaterProcessor repeaterProcessor() {
         // For example:
         // double (element())
         // double[] (processor())
         // double[][] (repeater())
         // return new ArrayOfArrayRepeaterProcessor(allowMissing, allowNull);
-        return new ValueInnerRepeaterProcessor(allowMissing, allowNull, new ArrayValueProcessor());
+        return new ValueInnerRepeaterProcessor(new ArrayValueProcessor());
     }
 
     private class ArrayValueProcessor implements ValueProcessor {

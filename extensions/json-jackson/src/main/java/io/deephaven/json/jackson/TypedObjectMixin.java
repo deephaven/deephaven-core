@@ -12,7 +12,6 @@ import io.deephaven.json.ObjectField;
 import io.deephaven.json.ObjectValue;
 import io.deephaven.json.StringValue;
 import io.deephaven.json.TypedObjectValue;
-import io.deephaven.json.jackson.Exceptions.ValueAwareException;
 import io.deephaven.qst.type.Type;
 
 import java.io.IOException;
@@ -96,7 +95,7 @@ final class TypedObjectMixin extends Mixin<TypedObjectValue> {
     }
 
     @Override
-    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
+    RepeaterProcessor repeaterProcessor() {
         throw new UnsupportedOperationException();
     }
 

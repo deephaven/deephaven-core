@@ -64,15 +64,15 @@ final class ByteMixin extends Mixin<ByteValue> implements ToByte {
     }
 
     @Override
-    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
-        return new ByteRepeaterImpl(allowMissing, allowNull);
+    RepeaterProcessor repeaterProcessor() {
+        return new ByteRepeaterImpl();
     }
 
     final class ByteRepeaterImpl extends RepeaterProcessorBase<byte[]> {
         private final SizedByteChunk<?> chunk = new SizedByteChunk<>(0);
 
-        public ByteRepeaterImpl(boolean allowMissing, boolean allowNull) {
-            super(allowMissing, allowNull, null, null, Type.byteType().arrayType());
+        public ByteRepeaterImpl() {
+            super(null, null, Type.byteType().arrayType());
         }
 
         @Override

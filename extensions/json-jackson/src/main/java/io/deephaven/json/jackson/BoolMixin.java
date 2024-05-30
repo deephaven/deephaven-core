@@ -72,8 +72,8 @@ final class BoolMixin extends Mixin<BoolValue> implements ToByte {
     }
 
     @Override
-    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
-        return new RepeaterGenericImpl<>(new ToBoolean(), allowMissing, allowNull, null, null,
+    RepeaterProcessor repeaterProcessor() {
+        return new RepeaterGenericImpl<>(new ToBoolean(), null, null,
                 Type.booleanType().boxedType().arrayType());
     }
 
@@ -105,7 +105,7 @@ final class BoolMixin extends Mixin<BoolValue> implements ToByte {
         if (!allowNull()) {
             final byte res = Parsing.parseStringAsByteBool(parser, BooleanUtils.NULL_BOOLEAN_AS_BYTE);
             if (res == BooleanUtils.NULL_BOOLEAN_AS_BYTE) {
-                throw Exceptions.notAllowed(parser, this);
+                throw nullNotAllowed(parser);
             }
             return res;
         }
@@ -127,7 +127,7 @@ final class BoolMixin extends Mixin<BoolValue> implements ToByte {
         if (!allowNull()) {
             final Boolean result = Parsing.parseStringAsBoolean(parser, null);
             if (result == null) {
-                throw Exceptions.notAllowed(parser, this);
+                throw nullNotAllowed(parser);
             }
             return result;
         }

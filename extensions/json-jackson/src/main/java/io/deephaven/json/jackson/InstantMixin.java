@@ -67,8 +67,8 @@ final class InstantMixin extends Mixin<InstantValue> implements ToLong {
     }
 
     @Override
-    RepeaterProcessor repeaterProcessor(boolean allowMissing, boolean allowNull) {
-        return new RepeaterGenericImpl<>(new ToObjectImpl(), allowMissing, allowNull, null, null,
+    RepeaterProcessor repeaterProcessor() {
+        return new RepeaterGenericImpl<>(new ToObjectImpl(), null, null,
                 Type.instantType().arrayType());
     }
 
