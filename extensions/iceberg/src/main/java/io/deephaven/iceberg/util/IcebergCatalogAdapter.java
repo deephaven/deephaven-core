@@ -328,24 +328,9 @@ public class IcebergCatalogAdapter {
             // Create the flat layout location key finder
             keyFinder = new IcebergFlatLayout(tableDef, table, snapshot, fileIO, instructions);
         } else {
-            // Get the partitioning columns (applying column renames).
-            final String[] partitionColumns = partitionSpec.fields().stream()
-                    .map(PartitionField::name)
-                    .map(colName -> instructions.columnRenameMap().getOrDefault(colName, colName))
-                    .toArray(String[]::new);
-
-            // Verify that the partitioning columns are present in the table definition.
-            final Map<String, ColumnDefinition<?>> columnDefinitionMap = tableDef.getColumnNameMap();
-            final String[] missingColumns = Arrays.stream(partitionColumns)
-                    .filter(col -> !columnDefinitionMap.containsKey(col)).toArray(String[]::new);
-            if (missingColumns.length > 0) {
-                throw new IllegalStateException(
-                        String.format("%s:%d - Partitioning column(s) %s were not found in the table definition",
-                                table, snapshot.snapshotId(), Arrays.toString(missingColumns)));
-            }
-
             // Create the partitioning column location key finder
-            keyFinder = new IcebergKeyValuePartitionedLayout(tableDef, table, snapshot, fileIO, instructions);
+            keyFinder = new IcebergKeyValuePartitionedLayout(tableDef, table, snapshot, fileIO, partitionSpec,
+                    instructions);
         }
 
         refreshService = null;

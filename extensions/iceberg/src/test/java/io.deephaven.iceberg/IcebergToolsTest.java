@@ -143,7 +143,7 @@ public abstract class IcebergToolsTest {
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
 
         final TLongArrayList snapshotIds = new TLongArrayList();
-        final TableIdentifier tableIdentifier =TableIdentifier.of("sales", "sales_multi");
+        final TableIdentifier tableIdentifier = TableIdentifier.of("sales", "sales_multi");
         adapter.listSnapshots(tableIdentifier)
                 .forEach(snapshot -> snapshotIds.add(snapshot.snapshotId()));
 
@@ -304,6 +304,66 @@ public abstract class IcebergToolsTest {
                 .putColumnRenameMap("Order_Date", "OrderDate")
                 .putColumnRenameMap("year", "__year")
                 .putColumnRenameMap("month", "__month")
+                .build();
+
+        final IcebergCatalogAdapter adapter =
+                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+
+        final Namespace ns = Namespace.of("sales");
+        final TableIdentifier tableId = TableIdentifier.of(ns, "sales_partitioned");
+        final io.deephaven.engine.table.Table table = adapter.readTable(tableId, localInstructions);
+
+        // Verify we retrieved all the rows.
+        Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
+    }
+
+    @Test
+    public void testSkippedPartitioningColumn() throws ExecutionException, InterruptedException, TimeoutException {
+        uploadParquetFiles(new File(IcebergToolsTest.class.getResource("/warehouse/sales/sales_partitioned").getPath()),
+                warehousePath);
+
+        final TableDefinition tableDef = TableDefinition.of(
+                ColumnDefinition.ofInt("year").withPartitioning(),
+                // Omitting month partitioning column
+                ColumnDefinition.ofString("Region"),
+                ColumnDefinition.ofString("Item_Type"),
+                ColumnDefinition.ofInt("Units_Sold"),
+                ColumnDefinition.ofDouble("Unit_Price"),
+                ColumnDefinition.fromGenericType("Order_Date", Instant.class));
+
+        final IcebergInstructions localInstructions = IcebergInstructions.builder()
+                .tableDefinition(tableDef)
+                .s3Instructions(instructions.s3Instructions().get())
+                .build();
+
+        final IcebergCatalogAdapter adapter =
+                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+
+        final Namespace ns = Namespace.of("sales");
+        final TableIdentifier tableId = TableIdentifier.of(ns, "sales_partitioned");
+        final io.deephaven.engine.table.Table table = adapter.readTable(tableId, localInstructions);
+
+        // Verify we retrieved all the rows.
+        Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
+    }
+
+    @Test
+    public void testReorderedPartitioningColumn() throws ExecutionException, InterruptedException, TimeoutException {
+        uploadParquetFiles(new File(IcebergToolsTest.class.getResource("/warehouse/sales/sales_partitioned").getPath()),
+                warehousePath);
+
+        final TableDefinition tableDef = TableDefinition.of(
+                ColumnDefinition.ofInt("month").withPartitioning(),
+                ColumnDefinition.ofInt("year").withPartitioning(),
+                ColumnDefinition.ofString("Region"),
+                ColumnDefinition.ofString("Item_Type"),
+                ColumnDefinition.ofInt("Units_Sold"),
+                ColumnDefinition.ofDouble("Unit_Price"),
+                ColumnDefinition.fromGenericType("Order_Date", Instant.class));
+
+        final IcebergInstructions localInstructions = IcebergInstructions.builder()
+                .tableDefinition(tableDef)
+                .s3Instructions(instructions.s3Instructions().get())
                 .build();
 
         final IcebergCatalogAdapter adapter =
