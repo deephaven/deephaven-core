@@ -38,7 +38,6 @@ import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.datastructures.SizeException;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.mutable.MutableLong;
-import io.grpc.Drainable;
 import org.apache.arrow.flatbuf.Buffer;
 import org.apache.arrow.flatbuf.FieldNode;
 import org.apache.arrow.flatbuf.RecordBatch;
@@ -47,7 +46,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.function.Consumer;
@@ -1111,24 +1109,11 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
     }
 
     public static class BitSetGenerator extends ByteArrayGenerator {
-        public final BitSet original;
-
-        public BitSetGenerator(final BitSet bitset) throws IOException {
-            this.original = bitset == null ? new BitSet() : bitset;
+        public BitSetGenerator(final BitSet bitset) {
+            BitSet original = bitset == null ? new BitSet() : bitset;
             this.raw = original.toByteArray();
             final int nBits = original.previousSetBit(Integer.MAX_VALUE - 1) + 1;
             this.len = (int) ((long) nBits + 7) / 8;
-        }
-
-        public int addToFlatBuffer(final BitSet mine, final FlatBufferBuilder builder) throws IOException {
-            if (mine.equals(original)) {
-                return addToFlatBuffer(builder);
-            }
-
-            final byte[] nraw = mine.toByteArray();
-            final int nBits = mine.previousSetBit(Integer.MAX_VALUE - 1) + 1;
-            final int nlen = (int) ((long) nBits + 7) / 8;
-            return builder.createByteVector(nraw, 0, nlen);
         }
     }
 
