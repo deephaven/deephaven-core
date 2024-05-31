@@ -197,7 +197,8 @@ public class IcebergCatalogAdapter {
 
         // Create the column source(s)
         final String[] namespaceArr = new String[(int) size];
-        columnSourceMap.put("namespace", InMemoryColumnSource.getImmutableMemoryColumnSource(namespaceArr));
+        columnSourceMap.put("namespace",
+                InMemoryColumnSource.getImmutableMemoryColumnSource(namespaceArr, String.class, null));
 
         final Namespace[] namespaceObjectArr = new Namespace[(int) size];
         columnSourceMap.put("namespace_object",
@@ -240,14 +241,16 @@ public class IcebergCatalogAdapter {
 
         // Create the column source(s)
         final String[] namespaceArr = new String[(int) size];
-        columnSourceMap.put("namespace", InMemoryColumnSource.getImmutableMemoryColumnSource(namespaceArr));
+        columnSourceMap.put("namespace",
+                InMemoryColumnSource.getImmutableMemoryColumnSource(namespaceArr, String.class, null));
 
         final String[] tableNameArr = new String[(int) size];
-        columnSourceMap.put("table_name", InMemoryColumnSource.getImmutableMemoryColumnSource(tableNameArr));
+        columnSourceMap.put("table_name",
+                InMemoryColumnSource.getImmutableMemoryColumnSource(tableNameArr, String.class, null));
 
         final TableIdentifier[] tableIdentifierArr = new TableIdentifier[(int) size];
         columnSourceMap.put("table_identifier_object",
-                InMemoryColumnSource.getImmutableMemoryColumnSource(tableIdentifierArr, Namespace.class, null));
+                InMemoryColumnSource.getImmutableMemoryColumnSource(tableIdentifierArr, TableIdentifier.class, null));
 
         // Populate the column source arrays
         for (int i = 0; i < size; i++) {
@@ -289,13 +292,15 @@ public class IcebergCatalogAdapter {
 
         // Create the column source(s)
         final long[] idArr = new long[(int) size];
-        columnSourceMap.put("id", InMemoryColumnSource.getImmutableMemoryColumnSource(idArr));
+        columnSourceMap.put("id", InMemoryColumnSource.getImmutableMemoryColumnSource(idArr, long.class, null));
 
         final long[] timestampArr = new long[(int) size];
-        columnSourceMap.put("timestamp_ms", InMemoryColumnSource.getImmutableMemoryColumnSource(timestampArr));
+        columnSourceMap.put("timestamp_ms",
+                InMemoryColumnSource.getImmutableMemoryColumnSource(timestampArr, long.class, null));
 
         final String[] operatorArr = new String[(int) size];
-        columnSourceMap.put("operation", InMemoryColumnSource.getImmutableMemoryColumnSource(operatorArr));
+        columnSourceMap.put("operation",
+                InMemoryColumnSource.getImmutableMemoryColumnSource(operatorArr, String.class, null));
 
         final Map<String, String>[] summaryArr = new Map[(int) size];
         columnSourceMap.put("summary",
@@ -393,7 +398,7 @@ public class IcebergCatalogAdapter {
         // Get the table definition from the schema (potentially limited by the user supplied table definition and
         // applying column renames).
         final TableDefinition icebergTableDef =
-                fromSchema(schema, partitionSpec, userTableDef, instructions.columnRename());
+                fromSchema(schema, partitionSpec, userTableDef, instructions.columnRenames());
 
         // If the user supplied a table definition, make sure it's fully compatible.
         final TableDefinition tableDef;

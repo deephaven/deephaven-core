@@ -60,7 +60,7 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
         final MutableInt icebergIndex = new MutableInt(0);
         final Map<String, Integer> availablePartitioningColumns = partitionSpec.fields().stream()
                 .map(PartitionField::name)
-                .map(name -> instructions.columnRename().getOrDefault(name, name))
+                .map(name -> instructions.columnRenames().getOrDefault(name, name))
                 .collect(Collectors.toMap(
                         name -> name,
                         name -> icebergIndex.getAndIncrement(),

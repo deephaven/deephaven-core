@@ -295,13 +295,13 @@ public abstract class IcebergToolsTest {
         final IcebergInstructions localInstructions = IcebergInstructions.builder()
                 .tableDefinition(tableDef)
                 .s3Instructions(instructions.s3Instructions().get())
-                .putColumnRename("Region", "RegionName")
-                .putColumnRename("Item_Type", "ItemType")
-                .putColumnRename("Units_Sold", "UnitsSold")
-                .putColumnRename("Unit_Price", "UnitPrice")
-                .putColumnRename("Order_Date", "OrderDate")
-                .putColumnRename("year", "__year")
-                .putColumnRename("month", "__month")
+                .putColumnRenames("Region", "RegionName")
+                .putColumnRenames("Item_Type", "ItemType")
+                .putColumnRenames("Units_Sold", "UnitsSold")
+                .putColumnRenames("Unit_Price", "UnitPrice")
+                .putColumnRenames("Order_Date", "OrderDate")
+                .putColumnRenames("year", "__year")
+                .putColumnRenames("month", "__month")
                 .build();
 
         final IcebergCatalogAdapter adapter =
@@ -469,8 +469,8 @@ public abstract class IcebergToolsTest {
 
         final IcebergInstructions localInstructions = IcebergInstructions.builder()
                 .s3Instructions(instructions.s3Instructions().get())
-                .putColumnRename("RegionName", "Region")
-                .putColumnRename("ItemType", "Item_Type")
+                .putColumnRenames("RegionName", "Region")
+                .putColumnRenames("ItemType", "Item_Type")
                 .build();
 
         final IcebergCatalogAdapter adapter =
@@ -492,9 +492,9 @@ public abstract class IcebergToolsTest {
 
         final IcebergInstructions localInstructions = IcebergInstructions.builder()
                 .s3Instructions(instructions.s3Instructions().get())
-                .putColumnRename("VendorID", "vendor_id")
-                .putColumnRename("month", "__month")
-                .putColumnRename("year", "__year")
+                .putColumnRenames("VendorID", "vendor_id")
+                .putColumnRenames("month", "__month")
+                .putColumnRenames("year", "__year")
                 .build();
 
         final IcebergCatalogAdapter adapter =

@@ -73,8 +73,8 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
                 builder.setTableDefinition(tableDef);
 
                 // Add any column rename mappings.
-                if (!instructions.columnRename().isEmpty()) {
-                    for (Map.Entry<String, String> entry : instructions.columnRename().entrySet()) {
+                if (!instructions.columnRenames().isEmpty()) {
+                    for (Map.Entry<String, String> entry : instructions.columnRenames().entrySet()) {
                         builder.addColumnNameMapping(entry.getKey(), entry.getValue());
                     }
                 }
