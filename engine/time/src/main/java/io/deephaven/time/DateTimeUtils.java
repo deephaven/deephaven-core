@@ -944,7 +944,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Get the {@link LocalDateTime} portion of a {@link ZonedDateTime}.
+     * Gets the {@link LocalDateTime} portion of a {@link ZonedDateTime}.
      *
      * @param dateTime the zoned date time to convert
      * @return the {@link LocalDateTime}, or {@code null} if {@code dateTime} is {@code null}
@@ -994,7 +994,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Get the {@link LocalDate} portion of a {@link ZonedDateTime}.
+     * Gets the {@link LocalDate} portion of a {@link ZonedDateTime}.
      *
      * @param dateTime the zoned date time to convert
      * @return the {@link LocalDate}, or {@code null} if {@code dateTime} is {@code null}
@@ -1010,7 +1010,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Get the {@link LocalDate} portion of a {@link LocalDateTime}.
+     * Gets the {@link LocalDate} portion of a {@link LocalDateTime}.
      *
      * @param localDateTime the local date time to convert
      * @return the {@link LocalDate}, or {@code null} if {@code localDateTime} is {@code null}
@@ -1042,7 +1042,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Get the {@link LocalTime} portion of a {@link ZonedDateTime}.
+     * Gets the {@link LocalTime} portion of a {@link ZonedDateTime}.
      *
      * @param dateTime the zoned date time to convert
      * @return the {@link LocalTime}, or {@code null} if {@code dateTime} is {@code null}
@@ -1057,7 +1057,7 @@ public class DateTimeUtils {
     }
 
     /**
-     * Get the {@link LocalTime} portion of a {@link LocalDateTime}.
+     * Gets the {@link LocalTime} portion of a {@link LocalDateTime}.
      *
      * @param localDateTime the local date time to convert
      * @return the {@link LocalTime}, or {@code null} if {@code localDateTime} is {@code null}
@@ -3809,11 +3809,11 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns an {@link ZonedDateTime} for the prior midnight in the specified time zone.
+     * Returns a {@link ZonedDateTime} for the prior midnight in the specified time zone.
      *
      * @param localDateTime local date time to compute the prior midnight for
      * @param timeZone time zone
-     * @return {@code null} if either input is {@code null}; otherwise an {@link ZonedDateTime} representing the prior
+     * @return {@code null} if either input is {@code null}; otherwise a {@link ZonedDateTime} representing the prior
      *         midnight in the specified time zone
      */
     @ScriptApi
@@ -3827,11 +3827,11 @@ public class DateTimeUtils {
     }
 
     /**
-     * Returns an {@link ZonedDateTime} for the prior midnight in the specified time zone.
+     * Returns a {@link ZonedDateTime} for the prior midnight in the specified time zone.
      *
      * @param localDate local date to compute the prior midnight for
      * @param timeZone time zone
-     * @return {@code null} if either input is {@code null}; otherwise an {@link ZonedDateTime} representing the prior
+     * @return {@code null} if either input is {@code null}; otherwise a {@link ZonedDateTime} representing the prior
      *         midnight in the specified time zone
      */
     @ScriptApi
