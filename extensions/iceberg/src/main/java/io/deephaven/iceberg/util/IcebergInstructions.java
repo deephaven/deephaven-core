@@ -36,7 +36,7 @@ public abstract class IcebergInstructions {
      * A {@link Map map} of rename instructions from Iceberg to Deephaven column names to use when reading the Iceberg
      * data files.
      */
-    public abstract Map<String, String> columnRenameMap();
+    public abstract Map<String, String> columnRename();
 
     public interface Builder {
         @SuppressWarnings("unused")
@@ -46,10 +46,10 @@ public abstract class IcebergInstructions {
         Builder s3Instructions(S3Instructions s3Instructions);
 
         @SuppressWarnings("unused")
-        Builder putColumnRenameMap(String key, String value);
+        Builder putColumnRename(String key, String value);
 
         @SuppressWarnings("unused")
-        Builder putAllColumnRenameMap(Map<String, ? extends String> entries);
+        Builder putAllColumnRename(Map<String, ? extends String> entries);
 
         IcebergInstructions build();
     }

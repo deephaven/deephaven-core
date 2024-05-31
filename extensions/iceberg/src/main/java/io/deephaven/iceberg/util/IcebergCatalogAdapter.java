@@ -13,7 +13,7 @@ import io.deephaven.engine.table.impl.locations.impl.PollingTableLocationProvide
 import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
-import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
+import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.iceberg.layout.IcebergFlatLayout;
@@ -53,11 +53,21 @@ public class IcebergCatalogAdapter {
         this.fileIO = fileIO;
     }
 
+    /**
+     * Create a single {@link TableDefinition} from a given Schema, PartitionSpec, and TableDefinition. Takes into
+     * account {@link Map<String,String> column rename instructions}
+     *
+     * @param schema The schema of the table.
+     * @param partitionSpec The partition specification of the table.
+     * @param tableDefinition The table definition.
+     * @param columnRename The map for renaming columns.
+     * @return The generated TableDefinition.
+     */
     private static TableDefinition fromSchema(
             @NotNull final Schema schema,
             @NotNull final PartitionSpec partitionSpec,
             @Nullable final TableDefinition tableDefinition,
-            @NotNull final Map<String, String> columnRenameMap) {
+            @NotNull final Map<String, String> columnRename) {
 
         final Set<String> columnNames = tableDefinition != null
                 ? tableDefinition.getColumnNameSet()
@@ -66,13 +76,13 @@ public class IcebergCatalogAdapter {
         final Set<String> partitionNames =
                 partitionSpec.fields().stream()
                         .map(PartitionField::name)
-                        .map(colName -> columnRenameMap.getOrDefault(colName, colName))
+                        .map(colName -> columnRename.getOrDefault(colName, colName))
                         .collect(Collectors.toSet());
 
         final List<ColumnDefinition<?>> columns = new ArrayList<>();
 
         for (final Types.NestedField field : schema.columns()) {
-            final String name = columnRenameMap.getOrDefault(field.name(), field.name());
+            final String name = columnRename.getOrDefault(field.name(), field.name());
             // Skip columns that are not in the provided table definition.
             if (columnNames != null && !columnNames.contains(name)) {
                 continue;
@@ -91,6 +101,12 @@ public class IcebergCatalogAdapter {
         return TableDefinition.of(columns);
     }
 
+    /**
+     * Convert an Iceberg data type to a Deephaven type.
+     *
+     * @param icebergType The Iceberg data type to be converted.
+     * @return The converted Deephaven type.
+     */
     static io.deephaven.qst.type.Type<?> convertPrimitiveType(@NotNull final Type icebergType) {
         final Type.TypeID typeId = icebergType.typeId();
         switch (typeId) {
@@ -129,12 +145,26 @@ public class IcebergCatalogAdapter {
         }
     }
 
+    /**
+     * List all {@link Namespace namespaces} in the catalog. This method is only supported if the catalog implements
+     * {@link SupportsNamespaces} for namespace discovery. See {@link SupportsNamespaces#listNamespaces(Namespace)}.
+     *
+     * @return A list of all namespaces.
+     */
     public List<Namespace> listNamespaces() {
         return listNamespaces(Namespace.empty());
     }
 
-    public List<Namespace> listNamespaces(@NotNull Namespace namespace) {
-        if (catalog instanceof org.apache.iceberg.catalog.SupportsNamespaces) {
+    /**
+     * List all {@link Namespace namespaces} in a given namespace. This method is only supported if the catalog
+     * implements {@link SupportsNamespaces} for namespace discovery. See
+     * {@link SupportsNamespaces#listNamespaces(Namespace)}.
+     *
+     * @param namespace The namespace to list namespaces in.
+     * @return A list of all namespaces in the given namespace.
+     */
+    public List<Namespace> listNamespaces(@NotNull final Namespace namespace) {
+        if (catalog instanceof SupportsNamespaces) {
             final SupportsNamespaces nsCatalog = (SupportsNamespaces) catalog;
             return nsCatalog.listNamespaces(namespace);
         }
@@ -142,41 +172,65 @@ public class IcebergCatalogAdapter {
                 "%s does not implement org.apache.iceberg.catalog.SupportsNamespaces", catalog.getClass().getName()));
     }
 
+    /**
+     * List all {@link Namespace namespaces} in the catalog as a Deephaven {@link Table table}. The resulting table will
+     * be static and contain the same information as {@link #listNamespaces()}.
+     *
+     * @return A {@link Table table} of all namespaces.
+     */
     public Table listNamespacesAsTable() {
         return listNamespacesAsTable(Namespace.empty());
     }
 
-    public Table listNamespacesAsTable(@NotNull Namespace namespace) {
-        final List<Namespace> namespaces = listNamespaces();
+    /**
+     * List all {@link Namespace namespaces} in a given namespace as a Deephaven {@link Table table}. The resulting
+     * table will be static and contain the same information as {@link #listNamespaces(Namespace)}.
+     *
+     * @return A {@link Table table} of all namespaces.
+     */
+    public Table listNamespacesAsTable(@NotNull final Namespace namespace) {
+        final List<Namespace> namespaces = listNamespaces(namespace);
         final long size = namespaces.size();
 
         // Create and return a table containing the namespaces as strings
         final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
 
         // Create the column source(s)
-        final WritableColumnSource<String> namespaceColumn =
-                ArrayBackedColumnSource.getMemoryColumnSource(size, String.class, null);
-        columnSourceMap.put("namespace", namespaceColumn);
+        final String[] namespaceArr = new String[(int) size];
+        columnSourceMap.put("namespace", InMemoryColumnSource.getImmutableMemoryColumnSource(namespaceArr));
 
-        final WritableColumnSource<Object> objectColumn =
-                ArrayBackedColumnSource.getMemoryColumnSource(size, Object.class, Namespace.class);
-        columnSourceMap.put("namespace_object", objectColumn);
+        final Namespace[] namespaceObjectArr = new Namespace[(int) size];
+        columnSourceMap.put("namespace_object",
+                InMemoryColumnSource.getImmutableMemoryColumnSource(namespaceObjectArr, Namespace.class, null));
 
-        // Populate the column source(s)
+        // Populate the column source arrays
         for (int i = 0; i < size; i++) {
             final Namespace ns = namespaces.get(i);
-            namespaceColumn.set(i, ns.toString());
-            objectColumn.set(i, ns);
+            namespaceArr[i] = ns.toString();
+            namespaceObjectArr[i] = ns;
         }
 
         // Create and return the table
         return new QueryTable(RowSetFactory.flat(size).toTracking(), columnSourceMap);
     }
 
+    /**
+     * List all Iceberg {@link TableIdentifier tables} in a given namespace.
+     *
+     * @param namespace The namespace to list tables in.
+     * @return A list of all tables in the given namespace.
+     */
     public List<TableIdentifier> listTables(@NotNull final Namespace namespace) {
         return catalog.listTables(namespace);
     }
 
+    /**
+     * List all Iceberg {@link TableIdentifier tables} in a given namespace as a Deephaven {@link Table table}. The
+     * resulting table will be static and contain the same information as {@link #listTables(Namespace)}.
+     *
+     * @param namespace The namespace from which to gather the tables
+     * @return A list of all tables in the given namespace.
+     */
     public Table listTablesAsTable(@NotNull final Namespace namespace) {
         final List<TableIdentifier> tableIdentifiers = listTables(namespace);
         final long size = tableIdentifiers.size();
@@ -185,36 +239,47 @@ public class IcebergCatalogAdapter {
         final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
 
         // Create the column source(s)
-        final WritableColumnSource<String> namespaceColumn =
-                ArrayBackedColumnSource.getMemoryColumnSource(size, String.class, null);
-        columnSourceMap.put("namespace", namespaceColumn);
+        final String[] namespaceArr = new String[(int) size];
+        columnSourceMap.put("namespace", InMemoryColumnSource.getImmutableMemoryColumnSource(namespaceArr));
 
-        final WritableColumnSource<String> tableColumn =
-                ArrayBackedColumnSource.getMemoryColumnSource(size, String.class, null);
-        columnSourceMap.put("table_name", tableColumn);
+        final String[] tableNameArr = new String[(int) size];
+        columnSourceMap.put("table_name", InMemoryColumnSource.getImmutableMemoryColumnSource(tableNameArr));
 
-        final WritableColumnSource<Object> objectColumn =
-                ArrayBackedColumnSource.getMemoryColumnSource(size, Object.class, TableIdentifier.class);
-        columnSourceMap.put("table_identifier_object", objectColumn);
+        final TableIdentifier[] tableIdentifierArr = new TableIdentifier[(int) size];
+        columnSourceMap.put("table_identifier_object",
+                InMemoryColumnSource.getImmutableMemoryColumnSource(tableIdentifierArr, Namespace.class, null));
 
-        // Populate the column source(s)
+        // Populate the column source arrays
         for (int i = 0; i < size; i++) {
             final TableIdentifier tableIdentifier = tableIdentifiers.get(i);
-            namespaceColumn.set(i, tableIdentifier.namespace().toString());
-            tableColumn.set(i, tableIdentifier.name());
-            objectColumn.set(i, tableIdentifier);
+            namespaceArr[i] = tableIdentifier.namespace().toString();
+            tableNameArr[i] = tableIdentifier.name();
+            tableIdentifierArr[i] = tableIdentifier;
         }
 
         // Create and return the table
         return new QueryTable(RowSetFactory.flat(size).toTracking(), columnSourceMap);
     }
 
+    /**
+     * List all {@link Snapshot snapshots} of a given Iceberg table.
+     *
+     * @param tableIdentifier The identifier of the table from which to gather snapshots.
+     * @return A list of all snapshots of the given table.
+     */
     public List<Snapshot> listSnapshots(@NotNull final TableIdentifier tableIdentifier) {
         final List<Snapshot> snapshots = new ArrayList<>();
         catalog.loadTable(tableIdentifier).snapshots().forEach(snapshots::add);
         return snapshots;
     }
 
+    /**
+     * List all {@link Snapshot snapshots} of a given Iceberg table as a Deephaven {@link Table table}. The resulting
+     * table will be static and contain the same information as {@link #listSnapshots(TableIdentifier)}.
+     *
+     * @param tableIdentifier The identifier of the table from which to gather snapshots.
+     * @return A list of all tables in the given namespace.
+     */
     public Table listSnapshotsAsTable(@NotNull final TableIdentifier tableIdentifier) {
         final List<Snapshot> snapshots = listSnapshots(tableIdentifier);
         final long size = snapshots.size();
@@ -223,34 +288,31 @@ public class IcebergCatalogAdapter {
         final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
 
         // Create the column source(s)
-        final WritableColumnSource<Long> idColumn =
-                ArrayBackedColumnSource.getMemoryColumnSource(size, Long.class, null);
-        columnSourceMap.put("id", idColumn);
+        final long[] idArr = new long[(int) size];
+        columnSourceMap.put("id", InMemoryColumnSource.getImmutableMemoryColumnSource(idArr));
 
-        final WritableColumnSource<Long> timestampMsColumn =
-                ArrayBackedColumnSource.getMemoryColumnSource(size, Long.class, null);
-        columnSourceMap.put("timestamp_ms", timestampMsColumn);
+        final long[] timestampArr = new long[(int) size];
+        columnSourceMap.put("timestamp_ms", InMemoryColumnSource.getImmutableMemoryColumnSource(timestampArr));
 
-        final WritableColumnSource<String> operationColumn =
-                ArrayBackedColumnSource.getMemoryColumnSource(size, String.class, null);
-        columnSourceMap.put("operation", operationColumn);
+        final String[] operatorArr = new String[(int) size];
+        columnSourceMap.put("operation", InMemoryColumnSource.getImmutableMemoryColumnSource(operatorArr));
 
-        final WritableColumnSource<Object> summaryColumn =
-                ArrayBackedColumnSource.getMemoryColumnSource(size, Object.class, Map.class);
-        columnSourceMap.put("summary", summaryColumn);
+        final Map<String, String>[] summaryArr = new Map[(int) size];
+        columnSourceMap.put("summary",
+                InMemoryColumnSource.getImmutableMemoryColumnSource(summaryArr, Map.class, null));
 
-        final WritableColumnSource<Object> objectColumn =
-                ArrayBackedColumnSource.getMemoryColumnSource(size, Object.class, Snapshot.class);
-        columnSourceMap.put("snapshot_object", objectColumn);
+        final Snapshot[] snapshotArr = new Snapshot[(int) size];
+        columnSourceMap.put("snapshot_object",
+                InMemoryColumnSource.getImmutableMemoryColumnSource(snapshotArr, Snapshot.class, null));
 
         // Populate the column source(s)
         for (int i = 0; i < size; i++) {
             final Snapshot snapshot = snapshots.get(i);
-            idColumn.set(i, snapshot.snapshotId());
-            timestampMsColumn.set(i, snapshot.timestampMillis());
-            operationColumn.set(i, snapshot.operation());
-            summaryColumn.set(i, snapshot.summary());
-            objectColumn.set(i, snapshot);
+            idArr[i] = snapshot.snapshotId();
+            timestampArr[i] = snapshot.timestampMillis();
+            operatorArr[i] = snapshot.operation();
+            summaryArr[i] = snapshot.summary();
+            snapshotArr[i] = snapshot;
         }
 
         // Create and return the table
@@ -258,7 +320,7 @@ public class IcebergCatalogAdapter {
     }
 
     /**
-     * Read the latest static snapshot of a table from the Iceberg catalog.
+     * Read the latest static snapshot of an Iceberg table from the Iceberg catalog.
      *
      * @param tableIdentifier The table identifier to load
      * @param instructions The instructions for customizations while reading
@@ -272,7 +334,30 @@ public class IcebergCatalogAdapter {
     }
 
     /**
-     * Read a static snapshot of a table from the Iceberg catalog.
+     * Read a static snapshot of an Iceberg table from the Iceberg catalog.
+     *
+     * @param tableIdentifier The table identifier to load
+     * @param tableSnapshotId The snapshot id to load
+     * @param instructions The instructions for customizations while reading
+     * @return The loaded table
+     */
+    @SuppressWarnings("unused")
+    public Table readTable(
+            @NotNull final TableIdentifier tableIdentifier,
+            final long tableSnapshotId,
+            @NotNull final IcebergInstructions instructions) {
+
+        // Find the snapshot with the given snapshot id
+        final Snapshot tableSnapshot = listSnapshots(tableIdentifier).stream()
+                .filter(snapshot -> snapshot.snapshotId() == tableSnapshotId)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Snapshot with id " + tableSnapshotId + " not found"));
+
+        return readTableInternal(tableIdentifier, tableSnapshot, instructions);
+    }
+
+    /**
+     * Read a static snapshot of an Iceberg table from the Iceberg catalog.
      *
      * @param tableIdentifier The table identifier to load
      * @param tableSnapshot The {@link Snapshot snapshot} to load
@@ -308,12 +393,29 @@ public class IcebergCatalogAdapter {
         // Get the table definition from the schema (potentially limited by the user supplied table definition and
         // applying column renames).
         final TableDefinition icebergTableDef =
-                fromSchema(schema, partitionSpec, userTableDef, instructions.columnRenameMap());
+                fromSchema(schema, partitionSpec, userTableDef, instructions.columnRename());
 
         // If the user supplied a table definition, make sure it's fully compatible.
         final TableDefinition tableDef;
         if (userTableDef != null) {
             tableDef = icebergTableDef.checkCompatibility(userTableDef);
+
+            // Ensure that the user has not marked non-partitioned columns as partitioned.
+            final Set<String> userPartitionColumns = userTableDef.getPartitioningColumns().stream()
+                    .map(ColumnDefinition::getName)
+                    .collect(Collectors.toSet());
+            final Set<String> partitionColumns = tableDef.getPartitioningColumns().stream()
+                    .map(ColumnDefinition::getName)
+                    .collect(Collectors.toSet());
+
+            // The working partitioning column set must be a super-set of the user-supplied set.
+            if (!partitionColumns.containsAll(userPartitionColumns)) {
+                final Set<String> invalidColumns = new HashSet<>(userPartitionColumns);
+                invalidColumns.removeAll(partitionColumns);
+
+                throw new TableDataException("The following columns are not partitioned in the Iceberg table: " +
+                        invalidColumns);
+            }
         } else {
             // Use the snapshot schema as the table definition.
             tableDef = icebergTableDef;

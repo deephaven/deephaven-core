@@ -1,20 +1,18 @@
 //
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.iceberg;
+package io.deephaven.iceberg.util;
 
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.s3.S3Instructions;
 import io.deephaven.iceberg.TestCatalog.IcebergTestCatalog;
 import io.deephaven.iceberg.TestCatalog.IcebergTestFileIO;
-import io.deephaven.iceberg.util.IcebergCatalogAdapter;
-import io.deephaven.iceberg.util.IcebergInstructions;
-import io.deephaven.iceberg.util.IcebergTools;
 import io.deephaven.time.DateTimeUtils;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.catalog.Catalog;
@@ -297,13 +295,13 @@ public abstract class IcebergToolsTest {
         final IcebergInstructions localInstructions = IcebergInstructions.builder()
                 .tableDefinition(tableDef)
                 .s3Instructions(instructions.s3Instructions().get())
-                .putColumnRenameMap("Region", "RegionName")
-                .putColumnRenameMap("Item_Type", "ItemType")
-                .putColumnRenameMap("Units_Sold", "UnitsSold")
-                .putColumnRenameMap("Unit_Price", "UnitPrice")
-                .putColumnRenameMap("Order_Date", "OrderDate")
-                .putColumnRenameMap("year", "__year")
-                .putColumnRenameMap("month", "__month")
+                .putColumnRename("Region", "RegionName")
+                .putColumnRename("Item_Type", "ItemType")
+                .putColumnRename("Units_Sold", "UnitsSold")
+                .putColumnRename("Unit_Price", "UnitPrice")
+                .putColumnRename("Order_Date", "OrderDate")
+                .putColumnRename("year", "__year")
+                .putColumnRename("month", "__month")
                 .build();
 
         final IcebergCatalogAdapter adapter =
@@ -378,6 +376,64 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
+    public void testZeroPartitioningColumns() throws ExecutionException, InterruptedException, TimeoutException {
+        uploadParquetFiles(new File(IcebergToolsTest.class.getResource("/warehouse/sales/sales_partitioned").getPath()),
+                warehousePath);
+
+        final TableDefinition tableDef = TableDefinition.of(
+                ColumnDefinition.ofString("Region"),
+                ColumnDefinition.ofString("Item_Type"),
+                ColumnDefinition.ofInt("Units_Sold"),
+                ColumnDefinition.ofDouble("Unit_Price"),
+                ColumnDefinition.fromGenericType("Order_Date", Instant.class));
+
+        final IcebergInstructions localInstructions = IcebergInstructions.builder()
+                .tableDefinition(tableDef)
+                .s3Instructions(instructions.s3Instructions().get())
+                .build();
+
+        final IcebergCatalogAdapter adapter =
+                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+
+        final Namespace ns = Namespace.of("sales");
+        final TableIdentifier tableId = TableIdentifier.of(ns, "sales_partitioned");
+        final io.deephaven.engine.table.Table table = adapter.readTable(tableId, localInstructions);
+
+        // Verify we retrieved all the rows.
+        Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
+    }
+
+    @Test
+    public void testIncorrectPartitioningColumns() throws ExecutionException, InterruptedException, TimeoutException {
+        final TableDefinition tableDef = TableDefinition.of(
+                ColumnDefinition.ofInt("month").withPartitioning(),
+                ColumnDefinition.ofInt("year").withPartitioning(),
+                ColumnDefinition.ofString("Region").withPartitioning(),
+                ColumnDefinition.ofString("Item_Type"),
+                ColumnDefinition.ofInt("Units_Sold"),
+                ColumnDefinition.ofDouble("Unit_Price"),
+                ColumnDefinition.fromGenericType("Order_Date", Instant.class));
+
+        final IcebergInstructions localInstructions = IcebergInstructions.builder()
+                .tableDefinition(tableDef)
+                .s3Instructions(instructions.s3Instructions().get())
+                .build();
+
+        final IcebergCatalogAdapter adapter =
+                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+
+        final Namespace ns = Namespace.of("sales");
+        final TableIdentifier tableId = TableIdentifier.of(ns, "sales_partitioned");
+
+        try {
+            final io.deephaven.engine.table.Table table = adapter.readTable(tableId, localInstructions);
+            Assert.statementNeverExecuted("Expected an exception for missing columns");
+        } catch (final TableDataException e) {
+            Assert.eqTrue(e.getMessage().startsWith("The following columns are not partitioned"), "Exception message");
+        }
+    }
+
+    @Test
     public void testMissingPartitioningColumns() {
         final TableDefinition tableDef = TableDefinition.of(
                 ColumnDefinition.ofInt("__year").withPartitioning(), // Incorrect name
@@ -413,8 +469,8 @@ public abstract class IcebergToolsTest {
 
         final IcebergInstructions localInstructions = IcebergInstructions.builder()
                 .s3Instructions(instructions.s3Instructions().get())
-                .putColumnRenameMap("RegionName", "Region")
-                .putColumnRenameMap("ItemType", "Item_Type")
+                .putColumnRename("RegionName", "Region")
+                .putColumnRename("ItemType", "Item_Type")
                 .build();
 
         final IcebergCatalogAdapter adapter =
@@ -436,9 +492,9 @@ public abstract class IcebergToolsTest {
 
         final IcebergInstructions localInstructions = IcebergInstructions.builder()
                 .s3Instructions(instructions.s3Instructions().get())
-                .putColumnRenameMap("VendorID", "vendor_id")
-                .putColumnRenameMap("month", "__month")
-                .putColumnRenameMap("year", "__year")
+                .putColumnRename("VendorID", "vendor_id")
+                .putColumnRename("month", "__month")
+                .putColumnRename("year", "__year")
                 .build();
 
         final IcebergCatalogAdapter adapter =
@@ -454,6 +510,35 @@ public abstract class IcebergToolsTest {
 
     @Test
     public void testOpenTableSnapshot() throws ExecutionException, InterruptedException, TimeoutException {
+        uploadParquetFiles(new File(IcebergToolsTest.class.getResource("/warehouse/sales/sales_multi").getPath()),
+                warehousePath);
+
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+
+        final Namespace ns = Namespace.of("sales");
+        final TableIdentifier tableId = TableIdentifier.of(ns, "sales_multi");
+        final List<Snapshot> snapshots = adapter.listSnapshots(tableId);
+
+        // Verify we retrieved all the rows.
+        final io.deephaven.engine.table.Table table0 =
+                adapter.readTable(tableId, snapshots.get(0).snapshotId(), instructions);
+        Assert.eq(table0.size(), "table0.size()", 18266, "18266 rows in the table");
+
+        final io.deephaven.engine.table.Table table1 =
+                adapter.readTable(tableId, snapshots.get(1).snapshotId(), instructions);
+        Assert.eq(table1.size(), "table1.size()", 54373, "54373 rows in the table");
+
+        final io.deephaven.engine.table.Table table2 =
+                adapter.readTable(tableId, snapshots.get(2).snapshotId(), instructions);
+        Assert.eq(table2.size(), "table2.size()", 72603, "72603 rows in the table");
+
+        final io.deephaven.engine.table.Table table3 =
+                adapter.readTable(tableId, snapshots.get(3).snapshotId(), instructions);
+        Assert.eq(table3.size(), "table3.size()", 100_000, "100_000 rows in the table");
+    }
+
+    @Test
+    public void testOpenTableSnapshotByID() throws ExecutionException, InterruptedException, TimeoutException {
         uploadParquetFiles(new File(IcebergToolsTest.class.getResource("/warehouse/sales/sales_multi").getPath()),
                 warehousePath);
 
