@@ -47,7 +47,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.*;
@@ -310,7 +309,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
         }
 
         @Override
-        public void forEachStream(Consumer<InputStream> visitor) throws IOException {
+        public void forEachStream(Consumer<DefensiveDrainable> visitor) throws IOException {
             final long startTm = System.nanoTime();
             ByteBuffer metadata = getSubscriptionMetadata();
             MutableLong bytesWritten = new MutableLong(0L);
@@ -322,7 +321,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
 
             if (numAddRows == 0 && numModRows == 0) {
                 // we still need to send a message containing metadata when there are no rows
-                final InputStream is = getInputStream(this, 0, 0, actualBatchSize, metadata,
+                final DefensiveDrainable is = getInputStream(this, 0, 0, actualBatchSize, metadata,
                         BarrageStreamGeneratorImpl.this::appendAddColumns);
                 bytesWritten.add(is.available());
                 visitor.accept(is);
@@ -522,7 +521,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
         }
 
         @Override
-        public void forEachStream(Consumer<InputStream> visitor) throws IOException {
+        public void forEachStream(Consumer<DefensiveDrainable> visitor) throws IOException {
             final long startTm = System.nanoTime();
             ByteBuffer metadata = getSnapshotMetadata();
             MutableLong bytesWritten = new MutableLong(0L);
@@ -636,7 +635,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
         }
 
         @Override
-        public void forEachStream(Consumer<InputStream> visitor) {
+        public void forEachStream(Consumer<DefensiveDrainable> visitor) {
             visitor.accept(new DrainableByteArrayInputStream(msgBytes, 0, msgBytes.length));
         }
     }
@@ -644,7 +643,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
     @FunctionalInterface
     private interface ColumnVisitor {
         int visit(final RecordBatchMessageView view, final long startRange, final int targetBatchSize,
-                final Consumer<InputStream> addStream,
+                final Consumer<DefensiveDrainable> addStream,
                 final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
                 final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException;
     }
@@ -661,13 +660,14 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
      * @param columnVisitor the helper method responsible for appending the payload columns to the RecordBatch
      * @return an InputStream ready to be drained by GRPC
      */
-    private InputStream getInputStream(final RecordBatchMessageView view, final long offset, final int targetBatchSize,
+    private DefensiveDrainable getInputStream(final RecordBatchMessageView view, final long offset,
+            final int targetBatchSize,
             final MutableInt actualBatchSize, final ByteBuffer metadata, final ColumnVisitor columnVisitor)
             throws IOException {
-        final ArrayDeque<InputStream> streams = new ArrayDeque<>();
+        final ArrayDeque<DefensiveDrainable> streams = new ArrayDeque<>();
         final MutableInt size = new MutableInt();
 
-        final Consumer<InputStream> addStream = (final InputStream is) -> {
+        final Consumer<DefensiveDrainable> addStream = (final DefensiveDrainable is) -> {
             try {
                 final int sz = is.available();
                 if (sz == 0) {
@@ -755,7 +755,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             writeHeader(metadata, size, header, baos);
             streams.addFirst(new DrainableByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
 
-            return new ConsecutiveDrainableStreams(streams.toArray(new InputStream[0]));
+            return new ConsecutiveDrainableStreams(streams.toArray(new DefensiveDrainable[0]));
         } catch (final IOException ex) {
             throw new UncheckedDeephavenException("Unexpected IOException", ex);
         }
@@ -781,7 +781,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
         cos.flush();
     }
 
-    private void processBatches(Consumer<InputStream> visitor, final RecordBatchMessageView view,
+    private void processBatches(Consumer<DefensiveDrainable> visitor, final RecordBatchMessageView view,
             final long numRows, final int maxBatchSize, ByteBuffer metadata,
             final ColumnVisitor columnVisitor, final MutableLong bytesWritten) throws IOException {
         long offset = 0;
@@ -798,7 +798,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
 
         while (offset < numRows) {
             try {
-                final InputStream is =
+                final DefensiveDrainable is =
                         getInputStream(view, offset, batchSize, actualBatchSize, metadata, columnVisitor);
                 int bytesToWrite = is.available();
 
@@ -875,7 +875,8 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
     }
 
     private int appendAddColumns(final RecordBatchMessageView view, final long startRange, final int targetBatchSize,
-            final Consumer<InputStream> addStream, final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
+            final Consumer<DefensiveDrainable> addStream,
+            final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
             final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException {
         if (addColumnData.length == 0) {
             return view.addRowOffsets().intSize();
@@ -941,7 +942,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
     }
 
     private int appendModColumns(final RecordBatchMessageView view, final long startRange, final int targetBatchSize,
-            final Consumer<InputStream> addStream,
+            final Consumer<DefensiveDrainable> addStream,
             final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
             final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException {
         int[] columnChunkIdx = new int[modColumnData.length];
@@ -1203,21 +1204,16 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
     }
 
     public static class ConsecutiveDrainableStreams extends DefensiveDrainable {
-        final InputStream[] streams;
+        final DefensiveDrainable[] streams;
 
-        public ConsecutiveDrainableStreams(final InputStream... streams) {
+        public ConsecutiveDrainableStreams(final @NotNull DefensiveDrainable... streams) {
             this.streams = streams;
-            for (final InputStream stream : streams) {
-                if (!(stream instanceof Drainable)) {
-                    throw new IllegalArgumentException("expecting sub-class of Drainable; found: " + stream.getClass());
-                }
-            }
         }
 
         @Override
         public int drainTo(final OutputStream outputStream) throws IOException {
             int total = 0;
-            for (final InputStream stream : streams) {
+            for (final DefensiveDrainable stream : streams) {
                 final int expected = total + stream.available();
                 total += ((Drainable) stream).drainTo(outputStream);
                 if (expected != total) {
@@ -1233,7 +1229,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
         @Override
         public int available() throws SizeException, IOException {
             int total = 0;
-            for (final InputStream stream : streams) {
+            for (final DefensiveDrainable stream : streams) {
                 total += stream.available();
                 if (total < 0) {
                     throw new SizeException("drained message is too large; exceeds Integer.MAX_VALUE", total);
@@ -1244,7 +1240,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
 
         @Override
         public void close() throws IOException {
-            for (final InputStream stream : streams) {
+            for (final DefensiveDrainable stream : streams) {
                 try {
                     stream.close();
                 } catch (final IOException e) {

@@ -6,12 +6,12 @@ package io.deephaven.extensions.barrage;
 import com.google.flatbuffers.FlatBufferBuilder;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
+import io.deephaven.extensions.barrage.util.DefensiveDrainable;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.BitSet;
 import java.util.function.Consumer;
 import java.util.function.ToIntFunction;
@@ -23,7 +23,7 @@ import java.util.function.ToIntFunction;
 public interface BarrageStreamGenerator extends SafeCloseable {
 
     interface MessageView {
-        void forEachStream(Consumer<InputStream> visitor) throws IOException;
+        void forEachStream(Consumer<DefensiveDrainable> visitor) throws IOException;
     }
 
     interface Factory {
