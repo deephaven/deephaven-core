@@ -57,8 +57,7 @@ import java.util.function.ToIntFunction;
 import static io.deephaven.extensions.barrage.chunk.BaseChunkInputStreamGenerator.PADDING_BUFFER;
 import static io.deephaven.proto.flight.util.MessageHelper.toIpcBytes;
 
-public class BarrageStreamGeneratorImpl implements
-        BarrageStreamGenerator<BarrageStreamGeneratorImpl.View> {
+public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
 
     private static final Logger log = LoggerFactory.getLogger(BarrageStreamGeneratorImpl.class);
     // NB: This should likely be something smaller, such as 1<<16, but since the js api is not yet able
@@ -75,37 +74,30 @@ public class BarrageStreamGeneratorImpl implements
             .getIntegerForClassWithDefault(BarrageStreamGeneratorImpl.class, "maxOutboundMessageSize",
                     100 * 1024 * 1024);
 
-    public interface View {
-        void forEachStream(Consumer<InputStream> visitor) throws IOException;
-
+    public interface RecordBatchMessageView extends MessageView {
         boolean isViewport();
 
         StreamReaderOptions options();
-
-        int clientMaxMessageSize();
 
         RowSet addRowOffsets();
 
         RowSet modRowOffsets(int col);
     }
 
-    public static class Factory
-            implements BarrageStreamGenerator.Factory<View> {
-        public Factory() {}
-
+    public static class Factory implements BarrageStreamGenerator.Factory {
         @Override
-        public BarrageStreamGenerator<View> newGenerator(
+        public BarrageStreamGenerator newGenerator(
                 final BarrageMessage message, final BarragePerformanceLog.WriteMetricsConsumer metricsConsumer) {
             return new BarrageStreamGeneratorImpl(message, metricsConsumer);
         }
 
         @Override
-        public View getSchemaView(@NotNull final ToIntFunction<FlatBufferBuilder> schemaPayloadWriter) {
+        public MessageView getSchemaView(@NotNull final ToIntFunction<FlatBufferBuilder> schemaPayloadWriter) {
             final FlatBufferBuilder builder = new FlatBufferBuilder();
             final int schemaOffset = schemaPayloadWriter.applyAsInt(builder);
             builder.finish(MessageHelper.wrapInMessage(builder, schemaOffset,
                     org.apache.arrow.flatbuf.MessageHeader.Schema));
-            return new SchemaView(builder.dataBuffer());
+            return new SchemaMessageView(builder.dataBuffer());
         }
     }
 
@@ -114,7 +106,7 @@ public class BarrageStreamGeneratorImpl implements
      */
     public static class ArrowFactory extends Factory {
         @Override
-        public BarrageStreamGenerator<View> newGenerator(
+        public BarrageStreamGenerator newGenerator(
                 BarrageMessage message, BarragePerformanceLog.WriteMetricsConsumer metricsConsumer) {
             return new BarrageStreamGeneratorImpl(message, metricsConsumer) {
                 @Override
@@ -232,7 +224,7 @@ public class BarrageStreamGeneratorImpl implements
      * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
      */
     @Override
-    public SubView getSubView(final BarrageSubscriptionOptions options,
+    public MessageView getSubView(final BarrageSubscriptionOptions options,
             final boolean isInitialSnapshot,
             @Nullable final RowSet viewport,
             final boolean reverseViewport,
@@ -250,11 +242,11 @@ public class BarrageStreamGeneratorImpl implements
      * @return a MessageView filtered by the subscription properties that can be sent to that subscriber
      */
     @Override
-    public SubView getSubView(BarrageSubscriptionOptions options, boolean isInitialSnapshot) {
+    public MessageView getSubView(BarrageSubscriptionOptions options, boolean isInitialSnapshot) {
         return getSubView(options, isInitialSnapshot, null, false, null, null);
     }
 
-    public final class SubView implements View {
+    private final class SubView implements RecordBatchMessageView {
         private final BarrageSubscriptionOptions options;
         private final boolean isInitialSnapshot;
         private final RowSet viewport;
@@ -363,11 +355,6 @@ public class BarrageStreamGeneratorImpl implements
                 batchSize = DEFAULT_BATCH_SIZE;
             }
             return batchSize;
-        }
-
-        @Override
-        public int clientMaxMessageSize() {
-            return options.maxMessageSize();
         }
 
         @Override
@@ -483,7 +470,7 @@ public class BarrageStreamGeneratorImpl implements
      * @return a MessageView filtered by the snapshot properties that can be sent to that subscriber
      */
     @Override
-    public SnapshotView getSnapshotView(final BarrageSnapshotOptions options,
+    public MessageView getSnapshotView(final BarrageSnapshotOptions options,
             @Nullable final RowSet viewport,
             final boolean reverseViewport,
             @Nullable final RowSet keyspaceViewport,
@@ -498,11 +485,11 @@ public class BarrageStreamGeneratorImpl implements
      * @return a MessageView filtered by the snapshot properties that can be sent to that subscriber
      */
     @Override
-    public SnapshotView getSnapshotView(BarrageSnapshotOptions options) {
+    public MessageView getSnapshotView(BarrageSnapshotOptions options) {
         return getSnapshotView(options, null, false, null, null);
     }
 
-    public final class SnapshotView implements View {
+    private final class SnapshotView implements RecordBatchMessageView {
         private final BarrageSnapshotOptions options;
         private final RowSet viewport;
         private final boolean reverseViewport;
@@ -563,11 +550,6 @@ public class BarrageStreamGeneratorImpl implements
                 batchSize = DEFAULT_BATCH_SIZE;
             }
             return batchSize;
-        }
-
-        @Override
-        public int clientMaxMessageSize() {
-            return options.maxMessageSize();
         }
 
         @Override
@@ -643,10 +625,10 @@ public class BarrageStreamGeneratorImpl implements
         }
     }
 
-    public static final class SchemaView implements View {
+    private static final class SchemaMessageView implements MessageView {
         private final byte[] msgBytes;
 
-        public SchemaView(final ByteBuffer buffer) {
+        public SchemaMessageView(final ByteBuffer buffer) {
             this.msgBytes = Flight.FlightData.newBuilder()
                     .setDataHeader(ByteStringAccess.wrap(buffer))
                     .build()
@@ -657,36 +639,11 @@ public class BarrageStreamGeneratorImpl implements
         public void forEachStream(Consumer<InputStream> visitor) {
             visitor.accept(new DrainableByteArrayInputStream(msgBytes, 0, msgBytes.length));
         }
-
-        @Override
-        public boolean isViewport() {
-            return false;
-        }
-
-        @Override
-        public StreamReaderOptions options() {
-            return null;
-        }
-
-        @Override
-        public int clientMaxMessageSize() {
-            return 0;
-        }
-
-        @Override
-        public RowSet addRowOffsets() {
-            return null;
-        }
-
-        @Override
-        public RowSet modRowOffsets(int col) {
-            return null;
-        }
     }
 
     @FunctionalInterface
     private interface ColumnVisitor {
-        int visit(final View view, final long startRange, final int targetBatchSize,
+        int visit(final RecordBatchMessageView view, final long startRange, final int targetBatchSize,
                 final Consumer<InputStream> addStream,
                 final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
                 final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException;
@@ -704,7 +661,7 @@ public class BarrageStreamGeneratorImpl implements
      * @param columnVisitor the helper method responsible for appending the payload columns to the RecordBatch
      * @return an InputStream ready to be drained by GRPC
      */
-    private InputStream getInputStream(final View view, final long offset, final int targetBatchSize,
+    private InputStream getInputStream(final RecordBatchMessageView view, final long offset, final int targetBatchSize,
             final MutableInt actualBatchSize, final ByteBuffer metadata, final ColumnVisitor columnVisitor)
             throws IOException {
         final ArrayDeque<InputStream> streams = new ArrayDeque<>();
@@ -824,7 +781,7 @@ public class BarrageStreamGeneratorImpl implements
         cos.flush();
     }
 
-    private void processBatches(Consumer<InputStream> visitor, final View view,
+    private void processBatches(Consumer<InputStream> visitor, final RecordBatchMessageView view,
             final long numRows, final int maxBatchSize, ByteBuffer metadata,
             final ColumnVisitor columnVisitor, final MutableLong bytesWritten) throws IOException {
         long offset = 0;
@@ -833,8 +790,8 @@ public class BarrageStreamGeneratorImpl implements
         int batchSize = Math.min(DEFAULT_INITIAL_BATCH_SIZE, maxBatchSize);
 
         // allow the client to override the default message size
-        final int maxMessageSize =
-                view.clientMaxMessageSize() > 0 ? view.clientMaxMessageSize() : DEFAULT_MESSAGE_SIZE_LIMIT;
+        int clientMaxMessageSize = view.options().maxMessageSize();
+        final int maxMessageSize = clientMaxMessageSize > 0 ? clientMaxMessageSize : DEFAULT_MESSAGE_SIZE_LIMIT;
 
         // TODO (deephaven-core#188): remove this when JS API can accept multiple batches
         boolean sendAllowed = numRows <= batchSize;
@@ -917,7 +874,7 @@ public class BarrageStreamGeneratorImpl implements
         return low;
     }
 
-    private int appendAddColumns(final View view, final long startRange, final int targetBatchSize,
+    private int appendAddColumns(final RecordBatchMessageView view, final long startRange, final int targetBatchSize,
             final Consumer<InputStream> addStream, final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
             final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException {
         if (addColumnData.length == 0) {
@@ -983,7 +940,7 @@ public class BarrageStreamGeneratorImpl implements
         }
     }
 
-    private int appendModColumns(final View view, final long startRange, final int targetBatchSize,
+    private int appendModColumns(final RecordBatchMessageView view, final long startRange, final int targetBatchSize,
             final Consumer<InputStream> addStream,
             final ChunkInputStreamGenerator.FieldNodeListener fieldNodeListener,
             final ChunkInputStreamGenerator.BufferListener bufferListener) throws IOException {

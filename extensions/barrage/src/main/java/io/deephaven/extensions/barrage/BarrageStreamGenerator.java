@@ -10,25 +10,30 @@ import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.BitSet;
+import java.util.function.Consumer;
 import java.util.function.ToIntFunction;
 
 /**
  * A StreamGenerator takes a BarrageMessage and re-uses portions of the serialized payload across different subscribers
  * that may subscribe to different viewports and columns.
- *
- * @param <MessageView> The sub-view type that the listener expects to receive.
  */
-public interface BarrageStreamGenerator<MessageView> extends SafeCloseable {
+public interface BarrageStreamGenerator extends SafeCloseable {
 
-    interface Factory<MessageView> {
+    interface MessageView {
+        void forEachStream(Consumer<InputStream> visitor) throws IOException;
+    }
+
+    interface Factory {
         /**
          * Create a StreamGenerator that now owns the BarrageMessage.
          *
          * @param message the message that contains the update that we would like to propagate
          * @param metricsConsumer a method that can be used to record write metrics
          */
-        BarrageStreamGenerator<MessageView> newGenerator(
+        BarrageStreamGenerator newGenerator(
                 BarrageMessage message, BarragePerformanceLog.WriteMetricsConsumer metricsConsumer);
 
         /**

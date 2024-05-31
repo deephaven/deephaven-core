@@ -32,17 +32,19 @@ public abstract class ArrowModule {
     @IntoSet
     abstract BindableService bindBrowserFlightServiceBinding(BrowserFlightServiceGrpcBinding service);
 
-    @Provides
+    @Binds
     @Singleton
-    static BarrageStreamGenerator.Factory<BarrageStreamGeneratorImpl.View> bindStreamGenerator() {
+    static BarrageStreamGenerator.Factory bindStreamGenerator() {
         return new BarrageStreamGeneratorImpl.Factory();
     }
 
+
+    // TODO before commit, try getting rid of this
     @Provides
-    static BarrageMessageProducer.Adapter<StreamObserver<InputStream>, StreamObserver<BarrageStreamGeneratorImpl.View>> provideListenerAdapter() {
+    static BarrageMessageProducer.Adapter<StreamObserver<InputStream>, StreamObserver<BarrageStreamGenerator.MessageView>> provideListenerAdapter() {
         return delegate -> new StreamObserver<>() {
             @Override
-            public void onNext(final BarrageStreamGeneratorImpl.View view) {
+            public void onNext(final BarrageStreamGenerator.MessageView view) {
                 try {
                     synchronized (delegate) {
                         view.forEachStream(delegate::onNext);
