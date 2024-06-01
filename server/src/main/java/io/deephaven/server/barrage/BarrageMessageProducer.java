@@ -516,7 +516,7 @@ public class BarrageMessageProducer extends LivenessArtifact
         }
     }
 
-    private boolean findAndUpdateSubscription(final StreamObserver<?> listener,
+    private boolean findAndUpdateSubscription(final StreamObserver<BarrageStreamGenerator.MessageView> listener,
             final Consumer<Subscription> updateSubscription) {
         final Function<List<Subscription>, Boolean> findAndUpdate = (List<Subscription> subscriptions) -> {
             for (final Subscription sub : subscriptions) {
@@ -581,7 +581,7 @@ public class BarrageMessageProducer extends LivenessArtifact
         });
     }
 
-    public void removeSubscription(final StreamObserver<?> listener) {
+    public void removeSubscription(final StreamObserver<BarrageStreamGenerator.MessageView> listener) {
         findAndUpdateSubscription(listener, sub -> {
             sub.pendingDelete = true;
             if (log.isDebugEnabled()) {

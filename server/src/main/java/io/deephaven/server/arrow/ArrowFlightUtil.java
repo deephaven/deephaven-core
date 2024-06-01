@@ -62,6 +62,38 @@ import static io.deephaven.extensions.barrage.util.BarrageUtil.DEFAULT_SNAPSHOT_
 public class ArrowFlightUtil {
     private static final Logger log = LoggerFactory.getLogger(ArrowFlightUtil.class);
 
+    private static class MessageViewAdapter implements StreamObserver<BarrageStreamGenerator.MessageView> {
+        private final StreamObserver<InputStream> delegate;
+
+        private MessageViewAdapter(StreamObserver<InputStream> delegate) {
+            this.delegate = delegate;
+        }
+
+        public void onNext(BarrageStreamGenerator.MessageView value) {
+            synchronized (delegate) {
+                try {
+                    value.forEachStream(delegate::onNext);
+                } catch (IOException e) {
+                    throw new UncheckedDeephavenException(e);
+                }
+            }
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            synchronized (delegate) {
+                delegate.onError(t);
+            }
+        }
+
+        @Override
+        public void onCompleted() {
+            synchronized (delegate) {
+                delegate.onCompleted();
+            }
+        }
+    }
+
     public static final int DEFAULT_MIN_UPDATE_INTERVAL_MS =
             Configuration.getInstance().getIntegerWithDefault("barrage.minUpdateInterval", 1000);
 
@@ -105,7 +137,7 @@ public class ArrowFlightUtil {
 
                         // create an adapter for the response observer
                         final StreamObserver<BarrageStreamGenerator.MessageView> listener =
-                                ArrowModule.provideListenerAdapter().adapt(observer);
+                                new MessageViewAdapter(observer);
 
                         // push the schema to the listener
                         listener.onNext(streamGeneratorFactory.getSchemaView(
@@ -355,7 +387,6 @@ public class ArrowFlightUtil {
                 final BarrageStreamGenerator.Factory streamGeneratorFactory,
                 final BarrageMessageProducer.Operation.Factory bmpOperationFactory,
                 final HierarchicalTableViewSubscription.Factory htvsFactory,
-                final BarrageMessageProducer.Adapter<StreamObserver<InputStream>, StreamObserver<BarrageStreamGenerator.MessageView>> listenerAdapter,
                 final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> subscriptionOptAdapter,
                 final BarrageMessageProducer.Adapter<BarrageSnapshotRequest, BarrageSnapshotOptions> snapshotOptAdapter,
                 final SessionService.ErrorTransformer errorTransformer,
@@ -370,7 +401,7 @@ public class ArrowFlightUtil {
             this.subscriptionOptAdapter = subscriptionOptAdapter;
             this.snapshotOptAdapter = snapshotOptAdapter;
             this.session = session;
-            this.listener = listenerAdapter.adapt(responseObserver);
+            this.listener = new MessageViewAdapter(responseObserver);
             this.errorTransformer = errorTransformer;
 
             this.session.addOnCloseCallback(this);

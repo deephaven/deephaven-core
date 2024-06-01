@@ -7,7 +7,6 @@ import dagger.Binds;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoSet;
-import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
@@ -16,11 +15,8 @@ import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.server.barrage.BarrageMessageProducer;
 import io.deephaven.extensions.barrage.BarrageStreamGeneratorImpl;
 import io.grpc.BindableService;
-import io.grpc.stub.StreamObserver;
 
 import javax.inject.Singleton;
-import java.io.IOException;
-import java.io.InputStream;
 
 @Module
 public abstract class ArrowModule {
@@ -32,42 +28,10 @@ public abstract class ArrowModule {
     @IntoSet
     abstract BindableService bindBrowserFlightServiceBinding(BrowserFlightServiceGrpcBinding service);
 
-    @Binds
+    @Provides
     @Singleton
     static BarrageStreamGenerator.Factory bindStreamGenerator() {
         return new BarrageStreamGeneratorImpl.Factory();
-    }
-
-
-    // TODO before commit, try getting rid of this
-    @Provides
-    static BarrageMessageProducer.Adapter<StreamObserver<InputStream>, StreamObserver<BarrageStreamGenerator.MessageView>> provideListenerAdapter() {
-        return delegate -> new StreamObserver<>() {
-            @Override
-            public void onNext(final BarrageStreamGenerator.MessageView view) {
-                try {
-                    synchronized (delegate) {
-                        view.forEachStream(delegate::onNext);
-                    }
-                } catch (final IOException ioe) {
-                    throw new UncheckedDeephavenException(ioe);
-                }
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                synchronized (delegate) {
-                    delegate.onError(t);
-                }
-            }
-
-            @Override
-            public void onCompleted() {
-                synchronized (delegate) {
-                    delegate.onCompleted();
-                }
-            }
-        };
     }
 
     @Provides
