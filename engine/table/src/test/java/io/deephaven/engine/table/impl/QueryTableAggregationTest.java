@@ -485,6 +485,7 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(int.class, grouped.getColumnSource("j").getType());
 
         table = newTable(intCol("V", 100));
+        grouped = table.updateView("j=i").groupBy("j");
         TestCase.assertEquals(1, grouped.size());
         TestCase.assertEquals(2, grouped.numColumns());
         TestCase.assertEquals(int.class,

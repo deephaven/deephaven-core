@@ -273,11 +273,11 @@ public class TestTableTools {
                 roundedColumns.getColumnSource("Double").getLong(roundedColumns.getRowSet().get(2)));
         // Cast these cause the DB rounds floats to longs
         assertEquals(Math.round(table.getColumnSource("Float").getFloat(table.getRowSet().get(0))),
-                roundedColumns.getColumnSource("Float").getInt(roundedColumns.getRowSet().get(0)));
+                roundedColumns.getColumnSource("Float").getLong(roundedColumns.getRowSet().get(0)));
         assertEquals(Math.round(table.getColumnSource("Float").getFloat(table.getRowSet().get(1))),
-                roundedColumns.getColumnSource("Float").getInt(roundedColumns.getRowSet().get(1)));
+                roundedColumns.getColumnSource("Float").getLong(roundedColumns.getRowSet().get(1)));
         assertEquals(Math.round(table.getColumnSource("Float").getFloat(table.getRowSet().get(2))),
-                roundedColumns.getColumnSource("Float").getInt(roundedColumns.getRowSet().get(2)));
+                roundedColumns.getColumnSource("Float").getLong(roundedColumns.getRowSet().get(2)));
 
         // Test whether it works when we specify the columns, by comparing to the validated results from before
         Table specificRoundedColumns = TableTools.roundDecimalColumns(table, "Double", "Float");

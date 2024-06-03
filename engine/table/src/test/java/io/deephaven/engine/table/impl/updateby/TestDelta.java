@@ -182,8 +182,8 @@ public class TestDelta extends BaseUpdateByTest {
         preOp.partitionedTransform(postOp, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
                 assertWithDelta(
-                        ColumnVectors.of(source, col).getDirect(),
-                        ColumnVectors.of(actual, col).getDirect(),
+                        ColumnVectors.of(source, col).toArray(),
+                        ColumnVectors.of(actual, col).toArray(),
                         DeltaControl.DEFAULT);
             });
             return source;
@@ -197,8 +197,8 @@ public class TestDelta extends BaseUpdateByTest {
         preOp.partitionedTransform(postOp, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
                 assertWithDelta(
-                        ColumnVectors.of(source, col).getDirect(),
-                        ColumnVectors.of(actual, col).getDirect(),
+                        ColumnVectors.of(source, col).toArray(),
+                        ColumnVectors.of(actual, col).toArray(),
                         DeltaControl.NULL_DOMINATES);
             });
             return source;
@@ -212,8 +212,8 @@ public class TestDelta extends BaseUpdateByTest {
         preOp.partitionedTransform(postOp, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
                 assertWithDelta(
-                        ColumnVectors.of(source, col).getDirect(),
-                        ColumnVectors.of(actual, col).getDirect(),
+                        ColumnVectors.of(source, col).toArray(),
+                        ColumnVectors.of(actual, col).toArray(),
                         DeltaControl.VALUE_DOMINATES);
             });
             return source;
@@ -227,8 +227,8 @@ public class TestDelta extends BaseUpdateByTest {
         preOp.partitionedTransform(postOp, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
                 assertWithDelta(
-                        ColumnVectors.of(source, col).getDirect(),
-                        ColumnVectors.of(actual, col).getDirect(),
+                        ColumnVectors.of(source, col).toArray(),
+                        ColumnVectors.of(actual, col).toArray(),
                         DeltaControl.ZERO_DOMINATES);
             });
             return source;

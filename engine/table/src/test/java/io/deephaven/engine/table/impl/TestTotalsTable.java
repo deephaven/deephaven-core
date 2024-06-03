@@ -12,7 +12,6 @@ import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.EvalNuggetInterface;
 import io.deephaven.engine.util.TotalsTableBuilder;
-import io.deephaven.util.QueryConstants;
 
 import java.util.Arrays;
 import java.util.LinkedHashSet;
@@ -26,17 +25,6 @@ import static io.deephaven.function.Numeric.*;
 public class TestTotalsTable extends RefreshingTableTestCase {
 
     private static final double EPSILON = 0.000000001;
-
-    private long shortSum(short[] values) {
-        long sum = 0;
-        for (short value : values) {
-            if (value == QueryConstants.NULL_SHORT) {
-                continue;
-            }
-            sum += value;
-        }
-        return sum;
-    }
 
     public void testTotalsTable() {
         final int size = 1000;
@@ -66,7 +54,7 @@ public class TestTotalsTable extends RefreshingTableTestCase {
                 "floatCol", "byteCol", "shortCol")), resultColumns);
 
         assertEquals(sum(ColumnVectors.ofInt(queryTable, "intCol")),
-                totals.getColumnSource("intCol").getInt(totals.getRowSet().firstRowKey()));
+                totals.getColumnSource("intCol").getLong(totals.getRowSet().firstRowKey()));
         assertEquals(sum(ColumnVectors.ofDouble(queryTable, "doubleCol")),
                 totals.getColumnSource("doubleCol").getDouble(totals.getRowSet().firstRowKey()));
         assertEquals(sum(ColumnVectors.ofDouble(queryTable, "doubleNullCol")),
@@ -74,7 +62,7 @@ public class TestTotalsTable extends RefreshingTableTestCase {
         assertEquals(sum(ColumnVectors.ofFloat(queryTable, "floatCol")),
                 totals.getColumnSource("floatCol").getFloat(totals.getRowSet().firstRowKey()), 0.02);
         assertEquals(sum(ColumnVectors.ofShort(queryTable, "shortCol")),
-                totals.getColumnSource("shortCol").getShort(totals.getRowSet().firstRowKey()));
+                totals.getColumnSource("shortCol").getLong(totals.getRowSet().firstRowKey()));
 
         builder.setDefaultOperation("skip");
         builder.setOperation("byteCol", "min");
@@ -89,9 +77,8 @@ public class TestTotalsTable extends RefreshingTableTestCase {
                 totals2.getColumnSource("byteCol").getByte(totals2.getRowSet().firstRowKey()));
         assertEquals(queryTable.getColumnSource("Sym").get(queryTable.getRowSet().firstRowKey()),
                 totals2.getColumnSource("Sym").get(totals2.getRowSet().firstRowKey()));
-        assertEquals(queryTable.getColumnSource("intCol2").getInt(queryTable.getRowSet().get(queryTable.size() - 1)),
-                totals2.getColumnSource("intCol2")
-                        .getInt(queryTable.getRowSet().get(totals2.getRowSet().firstRowKey())));
+        assertEquals(queryTable.getColumnSource("intCol2").getInt(queryTable.getRowSet().lastRowKey()),
+                totals2.getColumnSource("intCol2").getInt(totals2.getRowSet().get(totals2.getRowSet().firstRowKey())));
 
         builder.setOperation("byteCol", "max");
         builder.setOperation("doubleCol", "var");

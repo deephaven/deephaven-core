@@ -29,7 +29,11 @@ import io.deephaven.csv.sinks.Source;
 import io.deephaven.csv.tokenization.Tokenizer.CustomTimeZoneParser;
 import io.deephaven.csv.util.CsvReaderException;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSequenceFactory;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
@@ -915,14 +919,14 @@ public class CsvTools {
                 final RowSet.Iterator rowsIter = rows.iterator()) {
             String separatorStr = String.valueOf(separator);
             for (long ri = 0; ri < size; ri++) {
-                for (int j = 0; j < cols.length; j++) {
-                    if (j > 0) {
+                final long rowKey = rowsIter.nextLong();
+                for (int ci = 0; ci < cols.length; ci++) {
+                    if (ci > 0) {
                         out.write(separatorStr);
                     } else {
                         out.write("\n");
                     }
-                    final long rowKey = rowsIter.nextLong();
-                    final Object o = cols[j].get(rowKey);
+                    final Object o = cols[ci].get(rowKey);
                     if (o instanceof String) {
                         out.write("" + separatorCsvEscape((String) o, separatorStr));
                     } else if (o instanceof Instant) {

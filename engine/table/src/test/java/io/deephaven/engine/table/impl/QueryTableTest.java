@@ -1302,13 +1302,18 @@ public class QueryTableTest extends QueryTableTestBase {
 
     }
 
-    private void checkReverse(QueryTable table, Table reversed, String timestamp) {
+    private void checkReverse(QueryTable table, Table reversed, String columnName) {
         assertEquals(table.size(), reversed.size());
-        for (long ii = 0; ii < table.size(); ++ii) {
-            final long jj = table.size() - ii - 1;
-            assertEquals(
-                    ColumnVectors.ofObject(table, timestamp, Object.class).get(ii),
-                    ColumnVectors.ofObject(reversed, timestamp, Object.class).get(jj));
+        final ColumnSource<?> tableSource = table.getColumnSource(columnName);
+        final ColumnSource<?> reversedSource = reversed.getColumnSource(columnName);
+        try (final RowSet.Iterator tableRows = table.getRowSet().iterator();
+                final RowSet.Iterator reverseRows = reversed.getRowSet().reverseIterator()) {
+            while (tableRows.hasNext()) {
+                assertTrue(reverseRows.hasNext());
+                final long tableRow = tableRows.nextLong();
+                final long reverseRow = reverseRows.nextLong();
+                assertEquals(tableSource.get(tableRow), reversedSource.get(reverseRow));
+            }
         }
     }
 

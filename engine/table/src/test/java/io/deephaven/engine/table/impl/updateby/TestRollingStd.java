@@ -8,7 +8,6 @@ import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.vectors.ColumnVectors;
@@ -22,6 +21,8 @@ import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.annotations.TestUseOnly;
+import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.vector.ObjectVector;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -34,7 +35,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
-import java.util.function.Function;
 
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
@@ -95,90 +95,95 @@ public class TestRollingStd extends BaseUpdateByTest {
 
     // region Object Helper functions
 
-    final Function<ObjectVector<BigInteger>, BigDecimal> stdBigInt = bigIntegerObjectVector -> {
-        MathContext mathContextDefault = UpdateByControl.mathContextDefault();
+    @SuppressWarnings("unused") // Functions used via QueryLibrary
+    @VisibleForTesting
+    @TestUseOnly
+    public static class Helpers {
 
-        if (bigIntegerObjectVector == null || bigIntegerObjectVector.size() == 0) {
-            return null;
-        }
+        public static BigDecimal stdBigInt(ObjectVector<BigInteger> bigIntegerObjectVector) {
+            MathContext mathContextDefault = UpdateByControl.mathContextDefault();
 
-        BigDecimal sum = new BigDecimal(0);
-        BigDecimal sumSquares = new BigDecimal(0);
-        long count = 0;
-
-        final long n = bigIntegerObjectVector.size();
-
-        for (long i = 0; i < n; i++) {
-            BigInteger val = bigIntegerObjectVector.get(i);
-            if (!isNull(val)) {
-                final BigDecimal decVal = new BigDecimal(val);
-                final BigDecimal decValSquare = decVal.multiply(decVal, mathContextDefault);
-
-                sum = sum.add(decVal, mathContextDefault);
-                sumSquares = sumSquares.add(decValSquare, mathContextDefault);
-                count++;
+            if (bigIntegerObjectVector == null || bigIntegerObjectVector.isEmpty()) {
+                return null;
             }
-        }
-        if (count <= 1) {
-            return null;
-        }
 
-        // complex calc for variance and std
-        final BigDecimal biCount = BigDecimal.valueOf(count);
-        final BigDecimal biCountMinusOne = BigDecimal.valueOf(count - 1);
+            BigDecimal sum = new BigDecimal(0);
+            BigDecimal sumSquares = new BigDecimal(0);
+            long count = 0;
 
-        final BigDecimal variance = sumSquares.divide(biCountMinusOne, mathContextDefault)
-                .subtract(sum.multiply(sum, mathContextDefault).divide(biCount, mathContextDefault)
-                        .divide(biCountMinusOne, mathContextDefault));
+            final long n = bigIntegerObjectVector.size();
 
-        return variance.sqrt(mathContextDefault);
-    };
+            for (long i = 0; i < n; i++) {
+                BigInteger val = bigIntegerObjectVector.get(i);
+                if (!isNull(val)) {
+                    final BigDecimal decVal = new BigDecimal(val);
+                    final BigDecimal decValSquare = decVal.multiply(decVal, mathContextDefault);
 
-    final Function<ObjectVector<BigDecimal>, BigDecimal> stdBigDec = bigDecimalObjectVector -> {
-        MathContext mathContextDefault = UpdateByControl.mathContextDefault();
-
-        if (bigDecimalObjectVector == null || bigDecimalObjectVector.size() == 0) {
-            return null;
-        }
-
-        BigDecimal sum = new BigDecimal(0);
-        BigDecimal sumSquares = new BigDecimal(0);
-        long count = 0;
-
-        final long n = bigDecimalObjectVector.size();
-
-        for (long i = 0; i < n; i++) {
-            BigDecimal decVal = bigDecimalObjectVector.get(i);
-            if (!isNull(decVal)) {
-                final BigDecimal decValSquare = decVal.multiply(decVal, mathContextDefault);
-
-                sum = sum.add(decVal, mathContextDefault);
-                sumSquares = sumSquares.add(decValSquare, mathContextDefault);
-                count++;
+                    sum = sum.add(decVal, mathContextDefault);
+                    sumSquares = sumSquares.add(decValSquare, mathContextDefault);
+                    count++;
+                }
             }
+            if (count <= 1) {
+                return null;
+            }
+
+            // complex calc for variance and std
+            final BigDecimal biCount = BigDecimal.valueOf(count);
+            final BigDecimal biCountMinusOne = BigDecimal.valueOf(count - 1);
+
+            final BigDecimal variance = sumSquares.divide(biCountMinusOne, mathContextDefault)
+                    .subtract(sum.multiply(sum, mathContextDefault).divide(biCount, mathContextDefault)
+                            .divide(biCountMinusOne, mathContextDefault));
+
+            return variance.sqrt(mathContextDefault);
         }
-        if (count <= 1) {
-            return null;
+
+        public static BigDecimal stdBigDec(ObjectVector<BigDecimal> bigDecimalObjectVector) {
+            MathContext mathContextDefault = UpdateByControl.mathContextDefault();
+
+            if (bigDecimalObjectVector == null || bigDecimalObjectVector.isEmpty()) {
+                return null;
+            }
+
+            BigDecimal sum = new BigDecimal(0);
+            BigDecimal sumSquares = new BigDecimal(0);
+            long count = 0;
+
+            final long n = bigDecimalObjectVector.size();
+
+            for (long i = 0; i < n; i++) {
+                BigDecimal decVal = bigDecimalObjectVector.get(i);
+                if (!isNull(decVal)) {
+                    final BigDecimal decValSquare = decVal.multiply(decVal, mathContextDefault);
+
+                    sum = sum.add(decVal, mathContextDefault);
+                    sumSquares = sumSquares.add(decValSquare, mathContextDefault);
+                    count++;
+                }
+            }
+            if (count <= 1) {
+                return null;
+            }
+
+            // complex calc for variance and std
+            final BigDecimal biCount = BigDecimal.valueOf(count);
+            final BigDecimal biCountMinusOne = BigDecimal.valueOf(count - 1);
+
+            final BigDecimal variance = sumSquares.divide(biCountMinusOne, mathContextDefault)
+                    .subtract(sum.multiply(sum, mathContextDefault).divide(biCount, mathContextDefault)
+                            .divide(biCountMinusOne, mathContextDefault));
+
+            return variance.sqrt(mathContextDefault);
         }
-
-        // complex calc for variance and std
-        final BigDecimal biCount = BigDecimal.valueOf(count);
-        final BigDecimal biCountMinusOne = BigDecimal.valueOf(count - 1);
-
-        final BigDecimal variance = sumSquares.divide(biCountMinusOne, mathContextDefault)
-                .subtract(sum.multiply(sum, mathContextDefault).divide(biCount, mathContextDefault)
-                        .divide(biCountMinusOne, mathContextDefault));
-
-        return variance.sqrt(mathContextDefault);
-    };
+    }
 
     private void doTestStaticZeroKeyBigNumbers(final QueryTable t, final int prevTicks, final int postTicks) {
-        QueryScope.addParam("stdBigInt", stdBigInt);
-        QueryScope.addParam("stdBigDec", stdBigDec);
+        ExecutionContext.getContext().getQueryLibrary().importStatic(Helpers.class);
 
         Table actual = t.updateBy(UpdateByOperation.RollingStd(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"));
         Table expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"))
-                .update("bigIntCol=stdBigInt.apply(bigIntCol)", "bigDecimalCol=stdBigDec.apply(bigDecimalCol)");
+                .update("bigIntCol=stdBigInt(bigIntCol)", "bigDecimalCol=stdBigDec(bigDecimalCol)");
 
         BigDecimal[] biActual = ColumnVectors.ofObject(actual, "bigIntCol", BigDecimal.class).toArray();
         BigDecimal[] biExpected = ColumnVectors.ofObject(expected, "bigIntCol", BigDecimal.class).toArray();
@@ -207,13 +212,12 @@ public class TestRollingStd extends BaseUpdateByTest {
 
     private void doTestStaticZeroKeyTimedBigNumbers(final QueryTable t, final Duration prevTime,
             final Duration postTime) {
-        QueryScope.addParam("stdBigInt", stdBigInt);
-        QueryScope.addParam("stdBigDec", stdBigDec);
+        ExecutionContext.getContext().getQueryLibrary().importStatic(Helpers.class);
 
         Table actual = t.updateBy(UpdateByOperation.RollingStd("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"));
         Table expected =
                 t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"))
-                        .update("bigIntCol=stdBigInt.apply(bigIntCol)", "bigDecimalCol=stdBigDec.apply(bigDecimalCol)");
+                        .update("bigIntCol=stdBigInt(bigIntCol)", "bigDecimalCol=stdBigDec(bigDecimalCol)");
 
         BigDecimal[] biActual = ColumnVectors.ofObject(actual, "bigIntCol", BigDecimal.class).toArray();
         BigDecimal[] biExpected = ColumnVectors.ofObject(expected, "bigIntCol", BigDecimal.class).toArray();
@@ -241,14 +245,13 @@ public class TestRollingStd extends BaseUpdateByTest {
     }
 
     private void doTestStaticBucketedBigNumbers(final QueryTable t, final int prevTicks, final int postTicks) {
-        QueryScope.addParam("stdBigInt", stdBigInt);
-        QueryScope.addParam("stdBigDec", stdBigDec);
+        ExecutionContext.getContext().getQueryLibrary().importStatic(Helpers.class);
 
         Table actual =
                 t.updateBy(UpdateByOperation.RollingStd(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"), "Sym");
         Table expected =
                 t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"), "Sym")
-                        .update("bigIntCol=stdBigInt.apply(bigIntCol)", "bigDecimalCol=stdBigDec.apply(bigDecimalCol)");
+                        .update("bigIntCol=stdBigInt(bigIntCol)", "bigDecimalCol=stdBigDec(bigDecimalCol)");
 
         BigDecimal[] biActual = ColumnVectors.ofObject(actual, "bigIntCol", BigDecimal.class).toArray();
         BigDecimal[] biExpected = ColumnVectors.ofObject(expected, "bigIntCol", BigDecimal.class).toArray();
@@ -277,14 +280,13 @@ public class TestRollingStd extends BaseUpdateByTest {
 
     private void doTestStaticBucketedTimedBigNumbers(final QueryTable t, final Duration prevTime,
             final Duration postTime) {
-        QueryScope.addParam("stdBigInt", stdBigInt);
-        QueryScope.addParam("stdBigDec", stdBigDec);
+        ExecutionContext.getContext().getQueryLibrary().importStatic(Helpers.class);
 
         Table actual =
                 t.updateBy(UpdateByOperation.RollingStd("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"), "Sym");
         Table expected = t
                 .updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"), "Sym")
-                .update("bigIntCol=stdBigInt.apply(bigIntCol)", "bigDecimalCol=stdBigDec.apply(bigDecimalCol)");
+                .update("bigIntCol=stdBigInt(bigIntCol)", "bigDecimalCol=stdBigDec(bigDecimalCol)");
 
         BigDecimal[] biActual = ColumnVectors.ofObject(actual, "bigIntCol", BigDecimal.class).toArray();
         BigDecimal[] biExpected = ColumnVectors.ofObject(expected, "bigIntCol", BigDecimal.class).toArray();

@@ -29,6 +29,7 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.vector.CharVector;
 import io.deephaven.vector.DoubleVector;
 import io.deephaven.vector.IntVector;
+import io.deephaven.vector.LongVector;
 import junit.framework.TestCase;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -82,10 +83,10 @@ public class TestAggBy extends RefreshingTableTestCase {
         show(doubleCounted);
         assertEquals(2, doubleCounted.size());
 
-        IntVector counts = ColumnVectors.ofInt(doubleCounted, "Count1");
+        LongVector counts = ColumnVectors.ofLong(doubleCounted, "Count1");
         assertEquals(6L, counts.get(0));
         assertEquals(4L, counts.get(1));
-        counts = ColumnVectors.ofInt(doubleCounted, "Count2");
+        counts = ColumnVectors.ofLong(doubleCounted, "Count2");
         assertEquals(6L, counts.get(0));
         assertEquals(4L, counts.get(1));
 

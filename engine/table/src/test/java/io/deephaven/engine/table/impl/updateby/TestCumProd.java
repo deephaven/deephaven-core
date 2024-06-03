@@ -124,8 +124,8 @@ public class TestCumProd extends BaseUpdateByTest {
         preOp.partitionedTransform(postOp, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
                 assertWithCumProd(
-                        ColumnVectors.of(source, col).getDirect(),
-                        ColumnVectors.of(actual, col).getDirect(),
+                        ColumnVectors.of(source, col).toArray(),
+                        ColumnVectors.of(actual, col).toArray(),
                         actual.getDefinition().getColumn(col).getDataType());
             });
             return source;
