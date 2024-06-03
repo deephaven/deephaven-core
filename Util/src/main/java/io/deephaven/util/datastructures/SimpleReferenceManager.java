@@ -4,7 +4,7 @@
 package io.deephaven.util.datastructures;
 
 import io.deephaven.base.reference.SimpleReference;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -221,7 +221,7 @@ public final class SimpleReferenceManager<T, R extends SimpleReference<T>> {
     public int size() {
         final MutableInt size = new MutableInt(0);
         forEach((ref, source) -> size.increment());
-        return size.intValue();
+        return size.get();
     }
 
     /**

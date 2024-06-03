@@ -7,6 +7,7 @@ import com.vertispan.tsdefs.annotations.TsTypeRef;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.Storage_pb;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.storage_pb.ItemInfo;
 import jsinterop.annotations.JsIgnore;
+import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 
@@ -15,13 +16,15 @@ import jsinterop.annotations.JsType;
  */
 @JsType(namespace = "dh.storage", name = "ItemDetails")
 public class JsItemDetails {
+    private final String parentPath;
     private final String path;
     private final int type;
     private final String size;
     private final String etag;
 
     @JsIgnore
-    public JsItemDetails(String path, int kind, String size, String etag) {
+    public JsItemDetails(String parentPath, String path, int kind, String size, String etag) {
+        this.parentPath = parentPath;
         this.path = path;
         this.type = kind;
         this.size = size;
@@ -29,8 +32,8 @@ public class JsItemDetails {
     }
 
     @JsIgnore
-    public static JsItemDetails fromProto(ItemInfo item) {
-        return new JsItemDetails(item.getPath(), item.getType(), item.getSize(), item.getEtag());
+    public static JsItemDetails fromProto(String parentPath, ItemInfo item) {
+        return new JsItemDetails(parentPath, item.getPath(), item.getType(), item.getSize(), item.getEtag());
     }
 
     @JsProperty
@@ -40,12 +43,16 @@ public class JsItemDetails {
 
     @JsProperty
     public String getBasename() {
-        return path.substring(path.lastIndexOf('/') + 1);
+        // TODO (deephaven-core#5068) remove extra check
+        if (parentPath.equals("/")) {
+            return path.substring(1);
+        }
+        return path.substring(parentPath.length() + 1);
     }
 
     @JsProperty
     public String getDirname() {
-        return path.substring(0, path.lastIndexOf('/'));
+        return parentPath;
     }
 
     @JsProperty
@@ -62,5 +69,11 @@ public class JsItemDetails {
     @JsProperty
     public String getEtag() {
         return etag;
+    }
+
+    @JsMethod
+    @Override
+    public String toString() {
+        return getBasename();
     }
 }

@@ -181,7 +181,7 @@ public class GenerateArrowColumnSourceTests {
     }
 
     private static TypeName mutableInt() {
-        return ClassName.get("org.apache.commons.lang3.mutable", "MutableInt");
+        return ClassName.get("io.deephaven.util.mutable", "MutableInt");
     }
 
     private static TypeName staticAssert() {

@@ -10,7 +10,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -76,11 +76,11 @@ class BigIntegerChunkedAvgOperator implements IterativeChunkedAggregationOperato
         final MutableInt chunkNonNull = new MutableInt(0);
         final BigInteger chunkSum = SumBigIntegerChunk.sumBigIntegerChunk(values, chunkStart, chunkSize, chunkNonNull);
 
-        if (chunkNonNull.intValue() <= 0) {
+        if (chunkNonNull.get() <= 0) {
             return false;
         }
 
-        final long newCount = nonNullCount.addNonNull(destination, chunkNonNull.intValue());
+        final long newCount = nonNullCount.addNonNull(destination, chunkNonNull.get());
         final BigInteger newSum;
         final BigInteger oldSum = runningSum.getUnsafe(destination);
         if (oldSum == null) {
@@ -100,11 +100,11 @@ class BigIntegerChunkedAvgOperator implements IterativeChunkedAggregationOperato
         final MutableInt chunkNonNull = new MutableInt(0);
         final BigInteger chunkSum = SumBigIntegerChunk.sumBigIntegerChunk(values, chunkStart, chunkSize, chunkNonNull);
 
-        if (chunkNonNull.intValue() <= 0) {
+        if (chunkNonNull.get() <= 0) {
             return false;
         }
 
-        final long newCount = nonNullCount.addNonNull(destination, -chunkNonNull.intValue());
+        final long newCount = nonNullCount.addNonNull(destination, -chunkNonNull.get());
         if (newCount == 0) {
             resultColumn.set(destination, null);
             runningSum.set(destination, null);

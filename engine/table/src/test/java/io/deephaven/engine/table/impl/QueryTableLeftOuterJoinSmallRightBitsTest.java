@@ -3,7 +3,7 @@
 //
 package io.deephaven.engine.table.impl;
 
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 
 public class QueryTableLeftOuterJoinSmallRightBitsTest extends QueryTableLeftOuterJoinTestBase {
     public QueryTableLeftOuterJoinSmallRightBitsTest() {

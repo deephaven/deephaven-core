@@ -3,6 +3,7 @@
 //
 package io.deephaven.parquet.table.pagestore;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Any;
@@ -144,7 +145,17 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
 
     @Override
     @NotNull
-    public ChunkPage<ATTR> getPageContaining(@Nullable final FillContext fillContext, long rowKey) {
+    public ChunkPage<ATTR> getPageContaining(@Nullable final FillContext fillContext, final long rowKey) {
+        try {
+            return getPageContainingImpl(fillContext, rowKey);
+        } catch (final RuntimeException e) {
+            throw new UncheckedDeephavenException("Failed to read parquet page data for row: " + rowKey + ", column: " +
+                    columnChunkReader.columnName() + ", uri: " + columnChunkReader.getURI(), e);
+        }
+    }
+
+    @NotNull
+    private ChunkPage<ATTR> getPageContainingImpl(@Nullable final FillContext fillContext, long rowKey) {
         rowKey &= mask();
         Require.inRange(rowKey - pageRowOffsets[0], "rowKey", numRows(), "numRows");
         int localNumPages = numPages;

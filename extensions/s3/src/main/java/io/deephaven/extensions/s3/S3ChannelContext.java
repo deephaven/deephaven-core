@@ -32,6 +32,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
     static final long UNINITIALIZED_SIZE = -1;
     private static final long UNINITIALIZED_NUM_FRAGMENTS = -1;
 
+    final S3SeekableChannelProvider provider;
     final S3AsyncClient client;
     final S3Instructions instructions;
 
@@ -63,8 +64,12 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
      */
     private long numFragments;
 
-    S3ChannelContext(@NotNull final S3AsyncClient client, @NotNull final S3Instructions instructions,
+    S3ChannelContext(
+            @NotNull final S3SeekableChannelProvider provider,
+            @NotNull final S3AsyncClient client,
+            @NotNull final S3Instructions instructions,
             @NotNull final S3RequestCache sharedCache) {
+        this.provider = Objects.requireNonNull(provider);
         this.client = Objects.requireNonNull(client);
         this.instructions = Objects.requireNonNull(instructions);
         this.localCache = new S3Request.AcquiredRequest[instructions.maxCacheSize()];
@@ -88,7 +93,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
         this.uri = uri;
     }
 
-    void verifyOrSetSize(long size) {
+    void verifyOrSetSize(final long size) {
         if (this.size == UNINITIALIZED_SIZE) {
             setSize(size);
         } else if (this.size != size) {
@@ -255,10 +260,12 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
         } catch (final InterruptedException | ExecutionException | TimeoutException | CancellationException e) {
             throw handleS3Exception(e, String.format("fetching HEAD for file %s, %s", uri, ctxStr()), instructions);
         }
-        setSize(headObjectResponse.contentLength());
+        final long fileSize = headObjectResponse.contentLength();
+        setSize(fileSize);
+        provider.updateFileSizeCache(uri.uri(), fileSize);
     }
 
-    private void setSize(long size) {
+    private void setSize(final long size) {
         this.size = size;
         // ceil(size / fragmentSize)
         this.numFragments = (size + instructions.fragmentSize() - 1) / instructions.fragmentSize();

@@ -21,7 +21,7 @@ import io.deephaven.extensions.barrage.chunk.vector.VectorExpansionKernel;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.vector.Vector;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.DataInput;

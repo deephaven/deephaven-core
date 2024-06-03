@@ -19,7 +19,7 @@ import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedQueue;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -194,9 +194,9 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
 
                 result.manage(constituentTable);
             });
-            return initialLastRowKey == lastInsertedRowKey.longValue()
+            return initialLastRowKey == lastInsertedRowKey.get()
                     ? RowSetFactory.empty()
-                    : RowSetFactory.fromRange(initialLastRowKey + 1, lastInsertedRowKey.longValue());
+                    : RowSetFactory.fromRange(initialLastRowKey + 1, lastInsertedRowKey.get());
         }
 
         private Table makeConstituentTable(@NotNull final TableLocation tableLocation) {
