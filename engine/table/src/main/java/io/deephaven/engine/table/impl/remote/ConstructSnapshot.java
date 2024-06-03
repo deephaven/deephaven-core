@@ -40,6 +40,10 @@ import java.lang.reflect.Array;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import io.deephaven.chunk.attributes.Values;
@@ -1452,6 +1456,7 @@ public class ConstructSnapshot {
                     return false;
                 }
 
+                // TODO Should I also parallelize this method?
                 final ColumnSource<?> columnSource = table.getColumnSource(columnSources[ii]);
                 snapshot.dataColumns[ii] = getSnapshotData(columnSource, sharedContext, snapshot.rowsIncluded, usePrev);
             }
@@ -1509,41 +1514,46 @@ public class ConstructSnapshot {
 
         final String[] columnSources = table.getDefinition().getColumnNamesArray();
 
-        try (final SharedContext sharedContext =
-                (columnSources.length > 1) ? SharedContext.makeSharedContext() : null) {
-            for (int ii = 0; ii < columnSources.length; ++ii) {
-                if (concurrentAttemptInconsistent()) {
-                    if (log.isDebugEnabled()) {
-                        final LogEntry logEntry = log.debug().append(System.identityHashCode(logIdentityObject))
-                                .append(" Bad snapshot before column ").append(ii);
-                        appendConcurrentAttemptClockInfo(logEntry);
-                        logEntry.endl();
-                    }
-                    return false;
+        final ExecutionContext executionContext = ExecutionContext.getContext();
+        final JobScheduler jobScheduler;
+        // TODO Check with Ryan if I should keep this check
+        // if (executionContext.getOperationInitializer() instanceof PoisonedOperationInitializer) {
+        // jobScheduler = new ImmediateJobScheduler();
+        // }
+        if (!executionContext.getOperationInitializer().canParallelize()) {
+            jobScheduler = new ImmediateJobScheduler();
+        } else {
+            jobScheduler = new OperationInitializerJobScheduler();
+        }
+
+        final CompletableFuture<Boolean> waitForResult = new CompletableFuture<>();
+        final AtomicReference<Exception> exception = new AtomicReference<>();
+        final Consumer<Exception> onError = err -> {
+            exception.set(err);
+            waitForResult.complete(Boolean.FALSE);
+        };
+        jobScheduler.iterateParallel(
+                executionContext,
+                logOutput -> logOutput.append("serializeAllTable"),
+                JobScheduler.DEFAULT_CONTEXT_FACTORY,
+                0, columnSources.length,
+                (context, colIdx, nestedErrorConsumer) -> serializeColumn(columnSources, colIdx, usePrev, snapshot,
+                        table, logIdentityObject, columnsToSerialize),
+                () -> waitForResult.complete(Boolean.TRUE),
+                onError);
+        try {
+            final boolean ret = waitForResult.get();
+            if (!ret) {
+                final Exception err = exception.get();
+                if (!(err instanceof SnapshotUnsuccessfulException)) {
+                    throw new SnapshotUnsuccessfulException("Snapshot failed", err);
                 }
-
-                final ColumnSource<?> columnSource = table.getColumnSource(columnSources[ii]);
-
-                final BarrageMessage.AddColumnData acd = new BarrageMessage.AddColumnData();
-                snapshot.addColumnData[ii] = acd;
-                final boolean columnIsEmpty = columnsToSerialize != null && !columnsToSerialize.get(ii);
-                final RowSet rows = columnIsEmpty ? RowSetFactory.empty() : snapshot.rowsIncluded;
-                // Note: cannot use shared context across several calls of differing lengths and no sharing necessary
-                // when empty
-                final ColumnSource<?> sourceToUse = ReinterpretUtils.maybeConvertToPrimitive(columnSource);
-                acd.data = getSnapshotDataAsChunkList(sourceToUse, columnIsEmpty ? null : sharedContext, rows, usePrev);
-                acd.type = columnSource.getType();
-                acd.componentType = columnSource.getComponentType();
-                acd.chunkType = sourceToUse.getChunkType();
-
-                final BarrageMessage.ModColumnData mcd = new BarrageMessage.ModColumnData();
-                snapshot.modColumnData[ii] = mcd;
-                mcd.rowsModified = RowSetFactory.empty();
-                mcd.data = getSnapshotDataAsChunkList(sourceToUse, null, RowSetFactory.empty(), usePrev);
-                mcd.type = acd.type;
-                mcd.componentType = acd.componentType;
-                mcd.chunkType = sourceToUse.getChunkType();
+                return false;
             }
+        } catch (final InterruptedException e) {
+            throw new java.util.concurrent.CancellationException("Interrupted while serializing table");
+        } catch (final ExecutionException e) {
+            throw new UncheckedDeephavenException("Execution exception while serializing table", e);
         }
 
         if (log.isDebugEnabled()) {
@@ -1561,6 +1571,54 @@ public class ConstructSnapshot {
         }
 
         return true;
+    }
+
+    /**
+     * Serialize a single column of a table into a BarrageMessage.
+     * <p>
+     * This method is intended to be called from a thread pool executor.
+     */
+    private static void serializeColumn(
+            final String[] columnSources,
+            final int colIdx,
+            final boolean usePrev,
+            @NotNull final BarrageMessage snapshot,
+            @NotNull final Table table,
+            @NotNull final Object logIdentityObject,
+            @Nullable final BitSet columnsToSerialize) {
+        if (concurrentAttemptInconsistent()) {
+            if (log.isDebugEnabled()) {
+                final LogEntry logEntry = log.debug().append(System.identityHashCode(logIdentityObject))
+                        .append(" Bad snapshot before column ").append(columnSources[colIdx])
+                        .append(" at idx").append(colIdx);
+                appendConcurrentAttemptClockInfo(logEntry);
+                logEntry.endl();
+            }
+            throw new SnapshotUnsuccessfulException("Failed to serialize column" + columnSources[colIdx] + " at idx "
+                    + colIdx + " due to inconsistent state");
+        }
+
+        final ColumnSource<?> columnSource = table.getColumnSource(columnSources[colIdx]);
+
+        final BarrageMessage.AddColumnData acd = new BarrageMessage.AddColumnData();
+        snapshot.addColumnData[colIdx] = acd;
+        final boolean columnIsEmpty = columnsToSerialize != null && !columnsToSerialize.get(colIdx);
+        final RowSet rows = columnIsEmpty ? RowSetFactory.empty() : snapshot.rowsIncluded;
+        // Note: cannot use shared context across several calls of differing lengths and no sharing necessary
+        // when empty
+        final ColumnSource<?> sourceToUse = ReinterpretUtils.maybeConvertToPrimitive(columnSource);
+        acd.data = getSnapshotDataAsChunkList(sourceToUse, null, rows, usePrev);
+        acd.type = columnSource.getType();
+        acd.componentType = columnSource.getComponentType();
+        acd.chunkType = sourceToUse.getChunkType();
+
+        final BarrageMessage.ModColumnData mcd = new BarrageMessage.ModColumnData();
+        snapshot.modColumnData[colIdx] = mcd;
+        mcd.rowsModified = RowSetFactory.empty();
+        mcd.data = getSnapshotDataAsChunkList(sourceToUse, null, RowSetFactory.empty(), usePrev);
+        mcd.type = acd.type;
+        mcd.componentType = acd.componentType;
+        mcd.chunkType = sourceToUse.getChunkType();
     }
 
     private static boolean serializeAllTables(
