@@ -1,10 +1,10 @@
 {
   "format-version" : 2,
-  "table-uuid" : "0eb53bb4-0f8b-403a-8386-7427eb2cd719",
+  "table-uuid" : "059cfc0e-7f89-4be3-913d-b1d451736783",
   "location" : "s3://warehouse/sample/all_types",
   "last-sequence-number" : 1,
-  "last-updated-ms" : 1717109460647,
-  "last-column-id" : 12,
+  "last-updated-ms" : 1717446059625,
+  "last-column-id" : 13,
   "current-schema-id" : 0,
   "schemas" : [ {
     "type" : "struct",
@@ -69,6 +69,11 @@
       "name" : "binaryField",
       "required" : false,
       "type" : "binary"
+    }, {
+      "id" : 13,
+      "name" : "instantField",
+      "required" : false,
+      "type" : "timestamptz"
     } ]
   } ],
   "default-spec-id" : 0,
@@ -85,41 +90,41 @@
   "properties" : {
     "write.parquet.compression-codec" : "zstd"
   },
-  "current-snapshot-id" : 5615734881085848694,
+  "current-snapshot-id" : 6186754175552482648,
   "refs" : {
     "main" : {
-      "snapshot-id" : 5615734881085848694,
+      "snapshot-id" : 6186754175552482648,
       "type" : "branch"
     }
   },
   "snapshots" : [ {
     "sequence-number" : 1,
-    "snapshot-id" : 5615734881085848694,
-    "timestamp-ms" : 1717109460647,
+    "snapshot-id" : 6186754175552482648,
+    "timestamp-ms" : 1717446059625,
     "summary" : {
       "operation" : "append",
       "added-data-files" : "1",
       "added-records" : "10",
-      "added-files-size" : "3904",
+      "added-files-size" : "4239",
       "changed-partition-count" : "1",
       "total-records" : "10",
-      "total-files-size" : "3904",
+      "total-files-size" : "4239",
       "total-data-files" : "1",
       "total-delete-files" : "0",
       "total-position-deletes" : "0",
       "total-equality-deletes" : "0"
     },
-    "manifest-list" : "s3://warehouse/sample/all_types/metadata/snap-5615734881085848694-1-e421fde5-e926-4c4e-a30a-010a244ca3ce.avro",
+    "manifest-list" : "s3://warehouse/sample/all_types/metadata/snap-6186754175552482648-1-388d67e5-5760-40c1-a460-c8c4ee5b8629.avro",
     "schema-id" : 0
   } ],
   "statistics" : [ ],
   "partition-statistics" : [ ],
   "snapshot-log" : [ {
-    "timestamp-ms" : 1717109460647,
-    "snapshot-id" : 5615734881085848694
+    "timestamp-ms" : 1717446059625,
+    "snapshot-id" : 6186754175552482648
   } ],
   "metadata-log" : [ {
-    "timestamp-ms" : 1717109442450,
-    "metadata-file" : "s3://warehouse/sample/all_types/metadata/00000-3edeb19d-2420-4247-88af-3583a772d037.metadata.json"
+    "timestamp-ms" : 1717446052895,
+    "metadata-file" : "s3://warehouse/sample/all_types/metadata/00000-bbb283f2-4659-434a-b422-227b8b15dfb9.metadata.json"
   } ]
 }
