@@ -151,33 +151,33 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                 if (type == Short.class) {
                     return ShortChunkInputStreamGenerator.convertBoxed(chunk.asObjectChunk(), rowOffset);
                 }
-                if (type == LocalDate.class) {
-                    return LongChunkInputStreamGenerator.<LocalDate>convertWithTransform(chunk.asObjectChunk(),
-                            rowOffset, date -> {
-                                if (date == null) {
-                                    return QueryConstants.NULL_LONG;
-                                }
-                                final long epochDay = date.toEpochDay();
-                                if (epochDay < MIN_LOCAL_DATE_VALUE || epochDay > MAX_LOCAL_DATE_VALUE) {
-                                    throw new IllegalArgumentException("Date out of range: " + date + " (" + epochDay
-                                            + " not in [" + MIN_LOCAL_DATE_VALUE + ", " + MAX_LOCAL_DATE_VALUE + "])");
-                                }
-                                return epochDay * MS_PER_DAY;
-                            });
-                }
-                if (type == LocalTime.class) {
-                    return LongChunkInputStreamGenerator.<LocalTime>convertWithTransform(chunk.asObjectChunk(),
-                            rowOffset, time -> {
-                                if (time == null) {
-                                    return QueryConstants.NULL_LONG;
-                                }
-                                final long nanoOfDay = time.toNanoOfDay();
-                                if (nanoOfDay < 0) {
-                                    throw new IllegalArgumentException("Time out of range: " + time);
-                                }
-                                return nanoOfDay;
-                            });
-                }
+//                if (type == LocalDate.class) {
+//                    return LongChunkInputStreamGenerator.<LocalDate>convertWithTransform(chunk.asObjectChunk(),
+//                            rowOffset, date -> {
+//                                if (date == null) {
+//                                    return QueryConstants.NULL_LONG;
+//                                }
+//                                final long epochDay = date.toEpochDay();
+//                                if (epochDay < MIN_LOCAL_DATE_VALUE || epochDay > MAX_LOCAL_DATE_VALUE) {
+//                                    throw new IllegalArgumentException("Date out of range: " + date + " (" + epochDay
+//                                            + " not in [" + MIN_LOCAL_DATE_VALUE + ", " + MAX_LOCAL_DATE_VALUE + "])");
+//                                }
+//                                return epochDay * MS_PER_DAY;
+//                            });
+//                }
+//                if (type == LocalTime.class) {
+//                    return LongChunkInputStreamGenerator.<LocalTime>convertWithTransform(chunk.asObjectChunk(),
+//                            rowOffset, time -> {
+//                                if (time == null) {
+//                                    return QueryConstants.NULL_LONG;
+//                                }
+//                                final long nanoOfDay = time.toNanoOfDay();
+//                                if (nanoOfDay < 0) {
+//                                    throw new IllegalArgumentException("Time out of range: " + time);
+//                                }
+//                                return nanoOfDay;
+//                            });
+//                }
                 // TODO (core#936): support column conversion modes
 
                 return new VarBinaryChunkInputStreamGenerator<>(chunk.asObjectChunk(), rowOffset,
@@ -345,20 +345,20 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                             Short.BYTES, options, io -> TypeUtils.box(io.readShort()),
                             fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
                 }
-                if (type == LocalDate.class) {
-                    return LongChunkInputStreamGenerator.extractChunkFromInputStreamWithTransform(
-                            Long.BYTES, options,
-                            value -> value == QueryConstants.NULL_LONG
-                                    ? null
-                                    : LocalDate.ofEpochDay(value / MS_PER_DAY),
-                            fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
-                }
-                if (type == LocalTime.class) {
-                    return LongChunkInputStreamGenerator.extractChunkFromInputStreamWithTransform(
-                            Long.BYTES, options,
-                            value -> value == QueryConstants.NULL_LONG ? null : LocalTime.ofNanoOfDay(value),
-                            fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
-                }
+//                if (type == LocalDate.class) {
+//                    return LongChunkInputStreamGenerator.extractChunkFromInputStreamWithTransform(
+//                            Long.BYTES, options,
+//                            value -> value == QueryConstants.NULL_LONG
+//                                    ? null
+//                                    : LocalDate.ofEpochDay(value / MS_PER_DAY),
+//                            fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
+//                }
+//                if (type == LocalTime.class) {
+//                    return LongChunkInputStreamGenerator.extractChunkFromInputStreamWithTransform(
+//                            Long.BYTES, options,
+//                            value -> value == QueryConstants.NULL_LONG ? null : LocalTime.ofNanoOfDay(value),
+//                            fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
+//                }
                 if (type == String.class ||
                         options.columnConversionMode().equals(ColumnConversionMode.Stringify)) {
                     return VarBinaryChunkInputStreamGenerator.extractChunkFromInputStream(is, fieldNodeIter,
