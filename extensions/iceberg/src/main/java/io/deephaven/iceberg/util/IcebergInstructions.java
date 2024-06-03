@@ -5,7 +5,6 @@ package io.deephaven.iceberg.util;
 
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.extensions.s3.S3Instructions;
 import org.immutables.value.Value.Immutable;
 
 import java.util.Map;
@@ -28,9 +27,10 @@ public abstract class IcebergInstructions {
     public abstract Optional<TableDefinition> tableDefinition();
 
     /**
-     * The {@link S3Instructions} to use for reading the Iceberg data files.
+     * The data instructions to use for reading the Iceberg data files (might be S3Instructions or other cloud
+     * provider-specific instructions).
      */
-    public abstract Optional<S3Instructions> s3Instructions();
+    public abstract Optional<Object> dataInstructions();
 
     /**
      * A {@link Map map} of rename instructions from Iceberg to Deephaven column names to use when reading the Iceberg
@@ -43,7 +43,7 @@ public abstract class IcebergInstructions {
         Builder tableDefinition(TableDefinition tableDefinition);
 
         @SuppressWarnings("unused")
-        Builder s3Instructions(S3Instructions s3Instructions);
+        Builder dataInstructions(Object s3Instructions);
 
         @SuppressWarnings("unused")
         Builder putColumnRenames(String key, String value);

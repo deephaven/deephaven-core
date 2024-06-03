@@ -126,6 +126,12 @@ class Classpaths {
     static final String HADOOP_GROUP = 'org.apache.hadoop'
     static final String HADOOP_VERSION = '3.4.0'
 
+    static final String ICEBERG_GROUP = 'org.apache.iceberg'
+    static final String ICEBERG_VERSION = '1.5.0'
+
+    static final String AWSSDK_GROUP = 'software.amazon.awssdk'
+    static final String AWSSDK_VERSION = '2.23.19'
+
     static boolean addDependency(Configuration conf, String group, String name, String version, Action<? super DefaultExternalModuleDependency> configure = Actions.doNothing()) {
         if (!conf.dependencies.find { it.name == name && it.group == group}) {
             DefaultExternalModuleDependency dep = dependency group, name, version
@@ -295,12 +301,6 @@ class Classpaths {
         addDependency(config, 'org.apache.parquet', 'parquet-hadoop', '1.14.0')
     }
 
-    static void inheritIcebergHadoop(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
-        Configuration config = p.configurations.getByName(configName)
-        addDependency(config, HADOOP_GROUP, 'hadoop-common', HADOOP_VERSION)
-        addDependency(config, HADOOP_GROUP, 'hadoop-hdfs-client', HADOOP_VERSION)
-    }
-
     /** configName controls only the Configuration's classpath, all transitive dependencies are runtimeOnly */
     static void inheritParquetHadoopConfiguration(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
         Configuration config = p.configurations.getByName(configName)
@@ -322,5 +322,37 @@ class Classpaths {
         addDependency(runtimeOnly, 'commons-collections', 'commons-collections', '3.2.2') {
             it.because('hadoop-common required dependency for Configuration')
         }
+    }
+
+    static void inheritIcebergHadoop(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, HADOOP_GROUP, 'hadoop-common', HADOOP_VERSION)
+        addDependency(config, HADOOP_GROUP, 'hadoop-hdfs-client', HADOOP_VERSION)
+    }
+
+
+    static void inheritIcebergCore(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, p.getDependencies().platform(ICEBERG_GROUP + ":iceberg-bom:" + ICEBERG_VERSION))
+
+        addDependency(config, ICEBERG_GROUP, 'iceberg-bom', ICEBERG_VERSION)
+        addDependency(config, ICEBERG_GROUP, 'iceberg-core', ICEBERG_VERSION)
+        addDependency(config, ICEBERG_GROUP, 'iceberg-bundled-guava', ICEBERG_VERSION)
+    }
+
+    static void inheritAWSSDK(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, p.getDependencies().platform(AWSSDK_GROUP + ":bom:" + AWSSDK_VERSION))
+
+        addDependency(config, AWSSDK_GROUP, 's3', AWSSDK_VERSION)
+        addDependency(config, AWSSDK_GROUP, 'aws-crt-client', AWSSDK_VERSION)
+    }
+
+    static void inheritTestContainers(Project p, String configName = JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, 'org.testcontainers', 'testcontainers', '1.19.4')
+        addDependency(config, 'org.testcontainers', 'junit-jupiter', '1.19.4')
+        addDependency(config, 'org.testcontainers', 'localstack', '1.19.4')
+        addDependency(config, 'org.testcontainers', 'minio', '1.19.4')
     }
 }

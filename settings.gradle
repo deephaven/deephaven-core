@@ -270,6 +270,9 @@ project(':extensions-s3').projectDir = file('extensions/s3')
 include(':extensions-iceberg')
 project(':extensions-iceberg').projectDir = file('extensions/iceberg')
 
+include(':extensions-iceberg-aws')
+project(':extensions-iceberg-aws').projectDir = file('extensions/iceberg-aws')
+
 include(':plugin')
 
 include(':plugin-dagger')

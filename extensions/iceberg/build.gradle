@@ -5,10 +5,6 @@ plugins {
 
 description 'Iceberg: Support to read iceberg catalogs.'
 
-ext {
-    hadoopVersion = '3.3.6'
-}
-
 dependencies {
     api project(':engine-api')
     api project(':engine-table')
@@ -16,10 +12,6 @@ dependencies {
     implementation project(':engine-base')
     implementation project(':log-factory')
     implementation project(':Configuration')
-
-    implementation platform('software.amazon.awssdk:bom:2.23.19')
-    implementation 'software.amazon.awssdk:s3'
-    implementation 'software.amazon.awssdk:aws-crt-client'
 
     Classpaths.inheritAutoService(project)
     Classpaths.inheritImmutables(project)
@@ -35,49 +27,13 @@ dependencies {
 
     implementation project(':extensions-parquet-base')
     implementation project(':extensions-parquet-table')
-    implementation project(':extensions-s3')
 
-    implementation platform("org.apache.iceberg:iceberg-bom:1.5.0")
-    implementation "org.apache.iceberg:iceberg-api"
-    implementation "org.apache.iceberg:iceberg-core"
-    implementation "org.apache.iceberg:iceberg-aws"
-    // The following lines can be uncommented when we enable support for Azure and GCP
-    // implementation "org.apache.iceberg:iceberg-azure"
-    // implementation "org.apache.iceberg:iceberg-gcp"
-    implementation "org.apache.iceberg:iceberg-bundled-guava"
-    runtimeOnly "org.apache.iceberg:iceberg-aws-bundle"
-
+    Classpaths.inheritIcebergCore(project)
     Classpaths.inheritIcebergHadoop(project)
 
-    // could be downstream configurable ?? testRuntimeOnly might be better
-    // The following lines can be uncommented when we enable support for Azure and GCP
-    // runtimeOnly "org.apache.iceberg:iceberg-azure-bundle"
-    // runtimeOnly "org.apache.iceberg:iceberg-gcp-bundle"
-
-    testImplementation "org.testcontainers:testcontainers:1.19.4"
-    testImplementation "org.testcontainers:junit-jupiter:1.19.4"
-    testImplementation "org.testcontainers:localstack:1.19.4"
-    testImplementation "org.testcontainers:minio:1.19.4"
-
-    testImplementation TestTools.projectDependency(project, 'extensions-s3')
+    Classpaths.inheritTestContainers(project)
 
     testRuntimeOnly project(':test-configs')
     testRuntimeOnly project(':log-to-slf4j')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 }
-
-test {
-    useJUnitPlatform {
-        excludeTags("testcontainers")
-    }
-}
-
-tasks.register('testOutOfBand', Test) {
-    useJUnitPlatform {
-        includeTags("testcontainers")
-    }
-    systemProperty 'testcontainers.localstack.image', project.property('testcontainers.localstack.image')
-    systemProperty 'testcontainers.minio.image', project.property('testcontainers.minio.image')
-}
-
-

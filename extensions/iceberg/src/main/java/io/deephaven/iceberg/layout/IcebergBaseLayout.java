@@ -79,8 +79,8 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
                     }
                 }
 
-                // Add the S3 instructions.
-                instructions.s3Instructions().ifPresent(builder::setSpecialInstructions);
+                // Add the data instructions.
+                instructions.dataInstructions().ifPresent(builder::setSpecialInstructions);
 
                 parquetInstructions = builder.build();
             }

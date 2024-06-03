@@ -69,7 +69,7 @@ public abstract class IcebergToolsTest {
         final S3Instructions s3Instructions = s3Instructions(S3Instructions.builder()).build();
 
         instructions = IcebergInstructions.builder()
-                .s3Instructions(s3Instructions)
+                .dataInstructions(s3Instructions)
                 .build();
     }
 
@@ -119,7 +119,8 @@ public abstract class IcebergToolsTest {
         final Table table = adapter.listNamespacesAsTable();
         Assert.eq(table.size(), "table.size()", 2, "2 namespace in the catalog");
         Assert.eqTrue(table.getColumnSource("namespace").getType().equals(String.class), "namespace column type");
-        Assert.eqTrue(table.getColumnSource("namespace_object").getType().equals(Namespace.class), "namespace_object column type");
+        Assert.eqTrue(table.getColumnSource("namespace_object").getType().equals(Namespace.class),
+                "namespace_object column type");
     }
 
     @Test
@@ -139,7 +140,8 @@ public abstract class IcebergToolsTest {
         Assert.eq(table.size(), "table.size()", 3, "3 tables in the namespace");
         Assert.eqTrue(table.getColumnSource("namespace").getType().equals(String.class), "namespace column type");
         Assert.eqTrue(table.getColumnSource("table_name").getType().equals(String.class), "table_name column type");
-        Assert.eqTrue(table.getColumnSource("table_identifier_object").getType().equals(TableIdentifier.class), "table_identifier_object column type");
+        Assert.eqTrue(table.getColumnSource("table_identifier_object").getType().equals(TableIdentifier.class),
+                "table_identifier_object column type");
     }
 
     @Test
@@ -164,7 +166,8 @@ public abstract class IcebergToolsTest {
         Assert.eqTrue(table.getColumnSource("timestamp_ms").getType().equals(long.class), "timestamp_ms column type");
         Assert.eqTrue(table.getColumnSource("operation").getType().equals(String.class), "operation column type");
         Assert.eqTrue(table.getColumnSource("summary").getType().equals(Map.class), "summary column type");
-        Assert.eqTrue(table.getColumnSource("snapshot_object").getType().equals(Snapshot.class), "snapshot_object column type");
+        Assert.eqTrue(table.getColumnSource("snapshot_object").getType().equals(Snapshot.class),
+                "snapshot_object column type");
     }
 
     @Test
@@ -245,7 +248,7 @@ public abstract class IcebergToolsTest {
 
         final IcebergInstructions localInstructions = IcebergInstructions.builder()
                 .tableDefinition(tableDef)
-                .s3Instructions(instructions.s3Instructions().get())
+                .dataInstructions(instructions.dataInstructions().get())
                 .build();
 
         final IcebergCatalogAdapter adapter =
@@ -272,7 +275,7 @@ public abstract class IcebergToolsTest {
 
         final IcebergInstructions localInstructions = IcebergInstructions.builder()
                 .tableDefinition(tableDef)
-                .s3Instructions(instructions.s3Instructions().get())
+                .dataInstructions(instructions.dataInstructions().get())
                 .build();
 
         final IcebergCatalogAdapter adapter =
@@ -305,7 +308,7 @@ public abstract class IcebergToolsTest {
 
         final IcebergInstructions localInstructions = IcebergInstructions.builder()
                 .tableDefinition(tableDef)
-                .s3Instructions(instructions.s3Instructions().get())
+                .dataInstructions(instructions.dataInstructions().get())
                 .putColumnRenames("Region", "RegionName")
                 .putColumnRenames("Item_Type", "ItemType")
                 .putColumnRenames("Units_Sold", "UnitsSold")
@@ -342,7 +345,7 @@ public abstract class IcebergToolsTest {
 
         final IcebergInstructions localInstructions = IcebergInstructions.builder()
                 .tableDefinition(tableDef)
-                .s3Instructions(instructions.s3Instructions().get())
+                .dataInstructions(instructions.dataInstructions().get())
                 .build();
 
         final IcebergCatalogAdapter adapter =
@@ -372,7 +375,7 @@ public abstract class IcebergToolsTest {
 
         final IcebergInstructions localInstructions = IcebergInstructions.builder()
                 .tableDefinition(tableDef)
-                .s3Instructions(instructions.s3Instructions().get())
+                .dataInstructions(instructions.dataInstructions().get())
                 .build();
 
         final IcebergCatalogAdapter adapter =
@@ -400,7 +403,7 @@ public abstract class IcebergToolsTest {
 
         final IcebergInstructions localInstructions = IcebergInstructions.builder()
                 .tableDefinition(tableDef)
-                .s3Instructions(instructions.s3Instructions().get())
+                .dataInstructions(instructions.dataInstructions().get())
                 .build();
 
         final IcebergCatalogAdapter adapter =
@@ -427,7 +430,7 @@ public abstract class IcebergToolsTest {
 
         final IcebergInstructions localInstructions = IcebergInstructions.builder()
                 .tableDefinition(tableDef)
-                .s3Instructions(instructions.s3Instructions().get())
+                .dataInstructions(instructions.dataInstructions().get())
                 .build();
 
         final IcebergCatalogAdapter adapter =
@@ -457,7 +460,7 @@ public abstract class IcebergToolsTest {
 
         final IcebergInstructions localInstructions = IcebergInstructions.builder()
                 .tableDefinition(tableDef)
-                .s3Instructions(instructions.s3Instructions().get())
+                .dataInstructions(instructions.dataInstructions().get())
                 .build();
 
         final IcebergCatalogAdapter adapter =
@@ -479,7 +482,7 @@ public abstract class IcebergToolsTest {
                 warehousePath);
 
         final IcebergInstructions localInstructions = IcebergInstructions.builder()
-                .s3Instructions(instructions.s3Instructions().get())
+                .dataInstructions(instructions.dataInstructions().get())
                 .putColumnRenames("RegionName", "Region")
                 .putColumnRenames("ItemType", "Item_Type")
                 .build();
@@ -502,7 +505,7 @@ public abstract class IcebergToolsTest {
                 warehousePath);
 
         final IcebergInstructions localInstructions = IcebergInstructions.builder()
-                .s3Instructions(instructions.s3Instructions().get())
+                .dataInstructions(instructions.dataInstructions().get())
                 .putColumnRenames("VendorID", "vendor_id")
                 .putColumnRenames("month", "__month")
                 .putColumnRenames("year", "__year")
