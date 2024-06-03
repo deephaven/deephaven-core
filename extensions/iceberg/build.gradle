@@ -47,8 +47,7 @@ dependencies {
     implementation "org.apache.iceberg:iceberg-bundled-guava"
     runtimeOnly "org.apache.iceberg:iceberg-aws-bundle"
 
-    implementation "org.apache.hadoop:hadoop-common:${hadoopVersion}"
-    implementation "org.apache.hadoop:hadoop-hdfs-client:${hadoopVersion}"
+    Classpaths.inheritIcebergHadoop(project)
 
     // could be downstream configurable ?? testRuntimeOnly might be better
     // The following lines can be uncommented when we enable support for Azure and GCP

@@ -123,6 +123,9 @@ class Classpaths {
     static final String GUAVA_NAME = 'guava'
     static final String GUAVA_VERSION = '33.2.0-jre'
 
+    static final String HADOOP_GROUP = 'org.apache.hadoop'
+    static final String HADOOP_VERSION = '3.4.0'
+
     static boolean addDependency(Configuration conf, String group, String name, String version, Action<? super DefaultExternalModuleDependency> configure = Actions.doNothing()) {
         if (!conf.dependencies.find { it.name == name && it.group == group}) {
             DefaultExternalModuleDependency dep = dependency group, name, version
@@ -292,10 +295,16 @@ class Classpaths {
         addDependency(config, 'org.apache.parquet', 'parquet-hadoop', '1.14.0')
     }
 
+    static void inheritIcebergHadoop(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, HADOOP_GROUP, 'hadoop-common', HADOOP_VERSION)
+        addDependency(config, HADOOP_GROUP, 'hadoop-hdfs-client', HADOOP_VERSION)
+    }
+
     /** configName controls only the Configuration's classpath, all transitive dependencies are runtimeOnly */
     static void inheritParquetHadoopConfiguration(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
         Configuration config = p.configurations.getByName(configName)
-        addDependency(config, 'org.apache.hadoop', 'hadoop-common', '3.4.0') {
+        addDependency(config, HADOOP_GROUP, 'hadoop-common', HADOOP_VERSION) {
             it.setTransitive(false)
             // Do not take any extra dependencies of this project transitively. We just want a few classes for
             // configuration and compression codecs. For any additional required dependencies, add them separately, as
