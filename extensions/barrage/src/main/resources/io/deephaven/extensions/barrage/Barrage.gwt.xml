@@ -1,6 +1,7 @@
 <module>
     <inherits name="org.immutables.value.Immutables" />
     <inherits name="io.deephaven.chunk.Chunk" />
+    <inherits name="io.deephaven.engine.primitive.function.Function" />
     <inherits name="io.grpc.Grpc" />
     <source path="" includes="BarrageSnapshotOptions.java,BarrageSubscriptionOptions.java,ColumnConversionMode.java,ImmutableBarrageSnapshotOptions.java,ImmutableBarrageSubscriptionOptions.java" />
     <source path="util" includes="StreamReaderOptions.java,FlatBufferIteratorAdapter.java,DefensiveDrainable.java,DefensiveCapture.java,ExposedByteArrayOutputStream.java" />
