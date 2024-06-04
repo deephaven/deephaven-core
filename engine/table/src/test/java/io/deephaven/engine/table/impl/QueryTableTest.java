@@ -2718,14 +2718,21 @@ public class QueryTableTest extends QueryTableTestBase {
                 testRefreshingTable(i(0).toTracking())
                         .update("X = new Integer[]{null, 2, 3}", "Z = new Integer[]{4, 5, null}");
         final Table ungrouped = t.ungroup();
-
         try (final BarrageMessage snap = ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) ungrouped)) {
-            assertEquals(snap.rowsAdded, i(0, 1, 2));
-            assertEquals(snap.addColumnData[0].data.get(0).asIntChunk().get(0),
-                    io.deephaven.util.QueryConstants.NULL_INT);
-            assertEquals(snap.addColumnData[1].data.get(0).asIntChunk().get(2),
-                    io.deephaven.util.QueryConstants.NULL_INT);
+            testUngroupConstructSnashotHelper(snap);
         }
+        final Table selected = ungrouped.select(); // Will convert column sources to in memory
+        try (final BarrageMessage snap = ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) selected)) {
+            testUngroupConstructSnashotHelper(snap);
+        }
+    }
+
+    private static void testUngroupConstructSnashotHelper(@NotNull final BarrageMessage snap) {
+        assertEquals(snap.rowsAdded, i(0, 1, 2));
+        assertEquals(snap.addColumnData[0].data.get(0).asIntChunk().get(0),
+                QueryConstants.NULL_INT);
+        assertEquals(snap.addColumnData[1].data.get(0).asIntChunk().get(2),
+                QueryConstants.NULL_INT);
     }
 
     public void testUngroupableColumnSources() {

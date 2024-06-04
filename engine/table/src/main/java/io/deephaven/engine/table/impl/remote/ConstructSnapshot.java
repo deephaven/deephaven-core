@@ -10,6 +10,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.SnapshotUnsuccessfulException;
+import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.updategraph.*;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.SharedContext;
@@ -47,6 +48,9 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import io.deephaven.chunk.attributes.Values;
+
+import static io.deephaven.engine.table.impl.QueryTable.ENABLE_PARALLEL_SNAPSHOT;
+import static io.deephaven.engine.table.impl.QueryTable.MINIMUM_PARALLEL_SNAPSHOT_ROWS;
 
 /**
  * A Set of static utilities for computing values from a table while avoiding the use of an update graph lock. This
@@ -86,6 +90,7 @@ public class ConstructSnapshot {
     public static final int SNAPSHOT_CHUNK_SIZE = Configuration.getInstance()
             .getIntegerWithDefault("ConstructSnapshot.snapshotChunkSize", 1 << 24);
 
+    private static final ArrayList<Chunk<Values>> EMPTY_CHUNK_LIST = new ArrayList<>();
 
     public interface State {
 
@@ -1520,18 +1525,17 @@ public class ConstructSnapshot {
         // if (executionContext.getOperationInitializer() instanceof PoisonedOperationInitializer) {
         // jobScheduler = new ImmediateJobScheduler();
         // }
-        if (!executionContext.getOperationInitializer().canParallelize()) {
-            jobScheduler = new ImmediateJobScheduler();
-        } else {
+        if (ENABLE_PARALLEL_SNAPSHOT && executionContext.getOperationInitializer().canParallelize() &&
+                (snapshot.rowsIncluded.size() > MINIMUM_PARALLEL_SNAPSHOT_ROWS ||
+                        !allColumnSourcesInMemory(table, columnSources, columnsToSerialize))) {
+            // We can parallelize the snapshot
             jobScheduler = new OperationInitializerJobScheduler();
+        } else {
+            jobScheduler = new ImmediateJobScheduler();
         }
 
         final CompletableFuture<Boolean> waitForResult = new CompletableFuture<>();
         final AtomicReference<Exception> exception = new AtomicReference<>();
-        final Consumer<Exception> onError = err -> {
-            exception.set(err);
-            waitForResult.complete(Boolean.FALSE);
-        };
         jobScheduler.iterateParallel(
                 executionContext,
                 logOutput -> logOutput.append("serializeAllTable"),
@@ -1540,7 +1544,10 @@ public class ConstructSnapshot {
                 (context, colIdx, nestedErrorConsumer) -> serializeColumn(columnSources, colIdx, usePrev, snapshot,
                         table, logIdentityObject, columnsToSerialize),
                 () -> waitForResult.complete(Boolean.TRUE),
-                onError);
+                err -> {
+                    exception.set(err);
+                    waitForResult.complete(Boolean.FALSE);
+                });
         try {
             final boolean ret = waitForResult.get();
             if (!ret) {
@@ -1569,7 +1576,26 @@ public class ConstructSnapshot {
             }
             logEntry.append(", usePrev=").append(usePrev).endl();
         }
+        return true;
+    }
 
+
+    /**
+     * Check if all the required columns are {@link InMemoryColumnSource}.
+     */
+    private static boolean allColumnSourcesInMemory(
+            @NotNull final Table table,
+            @NotNull final String[] columnSources,
+            @Nullable final BitSet columnsToCheck) {
+        for (int colIdx = 0; colIdx < columnSources.length; colIdx++) {
+            if (columnsToCheck != null && !columnsToCheck.get(colIdx)) {
+                continue;
+            }
+            final ColumnSource<?> columnSource = table.getColumnSource(columnSources[colIdx]);
+            if (!(columnSource instanceof InMemoryColumnSource)) {
+                return false;
+            }
+        }
         return true;
     }
 
@@ -1615,7 +1641,7 @@ public class ConstructSnapshot {
         final BarrageMessage.ModColumnData mcd = new BarrageMessage.ModColumnData();
         snapshot.modColumnData[colIdx] = mcd;
         mcd.rowsModified = RowSetFactory.empty();
-        mcd.data = getSnapshotDataAsChunkList(sourceToUse, null, RowSetFactory.empty(), usePrev);
+        mcd.data = EMPTY_CHUNK_LIST;
         mcd.type = acd.type;
         mcd.componentType = acd.componentType;
         mcd.chunkType = sourceToUse.getChunkType();
@@ -1676,14 +1702,13 @@ public class ConstructSnapshot {
             @Nullable final SharedContext sharedContext,
             @NotNull final RowSet rowSet,
             final boolean usePrev) {
-        long offset = 0;
         final long size = rowSet.size();
-        final ArrayList<Chunk<Values>> result = new ArrayList<>();
-
         if (size == 0) {
-            return result;
+            return EMPTY_CHUNK_LIST;
         }
 
+        long offset = 0;
+        final ArrayList<Chunk<Values>> result = new ArrayList<>();
         final int maxChunkSize = (int) Math.min(size, SNAPSHOT_CHUNK_SIZE);
 
         try (final ColumnSource.FillContext context = columnSource.makeFillContext(maxChunkSize, sharedContext);
