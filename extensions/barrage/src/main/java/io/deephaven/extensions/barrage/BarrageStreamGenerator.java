@@ -22,6 +22,10 @@ import java.util.function.ToIntFunction;
  */
 public interface BarrageStreamGenerator extends SafeCloseable {
 
+    /**
+     * Represents a single update, which might be sent as multiple distinct payloads as necessary based in the
+     * implementation.
+     */
     interface MessageView {
         void forEachStream(Consumer<DefensiveDrainable> visitor) throws IOException;
     }

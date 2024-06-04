@@ -647,8 +647,9 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
     }
 
     /**
-     * Returns an InputStream of the message filtered to the viewport. This function accepts `targetBatchSize` but may
-     * actually write fewer rows than the target (when crossing an internal chunk boundary, e.g.)
+     * Returns an InputStream of a single FlightData message filtered to the viewport (if provided). This function
+     * accepts {@code targetBatchSize}, but may actually write fewer rows than the target (e.g. when crossing an
+     * internal chunk boundary).
      *
      * @param view the view of the overall chunk to generate a RecordBatch for
      * @param offset the start of the batch in position space w.r.t. the view (inclusive)
