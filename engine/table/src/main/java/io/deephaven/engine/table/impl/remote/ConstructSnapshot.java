@@ -44,7 +44,6 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import io.deephaven.chunk.attributes.Values;
@@ -90,7 +89,7 @@ public class ConstructSnapshot {
     public static final int SNAPSHOT_CHUNK_SIZE = Configuration.getInstance()
             .getIntegerWithDefault("ConstructSnapshot.snapshotChunkSize", 1 << 24);
 
-    private static final ArrayList<Chunk<Values>> EMPTY_CHUNK_LIST = new ArrayList<>();
+    private static final ArrayList<Chunk<Values>> EMPTY_CHUNK_LIST = new ArrayList<>(0);
 
     public interface State {
 
