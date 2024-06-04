@@ -89,7 +89,7 @@ public abstract class BaseChunkInputStreamGenerator<T extends Chunk<Values>> imp
             this.options = options;
             this.subset = chunk.size() == 0 ? RowSequenceFactory.EMPTY
                     : subset != null ? subset.copy() : RowSequenceFactory.forRange(0, chunk.size() - 1);
-//            REFERENCE_COUNT_UPDATER.incrementAndGet(BaseChunkInputStreamGenerator.this);
+            // REFERENCE_COUNT_UPDATER.incrementAndGet(BaseChunkInputStreamGenerator.this);
             // ignore the empty chunk as these are intentionally empty generators that should work for any subset
             if (chunk.size() > 0 && this.subset.lastRowKey() >= chunk.size()) {
                 throw new IllegalStateException(
