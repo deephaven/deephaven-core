@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.table.impl;
 
-import com.google.common.primitives.Ints;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.spec.AggSpec;
@@ -2762,11 +2761,10 @@ public class QueryTableTest extends QueryTableTestBase {
             fail("Expected does not match direct value!");
         }
 
-        int[] intPrevDirect =
-                (int[]) IndexedDataColumn.makePreviousColumn(t2.getRowSet(), t2.getColumnSource("Int")).getDirect();
-        if (!Arrays.equals(expected, intPrevDirect)) {
+        int[] intPrev = ColumnVectors.ofInt(t2, "Int", true).toArray();
+        if (!Arrays.equals(expected, intPrev)) {
             System.out.println("Expected: " + Arrays.toString(expected));
-            System.out.println("Prev: " + Arrays.toString(intPrevDirect));
+            System.out.println("Prev: " + Arrays.toString(intPrev));
             fail("Expected does not match previous value!");
         }
 
@@ -2774,11 +2772,10 @@ public class QueryTableTest extends QueryTableTestBase {
         updateGraph.runWithinUnitTestCycle(() -> {
         });
 
-        intPrevDirect =
-                (int[]) IndexedDataColumn.makePreviousColumn(t2.getRowSet(), t2.getColumnSource("Int")).getDirect();
-        if (!Arrays.equals(expected, intPrevDirect)) {
+        intPrev = ColumnVectors.ofInt(t2, "Int", true).toArray();
+        if (!Arrays.equals(expected, intPrev)) {
             System.out.println("Expected: " + Arrays.toString(expected));
-            System.out.println("Prev: " + Arrays.toString(intPrevDirect));
+            System.out.println("Prev: " + Arrays.toString(intPrev));
             fail("Expected does not match previous value!");
         }
     }
@@ -2847,10 +2844,9 @@ public class QueryTableTest extends QueryTableTestBase {
             assertArrayEquals(new String[] {"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"},
                     ColumnVectors.ofObject(t1, "Y", String.class).toArray());
 
-            assertEquals(Arrays.asList(1, 1, 1, 2, 2), Ints.asList(
-                    (int[]) IndexedDataColumn.makePreviousColumn(t1.getRowSet(), t1.getColumnSource("X")).getDirect()));
-            assertEquals(Arrays.asList("a", "b", "c", "d", "e"), Arrays.asList((String[]) IndexedDataColumn
-                    .makePreviousColumn(t1.getRowSet(), t1.getColumnSource("Y")).getDirect()));
+            assertArrayEquals(new int[] {1, 1, 1, 2, 2}, ColumnVectors.ofInt(t1, "X", true).toArray());
+            assertArrayEquals(new String[] {"a", "b", "c", "d", "e"},
+                    ColumnVectors.ofObject(t1, "Y", String.class, true).toArray());
 
             updateGraph.runWithinUnitTestCycle(() -> {
             });
@@ -2860,11 +2856,10 @@ public class QueryTableTest extends QueryTableTestBase {
             assertArrayEquals(new String[] {"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"},
                     ColumnVectors.ofObject(t1, "Y", String.class).toArray());
 
-            assertEquals(Arrays.asList(1, 1, 1, 2, 2, 3, 3, 3, 3, 3, 3), Ints.asList(
-                    (int[]) IndexedDataColumn.makePreviousColumn(t1.getRowSet(), t1.getColumnSource("X")).getDirect()));
-            assertEquals(Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"),
-                    Arrays.asList((String[]) IndexedDataColumn
-                            .makePreviousColumn(t1.getRowSet(), t1.getColumnSource("Y")).getDirect()));
+            assertArrayEquals(new int[] {1, 1, 1, 2, 2, 3, 3, 3, 3, 3, 3},
+                    ColumnVectors.ofInt(t1, "X", true).toArray());
+            assertArrayEquals(new String[] {"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"},
+                    ColumnVectors.ofObject(t1, "Y", String.class, true).toArray());
         } finally {
             QueryTable.setMinimumUngroupBase(minimumUngroupBase);
         }

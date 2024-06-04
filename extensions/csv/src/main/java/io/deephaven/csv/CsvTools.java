@@ -893,7 +893,7 @@ public class CsvTools {
     }
 
     /**
-     * Writes an array of Deephaven DataColumns out as a CSV file.
+     * Writes Deephaven columns out as a CSV file.
      *
      * @param out a Writer to which the header should be written
      * @param timeZone a time zone constant relative to which date time data should be adjusted
