@@ -23,10 +23,10 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.asofjoin.StaticAsOfJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableIntArraySource;
+import io.deephaven.util.mutable.MutableInt;
 import java.lang.Object;
 import java.lang.Override;
 import java.util.Arrays;
-import org.apache.commons.lang3.mutable.MutableLong;
 
 final class StaticAsOfJoinHasherInt extends StaticAsOfJoinStateManagerTypedBase {
     private final ImmutableIntArraySource mainKeySource0;
@@ -99,7 +99,7 @@ final class StaticAsOfJoinHasherInt extends StaticAsOfJoinStateManagerTypedBase 
     }
 
     protected void decorateLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            IntegerArraySource hashSlots, MutableLong hashSlotOffset,
+            IntegerArraySource hashSlots, MutableInt hashSlotOffset,
             RowSetBuilderRandom foundBuilder) {
         final IntChunk<Values> keyChunk0 = sourceKeyChunks[0].asIntChunk();
         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();

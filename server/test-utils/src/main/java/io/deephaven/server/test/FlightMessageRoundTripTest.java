@@ -8,6 +8,7 @@ import com.google.protobuf.ByteString;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoSet;
+import io.deephaven.auth.AuthContext;
 import io.deephaven.auth.ServiceAuthWiring;
 import io.deephaven.auth.codegen.impl.ConsoleServiceAuthWiring;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
@@ -64,7 +65,7 @@ import io.deephaven.server.test.TestAuthModule.FakeBearer;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.auth.AuthContext;
+import io.deephaven.util.mutable.MutableInt;
 import io.grpc.*;
 import io.grpc.CallOptions;
 import io.grpc.stub.ClientCalls;
@@ -95,7 +96,6 @@ import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.commons.lang3.mutable.MutableBoolean;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Before;
@@ -716,7 +716,7 @@ public abstract class FlightMessageRoundTripTest {
             }
         });
 
-        Assert.eq(seenTables.intValue(), "seenTables.intValue()", 2);
+        Assert.eq(seenTables.get(), "seenTables.get()", 2);
     }
 
     @Test
@@ -749,7 +749,7 @@ public abstract class FlightMessageRoundTripTest {
             }
         });
 
-        Assert.eq(seenTables.intValue(), "seenTables.intValue()", 2);
+        Assert.eq(seenTables.get(), "seenTables.get()", 2);
     }
 
     @Test
@@ -881,13 +881,13 @@ public abstract class FlightMessageRoundTripTest {
         ExecutionContext.getContext().getQueryScope().putParam(tableName, table);
 
         // export from query scope to our session; this transforms the table
-        assertEquals(0, numTransforms.intValue());
+        assertEquals(0, numTransforms.get());
         try (final TableHandle handle = clientSession.execute(TicketTable.fromQueryScopeField(tableName))) {
             // place the transformed table into the scope; wait on the future to ensure the server-side operation
             // completes
             clientSession.publish(resultTableName, handle).get();
         }
-        assertEquals(1, numTransforms.intValue());
+        assertEquals(1, numTransforms.get());
 
         // check that the table was transformed
         Object result = ExecutionContext.getContext().getQueryScope().readParamValue(resultTableName, null);

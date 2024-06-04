@@ -16,7 +16,7 @@ import io.deephaven.util.compare.FloatComparisons;
 import io.deephaven.engine.table.impl.sources.FloatArraySource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.*;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 
 import java.util.Collections;
 import java.util.Map;
@@ -55,7 +55,7 @@ class FloatChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOp
                 }
             }
         }
-        chunkNonNull.setValue(nonNull);
+        chunkNonNull.set(nonNull);
         return value;
     }
 
@@ -72,7 +72,7 @@ class FloatChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOp
                 }
             }
         }
-        chunkNonNull.setValue(nonNull);
+        chunkNonNull.set(nonNull);
         return value;
     }
 
@@ -139,7 +139,7 @@ class FloatChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOp
         final int chunkEnd = chunkStart + chunkSize;
         final float chunkValue = minimum ? min(values, chunkNonNull, chunkStart, chunkEnd)
                 : max(values, chunkNonNull, chunkStart, chunkEnd);
-        if (chunkNonNull.intValue() == 0) {
+        if (chunkNonNull.get() == 0) {
             return false;
         }
 

@@ -24,8 +24,8 @@ import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.PrintListener;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
-import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.experimental.categories.Category;
 
@@ -259,7 +259,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             final MutableInt numSteps) {
         final int leftSize = (int) Math.ceil(Math.sqrt(size));
 
-        final int maxSteps = numSteps.intValue();
+        final int maxSteps = numSteps.get();
         final Random random = new Random(seed);
 
         final int numGroups = (int) Math.max(4, Math.ceil(Math.sqrt(leftSize)));
@@ -279,7 +279,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
                 EvalNugget.from(() -> leftTicking.join(rightStatic, emptyList(), emptyList(), numRightBitsToReserve)),
         };
 
-        for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
+        for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
             // left size is sqrt right table size; which is a good update size for the right table
             ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().runWithinUnitTestCycle(() -> {
                 final int stepInstructions = random.nextInt();
@@ -293,7 +293,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
                             random, rightTicking, rightColumns);
                 }
             });
-            TstUtils.validate(ctxt + " step == " + numSteps.getValue(), en);
+            TstUtils.validate(ctxt + " step == " + numSteps.get(), en);
         }
     }
 
@@ -431,24 +431,24 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
             final long leftId = leftColumn.getLong(ii);
             final long rightId = rightColumn.getLong(ii);
             if (lastSharedKey.getValue() != null && lastSharedKey.getValue().equals(sharedKey)) {
-                Assert.leq(lastLeftId.longValue(), "lastLeftId.longValue()", leftId, "leftId");
-                if (lastLeftId.longValue() == leftId) {
-                    Assert.lt(lastRightId.longValue(), "lastRightId.longValue()", rightId, "rightId");
+                Assert.leq(lastLeftId.get(), "lastLeftId.longValue()", leftId, "leftId");
+                if (lastLeftId.get() == leftId) {
+                    Assert.lt(lastRightId.get(), "lastRightId.longValue()", rightId, "rightId");
                 }
             } else {
                 lastSharedKey.setValue(sharedKey);
-                lastLeftId.setValue(leftId);
+                lastLeftId.set(leftId);
             }
-            lastRightId.setValue(rightId);
+            lastRightId.set(rightId);
 
             final MutableLong remainingCount = expectedByKey.get(sharedKey);
             Assert.neqNull(remainingCount, "remainingCount");
-            Assert.gtZero(remainingCount.longValue(), "remainingCount.longValue()");
+            Assert.gtZero(remainingCount.get(), "remainingCount.longValue()");
             remainingCount.decrement();
         });
 
         for (final Map.Entry<String, MutableLong> entry : expectedByKey.entrySet()) {
-            Assert.eqZero(entry.getValue().longValue(), "entry.getValue().longValue");
+            Assert.eqZero(entry.getValue().get(), "entry.getValue().longValue");
         }
     }
 
@@ -503,7 +503,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
     private void testIncrementalOverflow(final String ctxt, final int numGroups, final int seed,
             final MutableInt numSteps) {
-        final int maxSteps = numSteps.intValue();
+        final int maxSteps = numSteps.get();
         final Random random = new Random(seed);
 
         // Note: make our join helper think this left table might tick
@@ -565,7 +565,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         };
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
+        for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
             updateGraph.runWithinUnitTestCycle(() -> {
                 final int stepInstructions = random.nextInt();
                 if (stepInstructions % 4 != 1) {
@@ -580,7 +580,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
                 }
             });
 
-            TstUtils.validate(ctxt + " step == " + numSteps.getValue(), en);
+            TstUtils.validate(ctxt + " step == " + numSteps.get(), en);
         }
     }
 
@@ -594,7 +594,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
     protected void testIncrementalWithKeyColumns(final String ctxt, final int initialSize, final int seed,
             final MutableInt numSteps) {
-        final int maxSteps = numSteps.intValue();
+        final int maxSteps = numSteps.get();
         final Random random = new Random(seed);
 
         final int numGroups = (int) Math.max(4, Math.ceil(Math.sqrt(initialSize)));
@@ -630,7 +630,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         }
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
+        for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
             updateGraph.runWithinUnitTestCycle(() -> {
                 final int stepInstructions = random.nextInt();
                 if (stepInstructions % 4 != 1) {
@@ -643,7 +643,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
                 }
             });
 
-            TstUtils.validate(ctxt + " step == " + numSteps.getValue(), en);
+            TstUtils.validate(ctxt + " step == " + numSteps.get(), en);
         }
     }
 
@@ -706,43 +706,43 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         }
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
-            final long rightOffset = numSteps.getValue();
+        for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
+            final long rightOffset = numSteps.get();
 
             updateGraph.runWithinUnitTestCycle(() -> {
-                addToTable(leftTicking, i(numSteps.getValue()), longCol("intCol", numSteps.getValue()));
+                addToTable(leftTicking, i(numSteps.get()), longCol("intCol", numSteps.get()));
                 TableUpdateImpl up = new TableUpdateImpl();
                 up.shifted = RowSetShiftData.EMPTY;
-                up.added = i(numSteps.getValue());
+                up.added = i(numSteps.get());
                 up.removed = i();
                 up.modified = i();
                 up.modifiedColumnSet = ModifiedColumnSet.ALL;
                 leftTicking.notifyListeners(up);
 
-                final long[] data = new long[numSteps.getValue() + 1];
-                for (int i = 0; i <= numSteps.getValue(); ++i) {
+                final long[] data = new long[numSteps.get() + 1];
+                for (int i = 0; i <= numSteps.get(); ++i) {
                     data[i] = i;
                 }
-                addToTable(rightTicking, RowSetFactory.fromRange(rightOffset, rightOffset + numSteps.getValue()),
+                addToTable(rightTicking, RowSetFactory.fromRange(rightOffset, rightOffset + numSteps.get()),
                         longCol("intCol", data));
                 TstUtils.removeRows(rightTicking, i(rightOffset - 1));
 
                 up = new TableUpdateImpl();
                 final RowSetShiftData.Builder shifted = new RowSetShiftData.Builder();
-                shifted.shiftRange(0, numSteps.getValue() + rightOffset, 1);
+                shifted.shiftRange(0, numSteps.get() + rightOffset, 1);
                 up.shifted = shifted.build();
-                up.added = i(rightOffset + numSteps.getValue());
+                up.added = i(rightOffset + numSteps.get());
                 up.removed = i();
-                if (numSteps.getValue() == 0) {
+                if (numSteps.get() == 0) {
                     up.modified = RowSetFactory.empty();
                 } else {
-                    up.modified = RowSetFactory.fromRange(rightOffset, rightOffset + numSteps.getValue() - 1);
+                    up.modified = RowSetFactory.fromRange(rightOffset, rightOffset + numSteps.get() - 1);
                 }
                 up.modifiedColumnSet = ModifiedColumnSet.ALL;
                 rightTicking.notifyListeners(up);
             });
 
-            TstUtils.validate(" step == " + numSteps.getValue(), en);
+            TstUtils.validate(" step == " + numSteps.get(), en);
         }
     }
 }

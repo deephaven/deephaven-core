@@ -11,8 +11,8 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.DoubleArraySource;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.util.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableDouble;
-import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -85,13 +85,13 @@ final class FloatChunkedVarOperator extends FpChunkedNonNormalCounter implements
         final double sum = SumFloatChunk.sum2FloatChunk(values, chunkStart, chunkSize, chunkNormalCount, chunkNanCount,
                 chunkInfinityCount, chunkMinusInfinity, sum2);
 
-        final long totalPositiveInfinities = updatePositiveInfinityCount(destination, chunkInfinityCount.intValue());
-        final long totalNegativeInfinities = updateNegativeInfinityCount(destination, chunkMinusInfinity.intValue());
-        final long totalNanCount = updateNanCount(destination, chunkNanCount.intValue());
+        final long totalPositiveInfinities = updatePositiveInfinityCount(destination, chunkInfinityCount.get());
+        final long totalNegativeInfinities = updateNegativeInfinityCount(destination, chunkMinusInfinity.get());
+        final long totalNanCount = updateNanCount(destination, chunkNanCount.get());
         final boolean forceNanResult = totalNegativeInfinities > 0 || totalPositiveInfinities > 0 || totalNanCount > 0;
 
-        if (chunkNormalCount.intValue() > 0) {
-            final long nonNullCount = nonNullCounter.addNonNullUnsafe(destination, chunkNormalCount.intValue());
+        if (chunkNormalCount.get() > 0) {
+            final long nonNullCount = nonNullCounter.addNonNullUnsafe(destination, chunkNormalCount.get());
             final double newSum = NullSafeAddition.plusDouble(sumSource.getUnsafe(destination), sum);
             final double newSum2 = NullSafeAddition.plusDouble(sum2Source.getUnsafe(destination), sum2.doubleValue());
 
@@ -139,20 +139,20 @@ final class FloatChunkedVarOperator extends FpChunkedNonNormalCounter implements
         final double sum = SumFloatChunk.sum2FloatChunk(values, chunkStart, chunkSize, chunkNormalCount, chunkNanCount,
                 chunkInfinityCount, chunkMinusInfinity, sum2);
 
-        if (chunkNormalCount.intValue() == 0 && chunkNanCount.intValue() == 0 && chunkInfinityCount.intValue() == 0
-                && chunkMinusInfinity.intValue() == 0) {
+        if (chunkNormalCount.get() == 0 && chunkNanCount.get() == 0 && chunkInfinityCount.get() == 0
+                && chunkMinusInfinity.get() == 0) {
             return false;
         }
 
-        final long totalPositiveInfinities = updatePositiveInfinityCount(destination, -chunkInfinityCount.intValue());
-        final long totalNegativeInfinities = updateNegativeInfinityCount(destination, -chunkMinusInfinity.intValue());
-        final long totalNanCount = updateNanCount(destination, -chunkNanCount.intValue());
+        final long totalPositiveInfinities = updatePositiveInfinityCount(destination, -chunkInfinityCount.get());
+        final long totalNegativeInfinities = updateNegativeInfinityCount(destination, -chunkMinusInfinity.get());
+        final long totalNanCount = updateNanCount(destination, -chunkNanCount.get());
         final boolean forceNanResult = totalNegativeInfinities > 0 || totalPositiveInfinities > 0 || totalNanCount > 0;
 
-        final long totalNormalCount = nonNullCounter.addNonNullUnsafe(destination, -chunkNormalCount.intValue());
+        final long totalNormalCount = nonNullCounter.addNonNullUnsafe(destination, -chunkNormalCount.get());
         final double newSum, newSum2;
 
-        if (chunkNormalCount.intValue() > 0) {
+        if (chunkNormalCount.get() > 0) {
             if (totalNormalCount > 0) {
                 newSum = NullSafeAddition.plusDouble(sumSource.getUnsafe(destination), -sum);
                 newSum2 = NullSafeAddition.plusDouble(sum2Source.getUnsafe(destination), -sum2.doubleValue());

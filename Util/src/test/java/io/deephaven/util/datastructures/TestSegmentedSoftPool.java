@@ -4,8 +4,8 @@
 package io.deephaven.util.datastructures;
 
 import io.deephaven.util.annotations.ReferentialIntegrity;
+import io.deephaven.util.mutable.MutableInt;
 import junit.framework.TestCase;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assume;
 import org.junit.Test;
@@ -51,8 +51,8 @@ public class TestSegmentedSoftPool {
         final SegmentedSoftPool<Integer> pool = new SegmentedSoftPool<>(10,
                 () -> {
                     counter.increment();
-                    sumAllocated.add(counter);
-                    return counter.toInteger();
+                    sumAllocated.add(counter.get());
+                    return counter.get();
                 },
                 sumCleared::add);
 
@@ -64,7 +64,7 @@ public class TestSegmentedSoftPool {
 
         IntStream.range(0, 1000).boxed().forEach(II -> TestCase.assertEquals(II, pool.take()));
         IntStream.range(0, 1000).boxed().forEach(pool::give);
-        TestCase.assertEquals(sumAllocated, sumCleared);
+        TestCase.assertEquals(sumAllocated.get(), sumCleared.get());
     }
 
     private static final BitSet OUTSTANDING_INSTANCES = new BitSet(1_000_000);

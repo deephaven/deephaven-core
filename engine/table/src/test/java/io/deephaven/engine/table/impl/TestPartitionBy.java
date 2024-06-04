@@ -24,8 +24,8 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.tuple.ArrayTuple;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.mutable.MutableLong;
 import junit.framework.TestCase;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.Assert;
 
@@ -438,9 +438,9 @@ public class TestPartitionBy extends QueryTableTestBase {
                     intCol("Int", 8),
                     intCol("I2", 5));
             rawTable.notifyListeners(i(8), i(), i());
-            start.setValue(System.currentTimeMillis());
+            start.set(System.currentTimeMillis());
         });
-        System.out.println("Completion took: " + (System.currentTimeMillis() - start.getValue()));
+        System.out.println("Completion took: " + (System.currentTimeMillis() - start.get()));
 
         final MutableObject<Future<?>> mutableFuture = new MutableObject<>();
 
@@ -461,9 +461,9 @@ public class TestPartitionBy extends QueryTableTestBase {
                 rollupManager.release();
             }));
 
-            start.setValue(System.currentTimeMillis());
+            start.set(System.currentTimeMillis());
         });
-        System.out.println("Completion took: " + (System.currentTimeMillis() - start.getValue()));
+        System.out.println("Completion took: " + (System.currentTimeMillis() - start.get()));
 
         try {
             mutableFuture.getValue().get();
