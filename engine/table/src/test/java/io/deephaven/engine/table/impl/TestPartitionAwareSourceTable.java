@@ -614,7 +614,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         });
         final Table result = SUT.selectDistinct(PARTITIONING_COLUMN_DEFINITION.getName());
         assertIsSatisfied();
-        final @NotNull String columnName = PARTITIONING_COLUMN_DEFINITION.getName();
+        final String columnName = PARTITIONING_COLUMN_DEFINITION.getName();
         final ObjectVector<String> distinctDatesVector = ColumnVectors.ofObject(result, columnName, String.class);
         assertEquals(expectedDistinctDates.length, distinctDatesVector.size());
         final String[] distinctDates = distinctDatesVector.toArray();

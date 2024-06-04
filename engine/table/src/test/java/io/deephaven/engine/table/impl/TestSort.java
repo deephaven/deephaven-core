@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.function.BiFunction;
 
 import io.deephaven.util.mutable.MutableInt;
-import io.deephaven.vector.IntVector;
 import org.jetbrains.annotations.NotNull;
 import org.junit.experimental.categories.Category;
 
@@ -654,20 +653,18 @@ public class TestSort extends RefreshingTableTestCase {
     }
 
     private void sortTester(int ncols, int size, Comparable[][] columnData, Table source, boolean isRefreshing) {
-        ((QueryTable) source).setRefreshing(isRefreshing);
+        source.setRefreshing(isRefreshing);
 
         // Now sort the table by the sentinel, which should just give us a simple ordering.
         assertEquals(source.size(), size);
 
         Table result0 = source.sort("Sentinel");
-        // show(result0);
         final MutableInt expected = new MutableInt(1);
         try (final CloseablePrimitiveIteratorOfInt sentinelIterator = result0.integerColumnIterator("Sentinel")) {
             sentinelIterator.forEachRemaining((final int actual) -> assertEquals(expected.getAndIncrement(), actual));
         }
 
         Table result1 = source.sortDescending("Sentinel");
-        // show(result1);
         expected.set(size);
         try (final CloseablePrimitiveIteratorOfInt sentinelIterator = result1.integerColumnIterator("Sentinel")) {
             sentinelIterator.forEachRemaining((final int actual) -> assertEquals(expected.getAndAdd(-1), actual));
@@ -683,8 +680,6 @@ public class TestSort extends RefreshingTableTestCase {
             System.out.println("Sorted by " + Arrays.toString(colNames));
             Table resultAscending = source.sort(colNames);
             Table resultDescending = source.sortDescending(colNames);
-            // TableTools.show(resultAscending);
-            // TableTools.show(resultDescending);
 
             final MultiColumnSortHelper multiColumnSortHelper = new MultiColumnSortHelper(columnData, ii);
             try (final CloseablePrimitiveIteratorOfInt sentinelAscending =
