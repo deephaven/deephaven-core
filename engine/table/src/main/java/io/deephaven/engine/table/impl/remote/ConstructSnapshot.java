@@ -1555,6 +1555,8 @@ public class ConstructSnapshot {
                 if (!(err instanceof SnapshotUnsuccessfulException)) {
                     throw new SnapshotUnsuccessfulException("Snapshot failed", err);
                 }
+                // Free any resources that may have been allocated
+                snapshot.close();
                 return false;
             }
         } catch (final InterruptedException e) {
@@ -1581,7 +1583,7 @@ public class ConstructSnapshot {
 
 
     /**
-     * Check if all the required columns are {@link InMemoryColumnSource}.
+     * Check if all the required column sources are {@link InMemoryColumnSource}.
      */
     private static boolean allColumnSourcesInMemory(
             @NotNull final Table table,
