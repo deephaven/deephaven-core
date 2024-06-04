@@ -1561,7 +1561,8 @@ public class ConstructSnapshot {
         } catch (final InterruptedException e) {
             throw new java.util.concurrent.CancellationException("Interrupted while serializing table");
         } catch (final ExecutionException e) {
-            throw new UncheckedDeephavenException("Execution exception while serializing table", e);
+            throw new SnapshotUnsuccessfulException("Execution exception occurred while serializing table",
+                    e.getCause());
         }
 
         if (log.isDebugEnabled()) {
