@@ -132,6 +132,9 @@ class Classpaths {
     static final String AWSSDK_GROUP = 'software.amazon.awssdk'
     static final String AWSSDK_VERSION = '2.23.19'
 
+    static final String TESTCONTAINER_GROUP = 'org.testcontainers'
+    static final String TESTCONTAINER_VERSION = '1.19.4'
+
     static boolean addDependency(Configuration conf, String group, String name, String version, Action<? super DefaultExternalModuleDependency> configure = Actions.doNothing()) {
         if (!conf.dependencies.find { it.name == name && it.group == group}) {
             DefaultExternalModuleDependency dep = dependency group, name, version
@@ -335,7 +338,6 @@ class Classpaths {
         Configuration config = p.configurations.getByName(configName)
         addDependency(config, p.getDependencies().platform(ICEBERG_GROUP + ":iceberg-bom:" + ICEBERG_VERSION))
 
-        addDependency(config, ICEBERG_GROUP, 'iceberg-bom', ICEBERG_VERSION)
         addDependency(config, ICEBERG_GROUP, 'iceberg-core', ICEBERG_VERSION)
         addDependency(config, ICEBERG_GROUP, 'iceberg-bundled-guava', ICEBERG_VERSION)
     }
@@ -350,9 +352,9 @@ class Classpaths {
 
     static void inheritTestContainers(Project p, String configName = JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME) {
         Configuration config = p.configurations.getByName(configName)
-        addDependency(config, 'org.testcontainers', 'testcontainers', '1.19.4')
-        addDependency(config, 'org.testcontainers', 'junit-jupiter', '1.19.4')
-        addDependency(config, 'org.testcontainers', 'localstack', '1.19.4')
-        addDependency(config, 'org.testcontainers', 'minio', '1.19.4')
+        addDependency(config, TESTCONTAINER_GROUP, 'testcontainers', TESTCONTAINER_VERSION)
+        addDependency(config, TESTCONTAINER_GROUP, 'junit-jupiter', TESTCONTAINER_VERSION)
+        addDependency(config, TESTCONTAINER_GROUP, 'localstack', TESTCONTAINER_VERSION)
+        addDependency(config, TESTCONTAINER_GROUP, 'minio', TESTCONTAINER_VERSION)
     }
 }

@@ -19,7 +19,8 @@ import java.util.Map;
 /**
  * Tools for accessing tables in the Iceberg table format.
  */
-public class IcebergToolsAWS extends IcebergTools {
+@SuppressWarnings("unused")
+public class IcebergToolsS3 extends IcebergTools {
     private static final String S3_FILE_IO_CLASS = "org.apache.iceberg.aws.s3.S3FileIO";
 
     public static IcebergCatalogAdapter createS3Rest(

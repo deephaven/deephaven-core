@@ -16,20 +16,20 @@ dependencies {
     Classpaths.inheritAutoService(project)
     Classpaths.inheritImmutables(project)
 
-    Classpaths.inheritJUnitPlatform(project)
-    Classpaths.inheritAssertJ(project)
-
     Classpaths.inheritParquetHadoop(project)
-
-    testImplementation 'org.junit.jupiter:junit-jupiter'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
     implementation project(':extensions-parquet-base')
     implementation project(':extensions-parquet-table')
 
     Classpaths.inheritIcebergCore(project)
     Classpaths.inheritIcebergHadoop(project)
+
+    Classpaths.inheritJUnitPlatform(project)
+    Classpaths.inheritAssertJ(project)
+
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
     Classpaths.inheritTestContainers(project)
 

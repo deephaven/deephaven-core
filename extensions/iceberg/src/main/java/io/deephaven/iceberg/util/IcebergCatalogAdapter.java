@@ -36,7 +36,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -109,8 +108,6 @@ public class IcebergCatalogAdapter {
      * @return The converted Deephaven type.
      */
     static io.deephaven.qst.type.Type<?> convertPrimitiveType(@NotNull final Type icebergType) {
-        final OffsetDateTime now = OffsetDateTime.now().plusSeconds(1);
-
         final Type.TypeID typeId = icebergType.typeId();
         switch (typeId) {
             case BOOLEAN:
