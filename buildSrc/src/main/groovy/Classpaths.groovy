@@ -100,7 +100,7 @@ class Classpaths {
     // TODO(deephaven-core#1685): Create strategy around updating and maintaining protoc version
     static final String PROTOBUF_GROUP = 'com.google.protobuf'
     static final String PROTOBUF_NAME = 'protobuf-java'
-    static final String PROTOBUF_VERSION = '3.23.0'
+    static final String PROTOBUF_VERSION = '3.25.3'
 
     // See dependency matrix for particular gRPC versions at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty
     static final String BORINGSSL_GROUP = 'io.netty'
@@ -121,7 +121,7 @@ class Classpaths {
 
     static final String GUAVA_GROUP = 'com.google.guava'
     static final String GUAVA_NAME = 'guava'
-    static final String GUAVA_VERSION = '32.0.1-jre'
+    static final String GUAVA_VERSION = '33.2.0-jre'
 
     static boolean addDependency(Configuration conf, String group, String name, String version, Action<? super DefaultExternalModuleDependency> configure = Actions.doNothing()) {
         if (!conf.dependencies.find { it.name == name && it.group == group}) {
@@ -289,7 +289,7 @@ class Classpaths {
 
     static void inheritParquetHadoop(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
         Configuration config = p.configurations.getByName(configName)
-        addDependency(config, 'org.apache.parquet', 'parquet-hadoop', '1.13.1')
+        addDependency(config, 'org.apache.parquet', 'parquet-hadoop', '1.14.0')
     }
 
     /** configName controls only the Configuration's classpath, all transitive dependencies are runtimeOnly */

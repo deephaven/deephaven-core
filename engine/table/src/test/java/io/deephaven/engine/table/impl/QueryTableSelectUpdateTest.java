@@ -34,9 +34,9 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.vector.LongVector;
 import junit.framework.TestCase;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -668,10 +668,10 @@ public class QueryTableSelectUpdateTest {
                                 .select("Time", "Diff = Time_[i]")),
         };
 
-        final int maxSteps = numSteps.intValue();
-        for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
+        final int maxSteps = numSteps.get();
+        for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
             if (RefreshingTableTestCase.printTableUpdates) {
-                System.out.println("Step = " + numSteps.intValue());
+                System.out.println("Step = " + numSteps.get());
             }
             RefreshingTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
         }
@@ -748,10 +748,10 @@ public class QueryTableSelectUpdateTest {
                         "Concat=UC + FC")),
         };
 
-        final int maxSteps = numSteps.intValue();
-        for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
+        final int maxSteps = numSteps.get();
+        for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
             if (RefreshingTableTestCase.printTableUpdates) {
-                System.out.println("Step = " + numSteps.intValue());
+                System.out.println("Step = " + numSteps.get());
             }
             RefreshingTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
         }

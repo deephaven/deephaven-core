@@ -32,7 +32,7 @@ import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.InternalUseOnly;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -655,8 +655,8 @@ public class PartitionedTableImpl extends LivenessArtifact implements Partitione
             this.constituentDefinition = constituentDefinition;
             final MutableInt hashAccumulator = new MutableInt(31 + constituentColumnName.hashCode());
             constituentDefinition.getColumnStream().map(ColumnDefinition::getName).sorted().forEach(
-                    cn -> hashAccumulator.setValue(31 * hashAccumulator.intValue() + cn.hashCode()));
-            hashCode = hashAccumulator.intValue();
+                    cn -> hashAccumulator.set(31 * hashAccumulator.get() + cn.hashCode()));
+            hashCode = hashAccumulator.get();
         }
 
         @Override

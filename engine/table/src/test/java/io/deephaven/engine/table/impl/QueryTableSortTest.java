@@ -23,10 +23,10 @@ import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.engine.table.impl.util.*;
+import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.util.mutable.MutableInt;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
-import io.deephaven.test.types.OutOfBandTest;
-import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.io.File;
 import java.io.IOException;
@@ -413,7 +413,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
     }
 
     private void testSortIncremental(final String ctxt, final int size, int seed, MutableInt numSteps) {
-        final int maxSteps = numSteps.intValue();
+        final int maxSteps = numSteps.get();
         final Random random = new Random(seed);
         final ColumnInfo<?, ?>[] columnInfo = getIncrementalColumnInfo();
         final QueryTable queryTable = getTable(size, random, columnInfo);
@@ -457,8 +457,8 @@ public class QueryTableSortTest extends QueryTableTestBase {
                 EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.desc(ColumnName.of("bigD"))))),
         };
 
-        for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
-            simulateShiftAwareStep(ctxt + " step == " + numSteps.getValue(), size, random, queryTable, columnInfo, en);
+        for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
+            simulateShiftAwareStep(ctxt + " step == " + numSteps.get(), size, random, queryTable, columnInfo, en);
         }
     }
 

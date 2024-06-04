@@ -27,10 +27,10 @@ import io.deephaven.server.session.TicketRouter;
 import io.deephaven.server.table.ExportedTableUpdateListener;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.mutable.MutableInt;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;

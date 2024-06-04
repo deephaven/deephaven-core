@@ -186,7 +186,7 @@ public class ParquetTableLocation extends AbstractTableLocation {
         final List<String> nameList =
                 columnPath == null ? Collections.singletonList(parquetColumnName) : Arrays.asList(columnPath);
         final ColumnChunkReader[] columnChunkReaders = Arrays.stream(getRowGroupReaders())
-                .map(rgr -> rgr.getColumnChunk(nameList)).toArray(ColumnChunkReader[]::new);
+                .map(rgr -> rgr.getColumnChunk(columnName, nameList)).toArray(ColumnChunkReader[]::new);
         final boolean exists = Arrays.stream(columnChunkReaders).anyMatch(ccr -> ccr != null && ccr.numRows() > 0);
         return new ParquetColumnLocation<>(this, columnName, parquetColumnName,
                 exists ? columnChunkReaders : null);

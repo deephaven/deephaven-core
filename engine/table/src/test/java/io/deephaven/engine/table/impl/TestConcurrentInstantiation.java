@@ -34,8 +34,8 @@ import io.deephaven.gui.table.QuickFilterMode;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReflexiveUse;
+import io.deephaven.util.mutable.MutableInt;
 import junit.framework.TestCase;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.junit.experimental.categories.Category;
@@ -693,7 +693,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         final int size = 100;
         final Random random = new Random(seed);
-        final int maxSteps = numSteps.intValue();
+        final int maxSteps = numSteps.get();
 
         final QueryTable table = getTable(size, random,
                 columnInfos = initColumnInfos(new String[] {"Sym", "intCol", "boolCol", "boolCol2", "doubleCol"},
@@ -769,8 +769,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                 showWithRowSet(table);
             }
 
-            for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
-                final int i = numSteps.intValue();
+            for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
+                final int i = numSteps.get();
                 if (RefreshingTableTestCase.printTableUpdates) {
                     System.out.println("Step = " + i);
                 }

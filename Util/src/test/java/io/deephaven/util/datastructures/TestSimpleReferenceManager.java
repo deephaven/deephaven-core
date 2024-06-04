@@ -3,13 +3,15 @@
 //
 package io.deephaven.util.datastructures;
 
+import io.deephaven.base.reference.HardSimpleReference;
 import io.deephaven.base.reference.SimpleReference;
+import io.deephaven.util.mutable.MutableInt;
 import junit.framework.TestCase;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
@@ -27,81 +29,66 @@ public class TestSimpleReferenceManager {
         doTest(false);
     }
 
-    private static final class IntRef extends MutableInt implements SimpleReference<MutableInt> {
-
-        private boolean cleared;
-
-        public IntRef(final int value) {
-            super(value);
-        }
-
-        @Override
-        public MutableInt get() {
-            return cleared ? null : this;
-        }
-
-        @Override
-        public void clear() {
-            cleared = true;
-        }
-    }
-
     @SuppressWarnings({"NumberEquality", "PointlessArithmeticExpression"})
     private void doTest(final boolean concurrent) {
-        final SimpleReferenceManager<MutableInt, SimpleReference<MutableInt>> SUT =
-                new SimpleReferenceManager<>((final MutableInt item) -> ((IntRef) item), concurrent);
-        final IntRef[] items = IntStream.range(0, 1000).mapToObj(IntRef::new).toArray(IntRef[]::new);
+        // noinspection unchecked
+        final SimpleReference<Integer>[] refs =
+                IntStream.range(0, 1000).mapToObj(HardSimpleReference::new).toArray(SimpleReference[]::new);
+        final SimpleReferenceManager<Integer, SimpleReference<Integer>> SUT =
+                new SimpleReferenceManager<>(val -> refs[val], concurrent);
 
-        Arrays.stream(items, 0, 500).forEach(SUT::add);
+        Arrays.stream(refs, 0, 500).map(SimpleReference::get).forEach(SUT::add);
 
         int expectedSum = 500 * (499 + 0) / 2;
         testSumExpectations(SUT, expectedSum);
 
-        Arrays.stream(items, 0, 500).forEach((final IntRef item) -> TestCase.assertSame(item,
-                SUT.getFirstItem((final MutableInt other) -> item == other)));
-        Arrays.stream(items, 0, 500).forEach((final IntRef item) -> TestCase.assertSame(item,
-                SUT.getFirstReference((final MutableInt other) -> item == other)));
+        Arrays.stream(refs, 0, 500).forEach(ref -> TestCase.assertSame(ref.get(),
+                SUT.getFirstItem((final Integer other) -> ref.get() == other)));
+        Arrays.stream(refs, 0, 500).forEach(ref -> TestCase.assertSame(ref,
+                SUT.getFirstReference((final Integer other) -> ref.get() == other)));
 
-        items[200].clear();
+        refs[200].clear();
         expectedSum -= 200;
-        TestCase.assertSame(items[199], SUT.getFirstItem((final MutableInt other) -> items[199] == other));
-        TestCase.assertNull(SUT.getFirstItem((final MutableInt other) -> items[200] == other));
-        TestCase.assertSame(items[201], SUT.getFirstItem((final MutableInt other) -> items[201] == other));
+        TestCase.assertSame(refs[199].get(), SUT.getFirstItem((final Integer other) -> refs[199].get() == other));
+        TestCase.assertNull(SUT.getFirstItem((final Integer other) -> refs[200].get() == other));
+        TestCase.assertSame(refs[201].get(), SUT.getFirstItem((final Integer other) -> refs[201].get() == other));
         testSumExpectations(SUT, expectedSum);
 
-        items[300].clear();
+        refs[300].clear();
         expectedSum -= 300;
-        TestCase.assertSame(items[299], SUT.getFirstReference((final MutableInt other) -> items[299] == other));
-        TestCase.assertNull(SUT.getFirstReference((final MutableInt other) -> items[300] == other));
-        TestCase.assertSame(items[301], SUT.getFirstReference((final MutableInt other) -> items[301] == other));
+        TestCase.assertSame(refs[299], SUT.getFirstReference((final Integer other) -> refs[299].get() == other));
+        TestCase.assertNull(SUT.getFirstReference((final Integer other) -> refs[300].get() == other));
+        TestCase.assertSame(refs[301], SUT.getFirstReference((final Integer other) -> refs[301].get() == other));
         testSumExpectations(SUT, expectedSum);
 
-        items[400].clear();
+        refs[400].clear();
         expectedSum -= 400;
         testSumExpectations(SUT, expectedSum);
 
-        Arrays.stream(items, 500, 1000).forEach(SUT::add);
+        Arrays.stream(refs, 500, 1000).map(SimpleReference::get).forEach(SUT::add);
         expectedSum += 500 * (999 + 500) / 2;
         testSumExpectations(SUT, expectedSum);
 
-        SUT.removeAll(Arrays.asList(Arrays.copyOfRange(items, 600, 700)));
-        Arrays.stream(items, 700, 800).forEach(IntRef::clear);
+        SUT.removeAll(Arrays.stream(Arrays.copyOfRange(refs, 600, 700)).map(SimpleReference::get)
+                .collect(Collectors.toList()));
+        Arrays.stream(refs, 700, 800).forEach(SimpleReference::clear);
         expectedSum -= 200 * (799 + 600) / 2;
         testSumExpectations(SUT, expectedSum);
 
-        Arrays.stream(items, 0, 100).forEach(IntRef::clear);
-        SUT.remove(items[0]);
+        Arrays.stream(refs, 0, 100).forEach(SimpleReference::clear);
+        SUT.remove(refs[0].get());
         expectedSum -= 100 * (99 + 0) / 2;
         testSumExpectations(SUT, expectedSum);
     }
 
-    private void testSumExpectations(@NotNull final SimpleReferenceManager<MutableInt, SimpleReference<MutableInt>> SUT,
+    private void testSumExpectations(
+            @NotNull final SimpleReferenceManager<Integer, ? extends SimpleReference<Integer>> SUT,
             final int expectedSum) {
         final MutableInt sum = new MutableInt();
-        SUT.forEach((final SimpleReference<MutableInt> ref, final MutableInt item) -> {
-            TestCase.assertSame(ref, item);
+        SUT.forEach((ref, item) -> {
+            TestCase.assertSame(ref.get(), item);
             sum.add(item);
         });
-        TestCase.assertEquals(expectedSum, sum.intValue());
+        TestCase.assertEquals(expectedSum, sum.get());
     }
 }

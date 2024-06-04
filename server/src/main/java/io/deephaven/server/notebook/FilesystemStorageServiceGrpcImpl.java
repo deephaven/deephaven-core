@@ -35,6 +35,7 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.DirectoryNotEmptyException;
@@ -70,9 +71,9 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
             DataDir.get().resolve("storage").toString());
 
     private static final String WEB_LAYOUT_DIRECTORY =
-            Configuration.getInstance().getStringWithDefault("web.storage.layout.directory", "/layouts");
+            Configuration.getInstance().getProperty("web.storage.layout.directory");
     private static final String WEB_NOTEBOOK_DIRECTORY =
-            Configuration.getInstance().getStringWithDefault("web.storage.notebook.directory", "/notebooks");
+            Configuration.getInstance().getProperty("web.storage.notebook.directory");
     private static final String[] PRE_CREATE_PATHS = Configuration.getInstance()
             .getStringArrayFromPropertyWithDefault("storage.path.defaults", new String[] {
                     WEB_LAYOUT_DIRECTORY,
@@ -85,6 +86,12 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
      * and this ensures that clients will have a stable cache across server restarts.
      */
     private static final HashFunction HASH_FUNCTION = Hashing.murmur3_128(0);
+
+    /**
+     * Presently, the Web IDE requires that all paths start with "/". When this is no longer true, remove this constant.
+     */
+    @Deprecated
+    private static final String REQUIRED_PATH_PREFIX = "/";
 
     private final Path root = Paths.get(STORAGE_PATH).normalize();
     private final SessionService sessionService;
@@ -107,11 +114,12 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
     }
 
     private Path resolveOrThrow(String incomingPath) {
-        if (incomingPath.startsWith("/")) {
-            Path resolved = root.resolve(incomingPath.substring(1)).normalize();
-            if (resolved.startsWith(root)) {
-                return resolved;
-            }
+        if (incomingPath.startsWith(File.separator)) {
+            incomingPath = incomingPath.substring(1);
+        }
+        Path resolved = root.resolve(incomingPath).normalize();
+        if (resolved.startsWith(root)) {
+            return resolved;
         }
         throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Invalid path: " + incomingPath);
     }
@@ -132,6 +140,7 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
         PathMatcher matcher =
                 request.hasFilterGlob() ? createPathFilter(request.getFilterGlob()) : ignore -> true;
         Path dir = resolveOrThrow(request.getPath());
+        builder.setCanonicalPath(REQUIRED_PATH_PREFIX + root.relativize(dir));
         try (Stream<Path> list = Files.list(dir)) {
             for (Path p : (Iterable<Path>) list::iterator) {
                 if (!matcher.matches(dir.relativize(p))) {
@@ -140,7 +149,7 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
                 BasicFileAttributes attrs = Files.readAttributes(p, BasicFileAttributes.class);
                 boolean isDirectory = attrs.isDirectory();
                 ItemInfo.Builder info = ItemInfo.newBuilder()
-                        .setPath("/" + root.relativize(p));
+                        .setPath(REQUIRED_PATH_PREFIX + root.relativize(p));
                 if (isDirectory) {
                     info.setType(ItemType.DIRECTORY);
                 } else {
@@ -163,7 +172,7 @@ public class FilesystemStorageServiceGrpcImpl extends StorageServiceGrpc.Storage
         if (filterGlob.contains("**")) {
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Bad glob, only single `*`s are supported");
         }
-        if (filterGlob.contains("/")) {
+        if (filterGlob.contains(File.separator)) {
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                     "Bad glob, only the same directory can be checked");
         }

@@ -7,7 +7,7 @@ plugins {
 dependencies {
     api project(':qst-type')
     api project(':util-function')
-    api 'com.google.protobuf:protobuf-java:3.24.1'
+    api 'com.google.protobuf:protobuf-java:3.25.3'
     implementation project(':engine-query-constants')
 
     Classpaths.inheritImmutables(project)
@@ -43,6 +43,6 @@ spotless {
 
 protobuf {
     protoc {
-        artifact = 'com.google.protobuf:protoc:3.24.1'
+        artifact = 'com.google.protobuf:protoc:3.25.3'
     }
 }

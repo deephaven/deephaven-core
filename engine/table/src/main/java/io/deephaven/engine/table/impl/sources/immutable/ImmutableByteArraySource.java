@@ -20,7 +20,7 @@ import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.sources.*;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import java.util.Arrays;
 
@@ -132,7 +132,7 @@ public class ImmutableByteArraySource extends AbstractColumnSource<Byte>
             chunk.copyFromTypedArray(data, (int) start, destPosition.getAndAdd(length), length);
             // endregion copyFromTypedArrayImmutable
         });
-        chunk.setSize(destPosition.intValue());
+        chunk.setSize(destPosition.get());
     }
     // endregion fillChunkByRanges
 
@@ -150,7 +150,7 @@ public class ImmutableByteArraySource extends AbstractColumnSource<Byte>
             chunk.set(destPosition.getAndIncrement(), getUnsafe(key));
             // endregion conversion
         });
-        chunk.setSize(destPosition.intValue());
+        chunk.setSize(destPosition.get());
     }
     // endregion fillChunkByKeys
 

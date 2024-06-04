@@ -19,7 +19,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.benchmarking.*;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.BenchmarkParams;
 
@@ -141,7 +141,7 @@ public class SortBenchmark {
 
         inputTable.getDefinition().getColumnNameSet().forEach(columnName -> {
             if (!columnName.equals(sortCol)) {
-                sortColumns[ci.intValue()] = columnName;
+                sortColumns[ci.get()] = columnName;
                 ci.increment();
             }
         });

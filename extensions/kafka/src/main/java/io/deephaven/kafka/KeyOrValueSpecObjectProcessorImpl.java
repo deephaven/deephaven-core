@@ -18,7 +18,7 @@ import io.deephaven.kafka.ingest.KeyOrValueProcessor;
 import io.deephaven.kafka.ingest.MultiFieldChunkAdapter;
 import io.deephaven.processor.ObjectProcessor;
 import io.deephaven.qst.type.Type;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.apache.kafka.common.serialization.Deserializer;
 
 import java.util.ArrayList;
