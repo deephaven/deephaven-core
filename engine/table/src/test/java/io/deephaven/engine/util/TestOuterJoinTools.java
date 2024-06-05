@@ -121,7 +121,7 @@ public class TestOuterJoinTools {
         assertEquals(2, DataAccessHelpers.getColumns(result).length);
         assertEquals("X", DataAccessHelpers.getColumns(result)[0].getName());
         assertEquals("Y", DataAccessHelpers.getColumns(result)[1].getName());
-        assertEquals(Arrays.asList("a", "b", "c", null),
+        assertEquals(Arrays.asList("a", "b", "c", "d"),
                 Arrays.asList(DataAccessHelpers.getColumn(result, "X").get(0, 4)));
         assertEquals(Arrays.asList("a", "b", null, "d"),
                 Arrays.asList(DataAccessHelpers.getColumn(result, "Y").get(0, 4)));
@@ -145,7 +145,7 @@ public class TestOuterJoinTools {
         assertEquals(2, DataAccessHelpers.getColumns(result).length);
         assertEquals("X", DataAccessHelpers.getColumns(result)[0].getName());
         assertEquals("Y", DataAccessHelpers.getColumns(result)[1].getName());
-        assertEquals(Arrays.asList("a", "b", "c", null),
+        assertEquals(Arrays.asList("a", "b", "c", "d"),
                 Arrays.asList(DataAccessHelpers.getColumn(result, "X").get(0, 4)));
         assertEquals(Arrays.asList("a", "b", null, "d"),
                 Arrays.asList(DataAccessHelpers.getColumn(result, "Y").get(0, 4)));
@@ -175,7 +175,7 @@ public class TestOuterJoinTools {
     }
 
     @Test
-    public void testFullOuterJoinAddColumnsDoesNotIncludeRightMatchColumns() {
+    public void testFullOuterJoinAddColumnsDoesIncludeRightMatchColumns() {
         Table lTable = testRefreshingTable(col("X", "a", "b", "c"));
         Table rTable = testRefreshingTable(col("Y", "a", "b", "d"), intCol("Z", 1, 2, 3));
         Table result = OuterJoinTools.fullOuterJoin(lTable, rTable, "X=Y", "A=Y");
@@ -183,7 +183,7 @@ public class TestOuterJoinTools {
         assertEquals(2, DataAccessHelpers.getColumns(result).length);
         assertEquals("X", DataAccessHelpers.getColumns(result)[0].getName());
         assertEquals("A", DataAccessHelpers.getColumns(result)[1].getName());
-        assertEquals(Arrays.asList("a", "b", "c", null),
+        assertEquals(Arrays.asList("a", "b", "c", "d"),
                 Arrays.asList(DataAccessHelpers.getColumn(result, "X").get(0, 4)));
         assertEquals(Arrays.asList("a", "b", null, "d"),
                 Arrays.asList(DataAccessHelpers.getColumn(result, "A").get(0, 4)));
@@ -198,7 +198,7 @@ public class TestOuterJoinTools {
         assertEquals(2, DataAccessHelpers.getColumns(result).length);
         assertEquals("X", DataAccessHelpers.getColumns(result)[0].getName());
         assertEquals("Y", DataAccessHelpers.getColumns(result)[1].getName());
-        assertEquals(Arrays.asList("a", "b", "c", null),
+        assertEquals(Arrays.asList("a", "b", "c", "g"),
                 Arrays.asList(DataAccessHelpers.getColumn(result, "X").get(0, 4)));
         assertEquals(Arrays.asList("e", "f", null, "g"),
                 Arrays.asList(DataAccessHelpers.getColumn(result, "Y").get(0, 4)));
@@ -216,7 +216,7 @@ public class TestOuterJoinTools {
         assertEquals("X", DataAccessHelpers.getColumns(result)[0].getName());
         assertEquals("Y", DataAccessHelpers.getColumns(result)[1].getName());
         assertEquals("Z", DataAccessHelpers.getColumns(result)[2].getName());
-        assertEquals(Arrays.asList("a", "a", "b", "b", "c", null),
+        assertEquals(Arrays.asList("a", "a", "b", "b", "c", "d"),
                 Arrays.asList(DataAccessHelpers.getColumn(result, "X").get(0, 6)));
         assertEquals(Arrays.asList("a", "a", "b", "b", null, "d"),
                 Arrays.asList(DataAccessHelpers.getColumn(result, "Y").get(0, 6)));
@@ -233,7 +233,7 @@ public class TestOuterJoinTools {
         assertEquals(2, DataAccessHelpers.getColumns(result).length);
         assertEquals("X", DataAccessHelpers.getColumns(result)[0].getName());
         assertEquals("Y", DataAccessHelpers.getColumns(result)[1].getName());
-        assertEquals(Arrays.asList("a", "a", "b", "b", "c", null),
+        assertEquals(Arrays.asList("a", "a", "b", "b", "c", "d"),
                 Arrays.asList(DataAccessHelpers.getColumn(result, "X").get(0, 6)));
         assertEquals(Arrays.asList("a", "a", "b", "b", null, "d"),
                 Arrays.asList(DataAccessHelpers.getColumn(result, "Y").get(0, 6)));
