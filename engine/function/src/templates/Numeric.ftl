@@ -2599,6 +2599,7 @@ public class Numeric {
         }
 
         long vsum = 0;
+        long nullCount = 0;
 
         try (
             final ${pt.vectorIterator} vi = values.iterator();
@@ -2610,8 +2611,14 @@ public class Numeric {
 
                 if (!isNull(c) && !isNull(w)) {
                     vsum += c * (long) w;
+                } else {
+                    nullCount++;
                 }
             }
+        }
+
+        if (nullCount == values.size()) {
+            return NULL_LONG;
         }
 
         return vsum;
@@ -2629,6 +2636,7 @@ public class Numeric {
         }
 
         double vsum = 0;
+        long nullCount = 0;
 
         try (
             final ${pt.vectorIterator} vi = values.iterator();
@@ -2660,8 +2668,14 @@ public class Numeric {
                    <#else>
                     vsum += c * (double) w;
                    </#if>
+                } else {
+                    nullCount++;
                 }
             }
+        }
+
+        if (nullCount == values.size()) {
+            return NULL_DOUBLE;
         }
 
         return vsum;
@@ -2733,6 +2747,7 @@ public class Numeric {
 
         double vsum = 0;
         double wsum = 0;
+        long nullCount = 0;
 
         try (
             final ${pt.vectorIterator} vi = values.iterator();
@@ -2750,8 +2765,14 @@ public class Numeric {
                 if (!isNull(c) && !isNull(w)) {
                     vsum += c * w;
                     wsum += w;
+                } else {
+                    nullCount++;
                 }
             }
+        }
+
+        if (nullCount == values.size()) {
+            return NULL_DOUBLE;
         }
 
         return vsum / wsum;

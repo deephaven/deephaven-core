@@ -135,6 +135,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     private Column rowExpandedCol;
     private final Column actionCol;
     private final JsArray<Column> groupedColumns;
+    private JsLayoutHints layoutHints;
 
     // The source JsTable behind the original HierarchicalTable, lazily built at this time
     private final JsLazy<Promise<JsTable>> sourceTable;
@@ -1032,6 +1033,25 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     @JsNullable
     public String getDescription() {
         return tableDefinition.getAttributes().getDescription();
+    }
+
+    @JsProperty
+    @JsNullable
+    public JsLayoutHints getLayoutHints() {
+        if (layoutHints == null) {
+            createLayoutHints();
+        }
+        return layoutHints;
+    }
+
+    private void createLayoutHints() {
+        String hintsString = tableDefinition.getAttributes().getLayoutHints();
+        JsLayoutHints jsHints = new JsLayoutHints();
+        if (hintsString == null) {
+            layoutHints = null;
+        } else {
+            layoutHints = jsHints.parse(hintsString);
+        }
     }
 
     /**

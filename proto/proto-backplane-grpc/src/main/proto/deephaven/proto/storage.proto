@@ -62,6 +62,10 @@ message ItemInfo {
 message ListItemsResponse {
   // List of items found in the specified directory.
   repeated ItemInfo items = 1;
+
+  // The canonical path of the listed directory. This is useful to recognize the basename
+  // of the items in a cross-platform way.
+  string canonical_path = 2;
 }
 
 message FetchFileRequest {

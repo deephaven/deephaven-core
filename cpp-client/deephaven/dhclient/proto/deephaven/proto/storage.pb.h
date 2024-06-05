@@ -2492,6 +2492,7 @@ class ListItemsResponse final :
 
   enum : int {
     kItemsFieldNumber = 1,
+    kCanonicalPathFieldNumber = 2,
   };
   // repeated .io.deephaven.proto.backplane.grpc.ItemInfo items = 1;
   int items_size() const;
@@ -2511,14 +2512,30 @@ class ListItemsResponse final :
   ::io::deephaven::proto::backplane::grpc::ItemInfo* add_items();
   const ::google::protobuf::RepeatedPtrField< ::io::deephaven::proto::backplane::grpc::ItemInfo >&
       items() const;
+  // string canonical_path = 2;
+  void clear_canonical_path() ;
+  const std::string& canonical_path() const;
+  template <typename Arg_ = const std::string&, typename... Args_>
+  void set_canonical_path(Arg_&& arg, Args_... args);
+  std::string* mutable_canonical_path();
+  PROTOBUF_NODISCARD std::string* release_canonical_path();
+  void set_allocated_canonical_path(std::string* value);
+
+  private:
+  const std::string& _internal_canonical_path() const;
+  inline PROTOBUF_ALWAYS_INLINE void _internal_set_canonical_path(
+      const std::string& value);
+  std::string* _internal_mutable_canonical_path();
+
+  public:
   // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.ListItemsResponse)
  private:
   class _Internal;
 
   friend class ::google::protobuf::internal::TcParser;
   static const ::google::protobuf::internal::TcParseTable<
-      0, 1, 1,
-      0, 2>
+      1, 2, 1,
+      74, 2>
       _table_;
   friend class ::google::protobuf::MessageLite;
   friend class ::google::protobuf::Arena;
@@ -2535,6 +2552,7 @@ class ListItemsResponse final :
         inline explicit Impl_(::google::protobuf::internal::InternalVisibility visibility,
                               ::google::protobuf::Arena* arena, const Impl_& from);
     ::google::protobuf::RepeatedPtrField< ::io::deephaven::proto::backplane::grpc::ItemInfo > items_;
+    ::google::protobuf::internal::ArenaStringPtr canonical_path_;
     mutable ::google::protobuf::internal::CachedSize _cached_size_;
     PROTOBUF_TSAN_DECLARE_MEMBER
   };
@@ -2907,6 +2925,59 @@ inline ::google::protobuf::RepeatedPtrField<::io::deephaven::proto::backplane::g
 ListItemsResponse::_internal_mutable_items() {
   PROTOBUF_TSAN_READ(&_impl_._tsan_detect_race);
   return &_impl_.items_;
+}
+
+// string canonical_path = 2;
+inline void ListItemsResponse::clear_canonical_path() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  _impl_.canonical_path_.ClearToEmpty();
+}
+inline const std::string& ListItemsResponse::canonical_path() const
+    ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.ListItemsResponse.canonical_path)
+  return _internal_canonical_path();
+}
+template <typename Arg_, typename... Args_>
+inline PROTOBUF_ALWAYS_INLINE void ListItemsResponse::set_canonical_path(Arg_&& arg,
+                                                     Args_... args) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  _impl_.canonical_path_.Set(static_cast<Arg_&&>(arg), args..., GetArena());
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.ListItemsResponse.canonical_path)
+}
+inline std::string* ListItemsResponse::mutable_canonical_path() ABSL_ATTRIBUTE_LIFETIME_BOUND {
+  std::string* _s = _internal_mutable_canonical_path();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.ListItemsResponse.canonical_path)
+  return _s;
+}
+inline const std::string& ListItemsResponse::_internal_canonical_path() const {
+  PROTOBUF_TSAN_READ(&_impl_._tsan_detect_race);
+  return _impl_.canonical_path_.Get();
+}
+inline void ListItemsResponse::_internal_set_canonical_path(const std::string& value) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  _impl_.canonical_path_.Set(value, GetArena());
+}
+inline std::string* ListItemsResponse::_internal_mutable_canonical_path() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ;
+  return _impl_.canonical_path_.Mutable( GetArena());
+}
+inline std::string* ListItemsResponse::release_canonical_path() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.ListItemsResponse.canonical_path)
+  return _impl_.canonical_path_.Release();
+}
+inline void ListItemsResponse::set_allocated_canonical_path(std::string* value) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  _impl_.canonical_path_.SetAllocated(value, GetArena());
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+        if (_impl_.canonical_path_.IsDefault()) {
+          _impl_.canonical_path_.Set("", GetArena());
+        }
+  #endif  // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.ListItemsResponse.canonical_path)
 }
 
 // -------------------------------------------------------------------
