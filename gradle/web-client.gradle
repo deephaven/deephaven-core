@@ -1,8 +1,0 @@
-apply from: "$rootDir/gradle/web-common.gradle"
-
-// To perform production compile: gw gCo (./gradlew gwtCompile)
-// To start the dev server: gw gCS (./gradlew gwtCodeServer)
-
-Classpaths.inheritGwt project, 'gwt-user', 'compileOnly'
-Classpaths.inheritGwt project, 'gwt-user', 'testImplementation'
-Classpaths.inheritGwt project, 'gwt-dev', 'testImplementation'

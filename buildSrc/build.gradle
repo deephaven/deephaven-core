@@ -17,7 +17,7 @@ repositories {
 }
 
 dependencies {
-    implementation('org.docstr:gwt-gradle-plugin:1.1.30') {
+    implementation('de.esoco.gwt:gwt-gradle-plugin:1.2.0') {
         exclude group: 'org.codehaus.groovy'
         because('needed for GwtTools')
     }

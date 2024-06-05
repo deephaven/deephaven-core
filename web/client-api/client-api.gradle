@@ -6,14 +6,9 @@ import io.deephaven.tools.docker.WaitForHealthyContainer
 plugins {
     id 'io.deephaven.project.register'
     id 'io.deephaven.deephaven-in-docker'
-    id 'gwt-compiler'
 }
 
 evaluationDependsOn(Docker.registryProject('selenium'))
-evaluationDependsOn ':web-shared-beans'
-evaluationDependsOn ':web-client-backplane'
-
-apply from: "$rootDir/gradle/web-client.gradle"
 
 configurations {
     js
@@ -39,26 +34,12 @@ Classpaths.inheritElemental(project, 'elemental2-core', 'implementation')
 Classpaths.inheritElemental(project, 'elemental2-promise', 'implementation')
 Classpaths.inheritElemental(project, 'elemental2-dom', 'implementation')
 
-gwt {
-    gwtVersion = Classpaths.GWT_VERSION
-    modules 'io.deephaven.web.DeephavenApi'
-
-    src += files(project.files(project(':web-shared-beans').sourceSets.main.allSource.srcDirs))
-    src += files(project.files(project(':web-client-backplane').sourceSets.main.allSource.srcDirs))
-    src += files(project.files(project(':open-api-shared-fu').sourceSets.main.allSource.srcDirs))
-
-    maxHeapSize '1024m'
-
-    jsInteropExports {
-        setGenerate true
-    }
-//    extraDir layout.buildDirectory.dir('gwt/extra')
-}
+GwtTools.gwtCompile project, 'io.deephaven.web.DeephavenApi', 'Create a jar of client JS API'
 
 def jsOutput = layout.buildDirectory.dir('js')
 def gwtOutput = tasks.register('gwtOutput', Sync) {
     includeEmptyDirs = false
-    from(tasks.getByName('compileGwt').outputs.files) {
+    from(tasks.getByName('gwtCompile').outputs.files) {
         // only copy the dhapi module, and don't give it a wrapper directory
         include 'dhapi/**'
         eachFile { it.path = 'jsapi/' + it.path.substring('dhapi/'.length()) }

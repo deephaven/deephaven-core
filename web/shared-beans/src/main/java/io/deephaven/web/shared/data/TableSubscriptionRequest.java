@@ -3,6 +3,7 @@
 //
 package io.deephaven.web.shared.data;
 
+import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.util.BitSet;
 
@@ -34,7 +35,7 @@ public class TableSubscriptionRequest implements Serializable {
 
     }
 
-    public TableSubscriptionRequest(int subscriptionId, RangeSet rows, BitSet columns) {
+    public TableSubscriptionRequest(int subscriptionId, @Nullable RangeSet rows, BitSet columns) {
         this.subscriptionId = subscriptionId;
         this.rows = rows;
         this.columns = columns;
