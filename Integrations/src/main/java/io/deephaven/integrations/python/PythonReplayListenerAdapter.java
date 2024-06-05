@@ -3,6 +3,7 @@
 //
 package io.deephaven.integrations.python;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
@@ -11,8 +12,12 @@ import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jpy.PyObject;
+
+import java.util.Arrays;
 
 
 /**
@@ -27,35 +32,7 @@ public class PythonReplayListenerAdapter extends InstrumentedTableUpdateListener
         implements TableSnapshotReplayer {
     private static final long serialVersionUID = -8882402061960621245L;
     private final PyObject pyCallable;
-
-    /**
-     * Create a Python listener.
-     *
-     * No description for this listener will be provided. A hard reference to this listener will be maintained to
-     * prevent garbage collection. See {@link #PythonReplayListenerAdapter(String, Table, boolean, PyObject)} if you do
-     * not want to prevent garbage collection of this listener.
-     *
-     * @param source The source table to which this listener will subscribe.
-     * @param pyObjectIn Python listener object.
-     */
-    public PythonReplayListenerAdapter(Table source, PyObject pyObjectIn) {
-        this(null, source, true, pyObjectIn);
-    }
-
-    /**
-     * Create a Python listener.
-     *
-     * A hard reference to this listener will be maintained to prevent garbage collection. See
-     * {@link #PythonReplayListenerAdapter(String, Table, boolean, PyObject)} if you do not want to prevent garbage
-     * collection of this listener.
-     *
-     * @param description A description for the UpdatePerformanceTracker to append to its entry description.
-     * @param source The source table to which this listener will subscribe.
-     * @param pyObjectIn Python listener object.
-     */
-    public PythonReplayListenerAdapter(String description, Table source, PyObject pyObjectIn) {
-        this(description, source, true, pyObjectIn);
-    }
+    private final Table[] dependencies;
 
     /**
      * Create a Python listener.
@@ -64,11 +41,21 @@ public class PythonReplayListenerAdapter extends InstrumentedTableUpdateListener
      * @param source The source table to which this listener will subscribe.
      * @param retain Whether a hard reference to this listener should be maintained to prevent it from being collected.
      * @param pyObjectIn Python listener object.
+     * @param dependencies The tables that must be satisfied before this listener is executed.
      */
-    public PythonReplayListenerAdapter(String description, Table source, boolean retain,
-            PyObject pyObjectIn) {
+    private PythonReplayListenerAdapter(String description, Table source, boolean retain, PyObject pyObjectIn,
+            Table... dependencies) {
         super(description, source, retain);
-        pyCallable = PythonUtils.pyListenerFunc(pyObjectIn);
+        this.dependencies = dependencies;
+        this.pyCallable = PythonUtils.pyListenerFunc(pyObjectIn);
+    }
+
+    public static PythonReplayListenerAdapter create(String description, Table source, boolean retain,
+            PyObject pyObjectIn, Table... dependencies) {
+        final UpdateGraph updateGraph = source.getUpdateGraph(dependencies);
+        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
+            return new PythonReplayListenerAdapter(description, source, retain, pyObjectIn, dependencies);
+        }
     }
 
     @Override
@@ -86,5 +73,10 @@ public class PythonReplayListenerAdapter extends InstrumentedTableUpdateListener
     public void onUpdate(final TableUpdate update) {
         final boolean isReplay = false;
         pyCallable.call("__call__", update, isReplay);
+    }
+
+    @Override
+    public boolean canExecute(final long step) {
+        return source.satisfied(step) && Arrays.stream(dependencies).allMatch(t -> t.satisfied(step));
     }
 }

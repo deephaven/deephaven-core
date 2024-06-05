@@ -7,8 +7,10 @@ import unittest
 from typing import List, Union
 
 import numpy
+import jpy
 
-from deephaven import time_table
+from deephaven import time_table, new_table, input_table
+from deephaven.column import bool_col, string_col
 from deephaven.experimental import time_window
 from deephaven.jcompat import to_sequence
 from deephaven.table import Table
@@ -17,6 +19,7 @@ from deephaven.execution_context import get_exec_ctx
 from deephaven.update_graph import exclusive_lock
 from tests.testbase import BaseTestCase
 
+_JColumnVectors = jpy.get_type("io.deephaven.engine.table.vectors.ColumnVectors")
 
 class TableUpdateRecorder:
     def __init__(self, table: Table, chunk_size: int = None, cols: Union[str, List[str]] = None):
@@ -51,7 +54,7 @@ class TableUpdateRecorder:
         self.modified_columns_list.append(update.modified_columns)
 
 
-def ensure_ugp_cycles(table_update_recorder: TableUpdateRecorder, cycles: int = 2):
+def ensure_ugp_cycles(table_update_recorder: TableUpdateRecorder, cycles: int = 2) -> None:
     while len(table_update_recorder.replays) < cycles:
         time.sleep(1)
 
@@ -189,6 +192,95 @@ class TableListenerTestCase(BaseTestCase):
 
         self.check_update_recorder(table_update_recorder=table_update_recorder, cols=cols, has_replay=False,
                                    has_added=True, has_removed=False, has_modified=True)
+
+
+    def test_listener_with_deps_obj(self):
+        table_update_recorder = TableUpdateRecorder(self.test_table)
+        dep_table = time_table("PT00:00:05").update("X = i % 11")
+        ec = get_exec_ctx()
+
+
+        with self.subTest("with deps"):
+            j_arrays = []
+
+            class ListenerClass(TableListener):
+                def on_update(self, update, is_replay):
+                    table_update_recorder.record(update, is_replay)
+                    with ec:
+                        t2 = dep_table.view(["Y = i % 8"])
+                        j_arrays.append(_JColumnVectors.of(t2.j_table, "Y").copyToArray())
+
+            listener = ListenerClass()
+            table_listener_handle = listen(self.test_table, listener, dependencies=dep_table)
+            ensure_ugp_cycles(table_update_recorder, cycles=3)
+            table_listener_handle.stop()
+
+            self.check_update_recorder(table_update_recorder=table_update_recorder, cols="X", has_replay=False,
+                                       has_added=True, has_removed=True, has_modified=False)
+            self.assertTrue(all([len(ja) > 0 for ja in j_arrays]))
+
+        with self.subTest("with deps, error"):
+            j_arrays = []
+
+            class ListenerClass(TableListener):
+                def on_update(self, update, is_replay):
+                    table_update_recorder.record(update, is_replay)
+                    with ec:
+                        try:
+                            t2 = dep_table.view(["Y = i % 8"]).group_by("X")
+                            j_arrays.append(_JColumnVectors.of(t2.j_table, "Y").copyToArray())
+                        except Exception as e:
+                            pass
+
+            listener = ListenerClass()
+            table_listener_handle = listen(self.test_table, listener, dependencies=dep_table)
+            ensure_ugp_cycles(table_update_recorder, cycles=3)
+            table_listener_handle.stop()
+
+            self.check_update_recorder(table_update_recorder=table_update_recorder, cols="X", has_replay=False,
+                                       has_added=True, has_removed=True, has_modified=False)
+            self.assertTrue(len(j_arrays) == 0)
+
+    def test_listener_with_deps_func(self):
+        cols = [
+            bool_col(name="Boolean", data=[True, False]),
+            string_col(name="String", data=["foo", "bar"]),
+        ]
+        t = new_table(cols=cols)
+        self.assertEqual(t.size, 2)
+        col_defs = {c.name: c.data_type for c in t.columns}
+        dep_table = input_table(col_defs=col_defs)
+
+        def listener_func(update, is_replay):
+            table_update_recorder.record(update, is_replay)
+            try:
+                dep_table.add(t)
+            except Exception as e:
+                self.assertIn("Attempted to make a blocking input table edit from a listener or notification. This is unsupported", str(e))
+                pass
+
+        with self.subTest("with deps"):
+            table_update_recorder = TableUpdateRecorder(self.test_table)
+            table_listener_handle = TableListenerHandle(self.test_table,  listener_func, dependencies=dep_table)
+            table_listener_handle.start(do_replay=False)
+            ensure_ugp_cycles(table_update_recorder, cycles=3)
+            table_listener_handle.stop()
+            self.check_update_recorder(table_update_recorder, has_replay=False, has_added=True, has_removed=True,
+                                   has_modified=False)
+            self.assertEqual(dep_table.size, 0)
+
+        with self.subTest("with deps, replay_lock='exclusive'"):
+            table_listener_handle.start(do_replay=True, replay_lock="exclusive")
+            ensure_ugp_cycles(table_update_recorder, cycles=3)
+            table_listener_handle.stop()
+            self.check_update_recorder(table_update_recorder, has_replay=True, has_added=True, has_removed=True, has_modified=False)
+
+        with self.subTest("with deps, replay_lock='shared'"):
+            raise unittest.SkipTest("This test will dead lock, waiting for the resolution of https://github.com/deephaven/deephaven-core/issues/5585")
+            table_listener_handle.start(do_replay=True, replay_lock="shared") # noqa
+            ensure_ugp_cycles(table_update_recorder, cycles=3)
+            table_listener_handle.stop()
+            self.check_update_recorder(table_update_recorder, has_replay=True, has_added=True, has_removed=True, has_modified=False)
 
 
 if __name__ == "__main__":
