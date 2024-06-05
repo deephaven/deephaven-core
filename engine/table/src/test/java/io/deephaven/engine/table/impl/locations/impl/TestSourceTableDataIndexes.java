@@ -174,6 +174,21 @@ public class TestSourceTableDataIndexes {
     }
 
     @Test
+    public void testDroppedIndexColumn() {
+        final Table raw = TableTools.emptyTable(26 * 10 * 1000).update("Part=String.format(`%04d`, (long)(ii/1000))",
+                "Sym=(char)('A' + ii % 26)", "Other=ii");
+        DataIndexer.getOrCreateDataIndex(raw, "Sym");
+
+        final String path =
+                dataDirectory.getAbsolutePath() + File.separator + "TestTable2" + File.separator + PARQUET_FILE_NAME;
+
+        ParquetTools.writeTable(raw, path);
+
+        TestCase.assertFalse(DataIndexer.hasDataIndex(
+                ParquetTools.readTable(path).dropColumns("Sym").coalesce(), "Sym"));
+    }
+
+    @Test
     public void testParallelCollection() {
         final List<Integer> observedOrder = Collections.synchronizedList(new ArrayList<>());
         final int[] intArray = IntStream.range(0, 10000).parallel().peek(observedOrder::add).toArray();
