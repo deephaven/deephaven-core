@@ -271,6 +271,6 @@ public class WebBarrageStreamReader {
     }
 
     private static ShiftedRange[] extractIndexShiftData(final ByteBuffer bb) {
-        return new ShiftedRangeReader().read(bb);
+        return ShiftedRangeReader.read(bb);
     }
 }

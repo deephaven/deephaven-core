@@ -333,6 +333,12 @@ public class RangeSet {
         return sortedRanges[sortedRanges.length - 1].getLast();
     }
 
+    public RangeSet copy() {
+        RangeSet copy = new RangeSet();
+        copy.sortedRanges = Arrays.copyOf(sortedRanges, sortedRanges.length);
+        return copy;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o)

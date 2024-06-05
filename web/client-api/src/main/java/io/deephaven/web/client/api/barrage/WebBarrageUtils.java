@@ -243,8 +243,7 @@ public class WebBarrageUtils {
             deltaUpdates.setRemoved(new CompressedRangeSetReader()
                     .read(barrageUpdate.removedRowsAsByteBuffer()));
 
-            deltaUpdates.setShiftedRanges(
-                    new ShiftedRangeReader().read(barrageUpdate.shiftDataAsByteBuffer()));
+            deltaUpdates.setShiftedRanges(ShiftedRangeReader.read(barrageUpdate.shiftDataAsByteBuffer()));
 
             RangeSet includedAdditions;
 

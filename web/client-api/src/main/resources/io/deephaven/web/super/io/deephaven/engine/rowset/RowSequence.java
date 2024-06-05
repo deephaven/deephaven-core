@@ -9,6 +9,7 @@ import io.deephaven.util.datastructures.LongRangeConsumer;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 
 public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
+    long NULL_ROW_KEY = -1L;
     boolean isEmpty();
     long lastRowKey();
     boolean forEachRowKey(LongAbortableConsumer lac);
@@ -18,7 +19,6 @@ public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
             return true;
         });
     }
-//    void forAllRowKeys(java.util.function.LongConsumer lc);
 
     void forAllRowKeyRanges(LongRangeConsumer lrc);
 }

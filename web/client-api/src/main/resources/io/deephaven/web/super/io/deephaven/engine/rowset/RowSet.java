@@ -8,4 +8,7 @@ import io.deephaven.util.datastructures.LongSizedDataStructure;
 
 public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseable {
     RowSet copy();
+    long get(long rowPosition);
+
+    WritableRowSet intersect(RowSet rowSet);
 }

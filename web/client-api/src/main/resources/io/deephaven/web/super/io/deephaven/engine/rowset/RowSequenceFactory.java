@@ -3,9 +3,12 @@
 //
 package io.deephaven.engine.rowset;
 
+import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
+import io.deephaven.web.shared.data.RangeSet;
+
 public class RowSequenceFactory {
-    public static /*final*/ RowSequence EMPTY;
+    public static final RowSequence EMPTY = new WebRowSetImpl(RangeSet.empty());
     public static RowSequence forRange(final long firstRowKey, final long lastRowKey) {
-        return null;
+        return new WebRowSetImpl(RangeSet.ofRange(firstRowKey, lastRowKey));
     }
 }
