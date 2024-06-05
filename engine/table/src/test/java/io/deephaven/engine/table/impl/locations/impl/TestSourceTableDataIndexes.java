@@ -102,7 +102,6 @@ public class TestSourceTableDataIndexes {
 
         final TableDefinition partitionedMissingDataDefinition = TableDefinition.of(
                 ColumnDefinition.ofString("Part").withPartitioning(),
-                ColumnDefinition.ofChar("Sym"),
                 ColumnDefinition.ofLong("Other"));
 
         final String tableName = "TestTable";
