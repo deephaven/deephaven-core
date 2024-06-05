@@ -14,8 +14,8 @@ public class BarrageStreamGeneratorTest {
     @Test
     public void testDrainableStreamIsEmptied() throws IOException {
         final int length = 512;
-        final BarrageStreamGeneratorImpl.DrainableByteArrayInputStream inputStream =
-                new BarrageStreamGeneratorImpl.DrainableByteArrayInputStream(new byte[length * 2], length / 2, length);
+        final DrainableByteArrayInputStream inputStream =
+                new DrainableByteArrayInputStream(new byte[length * 2], length / 2, length);
 
         int bytesRead = inputStream.drainTo(new NullOutputStream());
 
@@ -26,12 +26,11 @@ public class BarrageStreamGeneratorTest {
     @Test
     public void testConsecutiveDrainableStreamIsEmptied() throws IOException {
         final int length = 512;
-        final BarrageStreamGeneratorImpl.DrainableByteArrayInputStream in1 =
-                new BarrageStreamGeneratorImpl.DrainableByteArrayInputStream(new byte[length * 2], length / 2, length);
-        final BarrageStreamGeneratorImpl.DrainableByteArrayInputStream in2 =
-                new BarrageStreamGeneratorImpl.DrainableByteArrayInputStream(new byte[length * 2], length / 2, length);
-        final BarrageStreamGeneratorImpl.ConsecutiveDrainableStreams inputStream =
-                new BarrageStreamGeneratorImpl.ConsecutiveDrainableStreams(in1, in2);
+        final DrainableByteArrayInputStream in1 =
+                new DrainableByteArrayInputStream(new byte[length * 2], length / 2, length);
+        final DrainableByteArrayInputStream in2 =
+                new DrainableByteArrayInputStream(new byte[length * 2], length / 2, length);
+        final ConsecutiveDrainableStreams inputStream = new ConsecutiveDrainableStreams(in1, in2);
 
         int bytesRead = inputStream.drainTo(new NullOutputStream());
 
