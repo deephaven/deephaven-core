@@ -48,7 +48,7 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
     private final OffsetIndexReader offsetIndexReader;
     private final List<Type> fieldTypes;
     private final Function<SeekableChannelContext, Dictionary> dictionarySupplier;
-    private final PageMaterializerFactory nullMaterializerFactory;
+    private final PageMaterializerFactory pageMaterializerFactory;
     private final URI columnChunkURI;
     /**
      * Number of rows in the row group of this column chunk.
@@ -81,7 +81,7 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
         }
         this.fieldTypes = fieldTypes;
         this.dictionarySupplier = new SoftCachingFunction<>(this::getDictionary);
-        this.nullMaterializerFactory = PageMaterializer.factoryForType(path.getPrimitiveType().getPrimitiveTypeName());
+        this.pageMaterializerFactory = PageMaterializer.factoryForType(path.getPrimitiveType());
         this.numRows = numRows;
         this.version = version;
         if (columnChunk.isSetFile_path() && FILE_URI_SCHEME.equals(rootURI.getScheme())) {
@@ -287,7 +287,7 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
                 final Function<SeekableChannelContext, Dictionary> pageDictionarySupplier =
                         getPageDictionarySupplier(pageHeader);
                 return new ColumnPageReaderImpl(columnName, channelsProvider, decompressor, pageDictionarySupplier,
-                        nullMaterializerFactory, path, getURI(), fieldTypes, dataOffset, pageHeader, numValuesInPage);
+                        pageMaterializerFactory, path, getURI(), fieldTypes, dataOffset, pageHeader, numValuesInPage);
             } catch (IOException e) {
                 throw new UncheckedDeephavenException("Error reading page header at offset " + headerOffset + " for " +
                         "column: " + columnName + ", uri: " + getURI(), e);
@@ -358,7 +358,7 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
                 final Function<SeekableChannelContext, Dictionary> pageDictionarySupplier =
                         getPageDictionarySupplier(pageHeader);
                 return new ColumnPageReaderImpl(columnName, channelsProvider, decompressor, pageDictionarySupplier,
-                        nullMaterializerFactory, path, getURI(), fieldTypes, dataOffset, pageHeader,
+                        pageMaterializerFactory, path, getURI(), fieldTypes, dataOffset, pageHeader,
                         getNumValues(pageHeader));
             } catch (final IOException e) {
                 throw new UncheckedDeephavenException("Error reading page header for page number " + pageNum +

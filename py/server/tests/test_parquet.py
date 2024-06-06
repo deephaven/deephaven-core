@@ -447,6 +447,58 @@ class ParquetTestCase(BaseTestCase):
         schema_msec = table.schema.set(0, pyarrow.field('f', pyarrow.timestamp('ms')))
         timestamp_test_helper(table, schema_msec, 'timestamp_test_msec.parquet')
 
+    def test_timestamp_with_different_units(self):
+        # Create a DataFrame with a Timestamp column
+        df = pandas.DataFrame({
+            "time_ms": pandas.date_range("11:00:00", "11:00:01", freq="1ms"),
+            "time_us": pandas.date_range("11:00:01", "11:00:02", freq="1ms"),
+            "time_ns": pandas.date_range("11:00:02", "11:00:03", freq="1ms")
+        })
+
+        # Sprinkle some nulls
+        df["time_ms"][0] = df["time_ms"][5] = None
+        df["time_us"][0] = df["time_us"][5] = None
+        df["time_ns"][0] = df["time_ns"][5] = None
+
+        # Set the appropriate unit and timezone
+        df['time_ms'] = df["time_ms"].astype("datetime64[ms]").dt.tz_localize('UTC')
+        df['time_us'] = df["time_us"].astype("datetime64[us]").dt.tz_localize('UTC')
+        df['time_ns'] = df["time_ns"].astype("datetime64[ns]").dt.tz_localize('UTC')
+
+        dest = "timestamp_data_from_pd.parquet"
+        df.to_parquet(dest)
+
+        metadata = pyarrow.parquet.read_metadata(dest)
+        ms_col_metadata = str(metadata.row_group(0).column(0))
+        if "isAdjustedToUTC=true" not in ms_col_metadata:
+            self.fail("isAdjustedToUTC is not set to true")
+        if "timeUnit=milliseconds" not in ms_col_metadata:
+            self.fail("timeUnit is not milliseconds")
+        us_col_metadata = str(metadata.row_group(0).column(1))
+        if "isAdjustedToUTC=true" not in us_col_metadata:
+            self.fail("isAdjustedToUTC is not set to true")
+        if "timeUnit=microseconds" not in us_col_metadata:
+            self.fail("timeUnit is not microseconds")
+        ns_col_metadata = str(metadata.row_group(0).column(2))
+        if "isAdjustedToUTC=true" not in ns_col_metadata:
+            self.fail("isAdjustedToUTC is not set to true")
+        if "timeUnit=nanoseconds" not in ns_col_metadata:
+            self.fail("timeUnit is not nanoseconds")
+
+        # Read the parquet file back using deephaven and write it back
+        dh_table_from_disk = read(dest).select()
+        dh_dest = "dh_" + dest
+        write(dh_table_from_disk, dh_dest)
+
+        # Read the new parquet file using pyarrow and compare against original table
+        df_from_disk = pyarrow.parquet.read_table(dh_dest).to_pandas()
+
+        # Deephaven writes timestamps as nsec, so need to convert them back
+        df_from_disk['time_ms'] = df_from_disk["time_ms"].dt.tz_localize(None).astype("datetime64[ms]").dt.tz_localize('UTC')
+        df_from_disk['time_us'] = df_from_disk["time_us"].dt.tz_localize(None).astype("datetime64[us]").dt.tz_localize('UTC')
+        self.assertTrue(df_from_disk.equals(df))
+
+
     def test_read_single_file(self):
         table = empty_table(3).update(
             formulas=["x=i", "y=(double)(i/10.0)", "z=(double)(i*i)"]
