@@ -6,6 +6,7 @@ package io.deephaven.parquet.base;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Require;
+import io.deephaven.parquet.base.materializers.IntMaterializer;
 import io.deephaven.parquet.compress.CompressorAdapter;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
@@ -344,8 +345,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             final RunLengthBitPackingHybridBufferDecoder rlDecoder,
             final RunLengthBitPackingHybridBufferDecoder dlDecoder,
             final ValuesReader dataReader) throws IOException {
-        final Object result = materialize(PageMaterializer.IntFactory, dlDecoder, rlDecoder, dataReader,
-                nullPlaceholder);
+        final Object result = materialize(IntMaterializer.Factory, dlDecoder, rlDecoder, dataReader, nullPlaceholder);
         if (result instanceof DataWithOffsets) {
             keyDest.put((int[]) ((DataWithOffsets) result).materializeResult);
             return ((DataWithOffsets) result).offsets;
