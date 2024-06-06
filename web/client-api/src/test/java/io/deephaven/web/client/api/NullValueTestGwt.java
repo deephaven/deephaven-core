@@ -86,8 +86,8 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
                 .then(table -> {
                     table.setViewport(0, 1, null);
                     return assertUpdateReceived(table, viewport -> {
-                        JsArray<ViewportRow> rows = viewport.getRows();
-                        ViewportRow nullRow = rows.getAt(0);
+                        JsArray<? extends TableData.Row> rows = viewport.getRows();
+                        TableData.Row nullRow = rows.getAt(0);
 
                         JsArray<Column> columns = table.getColumns();
                         for (int i = 0; i < columns.length; i++) {
@@ -95,7 +95,7 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
                             assertNull(nullRow.get(columns.getAt(i)));
                         }
 
-                        ViewportRow valueRow = rows.getAt(1);
+                        TableData.Row valueRow = rows.getAt(1);
                         assertEquals(1, valueRow.get(table.findColumn("MyInt")).asInt());
                         assertEquals((long) 1,
                                 valueRow.get(table.findColumn("MyLong")).<LongWrapper>cast().getWrapped());
@@ -157,12 +157,12 @@ public class NullValueTestGwt extends AbstractAsyncGwtTestCase {
                 .then(table -> {
                     table.setViewport(0, 1, null);
                     return assertUpdateReceived(table, viewport -> {
-                        JsArray<ViewportRow> rows = viewport.getRows();
+                        JsArray<? extends TableData.Row> rows = viewport.getRows();
 
                         JsArray<Column> columns = table.getColumns();
                         for (int i = 0; i < columns.length; i++) {
                             for (int j = 0; j < rows.length; j++) {
-                                ViewportRow row = rows.getAt(j);
+                                TableData.Row row = rows.getAt(j);
                                 assertFalse(Js.isTripleEqual(Js.undefined(), row.get(columns.getAt(i))));
                                 assertNull(columns.getAt(i).getName(), row.get(columns.getAt(i)));
                             }

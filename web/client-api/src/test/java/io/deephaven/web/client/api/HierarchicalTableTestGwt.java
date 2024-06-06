@@ -37,7 +37,8 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                         assertEquals(1d, data.getTreeSize());
 
                         treeTable.expand(JsTreeTable.RowReferenceUnion.of(0), null);
-                        return treeTable.<JsTreeTable.TreeViewportData>nextEvent(JsTreeTable.EVENT_UPDATED, 2001d);
+                        return treeTable.<JsTreeTable.TreeSubscription.TreeViewportData>nextEvent(
+                                JsTreeTable.EVENT_UPDATED, 2001d);
                     }).then(event -> {
                         assertEquals(10d, event.detail.getTreeSize());
 
@@ -69,14 +70,17 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
 
                     // Wait for the table to tick such that the first row has children
                     return waitForEventWhere(treeTable, JsTreeTable.EVENT_UPDATED,
-                            (CustomEvent<TreeViewportData> d) -> d.detail.getTreeSize() == 1
-                                    && d.detail.getRows().getAt(0).hasChildren(),
+                            (CustomEvent<JsTreeTable.TreeSubscription.TreeViewportData> d) -> d.detail
+                                    .getTreeSize() == 1
+                                    && d.detail.getRows().getAtAsAny(0).<JsTreeTable.TreeSubscription.TreeRow>cast()
+                                            .hasChildren(),
                             10001).then(data -> {
                                 treeTable.expand(JsTreeTable.RowReferenceUnion.of(0), null);
 
                                 // Wait for the expand to occur and table to show all 10 rows
                                 return waitForEventWhere(treeTable, JsTreeTable.EVENT_UPDATED,
-                                        (CustomEvent<JsTreeTable.TreeViewportData> d) -> d.detail.getTreeSize() == 10,
+                                        (CustomEvent<JsTreeTable.TreeSubscription.TreeViewportData> d) -> d.detail
+                                                .getTreeSize() == 10,
                                         14004);
                             }).then(event -> {
                                 treeTable.close();

@@ -342,8 +342,8 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         keyTableColumns.push(rowDepthCol);
         keyTableColumns.push(actionCol);
         keyTable = connection.newTable(
-                Js.uncheckedCast(keyTableColumns.map((p0, p1, p2) -> p0.getName())),
-                Js.uncheckedCast(keyTableColumns.map((p0, p1, p2) -> p0.getType())),
+                Js.uncheckedCast(keyTableColumns.map((p0, p1) -> p0.getName())),
+                Js.uncheckedCast(keyTableColumns.map((p0, p1) -> p0.getType())),
                 keyTableData,
                 null,
                 null);
@@ -377,7 +377,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         return viewTicket;
     }
 
-    class TreeSubscription extends AbstractTableSubscription {
+    public class TreeSubscription extends AbstractTableSubscription {
         @TsInterface
         @TsName(namespace = "dh")
         public class TreeViewportData extends AbstractTableSubscription.UpdateEventData {
@@ -757,7 +757,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         }
         columnsBitset.set(rowDepthCol.getIndex());
         columnsBitset.set(rowExpandedCol.getIndex());
-        keyColumns.forEach((p0, p1, p2) -> {
+        keyColumns.forEach((p0, p1) -> {
             columnsBitset.set(p0.getIndex());
             return null;
         });

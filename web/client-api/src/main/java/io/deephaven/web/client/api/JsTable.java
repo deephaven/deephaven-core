@@ -630,7 +630,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     @JsMethod
     @SuppressWarnings("unusable-by-js")
     public JsArray<CustomColumn> applyCustomColumns(JsArray<CustomColumnArgUnionType> customColumns) {
-        String[] customColumnStrings = customColumns.map((item, index, array) -> {
+        String[] customColumnStrings = customColumns.map((item, index) -> {
             if (item.isString() || item.isCustomColumn()) {
                 return item.toString();
             }

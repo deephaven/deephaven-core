@@ -10,8 +10,6 @@ plugins {
 
 evaluationDependsOn(Docker.registryProject('selenium'))
 
-apply from: "$rootDir/gradle/web-client.gradle"
-
 configurations {
     js
     dts
@@ -54,6 +52,7 @@ dependencies {
 Classpaths.inheritElemental(project, 'elemental2-core', 'implementation')
 Classpaths.inheritElemental(project, 'elemental2-promise', 'implementation')
 Classpaths.inheritElemental(project, 'elemental2-dom', 'implementation')
+Classpaths.inheritGwt(project, 'gwt-user', 'testImplementation')
 
 GwtTools.gwtCompile project, 'io.deephaven.web.DeephavenApi', 'Create a jar of client JS API'
 

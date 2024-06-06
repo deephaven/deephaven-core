@@ -115,7 +115,7 @@ public class PartitionedTableTestGwt extends AbstractAsyncGwtTestCase {
                     assertEquals("x", columns[2].getName());
 
                     return partitionedTable.getKeyTable().then(keyTable -> {
-                        keyTable.setViewport(0, 99, keyTable.getColumns(), null);
+                        keyTable.setViewport(0, 99, keyTable.getColumns(), null, null);
                         return waitForEventWhere(keyTable, JsTable.EVENT_UPDATED,
                                 (CustomEvent<ViewportData> d) -> d.detail.getRows().length >= 5, 14004);
                     }).then(event -> partitionedTable.getTable("2")).then(constituentTable -> {
@@ -146,7 +146,7 @@ public class PartitionedTableTestGwt extends AbstractAsyncGwtTestCase {
                     assertEquals("x", columns[1].getName());
 
                     return partitionedTable.getKeyTable().then(keyTable -> {
-                        keyTable.setViewport(0, 99, keyTable.getColumns(), null);
+                        keyTable.setViewport(0, 99, keyTable.getColumns(), null, null);
                         return waitForEventWhere(keyTable, JsTable.EVENT_UPDATED,
                                 (CustomEvent<ViewportData> d) -> d.detail.getRows().length >= 5, 14004)
                                 .then(event -> partitionedTable.getTable("2")).then(constituentTable -> {
