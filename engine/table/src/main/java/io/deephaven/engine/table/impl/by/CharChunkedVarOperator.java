@@ -10,8 +10,8 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.DoubleArraySource;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.util.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableDouble;
-import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -81,8 +81,8 @@ class CharChunkedVarOperator implements IterativeChunkedAggregationOperator {
         final MutableInt chunkNonNull = new MutableInt();
         final double sum = SumCharChunk.sum2CharChunk(values, chunkStart, chunkSize, chunkNonNull, sum2);
 
-        if (chunkNonNull.intValue() > 0) {
-            final long nonNullCount = nonNullCounter.addNonNullUnsafe(destination, chunkNonNull.intValue());
+        if (chunkNonNull.get() > 0) {
+            final long nonNullCount = nonNullCounter.addNonNullUnsafe(destination, chunkNonNull.get());
             final double newSum = plusDouble(sumSource.getUnsafe(destination), sum);
             final double newSum2 = plusDouble(sum2Source.getUnsafe(destination), sum2.doubleValue());
 
@@ -106,11 +106,11 @@ class CharChunkedVarOperator implements IterativeChunkedAggregationOperator {
         final MutableInt chunkNonNull = new MutableInt();
         final double sum = SumCharChunk.sum2CharChunk(values, chunkStart, chunkSize, chunkNonNull, sum2);
 
-        if (chunkNonNull.intValue() == 0) {
+        if (chunkNonNull.get() == 0) {
             return false;
         }
 
-        final long nonNullCount = nonNullCounter.addNonNullUnsafe(destination, -chunkNonNull.intValue());
+        final long nonNullCount = nonNullCounter.addNonNullUnsafe(destination, -chunkNonNull.get());
 
         final double newSum;
         final double newSum2;

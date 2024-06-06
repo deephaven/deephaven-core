@@ -18,8 +18,8 @@ import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
 import io.deephaven.test.types.OutOfBandTest;
-import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -1055,14 +1055,14 @@ public class SortedRangesTest {
         long prev = -1L;
         final MutableLong mutVal = new MutableLong(-1L);
         final RowSet.TargetComparator comp =
-                (final long key, final int dir) -> Long.signum(dir * (mutVal.getValue() - key));
+                (final long key, final int dir) -> Long.signum(dir * (mutVal.get() - key));
         for (long[] segment : segments0) {
             final long start = segment[0];
             final long end = segment[1];
             final String m = "start==" + start + " && end==" + end;
             for (long v = start - 1; v <= end + 1; ++v) {
                 final String m2 = m + " && v==" + v;
-                mutVal.setValue(v);
+                mutVal.set(v);
                 long result = sit.binarySearchValue(comp, 1);
                 searchRangeCheck(m2, start, end, v, prev, result);
                 final RowSet.SearchIterator brandNewIter = sar.getSearchIterator();
@@ -1192,7 +1192,7 @@ public class SortedRangesTest {
             card.add(end - start + 1);
             return true;
         });
-        return card.longValue();
+        return card.get();
     }
 
     @Test
@@ -1204,13 +1204,13 @@ public class SortedRangesTest {
         sar.getKeysForPositions(iterator, new LongConsumer() {
             @Override
             public void accept(final long v) {
-                final int miValue = mi.intValue();
+                final int miValue = mi.get();
                 final String m = "v==" + v + ", miValue==" + miValue;
                 assertEquals(m, sar.get(positions[miValue]), v);
                 mi.increment();
             }
         });
-        assertEquals(positions.length, mi.intValue());
+        assertEquals(positions.length, mi.get());
     }
 
     private static class IterOfLongAdaptor implements PrimitiveIterator.OfLong {
@@ -1256,13 +1256,13 @@ public class SortedRangesTest {
                 sar.getKeysForPositions(iterator, new LongConsumer() {
                     @Override
                     public void accept(final long v) {
-                        final int miValue = mi.intValue();
+                        final int miValue = mi.get();
                         final String m2 = m + " && v==" + v + ", miValue==" + miValue;
                         assertEquals(m2, sar.get(positions.get(miValue)), v);
                         mi.increment();
                     }
                 });
-                assertEquals(positions.size(), mi.intValue());
+                assertEquals(positions.size(), mi.get());
             }
         }
     }
@@ -2060,9 +2060,9 @@ public class SortedRangesTest {
             if (v == -1) {
                 return true;
             }
-            final int j = sr.unpackedBinarySearch(v, pos.intValue());
+            final int j = sr.unpackedBinarySearch(v, pos.get());
             assertTrue(m + " && v==" + v, j >= 0);
-            pos.setValue(j);
+            pos.set(j);
             return true;
         });
     }
@@ -2179,7 +2179,7 @@ public class SortedRangesTest {
             assertEquals("v==" + v, !inSr2, sr3.contains(v));
             return true;
         });
-        assertEquals(card.longValue(), sr3.getCardinality());
+        assertEquals(card.get(), sr3.getCardinality());
     }
 
     @Test
@@ -2308,7 +2308,7 @@ public class SortedRangesTest {
                     assertEquals(m2 + " && v==" + v, inSr2, intersect.ixContainsRange(v, v));
                     return true;
                 });
-                assertEquals(m, card.longValue(), intersect.ixCardinality());
+                assertEquals(m, card.get(), intersect.ixCardinality());
                 intersect.ixForEachLong((final long v) -> {
                     assertTrue(m2 + " && v==" + v, sr1.contains(v));
                     assertTrue(m2 + " && v==" + v, sr2.contains(v));

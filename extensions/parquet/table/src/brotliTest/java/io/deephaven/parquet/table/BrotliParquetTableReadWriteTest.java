@@ -95,11 +95,11 @@ public class BrotliParquetTableReadWriteTest {
     }
 
     private void compressionCodecTestHelper(final ParquetInstructions codec) {
-        File dest = new File(rootFile + File.separator + "Table1.parquet");
+        final File dest = new File(rootFile + File.separator + "Table1.parquet");
         final Table table1 = getTableFlat(10000, false);
-        ParquetTools.writeTable(table1, dest, codec);
+        ParquetTools.writeTable(table1, dest.getPath(), codec);
         assertTrue(dest.length() > 0L);
-        final Table table2 = ParquetTools.readTable(dest);
+        final Table table2 = ParquetTools.readTable(dest.getPath());
         TstUtils.assertTableEquals(table1, table2);
     }
 

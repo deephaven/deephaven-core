@@ -29,7 +29,7 @@ import io.deephaven.engine.table.impl.util.TableTimeConversions;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.time.DateTimeUtils;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.junit.Test;
 
 import java.time.Instant;

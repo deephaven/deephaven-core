@@ -81,10 +81,8 @@ import static io.deephaven.extensions.barrage.util.BarrageUtil.TARGET_SNAPSHOT_P
  * inside the same JVM.
  * <p>
  * The client-side counterpart of this is the {@link StreamReader}.
- *
- * @param <MessageView> The sub-view type that the listener expects to receive.
  */
-public class BarrageMessageProducer<MessageView> extends LivenessArtifact
+public class BarrageMessageProducer extends LivenessArtifact
         implements DynamicNode, NotificationStepReceiver {
     private static final int DELTA_CHUNK_SIZE = Configuration.getInstance().getIntegerForClassWithDefault(
             BarrageMessageProducer.class, "deltaChunkSize", ChunkPoolConstants.LARGEST_POOLED_CHUNK_CAPACITY);
@@ -108,17 +106,17 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         V adapt(T t);
     }
 
-    public static class Operation<MessageView>
-            implements QueryTable.MemoizableOperation<BarrageMessageProducer<MessageView>> {
+    public static class Operation
+            implements QueryTable.MemoizableOperation<BarrageMessageProducer> {
 
         @AssistedFactory
-        public interface Factory<MessageView> {
-            Operation<MessageView> create(BaseTable<?> parent, long updateIntervalMs);
+        public interface Factory {
+            Operation create(BaseTable<?> parent, long updateIntervalMs);
         }
 
         private final Scheduler scheduler;
         private final SessionService.ErrorTransformer errorTransformer;
-        private final BarrageStreamGenerator.Factory<MessageView> streamGeneratorFactory;
+        private final BarrageStreamGenerator.Factory streamGeneratorFactory;
         private final BaseTable<?> parent;
         private final long updateIntervalMs;
         private final Runnable onGetSnapshot;
@@ -127,7 +125,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         public Operation(
                 final Scheduler scheduler,
                 final SessionService.ErrorTransformer errorTransformer,
-                final BarrageStreamGenerator.Factory<MessageView> streamGeneratorFactory,
+                final BarrageStreamGenerator.Factory streamGeneratorFactory,
                 @Assisted final BaseTable<?> parent,
                 @Assisted final long updateIntervalMs) {
             this(scheduler, errorTransformer, streamGeneratorFactory, parent, updateIntervalMs, null);
@@ -137,7 +135,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         public Operation(
                 final Scheduler scheduler,
                 final SessionService.ErrorTransformer errorTransformer,
-                final BarrageStreamGenerator.Factory<MessageView> streamGeneratorFactory,
+                final BarrageStreamGenerator.Factory streamGeneratorFactory,
                 final BaseTable<?> parent,
                 final long updateIntervalMs,
                 @Nullable final Runnable onGetSnapshot) {
@@ -165,10 +163,9 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         }
 
         @Override
-        public Result<BarrageMessageProducer<MessageView>> initialize(final boolean usePrev,
-                final long beforeClock) {
-            final BarrageMessageProducer<MessageView> result = new BarrageMessageProducer<MessageView>(
-                    scheduler, errorTransformer, streamGeneratorFactory, parent, updateIntervalMs, onGetSnapshot);
+        public Result<BarrageMessageProducer> initialize(final boolean usePrev, final long beforeClock) {
+            final BarrageMessageProducer result = new BarrageMessageProducer(scheduler, errorTransformer,
+                    streamGeneratorFactory, parent, updateIntervalMs, onGetSnapshot);
             return new Result<>(result, result.constructListener());
         }
     }
@@ -199,7 +196,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     private final String logPrefix;
     private final Scheduler scheduler;
     private final SessionService.ErrorTransformer errorTransformer;
-    private final BarrageStreamGenerator.Factory<MessageView> streamGeneratorFactory;
+    private final BarrageStreamGenerator.Factory streamGeneratorFactory;
 
     private final BaseTable<?> parent;
     private final long updateIntervalMs;
@@ -308,7 +305,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
     public BarrageMessageProducer(
             final Scheduler scheduler,
             final SessionService.ErrorTransformer errorTransformer,
-            final BarrageStreamGenerator.Factory<MessageView> streamGeneratorFactory,
+            final BarrageStreamGenerator.Factory streamGeneratorFactory,
             final BaseTable<?> parent,
             final long updateIntervalMs,
             final Runnable onGetSnapshot) {
@@ -415,7 +412,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
      */
     private class Subscription {
         final BarrageSubscriptionOptions options;
-        final StreamObserver<MessageView> listener;
+        final StreamObserver<BarrageStreamGenerator.MessageView> listener;
         final String logPrefix;
 
         RowSet viewport; // active viewport
@@ -445,7 +442,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         WritableRowSet growingIncrementalViewport = null; // rows to be sent to the client from the current snapshot
         boolean isFirstSnapshot; // is this the first snapshot after a change to a subscriptions
 
-        private Subscription(final StreamObserver<MessageView> listener,
+        private Subscription(final StreamObserver<BarrageStreamGenerator.MessageView> listener,
                 final BarrageSubscriptionOptions options,
                 final BitSet subscribedColumns,
                 @Nullable final RowSet initialViewport,
@@ -473,7 +470,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
      * @param columnsToSubscribe The initial columns to subscribe to
      * @param initialViewport Initial viewport, to be owned by the subscription
      */
-    public void addSubscription(final StreamObserver<MessageView> listener,
+    public void addSubscription(final StreamObserver<BarrageStreamGenerator.MessageView> listener,
             final BarrageSubscriptionOptions options,
             @Nullable final BitSet columnsToSubscribe,
             @Nullable final RowSet initialViewport,
@@ -518,7 +515,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         }
     }
 
-    private boolean findAndUpdateSubscription(final StreamObserver<MessageView> listener,
+    private boolean findAndUpdateSubscription(final StreamObserver<BarrageStreamGenerator.MessageView> listener,
             final Consumer<Subscription> updateSubscription) {
         final Function<List<Subscription>, Boolean> findAndUpdate = (List<Subscription> subscriptions) -> {
             for (final Subscription sub : subscriptions) {
@@ -546,14 +543,17 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         }
     }
 
-    public boolean updateSubscription(final StreamObserver<MessageView> listener,
+    public boolean updateSubscription(final StreamObserver<BarrageStreamGenerator.MessageView> listener,
             @Nullable final RowSet newViewport, @Nullable final BitSet columnsToSubscribe) {
         // assume forward viewport when not specified
         return updateSubscription(listener, newViewport, columnsToSubscribe, false);
     }
 
-    public boolean updateSubscription(final StreamObserver<MessageView> listener, @Nullable final RowSet newViewport,
-            @Nullable final BitSet columnsToSubscribe, final boolean newReverseViewport) {
+    public boolean updateSubscription(
+            final StreamObserver<BarrageStreamGenerator.MessageView> listener,
+            @Nullable final RowSet newViewport,
+            @Nullable final BitSet columnsToSubscribe,
+            final boolean newReverseViewport) {
         return findAndUpdateSubscription(listener, sub -> {
             if (sub.pendingViewport != null) {
                 sub.pendingViewport.close();
@@ -582,7 +582,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         });
     }
 
-    public void removeSubscription(final StreamObserver<MessageView> listener) {
+    public void removeSubscription(final StreamObserver<BarrageStreamGenerator.MessageView> listener) {
         findAndUpdateSubscription(listener, sub -> {
             sub.pendingDelete = true;
             if (log.isDebugEnabled()) {
@@ -1457,7 +1457,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         }
 
         if (snapshot != null) {
-            try (final BarrageStreamGenerator<MessageView> snapshotGenerator =
+            try (final BarrageStreamGenerator snapshotGenerator =
                     streamGeneratorFactory.newGenerator(snapshot, this::recordWriteMetrics)) {
                 if (log.isDebugEnabled()) {
                     log.debug().append(logPrefix).append("Sending snapshot to ").append(activeSubscriptions.size())
@@ -1515,7 +1515,7 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
 
     private void propagateToSubscribers(final BarrageMessage message, final RowSet propRowSetForMessage) {
         // message is released via transfer to stream generator (as it must live until all view's are closed)
-        try (final BarrageStreamGenerator<MessageView> generator = streamGeneratorFactory.newGenerator(
+        try (final BarrageStreamGenerator generator = streamGeneratorFactory.newGenerator(
                 message, this::recordWriteMetrics)) {
             for (final Subscription subscription : activeSubscriptions) {
                 if (subscription.pendingInitialSnapshot || subscription.pendingDelete) {
@@ -1567,9 +1567,8 @@ public class BarrageMessageProducer<MessageView> extends LivenessArtifact
         }
     }
 
-    private void propagateSnapshotForSubscription(
-            final Subscription subscription,
-            final BarrageStreamGenerator<MessageView> snapshotGenerator) {
+    private void propagateSnapshotForSubscription(final Subscription subscription,
+            final BarrageStreamGenerator snapshotGenerator) {
         boolean needsSnapshot = subscription.pendingInitialSnapshot;
 
         // This is a little confusing, but by the time we propagate, the `snapshotViewport`/`snapshotColumns` objects

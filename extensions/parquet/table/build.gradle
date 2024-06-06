@@ -30,6 +30,7 @@ dependencies {
     implementation project(':log-factory')
     implementation project(':Configuration')
     implementation depCommonsLang3
+    implementation project(':Util')
 
     Classpaths.inheritCommonsText(project, 'implementation')
 
@@ -47,9 +48,7 @@ dependencies {
     testImplementation TestTools.projectDependency(project, 'extensions-s3')
     Classpaths.inheritJUnitClassic(project, 'testImplementation')
 
-    testImplementation "org.testcontainers:testcontainers:1.19.4"
-    testImplementation "org.testcontainers:localstack:1.19.4"
-    testImplementation "org.testcontainers:minio:1.19.4"
+    Classpaths.inheritTestContainers(project)
 
     testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),

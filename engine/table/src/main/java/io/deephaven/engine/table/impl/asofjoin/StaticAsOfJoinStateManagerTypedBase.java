@@ -17,7 +17,7 @@ import io.deephaven.engine.table.impl.sources.immutable.ImmutableObjectArraySour
 import io.deephaven.engine.table.impl.util.TypedHasherUtil;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.BuildContext;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.ProbeContext;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.engine.table.impl.JoinControl.CHUNK_SIZE;
@@ -225,7 +225,7 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
 
     private class LeftProbeHandler implements TypedHasherUtil.ProbeHandler {
         final IntegerArraySource hashSlots;
-        final MutableLong hashOffset;
+        final MutableInt hashOffset;
         final RowSetBuilderRandom foundBuilder;
 
         private LeftProbeHandler() {
@@ -234,7 +234,7 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
             this.foundBuilder = null;
         }
 
-        private LeftProbeHandler(final IntegerArraySource hashSlots, final MutableLong hashOffset,
+        private LeftProbeHandler(final IntegerArraySource hashSlots, final MutableInt hashOffset,
                 RowSetBuilderRandom foundBuilder) {
             this.hashSlots = hashSlots;
             this.hashOffset = hashOffset;
@@ -271,9 +271,9 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
             return 0;
         }
         try (final ProbeContext pc = makeProbeContext(leftSources, leftRowSet.size())) {
-            final MutableLong slotCount = new MutableLong();
+            final MutableInt slotCount = new MutableInt();
             probeTable(pc, leftRowSet, false, leftSources, new LeftProbeHandler(slots, slotCount, foundBuilder));
-            return slotCount.intValue();
+            return slotCount.get();
         }
     }
 
@@ -377,7 +377,7 @@ public abstract class StaticAsOfJoinStateManagerTypedBase extends StaticHashedAs
     abstract protected void buildFromRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks);
 
     abstract protected void decorateLeftSide(RowSequence rowSequence, Chunk[] sourceKeyChunks,
-            IntegerArraySource hashSlots, MutableLong hashSlotOffset, RowSetBuilderRandom foundBuilder);
+            IntegerArraySource hashSlots, MutableInt hashSlotOffset, RowSetBuilderRandom foundBuilder);
 
     abstract protected void decorateWithRightSide(RowSequence rowSequence, Chunk[] sourceKeyChunks);
 

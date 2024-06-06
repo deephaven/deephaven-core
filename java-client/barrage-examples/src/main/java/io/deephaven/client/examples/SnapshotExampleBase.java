@@ -8,7 +8,6 @@ import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
@@ -107,8 +106,7 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
 
             final Table table = snapshot.partialTable(null, columns).get();
 
-            System.out.println("Table info: rows = " + table.size()
-                    + ", cols = " + table.numColumns());
+            System.out.println("Table info: rows = " + table.size() + ", cols = " + table.numColumns());
             TableTools.show(table);
             System.out.println("");
             System.out.println("");
@@ -191,8 +189,7 @@ abstract class SnapshotExampleBase extends BarrageClientExampleBase {
 
             final Table table = subscription.snapshotEntireTable().get();
 
-            System.out.println(
-                    "Table info: rows = " + table.size() + ", cols = " + DataAccessHelpers.getColumns(table).length);
+            System.out.println("Table info: rows = " + table.size() + ", cols = " + table.numColumns());
             TableTools.show(table);
             System.out.println("");
         }

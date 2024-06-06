@@ -102,50 +102,53 @@ public class TestSourceTableDataIndexes {
 
         final TableDefinition partitionedMissingDataDefinition = TableDefinition.of(
                 ColumnDefinition.ofString("Part").withPartitioning(),
-                ColumnDefinition.ofChar("Sym"),
                 ColumnDefinition.ofLong("Other"));
 
         final String tableName = "TestTable";
 
+        // @formatter:off
         ParquetTools.writeTable(
                 partitions[0],
                 new File(dataDirectory,
                         "IP" + File.separator + "0000" + File.separator + tableName + File.separator
-                                + PARQUET_FILE_NAME),
-                partitionedDataDefinition);
+                                + PARQUET_FILE_NAME).getPath(),
+                ParquetInstructions.EMPTY.withTableDefinition(partitionedDataDefinition));
         ParquetTools.writeTable(
                 partitions[1],
                 new File(dataDirectory,
                         "IP" + File.separator + "0001" + File.separator + tableName + File.separator
-                                + PARQUET_FILE_NAME),
-                partitionedDataDefinition);
+                                + PARQUET_FILE_NAME).getPath(),
+                ParquetInstructions.EMPTY.withTableDefinition(partitionedDataDefinition));
         ParquetTools.writeTable(
                 partitions[2],
                 new File(dataDirectory,
                         "IP" + File.separator + "0002" + File.separator + tableName + File.separator
-                                + PARQUET_FILE_NAME),
-                missingIndexes ? partitionedMissingDataDefinition : partitionedDataDefinition);
+                                + PARQUET_FILE_NAME).getPath(),
+                ParquetInstructions.EMPTY.withTableDefinition(
+                        missingIndexes ? partitionedMissingDataDefinition : partitionedDataDefinition));
         ParquetTools.writeTable(
                 partitions[3],
                 new File(dataDirectory,
                         "IP" + File.separator + "0003" + File.separator + tableName + File.separator
-                                + PARQUET_FILE_NAME),
-                missingIndexes ? partitionedMissingDataDefinition : partitionedDataDefinition);
+                                + PARQUET_FILE_NAME).getPath(),
+                ParquetInstructions.EMPTY.withTableDefinition(
+                        missingIndexes ? partitionedMissingDataDefinition : partitionedDataDefinition));
         ParquetTools.writeTables(
                 Arrays.copyOfRange(partitions, 4, partitions.length),
-                partitionedDataDefinition,
                 IntStream.range(4, 260)
                         .mapToObj(pcv -> new File(dataDirectory,
                                 "IP" + File.separator + String.format("%04d", pcv) + File.separator + tableName
                                         + File.separator + PARQUET_FILE_NAME))
-                        .toArray(File[]::new));
+                        .map(File::getPath).toArray(String[]::new),
+                ParquetInstructions.EMPTY.withTableDefinition(partitionedDataDefinition));
         // TODO (deephaven/deephaven-core/issues/321): Re-add this part of the test when the parquet bug is fixed
         ParquetTools.writeTable(
                 TableTools.emptyTable(0).updateView("Sym=NULL_CHAR", "Other=NULL_LONG"),
                 new File(dataDirectory,
                         "IP" + File.separator + "XXXX" + File.separator + tableName + File.separator
-                                + PARQUET_FILE_NAME),
-                partitionedDataDefinition);
+                                + PARQUET_FILE_NAME).getPath(),
+                    ParquetInstructions.EMPTY.withTableDefinition(partitionedDataDefinition));
+        // @formatter:on
 
         if (missingIndexes) {
             // Put Sym back on for the partitions that dropped it.
@@ -155,11 +158,10 @@ public class TestSourceTableDataIndexes {
         // Column ordering was changed by groupBy()/ungroup() above, restore it here.
         final Table expected = TableTools.merge(partitions).view("Part", "Sym", "Other");
 
-        final Table actual = ParquetTools.readPartitionedTable(
+        final Table actual = ParquetTools.readTable(
                 DeephavenNestedPartitionLayout.forParquet(dataDirectory, tableName, "Part", ipn -> ipn.equals("IP"),
                         ParquetInstructions.EMPTY),
-                ParquetInstructions.EMPTY,
-                partitionedDataDefinition).coalesce();
+                ParquetInstructions.EMPTY.withTableDefinition(partitionedDataDefinition)).coalesce();
 
         TstUtils.assertTableEquals(expected, actual);
 
@@ -171,6 +173,21 @@ public class TestSourceTableDataIndexes {
         TestCase.assertEquals(!missingIndexes, DataIndexer.hasDataIndex(actual, "Sym"));
 
         TstUtils.assertTableEquals(expected.groupBy("Sym").ungroup(), actual.groupBy("Sym").ungroup());
+    }
+
+    @Test
+    public void testDroppedIndexColumn() {
+        final Table raw = TableTools.emptyTable(26 * 10 * 1000).update("Part=String.format(`%04d`, (long)(ii/1000))",
+                "Sym=(char)('A' + ii % 26)", "Other=ii");
+        DataIndexer.getOrCreateDataIndex(raw, "Sym");
+
+        final String path =
+                dataDirectory.getAbsolutePath() + File.separator + "TestTable2" + File.separator + PARQUET_FILE_NAME;
+
+        ParquetTools.writeTable(raw, path);
+
+        TestCase.assertFalse(DataIndexer.hasDataIndex(
+                ParquetTools.readTable(path).dropColumns("Sym").coalesce(), "Sym"));
     }
 
     @Test

@@ -81,7 +81,7 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.ScriptApi;
 import org.apache.avro.Schema;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.ListTopicsResult;

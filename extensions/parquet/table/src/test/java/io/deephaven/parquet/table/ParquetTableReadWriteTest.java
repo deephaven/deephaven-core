@@ -52,10 +52,14 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.codec.SimpleByteArrayCodec;
 import io.deephaven.util.compare.DoubleComparisons;
 import io.deephaven.util.compare.FloatComparisons;
+import io.deephaven.util.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableLong;
 import io.deephaven.vector.Vector;
 import io.deephaven.vector.*;
 import junit.framework.TestCase;
-import org.apache.commons.lang3.mutable.*;
+import org.apache.commons.lang3.mutable.MutableDouble;
+import org.apache.commons.lang3.mutable.MutableFloat;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.column.Encoding;
 import org.apache.parquet.column.statistics.Statistics;
@@ -107,9 +111,6 @@ import static io.deephaven.engine.util.TableTools.merge;
 import static io.deephaven.engine.util.TableTools.newTable;
 import static io.deephaven.engine.util.TableTools.shortCol;
 import static io.deephaven.engine.util.TableTools.stringCol;
-import static io.deephaven.parquet.table.ParquetTools.readFlatPartitionedTable;
-import static io.deephaven.parquet.table.ParquetTools.readKeyValuePartitionedTable;
-import static io.deephaven.parquet.table.ParquetTools.readSingleFileTable;
 import static io.deephaven.parquet.table.ParquetTools.readTable;
 import static io.deephaven.parquet.table.ParquetTools.writeKeyValuePartitionedTable;
 import static io.deephaven.parquet.table.ParquetTools.writeTable;
@@ -271,14 +272,14 @@ public final class ParquetTableReadWriteTest {
     private void flatTable(String tableName, int size, boolean includeSerializable) {
         final Table tableToSave = getTableFlat(size, includeSerializable, true);
         final File dest = new File(rootFile, "ParquetTest_" + tableName + "_test.parquet");
-        writeTable(tableToSave, dest);
+        writeTable(tableToSave, dest.getPath());
         checkSingleTable(maybeFixBigDecimal(tableToSave), dest);
     }
 
     private void groupedTable(String tableName, int size, boolean includeSerializable) {
         final Table tableToSave = getGroupedTable(size, includeSerializable);
         final File dest = new File(rootFile, "ParquetTest_" + tableName + "_test.parquet");
-        writeTable(tableToSave, dest, tableToSave.getDefinition());
+        writeTable(tableToSave, dest.getPath());
         checkSingleTable(tableToSave, dest);
     }
 
@@ -286,14 +287,14 @@ public final class ParquetTableReadWriteTest {
         final Table tableToSave = getGroupedOneColumnTable(size);
         TableTools.show(tableToSave, 50);
         final File dest = new File(rootFile, "ParquetTest_" + tableName + "_test.parquet");
-        writeTable(tableToSave, dest, tableToSave.getDefinition());
+        writeTable(tableToSave, dest.getPath());
         checkSingleTable(tableToSave, dest);
     }
 
     private void testEmptyArrayStore(String tableName, int size) {
         final Table tableToSave = getEmptyArray(size);
         final File dest = new File(rootFile, "ParquetTest_" + tableName + "_test.parquet");
-        writeTable(tableToSave, dest, tableToSave.getDefinition());
+        writeTable(tableToSave, dest.getPath());
         checkSingleTable(tableToSave, dest);
     }
 
@@ -302,7 +303,7 @@ public final class ParquetTableReadWriteTest {
         final Table t = TableTools.emptyTable(0).select("A = i");
         assertEquals(int.class, t.getDefinition().getColumn("A").getDataType());
         final File dest = new File(rootFile, "ParquetTest_emptyTrivialTable.parquet");
-        writeTable(t, dest);
+        writeTable(t, dest.getPath());
         final Table fromDisk = checkSingleTable(t, dest);
         assertEquals(t.getDefinition(), fromDisk.getDefinition());
     }
@@ -337,7 +338,7 @@ public final class ParquetTableReadWriteTest {
         DataIndexer.getOrCreateDataIndex(testTable, "someInt", "someLong");
 
         final File dest = new File(rootFile, "ParquetTest_groupByLong_test.parquet");
-        writeTable(testTable, dest);
+        writeTable(testTable, dest.getPath());
         final Table fromDisk = checkSingleTable(testTable, dest);
 
         // Validate the indexes and lookup functions.
@@ -360,7 +361,7 @@ public final class ParquetTableReadWriteTest {
         DataIndexer.getOrCreateDataIndex(testTable, "someInt", "someString");
 
         final File dest = new File(rootFile, "ParquetTest_groupByString_test.parquet");
-        writeTable(testTable, dest);
+        writeTable(testTable, dest.getPath());
         final Table fromDisk = checkSingleTable(testTable, dest);
 
         // Validate the indexes and lookup functions.
@@ -383,7 +384,7 @@ public final class ParquetTableReadWriteTest {
         DataIndexer.getOrCreateDataIndex(testTable, "someInt", "someBigInt");
 
         final File dest = new File(rootFile, "ParquetTest_groupByBigInt_test.parquet");
-        writeTable(testTable, dest);
+        writeTable(testTable, dest.getPath());
         final Table fromDisk = checkSingleTable(testTable, dest);
 
         // Validate the indexes and lookup functions.
@@ -407,7 +408,7 @@ public final class ParquetTableReadWriteTest {
         DataIndexer.getOrCreateDataIndex(testTable, "someInt", "someString");
 
         final File dest = new File(rootFile, "ParquetTest_sortingMetadata_test.parquet");
-        writeTable(testTable, dest);
+        writeTable(testTable, dest.getPath());
 
         final Table fromDisk = checkSingleTable(testTable, dest);
 
@@ -491,7 +492,7 @@ public final class ParquetTableReadWriteTest {
     private void compressionCodecTestHelper(final ParquetInstructions codec) {
         File dest = new File(rootFile + File.separator + "Table1.parquet");
         final Table table1 = getTableFlat(10000, false, true);
-        writeTable(table1, dest, codec);
+        writeTable(table1, dest.getPath(), codec);
         assertTrue(dest.length() > 0L);
         checkSingleTable(maybeFixBigDecimal(table1), dest);
     }
@@ -516,7 +517,7 @@ public final class ParquetTableReadWriteTest {
         // Write and read a LZ4 compressed file
         File dest = new File(rootFile + File.separator + "Table.parquet");
         final Table table = getTableFlat(100, false, false);
-        writeTable(table, dest, ParquetTools.LZ4);
+        writeTable(table, dest.getPath(), ParquetTools.LZ4);
 
         final Table fromDisk = checkSingleTable(table, dest).select();
 
@@ -524,12 +525,12 @@ public final class ParquetTableReadWriteTest {
             // The following file is tagged as LZ4 compressed based on its metadata, but is actually compressed with
             // LZ4_RAW. We should be able to read it anyway with no exceptions.
             String path = TestParquetTools.class.getResource("/sample_lz4_compressed.parquet").getFile();
-            readSingleFileTable(new File(path), EMPTY).select();
+            readTable(path, EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.SINGLE_FILE)).select();
         } catch (RuntimeException e) {
             TestCase.fail("Failed to read parquet file sample_lz4_compressed.parquet");
         }
         final File randomDest = new File(rootFile, "random.parquet");
-        writeTable(fromDisk, randomDest, ParquetTools.LZ4_RAW);
+        writeTable(fromDisk, randomDest.getPath(), ParquetTools.LZ4_RAW);
 
         // Read the LZ4 compressed file again, to make sure we use a new adapter
         checkSingleTable(table, randomDest);
@@ -571,8 +572,9 @@ public final class ParquetTableReadWriteTest {
         assertEquals(4, myBigDecimal.scale());
         final Table table = newTable(new ColumnHolder<>("MyBigDecimal", BigDecimal.class, null, false, myBigDecimal));
         final File dest = new File(rootFile, "ParquetTest_testBigDecimalPrecisionScale.parquet");
-        writeTable(table, dest);
-        final Table fromDisk = readSingleFileTable(dest, EMPTY);
+        writeTable(table, dest.getPath());
+        final Table fromDisk = readTable(dest.getPath(),
+                EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.SINGLE_FILE));
         try (final CloseableIterator<BigDecimal> it = fromDisk.objectColumnIterator("MyBigDecimal")) {
             assertTrue(it.hasNext());
             final BigDecimal item = it.next();
@@ -587,7 +589,7 @@ public final class ParquetTableReadWriteTest {
 
     private static void writeReadTableTest(final Table table, final File dest,
             final ParquetInstructions writeInstructions) {
-        writeTable(table, dest, writeInstructions);
+        writeTable(table, dest.getPath(), writeInstructions);
         checkSingleTable(table, dest);
     }
 
@@ -599,27 +601,27 @@ public final class ParquetTableReadWriteTest {
         final ParquetInstructions writeInstructions = ParquetInstructions.builder()
                 .setGenerateMetadataFiles(true)
                 .build();
-        writeTable(table, destFile, writeInstructions);
+        writeTable(table, destFile.getPath(), writeInstructions);
 
         final File metadataFile = new File(rootFile, "_metadata");
         assertTrue(metadataFile.exists());
         final File commonMetadataFile = new File(rootFile, "_common_metadata");
         assertTrue(commonMetadataFile.exists());
 
-        final Table fromDisk = readTable(destFile);
+        final Table fromDisk = readTable(destFile.getPath());
         assertTableEquals(table, fromDisk);
 
-        Table fromDiskWithMetadata = readTable(metadataFile);
+        Table fromDiskWithMetadata = readTable(metadataFile.getPath());
         assertTableEquals(table, fromDiskWithMetadata);
-        Table fromDiskWithCommonMetadata = readTable(commonMetadataFile);
+        Table fromDiskWithCommonMetadata = readTable(commonMetadataFile.getPath());
         assertTableEquals(table, fromDiskWithCommonMetadata);
 
         final ParquetInstructions readInstructions = ParquetInstructions.builder()
                 .setFileLayout(ParquetInstructions.ParquetFileLayout.METADATA_PARTITIONED)
                 .build();
-        fromDiskWithMetadata = readTable(metadataFile, readInstructions);
+        fromDiskWithMetadata = readTable(metadataFile.getPath(), readInstructions);
         assertTableEquals(table, fromDiskWithMetadata);
-        fromDiskWithCommonMetadata = readTable(commonMetadataFile, readInstructions);
+        fromDiskWithCommonMetadata = readTable(commonMetadataFile.getPath(), readInstructions);
         assertTableEquals(table, fromDiskWithCommonMetadata);
 
 
@@ -683,14 +685,14 @@ public final class ParquetTableReadWriteTest {
         final ParquetInstructions writeInstructions = ParquetInstructions.builder()
                 .setGenerateMetadataFiles(true)
                 .build();
-        writeTable(indexedTable, destFile, writeInstructions);
+        writeTable(indexedTable, destFile.getPath(), writeInstructions);
 
-        final Table fromDisk = readTable(destFile);
+        final Table fromDisk = readTable(destFile.getPath());
         assertTableEquals(indexedTable, fromDisk);
         verifyIndexingInfoExists(fromDisk, "vvv");
 
         final File metadataFile = new File(parentDir, "_metadata");
-        final Table fromDiskWithMetadata = readTable(metadataFile);
+        final Table fromDiskWithMetadata = readTable(metadataFile.getPath());
         assertTableEquals(indexedTable, fromDiskWithMetadata);
         verifyIndexingInfoExists(fromDiskWithMetadata, "vvv");
     }
@@ -710,7 +712,7 @@ public final class ParquetTableReadWriteTest {
         writeTables(new Table[] {someTable, someTable},
                 new String[] {firstDataFile.getPath(), secondDataFile.getPath()},
                 ParquetInstructions.EMPTY.withTableDefinition(someTable.getDefinition()));
-        final Table source = readTable(parentDir).select();
+        final Table source = readTable(parentDir.getPath()).select();
 
         // Now write with metadata files
         parentDir.delete();
@@ -722,11 +724,11 @@ public final class ParquetTableReadWriteTest {
                 new String[] {firstDataFile.getPath(), secondDataFile.getPath()},
                 writeInstructions.withTableDefinition(someTable.getDefinition()));
 
-        final Table fromDisk = readTable(parentDir);
+        final Table fromDisk = readTable(parentDir.getPath());
         assertTableEquals(source, fromDisk);
 
         final File metadataFile = new File(parentDir, "_metadata");
-        final Table fromDiskWithMetadata = readTable(metadataFile);
+        final Table fromDiskWithMetadata = readTable(metadataFile.getPath());
         assertTableEquals(source, fromDiskWithMetadata);
 
         // Now replace the underlying data files with empty files and read the size from metadata file verifying that
@@ -735,7 +737,7 @@ public final class ParquetTableReadWriteTest {
         firstDataFile.createNewFile();
         secondDataFile.delete();
         secondDataFile.createNewFile();
-        final Table fromDiskWithMetadataWithoutData = readTable(metadataFile);
+        final Table fromDiskWithMetadataWithoutData = readTable(metadataFile.getPath());
         assertEquals(source.size(), fromDiskWithMetadataWithoutData.size());
 
         // If we call select now, this should fail because the data files are empty
@@ -779,9 +781,9 @@ public final class ParquetTableReadWriteTest {
         final Table expected =
                 maybeFixBigDecimal(PartitionedTableFactory.ofTables(firstTable.getDefinition(), sources).merge());
 
-        final Table fromDisk = readTable(parentDir).select();
+        final Table fromDisk = readTable(parentDir.getPath()).select();
         assertTableEquals(expected, fromDisk);
-        final Table fromDiskWithMetadata = readTable(new File(parentDir, "_metadata"));
+        final Table fromDiskWithMetadata = readTable(new File(parentDir, "_metadata").getPath());
         assertTableEquals(expected, fromDiskWithMetadata);
     }
 
@@ -804,11 +806,11 @@ public final class ParquetTableReadWriteTest {
                 .build();
         writeKeyValuePartitionedTable(source, parentDir.getAbsolutePath(), writeInstructions);
 
-        final Table fromDisk = readTable(parentDir);
+        final Table fromDisk = readTable(parentDir.getPath());
         assertTableEquals(source.sort("PC1", "PC2"), fromDisk.sort("PC1", "PC2"));
 
         final File metadataFile = new File(parentDir, "_metadata");
-        final Table fromDiskWithMetadata = readTable(metadataFile);
+        final Table fromDiskWithMetadata = readTable(metadataFile.getPath());
         assertTableEquals(source.sort("PC1", "PC2"), fromDiskWithMetadata.sort("PC1", "PC2"));
 
         final File firstDataFile =
@@ -824,7 +826,7 @@ public final class ParquetTableReadWriteTest {
         firstDataFile.createNewFile();
         secondDataFile.delete();
         secondDataFile.createNewFile();
-        final Table fromDiskWithMetadataWithoutData = readTable(metadataFile);
+        final Table fromDiskWithMetadataWithoutData = readTable(metadataFile.getPath());
         assertEquals(source.size(), fromDiskWithMetadataWithoutData.size());
 
         // If we call select now, this should fail because the data files are empty
@@ -871,13 +873,14 @@ public final class ParquetTableReadWriteTest {
             }
         }
 
-        final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY);
+        final Table fromDisk = readTable(parentDir.getPath(),
+                EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED));
         verifyIndexingInfoExists(fromDisk, "I");
         fromDisk.where("I == 3").select();
         assertTableEquals(indexedtable.sort("PC1", "PC2"), fromDisk.sort("PC1", "PC2"));
 
         final File commonMetadata = new File(parentDir, "_common_metadata");
-        final Table fromDiskWithMetadata = readTable(commonMetadata);
+        final Table fromDiskWithMetadata = readTable(commonMetadata.getPath());
         fromDiskWithMetadata.where("I == 3").select();
         assertTableEquals(indexedtable.sort("PC1", "PC2"), fromDiskWithMetadata.sort("PC1", "PC2"));
 
@@ -902,7 +905,8 @@ public final class ParquetTableReadWriteTest {
                 }
             }
         }
-        final Table fromDiskWithoutMetadata = readKeyValuePartitionedTable(parentDirWithoutMetadata, EMPTY);
+        final Table fromDiskWithoutMetadata = readTable(parentDirWithoutMetadata.getPath(),
+                EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED));
         assertTableEquals(fromDisk, fromDiskWithoutMetadata);
         verifyIndexingInfoExists(fromDiskWithoutMetadata, "I");
     }
@@ -977,11 +981,12 @@ public final class ParquetTableReadWriteTest {
         }
 
         final Table expected = merge(inputData, inputData);
-        final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY);
+        final Table fromDisk = readTable(parentDir.getPath(),
+                EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED));
         assertTableEquals(expected.sort("PC1"), fromDisk.sort("PC1"));
 
         final File commonMetadata = new File(parentDir, "_common_metadata");
-        final Table fromDiskWithMetadata = readTable(commonMetadata);
+        final Table fromDiskWithMetadata = readTable(commonMetadata.getPath());
         assertTableEquals(expected.sort("PC1"), fromDiskWithMetadata.sort("PC1"));
 
         FileUtils.deleteRecursively(parentDir);
@@ -1038,9 +1043,10 @@ public final class ParquetTableReadWriteTest {
                 .setGenerateMetadataFiles(true)
                 .build();
         writeKeyValuePartitionedTable(partitionedTable, parentDir.getAbsolutePath(), writeInstructions);
-        final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY).select();
+        final Table fromDisk = readTable(parentDir.getPath(),
+                EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED)).select();
         assertTableEquals(inputData.sort("PC1"), fromDisk.sort("PC1"));
-        final Table fromDiskWithMetadata = readTable(new File(parentDir, "_common_metadata")).select();
+        final Table fromDiskWithMetadata = readTable(new File(parentDir, "_common_metadata").getPath()).select();
         assertTableEquals(inputData.sort("PC1"), fromDiskWithMetadata.sort("PC1"));
     }
 
@@ -1094,11 +1100,12 @@ public final class ParquetTableReadWriteTest {
 
         // Give then updated table definition used to write the data, we drop the column "II" and add a new column "J"
         final Table expected = inputData.dropColumns("II", "PC4").updateView("J = (int)null");
-        final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY);
+        final Table fromDisk =
+                readTable(parentDir.getPath(), EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED));
         assertTableEquals(expected.sort("PC1", "PC2"), fromDisk.sort("PC1", "PC2"));
 
         final File commonMetadata = new File(parentDir, "_common_metadata");
-        final Table fromDiskWithMetadata = readTable(commonMetadata);
+        final Table fromDiskWithMetadata = readTable(commonMetadata.getPath());
         assertTableEquals(expected.sort("PC1", "PC2"), fromDiskWithMetadata.sort("PC1", "PC2"));
 
         // Delete some files from the partitioned data and read the required rows to verify that we only read the
@@ -1106,7 +1113,7 @@ public final class ParquetTableReadWriteTest {
         FileUtils.deleteRecursivelyOnNFS(new File(parentDir, "PC1=0"));
         FileUtils.deleteRecursivelyOnNFS(new File(parentDir, "PC1=1"));
         assertTableEquals(expected.where("PC1 == 2").sort("PC1", "PC2", "PC3"),
-                readTable(commonMetadata).where("PC1 == 2").sort("PC1", "PC2", "PC3"));
+                readTable(commonMetadata.getPath()).where("PC1 == 2").sort("PC1", "PC2", "PC3"));
     }
 
     @Test
@@ -1131,7 +1138,8 @@ public final class ParquetTableReadWriteTest {
         final PartitionedTable partitionedTable = inputData.partitionBy(partitioningCols);
         writeKeyValuePartitionedTable(partitionedTable, parentDir.getPath(), writeInstructions);
 
-        final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY);
+        final Table fromDisk =
+                readTable(parentDir.getPath(), EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED));
         for (final String col : partitioningCols) {
             assertTrue(fromDisk.getDefinition().getColumn(col).isPartitioning());
         }
@@ -1139,7 +1147,7 @@ public final class ParquetTableReadWriteTest {
                 fromDisk.sort("symbol", "epic_collection_id"));
 
         final File commonMetadata = new File(parentDir, "_common_metadata");
-        final Table fromDiskWithMetadata = readTable(commonMetadata);
+        final Table fromDiskWithMetadata = readTable(commonMetadata.getPath());
         assertTableEquals(inputData.sort("symbol", "epic_collection_id"),
                 fromDiskWithMetadata.sort("symbol", "epic_collection_id"));
     }
@@ -1189,11 +1197,11 @@ public final class ParquetTableReadWriteTest {
 
         // Verify that we can read the partition values, but types like LocalDate or LocalTime will be read as strings
         // Therefore, we cannot compare the tables directly
-        readKeyValuePartitionedTable(parentDir, EMPTY).select();
+        readTable(parentDir.getPath(), EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED)).select();
 
         // Reading with metadata file should deduce the correct type, so we can compare the tables
         final File commonMetadata = new File(parentDir, "_common_metadata");
-        final Table fromDiskWithMetadata = readTable(commonMetadata);
+        final Table fromDiskWithMetadata = readTable(commonMetadata.getPath());
         final String[] partitioningColumns = definition.getPartitioningColumns().stream()
                 .map(ColumnDefinition::getName).toArray(String[]::new);
         assertTableEquals(inputData.sort(partitioningColumns), fromDiskWithMetadata.sort(partitioningColumns));
@@ -1252,9 +1260,10 @@ public final class ParquetTableReadWriteTest {
         final String[] partitioningColumns = definition.getPartitioningColumns().stream()
                 .map(ColumnDefinition::getName).toArray(String[]::new);
         {
-            final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY).select();
+            final Table fromDisk = readTable(parentDir.getPath(),
+                    EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED)).select();
             assertTableEquals(bigDecimalFixedInputData.sort(partitioningColumns), fromDisk.sort(partitioningColumns));
-            final Table fromDiskWithMetadata = readTable(new File(parentDir, "_common_metadata"));
+            final Table fromDiskWithMetadata = readTable(new File(parentDir, "_common_metadata").getPath());
             assertTableEquals(bigDecimalFixedInputData.sort(partitioningColumns),
                     fromDiskWithMetadata.sort(partitioningColumns));
             FileUtils.deleteRecursively(parentDir);
@@ -1267,10 +1276,11 @@ public final class ParquetTableReadWriteTest {
         {
             writeKeyValuePartitionedTable(inputData, parentDir.getPath(), withIndexColumns);
             assertFalse(DataIndexer.hasDataIndex(inputData, indexColumn));
-            final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY);
+            final Table fromDisk = readTable(parentDir.getPath(),
+                    EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED));
             verifyIndexingInfoExists(fromDisk, indexColumn);
             assertTableEquals(bigDecimalFixedInputData.sort(partitioningColumns), fromDisk.sort(partitioningColumns));
-            final Table fromDiskWithMetadata = readTable(new File(parentDir, "_common_metadata"));
+            final Table fromDiskWithMetadata = readTable(new File(parentDir, "_common_metadata").getPath());
             assertTableEquals(bigDecimalFixedInputData.sort(partitioningColumns),
                     fromDiskWithMetadata.sort(partitioningColumns));
             FileUtils.deleteRecursively(parentDir);
@@ -1280,9 +1290,10 @@ public final class ParquetTableReadWriteTest {
         final PartitionedTable partitionedTable = inputData.partitionBy("PC1");
         {
             writeKeyValuePartitionedTable(partitionedTable, parentDir.getPath(), writeInstructions);
-            final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY).select();
+            final Table fromDisk = readTable(parentDir.getPath(),
+                    EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED)).select();
             assertTableEquals(bigDecimalFixedInputData.sort(partitioningColumns), fromDisk.sort(partitioningColumns));
-            final Table fromDiskWithMetadata = readTable(new File(parentDir, "_common_metadata"));
+            final Table fromDiskWithMetadata = readTable(new File(parentDir, "_common_metadata").getPath());
             assertTableEquals(bigDecimalFixedInputData.sort(partitioningColumns),
                     fromDiskWithMetadata.sort(partitioningColumns));
             FileUtils.deleteRecursively(parentDir);
@@ -1291,10 +1302,11 @@ public final class ParquetTableReadWriteTest {
         // Next test passing additional indexing columns with partitioned table and no definition
         {
             writeKeyValuePartitionedTable(partitionedTable, parentDir.getPath(), withIndexColumns);
-            final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY);
+            final Table fromDisk = readTable(parentDir.getPath(),
+                    EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED));
             verifyIndexingInfoExists(fromDisk, "NPC5");
             assertTableEquals(bigDecimalFixedInputData.sort(partitioningColumns), fromDisk.sort(partitioningColumns));
-            final Table fromDiskWithMetadata = readTable(new File(parentDir, "_common_metadata"));
+            final Table fromDiskWithMetadata = readTable(new File(parentDir, "_common_metadata").getPath());
             assertTableEquals(bigDecimalFixedInputData.sort(partitioningColumns),
                     fromDiskWithMetadata.sort(partitioningColumns));
             FileUtils.deleteRecursively(parentDir);
@@ -1312,9 +1324,10 @@ public final class ParquetTableReadWriteTest {
         final Table expected = bigDecimalFixedInputData.dropColumns("PC2", "NPC6").updateView("NPC15 = (int)null");
         {
             writeKeyValuePartitionedTable(inputData, parentDir.getAbsolutePath(), withDefinition);
-            final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY).select();
+            final Table fromDisk = readTable(parentDir.getPath(),
+                    EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED)).select();
             assertTableEquals(expected.sort("PC1"), fromDisk.sort("PC1"));
-            final Table fromDiskWithMetadata = readTable(new File(parentDir, "_common_metadata"));
+            final Table fromDiskWithMetadata = readTable(new File(parentDir, "_common_metadata").getPath());
             assertTableEquals(expected.sort("PC1"), fromDiskWithMetadata.sort("PC1"));
             FileUtils.deleteRecursively(parentDir);
         }
@@ -1324,10 +1337,11 @@ public final class ParquetTableReadWriteTest {
         {
             writeKeyValuePartitionedTable(inputData, parentDir.getAbsolutePath(), withDefinitionAndIndexColumns);
             assertFalse(DataIndexer.hasDataIndex(inputData, indexColumn));
-            final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY);
+            final Table fromDisk = readTable(parentDir.getPath(),
+                    EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED));
             verifyIndexingInfoExists(fromDisk, indexColumn);
             assertTableEquals(expected.sort("PC1"), fromDisk.sort("PC1"));
-            final Table fromDiskWithMetadata = readTable(new File(parentDir, "_common_metadata"));
+            final Table fromDiskWithMetadata = readTable(new File(parentDir, "_common_metadata").getPath());
             assertTableEquals(expected.sort("PC1"), fromDiskWithMetadata.sort("PC1"));
             FileUtils.deleteRecursively(parentDir);
         }
@@ -1335,9 +1349,10 @@ public final class ParquetTableReadWriteTest {
         // Next test passing the partitioned table with an updated table definition
         {
             writeKeyValuePartitionedTable(partitionedTable, parentDir.getPath(), withDefinition);
-            final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY).select();
+            final Table fromDisk = readTable(parentDir.getPath(),
+                    EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED)).select();
             assertTableEquals(expected.sort("PC1"), fromDisk.sort("PC1"));
-            final Table fromDiskWithMetadata = readTable(new File(parentDir, "_common_metadata"));
+            final Table fromDiskWithMetadata = readTable(new File(parentDir, "_common_metadata").getPath());
             assertTableEquals(expected.sort("PC1"), fromDiskWithMetadata.sort("PC1"));
             FileUtils.deleteRecursively(parentDir);
         }
@@ -1345,10 +1360,11 @@ public final class ParquetTableReadWriteTest {
         // Next test passing the indexing columns with partitioned table and an updated table definition
         {
             writeKeyValuePartitionedTable(partitionedTable, parentDir.getPath(), withDefinitionAndIndexColumns);
-            final Table fromDisk = readKeyValuePartitionedTable(parentDir, EMPTY);
+            final Table fromDisk = readTable(parentDir.getPath(),
+                    EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED));
             verifyIndexingInfoExists(fromDisk, "NPC5");
             assertTableEquals(expected.sort("PC1"), fromDisk.sort("PC1"));
-            final Table fromDiskWithMetadata = readTable(new File(parentDir, "_common_metadata"));
+            final Table fromDiskWithMetadata = readTable(new File(parentDir, "_common_metadata").getPath());
             assertTableEquals(expected.sort("PC1"), fromDiskWithMetadata.sort("PC1"));
             FileUtils.deleteRecursively(parentDir);
         }
@@ -1530,7 +1546,7 @@ public final class ParquetTableReadWriteTest {
 
     private static Table readParquetFileFromGitLFS(final File dest) {
         try {
-            return readTable(dest, EMPTY);
+            return readTable(dest.getPath(), EMPTY);
         } catch (final RuntimeException e) {
             if (e.getCause() instanceof InvalidParquetFileException) {
                 final String InvalidParquetFileErrorMsgString = "Invalid parquet file detected, please ensure the " +
@@ -1762,9 +1778,11 @@ public final class ParquetTableReadWriteTest {
         void writeTable(final Table table, final File destFile);
     }
 
-    private static final TestParquetTableWriter SINGLE_WRITER = ParquetTools::writeTable;
+    private static final TestParquetTableWriter SINGLE_WRITER =
+            (sourceTable, destFile) -> writeTable(sourceTable, destFile.getPath());
     private static final TestParquetTableWriter MULTI_WRITER =
-            (table, destFile) -> writeTables(new Table[] {table}, table.getDefinition(), new File[] {destFile});
+            (table, destFile) -> writeTables(new Table[] {table}, new String[] {destFile.getPath()},
+                    ParquetInstructions.EMPTY.withTableDefinition(table.getDefinition()));
 
     /**
      * Verify that the parent directory contains the expected parquet files and index files in the right directory
@@ -1808,12 +1826,13 @@ public final class ParquetTableReadWriteTest {
         final Table someTable = TableTools.emptyTable(5).update("A=(int)i");
         final File firstPartition = new File(parentDir, "X=A");
         final File firstDataFile = new File(firstPartition, "data.parquet");
-        writeTable(someTable, firstDataFile);
+        writeTable(someTable, firstDataFile.getPath());
         final File secondPartition = new File(parentDir, "X=B");
         final File secondDataFile = new File(secondPartition, "data.parquet");
-        writeTable(someTable, secondDataFile);
+        writeTable(someTable, secondDataFile.getPath());
 
-        final Table expected = readKeyValuePartitionedTable(parentDir, ParquetInstructions.EMPTY);
+        final Table expected = readTable(parentDir.getPath(),
+                ParquetInstructions.EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED));
 
         String filePath = parentDir.getAbsolutePath();
         Table fromDisk = ParquetTools.readTable(filePath);
@@ -1950,10 +1969,11 @@ public final class ParquetTableReadWriteTest {
         final String secondFilename = "secondTable.parquet";
         final File secondDestFile = new File(parentDir, secondFilename);
 
-        Table[] tablesToSave = new Table[] {firstTable, secondTable};
-        File[] destFiles = new File[] {firstDestFile, secondDestFile};
+        final Table[] tablesToSave = new Table[] {firstTable, secondTable};
+        final String[] destinations = new String[] {firstDestFile.getPath(), secondDestFile.getPath()};
 
-        writeTables(tablesToSave, firstTable.getDefinition(), destFiles);
+        writeTables(tablesToSave, destinations,
+                ParquetInstructions.EMPTY.withTableDefinition(firstTable.getDefinition()));
 
         verifyFilesInDir(parentDir, new String[] {firstFilename, secondFilename}, null);
         checkSingleTable(firstTable, firstDestFile);
@@ -1978,12 +1998,13 @@ public final class ParquetTableReadWriteTest {
                 .updateView("InputString = ii % 2 == 0 ? Long.toString(ii*5) : null", "A=InputString.charAt(0)");
         final File secondDestFile = new File(parentDir, "secondTable.parquet");
 
-        Table[] tablesToSave = new Table[] {firstTable, secondTable};
-        File[] destFiles = new File[] {firstDestFile, secondDestFile};
+        final Table[] tablesToSave = new Table[] {firstTable, secondTable};
+        final String[] destinations = new String[] {firstDestFile.getPath(), secondDestFile.getPath()};
 
         // This write should fail
         try {
-            writeTables(tablesToSave, firstTable.getDefinition(), destFiles);
+            writeTables(tablesToSave, destinations,
+                    ParquetInstructions.EMPTY.withTableDefinition(firstTable.getDefinition()));
             TestCase.fail("Exception expected for invalid formula");
         } catch (UncheckedDeephavenException e) {
             assertTrue(e.getCause() instanceof FormulaEvaluationException);
@@ -2017,20 +2038,23 @@ public final class ParquetTableReadWriteTest {
         parentDir.mkdir();
         final File dest = new File(parentDir, parquetFileName);
 
-        ParquetTools.writeTable(table, dest);
-        Table fromDisk = readSingleFileTable(dest, ParquetInstructions.EMPTY);
+        writeTable(table, dest.getPath());
+        Table fromDisk = readTable(dest.getPath(),
+                ParquetInstructions.EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.SINGLE_FILE));
         assertTableEquals(table, fromDisk);
         FileUtils.deleteRecursively(parentDir);
 
         final String destAbsolutePathStr = dest.getAbsolutePath();
         ParquetTools.writeTable(table, destAbsolutePathStr);
-        fromDisk = readSingleFileTable(destAbsolutePathStr, ParquetInstructions.EMPTY);
+        fromDisk = readTable(destAbsolutePathStr,
+                ParquetInstructions.EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.SINGLE_FILE));
         assertTableEquals(table, fromDisk);
         FileUtils.deleteRecursively(parentDir);
 
         final String destRelativePathStr = rootFile.getName() + "/" + parentDirName + "/" + parquetFileName;
         ParquetTools.writeTable(table, destRelativePathStr);
-        fromDisk = readSingleFileTable(destRelativePathStr, ParquetInstructions.EMPTY);
+        fromDisk = readTable(destRelativePathStr,
+                ParquetInstructions.EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.SINGLE_FILE));
         assertTableEquals(table, fromDisk);
         FileUtils.deleteRecursively(parentDir);
     }
@@ -2145,12 +2169,13 @@ public final class ParquetTableReadWriteTest {
 
         final String destFilename = "data.parquet";
         final File destFile = new File(parentDir, destFilename);
-        writeTable(tableToSave, destFile);
+        writeTable(tableToSave, destFile.getPath());
         String vvvIndexFilePath = ".dh_metadata/indexes/vvv/index_vvv_data.parquet";
         verifyFilesInDir(parentDir, new String[] {destFilename}, Map.of("vvv", new String[] {vvvIndexFilePath}));
 
         // Call readTable on parent directory
-        Table fromDisk = readFlatPartitionedTable(parentDir, EMPTY);
+        Table fromDisk = readTable(parentDir.getPath(),
+                EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.FLAT_PARTITIONED));
         assertTableEquals(fromDisk, tableToSave);
 
         // Add an empty dot file and dot directory (with valid parquet files) in the parent directory
@@ -2159,15 +2184,17 @@ public final class ParquetTableReadWriteTest {
         final File dotDir = new File(parentDir, ".dotDir");
         assertTrue(dotDir.mkdir());
         final Table someTable = TableTools.emptyTable(5).update("A=(int)i");
-        writeTable(someTable, new File(dotDir, "data.parquet"));
-        fromDisk = readFlatPartitionedTable(parentDir, EMPTY);
+        writeTable(someTable, new File(dotDir, "data.parquet").getPath());
+        fromDisk = readTable(parentDir.getPath(),
+                EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.FLAT_PARTITIONED));
         assertTableEquals(fromDisk, tableToSave);
 
         // Add a dot parquet in parent directory
         final Table anotherTable = TableTools.emptyTable(5).update("A=(int)i");
         final File pqDotFile = new File(parentDir, ".dotFile.parquet");
-        writeTable(anotherTable, pqDotFile);
-        fromDisk = readFlatPartitionedTable(parentDir, EMPTY);
+        writeTable(anotherTable, pqDotFile.getPath());
+        fromDisk = readTable(parentDir.getPath(),
+                EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.FLAT_PARTITIONED));
         assertTableEquals(fromDisk, tableToSave);
     }
 
@@ -2184,8 +2211,8 @@ public final class ParquetTableReadWriteTest {
         final File secondPartition = new File(parentDir, "X=B");
         final File secondDataFile = new File(secondPartition, "data.parquet");
 
-        writeTable(someTable, firstDataFile);
-        writeTable(someTable, secondDataFile);
+        writeTable(someTable, firstDataFile.getPath());
+        writeTable(someTable, secondDataFile.getPath());
 
         final URI parentURI = convertToURI(parentDir, true);
         final Table partitionedTable = readTable(parentURI.toString()).select();
@@ -2197,14 +2224,14 @@ public final class ParquetTableReadWriteTest {
         assertTrue(dotFile.createNewFile());
         final File dotDir = new File(firstPartition, ".dotDir");
         assertTrue(dotDir.mkdir());
-        writeTable(someTable, new File(dotDir, "data.parquet"));
+        writeTable(someTable, new File(dotDir, "data.parquet").getPath());
         Table fromDisk = readTable(parentURI.toString());
         assertTableEquals(fromDisk, partitionedTable);
 
         // Add a dot parquet file in one of the partitions directory
         final Table anotherTable = TableTools.emptyTable(5).update("B=(int)i");
         final File pqDotFile = new File(secondPartition, ".dotFile.parquet");
-        writeTable(anotherTable, pqDotFile);
+        writeTable(anotherTable, pqDotFile.getPath());
         fromDisk = readTable(parentURI.toString());
         assertTableEquals(fromDisk, partitionedTable);
     }
@@ -2225,10 +2252,11 @@ public final class ParquetTableReadWriteTest {
         final File secondDataFile = new File(secondPartition, "data.parquet");
         final Table secondTable = TableTools.emptyTable(5).update("X='B'", "Y=(int)i");
 
-        writeTable(firstTable, firstDataFile);
-        writeTable(secondTable, secondDataFile);
+        writeTable(firstTable, firstDataFile.getPath());
+        writeTable(secondTable, secondDataFile.getPath());
 
-        final Table partitionedTable = readKeyValuePartitionedTable(parentDir, EMPTY).select();
+        final Table partitionedTable = readTable(parentDir.getPath(),
+                EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED)).select();
 
         final Table combinedTable = merge(firstTable, secondTable);
         assertTableEquals(partitionedTable, combinedTable);
@@ -2258,9 +2286,9 @@ public final class ParquetTableReadWriteTest {
         DataIndexer.getOrCreateDataIndex(secondTable, "vvv");
 
         Table[] tablesToSave = new Table[] {firstTable, secondTable};
-        File[] destFiles = new File[] {firstDestFile, secondDestFile};
-
-        writeTables(tablesToSave, firstTable.getDefinition(), destFiles);
+        final String[] destinations = new String[] {firstDestFile.getPath(), secondDestFile.getPath()};
+        writeTables(tablesToSave, destinations,
+                ParquetInstructions.EMPTY.withTableDefinition(firstTable.getDefinition()));
 
         String firstIndexFilePath = ".dh_metadata/indexes/vvv/index_vvv_firstTable.parquet";
         String secondIndexFilePath = ".dh_metadata/indexes/vvv/index_vvv_secondTable.parquet";
@@ -2357,13 +2385,16 @@ public final class ParquetTableReadWriteTest {
         final String filename = "readChangedUnderlyingFileTests.parquet";
         final File destFile = new File(rootFile, filename);
         writer.writeTable(tableToSave, destFile);
-        Table fromDisk = readSingleFileTable(destFile, EMPTY);
+        Table fromDisk =
+                readTable(destFile.getPath(), EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.SINGLE_FILE));
         // At this point, fromDisk is not fully materialized in the memory and would be read from the file on demand
 
         // Change the underlying file
         final Table stringTable = TableTools.emptyTable(5).update("InputString = Long.toString(ii)");
         writer.writeTable(stringTable, destFile);
-        Table stringFromDisk = readSingleFileTable(destFile, EMPTY).select();
+        Table stringFromDisk =
+                readTable(destFile.getPath(), EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.SINGLE_FILE))
+                        .select();
         assertTableEquals(stringTable, stringFromDisk);
 
         // Close all the file handles so that next time when fromDisk is accessed, we need to reopen the file handle
@@ -2390,7 +2421,8 @@ public final class ParquetTableReadWriteTest {
         final String filename = "readModifyWriteTests.parquet";
         final File destFile = new File(rootFile, filename);
         writer.writeTable(tableToSave, destFile);
-        Table fromDisk = readSingleFileTable(destFile, EMPTY);
+        Table fromDisk =
+                readTable(destFile.getPath(), EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.SINGLE_FILE));
         // At this point, fromDisk is not fully materialized in the memory and would be read from the file on demand
 
         // Create a view table on fromDisk which should fail on writing, and try to write at the same location
@@ -2425,7 +2457,7 @@ public final class ParquetTableReadWriteTest {
                 .build();
         final Table stringTable = TableTools.emptyTable(numRows).select(Selectable.from(columns));
         final File dest = new File(rootFile + File.separator + "dictEncoding.parquet");
-        writeTable(stringTable, dest, writeInstructions);
+        writeTable(stringTable, dest.getPath(), writeInstructions);
         checkSingleTable(stringTable, dest);
 
         // Verify that string columns are properly dictionary encoded
@@ -2500,7 +2532,7 @@ public final class ParquetTableReadWriteTest {
                 .build();
         Table stringTable = TableTools.emptyTable(numRows).select(Selectable.from(columns));
         final File dest = new File(rootFile + File.separator + "overflowingStringsTest.parquet");
-        writeTable(stringTable, dest, writeInstructions);
+        writeTable(stringTable, dest.getPath(), writeInstructions);
         checkSingleTable(stringTable, dest);
 
         ParquetMetadata metadata =
@@ -2524,7 +2556,7 @@ public final class ParquetTableReadWriteTest {
                 TableTools.col("VariableWidthByteArrayColumn", byteArray, byteArray, byteArray));
 
         final File dest = new File(rootFile + File.separator + "overflowingCodecsTest.parquet");
-        writeTable(table, dest, writeInstructions);
+        writeTable(table, dest.getPath(), writeInstructions);
         checkSingleTable(table, dest);
 
         final ParquetMetadata metadata =
@@ -2551,7 +2583,7 @@ public final class ParquetTableReadWriteTest {
                 TableTools.col("VariableWidthByteArrayColumn", null, byteArray, byteArray, byteArray, byteArray,
                         byteArray));
         final File simpleTableDest = new File(rootFile, "ParquetTest_simple_statistics_test.parquet");
-        writeTable(simpleTable, simpleTableDest);
+        writeTable(simpleTable, simpleTableDest.getPath());
 
         checkSingleTable(simpleTable, simpleTableDest);
 
@@ -2560,7 +2592,7 @@ public final class ParquetTableReadWriteTest {
         // Test flat columns.
         final Table flatTableToSave = getTableFlat(10_000, true, true);
         final File flatTableDest = new File(rootFile, "ParquetTest_flat_statistics_test.parquet");
-        writeTable(flatTableToSave, flatTableDest);
+        writeTable(flatTableToSave, flatTableDest.getPath());
 
         checkSingleTable(maybeFixBigDecimal(flatTableToSave), flatTableDest);
 
@@ -2569,7 +2601,8 @@ public final class ParquetTableReadWriteTest {
         // Test nested columns.
         final Table groupedTableToSave = getGroupedTable(10_000, true);
         final File groupedTableDest = new File(rootFile, "ParquetTest_grouped_statistics_test.parquet");
-        writeTable(groupedTableToSave, groupedTableDest, groupedTableToSave.getDefinition());
+        writeTable(groupedTableToSave, groupedTableDest.getPath(),
+                EMPTY.withTableDefinition(groupedTableToSave.getDefinition()));
 
         checkSingleTable(groupedTableToSave, groupedTableDest);
 
@@ -2661,7 +2694,7 @@ public final class ParquetTableReadWriteTest {
 
         // Write the table to disk using our code.
         final File dhDest = new File(rootFile, "ParquetTest_statistics_test.parquet");
-        writeTable(pyarrowFromDisk, dhDest);
+        writeTable(pyarrowFromDisk, dhDest.getPath());
 
         final Table dhFromDisk = checkSingleTable(pyarrowFromDisk, dhDest);
 
@@ -2711,9 +2744,9 @@ public final class ParquetTableReadWriteTest {
             fooBarNullFoo = newTable(fooBarDefinition, nullFooCol, barCol);
             fooBarNullBar = newTable(fooBarDefinition, fooCol, nullBarCol);
 
-            writeTable(foo, fooSource);
-            writeTable(fooBar, fooBarSource);
-            writeTable(bar, barSource);
+            writeTable(foo, fooSource.getPath());
+            writeTable(fooBar, fooBarSource.getPath());
+            writeTable(bar, barSource.getPath());
         }
 
         // Infer
@@ -2725,45 +2758,57 @@ public final class ParquetTableReadWriteTest {
 
         // readTable inference to readSingleTable
         {
-            assertTableEquals(foo, readTable(fooSource));
-            assertTableEquals(fooBar, readTable(fooBarSource));
-            assertTableEquals(bar, readTable(barSource));
+            assertTableEquals(foo, readTable(fooSource.getPath()));
+            assertTableEquals(fooBar, readTable(fooBarSource.getPath()));
+            assertTableEquals(bar, readTable(barSource.getPath()));
         }
 
         // Explicit
         {
-            assertTableEquals(foo, readSingleFileTable(fooSource, EMPTY, fooDefinition));
-            assertTableEquals(fooBar, readSingleFileTable(fooBarSource, EMPTY, fooBarDefinition));
-            assertTableEquals(bar, readSingleFileTable(barSource, EMPTY, barDefinition));
+            assertTableEquals(foo, readTable(fooSource.getPath(), EMPTY.withTableDefinitionAndLayout(fooDefinition,
+                    ParquetInstructions.ParquetFileLayout.SINGLE_FILE)));
+            assertTableEquals(fooBar,
+                    readTable(fooBarSource.getPath(), EMPTY.withTableDefinitionAndLayout(fooBarDefinition,
+                            ParquetInstructions.ParquetFileLayout.SINGLE_FILE)));
+            assertTableEquals(bar, readTable(barSource.getPath(), EMPTY.withTableDefinitionAndLayout(barDefinition,
+                    ParquetInstructions.ParquetFileLayout.SINGLE_FILE)));
         }
 
         // Explicit subset
         {
             // fooBar as foo
-            assertTableEquals(foo, readSingleFileTable(fooBarSource, EMPTY, fooDefinition));
+            assertTableEquals(foo, readTable(fooBarSource.getPath(), EMPTY.withTableDefinitionAndLayout(fooDefinition,
+                    ParquetInstructions.ParquetFileLayout.SINGLE_FILE)));
             // fooBar as bar
-            assertTableEquals(bar, readSingleFileTable(fooBarSource, EMPTY, barDefinition));
+            assertTableEquals(bar, readTable(fooBarSource.getPath(), EMPTY.withTableDefinitionAndLayout(barDefinition,
+                    ParquetInstructions.ParquetFileLayout.SINGLE_FILE)));
         }
 
         // Explicit superset
         {
             // foo as fooBar
-            assertTableEquals(fooBarNullBar, readSingleFileTable(fooSource, EMPTY, fooBarDefinition));
+            assertTableEquals(fooBarNullBar,
+                    readTable(fooSource.getPath(), EMPTY.withTableDefinitionAndLayout(fooBarDefinition,
+                            ParquetInstructions.ParquetFileLayout.SINGLE_FILE)));
             // bar as fooBar
-            assertTableEquals(fooBarNullFoo, readSingleFileTable(barSource, EMPTY, fooBarDefinition));
+            assertTableEquals(fooBarNullFoo,
+                    readTable(barSource.getPath(), EMPTY.withTableDefinitionAndLayout(fooBarDefinition,
+                            ParquetInstructions.ParquetFileLayout.SINGLE_FILE)));
         }
 
         // No refreshing single table support
         {
             try {
-                readSingleFileTable(fooSource, REFRESHING);
+                readTable(fooSource.getPath(),
+                        REFRESHING.withLayout(ParquetInstructions.ParquetFileLayout.SINGLE_FILE));
                 fail("Expected IllegalArgumentException");
             } catch (IllegalArgumentException e) {
                 assertEquals("Unable to have a refreshing single parquet file", e.getMessage());
             }
 
             try {
-                readSingleFileTable(fooSource, REFRESHING, fooDefinition);
+                readTable(fooSource.getPath(), REFRESHING.withTableDefinitionAndLayout(fooDefinition,
+                        ParquetInstructions.ParquetFileLayout.SINGLE_FILE));
                 fail("Expected IllegalArgumentException");
             } catch (IllegalArgumentException e) {
                 assertEquals("Unable to have a refreshing single parquet file", e.getMessage());
@@ -2801,13 +2846,13 @@ public final class ParquetTableReadWriteTest {
 
             final Table p1 = newTable(foo1);
             final Table p2 = newTable(foo2, bar2);
-            writeTable(p1, p1File);
-            writeTable(p2, p2File);
+            writeTable(p1, p1File.getPath());
+            writeTable(p2, p2File.getPath());
             writeIntoEmptySource = () -> {
                 p1FileEmpty.mkdirs();
                 p2FileEmpty.mkdirs();
-                writeTable(p1, p1FileEmpty);
-                writeTable(p2, p2FileEmpty);
+                writeTable(p1, p1FileEmpty.getPath());
+                writeTable(p2, p2FileEmpty.getPath());
             };
 
             final ColumnDefinition<Integer> foo = ColumnDefinition.ofInt("Foo");
@@ -2826,49 +2871,58 @@ public final class ParquetTableReadWriteTest {
 
         // Infer from last key
         {
-            final Table table = readFlatPartitionedTable(source, EMPTY);
+            final Table table = readTable(source.getPath(),
+                    EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.FLAT_PARTITIONED));
             assertTableEquals(latterData, table);
         }
         // Infer from last key, refreshing
         {
-            final Table table = readFlatPartitionedTable(source, REFRESHING);
+            final Table table = readTable(source.getPath(),
+                    REFRESHING.withLayout(ParquetInstructions.ParquetFileLayout.FLAT_PARTITIONED));
             assertTableEquals(latterData, table);
         }
         // readTable inference to readFlatPartitionedTable
         {
-            assertTableEquals(latterData, readTable(source));
+            assertTableEquals(latterData, readTable(source.getPath()));
         }
 
         // Explicit latter definition
         {
-            final Table table = readFlatPartitionedTable(source, EMPTY, latterDefinition);
+            final Table table = readTable(source.getPath(), EMPTY.withTableDefinitionAndLayout(latterDefinition,
+                    ParquetInstructions.ParquetFileLayout.FLAT_PARTITIONED));
             assertTableEquals(latterData, table);
         }
         // Explicit latter definition, refreshing
         {
-            final Table table = readFlatPartitionedTable(source, REFRESHING, latterDefinition);
+            final Table table = readTable(source.getPath(), REFRESHING.withTableDefinitionAndLayout(latterDefinition,
+                    ParquetInstructions.ParquetFileLayout.FLAT_PARTITIONED));
             assertTableEquals(latterData, table);
         }
 
         // Explicit former definition
         {
-            final Table table = readFlatPartitionedTable(source, EMPTY, formerDefinition);
+            final Table table = readTable(source.getPath(), EMPTY.withTableDefinitionAndLayout(formerDefinition,
+                    ParquetInstructions.ParquetFileLayout.FLAT_PARTITIONED));
             assertTableEquals(formerData, table);
         }
         // Explicit former definition, refreshing
         {
-            final Table table = readFlatPartitionedTable(source, REFRESHING, formerDefinition);
+            final Table table = readTable(source.getPath(), REFRESHING.withTableDefinitionAndLayout(formerDefinition,
+                    ParquetInstructions.ParquetFileLayout.FLAT_PARTITIONED));
             assertTableEquals(formerData, table);
         }
 
         // Explicit definition, empty directory
         {
-            final Table table = readFlatPartitionedTable(emptySource, EMPTY, latterDefinition);
+            final Table table = readTable(emptySource.getPath(), EMPTY.withTableDefinitionAndLayout(latterDefinition,
+                    ParquetInstructions.ParquetFileLayout.FLAT_PARTITIONED));
             assertTableEquals(TableTools.newTable(latterDefinition), table);
         }
         // Explicit definition, empty directory, refreshing with new data added
         {
-            final Table table = readFlatPartitionedTable(emptySource, REFRESHING, latterDefinition);
+            final Table table =
+                    readTable(emptySource.getPath(), REFRESHING.withTableDefinitionAndLayout(latterDefinition,
+                            ParquetInstructions.ParquetFileLayout.FLAT_PARTITIONED));
             assertTableEquals(TableTools.newTable(latterDefinition), table);
 
             writeIntoEmptySource.run();
@@ -2914,13 +2968,13 @@ public final class ParquetTableReadWriteTest {
 
             final Table p1 = newTable(foo1);
             final Table p2 = newTable(foo2, bar2);
-            writeTable(p1, p1File);
-            writeTable(p2, p2File);
+            writeTable(p1, p1File.getPath());
+            writeTable(p2, p2File.getPath());
             writeIntoEmptySource = () -> {
                 p1FileEmpty.mkdirs();
                 p2FileEmpty.mkdirs();
-                writeTable(p1, p1FileEmpty);
-                writeTable(p2, p2FileEmpty);
+                writeTable(p1, p1FileEmpty.getPath());
+                writeTable(p2, p2FileEmpty.getPath());
             };
 
             // Need to be explicit w/ definition so partitioning column applied to expected tables
@@ -2942,49 +2996,58 @@ public final class ParquetTableReadWriteTest {
 
         // Infer from last key
         {
-            final Table table = readKeyValuePartitionedTable(source, EMPTY);
+            final Table table =
+                    readTable(source.getPath(), EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED));
             assertTableEquals(latterData, table);
         }
         // Infer from last key, refreshing
         {
-            final Table table = readKeyValuePartitionedTable(source, REFRESHING);
+            final Table table = readTable(source.getPath(),
+                    REFRESHING.withLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED));
             assertTableEquals(latterData, table);
         }
         // readTable inference readKeyValuePartitionedTable
         {
-            assertTableEquals(latterData, readTable(source));
+            assertTableEquals(latterData, readTable(source.getPath()));
         }
 
         // Explicit latter definition
         {
-            final Table table = readKeyValuePartitionedTable(source, EMPTY, latterDefinition);
+            final Table table = readTable(source.getPath(), EMPTY.withTableDefinitionAndLayout(latterDefinition,
+                    ParquetInstructions.ParquetFileLayout.KV_PARTITIONED));
             assertTableEquals(latterData, table);
         }
         // Explicit latter definition, refreshing
         {
-            final Table table = readKeyValuePartitionedTable(source, REFRESHING, latterDefinition);
+            final Table table = readTable(source.getPath(), REFRESHING.withTableDefinitionAndLayout(latterDefinition,
+                    ParquetInstructions.ParquetFileLayout.KV_PARTITIONED));
             assertTableEquals(latterData, table);
         }
 
         // Explicit former definition
         {
-            final Table table = readKeyValuePartitionedTable(source, EMPTY, formerDefinition);
+            final Table table = readTable(source.getPath(), EMPTY.withTableDefinitionAndLayout(formerDefinition,
+                    ParquetInstructions.ParquetFileLayout.KV_PARTITIONED));
             assertTableEquals(formerData, table);
         }
         // Explicit former definition, refreshing
         {
-            final Table table = readKeyValuePartitionedTable(source, REFRESHING, formerDefinition);
+            final Table table = readTable(source.getPath(), REFRESHING.withTableDefinitionAndLayout(formerDefinition,
+                    ParquetInstructions.ParquetFileLayout.KV_PARTITIONED));
             assertTableEquals(formerData, table);
         }
 
         // Explicit definition, empty directory
         {
-            final Table table = readKeyValuePartitionedTable(emptySource, EMPTY, latterDefinition);
+            final Table table = readTable(emptySource.getPath(), EMPTY.withTableDefinitionAndLayout(latterDefinition,
+                    ParquetInstructions.ParquetFileLayout.KV_PARTITIONED));
             assertTableEquals(TableTools.newTable(latterDefinition), table);
         }
         // Explicit definition, empty directory, refreshing with new data added
         {
-            final Table table = readKeyValuePartitionedTable(emptySource, REFRESHING, latterDefinition);
+            final Table table =
+                    readTable(emptySource.getPath(), REFRESHING.withTableDefinitionAndLayout(latterDefinition,
+                            ParquetInstructions.ParquetFileLayout.KV_PARTITIONED));
             assertTableEquals(TableTools.newTable(latterDefinition), table);
 
             writeIntoEmptySource.run();
@@ -3013,38 +3076,58 @@ public final class ParquetTableReadWriteTest {
                 stringCol("String", null, "42"),
                 instantCol("Instant", null, Instant.ofEpochMilli(42)));
         {
-            writeTable(primitives, file);
+            writeTable(primitives, file.getPath());
         }
         assertTableEquals(
                 primitives.view("Bool"),
-                readSingleFileTable(file, EMPTY, TableDefinition.of(ColumnDefinition.ofBoolean("Bool"))));
+                readTable(file.getPath(),
+                        EMPTY.withTableDefinitionAndLayout(TableDefinition.of(ColumnDefinition.ofBoolean("Bool")),
+                                ParquetInstructions.ParquetFileLayout.SINGLE_FILE)));
         assertTableEquals(
                 primitives.view("Char"),
-                readSingleFileTable(file, EMPTY, TableDefinition.of(ColumnDefinition.ofChar("Char"))));
+                readTable(file.getPath(),
+                        EMPTY.withTableDefinitionAndLayout(TableDefinition.of(ColumnDefinition.ofChar("Char")),
+                                ParquetInstructions.ParquetFileLayout.SINGLE_FILE)));
         assertTableEquals(
                 primitives.view("Byte"),
-                readSingleFileTable(file, EMPTY, TableDefinition.of(ColumnDefinition.ofByte("Byte"))));
+                readTable(file.getPath(),
+                        EMPTY.withTableDefinitionAndLayout(TableDefinition.of(ColumnDefinition.ofByte("Byte")),
+                                ParquetInstructions.ParquetFileLayout.SINGLE_FILE)));
         assertTableEquals(
                 primitives.view("Short"),
-                readSingleFileTable(file, EMPTY, TableDefinition.of(ColumnDefinition.ofShort("Short"))));
+                readTable(file.getPath(),
+                        EMPTY.withTableDefinitionAndLayout(TableDefinition.of(ColumnDefinition.ofShort("Short")),
+                                ParquetInstructions.ParquetFileLayout.SINGLE_FILE)));
         assertTableEquals(
                 primitives.view("Int"),
-                readSingleFileTable(file, EMPTY, TableDefinition.of(ColumnDefinition.ofInt("Int"))));
+                readTable(file.getPath(),
+                        EMPTY.withTableDefinitionAndLayout(TableDefinition.of(ColumnDefinition.ofInt("Int")),
+                                ParquetInstructions.ParquetFileLayout.SINGLE_FILE)));
         assertTableEquals(
                 primitives.view("Long"),
-                readSingleFileTable(file, EMPTY, TableDefinition.of(ColumnDefinition.ofLong("Long"))));
+                readTable(file.getPath(),
+                        EMPTY.withTableDefinitionAndLayout(TableDefinition.of(ColumnDefinition.ofLong("Long")),
+                                ParquetInstructions.ParquetFileLayout.SINGLE_FILE)));
         assertTableEquals(
                 primitives.view("Float"),
-                readSingleFileTable(file, EMPTY, TableDefinition.of(ColumnDefinition.ofFloat("Float"))));
+                readTable(file.getPath(),
+                        EMPTY.withTableDefinitionAndLayout(TableDefinition.of(ColumnDefinition.ofFloat("Float")),
+                                ParquetInstructions.ParquetFileLayout.SINGLE_FILE)));
         assertTableEquals(
                 primitives.view("Double"),
-                readSingleFileTable(file, EMPTY, TableDefinition.of(ColumnDefinition.ofDouble("Double"))));
+                readTable(file.getPath(),
+                        EMPTY.withTableDefinitionAndLayout(TableDefinition.of(ColumnDefinition.ofDouble("Double")),
+                                ParquetInstructions.ParquetFileLayout.SINGLE_FILE)));
         assertTableEquals(
                 primitives.view("String"),
-                readSingleFileTable(file, EMPTY, TableDefinition.of(ColumnDefinition.ofString("String"))));
+                readTable(file.getPath(),
+                        EMPTY.withTableDefinitionAndLayout(TableDefinition.of(ColumnDefinition.ofString("String")),
+                                ParquetInstructions.ParquetFileLayout.SINGLE_FILE)));
         assertTableEquals(
                 primitives.view("Instant"),
-                readSingleFileTable(file, EMPTY, TableDefinition.of(ColumnDefinition.ofTime("Instant"))));
+                readTable(file.getPath(),
+                        EMPTY.withTableDefinitionAndLayout(TableDefinition.of(ColumnDefinition.ofTime("Instant")),
+                                ParquetInstructions.ParquetFileLayout.SINGLE_FILE)));
     }
 
     private void assertTableStatistics(Table inputTable, File dest) {
@@ -3073,7 +3156,7 @@ public final class ParquetTableReadWriteTest {
                         new SerialObjectColumnIterator<>(
                                 (ColumnSource<Boolean[]>) columnSource,
                                 inputTable.getRowSet()),
-                        (Statistics<Integer>) statistics);
+                        (Statistics<Boolean>) statistics);
             } else if (csType == byte.class || csType == Byte.class) {
                 assertByteColumnStatistics(
                         new SerialByteColumnIterator(
@@ -3256,20 +3339,20 @@ public final class ParquetTableReadWriteTest {
             if (value == NULL_BYTE) {
                 nullCount.increment();
             } else {
-                if (min.getValue() == NULL_BYTE || value < min.getValue()) {
-                    min.setValue(value);
+                if (min.get() == NULL_BYTE || value < min.get()) {
+                    min.set(value);
                 }
-                if (max.getValue() == NULL_BYTE || value > max.getValue()) {
-                    max.setValue(value);
+                if (max.get() == NULL_BYTE || value > max.get()) {
+                    max.set(value);
                 }
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
-        if (!itemCount.getValue().equals(nullCount.getValue())) {
+        assertEquals(nullCount.get(), statistics.getNumNulls());
+        if (itemCount.get() != nullCount.get()) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
-            assertEquals(min.getValue() == 1, statistics.genericGetMin());
-            assertEquals(max.getValue() == 1, statistics.genericGetMax());
+            assertEquals(min.get() == 1, statistics.genericGetMin());
+            assertEquals(max.get() == 1, statistics.genericGetMax());
         } else {
             // Everything is null, statistics should be empty.
             assertFalse(statistics.hasNonNullValue());
@@ -3277,7 +3360,7 @@ public final class ParquetTableReadWriteTest {
     }
 
     private void assertBooleanArrayColumnStatistics(SerialObjectColumnIterator<Boolean[]> iterator,
-            Statistics<Integer> statistics) {
+            Statistics<Boolean> statistics) {
         MutableLong itemCount = new MutableLong(0);
         MutableLong nullCount = new MutableLong(0);
         MutableInt min = new MutableInt(NULL_BYTE);
@@ -3294,21 +3377,21 @@ public final class ParquetTableReadWriteTest {
                 if (value == null) {
                     nullCount.increment();
                 } else {
-                    if (min.getValue() == NULL_BYTE || (value ? 1 : 0) < min.getValue()) {
-                        min.setValue(value ? 1 : 0);
+                    if (min.get() == NULL_BYTE || (value ? 1 : 0) < min.get()) {
+                        min.set(value ? 1 : 0);
                     }
-                    if (max.getValue() == NULL_BYTE || (value ? 1 : 0) > max.getValue()) {
-                        max.setValue(value ? 1 : 0);
+                    if (max.get() == NULL_BYTE || (value ? 1 : 0) > max.get()) {
+                        max.set(value ? 1 : 0);
                     }
                 }
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
-        if (!itemCount.getValue().equals(nullCount.getValue())) {
+        assertEquals(nullCount.get(), statistics.getNumNulls());
+        if (itemCount.get() != nullCount.get()) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
-            assertEquals(min.getValue() == 1, statistics.genericGetMin());
-            assertEquals(max.getValue() == 1, statistics.genericGetMax());
+            assertEquals(min.get() == 1, statistics.genericGetMin());
+            assertEquals(max.get() == 1, statistics.genericGetMax());
         } else {
             // Everything is null, statistics should be empty.
             assertFalse(statistics.hasNonNullValue());
@@ -3326,20 +3409,20 @@ public final class ParquetTableReadWriteTest {
             if (value == NULL_BYTE) {
                 nullCount.increment();
             } else {
-                if (min.getValue() == NULL_BYTE || value < min.getValue()) {
-                    min.setValue(value);
+                if (min.get() == NULL_BYTE || value < min.get()) {
+                    min.set(value);
                 }
-                if (max.getValue() == NULL_BYTE || value > max.getValue()) {
-                    max.setValue(value);
+                if (max.get() == NULL_BYTE || value > max.get()) {
+                    max.set(value);
                 }
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
-        if (!itemCount.getValue().equals(nullCount.getValue())) {
+        assertEquals(nullCount.get(), statistics.getNumNulls());
+        if (itemCount.get() != nullCount.get()) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
-            assertEquals(min.getValue(), statistics.genericGetMin());
-            assertEquals(max.getValue(), statistics.genericGetMax());
+            assertEquals(min.get(), (int) statistics.genericGetMin());
+            assertEquals(max.get(), (int) statistics.genericGetMax());
         } else {
             // Everything is null, statistics should be empty.
             assertFalse(statistics.hasNonNullValue());
@@ -3364,21 +3447,21 @@ public final class ParquetTableReadWriteTest {
                 if (value == NULL_BYTE) {
                     nullCount.increment();
                 } else {
-                    if (min.getValue() == NULL_BYTE || value < min.getValue()) {
-                        min.setValue(value);
+                    if (min.get() == NULL_BYTE || value < min.get()) {
+                        min.set(value);
                     }
-                    if (max.getValue() == NULL_BYTE || value > max.getValue()) {
-                        max.setValue(value);
+                    if (max.get() == NULL_BYTE || value > max.get()) {
+                        max.set(value);
                     }
                 }
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
-        if (!itemCount.getValue().equals(nullCount.getValue())) {
+        assertEquals(nullCount.get(), statistics.getNumNulls());
+        if (itemCount.get() != nullCount.get()) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
-            assertEquals(min.getValue(), statistics.genericGetMin());
-            assertEquals(max.getValue(), statistics.genericGetMax());
+            assertEquals(min.get(), (int) statistics.genericGetMin());
+            assertEquals(max.get(), (int) statistics.genericGetMax());
         } else {
             // Everything is null, statistics should be empty.
             assertFalse(statistics.hasNonNullValue());
@@ -3403,21 +3486,21 @@ public final class ParquetTableReadWriteTest {
                 if (value == NULL_BYTE) {
                     nullCount.increment();
                 } else {
-                    if (min.getValue() == NULL_BYTE || value < min.getValue()) {
-                        min.setValue(value);
+                    if (min.get() == NULL_BYTE || value < min.get()) {
+                        min.set(value);
                     }
-                    if (max.getValue() == NULL_BYTE || value > max.getValue()) {
-                        max.setValue(value);
+                    if (max.get() == NULL_BYTE || value > max.get()) {
+                        max.set(value);
                     }
                 }
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
-        if (!itemCount.getValue().equals(nullCount.getValue())) {
+        assertEquals(nullCount.get(), statistics.getNumNulls());
+        if (itemCount.get() != nullCount.get()) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
-            assertEquals(min.getValue(), statistics.genericGetMin());
-            assertEquals(max.getValue(), statistics.genericGetMax());
+            assertEquals(min.get(), (int) statistics.genericGetMin());
+            assertEquals(max.get(), (int) statistics.genericGetMax());
         } else {
             // Everything is null, statistics should be empty.
             assertFalse(statistics.hasNonNullValue());
@@ -3435,20 +3518,20 @@ public final class ParquetTableReadWriteTest {
             if (value == NULL_CHAR) {
                 nullCount.increment();
             } else {
-                if (min.getValue() == NULL_CHAR || value < min.getValue()) {
-                    min.setValue(value);
+                if (min.get() == NULL_CHAR || value < min.get()) {
+                    min.set(value);
                 }
-                if (max.getValue() == NULL_CHAR || value > max.getValue()) {
-                    max.setValue(value);
+                if (max.get() == NULL_CHAR || value > max.get()) {
+                    max.set(value);
                 }
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
-        if (!itemCount.getValue().equals(nullCount.getValue())) {
+        assertEquals(nullCount.get(), statistics.getNumNulls());
+        if (itemCount.get() != nullCount.get()) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
-            assertEquals(min.getValue(), statistics.genericGetMin());
-            assertEquals(max.getValue(), statistics.genericGetMax());
+            assertEquals(min.get(), (int) statistics.genericGetMin());
+            assertEquals(max.get(), (int) statistics.genericGetMax());
         } else {
             // Everything is null, statistics should be empty.
             assertFalse(statistics.hasNonNullValue());
@@ -3473,21 +3556,21 @@ public final class ParquetTableReadWriteTest {
                 if (value == NULL_CHAR) {
                     nullCount.increment();
                 } else {
-                    if (min.getValue() == NULL_CHAR || value < min.getValue()) {
-                        min.setValue(value);
+                    if (min.get() == NULL_CHAR || value < min.get()) {
+                        min.set(value);
                     }
-                    if (max.getValue() == NULL_CHAR || value > max.getValue()) {
-                        max.setValue(value);
+                    if (max.get() == NULL_CHAR || value > max.get()) {
+                        max.set(value);
                     }
                 }
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
-        if (!itemCount.getValue().equals(nullCount.getValue())) {
+        assertEquals(nullCount.get(), statistics.getNumNulls());
+        if (itemCount.get() != nullCount.get()) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
-            assertEquals(min.getValue(), statistics.genericGetMin());
-            assertEquals(max.getValue(), statistics.genericGetMax());
+            assertEquals(min.get(), (int) statistics.genericGetMin());
+            assertEquals(max.get(), (int) statistics.genericGetMax());
         } else {
             // Everything is null, statistics should be empty.
             assertFalse(statistics.hasNonNullValue());
@@ -3512,21 +3595,21 @@ public final class ParquetTableReadWriteTest {
                 if (value == NULL_CHAR) {
                     nullCount.increment();
                 } else {
-                    if (min.getValue() == NULL_CHAR || value < min.getValue()) {
-                        min.setValue(value);
+                    if (min.get() == NULL_CHAR || value < min.get()) {
+                        min.set(value);
                     }
-                    if (max.getValue() == NULL_CHAR || value > max.getValue()) {
-                        max.setValue(value);
+                    if (max.get() == NULL_CHAR || value > max.get()) {
+                        max.set(value);
                     }
                 }
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
-        if (!itemCount.getValue().equals(nullCount.getValue())) {
+        assertEquals(nullCount.get(), statistics.getNumNulls());
+        if (itemCount.get() != nullCount.get()) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
-            assertEquals(min.getValue(), statistics.genericGetMin());
-            assertEquals(max.getValue(), statistics.genericGetMax());
+            assertEquals(min.get(), (int) statistics.genericGetMin());
+            assertEquals(max.get(), (int) statistics.genericGetMax());
         } else {
             // Everything is null, statistics should be empty.
             assertFalse(statistics.hasNonNullValue());
@@ -3544,20 +3627,20 @@ public final class ParquetTableReadWriteTest {
             if (value == NULL_SHORT) {
                 nullCount.increment();
             } else {
-                if (min.getValue() == NULL_SHORT || value < min.getValue()) {
-                    min.setValue(value);
+                if (min.get() == NULL_SHORT || value < min.get()) {
+                    min.set(value);
                 }
-                if (max.getValue() == NULL_SHORT || value > max.getValue()) {
-                    max.setValue(value);
+                if (max.get() == NULL_SHORT || value > max.get()) {
+                    max.set(value);
                 }
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
-        if (!itemCount.getValue().equals(nullCount.getValue())) {
+        assertEquals(nullCount.get(), statistics.getNumNulls());
+        if (itemCount.get() != nullCount.get()) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
-            assertEquals(min.getValue(), statistics.genericGetMin());
-            assertEquals(max.getValue(), statistics.genericGetMax());
+            assertEquals(min.get(), (int) statistics.genericGetMin());
+            assertEquals(max.get(), (int) statistics.genericGetMax());
         } else {
             // Everything is null, statistics should be empty.
             assertFalse(statistics.hasNonNullValue());
@@ -3582,21 +3665,21 @@ public final class ParquetTableReadWriteTest {
                 if (value == NULL_SHORT) {
                     nullCount.increment();
                 } else {
-                    if (min.getValue() == NULL_SHORT || value < min.getValue()) {
-                        min.setValue(value);
+                    if (min.get() == NULL_SHORT || value < min.get()) {
+                        min.set(value);
                     }
-                    if (max.getValue() == NULL_SHORT || value > max.getValue()) {
-                        max.setValue(value);
+                    if (max.get() == NULL_SHORT || value > max.get()) {
+                        max.set(value);
                     }
                 }
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
-        if (!itemCount.getValue().equals(nullCount.getValue())) {
+        assertEquals(nullCount.get(), statistics.getNumNulls());
+        if (itemCount.get() != nullCount.get()) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
-            assertEquals(min.getValue(), statistics.genericGetMin());
-            assertEquals(max.getValue(), statistics.genericGetMax());
+            assertEquals(min.get(), (int) statistics.genericGetMin());
+            assertEquals(max.get(), (int) statistics.genericGetMax());
         } else {
             // Everything is null, statistics should be empty.
             assertFalse(statistics.hasNonNullValue());
@@ -3621,21 +3704,21 @@ public final class ParquetTableReadWriteTest {
                 if (value == NULL_SHORT) {
                     nullCount.increment();
                 } else {
-                    if (min.getValue() == NULL_SHORT || value < min.getValue()) {
-                        min.setValue(value);
+                    if (min.get() == NULL_SHORT || value < min.get()) {
+                        min.set(value);
                     }
-                    if (max.getValue() == NULL_SHORT || value > max.getValue()) {
-                        max.setValue(value);
+                    if (max.get() == NULL_SHORT || value > max.get()) {
+                        max.set(value);
                     }
                 }
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
-        if (!itemCount.getValue().equals(nullCount.getValue())) {
+        assertEquals(nullCount.get(), statistics.getNumNulls());
+        if (itemCount.get() != nullCount.get()) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
-            assertEquals(min.getValue(), statistics.genericGetMin());
-            assertEquals(max.getValue(), statistics.genericGetMax());
+            assertEquals(min.get(), (int) statistics.genericGetMin());
+            assertEquals(max.get(), (int) statistics.genericGetMax());
         } else {
             // Everything is null, statistics should be empty.
             assertFalse(statistics.hasNonNullValue());
@@ -3653,20 +3736,20 @@ public final class ParquetTableReadWriteTest {
             if (value == NULL_INT) {
                 nullCount.increment();
             } else {
-                if (min.getValue() == NULL_INT || value < min.getValue()) {
-                    min.setValue(value);
+                if (min.get() == NULL_INT || value < min.get()) {
+                    min.set(value);
                 }
-                if (max.getValue() == NULL_INT || value > max.getValue()) {
-                    max.setValue(value);
+                if (max.get() == NULL_INT || value > max.get()) {
+                    max.set(value);
                 }
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
-        if (!itemCount.getValue().equals(nullCount.getValue())) {
+        assertEquals(nullCount.get(), statistics.getNumNulls());
+        if (itemCount.get() != nullCount.get()) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
-            assertEquals(min.getValue(), statistics.genericGetMin());
-            assertEquals(max.getValue(), statistics.genericGetMax());
+            assertEquals(min.get(), (int) statistics.genericGetMin());
+            assertEquals(max.get(), (int) statistics.genericGetMax());
         } else {
             // Everything is null, statistics should be empty.
             assertFalse(statistics.hasNonNullValue());
@@ -3691,21 +3774,21 @@ public final class ParquetTableReadWriteTest {
                 if (value == NULL_INT) {
                     nullCount.increment();
                 } else {
-                    if (min.getValue() == NULL_INT || value < min.getValue()) {
-                        min.setValue(value);
+                    if (min.get() == NULL_INT || value < min.get()) {
+                        min.set(value);
                     }
-                    if (max.getValue() == NULL_INT || value > max.getValue()) {
-                        max.setValue(value);
+                    if (max.get() == NULL_INT || value > max.get()) {
+                        max.set(value);
                     }
                 }
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
-        if (!itemCount.getValue().equals(nullCount.getValue())) {
+        assertEquals(nullCount.get(), statistics.getNumNulls());
+        if (itemCount.get() != nullCount.get()) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
-            assertEquals(min.getValue(), statistics.genericGetMin());
-            assertEquals(max.getValue(), statistics.genericGetMax());
+            assertEquals(min.get(), (int) statistics.genericGetMin());
+            assertEquals(max.get(), (int) statistics.genericGetMax());
         } else {
             // Everything is null, statistics should be empty.
             assertFalse(statistics.hasNonNullValue());
@@ -3730,21 +3813,21 @@ public final class ParquetTableReadWriteTest {
                 if (value == NULL_INT) {
                     nullCount.increment();
                 } else {
-                    if (min.getValue() == NULL_INT || value < min.getValue()) {
-                        min.setValue(value);
+                    if (min.get() == NULL_INT || value < min.get()) {
+                        min.set(value);
                     }
-                    if (max.getValue() == NULL_INT || value > max.getValue()) {
-                        max.setValue(value);
+                    if (max.get() == NULL_INT || value > max.get()) {
+                        max.set(value);
                     }
                 }
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
-        if (!itemCount.getValue().equals(nullCount.getValue())) {
+        assertEquals(nullCount.get(), statistics.getNumNulls());
+        if (itemCount.get() != nullCount.get()) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
-            assertEquals(min.getValue(), statistics.genericGetMin());
-            assertEquals(max.getValue(), statistics.genericGetMax());
+            assertEquals(min.get(), (int) statistics.genericGetMin());
+            assertEquals(max.get(), (int) statistics.genericGetMax());
         } else {
             // Everything is null, statistics should be empty.
             assertFalse(statistics.hasNonNullValue());
@@ -3762,20 +3845,20 @@ public final class ParquetTableReadWriteTest {
             if (value == NULL_LONG) {
                 nullCount.increment();
             } else {
-                if (min.getValue() == NULL_LONG || value < min.getValue()) {
-                    min.setValue(value);
+                if (min.get() == NULL_LONG || value < min.get()) {
+                    min.set(value);
                 }
-                if (max.getValue() == NULL_LONG || value > max.getValue()) {
-                    max.setValue(value);
+                if (max.get() == NULL_LONG || value > max.get()) {
+                    max.set(value);
                 }
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
-        if (!itemCount.getValue().equals(nullCount.getValue())) {
+        assertEquals(nullCount.get(), statistics.getNumNulls());
+        if (itemCount.get() != nullCount.get()) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
-            assertEquals(min.getValue(), statistics.genericGetMin());
-            assertEquals(max.getValue(), statistics.genericGetMax());
+            assertEquals(min.get(), (long) statistics.genericGetMin());
+            assertEquals(max.get(), (long) statistics.genericGetMax());
         } else {
             // Everything is null, statistics should be empty.
             assertFalse(statistics.hasNonNullValue());
@@ -3800,21 +3883,21 @@ public final class ParquetTableReadWriteTest {
                 if (value == NULL_LONG) {
                     nullCount.increment();
                 } else {
-                    if (min.getValue() == NULL_LONG || value < min.getValue()) {
-                        min.setValue(value);
+                    if (min.get() == NULL_LONG || value < min.get()) {
+                        min.set(value);
                     }
-                    if (max.getValue() == NULL_LONG || value > max.getValue()) {
-                        max.setValue(value);
+                    if (max.get() == NULL_LONG || value > max.get()) {
+                        max.set(value);
                     }
                 }
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
-        if (!itemCount.getValue().equals(nullCount.getValue())) {
+        assertEquals(nullCount.get(), statistics.getNumNulls());
+        if (itemCount.get() != nullCount.get()) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
-            assertEquals(min.getValue(), statistics.genericGetMin());
-            assertEquals(max.getValue(), statistics.genericGetMax());
+            assertEquals(min.get(), (long) statistics.genericGetMin());
+            assertEquals(max.get(), (long) statistics.genericGetMax());
         } else {
             // Everything is null, statistics should be empty.
             assertFalse(statistics.hasNonNullValue());
@@ -3839,21 +3922,21 @@ public final class ParquetTableReadWriteTest {
                 if (value == NULL_LONG) {
                     nullCount.increment();
                 } else {
-                    if (min.getValue() == NULL_LONG || value < min.getValue()) {
-                        min.setValue(value);
+                    if (min.get() == NULL_LONG || value < min.get()) {
+                        min.set(value);
                     }
-                    if (max.getValue() == NULL_LONG || value > max.getValue()) {
-                        max.setValue(value);
+                    if (max.get() == NULL_LONG || value > max.get()) {
+                        max.set(value);
                     }
                 }
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
-        if (!itemCount.getValue().equals(nullCount.getValue())) {
+        assertEquals(nullCount.get(), statistics.getNumNulls());
+        if (itemCount.get() != nullCount.get()) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
-            assertEquals(min.getValue(), statistics.genericGetMin());
-            assertEquals(max.getValue(), statistics.genericGetMax());
+            assertEquals(min.get(), (long) statistics.genericGetMin());
+            assertEquals(max.get(), (long) statistics.genericGetMax());
         } else {
             // Everything is null, statistics should be empty.
             assertFalse(statistics.hasNonNullValue());
@@ -3871,21 +3954,21 @@ public final class ParquetTableReadWriteTest {
             if (value == NULL_FLOAT) {
                 nullCount.increment();
             } else {
-                if (min.getValue() == NULL_FLOAT || value < min.getValue()) {
+                if (min.floatValue() == NULL_FLOAT || value < min.floatValue()) {
                     min.setValue(value);
                 }
-                if (max.getValue() == NULL_FLOAT || value > max.getValue()) {
+                if (max.floatValue() == NULL_FLOAT || value > max.floatValue()) {
                     max.setValue(value);
                 }
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
-        if (!itemCount.getValue().equals(nullCount.getValue())) {
+        assertEquals(nullCount.get(), statistics.getNumNulls());
+        if (itemCount.get() != nullCount.get()) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             // Use FloatComparisons.compare() to handle -0.0f == 0.0f properly
-            assertEquals(FloatComparisons.compare(min.getValue(), statistics.genericGetMin()), 0);
-            assertEquals(FloatComparisons.compare(max.getValue(), statistics.genericGetMax()), 0);
+            assertEquals(FloatComparisons.compare(min.floatValue(), statistics.genericGetMin()), 0);
+            assertEquals(FloatComparisons.compare(max.floatValue(), statistics.genericGetMax()), 0);
         } else {
             // Everything is null, statistics should be empty.
             assertFalse(statistics.hasNonNullValue());
@@ -3910,22 +3993,22 @@ public final class ParquetTableReadWriteTest {
                 if (value == NULL_FLOAT) {
                     nullCount.increment();
                 } else {
-                    if (min.getValue() == NULL_FLOAT || value < min.getValue()) {
+                    if (min.floatValue() == NULL_FLOAT || value < min.floatValue()) {
                         min.setValue(value);
                     }
-                    if (max.getValue() == NULL_FLOAT || value > max.getValue()) {
+                    if (max.floatValue() == NULL_FLOAT || value > max.floatValue()) {
                         max.setValue(value);
                     }
                 }
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
-        if (!itemCount.getValue().equals(nullCount.getValue())) {
+        assertEquals(nullCount.get(), statistics.getNumNulls());
+        if (itemCount.get() != nullCount.get()) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             // Use FloatComparisons.compare() to handle -0.0f == 0.0f properly
-            assertEquals(FloatComparisons.compare(min.getValue(), statistics.genericGetMin()), 0);
-            assertEquals(FloatComparisons.compare(max.getValue(), statistics.genericGetMax()), 0);
+            assertEquals(FloatComparisons.compare(min.floatValue(), statistics.genericGetMin()), 0);
+            assertEquals(FloatComparisons.compare(max.floatValue(), statistics.genericGetMax()), 0);
         } else {
             // Everything is null, statistics should be empty.
             assertFalse(statistics.hasNonNullValue());
@@ -3950,22 +4033,22 @@ public final class ParquetTableReadWriteTest {
                 if (value == NULL_FLOAT) {
                     nullCount.increment();
                 } else {
-                    if (min.getValue() == NULL_FLOAT || value < min.getValue()) {
+                    if (min.floatValue() == NULL_FLOAT || value < min.floatValue()) {
                         min.setValue(value);
                     }
-                    if (max.getValue() == NULL_FLOAT || value > max.getValue()) {
+                    if (max.floatValue() == NULL_FLOAT || value > max.floatValue()) {
                         max.setValue(value);
                     }
                 }
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
-        if (!itemCount.getValue().equals(nullCount.getValue())) {
+        assertEquals(nullCount.get(), statistics.getNumNulls());
+        if (itemCount.get() != nullCount.get()) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             // Use FloatComparisons.compare() to handle -0.0f == 0.0f properly
-            assertEquals(FloatComparisons.compare(min.getValue(), statistics.genericGetMin()), 0);
-            assertEquals(FloatComparisons.compare(max.getValue(), statistics.genericGetMax()), 0);
+            assertEquals(FloatComparisons.compare(min.floatValue(), statistics.genericGetMin()), 0);
+            assertEquals(FloatComparisons.compare(max.floatValue(), statistics.genericGetMax()), 0);
         } else {
             // Everything is null, statistics should be empty.
             assertFalse(statistics.hasNonNullValue());
@@ -3983,21 +4066,21 @@ public final class ParquetTableReadWriteTest {
             if (value == NULL_DOUBLE) {
                 nullCount.increment();
             } else {
-                if (min.getValue() == NULL_DOUBLE || value < min.getValue()) {
+                if (min.doubleValue() == NULL_DOUBLE || value < min.doubleValue()) {
                     min.setValue(value);
                 }
-                if (max.getValue() == NULL_DOUBLE || value > max.getValue()) {
+                if (max.doubleValue() == NULL_DOUBLE || value > max.doubleValue()) {
                     max.setValue(value);
                 }
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
-        if (!itemCount.getValue().equals(nullCount.getValue())) {
+        assertEquals(nullCount.get(), statistics.getNumNulls());
+        if (itemCount.get() != nullCount.get()) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             // Use DoubleComparisons.compare() to handle -0.0f == 0.0f properly
-            assertEquals(DoubleComparisons.compare(min.getValue(), statistics.genericGetMin()), 0);
-            assertEquals(DoubleComparisons.compare(max.getValue(), statistics.genericGetMax()), 0);
+            assertEquals(DoubleComparisons.compare(min.doubleValue(), statistics.genericGetMin()), 0);
+            assertEquals(DoubleComparisons.compare(max.doubleValue(), statistics.genericGetMax()), 0);
         } else {
             // Everything is null, statistics should be empty.
             assertFalse(statistics.hasNonNullValue());
@@ -4022,22 +4105,22 @@ public final class ParquetTableReadWriteTest {
                 if (value == NULL_DOUBLE) {
                     nullCount.increment();
                 } else {
-                    if (min.getValue() == NULL_DOUBLE || value < min.getValue()) {
+                    if (min.doubleValue() == NULL_DOUBLE || value < min.doubleValue()) {
                         min.setValue(value);
                     }
-                    if (max.getValue() == NULL_DOUBLE || value > max.getValue()) {
+                    if (max.doubleValue() == NULL_DOUBLE || value > max.doubleValue()) {
                         max.setValue(value);
                     }
                 }
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
-        if (!itemCount.getValue().equals(nullCount.getValue())) {
+        assertEquals(nullCount.get(), statistics.getNumNulls());
+        if (itemCount.get() != nullCount.get()) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             // Use DoubleComparisons.compare() to handle -0.0f == 0.0f properly
-            assertEquals(DoubleComparisons.compare(min.getValue(), statistics.genericGetMin()), 0);
-            assertEquals(DoubleComparisons.compare(max.getValue(), statistics.genericGetMax()), 0);
+            assertEquals(DoubleComparisons.compare(min.doubleValue(), statistics.genericGetMin()), 0);
+            assertEquals(DoubleComparisons.compare(max.doubleValue(), statistics.genericGetMax()), 0);
         } else {
             // Everything is null, statistics should be empty.
             assertFalse(statistics.hasNonNullValue());
@@ -4062,22 +4145,22 @@ public final class ParquetTableReadWriteTest {
                 if (value == NULL_DOUBLE) {
                     nullCount.increment();
                 } else {
-                    if (min.getValue() == NULL_DOUBLE || value < min.getValue()) {
+                    if (min.doubleValue() == NULL_DOUBLE || value < min.doubleValue()) {
                         min.setValue(value);
                     }
-                    if (max.getValue() == NULL_DOUBLE || value > max.getValue()) {
+                    if (max.doubleValue() == NULL_DOUBLE || value > max.doubleValue()) {
                         max.setValue(value);
                     }
                 }
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
-        if (!itemCount.getValue().equals(nullCount.getValue())) {
+        assertEquals(nullCount.get(), statistics.getNumNulls());
+        if (itemCount.get() != nullCount.get()) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             // Use DoubleComparisons.compare() to handle -0.0f == 0.0f properly
-            assertEquals(DoubleComparisons.compare(min.getValue(), statistics.genericGetMin()), 0);
-            assertEquals(DoubleComparisons.compare(max.getValue(), statistics.genericGetMax()), 0);
+            assertEquals(DoubleComparisons.compare(min.doubleValue(), statistics.genericGetMin()), 0);
+            assertEquals(DoubleComparisons.compare(max.doubleValue(), statistics.genericGetMax()), 0);
         } else {
             // Everything is null, statistics should be empty.
             assertFalse(statistics.hasNonNullValue());
@@ -4105,8 +4188,8 @@ public final class ParquetTableReadWriteTest {
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
-        if (!itemCount.getValue().equals(nullCount.getValue())) {
+        assertEquals(nullCount.get(), statistics.getNumNulls());
+        if (itemCount.get() != nullCount.get()) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             assertEquals(Binary.fromString(min.getValue()), statistics.genericGetMin());
             assertEquals(Binary.fromString(max.getValue()), statistics.genericGetMax());
@@ -4144,8 +4227,8 @@ public final class ParquetTableReadWriteTest {
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
-        if (!itemCount.getValue().equals(nullCount.getValue())) {
+        assertEquals(nullCount.get(), statistics.getNumNulls());
+        if (itemCount.get() != nullCount.get()) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             assertEquals(Binary.fromString(min.getValue()), statistics.genericGetMin());
             assertEquals(Binary.fromString(max.getValue()), statistics.genericGetMax());
@@ -4183,8 +4266,8 @@ public final class ParquetTableReadWriteTest {
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
-        if (!itemCount.getValue().equals(nullCount.getValue())) {
+        assertEquals(nullCount.get(), statistics.getNumNulls());
+        if (itemCount.get() != nullCount.get()) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             assertEquals(Binary.fromString(min.getValue()), statistics.genericGetMin());
             assertEquals(Binary.fromString(max.getValue()), statistics.genericGetMax());
@@ -4207,20 +4290,20 @@ public final class ParquetTableReadWriteTest {
                 nullCount.increment();
             } else {
                 // DateTimeUtils.epochNanos() is the correct conversion for Instant to long.
-                if (min.getValue() == NULL_LONG || DateTimeUtils.epochNanos(value) < min.getValue()) {
-                    min.setValue(DateTimeUtils.epochNanos(value));
+                if (min.get() == NULL_LONG || DateTimeUtils.epochNanos(value) < min.get()) {
+                    min.set(DateTimeUtils.epochNanos(value));
                 }
-                if (max.getValue() == NULL_LONG || DateTimeUtils.epochNanos(value) > max.getValue()) {
-                    max.setValue(DateTimeUtils.epochNanos(value));
+                if (max.get() == NULL_LONG || DateTimeUtils.epochNanos(value) > max.get()) {
+                    max.set(DateTimeUtils.epochNanos(value));
                 }
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
-        if (!itemCount.getValue().equals(nullCount.getValue())) {
+        assertEquals(nullCount.get(), statistics.getNumNulls());
+        if (itemCount.get() != nullCount.get()) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
-            assertEquals(min.getValue(), statistics.genericGetMin());
-            assertEquals(max.getValue(), statistics.genericGetMax());
+            assertEquals(min.get(), (long) statistics.genericGetMin());
+            assertEquals(max.get(), (long) statistics.genericGetMax());
         } else {
             // Everything is null, statistics should be empty.
             assertFalse(statistics.hasNonNullValue());
@@ -4246,21 +4329,21 @@ public final class ParquetTableReadWriteTest {
                     nullCount.increment();
                 } else {
                     // DateTimeUtils.epochNanos() is the correct conversion for Instant to long.
-                    if (min.getValue() == NULL_LONG || DateTimeUtils.epochNanos(value) < min.getValue()) {
-                        min.setValue(DateTimeUtils.epochNanos(value));
+                    if (min.get() == NULL_LONG || DateTimeUtils.epochNanos(value) < min.get()) {
+                        min.set(DateTimeUtils.epochNanos(value));
                     }
-                    if (max.getValue() == NULL_LONG || DateTimeUtils.epochNanos(value) > max.getValue()) {
-                        max.setValue(DateTimeUtils.epochNanos(value));
+                    if (max.get() == NULL_LONG || DateTimeUtils.epochNanos(value) > max.get()) {
+                        max.set(DateTimeUtils.epochNanos(value));
                     }
                 }
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
-        if (!itemCount.getValue().equals(nullCount.getValue())) {
+        assertEquals(nullCount.get(), statistics.getNumNulls());
+        if (itemCount.get() != nullCount.get()) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
-            assertEquals(min.getValue(), statistics.genericGetMin());
-            assertEquals(max.getValue(), statistics.genericGetMax());
+            assertEquals(min.get(), (long) statistics.genericGetMin());
+            assertEquals(max.get(), (long) statistics.genericGetMax());
         } else {
             // Everything is null, statistics should be empty.
             assertFalse(statistics.hasNonNullValue());
@@ -4286,22 +4369,22 @@ public final class ParquetTableReadWriteTest {
                     nullCount.increment();
                 } else {
                     // DateTimeUtils.epochNanos() is the correct conversion for Instant to long.
-                    if (min.getValue() == NULL_LONG || DateTimeUtils.epochNanos(value) < min.getValue()) {
-                        min.setValue(DateTimeUtils.epochNanos(value));
+                    if (min.get() == NULL_LONG || DateTimeUtils.epochNanos(value) < min.get()) {
+                        min.set(DateTimeUtils.epochNanos(value));
                     }
-                    if (max.getValue() == NULL_LONG || DateTimeUtils.epochNanos(value) > max.getValue()) {
-                        max.setValue(DateTimeUtils.epochNanos(value));
+                    if (max.get() == NULL_LONG || DateTimeUtils.epochNanos(value) > max.get()) {
+                        max.set(DateTimeUtils.epochNanos(value));
                     }
                 }
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
-        if (!itemCount.getValue().equals(nullCount.getValue())) {
+        assertEquals(nullCount.get(), statistics.getNumNulls());
+        if (itemCount.get() != nullCount.get()) {
             // There are some non-null values, so min and max should be non-null and equal to observed
             // values.
-            assertEquals(min.getValue(), statistics.genericGetMin());
-            assertEquals(max.getValue(), statistics.genericGetMax());
+            assertEquals(min.get(), (long) statistics.genericGetMin());
+            assertEquals(max.get(), (long) statistics.genericGetMax());
         } else {
             // Everything is null, statistics should be empty.
             assertFalse(statistics.hasNonNullValue());
@@ -4329,8 +4412,8 @@ public final class ParquetTableReadWriteTest {
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
-        if (!itemCount.getValue().equals(nullCount.getValue())) {
+        assertEquals(nullCount.get(), statistics.getNumNulls());
+        if (itemCount.get() != nullCount.get()) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             assertEquals(Binary.fromConstantByteArray(min.getValue().unscaledValue().toByteArray()),
                     statistics.genericGetMin());
@@ -4363,8 +4446,8 @@ public final class ParquetTableReadWriteTest {
             }
         });
 
-        assertEquals(nullCount.intValue(), statistics.getNumNulls());
-        if (!itemCount.getValue().equals(nullCount.getValue())) {
+        assertEquals(nullCount.get(), statistics.getNumNulls());
+        if (itemCount.get() != nullCount.get()) {
             // There are some non-null values, so min and max should be non-null and equal to observed values.
             assertEquals(Binary.fromConstantByteArray(min.getValue().toByteArray()), statistics.genericGetMin());
             assertEquals(Binary.fromConstantByteArray(max.getValue().toByteArray()), statistics.genericGetMax());
@@ -4380,7 +4463,8 @@ public final class ParquetTableReadWriteTest {
     }
 
     private static Table checkSingleTable(Table expected, File source, ParquetInstructions instructions) {
-        final Table singleTable = readSingleFileTable(source, instructions);
+        final Table singleTable =
+                readTable(source.getPath(), instructions.withLayout(ParquetInstructions.ParquetFileLayout.SINGLE_FILE));
         assertTableEquals(expected, singleTable);
         // Note: we can uncomment out the below lines for extra testing of readTable inference and readSingleTable via
         // definition, but it's ultimately extra work that we've already explicitly tested.

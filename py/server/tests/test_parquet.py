@@ -38,7 +38,11 @@ class ParquetTestCase(BaseTestCase):
         """ Test suite for reading, writing, and deleting a table to disk """
 
         table = empty_table(3).update(formulas=["x=i", "y=(double)(i/10.0)", "z=(double)(i*i)"])
-        definition = table.columns
+        table_definition = {
+            "x": dtypes.int32,
+            "y": dtypes.double,
+            "z": dtypes.double,
+        }
         base_dir = os.path.join(self.temp_dir.name, "testCreation")
         file_location = os.path.join(base_dir, 'table1.parquet')
         file_location2 = os.path.join(base_dir, 'table2.parquet')
@@ -57,8 +61,8 @@ class ParquetTestCase(BaseTestCase):
             self.assert_table_equals(table, table2)
             shutil.rmtree(base_dir)
 
-        with self.subTest(msg="write_tables(Table[], destinations, col_definitions"):
-            batch_write([table, table], [file_location, file_location2], definition)
+        with self.subTest(msg="write_tables(Table[], destinations, table_definition"):
+            batch_write([table, table], [file_location, file_location2], table_definition)
             self.assertTrue(os.path.exists(file_location))
             self.assertTrue(os.path.exists(file_location2))
             table2 = read(file_location, file_layout=ParquetFileLayout.SINGLE_FILE)
@@ -78,7 +82,11 @@ class ParquetTestCase(BaseTestCase):
         """ Test suite for reading, writing, and deleting a table to disk """
 
         table = empty_table(3).update(formulas=["x=i", "y=String.valueOf((double)(i/10.0))", "z=(double)(i*i)"])
-        col_definitions = table.columns
+        table_definition = {
+            "x": dtypes.int32,
+            "y": dtypes.string,
+            "z": dtypes.double,
+        }
         base_dir = os.path.join(self.temp_dir.name, "testCreation")
         file_location = os.path.join(base_dir, 'table1.parquet')
         file_location2 = os.path.join(base_dir, 'table2.parquet')
@@ -103,14 +111,14 @@ class ParquetTestCase(BaseTestCase):
             self.assertTrue(os.path.exists(file_location))
             shutil.rmtree(base_dir)
 
-        with self.subTest(msg="write_tables(Table[], destinations, col_definitions, "):
-            batch_write([table, table], [file_location, file_location2], col_definitions,
+        with self.subTest(msg="write_tables(Table[], destinations, table_definition, col_instructions"):
+            batch_write([table, table], [file_location, file_location2], table_definition,
                         col_instructions=[col_inst, col_inst1])
             self.assertTrue(os.path.exists(file_location))
             self.assertTrue(os.path.exists(file_location2))
             shutil.rmtree(base_dir)
 
-        with self.subTest(msg="write_table(Table, destination, col_definitions, "):
+        with self.subTest(msg="write_table(Table, destination, col_instructions"):
             write(table, file_location, col_instructions=[col_inst, col_inst1])
             # self.assertTrue(os.path.exists(file_location))
 
@@ -665,11 +673,8 @@ class ParquetTestCase(BaseTestCase):
         # Test all different APIs
         write_partitioned(partitioned_table, destination_dir=root_dir, base_name=base_name,
                           max_dictionary_keys=max_dictionary_keys)
-        from_disk = read(root_dir)
-        definition = from_disk.columns
-        verify_table_from_disk(from_disk)
+        verify_table_from_disk(read(root_dir))
         verify_file_names()
-        from_disk = None
 
         shutil.rmtree(root_dir)
         write_partitioned(partitioned_table, destination_dir=root_dir,
@@ -693,29 +698,33 @@ class ParquetTestCase(BaseTestCase):
         self.verify_index_files(os.path.join(root_dir, "X=Aa/.dh_metadata/indexes/Y,Number"))
 
         shutil.rmtree(root_dir)
-        write_partitioned(source, col_definitions=definition, destination_dir=root_dir,
+        table_definition = [
+            Column("X", dtypes.string, column_type=ColumnType.PARTITIONING),
+            Column("Y", dtypes.string),
+            Column("Number", dtypes.int32)
+        ]
+        write_partitioned(source, table_definition=table_definition, destination_dir=root_dir,
                           base_name=base_name, max_dictionary_keys=max_dictionary_keys)
         verify_table_from_disk(read(root_dir))
         verify_file_names()
 
         shutil.rmtree(root_dir)
-        write_partitioned(source, col_definitions=definition, destination_dir=root_dir,
+        write_partitioned(source, table_definition=table_definition, destination_dir=root_dir,
                           max_dictionary_keys=max_dictionary_keys, generate_metadata_files=True)
         verify_table_from_disk(read(root_dir))
         self.verify_metadata_files(root_dir)
 
         shutil.rmtree(root_dir)
-        write_partitioned(source, col_definitions=definition, destination_dir=root_dir,
-                          base_name=base_name)
+        write_partitioned(source, table_definition=table_definition, destination_dir=root_dir, base_name=base_name)
         verify_table_from_disk(read(root_dir))
         verify_file_names()
 
         shutil.rmtree(root_dir)
-        write_partitioned(source, col_definitions=definition, destination_dir=root_dir)
+        write_partitioned(source, table_definition=table_definition, destination_dir=root_dir)
         verify_table_from_disk(read(root_dir))
 
         shutil.rmtree(root_dir)
-        write_partitioned(source, col_definitions=definition, destination_dir=root_dir,
+        write_partitioned(source, table_definition=table_definition, destination_dir=root_dir,
                           index_columns=[["Y"], ["Y", "Number"]])
         verify_table_from_disk(read(root_dir))
         self.verify_index_files(os.path.join(root_dir, "X=Aa/.dh_metadata/indexes/Y"))
@@ -731,8 +740,13 @@ class ParquetTestCase(BaseTestCase):
         shutil.rmtree(".dh_metadata")
 
         second_table = empty_table(10).update(formulas=["x=i*5", "y=(double)(i/5.0)", "z=(double)(i*i*i)"])
+        table_definition = {
+            "x": dtypes.int32,
+            "y": dtypes.double,
+            "z": dtypes.double,
+        }
         batch_write([first_table, second_table], ["X.parquet", "Y.parquet"], index_columns=[["x"], ["y", "z"]],
-                    col_definitions=first_table.columns)
+                    table_definition=table_definition)
         from_disk_first_table = read("X.parquet")
         self.assert_table_equals(first_table, from_disk_first_table)
         from_disk_second_table = read("Y.parquet")
@@ -753,13 +767,6 @@ class ParquetTestCase(BaseTestCase):
         from_disk = read("data_from_dh.parquet")
         self.assert_table_equals(from_disk, table.select(["a", "b", "c"]))
 
-        col_definitions = from_disk.columns
-        write(table, "data_from_dh.parquet", col_definitions=col_definitions)
-        from_disk = read("data_from_dh.parquet")
-        self.assert_table_equals(from_disk, table.select(["a", "b", "c"]))
-
-        with self.assertRaises(Exception):
-            write(table, "data_from_dh.parquet", table_definition=table_definition, col_definitions=col_definitions)
 
     def test_unsigned_ints(self):
         df = pandas.DataFrame.from_records(

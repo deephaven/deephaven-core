@@ -1,0 +1,111 @@
+{
+  "format-version" : 2,
+  "table-uuid" : "27a1c139-084c-430b-9d0e-c08f18f89b42",
+  "location" : "s3://warehouse/sales/sales_partitioned",
+  "last-sequence-number" : 1,
+  "last-updated-ms" : 1716234546921,
+  "last-column-id" : 7,
+  "current-schema-id" : 0,
+  "schemas" : [ {
+    "type" : "struct",
+    "schema-id" : 0,
+    "fields" : [ {
+      "id" : 1,
+      "name" : "Region",
+      "required" : false,
+      "type" : "string"
+    }, {
+      "id" : 2,
+      "name" : "Item_Type",
+      "required" : false,
+      "type" : "string"
+    }, {
+      "id" : 3,
+      "name" : "Units_Sold",
+      "required" : false,
+      "type" : "int"
+    }, {
+      "id" : 4,
+      "name" : "Unit_Price",
+      "required" : false,
+      "type" : "double"
+    }, {
+      "id" : 5,
+      "name" : "Order_Date",
+      "required" : false,
+      "type" : "timestamptz"
+    }, {
+      "id" : 6,
+      "name" : "year",
+      "required" : false,
+      "type" : "int"
+    }, {
+      "id" : 7,
+      "name" : "month",
+      "required" : false,
+      "type" : "int"
+    } ]
+  } ],
+  "default-spec-id" : 0,
+  "partition-specs" : [ {
+    "spec-id" : 0,
+    "fields" : [ {
+      "name" : "year",
+      "transform" : "identity",
+      "source-id" : 6,
+      "field-id" : 1000
+    }, {
+      "name" : "month",
+      "transform" : "identity",
+      "source-id" : 7,
+      "field-id" : 1001
+    } ]
+  } ],
+  "last-partition-id" : 1001,
+  "default-sort-order-id" : 0,
+  "sort-orders" : [ {
+    "order-id" : 0,
+    "fields" : [ ]
+  } ],
+  "properties" : {
+    "owner" : "root",
+    "created-at" : "2024-05-20T19:49:06.309740092Z",
+    "write.format.default" : "parquet",
+    "write.parquet.compression-codec" : "zstd"
+  },
+  "current-snapshot-id" : 5230665555732911945,
+  "refs" : {
+    "main" : {
+      "snapshot-id" : 5230665555732911945,
+      "type" : "branch"
+    }
+  },
+  "snapshots" : [ {
+    "sequence-number" : 1,
+    "snapshot-id" : 5230665555732911945,
+    "timestamp-ms" : 1716234546921,
+    "summary" : {
+      "operation" : "append",
+      "spark.app.id" : "local-1716234462547",
+      "added-data-files" : "2",
+      "added-records" : "100000",
+      "added-files-size" : "755958",
+      "changed-partition-count" : "2",
+      "total-records" : "100000",
+      "total-files-size" : "755958",
+      "total-data-files" : "2",
+      "total-delete-files" : "0",
+      "total-position-deletes" : "0",
+      "total-equality-deletes" : "0"
+    },
+    "manifest-list" : "s3://warehouse/sales/sales_partitioned/metadata/snap-5230665555732911945-1-4c305b6c-008f-407a-8e3b-ea1187f6421e.avro",
+    "schema-id" : 0
+  } ],
+  "statistics" : [ ],
+  "partition-statistics" : [ ],
+  "snapshot-log" : [ {
+    "timestamp-ms" : 1716234546921,
+    "snapshot-id" : 5230665555732911945
+  } ],
+  "metadata-log" : [ ]
+}

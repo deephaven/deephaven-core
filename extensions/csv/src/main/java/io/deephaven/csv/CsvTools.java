@@ -31,14 +31,13 @@ import io.deephaven.csv.util.CsvReaderException;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -872,12 +871,9 @@ public class CsvTools {
         if (colNames.length == 0) {
             return;
         }
-        final DataColumn[] cols = new DataColumn[colNames.length];
-        for (int c = 0; c < colNames.length; ++c) {
-            cols[c] = DataAccessHelpers.getColumn(source, colNames[c]);
-        }
-        final long size = cols[0].size();
-        writeCsvContentsSeq(out, timeZone, cols, size, nullsAsEmpty, separator, progress);
+        final ColumnSource<?>[] cols =
+                Arrays.stream(colNames).map(source::getColumnSource).toArray(ColumnSource[]::new);
+        writeCsvContentsSeq(out, timeZone, source.getRowSet(), cols, nullsAsEmpty, separator, progress);
     }
 
     /**
@@ -897,12 +893,12 @@ public class CsvTools {
     }
 
     /**
-     * Writes an array of Deephaven DataColumns out as a CSV file.
+     * Writes Deephaven columns out as a CSV file.
      *
      * @param out a Writer to which the header should be written
      * @param timeZone a time zone constant relative to which date time data should be adjusted
-     * @param cols an array of Deephaven DataColumns to be written
-     * @param size the size of the DataColumns
+     * @param rows a RowSet containing the row keys to be written
+     * @param cols an array of ColumnSources to be written
      * @param nullsAsEmpty if nulls should be written as blank instead of '(null)'
      * @param separator the delimiter for the CSV
      * @param progress a procedure that implements BiConsumer, and takes a progress Integer and a total size Integer to
@@ -912,22 +908,25 @@ public class CsvTools {
     private static void writeCsvContentsSeq(
             final Writer out,
             final ZoneId timeZone,
-            final DataColumn[] cols,
-            final long size,
+            final RowSet rows,
+            final ColumnSource<?>[] cols,
             final boolean nullsAsEmpty,
             final char separator,
             @Nullable final BiConsumer<Long, Long> progress) throws IOException {
+        final long size = rows.size();
         try (final SafeCloseable ignored =
-                QueryPerformanceRecorder.getInstance().getNugget("CsvTools.writeCsvContentsSeq()")) {
+                QueryPerformanceRecorder.getInstance().getNugget("CsvTools.writeCsvContentsSeq()");
+                final RowSet.Iterator rowsIter = rows.iterator()) {
             String separatorStr = String.valueOf(separator);
-            for (long i = 0; i < size; i++) {
-                for (int j = 0; j < cols.length; j++) {
-                    if (j > 0) {
+            for (long ri = 0; ri < size; ri++) {
+                final long rowKey = rowsIter.nextLong();
+                for (int ci = 0; ci < cols.length; ci++) {
+                    if (ci > 0) {
                         out.write(separatorStr);
                     } else {
                         out.write("\n");
                     }
-                    final Object o = cols[j].get(i);
+                    final Object o = cols[ci].get(rowKey);
                     if (o instanceof String) {
                         out.write("" + separatorCsvEscape((String) o, separatorStr));
                     } else if (o instanceof Instant) {
@@ -941,7 +940,7 @@ public class CsvTools {
                     }
                 }
                 if (progress != null) {
-                    progress.accept(i, size);
+                    progress.accept(ri, size);
                 }
             }
         }

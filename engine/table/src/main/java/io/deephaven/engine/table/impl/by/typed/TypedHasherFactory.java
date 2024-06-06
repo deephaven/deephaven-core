@@ -38,8 +38,7 @@ import io.deephaven.engine.table.impl.updateby.hashing.TypedUpdateByFactory;
 import io.deephaven.engine.table.impl.updateby.hashing.UpdateByStateManagerTypedBase;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.CharComparisons;
-import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import javax.lang.model.element.Modifier;
@@ -273,7 +272,7 @@ public class TypedHasherFactory {
             builder.addProbe(new HasherConfig.ProbeSpec("decorateLeftSide", null, true,
                     TypedAsOfJoinFactory::staticProbeDecorateLeftFound, null,
                     ParameterSpec.builder(TypeName.get(IntegerArraySource.class), "hashSlots").build(),
-                    ParameterSpec.builder(MutableLong.class, "hashSlotOffset").build(),
+                    ParameterSpec.builder(MutableInt.class, "hashSlotOffset").build(),
                     ParameterSpec.builder(RowSetBuilderRandom.class, "foundBuilder").build()));
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromRightSide", "rightSideSentinel",

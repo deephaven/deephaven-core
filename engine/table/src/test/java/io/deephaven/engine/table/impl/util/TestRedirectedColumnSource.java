@@ -32,8 +32,7 @@ import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import gnu.trove.list.TByteList;
 import gnu.trove.list.array.TByteArrayList;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
-import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableInt;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -73,10 +72,10 @@ public class TestRedirectedColumnSource {
             final RowSequence rs,
             final WritableObjectChunk<String, Values> chunk,
             final long offset) {
-        final MutableLong pos = new MutableLong();
+        final MutableInt pos = new MutableInt();
         rs.forAllRowKeys(k -> {
             final String s = (String) cs.get(k);
-            assertEquals("offset=" + (pos.intValue() + offset) + ", k=" + k, s, chunk.get(pos.intValue()));
+            assertEquals("offset=" + (pos.get() + offset) + ", k=" + k, s, chunk.get(pos.get()));
             pos.increment();
         });
     }
@@ -156,7 +155,7 @@ public class TestRedirectedColumnSource {
         final byte[] expecteds = new byte[6];
         final MutableInt idx = new MutableInt();
         Stream.of(true, null, false, null, null, null).forEach(boolVal -> {
-            expecteds[idx.intValue()] = BooleanUtils.booleanAsByte(boolVal);
+            expecteds[idx.get()] = BooleanUtils.booleanAsByte(boolVal);
             idx.increment();
         });
         assertArrayEquals(expecteds, byteList.toArray());

@@ -22,7 +22,7 @@ import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.ByteUtils;
 import io.deephaven.util.CompletionStageFuture;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.apache.commons.text.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -970,7 +970,7 @@ public class QueryCompilerImpl implements QueryCompiler, LogOutputAppendable {
                         .collect(Collectors.toList()))
                 .call();
 
-        final boolean wantRetry = numFailures.intValue() > 0 && numFailures.intValue() != endExclusive - startInclusive;
+        final boolean wantRetry = numFailures.get() > 0 && numFailures.get() != endExclusive - startInclusive;
 
         // The above has compiled into e.g.
         // /tmp/workspace/cache/classes/temporaryCompilationDirectory12345/io/deephaven/test/cm12862183232603186v52_0/{various
