@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.context.QueryScope;
-import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.util.TableTools;
@@ -213,14 +212,14 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
         assertEquals(MatchFilter.class, f.getClass());
         RowSet idx = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);
         assertEquals(1, idx.size());
-        assertEquals(mon, DataAccessHelpers.getColumn(t, 0).get(idx.firstRowKey()));
+        assertEquals(mon, t.getColumnSource("Timestamp", Instant.class).get(idx.firstRowKey()));
         // match one of two items
         f = WhereFilterFactory.getExpression("Timestamp in '" + tues + "', '" + wed + "'");
         f.init(t.getDefinition());
         assertEquals(MatchFilter.class, f.getClass());
         idx = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);
         assertEquals(1, idx.size());
-        assertEquals(tues, DataAccessHelpers.getColumn(t, 0).get(idx.firstRowKey()));
+        assertEquals(tues, t.getColumnSource("Timestamp", Instant.class).get(idx.firstRowKey()));
 
         // match two of two items
         f = WhereFilterFactory.getExpression("Timestamp in '" + tues + "', '" + thurs + "'");
@@ -228,8 +227,8 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
         assertEquals(MatchFilter.class, f.getClass());
         idx = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);
         assertEquals(2, idx.size());
-        assertEquals(tues, DataAccessHelpers.getColumn(t, 0).get(idx.firstRowKey()));
-        assertEquals(thurs, DataAccessHelpers.getColumn(t, 0).get(idx.lastRowKey()));
+        assertEquals(tues, t.getColumnSource("Timestamp", Instant.class).get(idx.firstRowKey()));
+        assertEquals(thurs, t.getColumnSource("Timestamp", Instant.class).get(idx.lastRowKey()));
 
         // match zero of one item
         f = WhereFilterFactory.getExpression("Timestamp in '" + wed + "'");
@@ -252,14 +251,14 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
         assertEquals(MatchFilter.class, f.getClass());
         RowSet idx = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);
         assertEquals(1, idx.size());
-        assertEquals(b, DataAccessHelpers.getColumn(t, 0).get(idx.firstRowKey()));
+        assertEquals(b, t.getColumnSource("BigDecimal", BigDecimal.class).get(idx.firstRowKey()));
         // match one of two items
         f = WhereFilterFactory.getExpression("BigDecimal in " + a + ", " + b);
         f.init(t.getDefinition());
         assertEquals(MatchFilter.class, f.getClass());
         idx = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);
         assertEquals(1, idx.size());
-        assertEquals(b, DataAccessHelpers.getColumn(t, 0).get(idx.firstRowKey()));
+        assertEquals(b, t.getColumnSource("BigDecimal", BigDecimal.class).get(idx.firstRowKey()));
 
         // match two of two items
         f = WhereFilterFactory.getExpression("BigDecimal in " + c + ", " + d);
@@ -267,8 +266,8 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
         assertEquals(MatchFilter.class, f.getClass());
         idx = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);
         assertEquals(2, idx.size());
-        assertEquals(c, DataAccessHelpers.getColumn(t, 0).get(idx.firstRowKey()));
-        assertEquals(d, DataAccessHelpers.getColumn(t, 0).get(idx.lastRowKey()));
+        assertEquals(c, t.getColumnSource("BigDecimal", BigDecimal.class).get(idx.firstRowKey()));
+        assertEquals(d, t.getColumnSource("BigDecimal", BigDecimal.class).get(idx.lastRowKey()));
 
         // match zero of one item
         f = WhereFilterFactory.getExpression("BigDecimal == " + a);
@@ -291,14 +290,14 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
         assertEquals(MatchFilter.class, f.getClass());
         RowSet idx = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);
         assertEquals(1, idx.size());
-        assertEquals(b, DataAccessHelpers.getColumn(t, 0).get(idx.firstRowKey()));
+        assertEquals(b, t.getColumnSource("BigInteger", BigInteger.class).get(idx.firstRowKey()));
         // match one of two items
         f = WhereFilterFactory.getExpression("BigInteger in " + a + ", " + b);
         f.init(t.getDefinition());
         assertEquals(MatchFilter.class, f.getClass());
         idx = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);
         assertEquals(1, idx.size());
-        assertEquals(b, DataAccessHelpers.getColumn(t, 0).get(idx.firstRowKey()));
+        assertEquals(b, t.getColumnSource("BigInteger", BigInteger.class).get(idx.firstRowKey()));
 
         // match two of two items
         f = WhereFilterFactory.getExpression("BigInteger in " + c + ", " + d);
@@ -306,8 +305,8 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
         assertEquals(MatchFilter.class, f.getClass());
         idx = f.filter(t.getRowSet().copy(), t.getRowSet(), t, false);
         assertEquals(2, idx.size());
-        assertEquals(c, DataAccessHelpers.getColumn(t, 0).get(idx.firstRowKey()));
-        assertEquals(d, DataAccessHelpers.getColumn(t, 0).get(idx.lastRowKey()));
+        assertEquals(c, t.getColumnSource("BigInteger", BigInteger.class).get(idx.firstRowKey()));
+        assertEquals(d, t.getColumnSource("BigInteger", BigInteger.class).get(idx.lastRowKey()));
 
         // match zero of one item
         f = WhereFilterFactory.getExpression("BigInteger == " + a);

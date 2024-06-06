@@ -9,9 +9,11 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ResettableContext;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.vector.IntVector;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -106,9 +108,9 @@ public class TestSharedContext {
             final Table t2Filtered = t2.where(condition).reverse();
             assertEquals(t2.size(), t1.size());
             final Consumer<String> columnChecker = (final String col) -> {
-                final int[] t2fcs = (int[]) DataAccessHelpers.getColumn(t2Filtered, col).getDirect();
+                final int[] t2fcs = ColumnVectors.ofInt(t2Filtered, col).toArray();
                 assertEquals(t2Filtered.size(), t2fcs.length);
-                final int[] t1fcs = (int[]) DataAccessHelpers.getColumn(t1Filtered, col).getDirect();
+                final int[] t1fcs = ColumnVectors.ofInt(t1Filtered, col).toArray();
                 assertEquals(t1Filtered.size(), t1fcs.length);
                 assertArrayEquals(t1fcs, t2fcs);
             };
@@ -152,11 +154,11 @@ public class TestSharedContext {
             final Table t2Filtered = t2.where(joinedCondition).reverse();
             assertEquals(t2.size(), t1.size());
             final Consumer<String> columnChecker = (final String col) -> {
-                final int[] t2fcs = (int[]) DataAccessHelpers.getColumn(t2Filtered, col).getDirect();
-                assertEquals(t2Filtered.size(), t2fcs.length);
-                final int[] t1fcs = (int[]) DataAccessHelpers.getColumn(t1Filtered, col).getDirect();
-                assertEquals(t1Filtered.size(), t1fcs.length);
-                assertArrayEquals(t1fcs, t2fcs);
+                final IntVector t2fcs = ColumnVectors.ofInt(t2Filtered, col);
+                assertEquals(t2Filtered.size(), t2fcs.size());
+                final IntVector t1fcs = ColumnVectors.ofInt(t1Filtered, col);
+                assertEquals(t1Filtered.size(), t1fcs.size());
+                assertEquals(t1fcs, t2fcs);
             };
             for (String col : cols) {
                 columnChecker.accept(col);

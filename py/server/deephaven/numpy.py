@@ -17,7 +17,7 @@ from deephaven.jcompat import _j_array_to_numpy_array
 from deephaven.table import Table
 from deephaven.jcompat import j_list_to_list
 
-_JDataAccessHelpers = jpy.get_type("io.deephaven.engine.table.impl.DataAccessHelpers")
+_JColumnVectors = jpy.get_type("io.deephaven.engine.table.vectors.ColumnVectors")
 _JDayOfWeek = jpy.get_type("java.time.DayOfWeek")
 _JArrayList = jpy.get_type("java.util.ArrayList")
 
@@ -109,8 +109,7 @@ def to_numpy(table: Table, cols: List[str] = None) -> np.ndarray:
 
         j_arrays = []
         for col_def in col_defs:
-            data_col = _JDataAccessHelpers.getColumn(table.j_table, col_def.name)
-            j_arrays.append(data_col.getDirect())
+            j_arrays.append(_JColumnVectors.of(table.j_table, col_def.name).copyToArray())
         return _columns_to_2d_numpy_array(col_defs[0], j_arrays)
     except DHError:
         raise

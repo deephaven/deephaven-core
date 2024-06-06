@@ -5,8 +5,8 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
-import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 
 import static io.deephaven.engine.util.TableTools.*;
@@ -56,7 +56,7 @@ public class TestClockFilters {
         final SortedClockFilter filter = new SortedClockFilter("Timestamp", clock, true);
 
         final Table result = testInput1.sort("Timestamp").where(filter);
-        assertArrayEquals(new int[] {1, 1, 1, 1, 1, 1}, (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
+        assertArrayEquals(new int[] {1, 1, 1, 1, 1, 1}, ColumnVectors.ofInt(result, "Int").toArray());
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -64,14 +64,14 @@ public class TestClockFilters {
             filter.run();
         });
         assertArrayEquals(new int[] {1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2},
-                (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
+                ColumnVectors.ofInt(result, "Int").toArray());
 
         updateGraph.runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
         assertArrayEquals(new int[] {1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3},
-                (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
+                ColumnVectors.ofInt(result, "Int").toArray());
     }
 
     @Test
@@ -80,7 +80,7 @@ public class TestClockFilters {
         final UnsortedClockFilter filter = new UnsortedClockFilter("Timestamp", clock, true);
 
         final Table result = testInput1.where(filter);
-        assertArrayEquals(new int[] {1, 1, 1, 1, 1, 1}, (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
+        assertArrayEquals(new int[] {1, 1, 1, 1, 1, 1}, ColumnVectors.ofInt(result, "Int").toArray());
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -88,14 +88,14 @@ public class TestClockFilters {
             filter.run();
         });
         assertArrayEquals(new int[] {1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2},
-                (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
+                ColumnVectors.ofInt(result, "Int").toArray());
 
         updateGraph.runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
         assertArrayEquals(new int[] {1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3},
-                (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
+                ColumnVectors.ofInt(result, "Int").toArray());
     }
 
     @Test
@@ -104,7 +104,7 @@ public class TestClockFilters {
         final SortedClockFilter filter = new SortedClockFilter("Timestamp", clock, true);
 
         final Table result = testInput2.sort("Timestamp").where(filter);
-        assertArrayEquals(new int[] {1, 1, 1, 1}, (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
+        assertArrayEquals(new int[] {1, 1, 1, 1}, ColumnVectors.ofInt(result, "Int").toArray());
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -112,14 +112,14 @@ public class TestClockFilters {
             filter.run();
         });
         assertArrayEquals(new int[] {1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2},
-                (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
+                ColumnVectors.ofInt(result, "Int").toArray());
 
         updateGraph.runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
         assertArrayEquals(new int[] {1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3},
-                (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
+                ColumnVectors.ofInt(result, "Int").toArray());
     }
 
     @Test
@@ -128,7 +128,7 @@ public class TestClockFilters {
         final UnsortedClockFilter filter = new UnsortedClockFilter("Timestamp", clock, true);
 
         final Table result = testInput2.where(filter);
-        assertArrayEquals(new int[] {1, 1, 1, 1}, (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
+        assertArrayEquals(new int[] {1, 1, 1, 1}, ColumnVectors.ofInt(result, "Int").toArray());
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -136,14 +136,14 @@ public class TestClockFilters {
             filter.run();
         });
         assertArrayEquals(new int[] {1, 2, 1, 2, 2, 2, 2, 2, 1, 2, 1, 2},
-                (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
+                ColumnVectors.ofInt(result, "Int").toArray());
 
         updateGraph.runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
         assertArrayEquals(new int[] {1, 2, 3, 1, 2, 3, 2, 2, 3, 2, 2, 3, 1, 2, 3, 1, 2, 3},
-                (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
+                ColumnVectors.ofInt(result, "Int").toArray());
     }
 
     @Test
@@ -152,7 +152,7 @@ public class TestClockFilters {
         final SortedClockFilter filter = new SortedClockFilter("Timestamp", clock, true);
 
         final Table result = testInput3.sort("Timestamp").where(filter);
-        assertArrayEquals(new int[] {1, 1}, (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
+        assertArrayEquals(new int[] {1, 1}, ColumnVectors.ofInt(result, "Int").toArray());
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -160,14 +160,14 @@ public class TestClockFilters {
             filter.run();
         });
         assertArrayEquals(new int[] {1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2},
-                (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
+                ColumnVectors.ofInt(result, "Int").toArray());
 
         updateGraph.runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
         assertArrayEquals(new int[] {1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3},
-                (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
+                ColumnVectors.ofInt(result, "Int").toArray());
     }
 
     @Test
@@ -176,7 +176,7 @@ public class TestClockFilters {
         final UnsortedClockFilter filter = new UnsortedClockFilter("Timestamp", clock, true);
 
         final Table result = testInput3.where(filter);
-        assertArrayEquals(new int[] {1, 1}, (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
+        assertArrayEquals(new int[] {1, 1}, ColumnVectors.ofInt(result, "Int").toArray());
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -184,14 +184,14 @@ public class TestClockFilters {
             filter.run();
         });
         assertArrayEquals(new int[] {1, 2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2},
-                (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
+                ColumnVectors.ofInt(result, "Int").toArray());
 
         updateGraph.runWithinUnitTestCycle(() -> {
             clock.run();
             filter.run();
         });
         assertArrayEquals(new int[] {1, 2, 3, 1, 2, 3, 2, 2, 3, 2, 2, 3, 2, 2, 3, 2, 2, 3},
-                (int[]) DataAccessHelpers.getColumn(result, "Int").getDirect());
+                ColumnVectors.ofInt(result, "Int").toArray());
     }
 
     @Test
