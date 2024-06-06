@@ -37,9 +37,9 @@ public class TestParquetIndexing extends RefreshingTableTestCase {
                     .addColumnNameMapping("V", "v")
                     .build();
             final File dest = new File(directory, "testOverflow.parquet");
-            ParquetTools.writeTable(table, dest, instructions);
+            ParquetTools.writeTable(table, dest.getPath(), instructions);
 
-            final Table tableR = ParquetTools.readTable(dest);
+            final Table tableR = ParquetTools.readTable(dest.getPath());
             assertEquals(data.length, tableR.size());
             final DataIndex dataIndex = DataIndexer.getDataIndex(tableR, "V");
             Assert.neqNull(dataIndex, "dataIndex");

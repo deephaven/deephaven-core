@@ -8,8 +8,8 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
-import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.TstUtils;
@@ -47,10 +47,8 @@ public class TestCumMinMax extends BaseUpdateByTest {
             if ("boolCol".equals(col)) {
                 continue;
             }
-            assertWithCumMin(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(result, col + "Min").getDirect());
-            assertWithCumMax(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(result, col + "Max").getDirect());
+            assertWithCumMin(ColumnVectors.of(t, col).toArray(), ColumnVectors.of(result, col + "Min").toArray());
+            assertWithCumMax(ColumnVectors.of(t, col).toArray(), ColumnVectors.of(result, col + "Max").toArray());
         }
     }
 
@@ -70,10 +68,12 @@ public class TestCumMinMax extends BaseUpdateByTest {
             if ("boolCol".equals(col)) {
                 continue;
             }
-            assertWithCumMin(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(result, col + "Min").getDirect());
-            assertWithCumMax(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(result, col + "Max").getDirect());
+            assertWithCumMin(
+                    ColumnVectors.of(t, col).toArray(),
+                    ColumnVectors.of(result, col + "Min").toArray());
+            assertWithCumMax(
+                    ColumnVectors.of(t, col).toArray(),
+                    ColumnVectors.of(result, col + "Max").toArray());
         }
     }
 
@@ -111,10 +111,12 @@ public class TestCumMinMax extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOp, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                assertWithCumMin(DataAccessHelpers.getColumn(source, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col + "Min").getDirect());
-                assertWithCumMax(DataAccessHelpers.getColumn(source, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col + "Max").getDirect());
+                assertWithCumMin(
+                        ColumnVectors.of(source, col).toArray(),
+                        ColumnVectors.of(actual, col + "Min").toArray());
+                assertWithCumMax(
+                        ColumnVectors.of(source, col).toArray(),
+                        ColumnVectors.of(actual, col + "Max").toArray());
             });
             return source;
         });

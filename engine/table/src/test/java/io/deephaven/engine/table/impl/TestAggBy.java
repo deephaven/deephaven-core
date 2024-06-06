@@ -15,9 +15,9 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
@@ -29,6 +29,7 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.vector.CharVector;
 import io.deephaven.vector.DoubleVector;
 import io.deephaven.vector.IntVector;
+import io.deephaven.vector.LongVector;
 import junit.framework.TestCase;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -40,7 +41,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
-import java.util.Set;
 
 import static io.deephaven.api.agg.Aggregation.*;
 import static io.deephaven.engine.testutil.TstUtils.*;
@@ -72,23 +72,23 @@ public class TestAggBy extends RefreshingTableTestCase {
                 "A");
         show(minMax);
         assertEquals(2, minMax.size());
-        DataColumn<?> dc = DataAccessHelpers.getColumn(minMax, "Min");
-        assertEquals(1, dc.get(0));
-        assertEquals(3, dc.get(1));
-        dc = DataAccessHelpers.getColumn(minMax, "Max");
-        assertEquals(10, dc.get(0));
-        assertEquals(8, dc.get(1));
+        IntVector mins = ColumnVectors.ofInt(minMax, "Min");
+        assertEquals(1, mins.get(0));
+        assertEquals(3, mins.get(1));
+        IntVector maxes = ColumnVectors.ofInt(minMax, "Max");
+        assertEquals(10, maxes.get(0));
+        assertEquals(8, maxes.get(1));
 
         Table doubleCounted = table.aggBy(List.of(AggCount("Count1"), AggCount("Count2")), "A");
         show(doubleCounted);
         assertEquals(2, doubleCounted.size());
 
-        dc = DataAccessHelpers.getColumn(doubleCounted, "Count1");
-        assertEquals(6L, dc.get(0));
-        assertEquals(4L, dc.get(1));
-        dc = DataAccessHelpers.getColumn(doubleCounted, "Count2");
-        assertEquals(6L, dc.get(0));
-        assertEquals(4L, dc.get(1));
+        LongVector counts = ColumnVectors.ofLong(doubleCounted, "Count1");
+        assertEquals(6L, counts.get(0));
+        assertEquals(4L, counts.get(1));
+        counts = ColumnVectors.ofLong(doubleCounted, "Count2");
+        assertEquals(6L, counts.get(0));
+        assertEquals(4L, counts.get(1));
 
         // Lets do some interesting incremental computations, as this is the use case that I'm really aiming at. For
         // example, getting the count, and average on each update.
@@ -498,10 +498,10 @@ public class TestAggBy extends RefreshingTableTestCase {
         Table result = dataTable.aggBy(AggCountDistinct("Account", "Qty"), "USym").sort("USym");
         Table countNulls = dataTable.aggBy(AggCountDistinct(true, "Account", "Qty"), "USym").sort("USym");
         assertEquals(4, result.size());
-        assertArrayEquals(new Object[] {"AAPL", 2L, 2L}, DataAccessHelpers.getRecord(result, 0));
-        assertArrayEquals(new Object[] {"GOOG", 2L, 2L}, DataAccessHelpers.getRecord(result, 1));
-        assertArrayEquals(new Object[] {"SPY", 3L, 4L}, DataAccessHelpers.getRecord(result, 2));
-        assertArrayEquals(new Object[] {"VXX", 1L, 1L}, DataAccessHelpers.getRecord(result, 3));
+        assertArrayEquals(new Object[] {"AAPL", 2L, 2L}, getRowData(result, 0));
+        assertArrayEquals(new Object[] {"GOOG", 2L, 2L}, getRowData(result, 1));
+        assertArrayEquals(new Object[] {"SPY", 3L, 4L}, getRowData(result, 2));
+        assertArrayEquals(new Object[] {"VXX", 1L, 1L}, getRowData(result, 3));
         assertTableEquals(result, countNulls);
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
@@ -513,11 +513,11 @@ public class TestAggBy extends RefreshingTableTestCase {
             dataTable.notifyListeners(i(10), i(), i(1));
         });
 
-        assertArrayEquals(new Object[] {"AAPL", 2L, 2L}, DataAccessHelpers.getRecord(result, 0));
-        assertArrayEquals(new Object[] {"VXX", 2L, 1L}, DataAccessHelpers.getRecord(result, 3));
+        assertArrayEquals(new Object[] {"AAPL", 2L, 2L}, getRowData(result, 0));
+        assertArrayEquals(new Object[] {"VXX", 2L, 1L}, getRowData(result, 3));
 
-        assertArrayEquals(new Object[] {"AAPL", 3L, 2L}, DataAccessHelpers.getRecord(countNulls, 0));
-        assertArrayEquals(new Object[] {"VXX", 2L, 2L}, DataAccessHelpers.getRecord(countNulls, 3));
+        assertArrayEquals(new Object[] {"AAPL", 3L, 2L}, getRowData(countNulls, 0));
+        assertArrayEquals(new Object[] {"VXX", 2L, 2L}, getRowData(countNulls, 3));
 
         updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(dataTable, i(2),
@@ -527,8 +527,8 @@ public class TestAggBy extends RefreshingTableTestCase {
             dataTable.notifyListeners(i(), i(), i(2));
         });
 
-        assertArrayEquals(new Object[] {"AAPL", 1L, 2L}, DataAccessHelpers.getRecord(result, 0));
-        assertArrayEquals(new Object[] {"AAPL", 2L, 2L}, DataAccessHelpers.getRecord(countNulls, 0));
+        assertArrayEquals(new Object[] {"AAPL", 1L, 2L}, getRowData(result, 0));
+        assertArrayEquals(new Object[] {"AAPL", 2L, 2L}, getRowData(countNulls, 0));
 
         TableTools.showWithRowSet(dataTable, dataTable.size());
 
@@ -544,8 +544,8 @@ public class TestAggBy extends RefreshingTableTestCase {
 
         TableTools.showWithRowSet(dataTable, dataTable.size());
 
-        assertArrayEquals(new Object[] {"AAPL", 2L, 2L}, DataAccessHelpers.getRecord(result, 0));
-        assertArrayEquals(new Object[] {"SPY", 3L, 3L}, DataAccessHelpers.getRecord(countNulls, 2));
+        assertArrayEquals(new Object[] {"AAPL", 2L, 2L}, getRowData(result, 0));
+        assertArrayEquals(new Object[] {"SPY", 3L, 3L}, getRowData(countNulls, 2));
     }
 
     @Test
@@ -569,10 +569,10 @@ public class TestAggBy extends RefreshingTableTestCase {
                 AggUnique(true, UnionObject.of(dtDefault), "Whee")), "USym").sort("USym");
 
         assertEquals(4, result.size());
-        assertArrayEquals(new Object[] {"AAPL", -1L, 100, dt1}, DataAccessHelpers.getRecord(result, 0));
-        assertArrayEquals(new Object[] {"GOOG", -1L, -1, dtDefault}, DataAccessHelpers.getRecord(result, 1));
-        assertArrayEquals(new Object[] {"SPY", -1L, -1, dt2}, DataAccessHelpers.getRecord(result, 2));
-        assertArrayEquals(new Object[] {"VXX", 5L, 50, null}, DataAccessHelpers.getRecord(result, 3));
+        assertArrayEquals(new Object[] {"AAPL", -1L, 100, dt1}, getRowData(result, 0));
+        assertArrayEquals(new Object[] {"GOOG", -1L, -1, dtDefault}, getRowData(result, 1));
+        assertArrayEquals(new Object[] {"SPY", -1L, -1, dt2}, getRowData(result, 2));
+        assertArrayEquals(new Object[] {"VXX", 5L, 50, null}, getRowData(result, 3));
         assertTableEquals(result, countNulls);
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
@@ -585,13 +585,13 @@ public class TestAggBy extends RefreshingTableTestCase {
             dataTable.notifyListeners(i(10), i(), i(2));
         });
 
-        assertArrayEquals(new Object[] {"AAPL", 1L, 100, dt1}, DataAccessHelpers.getRecord(result, 0));
-        assertArrayEquals(new Object[] {"GOOG", -1L, -1, dtDefault}, DataAccessHelpers.getRecord(result, 1));
-        assertArrayEquals(new Object[] {"SPY", -1L, -1, dt2}, DataAccessHelpers.getRecord(result, 2));
-        assertArrayEquals(new Object[] {"VXX", 5L, 50, null}, DataAccessHelpers.getRecord(result, 3));
+        assertArrayEquals(new Object[] {"AAPL", 1L, 100, dt1}, getRowData(result, 0));
+        assertArrayEquals(new Object[] {"GOOG", -1L, -1, dtDefault}, getRowData(result, 1));
+        assertArrayEquals(new Object[] {"SPY", -1L, -1, dt2}, getRowData(result, 2));
+        assertArrayEquals(new Object[] {"VXX", 5L, 50, null}, getRowData(result, 3));
 
         // Check the nulls table
-        assertArrayEquals(new Object[] {"VXX", 5L, -1, null}, DataAccessHelpers.getRecord(countNulls, 3));
+        assertArrayEquals(new Object[] {"VXX", 5L, -1, null}, getRowData(countNulls, 3));
 
         updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(dataTable, i(11),
@@ -603,12 +603,12 @@ public class TestAggBy extends RefreshingTableTestCase {
             dataTable.notifyListeners(i(11), i(9, 10), i());
         });
 
-        assertArrayEquals(new Object[] {"AAPL", 1L, 100, dt1}, DataAccessHelpers.getRecord(result, 0));
-        assertArrayEquals(new Object[] {"GOOG", -1L, -1, dtDefault}, DataAccessHelpers.getRecord(result, 1));
-        assertArrayEquals(new Object[] {"SPY", -1L, -1, dt2}, DataAccessHelpers.getRecord(result, 2));
-        assertArrayEquals(new Object[] {"USO", 2L, 200, dt1}, DataAccessHelpers.getRecord(result, 3));
+        assertArrayEquals(new Object[] {"AAPL", 1L, 100, dt1}, getRowData(result, 0));
+        assertArrayEquals(new Object[] {"GOOG", -1L, -1, dtDefault}, getRowData(result, 1));
+        assertArrayEquals(new Object[] {"SPY", -1L, -1, dt2}, getRowData(result, 2));
+        assertArrayEquals(new Object[] {"USO", 2L, 200, dt1}, getRowData(result, 3));
 
-        assertArrayEquals(new Object[] {"AAPL", 1L, 100, dtDefault}, DataAccessHelpers.getRecord(countNulls, 0));
+        assertArrayEquals(new Object[] {"AAPL", 1L, 100, dtDefault}, getRowData(countNulls, 0));
 
         //
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -619,7 +619,7 @@ public class TestAggBy extends RefreshingTableTestCase {
                     col("Whee", dt2));
             dataTable.notifyListeners(i(), i(), i(11));
         });
-        assertArrayEquals(new Object[] {"USO", null, null, dt2}, DataAccessHelpers.getRecord(result, 3));
+        assertArrayEquals(new Object[] {"USO", null, null, dt2}, getRowData(result, 3));
 
         //
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -631,9 +631,9 @@ public class TestAggBy extends RefreshingTableTestCase {
             dataTable.notifyListeners(i(9, 10), i(), i(3, 4));
         });
 
-        assertArrayEquals(new Object[] {"GOOG", 2L, 350, dt2}, DataAccessHelpers.getRecord(result, 1));
-        assertArrayEquals(new Object[] {"VXX", 99L, 50, dt1}, DataAccessHelpers.getRecord(result, 4));
-        assertArrayEquals(new Object[] {"VXX", -1L, 50, dtDefault}, DataAccessHelpers.getRecord(countNulls, 4));
+        assertArrayEquals(new Object[] {"GOOG", 2L, 350, dt2}, getRowData(result, 1));
+        assertArrayEquals(new Object[] {"VXX", 99L, 50, dt1}, getRowData(result, 4));
+        assertArrayEquals(new Object[] {"VXX", -1L, 50, dtDefault}, getRowData(countNulls, 4));
     }
 
     @Test

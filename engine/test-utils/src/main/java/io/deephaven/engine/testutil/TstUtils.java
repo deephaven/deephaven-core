@@ -1075,4 +1075,28 @@ public class TstUtils {
             fillChunk(context, destination, rowSequence);
         }
     }
+
+    /**
+     * Fetch row data as boxed Objects for the specified row position and column names. This is not an efficient
+     * data-retrieval mechanism, just a convenient one.
+     *
+     * @param table The table to fetch from
+     * @param rowPosition The row position to fetch
+     * @param columnNames The names of columns to fetch; if empty, fetch all columns
+     * @return An array of row data as boxed Objects
+     */
+    public static Object[] getRowData(
+            @NotNull Table table,
+            final long rowPosition,
+            @NotNull final String... columnNames) {
+        try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            table = table.coalesce();
+            final long rowKey = table.getRowSet().get(rowPosition);
+            return (columnNames.length > 0
+                    ? Arrays.stream(columnNames).map(table::getColumnSource)
+                    : table.getColumnSources().stream())
+                    .map(columnSource -> columnSource.get(rowKey))
+                    .toArray(Object[]::new);
+        }
+    }
 }
