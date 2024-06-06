@@ -18,6 +18,7 @@ import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
+import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.parquet.table.ParquetTools;
@@ -877,8 +878,8 @@ public class QueryTableSortTest extends QueryTableTestBase {
         testDirectory.mkdirs();
         final File dest = new File(testDirectory, "Table.parquet");
         try {
-            ParquetTools.writeTable(source, dest, definition);
-            final Table table = ParquetTools.readTable(dest);
+            ParquetTools.writeTable(source, dest.getPath(), ParquetInstructions.EMPTY.withTableDefinition(definition));
+            final Table table = ParquetTools.readTable(dest.getPath());
             testFunction.accept(table);
             table.close();
         } finally {

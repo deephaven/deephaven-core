@@ -3930,13 +3930,13 @@ public class QueryTableAggregationTest {
 
 
             ParquetTools.writeTable(t1, new File(testRootFile,
-                    "Date=2021-07-20" + File.separator + "Num=100" + File.separator + "file1.parquet"));
+                    "Date=2021-07-20" + File.separator + "Num=100" + File.separator + "file1.parquet").getPath());
             ParquetTools.writeTable(t2, new File(testRootFile,
-                    "Date=2021-07-20" + File.separator + "Num=200" + File.separator + "file2.parquet"));
+                    "Date=2021-07-20" + File.separator + "Num=200" + File.separator + "file2.parquet").getPath());
             ParquetTools.writeTable(t3, new File(testRootFile,
-                    "Date=2021-07-21" + File.separator + "Num=300" + File.separator + "file3.parquet"));
+                    "Date=2021-07-21" + File.separator + "Num=300" + File.separator + "file3.parquet").getPath());
             ParquetTools.writeTable(t4, new File(testRootFile,
-                    "Date=2021-07-21" + File.separator + "Num=400" + File.separator + "file4.parquet"));
+                    "Date=2021-07-21" + File.separator + "Num=400" + File.separator + "file4.parquet").getPath());
 
             final Table merged = TableTools.merge(
                     t1.updateView("Date=`2021-07-20`", "Num=100"),
@@ -3944,7 +3944,7 @@ public class QueryTableAggregationTest {
                     t3.updateView("Date=`2021-07-21`", "Num=300"),
                     t4.updateView("Date=`2021-07-21`", "Num=400")).moveColumnsUp("Date", "Num");
 
-            final Table loaded = ParquetTools.readPartitionedTableInferSchema(
+            final Table loaded = ParquetTools.readTable(
                     new ParquetKeyValuePartitionedLayout(testRootFile.toURI(), 2, ParquetInstructions.EMPTY),
                     ParquetInstructions.EMPTY);
 
@@ -4008,8 +4008,7 @@ public class QueryTableAggregationTest {
 
         final File outputFile = new File(directory, "disk_table" + PARQUET_FILE_EXTENSION);
 
-        ParquetTools.writeTable(result, outputFile, result.getDefinition());
-
-        return ParquetTools.readTable(outputFile);
+        ParquetTools.writeTable(result, outputFile.getPath());
+        return ParquetTools.readTable(outputFile.getPath());
     }
 }
