@@ -851,8 +851,9 @@ public class ParquetTools {
 
     /**
      * Write out tables to disk. Data indexes to write are determined by those already present on the first source or
-     * those provided through {@link ParquetInstructions.Builder#addIndexColumns}. The {@link TableDefinition} to use
-     * for writing must be provided as part of {@link ParquetInstructions}.
+     * those provided through {@link ParquetInstructions.Builder#addIndexColumns}. If all source tables have the same
+     * definition, this method will use the common definition for writing. Else, a definition must be provided through
+     * the write instructions.
      *
      * @param sources The tables to write
      * @param destinations The destination paths or URIs. Any non-existing directories in the paths provided are
@@ -864,19 +865,35 @@ public class ParquetTools {
             @NotNull final Table[] sources,
             @NotNull final String[] destinations,
             @NotNull final ParquetInstructions writeInstructions) {
-        final Collection<List<String>> indexColumns =
-                writeInstructions.getIndexColumns().orElseGet(() -> indexedColumnNames(sources));
-        final TableDefinition definition = writeInstructions.getTableDefinition().orElseThrow(
-                () -> new IllegalArgumentException("Table definition must be provided"));
+        if (sources.length == 0) {
+            throw new IllegalArgumentException("No source tables provided for writing");
+        }
+        if (sources.length != destinations.length) {
+            throw new IllegalArgumentException("Number of sources and destinations must match");
+        }
+        final TableDefinition definition;
+        if (writeInstructions.getTableDefinition().isPresent()) {
+            definition = writeInstructions.getTableDefinition().get();
+        } else {
+            final TableDefinition firstDefinition = sources[0].getDefinition();
+            for (int idx = 1; idx < sources.length; idx++) {
+                if (!firstDefinition.equals(sources[idx].getDefinition())) {
+                    throw new IllegalArgumentException(
+                            "Table definitions must be provided when writing multiple tables " +
+                                    "with different definitions");
+                }
+            }
+            definition = firstDefinition;
+        }
         final File[] destinationFiles = new File[destinations.length];
-        for (int i = 0; i < destinations.length; i++) {
-            final URI destinationURI = convertToURI(destinations[i], false);
+        for (int idx = 0; idx < destinations.length; idx++) {
+            final URI destinationURI = convertToURI(destinations[idx], false);
             if (!FILE_URI_SCHEME.equals(destinationURI.getScheme())) {
                 throw new IllegalArgumentException(
                         "Only file URI scheme is supported for writing parquet files, found" +
-                                "non-file URI: " + destinations[i]);
+                                "non-file URI: " + destinations[idx]);
             }
-            destinationFiles[i] = new File(destinationURI);
+            destinationFiles[idx] = new File(destinationURI);
         }
         final File metadataRootDir;
         if (writeInstructions.generateMetadataFiles()) {
@@ -893,7 +910,8 @@ public class ParquetTools {
         } else {
             metadataRootDir = null;
         }
-
+        final Collection<List<String>> indexColumns =
+                writeInstructions.getIndexColumns().orElseGet(() -> indexedColumnNames(sources));
         final Map<String, Map<ParquetCacheTags, Object>> computedCache =
                 buildComputedCache(() -> PartitionedTableFactory.ofTables(definition, sources).merge(), definition);
         // We do not have any additional schema for partitioning columns in this case. Schema for all columns will be
