@@ -51,7 +51,7 @@ class Classpaths {
 
     static final String FLATBUFFER_GROUP = 'com.google.flatbuffers'
     static final String FLATBUFFER_NAME = 'flatbuffers-java'
-    static final String FLATBUFFER_VERSION = '2.0.3'
+    static final String FLATBUFFER_VERSION = '1.12.0'
 
     static final String DAGGER_GROUP = 'com.google.dagger'
     static final String DAGGER_NAME = 'dagger'
