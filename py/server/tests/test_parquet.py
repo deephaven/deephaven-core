@@ -746,13 +746,14 @@ class ParquetTestCase(BaseTestCase):
         dh_table2 = self.get_table_with_array_data()
         test_v2_pages_helper(dh_table2)
 
-    def test_batch_write_without_definition(self):
+    def test_batch_write_definition_handling(self):
         table = empty_table(3).update(
             formulas=["x=i", "y=(double)(i/10.0)", "z=(double)(i*i)"]
         )
         table2 = empty_table(3).update(
             formulas=["x=i*2", "y=(double)(i/5.0)", "z=(double)(i*i*i)"]
         )
+        # Should succeed because both tables have the same definition
         batch_write([table, table2], ["X.parquet", "Y.parquet"])
         self.assert_table_equals(read("X.parquet"), table)
         self.assert_table_equals(read("Y.parquet"), table2)

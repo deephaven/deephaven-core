@@ -2014,7 +2014,7 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
-    public void writeMultiTableDefintionTest() {
+    public void writeMultiTableDefinitionTest() {
         // Create an empty parent directory
         final File parentDir = new File(rootFile, "tempDir");
         parentDir.mkdir();

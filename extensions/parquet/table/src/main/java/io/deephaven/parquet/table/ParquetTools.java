@@ -853,7 +853,7 @@ public class ParquetTools {
      * Write out tables to disk. Data indexes to write are determined by those already present on the first source or
      * those provided through {@link ParquetInstructions.Builder#addIndexColumns}. If all source tables have the same
      * definition, this method will use the common definition for writing. Else, a definition must be provided through
-     * the write instructions.
+     * the {@code writeInstructions}.
      *
      * @param sources The tables to write
      * @param destinations The destination paths or URIs. Any non-existing directories in the paths provided are
@@ -879,7 +879,7 @@ public class ParquetTools {
             for (int idx = 1; idx < sources.length; idx++) {
                 if (!firstDefinition.equals(sources[idx].getDefinition())) {
                     throw new IllegalArgumentException(
-                            "Table definitions must be provided when writing multiple tables " +
+                            "Table definition must be provided when writing multiple tables " +
                                     "with different definitions");
                 }
             }
