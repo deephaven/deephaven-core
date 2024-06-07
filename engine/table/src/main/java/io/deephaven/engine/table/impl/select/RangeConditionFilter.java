@@ -160,13 +160,12 @@ public class RangeConditionFilter extends WhereFilterImpl {
                 MatchFilter.ColumnTypeConvertorFactory.getConvertor(def.getDataType());
 
         final MutableObject<Object> realValue = new MutableObject<>();
-        convertor.convertValue(def, value, compilationProcessor.getQueryScopeVariables(),
-                parsedValue -> {
-                    if (realValue.getValue() != null) {
-                        throw new IllegalArgumentException(value + " is an array type");
-                    }
-                    realValue.setValue(parsedValue);
-                });
+        boolean wasAnArrayType = convertor.convertValue(
+                def, value, compilationProcessor.getQueryScopeVariables(), realValue::setValue);
+        if (wasAnArrayType) {
+            throw new IllegalArgumentException("RangeConditionFilter does not support array types for column "
+                    + columnName + " with value <" + value + ">");
+        }
 
         if (colClass == double.class || colClass == Double.class) {
             filter = DoubleRangeFilter.makeDoubleRangeFilter(columnName, condition, (double) realValue.getValue());
@@ -226,6 +225,21 @@ public class RangeConditionFilter extends WhereFilterImpl {
                 return new InstantRangeFilter(columnName, value, Long.MAX_VALUE, false, true);
             case GREATER_THAN_OR_EQUAL:
                 return new InstantRangeFilter(columnName, value, Long.MAX_VALUE, true, true);
+            default:
+                throw new IllegalArgumentException("RangeConditionFilter does not support condition " + condition);
+        }
+    }
+
+    private static LongRangeFilter makeZonedDateTimeRangeFilter(String columnName, Condition condition, long value) {
+        switch (condition) {
+            case LESS_THAN:
+                return new ZonedDateTimeRangeFilter(columnName, value, Long.MIN_VALUE, true, false);
+            case LESS_THAN_OR_EQUAL:
+                return new ZonedDateTimeRangeFilter(columnName, value, Long.MIN_VALUE, true, true);
+            case GREATER_THAN:
+                return new ZonedDateTimeRangeFilter(columnName, value, Long.MAX_VALUE, false, true);
+            case GREATER_THAN_OR_EQUAL:
+                return new ZonedDateTimeRangeFilter(columnName, value, Long.MAX_VALUE, true, true);
             default:
                 throw new IllegalArgumentException("RangeConditionFilter does not support condition " + condition);
         }

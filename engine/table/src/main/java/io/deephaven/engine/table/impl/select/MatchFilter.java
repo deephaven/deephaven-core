@@ -267,7 +267,15 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
             return paramValue;
         }
 
-        final void convertValue(
+        /**
+         * Convert the string value to the appropriate type for the column.
+         * @param column the column definition
+         * @param strValue the string value to convert
+         * @param queryScopeVariables the query scope variables
+         * @param valueConsumer the consumer for the converted value
+         * @return whether the value was an array or collection
+         */
+        final boolean convertValue(
                 @NotNull final ColumnDefinition<?> column,
                 @NotNull final String strValue,
                 @NotNull final Map<String, Object> queryScopeVariables,
@@ -279,10 +287,12 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                     for (int ai = 0; ai < accessor.length(); ++ai) {
                         valueConsumer.accept(convertParamValue(accessor.get(ai)));
                     }
+                    return true;
                 } else if (paramValue != null && Collection.class.isAssignableFrom(paramValue.getClass())) {
                     for (final Object paramValueMember : (Collection<?>) paramValue) {
                         valueConsumer.accept(convertParamValue(paramValueMember));
                     }
+                    return true;
                 } else {
                     valueConsumer.accept(convertParamValue(paramValue));
                 }
@@ -294,6 +304,7 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                             "> for column \"" + column.getName() + "\" of type " + column.getDataType().getName(), t);
                 }
             }
+            return false;
         }
     }
 
