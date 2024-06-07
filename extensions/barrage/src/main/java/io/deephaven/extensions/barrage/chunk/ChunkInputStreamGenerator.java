@@ -263,30 +263,30 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                 // options, (Class<Vector<?>>) type, componentType, fieldNodeIter, bufferInfoIter, is,
                 // outChunk, outOffset, totalRows);
                 // }
-                // if (type == BigInteger.class) {
-                // return VarBinaryChunkInputStreamGenerator.extractChunkFromInputStream(
-                // is,
-                // fieldNodeIter,
-                // bufferInfoIter,
-                // BigInteger::new,
-                // outChunk, outOffset, totalRows);
-                // }
-                // if (type == BigDecimal.class) {
-                // return VarBinaryChunkInputStreamGenerator.extractChunkFromInputStream(
-                // is,
-                // fieldNodeIter,
-                // bufferInfoIter,
-                // (final byte[] buf, final int offset, final int length) -> {
-                // // read the int scale value as little endian, arrow's endianness.
-                // final byte b1 = buf[offset];
-                // final byte b2 = buf[offset + 1];
-                // final byte b3 = buf[offset + 2];
-                // final byte b4 = buf[offset + 3];
-                // final int scale = b4 << 24 | (b3 & 0xFF) << 16 | (b2 & 0xFF) << 8 | (b1 & 0xFF);
-                // return new BigDecimal(new BigInteger(buf, offset + 4, length - 4), scale);
-                // },
-                // outChunk, outOffset, totalRows);
-                // }
+                if (type == BigInteger.class) {
+                    return VarBinaryChunkInputStreamGenerator.extractChunkFromInputStream(
+                            is,
+                            fieldNodeIter,
+                            bufferInfoIter,
+                            BigInteger::new,
+                            outChunk, outOffset, totalRows);
+                }
+                if (type == BigDecimal.class) {
+                    return VarBinaryChunkInputStreamGenerator.extractChunkFromInputStream(
+                            is,
+                            fieldNodeIter,
+                            bufferInfoIter,
+                            (final byte[] buf, final int offset, final int length) -> {
+                                // read the int scale value as little endian, arrow's endianness.
+                                final byte b1 = buf[offset];
+                                final byte b2 = buf[offset + 1];
+                                final byte b3 = buf[offset + 2];
+                                final byte b4 = buf[offset + 3];
+                                final int scale = b4 << 24 | (b3 & 0xFF) << 16 | (b2 & 0xFF) << 8 | (b1 & 0xFF);
+                                return new BigDecimal(new BigInteger(buf, offset + 4, length - 4), scale);
+                            },
+                            outChunk, outOffset, totalRows);
+                }
                 // if (type == Instant.class) {
                 // return FixedWidthChunkInputStreamGenerator.extractChunkFromInputStreamWithTypeConversion(
                 // Long.BYTES, options, io -> {
