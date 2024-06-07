@@ -548,7 +548,7 @@ def test_udf(x: {np_type}) -> bool:
                 ...
 
             t = empty_table(1).update("X = f2(f1(ii))")
-            self.assertEqual(t.columns[0].data_type, dtypes.int_)
+            self.assertEqual(t.columns[0].data_type, dtypes.int64)
 
         with self.subTest("jpy.JType"):
             def f1(x: jpy.JType) -> bool:
@@ -594,7 +594,7 @@ def test_udf(x: {np_type}) -> bool:
 
             t = empty_table(3).update(["C = make_c()", "V = use_c(C)"])
             self.assertIsNotNone(t)
-            self.assertEqual(t.columns[1].data_type, dtypes.int_)
+            self.assertEqual(t.columns[1].data_type, dtypes.int64)
 
             def misuse_c(c: int) -> int:
                 return c
