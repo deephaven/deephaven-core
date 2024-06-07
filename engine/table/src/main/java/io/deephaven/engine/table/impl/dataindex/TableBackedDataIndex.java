@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.dataindex;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.ColumnSource;
@@ -52,7 +53,7 @@ public class TableBackedDataIndex extends AbstractDataIndex {
     public TableBackedDataIndex(
             @NotNull final QueryTable sourceTable,
             @NotNull final String... keyColumnNames) {
-        this.keyColumnNames = List.of(keyColumnNames);
+        this.keyColumnNames = List.of(Require.elementsNeqNull(keyColumnNames, "keyColumnNames"));
 
         // Create an in-order reverse lookup map for the key column names.
         keyColumnNamesByIndexedColumn = Collections.unmodifiableMap(

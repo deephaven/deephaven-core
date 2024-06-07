@@ -18,7 +18,7 @@ from deephaven.numpy import _make_input_column
 from deephaven.table import Table
 
 _NULL_BOOLEAN_AS_BYTE = jpy.get_type("io.deephaven.util.BooleanUtils").NULL_BOOLEAN_AS_BYTE
-_JDataAccessHelpers = jpy.get_type("io.deephaven.engine.table.impl.DataAccessHelpers")
+_JColumnVectors = jpy.get_type("io.deephaven.engine.table.vectors.ColumnVectors")
 _is_dtype_backend_supported = pd.__version__ >= "2.0.0"
 
 
@@ -38,8 +38,7 @@ def _column_to_series(table: Table, col_def: Column, conv_null: bool) -> pd.Seri
         DHError
     """
     try:
-        data_col = _JDataAccessHelpers.getColumn(table.j_table, col_def.name)
-        j_array = data_col.getDirect()
+        j_array = _JColumnVectors.of(table.j_table, col_def.name).copyToArray()
         return _j_array_to_series(col_def.data_type, j_array, conv_null)
     except DHError:
         raise

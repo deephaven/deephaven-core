@@ -11,6 +11,7 @@ import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
@@ -489,7 +490,8 @@ public class TestPartitionBy extends QueryTableTestBase {
         }
         final PartitionedTable pt = table.partitionedAggBy(List.of(), true, testTable(col("USym", "SPY")), "USym");
         final String keyColumnName = pt.keyColumnNames().stream().findFirst().get();
-        final String[] keys = (String[]) DataAccessHelpers.getColumn(pt.table(), keyColumnName).getDirect();
+        Table table1 = pt.table();
+        final String[] keys = ColumnVectors.ofObject(table1, keyColumnName, String.class).toArray();
         System.out.println(Arrays.toString(keys));
         assertEquals(keys, new String[] {"SPY", "AAPL"});
         assertEquals(pt.table().isRefreshing(), refreshing);

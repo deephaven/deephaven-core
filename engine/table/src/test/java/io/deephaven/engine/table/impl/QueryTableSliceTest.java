@@ -8,6 +8,7 @@ import io.deephaven.engine.primitive.function.CharConsumer;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
@@ -457,7 +458,7 @@ public class QueryTableSliceTest extends QueryTableTestBase {
     public void testLongTail() {
         final Table bigTable = emptyTable(2 * (long) (Integer.MAX_VALUE)).updateView("I=i", "II=ii");
         final Table tailed = bigTable.tail(1);
-        assertEquals(2L * Integer.MAX_VALUE - 1, DataAccessHelpers.getColumn(tailed, "II").get(0));
+        assertEquals(2L * Integer.MAX_VALUE - 1, tailed.getColumnSource("II").get(tailed.getRowSet().firstRowKey()));
     }
 
     public void testZeroHead() {

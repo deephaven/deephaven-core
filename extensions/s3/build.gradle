@@ -13,9 +13,7 @@ dependencies {
     implementation project(':Configuration')
     implementation project(':log-factory')
 
-    implementation platform('software.amazon.awssdk:bom:2.23.19')
-    implementation 'software.amazon.awssdk:s3'
-    implementation 'software.amazon.awssdk:aws-crt-client'
+    Classpaths.inheritAWSSDK(project)
 
     compileOnly depAnnotations
 
@@ -32,10 +30,7 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
     testImplementation 'software.amazon.awssdk:s3-transfer-manager'
-    testImplementation "org.testcontainers:testcontainers:1.19.4"
-    testImplementation "org.testcontainers:junit-jupiter:1.19.4"
-    testImplementation "org.testcontainers:localstack:1.19.4"
-    testImplementation "org.testcontainers:minio:1.19.4"
+    Classpaths.inheritTestContainers(project)
 
     testRuntimeOnly project(':test-configs')
     testRuntimeOnly project(':log-to-slf4j')

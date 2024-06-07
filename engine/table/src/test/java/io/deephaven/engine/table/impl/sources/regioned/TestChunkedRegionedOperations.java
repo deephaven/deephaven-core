@@ -262,11 +262,10 @@ public class TestChunkedRegionedOperations {
                         "Bl_R = booleanAsByte(Bl)",
                         "DT_R = epochNanos(DT)");
 
-        actual = ParquetTools.readPartitionedTable(
+        actual = ParquetTools.readTable(
                 DeephavenNestedPartitionLayout.forParquet(dataDirectory, tableName, "PC", null,
                         ParquetInstructions.EMPTY),
-                ParquetInstructions.EMPTY,
-                partitionedDataDefinition).updateView(
+                ParquetInstructions.EMPTY.withTableDefinition(partitionedDataDefinition)).updateView(
                         List.of(
                                 new ReinterpretedColumn<>("Bl", Boolean.class, "Bl_R", byte.class),
                                 new ReinterpretedColumn<>("DT", Instant.class, "DT_R", long.class)))
