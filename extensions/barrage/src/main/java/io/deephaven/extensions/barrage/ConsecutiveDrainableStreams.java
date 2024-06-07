@@ -3,11 +3,9 @@
 //
 package io.deephaven.extensions.barrage;
 
-import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.extensions.barrage.util.DefensiveDrainable;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.datastructures.SizeException;
-import io.grpc.Drainable;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;

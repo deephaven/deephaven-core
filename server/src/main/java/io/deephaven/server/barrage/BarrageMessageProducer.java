@@ -163,8 +163,7 @@ public class BarrageMessageProducer extends LivenessArtifact
         }
 
         @Override
-        public Result<BarrageMessageProducer> initialize(final boolean usePrev,
-                final long beforeClock) {
+        public Result<BarrageMessageProducer> initialize(final boolean usePrev, final long beforeClock) {
             final BarrageMessageProducer result = new BarrageMessageProducer(scheduler, errorTransformer,
                     streamGeneratorFactory, parent, updateIntervalMs, onGetSnapshot);
             return new Result<>(result, result.constructListener());
@@ -550,9 +549,11 @@ public class BarrageMessageProducer extends LivenessArtifact
         return updateSubscription(listener, newViewport, columnsToSubscribe, false);
     }
 
-    public boolean updateSubscription(final StreamObserver<BarrageStreamGenerator.MessageView> listener,
+    public boolean updateSubscription(
+            final StreamObserver<BarrageStreamGenerator.MessageView> listener,
             @Nullable final RowSet newViewport,
-            @Nullable final BitSet columnsToSubscribe, final boolean newReverseViewport) {
+            @Nullable final BitSet columnsToSubscribe,
+            final boolean newReverseViewport) {
         return findAndUpdateSubscription(listener, sub -> {
             if (sub.pendingViewport != null) {
                 sub.pendingViewport.close();

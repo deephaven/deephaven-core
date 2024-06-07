@@ -846,7 +846,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
 
     private static int findGeneratorForOffset(final List<ChunkInputStreamGenerator> generators, final long offset) {
         // fast path for smaller updates
-        if (generators.isEmpty()) {
+        if (generators.size() <= 1) {
             return 0;
         }
 
