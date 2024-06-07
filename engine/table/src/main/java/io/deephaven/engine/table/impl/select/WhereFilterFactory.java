@@ -99,8 +99,6 @@ public class WhereFilterFactory {
                 if (!ExecutionContext.getContext().getQueryScope().hasParamName(paramName)) {
                     return ConditionFilter.createConditionFilter(expression, parserConfiguration);
                 }
-                log.debug().append("WhereFilterFactory creating MatchFilter for expression: ").append(expression)
-                        .endl();
 
                 boolean inverted = false;
                 switch (op) {
@@ -108,6 +106,8 @@ public class WhereFilterFactory {
                         inverted = true;
                     case "=":
                     case "==":
+                        log.debug().append("WhereFilterFactory creating MatchFilter for expression: ")
+                                .append(expression).endl();
                         return new MatchFilter(
                                 MatchFilter.CaseSensitivity.MatchCase,
                                 inverted ? MatchFilter.MatchType.Inverted : MatchFilter.MatchType.Regular,

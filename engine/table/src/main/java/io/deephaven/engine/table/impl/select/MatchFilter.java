@@ -50,8 +50,6 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                 literals.stream().map(AsObject::of).toArray());
     }
 
-
-
     @NotNull
     private final String columnName;
     private Object[] values;
@@ -194,7 +192,6 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
         values = valueList.toArray();
         initialized = true;
     }
-
 
     @Override
     public SafeCloseable beginOperation(@NotNull final Table sourceTable) {

@@ -84,9 +84,9 @@ public class ZonedDateTimeRangeFilter extends LongRangeFilter {
         }
 
         // noinspection unchecked
-        final ColumnSource<Long> instantColumnSource =
+        final ColumnSource<Long> zdtColumnSource =
                 ReinterpretUtils.zonedDateTimeToLongSource((ColumnSource<ZonedDateTime>) columnSource);
-        return super.binarySearch(selection, instantColumnSource, usePrev, reverse);
+        return super.binarySearch(selection, zdtColumnSource, usePrev, reverse);
     }
 
     private class ZonedDateTimeLongChunkFilterAdapter implements ChunkFilter {
@@ -98,8 +98,8 @@ public class ZonedDateTimeRangeFilter extends LongRangeFilter {
 
                 final ObjectChunk<ZonedDateTime, ? extends Values> objectValues = values.asObjectChunk();
                 for (int ii = 0; ii < values.size(); ++ii) {
-                    final ZonedDateTime instant = objectValues.get(ii);
-                    writableLongChunk.set(ii, DateTimeUtils.epochNanos(instant));
+                    final ZonedDateTime zdt = objectValues.get(ii);
+                    writableLongChunk.set(ii, DateTimeUtils.epochNanos(zdt));
                 }
                 writableLongChunk.setSize(values.size());
                 longFilter.filter(writableLongChunk, keys, results);
