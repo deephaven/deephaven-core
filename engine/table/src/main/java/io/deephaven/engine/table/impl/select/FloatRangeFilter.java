@@ -59,16 +59,16 @@ public class FloatRangeFilter extends AbstractRangeFilter {
                 (float) (positiveOrZero ? parsed + offset : parsed - offset), positiveOrZero, !positiveOrZero);
     }
 
-    static WhereFilter makeFloatRangeFilter(String columnName, Condition condition, String value) {
+    static WhereFilter makeFloatRangeFilter(String columnName, Condition condition, float value) {
         switch (condition) {
             case LESS_THAN:
-                return lt(columnName, Float.parseFloat(value));
+                return lt(columnName, value);
             case LESS_THAN_OR_EQUAL:
-                return leq(columnName, Float.parseFloat(value));
+                return leq(columnName, value);
             case GREATER_THAN:
-                return gt(columnName, Float.parseFloat(value));
+                return gt(columnName, value);
             case GREATER_THAN_OR_EQUAL:
-                return geq(columnName, Float.parseFloat(value));
+                return geq(columnName, value);
             default:
                 throw new IllegalArgumentException("RangeConditionFilter does not support condition " + condition);
         }

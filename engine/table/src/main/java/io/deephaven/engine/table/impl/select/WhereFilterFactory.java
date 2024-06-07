@@ -7,6 +7,7 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.filter.FilterPattern;
 import io.deephaven.api.filter.FilterPattern.Mode;
 import io.deephaven.base.Pair;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.api.expression.AbstractExpressionFactory;
 import io.deephaven.engine.table.ColumnDefinition;
@@ -74,15 +75,18 @@ public class WhereFilterFactory {
                         value);
             }
         });
-        // <ColumnName>==<User QueryScopeParam>
-        // <ColumnName>=<User QueryScopeParam>
-        // <ColumnName>!=<User QueryScopeParam>
+        // <ColumnName> == <User QueryScopeParam>
+        // <ColumnName> =  <User QueryScopeParam>
+        // <ColumnName> != <User QueryScopeParam>
+        // <ColumnName> <  <User QueryScopeParam>
+        // <ColumnName> <= <User QueryScopeParam>
+        // <ColumnName> >  <User QueryScopeParam>
         parser.registerFactory(new AbstractExpressionFactory<>(
-                START_PTRN + "(" + ID_PTRN + ")\\s*(?:(?:={1,2})|(!=))\\s*(" + ID_PTRN + ")" + END_PTRN) {
+                START_PTRN + "(" + ID_PTRN + ")\\s*((?:=|!|<|>)=?)\\s*(" + ID_PTRN + ")" + END_PTRN) {
             @Override
             public WhereFilter getExpression(String expression, Matcher matcher, Object... args) {
                 final String columnName = matcher.group(1);
-                final boolean inverted = matcher.group(2) != null;
+                final String op = matcher.group(2);
                 final String paramName = matcher.group(3);
 
                 final FormulaParserConfiguration parserConfiguration = (FormulaParserConfiguration) args[0];
@@ -92,18 +96,34 @@ public class WhereFilterFactory {
                             .append(expression).endl();
                     return ConditionFilter.createConditionFilter(expression, parserConfiguration);
                 }
-                try {
-                    QueryScope.getParamValue(paramName);
-                } catch (QueryScope.MissingVariableException e) {
+                if (!ExecutionContext.getContext().getQueryScope().hasParamName(paramName)) {
                     return ConditionFilter.createConditionFilter(expression, parserConfiguration);
                 }
                 log.debug().append("WhereFilterFactory creating MatchFilter for expression: ").append(expression)
                         .endl();
-                return new MatchFilter(
-                        MatchFilter.CaseSensitivity.MatchCase,
-                        inverted ? MatchFilter.MatchType.Inverted : MatchFilter.MatchType.Regular,
-                        columnName,
-                        paramName);
+
+                boolean inverted = false;
+                switch (op) {
+                    case "!=":
+                        inverted = true;
+                    case "=":
+                    case "==":
+                        return new MatchFilter(
+                                MatchFilter.CaseSensitivity.MatchCase,
+                                inverted ? MatchFilter.MatchType.Inverted : MatchFilter.MatchType.Regular,
+                                columnName,
+                                paramName);
+                    case "<":
+                    case ">":
+                    case "<=":
+                    case ">=":
+                        log.debug().append("WhereFilterFactory creating RangeConditionFilter for expression: ")
+                                .append(expression).endl();
+                        return new RangeConditionFilter(columnName, op, paramName, expression,
+                                parserConfiguration);
+                    default:
+                        throw new IllegalStateException("Unexpected operator: " + op);
+                }
             }
         });
 
@@ -396,7 +416,7 @@ public class WhereFilterFactory {
             boolean removeQuotes,
             String... values) {
         final String value =
-                constructStringContainsRegex(values, matchType, internalDisjunctive, removeQuotes, columnName);
+                constructStringContainsRegex(values, matchType, internalDisjunctive, removeQuotes);
         return WhereFilterAdapter.of(FilterPattern.of(
                 ColumnName.of(columnName),
                 Pattern.compile(value, sensitivity == CaseSensitivity.IgnoreCase ? Pattern.CASE_INSENSITIVE : 0),
@@ -408,14 +428,13 @@ public class WhereFilterFactory {
             String[] values,
             MatchType matchType,
             boolean internalDisjunctive,
-            boolean removeQuotes,
-            String columnName) {
+            boolean removeQuotes) {
         if (values == null || values.length == 0) {
             throw new IllegalArgumentException(
                     "constructStringContainsRegex must be called with at least one value parameter");
         }
         final MatchFilter.ColumnTypeConvertor converter = removeQuotes
-                ? MatchFilter.ColumnTypeConvertorFactory.getConvertor(String.class, columnName)
+                ? MatchFilter.ColumnTypeConvertorFactory.getConvertor(String.class)
                 : null;
         final String regex;
         final Stream<String> valueStream = Arrays.stream(values)

@@ -33,6 +33,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 public class MatchFilter extends WhereFilterImpl implements DependencyStreamProvider {
@@ -48,6 +49,8 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                 columnName,
                 literals.stream().map(AsObject::of).toArray());
     }
+
+
 
     @NotNull
     private final String columnName;
@@ -183,38 +186,15 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
         }
         final List<Object> valueList = new ArrayList<>();
         final Map<String, Object> queryScopeVariables = compilationProcessor.getQueryScopeVariables();
-        final ColumnTypeConvertor convertor =
-                ColumnTypeConvertorFactory.getConvertor(column.getDataType(), column.getName());
+        final ColumnTypeConvertor convertor = ColumnTypeConvertorFactory.getConvertor(column.getDataType());
         for (String strValue : strValues) {
-            if (queryScopeVariables.containsKey(strValue)) {
-                Object paramValue = queryScopeVariables.get(strValue);
-                if (paramValue != null && paramValue.getClass().isArray()) {
-                    ArrayTypeUtils.ArrayAccessor<?> accessor = ArrayTypeUtils.getArrayAccessor(paramValue);
-                    for (int ai = 0; ai < accessor.length(); ++ai) {
-                        valueList.add(convertor.convertParamValue(accessor.get(ai)));
-                    }
-                } else if (paramValue != null && Collection.class.isAssignableFrom(paramValue.getClass())) {
-                    for (final Object paramValueMember : (Collection<?>) paramValue) {
-                        valueList.add(convertor.convertParamValue(paramValueMember));
-                    }
-                } else {
-                    valueList.add(convertor.convertParamValue(paramValue));
-                }
-            } else {
-                Object convertedValue;
-                try {
-                    convertedValue = convertor.convertStringLiteral(strValue);
-                } catch (Throwable t) {
-                    throw new IllegalArgumentException("Failed to convert literal value <" + strValue +
-                            "> for column \"" + columnName + "\" of type " + column.getDataType().getName(), t);
-                }
-                valueList.add(convertedValue);
-            }
+            convertor.convertValue(column, strValue, queryScopeVariables, valueList::add);
         }
         // values = (Object[])ArrayTypeUtils.toArray(valueList, TypeUtils.getBoxedType(theColumn.getDataType()));
         values = valueList.toArray();
         initialized = true;
     }
+
 
     @Override
     public SafeCloseable beginOperation(@NotNull final Table sourceTable) {
@@ -286,10 +266,39 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
             }
             return paramValue;
         }
+
+        final void convertValue(
+                @NotNull final ColumnDefinition<?> column,
+                @NotNull final String strValue,
+                @NotNull final Map<String, Object> queryScopeVariables,
+                @NotNull final Consumer<Object> valueConsumer) {
+            if (queryScopeVariables.containsKey(strValue)) {
+                Object paramValue = queryScopeVariables.get(strValue);
+                if (paramValue != null && paramValue.getClass().isArray()) {
+                    ArrayTypeUtils.ArrayAccessor<?> accessor = ArrayTypeUtils.getArrayAccessor(paramValue);
+                    for (int ai = 0; ai < accessor.length(); ++ai) {
+                        valueConsumer.accept(convertParamValue(accessor.get(ai)));
+                    }
+                } else if (paramValue != null && Collection.class.isAssignableFrom(paramValue.getClass())) {
+                    for (final Object paramValueMember : (Collection<?>) paramValue) {
+                        valueConsumer.accept(convertParamValue(paramValueMember));
+                    }
+                } else {
+                    valueConsumer.accept(convertParamValue(paramValue));
+                }
+            } else {
+                try {
+                    valueConsumer.accept(convertStringLiteral(strValue));
+                } catch (Throwable t) {
+                    throw new IllegalArgumentException("Failed to convert literal value <" + strValue +
+                            "> for column \"" + column.getName() + "\" of type " + column.getDataType().getName(), t);
+                }
+            }
+        }
     }
 
     public static class ColumnTypeConvertorFactory {
-        public static ColumnTypeConvertor getConvertor(final Class<?> cls, final String name) {
+        public static ColumnTypeConvertor getConvertor(final Class<?> cls) {
             if (cls == byte.class) {
                 return new ColumnTypeConvertor() {
                     @Override
@@ -469,9 +478,9 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                     Object convertStringLiteral(String str) {
                         if (str.charAt(0) != '\'' || str.charAt(str.length() - 1) != '\'') {
                             throw new IllegalArgumentException(
-                                    "Instant literal not enclosed in single-quotes (\"" + str + "\")");
+                                    "LocalDate literal not enclosed in single-quotes (\"" + str + "\")");
                         }
-                        return LocalDate.parse(str.substring(1, str.length() - 1));
+                        return DateTimeUtils.parseLocalDate(str.substring(1, str.length() - 1));
                     }
                 };
             }
@@ -481,9 +490,9 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                     Object convertStringLiteral(String str) {
                         if (str.charAt(0) != '\'' || str.charAt(str.length() - 1) != '\'') {
                             throw new IllegalArgumentException(
-                                    "Instant literal not enclosed in single-quotes (\"" + str + "\")");
+                                    "LocalTime literal not enclosed in single-quotes (\"" + str + "\")");
                         }
-                        return LocalTime.parse(str.substring(1, str.length() - 1));
+                        return DateTimeUtils.parseLocalTime(str.substring(1, str.length() - 1));
                     }
                 };
             }
@@ -493,7 +502,7 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                     Object convertStringLiteral(String str) {
                         if (str.charAt(0) != '\'' || str.charAt(str.length() - 1) != '\'') {
                             throw new IllegalArgumentException(
-                                    "Instant literal not enclosed in single-quotes (\"" + str + "\")");
+                                    "LocalDateTime literal not enclosed in single-quotes (\"" + str + "\")");
                         }
                         return LocalDateTime.parse(str.substring(1, str.length() - 1));
                     }
@@ -505,9 +514,9 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                     Object convertStringLiteral(String str) {
                         if (str.charAt(0) != '\'' || str.charAt(str.length() - 1) != '\'') {
                             throw new IllegalArgumentException(
-                                    "Instant literal not enclosed in single-quotes (\"" + str + "\")");
+                                    "ZoneDateTime literal not enclosed in single-quotes (\"" + str + "\")");
                         }
-                        return ZonedDateTime.parse(str.substring(1, str.length() - 1));
+                        return DateTimeUtils.parseZonedDateTime(str.substring(1, str.length() - 1));
                     }
                 };
             }
@@ -553,7 +562,7 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                 @Override
                 Object convertStringLiteral(String str) {
                     throw new IllegalArgumentException(
-                            "Can't convert String to " + cls.getName() + " for MatchFilter value auto-conversion");
+                            "Can't create " + cls.getName() + " from String Literal for value auto-conversion");
                 }
             };
         }

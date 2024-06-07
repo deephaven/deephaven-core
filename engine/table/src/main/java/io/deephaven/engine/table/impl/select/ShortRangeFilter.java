@@ -51,16 +51,16 @@ public class ShortRangeFilter extends AbstractRangeFilter {
         }
     }
 
-    static WhereFilter makeShortRangeFilter(String columnName, Condition condition, String value) {
+    static WhereFilter makeShortRangeFilter(String columnName, Condition condition, short value) {
         switch (condition) {
             case LESS_THAN:
-                return lt(columnName, RangeConditionFilter.parseShortFilter(value));
+                return lt(columnName, value);
             case LESS_THAN_OR_EQUAL:
-                return leq(columnName, RangeConditionFilter.parseShortFilter(value));
+                return leq(columnName, value);
             case GREATER_THAN:
-                return gt(columnName, RangeConditionFilter.parseShortFilter(value));
+                return gt(columnName, value);
             case GREATER_THAN_OR_EQUAL:
-                return geq(columnName, RangeConditionFilter.parseShortFilter(value));
+                return geq(columnName, value);
             default:
                 throw new IllegalArgumentException("RangeConditionFilter does not support condition " + condition);
         }
