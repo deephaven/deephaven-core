@@ -497,8 +497,13 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                     }
                 };
             }
-            throw new IllegalArgumentException(
-                    "Unknown type " + cls.getName() + " for MatchFilter value auto-conversion");
+            return new ColumnTypeConvertor() {
+                @Override
+                Object convertStringLiteral(String str) {
+                    throw new IllegalArgumentException(
+                            "Can't convert String to " + cls.getName() + " for MatchFilter value auto-conversion");
+                }
+            };
         }
     }
 
