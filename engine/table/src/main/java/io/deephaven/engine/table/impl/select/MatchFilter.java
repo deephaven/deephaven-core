@@ -28,6 +28,10 @@ import org.jpy.PyObject;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -456,6 +460,54 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                                     "Instant literal not enclosed in single-quotes (\"" + str + "\")");
                         }
                         return DateTimeUtils.parseInstant(str.substring(1, str.length() - 1));
+                    }
+                };
+            }
+            if (cls == LocalDate.class) {
+                return new ColumnTypeConvertor() {
+                    @Override
+                    Object convertStringLiteral(String str) {
+                        if (str.charAt(0) != '\'' || str.charAt(str.length() - 1) != '\'') {
+                            throw new IllegalArgumentException(
+                                    "Instant literal not enclosed in single-quotes (\"" + str + "\")");
+                        }
+                        return LocalDate.parse(str.substring(1, str.length() - 1));
+                    }
+                };
+            }
+            if (cls == LocalTime.class) {
+                return new ColumnTypeConvertor() {
+                    @Override
+                    Object convertStringLiteral(String str) {
+                        if (str.charAt(0) != '\'' || str.charAt(str.length() - 1) != '\'') {
+                            throw new IllegalArgumentException(
+                                    "Instant literal not enclosed in single-quotes (\"" + str + "\")");
+                        }
+                        return LocalTime.parse(str.substring(1, str.length() - 1));
+                    }
+                };
+            }
+            if (cls == LocalDateTime.class) {
+                return new ColumnTypeConvertor() {
+                    @Override
+                    Object convertStringLiteral(String str) {
+                        if (str.charAt(0) != '\'' || str.charAt(str.length() - 1) != '\'') {
+                            throw new IllegalArgumentException(
+                                    "Instant literal not enclosed in single-quotes (\"" + str + "\")");
+                        }
+                        return LocalDateTime.parse(str.substring(1, str.length() - 1));
+                    }
+                };
+            }
+            if (cls == ZonedDateTime.class) {
+                return new ColumnTypeConvertor() {
+                    @Override
+                    Object convertStringLiteral(String str) {
+                        if (str.charAt(0) != '\'' || str.charAt(str.length() - 1) != '\'') {
+                            throw new IllegalArgumentException(
+                                    "Instant literal not enclosed in single-quotes (\"" + str + "\")");
+                        }
+                        return ZonedDateTime.parse(str.substring(1, str.length() - 1));
                     }
                 };
             }
