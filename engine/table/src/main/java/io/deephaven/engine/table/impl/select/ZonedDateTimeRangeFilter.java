@@ -92,9 +92,9 @@ public class ZonedDateTimeRangeFilter extends LongRangeFilter {
     private class ZonedDateTimeLongChunkFilterAdapter implements ChunkFilter {
         @Override
         public void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                           WritableLongChunk<OrderedRowKeys> results) {
+                WritableLongChunk<OrderedRowKeys> results) {
             try (final WritableLongChunk<Values> writableLongChunk =
-                         WritableLongChunk.makeWritableChunk(values.size())) {
+                    WritableLongChunk.makeWritableChunk(values.size())) {
 
                 final ObjectChunk<ZonedDateTime, ? extends Values> objectValues = values.asObjectChunk();
                 for (int ii = 0; ii < values.size(); ++ii) {

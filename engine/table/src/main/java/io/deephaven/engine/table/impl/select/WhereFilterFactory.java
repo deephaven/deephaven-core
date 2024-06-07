@@ -76,11 +76,11 @@ public class WhereFilterFactory {
             }
         });
         // <ColumnName> == <User QueryScopeParam>
-        // <ColumnName> =  <User QueryScopeParam>
+        // <ColumnName> = <User QueryScopeParam>
         // <ColumnName> != <User QueryScopeParam>
-        // <ColumnName> <  <User QueryScopeParam>
+        // <ColumnName> < <User QueryScopeParam>
         // <ColumnName> <= <User QueryScopeParam>
-        // <ColumnName> >  <User QueryScopeParam>
+        // <ColumnName> > <User QueryScopeParam>
         parser.registerFactory(new AbstractExpressionFactory<>(
                 START_PTRN + "(" + ID_PTRN + ")\\s*((?:=|!|<|>)=?)\\s*(" + ID_PTRN + ")" + END_PTRN) {
             @Override

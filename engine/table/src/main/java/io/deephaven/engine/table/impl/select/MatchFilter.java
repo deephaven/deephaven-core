@@ -266,6 +266,7 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
 
         /**
          * Convert the string value to the appropriate type for the column.
+         * 
          * @param column the column definition
          * @param strValue the string value to convert
          * @param queryScopeVariables the query scope variables
