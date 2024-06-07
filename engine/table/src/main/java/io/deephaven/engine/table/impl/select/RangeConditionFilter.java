@@ -159,15 +159,26 @@ public class RangeConditionFilter extends WhereFilterImpl {
         final MatchFilter.ColumnTypeConvertor convertor =
                 MatchFilter.ColumnTypeConvertorFactory.getConvertor(def.getDataType());
 
+        RuntimeException conversionError = null;
         final MutableObject<Object> realValue = new MutableObject<>();
-        boolean wasAnArrayType = convertor.convertValue(
-                def, value, compilationProcessor.getQueryScopeVariables(), realValue::setValue);
-        if (wasAnArrayType) {
-            throw new IllegalArgumentException("RangeConditionFilter does not support array types for column "
-                    + columnName + " with value <" + value + ">");
+        try {
+            boolean wasAnArrayType = convertor.convertValue(
+                    def, value, compilationProcessor.getQueryScopeVariables(), realValue::setValue);
+            if (wasAnArrayType) {
+                throw new IllegalArgumentException("RangeConditionFilter does not support array types for column "
+                        + columnName + " with value <" + value + ">");
+            }
+        } catch (final RuntimeException err) {
+            conversionError = err;
         }
 
-        if (colClass == double.class || colClass == Double.class) {
+        if (conversionError != null) {
+            if (expression != null) {
+                filter = ConditionFilter.createConditionFilter(expression, parserConfiguration);
+            } else {
+                throw conversionError;
+            }
+        } else if (colClass == double.class || colClass == Double.class) {
             filter = DoubleRangeFilter.makeDoubleRangeFilter(columnName, condition, (double) realValue.getValue());
         } else if (colClass == float.class || colClass == Float.class) {
             filter = FloatRangeFilter.makeFloatRangeFilter(columnName, condition, (float) realValue.getValue());
@@ -191,7 +202,7 @@ public class RangeConditionFilter extends WhereFilterImpl {
         } else if (colClass == LocalDateTime.class) {
             filter = makeComparableRangeFilter(columnName, condition, (LocalDateTime) realValue.getValue());
         } else if (colClass == ZonedDateTime.class) {
-            filter = makeInstantRangeFilter(columnName, condition,
+            filter = makeZonedDateTimeRangeFilter(columnName, condition,
                     DateTimeUtils.epochNanos((ZonedDateTime) realValue.getValue()));
         } else if (BigDecimal.class.isAssignableFrom(colClass)) {
             filter = makeComparableRangeFilter(columnName, condition, (BigDecimal) realValue.getValue());

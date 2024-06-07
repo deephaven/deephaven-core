@@ -49,38 +49,55 @@ public class WhereFilterFactory {
     private static final ExpressionParser<WhereFilter> parser = new ExpressionParser<>();
 
     static {
-        // <ColumnName>==<Number|Boolean|"String">
-        // <ColumnName>=<Number|Boolean|"String">
-        // <ColumnName>!=<Number|Boolean|"String">
+        // <ColumnName> == <Number|Boolean|"String">
+        // <ColumnName> = <Number|Boolean|"String">
+        // <ColumnName> != <Number|Boolean|"String">
+        // <ColumnName> < <Number|Boolean|"String">
+        // <ColumnName> <= <Number|Boolean|"String">
+        // <ColumnName> > <Number|Boolean|"String">
+        // <ColumnName> >= <Number|Boolean|"String">
         parser.registerFactory(new AbstractExpressionFactory<>(
-                START_PTRN + "(" + ID_PTRN + ")\\s*(?:(?:={1,2})|(!=))\\s*(" + LITERAL_PTRN + ")" + END_PTRN) {
+                START_PTRN + "(" + ID_PTRN + ")\\s*((?:=|!|<|>)=?)\\s*(" + LITERAL_PTRN + ")" + END_PTRN) {
             @Override
             public WhereFilter getExpression(String expression, Matcher matcher, Object... args) {
                 final String columnName = matcher.group(1);
-                final boolean inverted = matcher.group(2) != null;
+                final String op = matcher.group(2);
                 final String value = matcher.group(3);
+                final boolean mirrored = false;
 
-                final FormulaParserConfiguration parserConfiguration = (FormulaParserConfiguration) args[0];
-                if (isRowVariable(columnName)) {
-                    log.debug().append("WhereFilterFactory creating ConditionFilter for expression: ")
-                            .append(expression).endl();
-                    return ConditionFilter.createConditionFilter(expression, parserConfiguration);
-                }
-                log.debug().append("WhereFilterFactory creating MatchFilter for expression: ").append(expression)
-                        .endl();
-                return new MatchFilter(
-                        MatchFilter.CaseSensitivity.MatchCase,
-                        inverted ? MatchFilter.MatchType.Inverted : MatchFilter.MatchType.Regular,
-                        columnName,
-                        value);
+                return getWhereFilterOneSideColumn(
+                        expression, (FormulaParserConfiguration) args[0], columnName, op, value, mirrored);
             }
         });
+
+        // <Number|Boolean|"String"> == <ColumnName>
+        // <Number|Boolean|"String"> = <ColumnName>
+        // <Number|Boolean|"String"> != <ColumnName>
+        // <Number|Boolean|"String"> < <ColumnName>
+        // <Number|Boolean|"String"> <= <ColumnName>
+        // <Number|Boolean|"String"> > <ColumnName>
+        // <Number|Boolean|"String"> >= <ColumnName>
+        parser.registerFactory(new AbstractExpressionFactory<>(
+                START_PTRN + "(" + LITERAL_PTRN + ")\\s*((?:=|!|<|>)=?)\\s*(" + ID_PTRN + ")" + END_PTRN) {
+            @Override
+            public WhereFilter getExpression(String expression, Matcher matcher, Object... args) {
+                final String value = matcher.group(1);
+                final String op = matcher.group(6);
+                final String columnName = matcher.group(7);
+                final boolean mirrored = true;
+
+                return getWhereFilterOneSideColumn(
+                        expression, (FormulaParserConfiguration) args[0], columnName, op, value, mirrored);
+            }
+        });
+
         // <ColumnName> == <User QueryScopeParam>
         // <ColumnName> = <User QueryScopeParam>
         // <ColumnName> != <User QueryScopeParam>
         // <ColumnName> < <User QueryScopeParam>
         // <ColumnName> <= <User QueryScopeParam>
         // <ColumnName> > <User QueryScopeParam>
+        // <ColumnName> >= <User QueryScopeParam>
         parser.registerFactory(new AbstractExpressionFactory<>(
                 START_PTRN + "(" + ID_PTRN + ")\\s*((?:=|!|<|>)=?)\\s*(" + ID_PTRN + ")" + END_PTRN) {
             @Override
@@ -88,73 +105,20 @@ public class WhereFilterFactory {
                 final String columnName = matcher.group(1);
                 final String op = matcher.group(2);
                 final String paramName = matcher.group(3);
-
                 final FormulaParserConfiguration parserConfiguration = (FormulaParserConfiguration) args[0];
 
-                if (isRowVariable(columnName)) {
-                    log.debug().append("WhereFilterFactory creating ConditionFilter for expression: ")
-                            .append(expression).endl();
-                    return ConditionFilter.createConditionFilter(expression, parserConfiguration);
-                }
-                if (!ExecutionContext.getContext().getQueryScope().hasParamName(paramName)) {
-                    return ConditionFilter.createConditionFilter(expression, parserConfiguration);
+                boolean mirrored = false;
+                final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
+                if (!queryScope.hasParamName(paramName)) {
+                    if (queryScope.hasParamName(columnName)) {
+                        mirrored = true;
+                    } else {
+                        return ConditionFilter.createConditionFilter(expression, parserConfiguration);
+                    }
                 }
 
-                boolean inverted = false;
-                switch (op) {
-                    case "!=":
-                        inverted = true;
-                    case "=":
-                    case "==":
-                        log.debug().append("WhereFilterFactory creating MatchFilter for expression: ")
-                                .append(expression).endl();
-                        return new MatchFilter(
-                                MatchFilter.CaseSensitivity.MatchCase,
-                                inverted ? MatchFilter.MatchType.Inverted : MatchFilter.MatchType.Regular,
-                                columnName,
-                                paramName);
-                    case "<":
-                    case ">":
-                    case "<=":
-                    case ">=":
-                        log.debug().append("WhereFilterFactory creating RangeConditionFilter for expression: ")
-                                .append(expression).endl();
-                        return new RangeConditionFilter(columnName, op, paramName, expression,
-                                parserConfiguration);
-                    default:
-                        throw new IllegalStateException("Unexpected operator: " + op);
-                }
-            }
-        });
-
-        // <ColumnName> < <Number|Boolean|"String">
-        // <ColumnName> <= <Number|Boolean|"String">
-        // <ColumnName> > <Number|Boolean|"String">
-        // <ColumnName> >= <Number|Boolean|"String">
-        parser.registerFactory(new AbstractExpressionFactory<>(
-                START_PTRN + "(" + ID_PTRN + ")\\s*([<>]=?)\\s*(" + LITERAL_PTRN + ")" + END_PTRN) {
-            @Override
-            public WhereFilter getExpression(String expression, Matcher matcher, Object... args) {
-                final FormulaParserConfiguration parserConfiguration = (FormulaParserConfiguration) args[0];
-                final String columnName = matcher.group(1);
-                final String conditionString = matcher.group(2);
-                final String value = matcher.group(3);
-                if (isRowVariable(columnName)) {
-                    log.debug().append("WhereFilterFactory creating ConditionFilter for expression: ")
-                            .append(expression).endl();
-                    return ConditionFilter.createConditionFilter(expression, parserConfiguration);
-                }
-                try {
-                    log.debug().append("WhereFilterFactory creating RangeConditionFilter for expression: ")
-                            .append(expression).endl();
-                    return new RangeConditionFilter(columnName, conditionString, value, expression,
-                            parserConfiguration);
-                } catch (Exception e) {
-                    log.warn().append("WhereFilterFactory could not make RangeFilter for expression: ")
-                            .append(expression).append(" due to ").append(e)
-                            .append(" Creating ConditionFilter instead.").endl();
-                    return ConditionFilter.createConditionFilter(expression, parserConfiguration);
-                }
+                return getWhereFilterOneSideColumn(
+                        expression, parserConfiguration, columnName, op, paramName, mirrored);
             }
         });
 
@@ -220,6 +184,57 @@ public class WhereFilterFactory {
                         return ConditionFilter.createConditionFilter(condition, parserConfiguration);
                     }
                 });
+    }
+
+    private static @NotNull WhereFilter getWhereFilterOneSideColumn(
+            final String expression,
+            final FormulaParserConfiguration parserConfiguration,
+            final String columnName,
+            String op,
+            final String value,
+            boolean mirrored) {
+
+        if (isRowVariable(columnName)) {
+            log.debug().append("WhereFilterFactory creating ConditionFilter for expression: ")
+                    .append(expression).endl();
+            return ConditionFilter.createConditionFilter(expression, parserConfiguration);
+        }
+
+        switch (op) {
+            case "!=":
+                mirrored = !mirrored;
+            case "=":
+            case "==":
+                log.debug().append("WhereFilterFactory creating MatchFilter for expression: ").append(expression)
+                        .endl();
+                return new MatchFilter(
+                        CaseSensitivity.MatchCase,
+                        mirrored ? MatchType.Inverted : MatchType.Regular,
+                        columnName,
+                        value);
+
+            case "<":
+            case ">":
+            case "<=":
+            case ">=":
+                try {
+                    if (mirrored) {
+                        final String dir = op.substring(0, 1);
+                        op = op.replaceFirst(dir, dir.equals("<") ? ">" : "<");
+                    }
+                    log.debug().append("WhereFilterFactory creating RangeConditionFilter for expression: ")
+                            .append(expression).endl();
+                    return new RangeConditionFilter(columnName, op, value, expression, parserConfiguration);
+                } catch (Exception e) {
+                    log.warn().append("WhereFilterFactory could not make RangeFilter for expression: ")
+                            .append(expression).append(" due to ").append(e)
+                            .append(" Creating ConditionFilter instead.").endl();
+                    return ConditionFilter.createConditionFilter(expression, parserConfiguration);
+                }
+
+            default:
+                throw new IllegalStateException("Unexpected operator: " + op);
+        }
     }
 
     private static boolean isRowVariable(String columnName) {

@@ -46,6 +46,7 @@ import org.junit.Test;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -1153,6 +1154,19 @@ public abstract class QueryTableWhereTest {
     }
 
     @Test
+    public void testZonedDateRangeFilter() {
+        final ZonedDateTime startTime = DateTimeUtils.parseZonedDateTime("2021-04-23T09:30 NY");
+        final ZonedDateTime[] array = new ZonedDateTime[10];
+        for (int ii = 0; ii < array.length; ++ii) {
+            array[ii] = DateTimeUtils.plus(startTime, 60_000_000_000L * ii);
+        }
+        final Table table = TableTools.newTable(col("ZDT", array));
+        showWithRowSet(table);
+
+        testRangeFilterHelper(table, "ZDT", array[5]);
+    }
+
+    @Test
     public void testInstantRangeFilter() {
         final Instant startTime = DateTimeUtils.parseInstant("2021-04-23T09:30 NY");
         final Instant[] array = new Instant[10];
@@ -1162,11 +1176,7 @@ public abstract class QueryTableWhereTest {
         final Table table = TableTools.newTable(col("DT", array));
         showWithRowSet(table);
 
-        final Table sorted = table.sort("DT");
-        final Table backwards = table.sort("DT");
-
-        assertTableEquals(sorted.where("DT < '" + array[5] + "'"), sorted.where("ii < 5"));
-        assertTableEquals(backwards.where("DT < '" + array[5] + "'"), backwards.where("ii < 5"));
+        testRangeFilterHelper(table, "DT", array[5]);
     }
 
     @Test
@@ -1184,22 +1194,26 @@ public abstract class QueryTableWhereTest {
         final Table table = TableTools.newTable(charCol("CH", array));
         showWithRowSet(table);
 
-        final Table sorted = table.sort("CH");
-        final Table backwards = table.sort("CH");
+        testRangeFilterHelper(table, "CH", array[5]);
+    }
+
+    private <T> void testRangeFilterHelper(Table table, String name, T mid) {
+        final Table sorted = table.sort(name);
+        final Table backwards = table.sort(name);
 
         showWithRowSet(sorted);
-        log.debug().append("Pivot: " + array[5]).endl();
+        log.debug().append("Pivot: " + mid).endl();
 
-        final Table rangeFiltered = sorted.where("CH < '" + array[5] + "'");
-        final Table standardFiltered = sorted.where("'" + array[5] + "' > CH");
+        final Table rangeFiltered = sorted.where(name + " < '" + mid + "'");
+        final Table standardFiltered = sorted.where("'" + mid + "' > " + name);
 
         showWithRowSet(rangeFiltered);
         showWithRowSet(standardFiltered);
         assertTableEquals(rangeFiltered, standardFiltered);
-        assertTableEquals(backwards.where("CH < '" + array[5] + "'"), backwards.where("'" + array[5] + "' > CH"));
-        assertTableEquals(backwards.where("CH <= '" + array[5] + "'"), backwards.where("'" + array[5] + "' >= CH"));
-        assertTableEquals(backwards.where("CH > '" + array[5] + "'"), backwards.where("'" + array[5] + "' < CH"));
-        assertTableEquals(backwards.where("CH >= '" + array[5] + "'"), backwards.where("'" + array[5] + "' <= CH"));
+        assertTableEquals(backwards.where(name + " < '" + mid + "'"), backwards.where("'" + mid + "' > " + name));
+        assertTableEquals(backwards.where(name + " <= '" + mid + "'"), backwards.where("'" + mid + "' >= " + name));
+        assertTableEquals(backwards.where(name + " > '" + mid + "'"), backwards.where("'" + mid + "' < " + name));
+        assertTableEquals(backwards.where(name + " >= '" + mid + "'"), backwards.where("'" + mid + "' <= " + name));
     }
 
     @Test
