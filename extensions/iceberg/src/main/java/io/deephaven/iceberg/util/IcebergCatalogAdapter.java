@@ -173,6 +173,18 @@ public class IcebergCatalogAdapter {
     }
 
     /**
+     * List all {@link Namespace namespaces} in a given namespace. This method is only supported if the catalog
+     * implements {@link SupportsNamespaces} for namespace discovery. See
+     * {@link SupportsNamespaces#listNamespaces(Namespace)}.
+     *
+     * @param namespace The namespace(s) to list namespaces in.
+     * @return A list of all namespaces in the given namespace.
+     */
+    public List<Namespace> listNamespaces(@NotNull final String... namespace) {
+        return listNamespaces(Namespace.of(namespace));
+    }
+
+    /**
      * List all {@link Namespace namespaces} in the catalog as a Deephaven {@link Table table}. The resulting table will
      * be static and contain the same information as {@link #listNamespaces()}.
      *
@@ -216,6 +228,16 @@ public class IcebergCatalogAdapter {
     }
 
     /**
+     * List all {@link Namespace namespaces} in a given namespace as a Deephaven {@link Table table}. The resulting
+     * table will be static and contain the same information as {@link #listNamespaces(Namespace)}.
+     *
+     * @return A {@link Table table} of all namespaces.
+     */
+    public Table listNamespacesAsTable(@NotNull final String... namespace) {
+        return listNamespacesAsTable(Namespace.of(namespace));
+    }
+
+    /**
      * List all Iceberg {@link TableIdentifier tables} in a given namespace.
      *
      * @param namespace The namespace to list tables in.
@@ -223,6 +245,16 @@ public class IcebergCatalogAdapter {
      */
     public List<TableIdentifier> listTables(@NotNull final Namespace namespace) {
         return catalog.listTables(namespace);
+    }
+
+    /**
+     * List all Iceberg {@link TableIdentifier tables} in a given namespace.
+     *
+     * @param namespace The namespace to list tables in.
+     * @return A list of all tables in the given namespace.
+     */
+    public List<TableIdentifier> listTables(@NotNull final String... namespace) {
+        return listTables(Namespace.of(namespace));
     }
 
     /**
@@ -264,6 +296,10 @@ public class IcebergCatalogAdapter {
         return new QueryTable(RowSetFactory.flat(size).toTracking(), columnSourceMap);
     }
 
+    public Table listTablesAsTable(@NotNull final String... namespace) {
+        return listTablesAsTable(Namespace.of(namespace));
+    }
+
     /**
      * List all {@link Snapshot snapshots} of a given Iceberg table.
      *
@@ -274,6 +310,16 @@ public class IcebergCatalogAdapter {
         final List<Snapshot> snapshots = new ArrayList<>();
         catalog.loadTable(tableIdentifier).snapshots().forEach(snapshots::add);
         return snapshots;
+    }
+
+    /**
+     * List all {@link Snapshot snapshots} of a given Iceberg table.
+     *
+     * @param tableIdentifier The identifier of the table from which to gather snapshots.
+     * @return A list of all snapshots of the given table.
+     */
+    public List<Snapshot> listSnapshots(@NotNull final String tableIdentifier) {
+        return listSnapshots(TableIdentifier.parse(tableIdentifier));
     }
 
     /**
@@ -325,6 +371,17 @@ public class IcebergCatalogAdapter {
     }
 
     /**
+     * List all {@link Snapshot snapshots} of a given Iceberg table as a Deephaven {@link Table table}. The resulting
+     * table will be static and contain the same information as {@link #listSnapshots(TableIdentifier)}.
+     *
+     * @param tableIdentifier The identifier of the table from which to gather snapshots.
+     * @return A list of all tables in the given namespace.
+     */
+    public Table listSnapshotsAsTable(@NotNull final String tableIdentifier) {
+        return listSnapshotsAsTable(TableIdentifier.parse(tableIdentifier));
+    }
+
+    /**
      * Read the latest static snapshot of an Iceberg table from the Iceberg catalog.
      *
      * @param tableIdentifier The table identifier to load
@@ -336,6 +393,20 @@ public class IcebergCatalogAdapter {
             @NotNull final TableIdentifier tableIdentifier,
             @NotNull final IcebergInstructions instructions) {
         return readTableInternal(tableIdentifier, null, instructions);
+    }
+
+    /**
+     * Read the latest static snapshot of an Iceberg table from the Iceberg catalog.
+     *
+     * @param tableIdentifier The table identifier to load
+     * @param instructions The instructions for customizations while reading
+     * @return The loaded table
+     */
+    @SuppressWarnings("unused")
+    public Table readTable(
+            @NotNull final String tableIdentifier,
+            @NotNull final IcebergInstructions instructions) {
+        return readTable(TableIdentifier.parse(tableIdentifier), instructions);
     }
 
     /**
@@ -359,6 +430,22 @@ public class IcebergCatalogAdapter {
                 .orElseThrow(() -> new IllegalArgumentException("Snapshot with id " + tableSnapshotId + " not found"));
 
         return readTableInternal(tableIdentifier, tableSnapshot, instructions);
+    }
+
+    /**
+     * Read a static snapshot of an Iceberg table from the Iceberg catalog.
+     *
+     * @param tableIdentifier The table identifier to load
+     * @param tableSnapshotId The snapshot id to load
+     * @param instructions The instructions for customizations while reading
+     * @return The loaded table
+     */
+    @SuppressWarnings("unused")
+    public Table readTable(
+            @NotNull final String tableIdentifier,
+            final long tableSnapshotId,
+            @NotNull final IcebergInstructions instructions) {
+        return readTable(TableIdentifier.parse(tableIdentifier), tableSnapshotId, instructions);
     }
 
     /**
