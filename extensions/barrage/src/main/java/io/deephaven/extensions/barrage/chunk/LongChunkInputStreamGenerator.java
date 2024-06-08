@@ -269,9 +269,7 @@ public class LongChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
             // consumed entire validity buffer by here
 
             final long payloadRead = (long) nodeInfo.numElements * elementSize;
-            if (payloadBuffer < payloadRead) {
-                throw new IllegalStateException("payload buffer is too short for expected number of elements");
-            }
+            Assert.geq(payloadBuffer, "payloadBuffer", payloadRead, "payloadRead");
 
             if (options.useDeephavenNulls()) {
                 useDeephavenNulls(conversion, is, nodeInfo, chunk, outOffset);
