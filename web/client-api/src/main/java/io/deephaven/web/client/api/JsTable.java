@@ -47,13 +47,11 @@ import io.deephaven.web.client.api.lifecycle.HasLifecycle;
 import io.deephaven.web.client.api.state.StateCache;
 import io.deephaven.web.client.api.subscription.TableSubscription;
 import io.deephaven.web.client.api.subscription.TableViewportSubscription;
-import io.deephaven.web.client.api.subscription.ViewportData;
 import io.deephaven.web.client.api.subscription.ViewportRow;
 import io.deephaven.web.client.api.tree.JsRollupConfig;
 import io.deephaven.web.client.api.tree.JsTreeTable;
 import io.deephaven.web.client.api.tree.JsTreeTableConfig;
 import io.deephaven.web.client.api.widget.JsWidget;
-import io.deephaven.web.client.fu.JsData;
 import io.deephaven.web.client.fu.JsItr;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
@@ -147,15 +145,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             // change in some table data
             INTERNAL_EVENT_SIZELISTENER = "sizelistener-internal";
 
-    // Amount of debounce to use when eating snapshot events.
-    public static final int DEBOUNCE_TIME = 20;
     public static final int MAX_BATCH_TIME = 600_000;
 
     private final WorkerConnection workerConnection;
 
-    private Map<TableTicket, TableViewportSubscription> subscriptions = new HashMap<>();
-    @Deprecated // TODO refactor this inside of the viewportSubscription type
-    private ViewportData currentViewportData;
+    private final Map<TableTicket, TableViewportSubscription> subscriptions = new HashMap<>();
 
     private ClientTableState lastVisibleState;
 

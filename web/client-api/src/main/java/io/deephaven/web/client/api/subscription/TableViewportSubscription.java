@@ -327,80 +327,9 @@ public class TableViewportSubscription extends AbstractTableSubscription {
     public Promise<TableData> snapshot(JsRangeSet rows, Column[] columns) {
         retainForExternalUse();
         // TODO #1039 slice rows and drop columns
-        // final ClientTableState state = original.lastVisibleState();
-        String[] columnTypes = Arrays.stream(state().getTableDef().getColumns())
-                .map(ColumnDefinition::getType)
-                .toArray(String[]::new);
 
-        final BitSet columnBitset = state().makeBitset(columns);
-        return Callbacks.<TableSnapshot, String>promise(this, callback -> {
-            WorkerConnection connection = connection();
-            BiDiStream<FlightData, FlightData> stream = connection.<FlightData, FlightData>streamFactory().create(
-                    headers -> connection.flightServiceClient().doExchange(headers),
-                    (first, headers) -> connection.browserFlightServiceClient().openDoExchange(first, headers),
-                    (next, headers, c) -> connection.browserFlightServiceClient().nextDoExchange(next, headers,
-                            c::apply),
-                    new FlightData());
 
-            FlatBufferBuilder doGetRequest = new FlatBufferBuilder(1024);
-            int columnsOffset = BarrageSnapshotRequest.createColumnsVector(doGetRequest,
-                    columnBitset.toByteArray());
-            int viewportOffset = BarrageSnapshotRequest.createViewportVector(doGetRequest, serializeRanges(
-                    Collections.singleton(rows.getRange())));
-            int serializationOptionsOffset = BarrageSnapshotOptions
-                    .createBarrageSnapshotOptions(doGetRequest, ColumnConversionMode.Stringify, true, 0, 0);
-            int tableTicketOffset =
-                    BarrageSnapshotRequest.createTicketVector(doGetRequest,
-                            TypedArrayHelper.wrap(state().getHandle().getTicket()));
-            BarrageSnapshotRequest.startBarrageSnapshotRequest(doGetRequest);
-            BarrageSnapshotRequest.addTicket(doGetRequest, tableTicketOffset);
-            BarrageSnapshotRequest.addColumns(doGetRequest, columnsOffset);
-            BarrageSnapshotRequest.addSnapshotOptions(doGetRequest, serializationOptionsOffset);
-            BarrageSnapshotRequest.addViewport(doGetRequest, viewportOffset);
-            doGetRequest.finish(BarrageSnapshotRequest.endBarrageSnapshotRequest(doGetRequest));
-
-            FlightData request = new FlightData();
-            request.setAppMetadata(
-                    WebBarrageUtils.wrapMessage(doGetRequest, BarrageMessageType.BarrageSnapshotRequest));
-            stream.send(request);
-            stream.end();
-            stream.onData(flightData -> {
-
-                Message message = Message.getRootAsMessage(TypedArrayHelper.wrap(flightData.getDataHeader_asU8()));
-                if (message.headerType() == MessageHeader.Schema) {
-                    // ignore for now, we'll handle this later
-                    return;
-                }
-                assert message.headerType() == MessageHeader.RecordBatch;
-                RecordBatch header = (RecordBatch) message.header(new RecordBatch());
-                Uint8Array appMetadataBytes = flightData.getAppMetadata_asU8();
-                BarrageUpdateMetadata update = null;
-                if (appMetadataBytes.length != 0) {
-                    BarrageMessageWrapper barrageMessageWrapper =
-                            BarrageMessageWrapper
-                                    .getRootAsBarrageMessageWrapper(TypedArrayHelper.wrap(appMetadataBytes));
-
-                    update = BarrageUpdateMetadata.getRootAsBarrageUpdateMetadata(
-                            barrageMessageWrapper.msgPayloadAsByteBuffer());
-                }
-                TableSnapshot snapshot = WebBarrageUtils.createSnapshot(header,
-                        WebBarrageUtils.typedArrayToAlignedLittleEndianByteBuffer(flightData.getDataBody_asU8()),
-                        update, true, columnTypes);
-                callback.onSuccess(snapshot);
-            });
-            stream.onStatus(status -> {
-                if (!status.isOk()) {
-                    callback.onFailure(status.getDetails());
-                }
-            });
-        }).then(defer()).then(snapshot -> {
-            SubscriptionTableData pretendSubscription = new SubscriptionTableData(Js.uncheckedCast(columns),
-                    state().getRowFormatColumn() == null ? NO_ROW_FORMAT_COLUMN
-                            : state().getRowFormatColumn().getIndex(),
-                    null);
-            TableData data = pretendSubscription.handleSnapshot(snapshot);
-            return Promise.resolve(data);
-        }).then(defer());
+        return null;
     }
 
     /**

@@ -192,9 +192,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
     }
 
 
-    @TsInterface
-    @TsName(name = "SubscriptionTableData", namespace = "dh")
-    public class UpdateEventData implements TableData {
+    public class UpdateEventData implements SubscriptionTableData, ViewportData {
         private final JsRangeSet added;
         private final JsRangeSet removed;
         private final JsRangeSet modified;
@@ -221,11 +219,6 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
             return offset;
         }
 
-        /**
-         * A lazily computed array of all rows in the entire table
-         *
-         * @return {@link SubscriptionRow} array.
-         */
         @Override
         public JsArray<@TsTypeRef(SubscriptionRow.class) ? extends SubscriptionRow> getRows() {
             if (allRows == null) {
@@ -251,12 +244,6 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
             return this.get((long) index);
         }
 
-        /**
-         * Reads a row object from the table, from which any subscribed column can be read
-         *
-         * @param index
-         * @return {@link SubscriptionRow}
-         */
         @Override
         public SubscriptionRow get(long index) {
             return makeRow(index);
@@ -267,25 +254,11 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
             return getData((long) index, column);
         }
 
-        /**
-         * a specific cell from the table, from the specified row and column
-         *
-         * @param index
-         * @param column
-         * @return Any
-         */
         @Override
-        public Any getData(long index, Column column) {
-            return barrageSubscription.getData(index, column.getIndex());
+        public Any getData(long key, Column column) {
+            return barrageSubscription.getData(key, column.getIndex());
         }
 
-        /**
-         * the Format to use for a cell from the specified row and column
-         *
-         * @param index
-         * @param column
-         * @return {@link Format}
-         */
         @Override
         public Format getFormat(int index, Column column) {
             return getFormat((long) index, column);
@@ -317,31 +290,16 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
             return columns;
         }
 
-        /**
-         * The ordered set of row indexes added since the last update
-         *
-         * @return dh.RangeSet
-         */
         @Override
         public JsRangeSet getAdded() {
             return added;
         }
 
-        /**
-         * The ordered set of row indexes removed since the last update
-         *
-         * @return dh.RangeSet
-         */
         @Override
         public JsRangeSet getRemoved() {
             return removed;
         }
 
-        /**
-         * The ordered set of row indexes updated since the last update
-         *
-         * @return dh.RangeSet
-         */
         @Override
         public JsRangeSet getModified() {
             return modified;

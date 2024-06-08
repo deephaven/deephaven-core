@@ -8,6 +8,7 @@ import com.vertispan.tsdefs.annotations.TsTypeRef;
 import com.vertispan.tsdefs.annotations.TsUnion;
 import com.vertispan.tsdefs.annotations.TsUnionMember;
 import elemental2.core.JsArray;
+import io.deephaven.web.client.api.subscription.AbstractTableSubscription;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
@@ -30,7 +31,7 @@ import jsinterop.base.Js;
  */
 @TsName(namespace = "dh")
 public interface TableData {
-    public static final int NO_ROW_FORMAT_COLUMN = -1;
+    int NO_ROW_FORMAT_COLUMN = -1;
 
     /**
      * TS type union to allow either "int" or "LongWrapper" to be passed as an argument for various methods.
@@ -62,26 +63,22 @@ public interface TableData {
     }
 
     @JsProperty
-    JsRangeSet getFullIndex();
-
-    @JsProperty
-    JsRangeSet getAdded();
-
-    @JsProperty
-    JsRangeSet getRemoved();
-
-    @JsProperty
-    JsRangeSet getModified();
-
-    // @JsProperty
-    // JsShiftData getShifts();
-
-    @JsProperty
     JsArray<Column> getColumns();
 
+    /**
+     * A lazily computed array of all rows in the entire table
+     *
+     * @return {@link AbstractTableSubscription.SubscriptionRow} array.
+     */
     @JsProperty
     JsArray<@TsTypeRef(Row.class) ? extends Row> getRows();
 
+    /**
+     * Reads a row object from the table, from which any subscribed column can be read.
+     *
+     * @param index the position or key to access
+     * @return the row at the given location
+     */
     @JsMethod
     default Row get(RowPositionUnion index) {
         if (index.isLongWrapper()) {
@@ -94,6 +91,13 @@ public interface TableData {
 
     Row get(int index);
 
+    /**
+     * Reads a specific cell from the table, by row key and column.
+     *
+     * @param index the row in the table to get data from
+     * @param column the column to read
+     * @return the value in the table
+     */
     @JsMethod
     default Any getData(RowPositionUnion index, Column column) {
         if (index.isLongWrapper()) {
@@ -106,6 +110,13 @@ public interface TableData {
 
     Any getData(long index, Column column);
 
+    /**
+     * The server-specified Format to use for the cell at the given position.
+     * 
+     * @param index the row to read
+     * @param column the column to read
+     * @return a Format instance with any server-specified details
+     */
     @JsMethod
     default Format getFormat(RowPositionUnion index, Column column) {
         if (index.isLongWrapper()) {
@@ -117,12 +128,6 @@ public interface TableData {
     Format getFormat(int index, Column column);
 
     Format getFormat(long index, Column column);
-
-    /**
-     * The position of the first returned row, null if this data is not for a viewport.
-     */
-    @JsProperty
-    Double getOffset();
 
     @TsName(namespace = "dh")
     interface Row {
