@@ -129,7 +129,7 @@ public class OneClick {
         }
 
         // Some of the values aren't set, need to iterate through all the table map keys and select the ones that match
-        return JsArray.from(partitionedTable.getKeys()).filter((tableKey, index, all) -> {
+        return JsArray.from(partitionedTable.getKeys()).filter((tableKey, index) -> {
             if (!(tableKey instanceof String[])) {
                 return false;
             }

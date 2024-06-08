@@ -3,8 +3,6 @@ plugins {
     id 'java-library'
 }
 
-apply from: "$rootDir/gradle/web-common.gradle"
-
 GwtTools.gwtLib project
 
 configurations {
