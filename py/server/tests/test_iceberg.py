@@ -38,7 +38,7 @@ class IcebergTestCase(BaseTestCase):
 
     def test_instruction_create_with_table_definitition_dict(self):
         table_def={
-            "x": dtypes.+ .int32,
+            "x": dtypes.int32,
             "y": dtypes.double,
             "z": dtypes.double,
         }
