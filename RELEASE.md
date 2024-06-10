@@ -253,6 +253,8 @@ $ git push upstream go/vX.Y.Z
 ### 11. Deephaven.io release
 
 The (non-public) [deephaven.io](https://github.com/deephaven/deephaven.io) `next` branch needs to be merged into `main`.
+Verify that [Reference API Docs](https://deephaven.io/core/docs/#reference-guides) point to the latest version.
+_(In the case of a patch, this may not be the version just built.)_
 Ping Margaret.
 
 ### 12. Deephaven images
