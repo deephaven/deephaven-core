@@ -11,8 +11,8 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.util.SafeCloseable;
 
-import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 /**
@@ -31,14 +31,14 @@ public class BarrageMessage implements SafeCloseable {
         public RowSet rowsModified;
         public Class<?> type;
         public Class<?> componentType;
-        public ArrayList<Chunk<Values>> data;
+        public List<Chunk<Values>> data;
         public ChunkType chunkType;
     }
 
     public static class AddColumnData {
         public Class<?> type;
         public Class<?> componentType;
-        public ArrayList<Chunk<Values>> data;
+        public List<Chunk<Values>> data;
         public ChunkType chunkType;
     }
 
@@ -95,7 +95,7 @@ public class BarrageMessage implements SafeCloseable {
         }
         if (addColumnData != null) {
             for (final BarrageMessage.AddColumnData acd : addColumnData) {
-                if (acd == null) {
+                if (acd == null || acd.data.isEmpty()) {
                     continue;
                 }
 
@@ -110,11 +110,11 @@ public class BarrageMessage implements SafeCloseable {
         }
         if (modColumnData != null) {
             for (final ModColumnData mcd : modColumnData) {
-                if (mcd == null) {
+                if (mcd == null || mcd.data.isEmpty()) {
                     continue;
                 }
 
-                for (Chunk<Values> chunk : mcd.data) {
+                for (final Chunk<Values> chunk : mcd.data) {
                     if (chunk instanceof PoolableChunk) {
                         ((PoolableChunk) chunk).close();
                     }

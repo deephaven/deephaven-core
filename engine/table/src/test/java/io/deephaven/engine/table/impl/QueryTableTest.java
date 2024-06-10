@@ -13,6 +13,8 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.AssertionFailure;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
@@ -2719,20 +2721,69 @@ public class QueryTableTest extends QueryTableTestBase {
                         .update("X = new Integer[]{null, 2, 3}", "Z = new Integer[]{4, 5, null}");
         final Table ungrouped = t.ungroup();
         try (final BarrageMessage snap = ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) ungrouped)) {
-            testUngroupConstructSnashotHelper(snap);
+            testUngroupConstructSnashotBoxedNullAllColumnHelper(snap);
         }
+        // Snapshot the second column for last two rows
+        final BitSet columnsToSnapshot = new BitSet(2);
+        columnsToSnapshot.set(1);
+        final RowSequence rowsToSnapshot = RowSequenceFactory.forRange(1, 2);
+        try (final BarrageMessage snap =
+                ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(this, (BaseTable<?>) ungrouped,
+                        columnsToSnapshot, rowsToSnapshot, null)) {
+            testUnGroupConstructSnapshotBoxedNullFewColumnsHelper(snap);
+        }
+
         final Table selected = ungrouped.select(); // Will convert column sources to in memory
         try (final BarrageMessage snap = ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) selected)) {
-            testUngroupConstructSnashotHelper(snap);
+            testUngroupConstructSnashotBoxedNullAllColumnHelper(snap);
+        }
+        try (final BarrageMessage snap =
+                ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(this, (BaseTable<?>) selected,
+                        columnsToSnapshot, RowSequenceFactory.forRange(1, 2), null)) {
+            testUnGroupConstructSnapshotBoxedNullFewColumnsHelper(snap);
         }
     }
 
-    private static void testUngroupConstructSnashotHelper(@NotNull final BarrageMessage snap) {
+    private static void testUngroupConstructSnashotBoxedNullAllColumnHelper(@NotNull final BarrageMessage snap) {
         assertEquals(snap.rowsAdded, i(0, 1, 2));
-        assertEquals(snap.addColumnData[0].data.get(0).asIntChunk().get(0),
-                QueryConstants.NULL_INT);
-        assertEquals(snap.addColumnData[1].data.get(0).asIntChunk().get(2),
-                QueryConstants.NULL_INT);
+        final List<Chunk<Values>> firstColChunk = snap.addColumnData[0].data;
+        final int[] firstColExpected = new int[] {QueryConstants.NULL_INT, 2, 3};
+        final List<Chunk<Values>> secondColChunk = snap.addColumnData[1].data;
+        final int[] secondColExpected = new int[] {4, 5, QueryConstants.NULL_INT};
+        for (int i = 0; i < 3; i++) {
+            assertEquals(firstColChunk.get(0).asIntChunk().get(i), firstColExpected[i]);
+            assertEquals(secondColChunk.get(0).asIntChunk().get(i), secondColExpected[i]);
+        }
+    }
+
+    private static void testUnGroupConstructSnapshotBoxedNullFewColumnsHelper(@NotNull final BarrageMessage snap) {
+        assertEquals(snap.rowsIncluded, i(1, 2));
+        assertEquals(snap.addColumnData[1].data.get(0).asIntChunk().get(0), 5);
+        assertEquals(snap.addColumnData[1].data.get(0).asIntChunk().get(1), QueryConstants.NULL_INT);
+    }
+
+
+    public void testUngroupConstructSnapshotSingleColumnTable() {
+        final Table t =
+                testRefreshingTable(i(0).toTracking())
+                        .update("X = new Integer[]{null, 2, 3}");
+        final Table ungrouped = t.ungroup();
+        try (final BarrageMessage snap = ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) ungrouped)) {
+            testUngroupConstructSnashotSinlgeColumnHelper(snap);
+        }
+        final Table selected = ungrouped.select(); // Will convert column sources to in memory
+        try (final BarrageMessage snap = ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) selected)) {
+            testUngroupConstructSnashotSinlgeColumnHelper(snap);
+        }
+    }
+
+    private static void testUngroupConstructSnashotSinlgeColumnHelper(@NotNull final BarrageMessage snap) {
+        assertEquals(snap.rowsAdded, i(0, 1, 2));
+        final List<Chunk<Values>> firstColChunk = snap.addColumnData[0].data;
+        final int[] firstColExpected = new int[] {QueryConstants.NULL_INT, 2, 3};
+        for (int i = 0; i < 3; i++) {
+            assertEquals(firstColChunk.get(0).asIntChunk().get(i), firstColExpected[i]);
+        }
     }
 
     public void testUngroupableColumnSources() {
