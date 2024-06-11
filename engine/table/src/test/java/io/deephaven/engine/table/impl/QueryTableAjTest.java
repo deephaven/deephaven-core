@@ -11,6 +11,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
@@ -1430,11 +1431,13 @@ public class QueryTableAjTest {
         final TIntArrayList expectedStamp = new TIntArrayList();
         final TIntArrayList expectedSentinel = new TIntArrayList();
 
-        final int[] leftStampArray = (int[]) DataAccessHelpers.getColumn(leftTable, "LeftStamp").getDirect();
-        final int[] rightStampArray = rightTable == null ? CollectionUtil.ZERO_LENGTH_INT_ARRAY
-                : (int[]) DataAccessHelpers.getColumn(rightTable, "RightStamp").getDirect();
-        final int[] rightSentinelArray = rightTable == null ? CollectionUtil.ZERO_LENGTH_INT_ARRAY
-                : (int[]) DataAccessHelpers.getColumn(rightTable, "RightSentinel").getDirect();
+        final int[] leftStampArray = ColumnVectors.ofInt(leftTable, "LeftStamp").toArray();
+        final int[] rightStampArray = rightTable == null
+                ? CollectionUtil.ZERO_LENGTH_INT_ARRAY
+                : ColumnVectors.ofInt(rightTable, "RightStamp").toArray();
+        final int[] rightSentinelArray = rightTable == null
+                ? CollectionUtil.ZERO_LENGTH_INT_ARRAY
+                : ColumnVectors.ofInt(rightTable, "RightSentinel").toArray();
 
         for (final int leftStamp : leftStampArray) {
             final int rightPosition = Arrays.binarySearch(rightStampArray, leftStamp);

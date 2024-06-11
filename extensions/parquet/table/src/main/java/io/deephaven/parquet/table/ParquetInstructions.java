@@ -87,7 +87,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
     /**
      * @return The default for {@link #getMaximumDictionarySize()}
      */
-    public static int getDefaltMaximumDictionarySize() {
+    public static int getDefaultMaximumDictionarySize() {
         return defaultMaximumDictionarySize;
     }
 
@@ -147,7 +147,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
          * <li>A single parquet {@value ParquetUtils#COMMON_METADATA_FILE_NAME} file
          * </ul>
          */
-        METADATA_PARTITIONED;
+        METADATA_PARTITIONED
     }
 
     private static final boolean DEFAULT_GENERATE_METADATA_FILES = false;
@@ -257,10 +257,10 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             if (i2 == EMPTY) {
                 return true;
             }
-            return ((ReadOnly) i2).columnNameToInstructions.size() == 0;
+            return ((ReadOnly) i2).columnNameToInstructions.isEmpty();
         }
         if (i2 == EMPTY) {
-            return ((ReadOnly) i1).columnNameToInstructions.size() == 0;
+            return ((ReadOnly) i1).columnNameToInstructions.isEmpty();
         }
         return ReadOnly.sameCodecMappings((ReadOnly) i1, (ReadOnly) i2);
     }
@@ -723,7 +723,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         private void newColumnNameToInstructionsMap() {
-            columnNameToInstructions = new KeyedObjectHashMap<>(new KeyedObjectKey.Basic<String, ColumnInstructions>() {
+            columnNameToInstructions = new KeyedObjectHashMap<>(new KeyedObjectKey.Basic<>() {
                 @Override
                 public String getKey(@NotNull final ColumnInstructions value) {
                     return value.getColumnName();
@@ -733,7 +733,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
         private void newParquetColumnNameToInstructionsMap() {
             parquetColumnNameToInstructions =
-                    new KeyedObjectHashMap<>(new KeyedObjectKey.Basic<String, ColumnInstructions>() {
+                    new KeyedObjectHashMap<>(new KeyedObjectKey.Basic<>() {
                         @Override
                         public String getKey(@NotNull final ColumnInstructions value) {
                             return value.getParquetColumnName();

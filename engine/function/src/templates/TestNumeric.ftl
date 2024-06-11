@@ -1146,6 +1146,10 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(NULL_LONG, wsum((${pt.primitive}[])null, new ${pt2.primitive}[]{4,5,6}));
         assertEquals(NULL_LONG, wsum(new ${pt.primitive}[]{1,2,3}, (${pt2.primitive}[])null));
 
+        assertEquals(NULL_LONG, wsum(new ${pt.primitive}[]{${pt.null},${pt.null},${pt.null}}, new ${pt2.primitive}[]{${pt2.null},${pt2.null},${pt2.null}}));
+        assertEquals(NULL_LONG, wsum(new ${pt.primitive}[]{1,2,3}, new ${pt2.primitive}[]{${pt2.null},${pt2.null},${pt2.null}}));
+        assertEquals(NULL_LONG, wsum(new ${pt.primitive}[]{${pt.null},${pt.null},${pt.null}}, new ${pt2.primitive}[]{1,2,3}));
+
         assertEquals(1*4+2*5+3*6, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.primitive}[]{4,5,6,7,${pt2.null}}));
         assertEquals(NULL_LONG, wsum((${pt.vector}) null, new ${pt2.primitive}[]{4,5,6}));
         assertEquals(NULL_LONG, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3}), (${pt2.primitive}[])null));
@@ -1168,6 +1172,10 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new ${pt.primitive}[]{1,2,3,${pt.null},5}, new ${pt2.primitive}[]{4,5,6,7,${pt2.null}}));
         assertEquals(NULL_DOUBLE, wsum((${pt.primitive}[])null, new ${pt2.primitive}[]{4,5,6}));
         assertEquals(NULL_DOUBLE, wsum(new ${pt.primitive}[]{1,2,3}, (${pt2.primitive}[])null));
+
+        assertEquals(NULL_DOUBLE, wsum(new ${pt.primitive}[]{${pt.null},${pt.null},${pt.null}}, new ${pt2.primitive}[]{${pt2.null},${pt2.null},${pt2.null}}));
+        assertEquals(NULL_DOUBLE, wsum(new ${pt.primitive}[]{1,2,3}, new ${pt2.primitive}[]{${pt2.null},${pt2.null},${pt2.null}}));
+        assertEquals(NULL_DOUBLE, wsum(new ${pt.primitive}[]{${pt.null},${pt.null},${pt.null}}, new ${pt2.primitive}[]{1,2,3}));
 
         assertEquals(1.0*4.0+2.0*5.0+3.0*6.0, wsum(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.primitive}[]{4,5,6,7,${pt2.null}}));
         assertEquals(NULL_DOUBLE, wsum((${pt.vector}) null, new ${pt2.primitive}[]{4,5,6}));
@@ -1214,6 +1222,10 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new ${pt.primitive}[]{1,2,3,${pt.null},5}, new ${pt2.primitive}[]{4,5,6,7,${pt2.null}}));
         assertEquals(NULL_DOUBLE, wavg((${pt.primitive}[])null, new ${pt2.primitive}[]{4,5,6}));
         assertEquals(NULL_DOUBLE, wavg(new ${pt.primitive}[]{1,2,3}, (${pt2.primitive}[])null));
+
+        assertEquals(NULL_DOUBLE, wavg(new ${pt.primitive}[]{${pt.null},${pt.null},${pt.null}}, new ${pt2.primitive}[]{${pt2.null},${pt2.null},${pt2.null}}));
+        assertEquals(NULL_DOUBLE, wavg(new ${pt.primitive}[]{1,2,3}, new ${pt2.primitive}[]{${pt2.null},${pt2.null},${pt2.null}}));
+        assertEquals(NULL_DOUBLE, wavg(new ${pt.primitive}[]{${pt.null},${pt.null},${pt.null}}, new ${pt2.primitive}[]{1,2,3}));
 
         assertEquals((1.0*4.0+2.0*5.0+3.0*6.0)/(4.0+5.0+6.0), wavg(new ${pt.vectorDirect}(new ${pt.primitive}[]{1,2,3,${pt.null},5}), new ${pt2.primitive}[]{4,5,6,7,${pt2.null}}));
         assertEquals(NULL_DOUBLE, wavg((${pt.vector}) null, new ${pt2.primitive}[]{4,5,6}));

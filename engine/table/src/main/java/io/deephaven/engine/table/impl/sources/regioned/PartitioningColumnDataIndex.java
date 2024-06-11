@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.sources.regioned;
 
 import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
@@ -73,7 +74,9 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends AbstractDataIndex {
             @NotNull final String keyColumnName,
             @NotNull final ColumnSource<KEY_TYPE> keySource,
             @NotNull final RegionedColumnSourceManager columnSourceManager) {
-        this.keyColumnName = keyColumnName;
+        this.keyColumnName = Require.neqNull(keyColumnName, "keyColumnName");
+        Require.neqNull(keySource, "keySource");
+        Require.neqNull(columnSourceManager, "columnSourceManager");
 
         keyColumnNamesByIndexedColumn = Map.of(keySource, keyColumnName);
 

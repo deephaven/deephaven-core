@@ -15,8 +15,7 @@ import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.*;
-import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableInt;
 
 import java.util.Collections;
 import java.util.Map;
@@ -126,9 +125,9 @@ class LongChunkedWeightedSumOperator implements IterativeChunkedAggregationOpera
             int start,
             int length,
             MutableInt normalOut,
-            MutableLong weightedSumOut) {
-        long normal = 0;
-        long weightedSum = 0;
+            MutableInt weightedSumOut) {
+        int normal = 0;
+        int weightedSum = 0;
 
         for (int ii = 0; ii < length; ++ii) {
             final double weight = weightValues.get(start + ii);
@@ -142,19 +141,19 @@ class LongChunkedWeightedSumOperator implements IterativeChunkedAggregationOpera
             weightedSum += weight * component;
         }
 
-        normalOut.setValue(normal);
-        weightedSumOut.setValue(weightedSum);
+        normalOut.set(normal);
+        weightedSumOut.set(weightedSum);
     }
 
     private boolean addChunk(LongChunk<? extends Values> longValues, LongChunk<? extends Values> weightValues,
             int start, int length, long destination) {
         final MutableInt normalOut = new MutableInt();
-        final MutableLong weightedSumOut = new MutableLong();
+        final MutableInt weightedSumOut = new MutableInt();
 
         sumChunks(longValues, weightValues, start, length, normalOut, weightedSumOut);
 
-        final long newNormal = normalOut.intValue();
-        final long newWeightedSum = weightedSumOut.longValue();
+        final int newNormal = normalOut.get();
+        final int newWeightedSum = weightedSumOut.get();
 
         final long totalNormal;
         final long existingNormal = normalCount.getUnsafe(destination);
@@ -181,12 +180,12 @@ class LongChunkedWeightedSumOperator implements IterativeChunkedAggregationOpera
     private boolean removeChunk(LongChunk<? extends Values> doubleValues, LongChunk<? extends Values> weightValues,
             int start, int length, long destination) {
         final MutableInt normalOut = new MutableInt();
-        final MutableLong weightedSumOut = new MutableLong();
+        final MutableInt weightedSumOut = new MutableInt();
 
         sumChunks(doubleValues, weightValues, start, length, normalOut, weightedSumOut);
 
-        final int newNormal = normalOut.intValue();
-        final long newWeightedSum = weightedSumOut.longValue();
+        final int newNormal = normalOut.get();
+        final int newWeightedSum = weightedSumOut.get();
 
         final long totalNormal;
         final long existingNormal = normalCount.getUnsafe(destination);
@@ -227,17 +226,17 @@ class LongChunkedWeightedSumOperator implements IterativeChunkedAggregationOpera
             LongChunk<? extends Values> prevWeightValues, LongChunk<? extends Values> newDoubleValues,
             LongChunk<? extends Values> newWeightValues, int start, int length, long destination) {
         final MutableInt normalOut = new MutableInt();
-        final MutableLong weightedSumOut = new MutableLong();
+        final MutableInt weightedSumOut = new MutableInt();
 
         sumChunks(prevDoubleValues, prevWeightValues, start, length, normalOut, weightedSumOut);
 
-        final int prevNormal = normalOut.intValue();
-        final long prevWeightedSum = weightedSumOut.longValue();
+        final int prevNormal = normalOut.get();
+        final int prevWeightedSum = weightedSumOut.get();
 
         sumChunks(newDoubleValues, newWeightValues, start, length, normalOut, weightedSumOut);
 
-        final int newNormal = normalOut.intValue();
-        final long newWeightedSum = weightedSumOut.longValue();
+        final int newNormal = normalOut.get();
+        final int newWeightedSum = weightedSumOut.get();
 
         final long totalNormal;
         final long existingNormal = normalCount.getUnsafe(destination);

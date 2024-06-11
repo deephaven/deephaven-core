@@ -25,6 +25,7 @@ import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.util.RuntimeMemory;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.QueryTableTestBase.ListenerWithGlobals;
 import io.deephaven.engine.testutil.QueryTableTestBase.TableComparator;
@@ -34,9 +35,9 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.vector.LongVector;
 import junit.framework.TestCase;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -47,7 +48,9 @@ import java.util.function.Supplier;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
+import static io.deephaven.util.QueryConstants.NULL_INT;
 import static java.util.Collections.emptyList;
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Test QueryTable select and update operations.
@@ -248,13 +251,9 @@ public class QueryTableSelectUpdateTest {
                 .lazyUpdate("B=" + QueryTableSelectUpdateTest.class.getCanonicalName() + ".callCounter(A)");
         TestCase.assertEquals(3, table.size());
         TestCase.assertEquals(0, callCount);
-        TestCase
-                .assertEquals(Arrays.asList(3, 6, 9),
-                        Arrays.asList(DataAccessHelpers.getColumn(table, "B").get(0, table.size())));
+        assertArrayEquals(new int[] {3, 6, 9}, ColumnVectors.ofInt(table, "B").toArray());
         TestCase.assertEquals(3, callCount);
-        TestCase
-                .assertEquals(Arrays.asList(3, 6, 9),
-                        Arrays.asList(DataAccessHelpers.getColumn(table, "B").get(0, table.size())));
+        assertArrayEquals(new int[] {3, 6, 9}, ColumnVectors.ofInt(table, "B").toArray());
         TestCase.assertEquals(3, callCount);
 
         callCount = 0;
@@ -264,11 +263,9 @@ public class QueryTableSelectUpdateTest {
                 .lazyUpdate("B=" + QueryTableSelectUpdateTest.class.getCanonicalName() + ".callCounter(A)");
         TestCase.assertEquals(6, table2.size());
         TestCase.assertEquals(0, callCount);
-        TestCase.assertEquals(Arrays.asList(3, 6, 9, 6, 9, 3),
-                Arrays.asList(DataAccessHelpers.getColumn(table2, "B").get(0, table2.size())));
+        assertArrayEquals(new int[] {3, 6, 9, 6, 9, 3}, ColumnVectors.ofInt(table2, "B").toArray());
         TestCase.assertEquals(3, callCount);
-        TestCase.assertEquals(Arrays.asList(3, 6, 9, 6, 9, 3),
-                Arrays.asList(DataAccessHelpers.getColumn(table2, "B").get(0, table2.size())));
+        assertArrayEquals(new int[] {3, 6, 9, 6, 9, 3}, ColumnVectors.ofInt(table2, "B").toArray());
         TestCase.assertEquals(3, callCount);
         TestCase.assertEquals(3, table2.getColumnSource("B").getInt(2));
         TestCase.assertEquals(3, table2.getColumnSource("B").get(2));
@@ -668,10 +665,10 @@ public class QueryTableSelectUpdateTest {
                                 .select("Time", "Diff = Time_[i]")),
         };
 
-        final int maxSteps = numSteps.intValue();
-        for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
+        final int maxSteps = numSteps.get();
+        for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
             if (RefreshingTableTestCase.printTableUpdates) {
-                System.out.println("Step = " + numSteps.intValue());
+                System.out.println("Step = " + numSteps.get());
             }
             RefreshingTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
         }
@@ -735,7 +732,7 @@ public class QueryTableSelectUpdateTest {
 
     private void testUpdateIncrementalRandomized(final int seed, MutableInt numSteps, int size) {
         final Random random = new Random(seed);
-        final ColumnInfo[] columnInfo;
+        final ColumnInfo<?, ?>[] columnInfo;
         final QueryTable queryTable = getTable(size, random,
                 columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
                         new SetGenerator<>("a", "b", "c", "d", "e"),
@@ -748,10 +745,10 @@ public class QueryTableSelectUpdateTest {
                         "Concat=UC + FC")),
         };
 
-        final int maxSteps = numSteps.intValue();
-        for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
+        final int maxSteps = numSteps.get();
+        for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
             if (RefreshingTableTestCase.printTableUpdates) {
-                System.out.println("Step = " + numSteps.intValue());
+                System.out.println("Step = " + numSteps.get());
             }
             RefreshingTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
         }
@@ -760,7 +757,7 @@ public class QueryTableSelectUpdateTest {
     @Test
     public void testUpdateIncrementalWithI() {
         Random random = new Random(0);
-        ColumnInfo[] columnInfo;
+        ColumnInfo<?, ?>[] columnInfo;
         int size = 50;
         final QueryTable queryTable = getTable(size, random,
                 columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
@@ -804,11 +801,8 @@ public class QueryTableSelectUpdateTest {
         TestCase.assertEquals(2, table.size());
         TestCase.assertEquals(2, table2.size());
         show(table2);
-        TestCase.assertEquals(Arrays.asList(0, 3),
-                Arrays.asList(DataAccessHelpers.getColumn(table2, "x").get(0, table2.size())));
-        TestCase
-                .assertEquals(Arrays.asList("7", "9"),
-                        Arrays.asList(DataAccessHelpers.getColumn(table2, "y").get(0, table2.size())));
+        assertArrayEquals(new int[] {0, 3}, ColumnVectors.ofInt(table2, "x").toArray());
+        assertArrayEquals(new String[] {"7", "9"}, ColumnVectors.ofObject(table2, "y", String.class).toArray());
         TestCase.assertEquals(base.added, i(7, 9));
         TestCase.assertEquals(base.removed, i());
         TestCase.assertEquals(base.modified, i());
@@ -838,10 +832,8 @@ public class QueryTableSelectUpdateTest {
         TestCase.assertEquals(2, table.size());
         TestCase.assertEquals(2, table2.size());
         show(table2);
-        TestCase.assertEquals(Arrays.asList(0, 1),
-                Arrays.asList(DataAccessHelpers.getColumn(table2, "Position").get(0, table2.size())));
-        TestCase.assertEquals(Arrays.asList("7", "9"),
-                Arrays.asList(DataAccessHelpers.getColumn(table2, "Key").get(0, table2.size())));
+        assertArrayEquals(new int[] {0, 1}, ColumnVectors.ofInt(table2, "Position").toArray());
+        assertArrayEquals(new String[] {"7", "9"}, ColumnVectors.ofObject(table2, "Key", String.class).toArray());
         TestCase.assertEquals(base.added, i(7, 9));
         TestCase.assertEquals(base.removed, i());
         TestCase.assertEquals(base.modified, i());
@@ -851,10 +843,8 @@ public class QueryTableSelectUpdateTest {
         TestCase.assertEquals(2, table.size());
         TestCase.assertEquals(2, table2.size());
         show(table2);
-        TestCase.assertEquals(Arrays.asList(0, 1),
-                Arrays.asList(DataAccessHelpers.getColumn(table2, "Position").get(0, table2.size())));
-        TestCase.assertEquals(Arrays.asList("7", "9"),
-                Arrays.asList(DataAccessHelpers.getColumn(table2, "Key").get(0, table2.size())));
+        assertArrayEquals(new int[] {0, 1}, ColumnVectors.ofInt(table2, "Position").toArray());
+        assertArrayEquals(new String[] {"7", "9"}, ColumnVectors.ofObject(table2, "Key", String.class).toArray());
         TestCase.assertEquals(base.added, i());
         TestCase.assertEquals(base.removed, i());
         TestCase.assertEquals(base.modified, i(9));
@@ -882,11 +872,9 @@ public class QueryTableSelectUpdateTest {
         TestCase.assertEquals(2, table.size());
         TestCase.assertEquals(2, table2.size());
         show(table2);
-        TestCase.assertEquals(Arrays.asList(0, 1),
-                Arrays.asList(DataAccessHelpers.getColumn(table2, "Position").get(0, table2.size())));
-        // assertEquals(Arrays.asList("7", "9"), Arrays.asList(table2.getColumn("Key").get(0, table2.size())));
-        TestCase.assertEquals(Arrays.asList(null, 0),
-                Arrays.asList(DataAccessHelpers.getColumn(table2, "PrevI").get(0, table2.size())));
+        assertArrayEquals(new int[] {0, 1}, ColumnVectors.ofInt(table2, "Position").toArray());
+        // assertArrayEquals(new String[] {"7", "9"}, ColumnVectors.ofObject(table2, "Key", String.class).toArray());
+        assertArrayEquals(new int[] {NULL_INT, 0}, ColumnVectors.ofInt(table2, "PrevI").toArray());
         TestCase.assertEquals(i(7, 9), base.added);
         TestCase.assertEquals(i(), base.removed);
         TestCase.assertEquals(i(), base.modified);
@@ -896,11 +884,9 @@ public class QueryTableSelectUpdateTest {
         TestCase.assertEquals(2, table.size());
         TestCase.assertEquals(2, table2.size());
         show(table2);
-        TestCase.assertEquals(Arrays.asList(0, 1),
-                Arrays.asList(DataAccessHelpers.getColumn(table2, "Position").get(0, table2.size())));
-        // assertEquals(Arrays.asList("7", "9"), Arrays.asList(table2.getColumn("Key").get(0, table2.size())));
-        TestCase.assertEquals(Arrays.asList(null, 0),
-                Arrays.asList(DataAccessHelpers.getColumn(table2, "PrevI").get(0, table2.size())));
+        assertArrayEquals(new int[] {0, 1}, ColumnVectors.ofInt(table2, "Position").toArray());
+        // assertArrayEquals(new String[] {"7", "9"}, ColumnVectors.ofObject(table2, "Key", String.class).toArray());
+        assertArrayEquals(new int[] {NULL_INT, 0}, ColumnVectors.ofInt(table2, "PrevI").toArray());
 
         // note this modification is not reported to table2 since `update` is smart enough to notice that no columns
         // are actually modified in the result table
@@ -1002,7 +988,7 @@ public class QueryTableSelectUpdateTest {
         final Table testtest = TableTools.emptyTable(554).view("Quantity=k").where("Quantity>200");
         final Table test = testtest.update("Quantity=100", "Test=Quantity");
 
-        final int[] testArray = (int[]) DataAccessHelpers.getColumn(test, "Test").getDirect();
+        final int[] testArray = ColumnVectors.ofInt(test, "Test").toArray();
         final int[] expected = new int[test.intSize()];
         Arrays.fill(expected, 100);
         BaseArrayTestCase.assertEquals(expected, testArray);
@@ -1050,7 +1036,7 @@ public class QueryTableSelectUpdateTest {
     public void testIds5746() {
         final Table x = TableTools.emptyTable(2).update("result = `blah`", "L = result.length()");
 
-        final int[] testArray = (int[]) DataAccessHelpers.getColumn(x, "L").getDirect();
+        final int[] testArray = ColumnVectors.ofInt(x, "L").toArray();
         final int[] expected = new int[] {4, 4};
         BaseArrayTestCase.assertEquals(expected, testArray);
     }
@@ -1104,7 +1090,7 @@ public class QueryTableSelectUpdateTest {
         Assert.assertTrue(cs instanceof RedirectedColumnSource);
 
         Assert.assertEquals(4L, updated.getColumnSource("D").get(updated.getRowSet().get(1)));
-        Assert.assertEquals(8L, updated.getColumnSource("D").getPrev(updated.getRowSet().copyPrev().get(2)));
+        Assert.assertEquals(8L, updated.getColumnSource("D").getPrev(updated.getRowSet().prev().get(2)));
     }
 
     @Test

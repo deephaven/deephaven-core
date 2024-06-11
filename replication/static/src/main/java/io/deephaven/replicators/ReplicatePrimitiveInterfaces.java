@@ -23,10 +23,17 @@ public class ReplicatePrimitiveInterfaces {
     private static final String INT_ITERATOR_PATH =
             "engine/primitive/src/main/java/io/deephaven/engine/primitive/iterator/CloseablePrimitiveIteratorOfInt.java";
 
+    private static final String TO_CHAR_PATH =
+            "engine/primitive/src/main/java/io/deephaven/engine/primitive/function/ToCharFunction.java";
+
     public static void main(String[] args) throws IOException {
         {
             charToShortAndByte(TASK, CHAR_CONSUMER_PATH);
             charToFloat(TASK, CHAR_CONSUMER_PATH, null);
+        }
+        {
+            charToShortAndByte(TASK, TO_CHAR_PATH);
+            charToFloat(TASK, TO_CHAR_PATH, null);
         }
         {
             charToShortAndByte(TASK, CHAR_TO_INT_PATH);

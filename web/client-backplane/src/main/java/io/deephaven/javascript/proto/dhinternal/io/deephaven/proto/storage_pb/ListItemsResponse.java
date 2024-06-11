@@ -57,7 +57,13 @@ public class ListItemsResponse {
         }
 
         @JsProperty
+        String getCanonicalPath();
+
+        @JsProperty
         JsArray<ListItemsResponse.ToObjectReturnType.ItemsListFieldType> getItemsList();
+
+        @JsProperty
+        void setCanonicalPath(String canonicalPath);
 
         @JsOverlay
         default void setItemsList(ListItemsResponse.ToObjectReturnType.ItemsListFieldType[] itemsList) {
@@ -110,7 +116,13 @@ public class ListItemsResponse {
         }
 
         @JsProperty
+        String getCanonicalPath();
+
+        @JsProperty
         JsArray<ListItemsResponse.ToObjectReturnType0.ItemsListFieldType> getItemsList();
+
+        @JsProperty
+        void setCanonicalPath(String canonicalPath);
 
         @JsOverlay
         default void setItemsList(
@@ -142,9 +154,13 @@ public class ListItemsResponse {
 
     public native void clearItemsList();
 
+    public native String getCanonicalPath();
+
     public native JsArray<ItemInfo> getItemsList();
 
     public native Uint8Array serializeBinary();
+
+    public native void setCanonicalPath(String value);
 
     @JsOverlay
     public final void setItemsList(ItemInfo[] value) {

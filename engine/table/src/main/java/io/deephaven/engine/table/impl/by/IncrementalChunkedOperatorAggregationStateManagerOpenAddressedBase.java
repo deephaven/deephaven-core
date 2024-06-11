@@ -18,7 +18,7 @@ import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.ProbeContext;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase
@@ -119,7 +119,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
 
     @Override
     public void onNextChunk(int size) {
-        outputPositionToHashSlot.ensureCapacity(nextOutputPosition.intValue() + size, false);
+        outputPositionToHashSlot.ensureCapacity(nextOutputPosition.get() + size, false);
     }
 
     @Override

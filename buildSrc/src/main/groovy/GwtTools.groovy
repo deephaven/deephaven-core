@@ -5,12 +5,11 @@ import de.esoco.gwt.gradle.task.GwtCheckTask
 import de.esoco.gwt.gradle.task.GwtCompileTask
 import groovy.transform.CompileStatic
 import org.gradle.api.Project
+import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.tasks.compile.JavaCompile
-
-import java.nio.file.Files
 
 /**
  * Helper to simplify / centralize configuring gwt plugins in build files
@@ -83,8 +82,17 @@ class GwtTools {
     static void applyDefaults(Project p, GwtExtension gwt, boolean compile = false) {
         gwt.gwtVersion = Classpaths.GWT_VERSION
         gwt.jettyVersion = Classpaths.JETTY_VERSION
+        p.configurations.all { Configuration c ->
+            c.resolutionStrategy.dependencySubstitution { sub ->
+                sub.substitute(sub.module("com.google.gwt:gwt-codeserver"))
+                        .using(sub.module("org.gwtproject:gwt-codeserver:${Classpaths.GWT_VERSION}"))
+                sub.substitute(sub.module("com.google.gwt:gwt-user"))
+                        .using(sub.module("org.gwtproject:gwt-user:${Classpaths.GWT_VERSION}"))
+                sub.substitute(sub.module("com.google.gwt:gwt-dev"))
+                        .using(sub.module("org.gwtproject:gwt-dev:${Classpaths.GWT_VERSION}"))
+            }
+        }
         if (compile) {
-
             String warPath = new File(p.buildDir, 'gwt').absolutePath
 
             gwt.compile.with {

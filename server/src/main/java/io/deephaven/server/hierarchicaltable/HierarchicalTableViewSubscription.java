@@ -34,7 +34,6 @@ import org.HdrHistogram.Histogram;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -55,7 +54,7 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
     public interface Factory {
         HierarchicalTableViewSubscription create(
                 HierarchicalTableView view,
-                StreamObserver<BarrageStreamGeneratorImpl.View> listener,
+                StreamObserver<BarrageStreamGenerator.MessageView> listener,
                 BarrageSubscriptionOptions subscriptionOptions,
                 long intervalMillis);
     }
@@ -64,10 +63,10 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
 
     private final Scheduler scheduler;
     private final SessionService.ErrorTransformer errorTransformer;
-    private final BarrageStreamGenerator.Factory<BarrageStreamGeneratorImpl.View> streamGeneratorFactory;
+    private final BarrageStreamGenerator.Factory streamGeneratorFactory;
 
     private final HierarchicalTableView view;
-    private final StreamObserver<BarrageStreamGeneratorImpl.View> listener;
+    private final StreamObserver<BarrageStreamGenerator.MessageView> listener;
     private final BarrageSubscriptionOptions subscriptionOptions;
     private final long intervalDurationNanos;
 
@@ -106,9 +105,9 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
     public HierarchicalTableViewSubscription(
             @NotNull final Scheduler scheduler,
             @NotNull final SessionService.ErrorTransformer errorTransformer,
-            @NotNull final BarrageStreamGenerator.Factory<BarrageStreamGeneratorImpl.View> streamGeneratorFactory,
+            @NotNull final BarrageStreamGenerator.Factory streamGeneratorFactory,
             @Assisted @NotNull final HierarchicalTableView view,
-            @Assisted @NotNull final StreamObserver<BarrageStreamGeneratorImpl.View> listener,
+            @Assisted @NotNull final StreamObserver<BarrageStreamGenerator.MessageView> listener,
             @Assisted @NotNull final BarrageSubscriptionOptions subscriptionOptions,
             @Assisted final long intervalDurationMillis) {
         this.scheduler = scheduler;
@@ -293,8 +292,8 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
     }
 
     private static long buildAndSendSnapshot(
-            @NotNull final BarrageStreamGenerator.Factory<BarrageStreamGeneratorImpl.View> streamGeneratorFactory,
-            @NotNull final StreamObserver<BarrageStreamGeneratorImpl.View> listener,
+            @NotNull final BarrageStreamGenerator.Factory streamGeneratorFactory,
+            @NotNull final StreamObserver<BarrageStreamGenerator.MessageView> listener,
             @NotNull final BarrageSubscriptionOptions subscriptionOptions,
             @NotNull final HierarchicalTableView view,
             @NotNull final LongConsumer snapshotNanosConsumer,
@@ -356,7 +355,7 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
         barrageMessage.modColumnData = BarrageMessage.ZERO_MOD_COLUMNS;
 
         // 5. Send the BarrageMessage
-        final BarrageStreamGenerator<BarrageStreamGeneratorImpl.View> streamGenerator =
+        final BarrageStreamGenerator streamGenerator =
                 streamGeneratorFactory.newGenerator(barrageMessage, writeMetricsConsumer);
         // Note that we're always specifying "isInitialSnapshot=true". This is to provoke the subscription view to
         // send the added rows on every snapshot, since (1) our added rows are flat, and thus cheap to send, and
