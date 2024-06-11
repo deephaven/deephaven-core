@@ -97,89 +97,89 @@ public class WhereFilterTest extends TestCase {
     }
 
     public void testGt() {
-        regular(FilterComparison.gt(FOO, V42), RangeConditionFilter.class,
+        regular(FilterComparison.gt(FOO, V42), RangeFilter.class,
                 "RangeConditionFilter(Foo greater than 42)");
-        regular(FilterComparison.gt(V42, FOO), RangeConditionFilter.class,
+        regular(FilterComparison.gt(V42, FOO), RangeFilter.class,
                 "RangeConditionFilter(Foo less than 42)");
-        regular(FilterComparison.gt(FOO, HELLO), RangeConditionFilter.class,
+        regular(FilterComparison.gt(FOO, HELLO), RangeFilter.class,
                 "RangeConditionFilter(Foo greater than \"Hello\")");
-        regular(FilterComparison.gt(HELLO, FOO), RangeConditionFilter.class,
+        regular(FilterComparison.gt(HELLO, FOO), RangeFilter.class,
                 "RangeConditionFilter(Foo less than \"Hello\")");
         regular(FilterComparison.gt(FOO, BAR), ConditionFilter.class, "Foo > Bar");
 
-        inverse(FilterComparison.gt(FOO, V42), RangeConditionFilter.class,
+        inverse(FilterComparison.gt(FOO, V42), RangeFilter.class,
                 "RangeConditionFilter(Foo less than or equal to 42)");
-        inverse(FilterComparison.gt(V42, FOO), RangeConditionFilter.class,
+        inverse(FilterComparison.gt(V42, FOO), RangeFilter.class,
                 "RangeConditionFilter(Foo greater than or equal to 42)");
-        inverse(FilterComparison.gt(FOO, HELLO), RangeConditionFilter.class,
+        inverse(FilterComparison.gt(FOO, HELLO), RangeFilter.class,
                 "RangeConditionFilter(Foo less than or equal to \"Hello\")");
-        inverse(FilterComparison.gt(HELLO, FOO), RangeConditionFilter.class,
+        inverse(FilterComparison.gt(HELLO, FOO), RangeFilter.class,
                 "RangeConditionFilter(Foo greater than or equal to \"Hello\")");
         inverse(FilterComparison.gt(FOO, BAR), ConditionFilter.class, "Foo <= Bar");
     }
 
     public void testGte() {
-        regular(FilterComparison.geq(FOO, V42), RangeConditionFilter.class,
+        regular(FilterComparison.geq(FOO, V42), RangeFilter.class,
                 "RangeConditionFilter(Foo greater than or equal to 42)");
-        regular(FilterComparison.geq(V42, FOO), RangeConditionFilter.class,
+        regular(FilterComparison.geq(V42, FOO), RangeFilter.class,
                 "RangeConditionFilter(Foo less than or equal to 42)");
-        regular(FilterComparison.geq(FOO, HELLO), RangeConditionFilter.class,
+        regular(FilterComparison.geq(FOO, HELLO), RangeFilter.class,
                 "RangeConditionFilter(Foo greater than or equal to \"Hello\")");
-        regular(FilterComparison.geq(HELLO, FOO), RangeConditionFilter.class,
+        regular(FilterComparison.geq(HELLO, FOO), RangeFilter.class,
                 "RangeConditionFilter(Foo less than or equal to \"Hello\")");
         regular(FilterComparison.geq(FOO, BAR), ConditionFilter.class, "Foo >= Bar");
 
-        inverse(FilterComparison.geq(FOO, V42), RangeConditionFilter.class,
+        inverse(FilterComparison.geq(FOO, V42), RangeFilter.class,
                 "RangeConditionFilter(Foo less than 42)");
-        inverse(FilterComparison.geq(V42, FOO), RangeConditionFilter.class,
+        inverse(FilterComparison.geq(V42, FOO), RangeFilter.class,
                 "RangeConditionFilter(Foo greater than 42)");
-        inverse(FilterComparison.geq(FOO, HELLO), RangeConditionFilter.class,
+        inverse(FilterComparison.geq(FOO, HELLO), RangeFilter.class,
                 "RangeConditionFilter(Foo less than \"Hello\")");
-        inverse(FilterComparison.geq(HELLO, FOO), RangeConditionFilter.class,
+        inverse(FilterComparison.geq(HELLO, FOO), RangeFilter.class,
                 "RangeConditionFilter(Foo greater than \"Hello\")");
         inverse(FilterComparison.geq(FOO, BAR), ConditionFilter.class, "Foo < Bar");
     }
 
     public void testLt() {
-        regular(FilterComparison.lt(FOO, V42), RangeConditionFilter.class,
+        regular(FilterComparison.lt(FOO, V42), RangeFilter.class,
                 "RangeConditionFilter(Foo less than 42)");
-        regular(FilterComparison.lt(V42, FOO), RangeConditionFilter.class,
+        regular(FilterComparison.lt(V42, FOO), RangeFilter.class,
                 "RangeConditionFilter(Foo greater than 42)");
-        regular(FilterComparison.lt(FOO, HELLO), RangeConditionFilter.class,
+        regular(FilterComparison.lt(FOO, HELLO), RangeFilter.class,
                 "RangeConditionFilter(Foo less than \"Hello\")");
-        regular(FilterComparison.lt(HELLO, FOO), RangeConditionFilter.class,
+        regular(FilterComparison.lt(HELLO, FOO), RangeFilter.class,
                 "RangeConditionFilter(Foo greater than \"Hello\")");
         regular(FilterComparison.lt(FOO, BAR), ConditionFilter.class, "Foo < Bar");
 
-        inverse(FilterComparison.lt(FOO, V42), RangeConditionFilter.class,
+        inverse(FilterComparison.lt(FOO, V42), RangeFilter.class,
                 "RangeConditionFilter(Foo greater than or equal to 42)");
-        inverse(FilterComparison.lt(V42, FOO), RangeConditionFilter.class,
+        inverse(FilterComparison.lt(V42, FOO), RangeFilter.class,
                 "RangeConditionFilter(Foo less than or equal to 42)");
-        inverse(FilterComparison.lt(FOO, HELLO), RangeConditionFilter.class,
+        inverse(FilterComparison.lt(FOO, HELLO), RangeFilter.class,
                 "RangeConditionFilter(Foo greater than or equal to \"Hello\")");
-        inverse(FilterComparison.lt(HELLO, FOO), RangeConditionFilter.class,
+        inverse(FilterComparison.lt(HELLO, FOO), RangeFilter.class,
                 "RangeConditionFilter(Foo less than or equal to \"Hello\")");
         inverse(FilterComparison.lt(FOO, BAR), ConditionFilter.class, "Foo >= Bar");
     }
 
     public void testLte() {
-        regular(FilterComparison.leq(FOO, V42), RangeConditionFilter.class,
+        regular(FilterComparison.leq(FOO, V42), RangeFilter.class,
                 "RangeConditionFilter(Foo less than or equal to 42)");
-        regular(FilterComparison.leq(V42, FOO), RangeConditionFilter.class,
+        regular(FilterComparison.leq(V42, FOO), RangeFilter.class,
                 "RangeConditionFilter(Foo greater than or equal to 42)");
-        regular(FilterComparison.leq(FOO, HELLO), RangeConditionFilter.class,
+        regular(FilterComparison.leq(FOO, HELLO), RangeFilter.class,
                 "RangeConditionFilter(Foo less than or equal to \"Hello\")");
-        regular(FilterComparison.leq(HELLO, FOO), RangeConditionFilter.class,
+        regular(FilterComparison.leq(HELLO, FOO), RangeFilter.class,
                 "RangeConditionFilter(Foo greater than or equal to \"Hello\")");
         regular(FilterComparison.leq(FOO, BAR), ConditionFilter.class, "Foo <= Bar");
 
-        inverse(FilterComparison.leq(FOO, V42), RangeConditionFilter.class,
+        inverse(FilterComparison.leq(FOO, V42), RangeFilter.class,
                 "RangeConditionFilter(Foo greater than 42)");
-        inverse(FilterComparison.leq(V42, FOO), RangeConditionFilter.class,
+        inverse(FilterComparison.leq(V42, FOO), RangeFilter.class,
                 "RangeConditionFilter(Foo less than 42)");
-        inverse(FilterComparison.leq(FOO, HELLO), RangeConditionFilter.class,
+        inverse(FilterComparison.leq(FOO, HELLO), RangeFilter.class,
                 "RangeConditionFilter(Foo greater than \"Hello\")");
-        inverse(FilterComparison.leq(HELLO, FOO), RangeConditionFilter.class,
+        inverse(FilterComparison.leq(HELLO, FOO), RangeFilter.class,
                 "RangeConditionFilter(Foo less than \"Hello\")");
         inverse(FilterComparison.leq(FOO, BAR), ConditionFilter.class, "Foo > Bar");
     }

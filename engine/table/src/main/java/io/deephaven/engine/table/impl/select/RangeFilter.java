@@ -35,7 +35,7 @@ import java.util.List;
  * <li>GREATER_THAN_OR_EQUAL</li>
  * </ul>
  */
-public class RangeConditionFilter extends WhereFilterImpl {
+public class RangeFilter extends WhereFilterImpl {
 
     private final String columnName;
     private final Condition condition;
@@ -54,7 +54,7 @@ public class RangeConditionFilter extends WhereFilterImpl {
      * @param condition the condition for filtering
      * @param value a String representation of the numeric filter value
      */
-    public RangeConditionFilter(String columnName, Condition condition, String value) {
+    public RangeFilter(String columnName, Condition condition, String value) {
         this(columnName, condition, value, null, null, null);
     }
 
@@ -67,8 +67,8 @@ public class RangeConditionFilter extends WhereFilterImpl {
      * @param expression the original expression prior to being parsed
      * @param parserConfiguration the parser configuration to use
      */
-    public RangeConditionFilter(String columnName, Condition condition, String value, String expression,
-            FormulaParserConfiguration parserConfiguration) {
+    public RangeFilter(String columnName, Condition condition, String value, String expression,
+                       FormulaParserConfiguration parserConfiguration) {
         this(columnName, condition, value, expression, null, parserConfiguration);
     }
 
@@ -81,14 +81,14 @@ public class RangeConditionFilter extends WhereFilterImpl {
      * @param expression the original expression prior to being parsed
      * @param parserConfiguration the parser configuration to useyy
      */
-    public RangeConditionFilter(String columnName, String conditionString, String value, String expression,
-            FormulaParserConfiguration parserConfiguration) {
+    public RangeFilter(String columnName, String conditionString, String value, String expression,
+                       FormulaParserConfiguration parserConfiguration) {
         this(columnName, conditionFromString(conditionString), value, expression, parserConfiguration);
     }
 
     // Used for copy method
-    private RangeConditionFilter(String columnName, Condition condition, String value, String expression,
-            WhereFilter filter, FormulaParserConfiguration parserConfiguration) {
+    private RangeFilter(String columnName, Condition condition, String value, String expression,
+                        WhereFilter filter, FormulaParserConfiguration parserConfiguration) {
         Assert.eqTrue(conditionSupported(condition), condition + " is not supported by RangeConditionFilter");
         this.columnName = columnName;
         this.condition = condition;
@@ -296,7 +296,7 @@ public class RangeConditionFilter extends WhereFilterImpl {
 
     @Override
     public WhereFilter copy() {
-        return new RangeConditionFilter(columnName, condition, value, expression, filter, parserConfiguration);
+        return new RangeFilter(columnName, condition, value, expression, filter, parserConfiguration);
     }
 
     @Override

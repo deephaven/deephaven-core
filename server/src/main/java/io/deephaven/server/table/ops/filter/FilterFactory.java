@@ -11,7 +11,7 @@ import io.deephaven.engine.table.impl.select.ConjunctiveFilter;
 import io.deephaven.engine.table.impl.select.DisjunctiveFilter;
 import io.deephaven.engine.table.impl.select.FormulaParserConfiguration;
 import io.deephaven.engine.table.impl.select.MatchFilter;
-import io.deephaven.engine.table.impl.select.RangeConditionFilter;
+import io.deephaven.engine.table.impl.select.RangeFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.engine.table.impl.select.WhereNoneFilter;
@@ -145,7 +145,7 @@ public class FilterFactory implements FilterVisitor<WhereFilter> {
             default:
                 throw new IllegalStateException("Range filter can't handle literal type " + value.getValueCase());
         }
-        return new RangeConditionFilter(columName, rangeCondition(operation, invert), valueString, null,
+        return new RangeFilter(columName, rangeCondition(operation, invert), valueString, null,
                 FormulaParserConfiguration.parser);
     }
 

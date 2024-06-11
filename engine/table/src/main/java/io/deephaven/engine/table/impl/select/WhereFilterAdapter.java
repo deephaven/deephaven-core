@@ -368,34 +368,34 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
                 return original();
             }
 
-            private RangeConditionFilter range(Object rhsLiteral) {
+            private RangeFilter range(Object rhsLiteral) {
                 // TODO(deephaven-core#3730): More efficient io.deephaven.api.filter.FilterComparison to RangeFilter
                 final String rhsLiteralAsStr = rhsLiteral.toString();
                 switch (preferred.operator()) {
                     case LESS_THAN:
-                        return new RangeConditionFilter(lhs.name(), Condition.LESS_THAN, rhsLiteralAsStr);
+                        return new RangeFilter(lhs.name(), Condition.LESS_THAN, rhsLiteralAsStr);
                     case LESS_THAN_OR_EQUAL:
-                        return new RangeConditionFilter(lhs.name(), Condition.LESS_THAN_OR_EQUAL, rhsLiteralAsStr);
+                        return new RangeFilter(lhs.name(), Condition.LESS_THAN_OR_EQUAL, rhsLiteralAsStr);
                     case GREATER_THAN:
-                        return new RangeConditionFilter(lhs.name(), Condition.GREATER_THAN, rhsLiteralAsStr);
+                        return new RangeFilter(lhs.name(), Condition.GREATER_THAN, rhsLiteralAsStr);
                     case GREATER_THAN_OR_EQUAL:
-                        return new RangeConditionFilter(lhs.name(), Condition.GREATER_THAN_OR_EQUAL, rhsLiteralAsStr);
+                        return new RangeFilter(lhs.name(), Condition.GREATER_THAN_OR_EQUAL, rhsLiteralAsStr);
                 }
                 throw new IllegalStateException("Unexpected");
             }
 
-            private RangeConditionFilter range(String rhsLiteral) {
+            private RangeFilter range(String rhsLiteral) {
                 // TODO(deephaven-core#3730): More efficient io.deephaven.api.filter.FilterComparison to RangeFilter
                 final String quotedRhsLiteral = '"' + rhsLiteral + '"';
                 switch (preferred.operator()) {
                     case LESS_THAN:
-                        return new RangeConditionFilter(lhs.name(), Condition.LESS_THAN, quotedRhsLiteral);
+                        return new RangeFilter(lhs.name(), Condition.LESS_THAN, quotedRhsLiteral);
                     case LESS_THAN_OR_EQUAL:
-                        return new RangeConditionFilter(lhs.name(), Condition.LESS_THAN_OR_EQUAL, quotedRhsLiteral);
+                        return new RangeFilter(lhs.name(), Condition.LESS_THAN_OR_EQUAL, quotedRhsLiteral);
                     case GREATER_THAN:
-                        return new RangeConditionFilter(lhs.name(), Condition.GREATER_THAN, quotedRhsLiteral);
+                        return new RangeFilter(lhs.name(), Condition.GREATER_THAN, quotedRhsLiteral);
                     case GREATER_THAN_OR_EQUAL:
-                        return new RangeConditionFilter(lhs.name(), Condition.GREATER_THAN_OR_EQUAL, quotedRhsLiteral);
+                        return new RangeFilter(lhs.name(), Condition.GREATER_THAN_OR_EQUAL, quotedRhsLiteral);
                 }
                 throw new IllegalStateException("Unexpected");
             }

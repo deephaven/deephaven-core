@@ -224,7 +224,7 @@ public class WhereFilterFactory {
                     }
                     log.debug().append("WhereFilterFactory creating RangeConditionFilter for expression: ")
                             .append(expression).endl();
-                    return new RangeConditionFilter(columnName, op, value, expression, parserConfiguration);
+                    return new RangeFilter(columnName, op, value, expression, parserConfiguration);
                 } catch (Exception e) {
                     log.warn().append("WhereFilterFactory could not make RangeFilter for expression: ")
                             .append(expression).append(" due to ").append(e)
