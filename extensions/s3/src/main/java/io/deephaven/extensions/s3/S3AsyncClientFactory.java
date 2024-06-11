@@ -56,7 +56,7 @@ class S3AsyncClientFactory {
                         .scheduledExecutorService(ensureScheduledExecutor())
                         .build())
                 .credentialsProvider(instructions.awsV2CredentialsProvider());
-        instructions.regionName().ifPresent(regionName -> builder.region(Region.of(regionName)));
+        instructions.regionName().map(Region::of).ifPresent(builder::region);
         instructions.endpointOverride().ifPresent(builder::endpointOverride);
         final S3AsyncClient ret = builder.build();
         if (log.isDebugEnabled()) {

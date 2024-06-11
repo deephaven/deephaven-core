@@ -32,7 +32,7 @@ public abstract class S3Instructions implements LogOutputAppendable {
     private final static Duration DEFAULT_CONNECTION_TIMEOUT = Duration.ofSeconds(2);
     private final static Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(2);
 
-    static final S3Instructions DEFAULT_S3_INSTRUCTIONS = builder().build();
+    static final S3Instructions DEFAULT = builder().build();
 
     public static Builder builder() {
         return ImmutableS3Instructions.builder();
@@ -41,8 +41,7 @@ public abstract class S3Instructions implements LogOutputAppendable {
     /**
      * The region name to use when reading or writing to S3. If not provided, the region name is picked by the AWS SDK
      * from 'aws.region' system property, "AWS_REGION" environment variable, the {user.home}/.aws/credentials or
-     * {user.home}/.aws/config files, or from EC2 metadata service, if running in EC2. Please check
-     * {@link software.amazon.awssdk.awscore.client.builder.AwsClientBuilder#region} for more details.
+     * {user.home}/.aws/config files, or from EC2 metadata service, if running in EC2.
      */
     public abstract Optional<String> regionName();
 
