@@ -11,7 +11,6 @@ import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
-import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
@@ -24,10 +23,11 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.List;
 
-import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
-import static io.deephaven.util.QueryConstants.NULL_INT;
+import static io.deephaven.time.DateTimeUtils.*;
+import static io.deephaven.util.QueryConstants.*;
 
 /**
  * Unit tests for {@link CsvTools}.
@@ -209,7 +209,8 @@ public class TestCsvTools {
     @Test
     public void testWriteCsv() throws Exception {
         final File csvFile = new File(tmpDir, "tmp.csv");
-        final String[] colNames = {"StringKeys", "GroupedInts", "Doubles", "DateTime"};
+        final String[] colNames = {"Strings", "Chars", "Bytes", "Shorts", "Ints", "Longs", "Floats", "Doubles",
+                "Instants", "ZonedDateTimes"};
         final Table tableToTest = new InMemoryTable(
                 colNames,
                 new Object[] {
@@ -217,38 +218,70 @@ public class TestCsvTools {
                                 "key11", "key11", "key21", "key21", "key22", null, "ABCDEFGHIJK", "\"", "123",
                                 "456", "789", ",", "8"
                         },
+                        new char[] {
+                                'a', 'b', 'b', NULL_CHAR, 'c', '\n', ',', MIN_CHAR, MAX_CHAR, 'Z', 'Y', '~', '0'
+                        },
+                        new byte[] {
+                                1, 2, 2, NULL_BYTE, 3, -99, -100, MIN_BYTE, MAX_BYTE, 5, 6, 7, 8
+                        },
+                        new short[] {
+                                1, 2, 2, NULL_SHORT, 3, -99, -100, MIN_SHORT, MAX_SHORT, 5, 6, 7, 8
+                        },
                         new int[] {
-                                1, 2, 2, NULL_INT, 3, -99, -100, Integer.MIN_VALUE + 1, Integer.MAX_VALUE,
-                                5, 6, 7, 8
+                                1, 2, 2, NULL_INT, 3, -99, -100, MIN_INT, MAX_INT, 5, 6, 7, 8
+                        },
+                        new long[] {
+                                1, 2, 2, NULL_LONG, 3, -99, -100, MIN_LONG, MAX_LONG, 5, 6, 7, 8
+                        },
+                        new float[] {
+                                2.342f, 0.0932f, 10000000, NULL_FLOAT, 3, MIN_FINITE_FLOAT, MAX_FINITE_FLOAT,
+                                Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY, -1.00f, 0.0f, -0.001f, Float.NaN
                         },
                         new double[] {
-                                2.342, 0.0932, 10000000, NULL_DOUBLE, 3, Double.MIN_VALUE, Double.MAX_VALUE,
+                                2.342, 0.0932, 10000000, NULL_DOUBLE, 3, MIN_FINITE_DOUBLE, MAX_FINITE_DOUBLE,
                                 Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, -1.00, 0.0, -0.001, Double.NaN
                         },
                         new Instant[] {
-                                DateTimeUtils.epochNanosToInstant(100),
-                                DateTimeUtils.epochNanosToInstant(10000),
+                                epochNanosToInstant(100),
+                                epochNanosToInstant(10000),
                                 null,
-                                DateTimeUtils.epochNanosToInstant(100000),
-                                DateTimeUtils.epochNanosToInstant(1000000),
-                                DateTimeUtils.parseInstant("2022-11-06T02:00:00.000000000-04:00"),
-                                DateTimeUtils.parseInstant("2022-11-06T02:00:00.000000000-05:00"),
-                                DateTimeUtils.parseInstant("2022-11-06T02:00:01.000000001-04:00"),
-                                DateTimeUtils.parseInstant("2022-11-06T02:00:01.000000001-05:00"),
-                                DateTimeUtils.parseInstant("2022-11-06T02:59:59.999999999-04:00"),
-                                DateTimeUtils.parseInstant("2022-11-06T02:59:59.999999999-05:00"),
-                                DateTimeUtils.parseInstant("2022-11-06T03:00:00.000000000-04:00"),
-                                DateTimeUtils.parseInstant("2022-11-06T03:00:00.000000000-05:00")
+                                epochNanosToInstant(100000),
+                                epochNanosToInstant(1000000),
+                                parseInstant("2022-11-06T02:00:00.000000000-04:00"),
+                                parseInstant("2022-11-06T02:00:00.000000000-05:00"),
+                                parseInstant("2022-11-06T02:00:01.000000001-04:00"),
+                                parseInstant("2022-11-06T02:00:01.000000001-05:00"),
+                                parseInstant("2022-11-06T02:59:59.999999999-04:00"),
+                                parseInstant("2022-11-06T02:59:59.999999999-05:00"),
+                                parseInstant("2022-11-06T03:00:00.000000000-04:00"),
+                                parseInstant("2022-11-06T03:00:00.000000000-05:00")
+                        },
+                        new ZonedDateTime[] {
+                                epochNanosToZonedDateTime(100, timeZone("America/New_York")),
+                                epochNanosToZonedDateTime(10000, timeZone("America/New_York")),
+                                null,
+                                epochNanosToZonedDateTime(100000, timeZone("America/New_York")),
+                                epochNanosToZonedDateTime(1000000, timeZone("America/New_York")),
+                                parseZonedDateTime("2022-11-06T02:00:00.000000000 America/New_York"),
+                                parseZonedDateTime("2022-11-06T02:00:00.000000000 America/New_York"),
+                                parseZonedDateTime("2022-11-06T02:00:01.000000001 America/New_York"),
+                                parseZonedDateTime("2022-11-06T02:00:01.000000001 America/New_York"),
+                                parseZonedDateTime("2022-11-06T02:59:59.999999999 America/New_York"),
+                                parseZonedDateTime("2022-11-06T02:59:59.999999999 America/New_York"),
+                                parseZonedDateTime("2022-11-06T03:00:00.000000000 America/New_York"),
+                                parseZonedDateTime("2022-11-06T03:00:00.000000000 America/New_York")
                         }
                 });
-
+        final String[] casts = {
+                "Bytes = (byte) Bytes", "Shorts = (short) Shorts", "Floats = (float) Floats",
+                "ZonedDateTimes = toZonedDateTime(ZonedDateTimes, 'America/New_York')"};
         final String allSeparators = ",|\tzZ- 9@";
         for (final char separator : allSeparators.toCharArray()) {
             CsvTools.writeCsv(
-                    tableToTest, csvFile.getPath(), false, DateTimeUtils.timeZone(), false, separator, colNames);
+                    tableToTest, csvFile.getPath(), false, timeZone(), false, separator, colNames);
             final Table result = CsvTools.readCsv(csvFile.getPath(),
                     CsvSpecs.builder().delimiter(separator).nullValueLiterals(List.of("(null)")).build());
-            TstUtils.assertTableEquals(tableToTest, result);
+            TstUtils.assertTableEquals(tableToTest, result.updateView(casts));
         }
     }
 }
