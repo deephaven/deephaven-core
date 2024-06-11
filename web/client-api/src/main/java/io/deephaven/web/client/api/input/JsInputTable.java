@@ -17,6 +17,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.batc
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.Column;
+import io.deephaven.web.client.api.JsLazy;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.shared.fu.JsRunnable;
@@ -52,13 +53,15 @@ public class JsInputTable {
 
     private final JsTable table;
     private final String[] keys;
-    private final String[] values;
+    private final JsLazy<String[]> values;
+    private final JsLazy<Column[]> keyColumns;
 
     @JsIgnore
     public JsInputTable(JsTable from, String[] keys, String[] values) {
         this.table = from;
         this.keys = JsObject.freeze(keys);
-        this.values = JsObject.freeze(values);
+        this.values = JsLazy.of(() -> JsObject.freeze(values));
+        this.keyColumns = JsLazy.of(() -> JsObject.freeze(table.findColumns(keys)));
     }
 
     /**
@@ -72,13 +75,13 @@ public class JsInputTable {
     }
 
     /**
-     * A list of the key Column objects
+     * A list of the key columns.
      *
-     * @return {@link Column} array.
+     * @return Column array.
      */
     @JsProperty
-    public JsArray<Column> getKeyColumns() {
-        return Js.uncheckedCast(table.lastVisibleState().getKeyColumns());
+    public Column[] getKeyColumns() {
+        return keyColumns.get();
     }
 
 
@@ -89,7 +92,7 @@ public class JsInputTable {
      */
     @JsProperty
     public String[] getValues() {
-        return values;
+        return values.get();
     }
 
     /**

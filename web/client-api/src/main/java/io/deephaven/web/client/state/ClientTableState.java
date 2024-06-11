@@ -321,7 +321,9 @@ public final class ClientTableState extends TableConfig {
         return columns;
     }
 
-    public Column[] getKeyColumns() { return keyColumns; }
+    public Column[] getKeyColumns() {
+        return keyColumns;
+    }
 
     public Column[] getAllColumns() {
         return allColumns;
