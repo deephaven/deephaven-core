@@ -131,10 +131,12 @@ public class WhereFilterFactory {
                 final boolean icase = matcher.group(2) != null;
                 final boolean inverted = matcher.group(3) != null;
                 final String[] values = new SplitIgnoreQuotes().split(matcher.group(4), ',');
+                final FormulaParserConfiguration parserConfiguration = (FormulaParserConfiguration) args[0];
 
                 log.debug().append("WhereFilterFactory creating MatchFilter for expression: ").append(expression)
                         .endl();
                 return new MatchFilter(
+                        expression, parserConfiguration,
                         icase ? MatchFilter.CaseSensitivity.IgnoreCase : MatchFilter.CaseSensitivity.MatchCase,
                         inverted ? MatchFilter.MatchType.Inverted : MatchFilter.MatchType.Regular,
                         columnName,
@@ -208,6 +210,7 @@ public class WhereFilterFactory {
                 log.debug().append("WhereFilterFactory creating MatchFilter for expression: ").append(expression)
                         .endl();
                 return new MatchFilter(
+                        expression, parserConfiguration,
                         CaseSensitivity.MatchCase,
                         mirrored ? MatchType.Inverted : MatchType.Regular,
                         columnName,

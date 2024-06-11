@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.literal.Literal;
 import io.deephaven.base.string.cache.CompressedString;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -45,10 +46,18 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
             Collection<Literal> literals,
             boolean inverted) {
         return new MatchFilter(
+                null, null, null,
                 inverted ? MatchType.Inverted : MatchType.Regular,
                 columnName,
                 literals.stream().map(AsObject::of).toArray());
     }
+
+    /** The expression to use for this filter should initialization fail. */
+    private final String expression;
+    /** The failover filter to use if this filter fails to initialize. */
+    private WhereFilter failoverFilter;
+    /** The parser configuration to use for the failover filter. */
+    private final FormulaParserConfiguration parserConfiguration;
 
     @NotNull
     private final String columnName;
@@ -83,7 +92,7 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
             @NotNull final MatchType matchType,
             @NotNull final String columnName,
             @NotNull final Object... values) {
-        this(CaseSensitivity.MatchCase, matchType, columnName, null, values);
+        this(null, null, null, CaseSensitivity.MatchCase, matchType, columnName, null, values);
     }
 
     /**
@@ -94,14 +103,7 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
     public MatchFilter(
             @NotNull final String columnName,
             @NotNull final Object... values) {
-        this(CaseSensitivity.IgnoreCase, MatchType.Regular, columnName, null, values);
-    }
-
-    public MatchFilter(
-            @NotNull final CaseSensitivity sensitivity,
-            @NotNull final String columnName,
-            @NotNull final String... strValues) {
-        this(sensitivity, MatchType.Regular, columnName, strValues, null);
+        this(null, null, null, CaseSensitivity.IgnoreCase, MatchType.Regular, columnName, null, values);
     }
 
     public MatchFilter(
@@ -109,15 +111,53 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
             @NotNull final MatchType matchType,
             @NotNull final String columnName,
             @NotNull final String... strValues) {
-        this(sensitivity, matchType, columnName, strValues, null);
+        this(null, null, null, sensitivity, matchType, columnName, strValues, null);
+    }
+
+    public MatchFilter(
+            @Nullable final String expression,
+            @Nullable final FormulaParserConfiguration parserConfiguration,
+            @NotNull final CaseSensitivity sensitivity,
+            @NotNull final MatchType matchType,
+            @NotNull final String columnName,
+            @NotNull final String... strValues) {
+        this(expression, parserConfiguration, null, sensitivity, matchType, columnName, strValues, null);
     }
 
     private MatchFilter(
+            @Nullable final String expression,
+            @Nullable final FormulaParserConfiguration parserConfiguration,
+            @Nullable final WhereFilter failoverFilter,
+            @NotNull final CaseSensitivity sensitivity,
+            @NotNull final MatchType matchType,
+            @NotNull final String columnName,
+            @NotNull final String... strValues) {
+        this(expression, parserConfiguration, failoverFilter, sensitivity, matchType, columnName, strValues, null);
+    }
+
+    private MatchFilter(
+            @Nullable final String expression,
+            @Nullable final FormulaParserConfiguration parserConfiguration,
+            @Nullable final WhereFilter failoverFilter,
+            @NotNull final MatchType matchType,
+            @NotNull final String columnName,
+            @NotNull final Object... values) {
+        this(expression, parserConfiguration, failoverFilter, CaseSensitivity.MatchCase, matchType, columnName, null,
+                values);
+    }
+
+    private MatchFilter(
+            @Nullable final String expression,
+            @Nullable final FormulaParserConfiguration parserConfiguration,
+            @Nullable final WhereFilter failoverFilter,
             @NotNull final CaseSensitivity sensitivity,
             @NotNull final MatchType matchType,
             @NotNull final String columnName,
             @Nullable String[] strValues,
             @Nullable final Object[] values) {
+        this.expression = expression;
+        this.parserConfiguration = parserConfiguration;
+        this.failoverFilter = failoverFilter;
         this.caseInsensitive = sensitivity == CaseSensitivity.IgnoreCase;
         this.invertMatch = (matchType == MatchType.Inverted);
         this.columnName = columnName;
@@ -127,9 +167,10 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
 
     public MatchFilter renameFilter(String newName) {
         if (strValues == null) {
-            return new MatchFilter(getMatchType(), newName, values);
+            return new MatchFilter(expression, parserConfiguration, failoverFilter, getMatchType(), newName, values);
         } else {
             return new MatchFilter(
+                    expression, parserConfiguration, failoverFilter,
                     caseInsensitive ? CaseSensitivity.IgnoreCase : CaseSensitivity.MatchCase,
                     getMatchType(), newName, strValues);
         }
@@ -173,23 +214,31 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
         if (initialized) {
             return;
         }
-        ColumnDefinition<?> column = tableDefinition.getColumn(columnName);
-        if (column == null) {
-            throw new RuntimeException("Column \"" + columnName
-                    + "\" doesn't exist in this table, available columns: " + tableDefinition.getColumnNames());
+        try {
+            ColumnDefinition<?> column = tableDefinition.getColumn(columnName);
+            if (column == null) {
+                throw new RuntimeException("Column \"" + columnName
+                        + "\" doesn't exist in this table, available columns: " + tableDefinition.getColumnNames());
+            }
+            if (strValues == null) {
+                initialized = true;
+                return;
+            }
+            final List<Object> valueList = new ArrayList<>();
+            final Map<String, Object> queryScopeVariables = compilationProcessor.getQueryScopeVariables();
+            final ColumnTypeConvertor convertor = ColumnTypeConvertorFactory.getConvertor(column.getDataType());
+            for (String strValue : strValues) {
+                convertor.convertValue(column, strValue, queryScopeVariables, valueList::add);
+            }
+            // values = (Object[])ArrayTypeUtils.toArray(valueList, TypeUtils.getBoxedType(theColumn.getDataType()));
+            values = valueList.toArray();
+        } catch (final RuntimeException err) {
+            if (expression != null) {
+                failoverFilter = ConditionFilter.createConditionFilter(expression, parserConfiguration);
+            } else {
+                throw new UncheckedDeephavenException("MatchFilter had an unexpected error", err);
+            }
         }
-        if (strValues == null) {
-            initialized = true;
-            return;
-        }
-        final List<Object> valueList = new ArrayList<>();
-        final Map<String, Object> queryScopeVariables = compilationProcessor.getQueryScopeVariables();
-        final ColumnTypeConvertor convertor = ColumnTypeConvertorFactory.getConvertor(column.getDataType());
-        for (String strValue : strValues) {
-            convertor.convertValue(column, strValue, queryScopeVariables, valueList::add);
-        }
-        // values = (Object[])ArrayTypeUtils.toArray(valueList, TypeUtils.getBoxedType(theColumn.getDataType()));
-        values = valueList.toArray();
         initialized = true;
     }
 
@@ -231,6 +280,10 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
     @Override
     public WritableRowSet filter(
             @NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table, boolean usePrev) {
+        if (failoverFilter != null) {
+            return failoverFilter.filter(selection, fullSet, table, usePrev);
+        }
+
         final ColumnSource<?> columnSource = table.getColumnSource(columnName);
         return columnSource.match(invertMatch, usePrev, caseInsensitive, dataIndex, selection, values);
     }
@@ -239,12 +292,20 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
     @Override
     public WritableRowSet filterInverse(
             @NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table, boolean usePrev) {
+        if (failoverFilter != null) {
+            return failoverFilter.filterInverse(selection, fullSet, table, usePrev);
+        }
+
         final ColumnSource<?> columnSource = table.getColumnSource(columnName);
         return columnSource.match(!invertMatch, usePrev, caseInsensitive, dataIndex, selection, values);
     }
 
     @Override
     public boolean isSimpleFilter() {
+        if (failoverFilter != null) {
+            return failoverFilter.isSimpleFilter();
+        }
+
         return true;
     }
 
@@ -619,10 +680,12 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
     public WhereFilter copy() {
         final MatchFilter copy;
         if (strValues != null) {
-            copy = new MatchFilter(caseInsensitive ? CaseSensitivity.IgnoreCase : CaseSensitivity.MatchCase,
+            copy = new MatchFilter(
+                    expression, parserConfiguration, failoverFilter,
+                    caseInsensitive ? CaseSensitivity.IgnoreCase : CaseSensitivity.MatchCase,
                     getMatchType(), columnName, strValues);
         } else {
-            copy = new MatchFilter(getMatchType(), columnName, values);
+            copy = new MatchFilter(expression, parserConfiguration, failoverFilter, getMatchType(), columnName, values);
         }
         if (initialized) {
             copy.initialized = true;
