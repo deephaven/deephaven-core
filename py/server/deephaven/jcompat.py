@@ -325,6 +325,35 @@ def _j_array_to_series(dtype: DType, j_array: jpy.JType, conv_null: bool) -> pd.
 
     return s
 
+def j_table_definition(table_definition: Union[Dict[str, DType], List[Column], None]) -> Optional[jpy.JType]:
+    """Produce a Deephaven TableDefinition from user input.
+
+    Args:
+        table_definition (Union[Dict[str, DType], List[Column], None]): the table definition as a dictionary of column
+            names and their corresponding data types or a list of Column objects
+
+    Returns:
+        a Deephaven TableDefinition object or None if the input is None
+
+    Raises:
+        DHError
+    """
+    if table_definition is None:
+        return None
+    elif isinstance(table_definition, Dict):
+        return _JTableDefinition.of(
+            [
+                Column(name=name, data_type=dtype).j_column_definition
+                for name, dtype in table_definition.items()
+            ]
+        )
+    elif isinstance(table_definition, List):
+        return _JTableDefinition.of(
+            [col.j_column_definition for col in table_definition]
+        )
+    else:
+        raise DHError(f"Unexpected table_definition type: {type(table_definition)}")
+
 
 class AutoCloseable(JObjectWrapper):
     """A context manager wrapper to allow Java AutoCloseable to be used in with statements.

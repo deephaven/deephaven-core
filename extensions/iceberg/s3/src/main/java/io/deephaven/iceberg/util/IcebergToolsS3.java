@@ -88,7 +88,7 @@ public class IcebergToolsS3 extends IcebergTools {
      * @param warehouseLocation the location of the S3 datafiles backing the catalog
      * @return the Iceberg catalog adapter
      */
-    public static IcebergCatalogAdapter createS3Glue(
+    public static IcebergCatalogAdapter createGlue(
             @Nullable final String name,
             @NotNull final String catalogURI,
             @NotNull final String warehouseLocation) {

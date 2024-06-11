@@ -12,23 +12,15 @@ from deephaven.column import Column
 from deephaven.dtypes import DType
 from deephaven.experimental import s3
 
-from deephaven.jcompat import j_list_to_list
+from deephaven.jcompat import j_list_to_list, j_table_definition
 
 from deephaven.table import Table
 
-# If we move Iceberg to a permanent module, we should remove this try/except block and just import the types directly.
-try:
-    _JIcebergInstructions = jpy.get_type("io.deephaven.iceberg.util.IcebergInstructions")
-except Exception:
-    _JIcebergInstructions = None
-try:
-    _JIcebergCatalog = jpy.get_type("io.deephaven.iceberg.util.IcebergCatalog")
-except Exception:
-    _JIcebergCatalog = None
-try:
-    _JIcebergCatalogAdapter = jpy.get_type("io.deephaven.iceberg.util.IcebergCatalogAdapter")
-except Exception:
-    _JIcebergCatalogAdapter = None
+_JIcebergInstructions = jpy.get_type("io.deephaven.iceberg.util.IcebergInstructions")
+_JIcebergCatalog = jpy.get_type("io.deephaven.iceberg.util.IcebergCatalog")
+_JIcebergCatalogAdapter = jpy.get_type("io.deephaven.iceberg.util.IcebergCatalogAdapter")
+
+# IcebergToolsS3 is an optional library
 try:
     _JIcebergToolsS3 = jpy.get_type("io.deephaven.iceberg.util.IcebergToolsS3")
 except Exception:
@@ -58,9 +50,9 @@ class IcebergInstructions(JObjectWrapper):
         Initializes the instructions using the provided parameters.
 
         Args:
-            table_definition (Union[Dict[str, DType], List[Column], None]): the table definition; if ommitted, the
-                definition is inferred from the Iceberg schema. Setting a definition guarantees the returned table will
-                have that definition. This is useful for specifying a subset of the Iceberg schema columns.
+            table_definition (Optional[Union[Dict[str, DType], List[Column], None]]): the table definition; if omitted,
+                the definition is inferred from the Iceberg schema. Setting a definition guarantees the returned table
+                will have that definition. This is useful for specifying a subset of the Iceberg schema columns.
             data_instructions (Optional[s3.S3Instructions]): Special instructions for reading data files, useful when
                 reading files from a non-local file system, like S3.
             column_renames (Optional[Dict[str, str]]): A dictionary of old to new column names that will be renamed in
@@ -70,15 +62,11 @@ class IcebergInstructions(JObjectWrapper):
             DHError: If unable to build the instructions object.
         """
 
-        if not _JIcebergInstructions:
-            raise DHError(message="IcebergInstructions requires the Iceberg specific deephaven extensions to be "
-                                  "included in the package")
-
         try:
             builder = self.j_object_type.builder()
 
             if table_definition is not None:
-                builder.tableDefinition(_j_table_definition(table_definition))
+                builder.tableDefinition(j_table_definition(table_definition))
 
             if data_instructions is not None:
                 builder.dataInstructions(data_instructions.j_object)
@@ -95,25 +83,6 @@ class IcebergInstructions(JObjectWrapper):
     def j_object(self) -> jpy.JType:
         return self._j_object
 
-def _j_table_definition(table_definition: Union[Dict[str, DType], List[Column], None]) -> Optional[jpy.JType]:
-    if table_definition is None:
-        return None
-    elif isinstance(table_definition, Dict):
-        return _JTableDefinition.of(
-            [
-                Column(name=name, data_type=dtype).j_column_definition
-                for name, dtype in table_definition.items()
-            ]
-        )
-    elif isinstance(table_definition, List):
-        return _JTableDefinition.of(
-            [col.j_column_definition for col in table_definition]
-        )
-    else:
-        raise DHError(f"Unexpected table_definition type: {type(table_definition)}")
-
-def _j_object_list_to_str_list(j_object_list: jpy.JType) -> List[str]:
-    return [x.toString() for x in j_list_to_list(j_object_list)]
 
 class IcebergCatalogAdapter(JObjectWrapper):
     """
@@ -194,7 +163,7 @@ class IcebergCatalogAdapter(JObjectWrapper):
         return self.j_catalog_adapter
 
 
-def create_s3_rest_adapter(
+def s3_rest_adapter(
         catalog_uri: str,
         warehouse_location: str,
         name: Optional[str] = None,
@@ -237,7 +206,7 @@ def create_s3_rest_adapter(
             end_point_override))
 
 
-def create_s3_aws_glue_adapter(
+def aws_glue_adapter(
         catalog_uri: str,
         warehouse_location: str,
         name: Optional[str] = None
@@ -259,7 +228,7 @@ def create_s3_aws_glue_adapter(
                               "be included in the package")
 
     return IcebergCatalogAdapter(
-        _JIcebergToolsS3.createS3Glue(
+        _JIcebergToolsS3.createGlue(
             name,
             catalog_uri,
             warehouse_location))

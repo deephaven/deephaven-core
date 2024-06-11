@@ -14,7 +14,7 @@ import jpy
 from deephaven import DHError
 from deephaven.column import Column
 from deephaven.dtypes import DType
-from deephaven.jcompat import j_array_list
+from deephaven.jcompat import j_array_list, j_table_definition
 from deephaven.table import Table, PartitionedTable
 from deephaven.experimental import s3
 
@@ -142,7 +142,7 @@ def _build_parquet_instructions(
         raise ValueError("table_definition and col_definitions cannot both be specified.")
 
     if table_definition is not None:
-        builder.setTableDefinition(_j_table_definition(table_definition))
+        builder.setTableDefinition(j_table_definition(table_definition))
 
     if col_definitions is not None:
         builder.setTableDefinition(_JTableDefinition.of([col.j_column_definition for col in col_definitions]))
@@ -154,23 +154,6 @@ def _build_parquet_instructions(
         builder.setSpecialInstructions(special_instructions.j_object)
 
     return builder.build()
-
-def _j_table_definition(table_definition: Union[Dict[str, DType], List[Column], None]) -> Optional[jpy.JType]:
-    if table_definition is None:
-        return None
-    elif isinstance(table_definition, Dict):
-        return _JTableDefinition.of(
-            [
-                Column(name=name, data_type=dtype).j_column_definition
-                for name, dtype in table_definition.items()
-            ]
-        )
-    elif isinstance(table_definition, List):
-        return _JTableDefinition.of(
-            [col.j_column_definition for col in table_definition]
-        )
-    else:
-        raise DHError(f"Unexpected table_definition type: {type(table_definition)}")
 
 
 def _j_file_layout(file_layout: Optional[ParquetFileLayout]) -> Optional[jpy.JType]:
