@@ -12,8 +12,6 @@ from deephaven.html import to_html
 
 from tests.testbase import BaseTestCase
 
-rate_risk_free = 0.05
-
 
 @vectorize([int64(int64, int64)])
 def vectorized_func(x, y):

@@ -216,9 +216,6 @@ class _ParsedSignature:
         for arg_type_str, param in zip(arg_type_strs, self.params):
             param.setup_arg_converter(arg_type_str)
 
-        if isinstance(self.fn, (numba.np.ufunc.gufunc.GUFunc, numba.np.ufunc.dufunc.DUFunc)) or isinstance(self.fn, numpy.ufunc):
-            warnings.filterwarnings("default", category=UserWarning)
-
         if all([param.arg_converter is None for param in self.params]):
             arg_conv_needed = False
 
