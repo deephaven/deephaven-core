@@ -33,9 +33,6 @@ public final class S3SeekableChannelProviderPlugin implements SeekableChannelsPr
             throw new IllegalArgumentException("Only S3Instructions are valid when reading files from S3, provided " +
                     "config instance of class " + config.getClass().getName());
         }
-        if (config == null) {
-            return new S3SeekableChannelProvider(S3Instructions.DEFAULT);
-        }
-        return new S3SeekableChannelProvider((S3Instructions) config);
+        return new S3SeekableChannelProvider(config == null ? S3Instructions.DEFAULT : (S3Instructions) config);
     }
 }
