@@ -643,37 +643,6 @@ class Docker {
         return makeImage;
     }
 
-    static TaskProvider<? extends Task> buildPyWheel(Project project, String taskName, String imgName, String sourcePath) {
-        project.evaluationDependsOn(registryProject('python'))
-        return registerDockerTask(project, taskName) { DockerTaskConfig config ->
-            config.copyIn { Sync sync ->
-                sync.from(sourcePath) { CopySpec copySpec ->
-                    copySpec.exclude 'build', 'dist'
-                    copySpec.into 'src'
-                }
-            }
-            config.imageName = "${imgName}:${LOCAL_BUILD_TAG}"
-            config.dockerfile { Dockerfile action ->
-                // set up the container, env vars - things that aren't likely to change
-                action.from "${localImageName('python')} as sources".toString()
-                action.arg 'DEEPHAVEN_VERSION'
-                action.environmentVariable 'DEEPHAVEN_VERSION', project.version.toString()
-                action.workingDir '/usr/src/app'
-                action.copyFile '/src', '.'
-                action.from 'sources as build'
-                action.runCommand '''set -eux; \\
-                      test -n "${DEEPHAVEN_VERSION}";\\
-                      python setup.py bdist_wheel'''
-            }
-            config.parentContainers = [ registryTask(project, 'python') ]
-            config.containerOutPath='/usr/src/app/dist'
-            config.copyOut { Sync sync ->
-                sync.into "build/wheel${taskName}"
-            }
-        }
-    }
-
-
     static TaskProvider<? extends DockerBuildImage> registryRegister(Project project) {
 
         String imageName = project.property('deephaven.registry.imageName')
