@@ -17,7 +17,7 @@ import io.deephaven.engine.rowset.impl.sortedranges.SortedRangesInt;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
 
 import java.util.PrimitiveIterator;
@@ -2135,7 +2135,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     private int getIndexForRankNoAcc(final int fromIndex, final long pos, final MutableLong prevCardMu) {
         int i = fromIndex;
         final long posp1 = pos + 1;
-        long card = (prevCardMu == null) ? 0 : prevCardMu.longValue();
+        long card = (prevCardMu == null) ? 0 : prevCardMu.get();
         long prevCard;
         while (true) {
             prevCard = card;
@@ -2146,13 +2146,13 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             ++i;
             if (i == size) {
                 if (prevCardMu != null) {
-                    prevCardMu.setValue(prevCard);
+                    prevCardMu.set(prevCard);
                 }
                 return size;
             }
         }
         if (prevCardMu != null) {
-            prevCardMu.setValue(prevCard);
+            prevCardMu.set(prevCard);
         }
         return i;
     }
@@ -2183,7 +2183,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             if (rankIndex == size) {
                 return -1;
             }
-            prevCard = prevCardMu.longValue();
+            prevCard = prevCardMu.get();
         }
         return get(rankIndex, pos - prevCard);
     }
@@ -2216,7 +2216,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                     }
                     return;
                 }
-                prevCardinality = prevCardMu.longValue();
+                prevCardinality = prevCardMu.get();
             }
             final long key = get(fromIndex, pos - prevCardinality);
             outputKeys.accept(key);
@@ -3833,9 +3833,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 return false;
             }
             n.increment();
-            return n.longValue() < maxCount;
+            return n.get() < maxCount;
         });
-        return n.longValue() >= maxCount; // The only way we get to maxCount is if lc never returns false above.
+        return n.get() >= maxCount; // The only way we get to maxCount is if lc never returns false above.
     }
 
     boolean forEachLongInSpanWithOffset(final int i, final long offset, LongAbortableConsumer lc) {
@@ -3870,9 +3870,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 return false;
             }
             n.increment();
-            return n.longValue() < maxCount;
+            return n.get() < maxCount;
         });
-        return n.longValue() >= maxCount; // The only way we get to maxCount is if lc never returns false above.
+        return n.get() >= maxCount; // The only way we get to maxCount is if lc never returns false above.
     }
 
     boolean forEachLongInSpan(final int i, LongAbortableConsumer lc) {
@@ -4097,7 +4097,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             if (startIdx == size) {
                 return null;
             }
-            cardBeforeStart = prevCardMu.longValue();
+            cardBeforeStart = prevCardMu.get();
         }
         final int endIdx;
         final long endOffset;
@@ -4112,7 +4112,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 endOffset = getSpanCardinalityAtIndex(endIdx) - 1;
             } else {
                 endIdx = ansIdx;
-                final long cardBeforeEnd = prevCardMu.longValue();
+                final long cardBeforeEnd = prevCardMu.get();
                 endOffset = effectiveLastPos - cardBeforeEnd;
             }
         }
@@ -4573,7 +4573,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             if (startIdx == size) {
                 return RowSequenceFactory.EMPTY;
             }
-            cardBeforeStart = prevCardMu.longValue();
+            cardBeforeStart = prevCardMu.get();
         }
         final int endIdx;
         final long endOffset;
@@ -4584,7 +4584,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             endOffset = endPositionInclusive - cardBeforeEnd;
         } else {
             final int ansIdx = getIndexForRankNoAcc(startIdx, endPositionInclusive, prevCardMu);
-            cardBeforeEnd = prevCardMu.longValue();
+            cardBeforeEnd = prevCardMu.get();
             if (ansIdx == size) {
                 endIdx = size - 1;
                 endOffset = getSpanCardinalityAtIndex(endIdx) - 1;

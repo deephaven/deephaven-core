@@ -13,7 +13,7 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.testutil.rowset.RowSetTstUtils;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
@@ -519,7 +519,7 @@ public abstract class RowSequenceTestBase {
             final MutableInt idx = new MutableInt(0);
             final RowSet ix = rowSequence.asRowSet();
             assertTrue(msg, ix.forEachRowKey((value) -> {
-                assertEquals(msg + " && value==" + value, expectedIndices.get(idx.intValue()), value);
+                assertEquals(msg + " && value==" + value, expectedIndices.get(idx.get()), value);
                 idx.add(1);
                 return true;
             }));

@@ -34,10 +34,10 @@ import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.util.mutable.MutableLong;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableBoolean;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.experimental.categories.Category;
 
 import java.io.File;
@@ -856,7 +856,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         final Table underlying;
         try (final SafeCloseable ignored = ExecutionContext.makeExecutionContext(false).open()) {
             underlying = base.update(
-                    "Constituent=emptyTable(1000 * step.longValue()).update(\"JJ=ii * \" + II + \" * step.longValue()\")");
+                    "Constituent=emptyTable(1000 * step.get()).update(\"JJ=ii * \" + II + \" * step.get()\")");
         }
 
         final PartitionedTable partitioned = PartitionedTableFactory.of(underlying);
@@ -869,7 +869,7 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         modifiedColumnSet.setAll("II");
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         while (step.incrementAndGet() <= 100) {
-            final boolean evenStep = step.longValue() % 2 == 0;
+            final boolean evenStep = step.get() % 2 == 0;
             updateGraph.runWithinUnitTestCycle(() -> {
                 base.notifyListeners(new TableUpdateImpl(
                         RowSetFactory.empty(),
@@ -882,11 +882,11 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
             final Table[] tables = LongStream.range(0, 10).mapToObj((final long II) -> {
                 final boolean evenPos = II % 2 == 0;
                 if (evenStep == evenPos) {
-                    return emptyTable(1000 * step.longValue())
-                            .updateView("JJ = ii * " + II + " * step.longValue()");
+                    return emptyTable(1000 * step.get())
+                            .updateView("JJ = ii * " + II + " * step.get()");
                 } else {
-                    return emptyTable(1000 * (step.longValue() - 1))
-                            .updateView("JJ = ii * " + II + " * (step.longValue() - 1)");
+                    return emptyTable(1000 * (step.get() - 1))
+                            .updateView("JJ = ii * " + II + " * (step.get() - 1)");
                 }
             }).toArray(Table[]::new);
             final Table matching = TableTools.merge(tables);
@@ -1090,12 +1090,12 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
             final ParquetInstructions instructions = ParquetInstructions.builder().useDictionary("I", true).build();
             Table a = emptyTable(200).update("I = `` + (50 + (ii % 100))", "K = ii");
             Table b = emptyTable(200).update("I = `` + (ii % 100)", "K = ii");
-            ParquetTools.writeTable(a, new java.io.File(tmpDir + "/Partition=p0/data.parquet"), instructions);
-            ParquetTools.writeTable(b, new java.io.File(tmpDir + "/Partition=p1/data.parquet"), instructions);
+            ParquetTools.writeTable(a, tmpDir + "/Partition=p0/data.parquet", instructions);
+            ParquetTools.writeTable(b, tmpDir + "/Partition=p1/data.parquet", instructions);
             a = a.updateView("Partition = `p0`").moveColumnsUp("Partition");
             b = b.updateView("Partition = `p1`").moveColumnsUp("Partition");
 
-            final Table fromDisk = ParquetTools.readTable(tmpDir);
+            final Table fromDisk = ParquetTools.readTable(tmpDir.getPath());
 
             // Assert non-partitioned table sorts.
             final Table diskOuterSort = fromDisk.sort("I");

@@ -12,7 +12,7 @@ import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.engine.table.impl.sources.BooleanArraySource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.*;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 
 import java.util.Collections;
 import java.util.Map;
@@ -44,7 +44,7 @@ class BooleanChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregation
                 }
             }
         }
-        chunkNonNull.setValue(nonNull);
+        chunkNonNull.set(nonNull);
         return value;
     }
 
@@ -61,7 +61,7 @@ class BooleanChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregation
                 }
             }
         }
-        chunkNonNull.setValue(nonNull);
+        chunkNonNull.set(nonNull);
         return value;
     }
 
@@ -115,7 +115,7 @@ class BooleanChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregation
         final int chunkEnd = chunkStart + chunkSize;
         final Boolean chunkValue = minimum ? min(values, chunkNonNull, chunkStart, chunkEnd)
                 : max(values, chunkNonNull, chunkStart, chunkEnd);
-        if (chunkNonNull.intValue() == 0) {
+        if (chunkNonNull.get() == 0) {
             return false;
         }
 

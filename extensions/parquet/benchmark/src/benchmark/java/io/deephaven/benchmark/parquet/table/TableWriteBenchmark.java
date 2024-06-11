@@ -95,7 +95,7 @@ public class TableWriteBenchmark {
         final ParquetInstructions instructions = ParquetInstructions.builder()
                 .setCompressionCodecName(compressionCodec)
                 .build();
-        ParquetTools.writeTable(table, rootPath.resolve("table.parquet").toFile(), instructions);
+        ParquetTools.writeTable(table, rootPath.resolve("table.parquet").toString(), instructions);
         return table;
     }
 }

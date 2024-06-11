@@ -26,7 +26,8 @@ public final class SingletonContainers {
 
     public static final class LocalStack {
         private static final LocalStackContainer LOCALSTACK_S3 =
-                new LocalStackContainer(DockerImageName.parse(System.getProperty("testcontainers.localstack.image")))
+                new LocalStackContainer(DockerImageName.parse(System.getProperty("testcontainers.localstack.image"))
+                        .asCompatibleSubstituteFor("localstack/localstack"), false)
                         .withServices(Service.S3);
         static {
             LOCALSTACK_S3.start();
@@ -59,7 +60,8 @@ public final class SingletonContainers {
         // comments in S3Instructions.
         // https://min.io/docs/minio/linux/reference/minio-server/settings/core.html#domain
         private static final MinIOContainer MINIO =
-                new MinIOContainer(DockerImageName.parse(System.getProperty("testcontainers.minio.image")))
+                new MinIOContainer(DockerImageName.parse(System.getProperty("testcontainers.minio.image"))
+                        .asCompatibleSubstituteFor("minio/minio"))
                         .withEnv("MINIO_DOMAIN", DockerClientFactory.instance().dockerHostIpAddress());
         static {
             MINIO.start();

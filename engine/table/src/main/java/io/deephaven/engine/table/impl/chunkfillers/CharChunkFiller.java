@@ -13,7 +13,7 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableCharChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 
 public final class CharChunkFiller implements ChunkFiller {
     public static final CharChunkFiller INSTANCE = new CharChunkFiller();
@@ -25,11 +25,11 @@ public final class CharChunkFiller implements ChunkFiller {
         final MutableInt destPos = new MutableInt(0);
         keys.forAllRowKeyRanges((start, end) -> {
             for (long v = start; v <= end; ++v) {
-                typedDest.set(destPos.intValue(), src.getChar(v));
+                typedDest.set(destPos.get(), src.getChar(v));
                 destPos.increment();
             }
         });
-        typedDest.setSize(destPos.intValue());
+        typedDest.setSize(destPos.get());
     }
 
     @Override
@@ -38,10 +38,10 @@ public final class CharChunkFiller implements ChunkFiller {
         final WritableCharChunk<? super Values> typedDest = dest.asWritableCharChunk();
         final MutableInt destPos = new MutableInt(0);
         keys.forAllRowKeys(v -> {
-            typedDest.set(destPos.intValue(), src.getChar(v));
+            typedDest.set(destPos.get(), src.getChar(v));
             destPos.increment();
         });
-        typedDest.setSize(destPos.intValue());
+        typedDest.setSize(destPos.get());
     }
 
     @Override
@@ -64,11 +64,11 @@ public final class CharChunkFiller implements ChunkFiller {
         final MutableInt destPos = new MutableInt(0);
         keys.forAllRowKeyRanges((start, end) -> {
             for (long v = start; v <= end; ++v) {
-                typedDest.set(destPos.intValue(), src.getPrevChar(v));
+                typedDest.set(destPos.get(), src.getPrevChar(v));
                 destPos.increment();
             }
         });
-        typedDest.setSize(destPos.intValue());
+        typedDest.setSize(destPos.get());
     }
 
     @Override
@@ -77,10 +77,10 @@ public final class CharChunkFiller implements ChunkFiller {
         final WritableCharChunk<? super Values> typedDest = dest.asWritableCharChunk();
         final MutableInt destPos = new MutableInt(0);
         keys.forAllRowKeys(v -> {
-            typedDest.set(destPos.intValue(), src.getPrevChar(v));
+            typedDest.set(destPos.get(), src.getPrevChar(v));
             destPos.increment();
         });
-        typedDest.setSize(destPos.intValue());
+        typedDest.setSize(destPos.get());
     }
 
     @Override

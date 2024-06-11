@@ -75,8 +75,9 @@ class MergedDataIndex extends AbstractDataIndex {
             @NotNull final String[] keyColumnNames,
             @NotNull final ColumnSource<?>[] keySources,
             @NotNull final RegionedColumnSourceManager columnSourceManager) {
-
         Require.eq(keyColumnNames.length, "keyColumnNames.length", keySources.length, "keySources.length");
+        Require.elementsNeqNull(keyColumnNames, "keyColumnNames");
+        Require.elementsNeqNull(keySources, "keySources");
 
         this.keyColumnNames = List.of(keyColumnNames);
         this.columnSourceManager = columnSourceManager;

@@ -109,7 +109,7 @@ class ColumnTestCase(BaseTestCase):
         t_func = empty_table(n).update(["X = get_x(i)"])
         # We want to test that casting on both PyObject and JObject works as expected.
         self.assertEqual(t_list.columns[0].data_type, dtypes.PyObject)
-        self.assertEqual(t_func.columns[0].data_type, dtypes.int_)
+        self.assertEqual(t_func.columns[0].data_type, dtypes.int64)
         t_func_str = t_func.to_string()
         for v in x:
             self.assertIn(str(int(v)), t_func_str)

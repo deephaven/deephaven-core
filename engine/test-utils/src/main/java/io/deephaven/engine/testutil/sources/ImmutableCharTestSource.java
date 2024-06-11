@@ -16,8 +16,8 @@ import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.type.TypeUtils;
+import io.deephaven.util.mutable.MutableInt;
 import it.unimi.dsi.fastutil.longs.Long2CharOpenHashMap;
-import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.util.function.LongConsumer;
 
@@ -73,7 +73,7 @@ public class ImmutableCharTestSource extends AbstractColumnSource<Character>
                 public void accept(final long v) {
                     // the unit test framework will ask us to add things, we need to conveniently ignore it
                     if (!data.containsKey(v)) {
-                        data.put(v, vcs.get(ii.intValue()));
+                        data.put(v, vcs.get(ii.get()));
                     }
                     ii.increment();
                 }
@@ -87,7 +87,7 @@ public class ImmutableCharTestSource extends AbstractColumnSource<Character>
                 public void accept(final long v) {
                     // the unit test framework will ask us to add things, we need to conveniently ignore it
                     if (!data.containsKey(v)) {
-                        data.put(v, TypeUtils.unbox(vcs.get(ii.intValue())));
+                        data.put(v, TypeUtils.unbox(vcs.get(ii.get())));
                     }
                     ii.increment();
                 }

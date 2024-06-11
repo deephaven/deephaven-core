@@ -37,9 +37,9 @@ import io.deephaven.engine.util.PrintListener;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableBoolean;
-import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.Rule;
@@ -2563,10 +2563,10 @@ public class ShiftedColumnOperationTest {
         final long start = System.nanoTime();
         dummy.getRowSet().forAllRowKeys(idx -> sum.add(xcs.getLong(idx)));
         final long end = System.nanoTime();
-        System.out.println("Sum: " + sum.longValue() + ", duration=" + (end - start));
+        System.out.println("Sum: " + sum.get() + ", duration=" + (end - start));
 
         final long startCk = System.nanoTime();
-        sum.setValue(0);
+        sum.set(0);
         try (final RowSequence.Iterator okIt = dummy.getRowSet().getRowSequenceIterator();
                 final ChunkSource.GetContext gc = xcs.makeGetContext(2048)) {
             while (okIt.hasMore()) {
@@ -2580,7 +2580,7 @@ public class ShiftedColumnOperationTest {
             }
         }
         final long endCk = System.nanoTime();
-        System.out.println("Sum: " + sum.longValue() + ", duration=" + (endCk - startCk));
+        System.out.println("Sum: " + sum.get() + ", duration=" + (endCk - startCk));
 
     }
 
@@ -2616,10 +2616,10 @@ public class ShiftedColumnOperationTest {
             while (okIt.hasMore()) {
                 sharedContext.reset();
                 final RowSequence chunkOk = okIt.getNextRowSequenceWithLength(chunkSize);
-                final long invertStart = invertCount.longValue();
+                final int invertStart = invertCount.get();
                 final LongChunk<? extends Values> ck1 = scs.getChunk(gc, chunkOk).asLongChunk();
                 final LongChunk<? extends Values> ck2 = s2cs.getChunk(gc2, chunkOk).asLongChunk();
-                final long invertEnd = invertCount.longValue();
+                final int invertEnd = invertCount.get();
                 Assert.assertEquals(1, invertEnd - invertStart);
                 chunkOk.fillRowKeyChunk(expect);
                 for (int ii = 0; ii < expect.size(); ++ii) {

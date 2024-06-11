@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
@@ -17,16 +18,13 @@ import io.deephaven.vector.IntVector;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.DoubleVector;
 import io.deephaven.engine.context.QueryScope;
-import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.TableTools;
 
-import java.text.ParseException;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.util.Arrays;
 import java.util.Random;
 
 import org.jetbrains.annotations.NotNull;
@@ -35,19 +33,24 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.printTableUpdates;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.testutil.TstUtils.*;
+import static io.deephaven.util.QueryConstants.NULL_INT;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.*;
 
 @Category(OutOfBandTest.class)
 public class QueryTableJoinTest {
+
+    private static final double DELTA = 0.000001;
+
     @Rule
     public final EngineCleanup base = new EngineCleanup();
 
     @Test
-    public void testAjIncremental() throws ParseException {
+    public void testAjIncremental() {
         final int maxSteps = 10;
         final int[] leftSizes = new int[] {10, 20};
         final int[] rightSizes = new int[] {10, 20};
@@ -357,7 +360,7 @@ public class QueryTableJoinTest {
                 col("OptionBid", .1, .2, .3, .4, .5));
 
         Table result = table.aj(lookUpValue1, "Ticker,Timestamp", "OptionBid");
-        assertEquals(Arrays.asList("Ticker", "Timestamp", "OptionBid"), result.getDefinition().getColumnNames());
+        assertEquals(asList("Ticker", "Timestamp", "OptionBid"), result.getDefinition().getColumnNames());
 
         table = testRefreshingTable(
                 col("Timestamp", 1L, 10L, 50L));
@@ -379,10 +382,10 @@ public class QueryTableJoinTest {
         assertEquals("indx", result.getDefinition().getColumns().get(0).getName());
         assertEquals("String", result.getDefinition().getColumns().get(1).getName());
         assertEquals("Int", result.getDefinition().getColumns().get(2).getName());
-        assertEquals(asList(null, null, "c"),
-                asList((Object[]) DataAccessHelpers.getColumn(result, "String").getDirect()));
-        assertEquals(asList("a", "b", "c"), asList((Object[]) DataAccessHelpers.getColumn(result, "indx").getDirect()));
-        assertEquals(asList(null, null, 2), asList(DataAccessHelpers.getColumn(result, "Int").get(0, 3)));
+        assertArrayEquals(new String[] {null, null, "c"},
+                ColumnVectors.ofObject(result, "String", String.class).toArray());
+        assertArrayEquals(new String[] {"a", "b", "c"}, ColumnVectors.ofObject(result, "indx", String.class).toArray());
+        assertArrayEquals(new int[] {NULL_INT, NULL_INT, 2}, ColumnVectors.ofInt(result, "Int").toArray());
 
         result = lookUpValue1.aj(table, "indx>=String", "Int,String");
 
@@ -398,10 +401,10 @@ public class QueryTableJoinTest {
         assertEquals("String", result.getDefinition().getColumns().get(1).getName());
         assertEquals("Int", result.getDefinition().getColumns().get(2).getName());
         assertEquals(3, result.numColumns());
-        assertEquals(asList("c", "c", "e"),
-                asList((Object[]) DataAccessHelpers.getColumn(result, "String").getDirect()));
-        assertEquals(asList("c", "d", "e"), asList((Object[]) DataAccessHelpers.getColumn(result, "indx").getDirect()));
-        assertEquals(asList(2, 2, 4), asList(DataAccessHelpers.getColumn(result, "Int").get(0, 3)));
+        assertArrayEquals(new String[] {"c", "c", "e"},
+                ColumnVectors.ofObject(result, "String", String.class).toArray());
+        assertArrayEquals(new String[] {"c", "d", "e"}, ColumnVectors.ofObject(result, "indx", String.class).toArray());
+        assertArrayEquals(new int[] {2, 2, 4}, ColumnVectors.ofInt(result, "Int").toArray());
 
         lookUpValue1 = testRefreshingTable(col("indx", "h", "e", "a"));
         result = lookUpValue1.aj(table, "indx>=String", "String,Int");
@@ -410,10 +413,10 @@ public class QueryTableJoinTest {
         assertEquals("String", result.getDefinition().getColumns().get(1).getName());
         assertEquals("Int", result.getDefinition().getColumns().get(2).getName());
         assertEquals(3, result.numColumns());
-        assertEquals(asList("g", "e", null),
-                asList((Object[]) DataAccessHelpers.getColumn(result, "String").getDirect()));
-        assertEquals(asList("h", "e", "a"), asList((Object[]) DataAccessHelpers.getColumn(result, "indx").getDirect()));
-        assertEquals(asList(6, 4, null), asList(DataAccessHelpers.getColumn(result, "Int").get(0, 3)));
+        assertArrayEquals(new String[] {"g", "e", null},
+                ColumnVectors.ofObject(result, "String", String.class).toArray());
+        assertArrayEquals(new String[] {"h", "e", "a"}, ColumnVectors.ofObject(result, "indx", String.class).toArray());
+        assertArrayEquals(new int[] {6, 4, NULL_INT}, ColumnVectors.ofInt(result, "Int").toArray());
 
 
         lookUpValue1 = testRefreshingTable(col("indx", "h", "e", "a"));
@@ -422,9 +425,9 @@ public class QueryTableJoinTest {
         assertEquals("indx", result.getDefinition().getColumns().get(0).getName());
         assertEquals("String", result.getDefinition().getColumns().get(1).getName());
         assertEquals(2, result.numColumns());
-        assertEquals(asList("g", "e", null),
-                asList((Object[]) DataAccessHelpers.getColumn(result, "String").getDirect()));
-        assertEquals(asList("h", "e", "a"), asList((Object[]) DataAccessHelpers.getColumn(result, "indx").getDirect()));
+        assertArrayEquals(new String[] {"g", "e", null},
+                ColumnVectors.ofObject(result, "String", String.class).toArray());
+        assertArrayEquals(new String[] {"h", "e", "a"}, ColumnVectors.ofObject(result, "indx", String.class).toArray());
 
         lookUpValue1 = testRefreshingTable(col("String", "h", "e", "a"));
         result = lookUpValue1.aj(table, "String", "xString=String,Int");
@@ -433,11 +436,11 @@ public class QueryTableJoinTest {
         assertEquals("xString", result.getDefinition().getColumns().get(1).getName());
         assertEquals("Int", result.getDefinition().getColumns().get(2).getName());
         assertEquals(3, result.numColumns());
-        assertEquals(asList("g", "e", null),
-                asList((Object[]) DataAccessHelpers.getColumn(result, "xString").getDirect()));
-        assertEquals(asList("h", "e", "a"),
-                asList((Object[]) DataAccessHelpers.getColumn(result, "String").getDirect()));
-        assertEquals(asList(6, 4, null), asList(DataAccessHelpers.getColumn(result, "Int").get(0, 3)));
+        assertArrayEquals(new String[] {"g", "e", null},
+                ColumnVectors.ofObject(result, "xString", String.class).toArray());
+        assertArrayEquals(new String[] {"h", "e", "a"},
+                ColumnVectors.ofObject(result, "String", String.class).toArray());
+        assertArrayEquals(new int[] {6, 4, NULL_INT}, ColumnVectors.ofInt(result, "Int").toArray());
     }
 
 
@@ -452,12 +455,12 @@ public class QueryTableJoinTest {
                 col("OptionBid", .1, .2, .3, .4, .5));
 
         Table result = table.aj(lookUpValue1.renameColumns("TS2=Timestamp"), "Ticker,Timestamp>TS2", "OptionBid");
-        assertEquals(Arrays.asList("Ticker", "Timestamp", "TS2", "OptionBid"), result.getDefinition().getColumnNames());
-        final long[] timestamps = DataAccessHelpers.getColumn(result, "TS2").getLongs(0, result.size());
+        assertEquals(asList("Ticker", "Timestamp", "TS2", "OptionBid"), result.getDefinition().getColumnNames());
+        final long[] timestamps = ColumnVectors.ofLong(result, "TS2").toArray();
         TableTools.show(result);
         assertArrayEquals(new long[] {QueryConstants.NULL_LONG, 5L, 10L}, timestamps);
         assertArrayEquals(new double[] {QueryConstants.NULL_DOUBLE, .2, .3},
-                DataAccessHelpers.getColumn(result, "OptionBid").getDoubles(0, result.size()), 0.0);
+                ColumnVectors.ofDouble(result, "OptionBid").toArray(), 0.0);
 
         table = testRefreshingTable(
                 col("Timestamp", 1L, 10L, 50L));
@@ -468,9 +471,9 @@ public class QueryTableJoinTest {
         assertEquals(long.class, result.getDefinition().getColumn("OptionTimestamp").getDataType());
         TableTools.show(result);
         assertArrayEquals(new long[] {QueryConstants.NULL_LONG, 5L, 25L},
-                DataAccessHelpers.getColumn(result, "OptionTimestamp").getLongs(0, result.size()));
+                ColumnVectors.ofLong(result, "OptionTimestamp").toArray());
         assertArrayEquals(new double[] {QueryConstants.NULL_DOUBLE, .2, .4},
-                DataAccessHelpers.getColumn(result, "OptionBid").getDoubles(0, result.size()), 0.0);
+                ColumnVectors.ofDouble(result, "OptionBid").toArray(), 0.0);
 
         table = testRefreshingTable(
                 col("String", "c", "e", "g"),
@@ -484,10 +487,10 @@ public class QueryTableJoinTest {
         assertEquals("indx", result.getDefinition().getColumns().get(0).getName());
         assertEquals("String", result.getDefinition().getColumns().get(1).getName());
         assertEquals("Int", result.getDefinition().getColumns().get(2).getName());
-        assertEquals(asList(null, null, "c"),
-                asList((Object[]) DataAccessHelpers.getColumn(result, "String").getDirect()));
-        assertEquals(asList("a", "c", "d"), asList((Object[]) DataAccessHelpers.getColumn(result, "indx").getDirect()));
-        assertEquals(asList(null, null, 2), asList(DataAccessHelpers.getColumn(result, "Int").get(0, 3)));
+        assertArrayEquals(new String[] {null, null, "c"},
+                ColumnVectors.ofObject(result, "String", String.class).toArray());
+        assertArrayEquals(new String[] {"a", "c", "d"}, ColumnVectors.ofObject(result, "indx", String.class).toArray());
+        assertArrayEquals(new int[] {NULL_INT, NULL_INT, 2}, ColumnVectors.ofInt(result, "Int").toArray());
 
         lookUpValue1 = testRefreshingTable(col("indx", "c", "d", "e"));
 
@@ -497,10 +500,10 @@ public class QueryTableJoinTest {
         assertEquals("String", result.getDefinition().getColumns().get(1).getName());
         assertEquals("Int", result.getDefinition().getColumns().get(2).getName());
         assertEquals(3, result.numColumns());
-        assertEquals(asList(null, "c", "c"),
-                asList((Object[]) DataAccessHelpers.getColumn(result, "String").getDirect()));
-        assertEquals(asList("c", "d", "e"), asList((Object[]) DataAccessHelpers.getColumn(result, "indx").getDirect()));
-        assertEquals(asList(null, 2, 2), asList(DataAccessHelpers.getColumn(result, "Int").get(0, 3)));
+        assertArrayEquals(new String[] {null, "c", "c"},
+                ColumnVectors.ofObject(result, "String", String.class).toArray());
+        assertArrayEquals(new String[] {"c", "d", "e"}, ColumnVectors.ofObject(result, "indx", String.class).toArray());
+        assertArrayEquals(new int[] {NULL_INT, 2, 2}, ColumnVectors.ofInt(result, "Int").toArray());
 
         lookUpValue1 = testRefreshingTable(col("indx", "h", "e", "a"));
         result = lookUpValue1.aj(table, "indx>String", "String,Int");
@@ -510,10 +513,10 @@ public class QueryTableJoinTest {
         assertEquals("String", result.getDefinition().getColumns().get(1).getName());
         assertEquals("Int", result.getDefinition().getColumns().get(2).getName());
         assertEquals(3, result.numColumns());
-        assertEquals(asList("g", "c", null),
-                asList((Object[]) DataAccessHelpers.getColumn(result, "String").getDirect()));
-        assertEquals(asList("h", "e", "a"), asList((Object[]) DataAccessHelpers.getColumn(result, "indx").getDirect()));
-        assertEquals(asList(6, 2, null), asList(DataAccessHelpers.getColumn(result, "Int").get(0, 3)));
+        assertArrayEquals(new String[] {"g", "c", null},
+                ColumnVectors.ofObject(result, "String", String.class).toArray());
+        assertArrayEquals(new String[] {"h", "e", "a"}, ColumnVectors.ofObject(result, "indx", String.class).toArray());
+        assertArrayEquals(new int[] {6, 2, NULL_INT}, ColumnVectors.ofInt(result, "Int").toArray());
 
 
         lookUpValue1 = testRefreshingTable(col("indx", "h", "e", "a"));
@@ -529,9 +532,9 @@ public class QueryTableJoinTest {
         assertEquals("indx", result.getDefinition().getColumns().get(0).getName());
         assertEquals("String", result.getDefinition().getColumns().get(1).getName());
         assertEquals(2, result.numColumns());
-        assertEquals(asList("g", "c", null),
-                asList((Object[]) DataAccessHelpers.getColumn(result, "String").getDirect()));
-        assertEquals(asList("h", "e", "a"), asList((Object[]) DataAccessHelpers.getColumn(result, "indx").getDirect()));
+        assertArrayEquals(new String[] {"g", "c", null},
+                ColumnVectors.ofObject(result, "String", String.class).toArray());
+        assertArrayEquals(new String[] {"h", "e", "a"}, ColumnVectors.ofObject(result, "indx", String.class).toArray());
 
         lookUpValue1 = testRefreshingTable(col("String", "h", "e", "a"));
         result = lookUpValue1.aj(table, "String>String", "xString=String,Int");
@@ -540,11 +543,11 @@ public class QueryTableJoinTest {
         assertEquals("xString", result.getDefinition().getColumns().get(1).getName());
         assertEquals("Int", result.getDefinition().getColumns().get(2).getName());
         assertEquals(3, result.numColumns());
-        assertEquals(asList("g", "c", null),
-                asList((Object[]) DataAccessHelpers.getColumn(result, "xString").getDirect()));
-        assertEquals(asList("h", "e", "a"),
-                asList((Object[]) DataAccessHelpers.getColumn(result, "String").getDirect()));
-        assertEquals(asList(6, 2, null), asList(DataAccessHelpers.getColumn(result, "Int").get(0, 3)));
+        assertArrayEquals(new String[] {"g", "c", null},
+                ColumnVectors.ofObject(result, "xString", String.class).toArray());
+        assertArrayEquals(new String[] {"h", "e", "a"},
+                ColumnVectors.ofObject(result, "String", String.class).toArray());
+        assertArrayEquals(new int[] {6, 2, NULL_INT}, ColumnVectors.ofInt(result, "Int").toArray());
     }
 
 
@@ -599,15 +602,15 @@ public class QueryTableJoinTest {
         System.out.println("AJ:");
         TableTools.show(aj);
 
-        assertEquals(asList("E2", "D4", "G6", "H8"),
-                asList((Object[]) DataAccessHelpers.getColumn(aj, "RSentinel").getDirect()));
+        assertArrayEquals(new String[] {"E2", "D4", "G6", "H8"},
+                ColumnVectors.ofObject(aj, "RSentinel", String.class).toArray());
 
         System.out.println("AJ2:");
         // let's swap the left and right
         final Table aj2 = right.sort("RSentinel").aj(left, "RInt>=LInt", "LInt,LSentinel");
         TableTools.show(aj2);
-        assertEquals(asList("a", null, "b", null, "b", "c", "d", "c"),
-                asList((Object[]) DataAccessHelpers.getColumn(aj2, "LSentinel").getDirect()));
+        assertArrayEquals(new String[] {"a", null, "b", null, "b", "c", "d", "c"},
+                ColumnVectors.ofObject(aj2, "LSentinel", String.class).toArray());
 
     }
 
@@ -619,9 +622,9 @@ public class QueryTableJoinTest {
                 col("LSentinel", "a", "b", "c", "d"));
 
         final QueryTable right = TstUtils.testRefreshingTable(i().toTracking(),
-                col("Group", CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
+                col("Group", ZERO_LENGTH_STRING_ARRAY),
                 intCol("RInt"),
-                col("RSentinel"));
+                col("RSentinel", ZERO_LENGTH_STRING_ARRAY));
 
         System.out.println("Left:");
         TableTools.show(left);
@@ -632,8 +635,8 @@ public class QueryTableJoinTest {
         System.out.println("AJ:");
         TableTools.show(aj);
 
-        assertEquals(asList(null, null, null, null),
-                asList((Object[]) DataAccessHelpers.getColumn(aj, "RSentinel").getDirect()));
+        assertArrayEquals(new String[] {null, null, null, null},
+                ColumnVectors.ofObject(aj, "RSentinel", String.class).toArray());
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -642,8 +645,8 @@ public class QueryTableJoinTest {
         });
 
         TableTools.show(aj);
-        assertEquals(asList(null, null, null, null),
-                asList((Object[]) DataAccessHelpers.getColumn(aj, "RSentinel").getDirect()));
+        assertArrayEquals(new String[] {null, null, null, null},
+                ColumnVectors.ofObject(aj, "RSentinel", String.class).toArray());
 
     }
 
@@ -659,15 +662,15 @@ public class QueryTableJoinTest {
 
         Table result = table.raj(lookUpValue1, "Ticker,Timestamp", "OptionBid");
         show(result, 10);
-        assertEquals(Arrays.asList("Ticker", "Timestamp", "OptionBid"), result.getDefinition().getColumnNames());
+        assertEquals(asList("Ticker", "Timestamp", "OptionBid"), result.getDefinition().getColumnNames());
         assertEquals(3, result.size());
         assertEquals("Ticker", result.getDefinition().getColumns().get(0).getName());
         assertEquals("Timestamp", result.getDefinition().getColumns().get(1).getName());
         assertEquals("OptionBid", result.getDefinition().getColumns().get(2).getName());
-        assertEquals(asList("AAPL", "IBM", "AAPL"),
-                asList((Object[]) DataAccessHelpers.getColumn(result, "Ticker").getDirect()));
-        assertEquals(asList(1L, 10L, 50L), asList(DataAccessHelpers.getColumn(result, "Timestamp").get(0, 3)));
-        assertEquals(asList(.1, .4, .5), asList(DataAccessHelpers.getColumn(result, "OptionBid").get(0, 3)));
+        assertArrayEquals(new String[] {"AAPL", "IBM", "AAPL"},
+                ColumnVectors.ofObject(result, "Ticker", String.class).toArray());
+        assertArrayEquals(new long[] {1L, 10L, 50L}, ColumnVectors.ofLong(result, "Timestamp").toArray());
+        assertArrayEquals(new double[] {.1, .4, .5}, ColumnVectors.ofDouble(result, "OptionBid").toArray(), DELTA);
 
         table = testRefreshingTable(
                 col("Timestamp", 1L, 10L, 50L));
@@ -689,10 +692,10 @@ public class QueryTableJoinTest {
         assertEquals("indx", result.getDefinition().getColumns().get(0).getName());
         assertEquals("String", result.getDefinition().getColumns().get(1).getName());
         assertEquals("Int", result.getDefinition().getColumns().get(2).getName());
-        assertEquals(asList("c", "c", "c"),
-                asList((Object[]) DataAccessHelpers.getColumn(result, "String").getDirect()));
-        assertEquals(asList("a", "b", "c"), asList((Object[]) DataAccessHelpers.getColumn(result, "indx").getDirect()));
-        assertEquals(asList(2, 2, 2), asList(DataAccessHelpers.getColumn(result, "Int").get(0, 3)));
+        assertArrayEquals(new String[] {"c", "c", "c"},
+                ColumnVectors.ofObject(result, "String", String.class).toArray());
+        assertArrayEquals(new String[] {"a", "b", "c"}, ColumnVectors.ofObject(result, "indx", String.class).toArray());
+        assertArrayEquals(new int[] {2, 2, 2}, ColumnVectors.ofInt(result, "Int").toArray());
 
         lookUpValue1 = testRefreshingTable(col("indx", "f", "g", "h"));
 
@@ -703,10 +706,10 @@ public class QueryTableJoinTest {
         assertEquals("indx", result.getDefinition().getColumns().get(0).getName());
         assertEquals("String", result.getDefinition().getColumns().get(1).getName());
         assertEquals("Int", result.getDefinition().getColumns().get(2).getName());
-        assertEquals(asList("g", "g", null),
-                asList((Object[]) DataAccessHelpers.getColumn(result, "String").getDirect()));
-        assertEquals(asList("f", "g", "h"), asList((Object[]) DataAccessHelpers.getColumn(result, "indx").getDirect()));
-        assertEquals(asList(6, 6, null), asList(DataAccessHelpers.getColumn(result, "Int").get(0, 3)));
+        assertArrayEquals(new String[] {"g", "g", null},
+                ColumnVectors.ofObject(result, "String", String.class).toArray());
+        assertArrayEquals(new String[] {"f", "g", "h"}, ColumnVectors.ofObject(result, "indx", String.class).toArray());
+        assertArrayEquals(new int[] {6, 6, NULL_INT}, ColumnVectors.ofInt(result, "Int").toArray());
 
         result = lookUpValue1.raj(table, "indx<=String", "Int,String");
 
@@ -728,10 +731,10 @@ public class QueryTableJoinTest {
         assertEquals("String", result.getDefinition().getColumns().get(1).getName());
         assertEquals("Int", result.getDefinition().getColumns().get(2).getName());
         assertEquals(3, result.numColumns());
-        assertEquals(asList("c", "e", "e"),
-                asList((Object[]) DataAccessHelpers.getColumn(result, "String").getDirect()));
-        assertEquals(asList("c", "d", "e"), asList((Object[]) DataAccessHelpers.getColumn(result, "indx").getDirect()));
-        assertEquals(asList(2, 4, 4), asList(DataAccessHelpers.getColumn(result, "Int").get(0, 3)));
+        assertArrayEquals(new String[] {"c", "e", "e"},
+                ColumnVectors.ofObject(result, "String", String.class).toArray());
+        assertArrayEquals(new String[] {"c", "d", "e"}, ColumnVectors.ofObject(result, "indx", String.class).toArray());
+        assertArrayEquals(new int[] {2, 4, 4}, ColumnVectors.ofInt(result, "Int").toArray());
 
         lookUpValue1 = testRefreshingTable(col("indx", "j", "e", "a"));
         result = lookUpValue1.raj(table, "indx<=String", "String,Int");
@@ -740,10 +743,10 @@ public class QueryTableJoinTest {
         assertEquals("String", result.getDefinition().getColumns().get(1).getName());
         assertEquals("Int", result.getDefinition().getColumns().get(2).getName());
         assertEquals(3, result.numColumns());
-        assertEquals(asList(null, "e", "c"),
-                asList((Object[]) DataAccessHelpers.getColumn(result, "String").getDirect()));
-        assertEquals(asList("j", "e", "a"), asList((Object[]) DataAccessHelpers.getColumn(result, "indx").getDirect()));
-        assertEquals(asList(null, 4, 2), asList(DataAccessHelpers.getColumn(result, "Int").get(0, 3)));
+        assertArrayEquals(new String[] {null, "e", "c"},
+                ColumnVectors.ofObject(result, "String", String.class).toArray());
+        assertArrayEquals(new String[] {"j", "e", "a"}, ColumnVectors.ofObject(result, "indx", String.class).toArray());
+        assertArrayEquals(new int[] {NULL_INT, 4, 2}, ColumnVectors.ofInt(result, "Int").toArray());
 
 
         lookUpValue1 = testRefreshingTable(col("indx", "j", "e", "a"));
@@ -752,9 +755,9 @@ public class QueryTableJoinTest {
         assertEquals("indx", result.getDefinition().getColumns().get(0).getName());
         assertEquals("String", result.getDefinition().getColumns().get(1).getName());
         assertEquals(2, result.numColumns());
-        assertEquals(asList(null, "e", "c"),
-                asList((Object[]) DataAccessHelpers.getColumn(result, "String").getDirect()));
-        assertEquals(asList("j", "e", "a"), asList((Object[]) DataAccessHelpers.getColumn(result, "indx").getDirect()));
+        assertArrayEquals(new String[] {null, "e", "c"},
+                ColumnVectors.ofObject(result, "String", String.class).toArray());
+        assertArrayEquals(new String[] {"j", "e", "a"}, ColumnVectors.ofObject(result, "indx", String.class).toArray());
 
         lookUpValue1 = testRefreshingTable(col("String", "j", "e", "a"));
         result = lookUpValue1.raj(table, "String", "xString=String,Int");
@@ -763,11 +766,11 @@ public class QueryTableJoinTest {
         assertEquals("xString", result.getDefinition().getColumns().get(1).getName());
         assertEquals("Int", result.getDefinition().getColumns().get(2).getName());
         assertEquals(3, result.numColumns());
-        assertEquals(asList(null, "e", "c"),
-                asList((Object[]) DataAccessHelpers.getColumn(result, "xString").getDirect()));
-        assertEquals(asList("j", "e", "a"),
-                asList((Object[]) DataAccessHelpers.getColumn(result, "String").getDirect()));
-        assertEquals(asList(null, 4, 2), asList(DataAccessHelpers.getColumn(result, "Int").get(0, 3)));
+        assertArrayEquals(new String[] {null, "e", "c"},
+                ColumnVectors.ofObject(result, "xString", String.class).toArray());
+        assertArrayEquals(new String[] {"j", "e", "a"},
+                ColumnVectors.ofObject(result, "String", String.class).toArray());
+        assertArrayEquals(new int[] {NULL_INT, 4, 2}, ColumnVectors.ofInt(result, "Int").toArray());
     }
 
     static final JoinControl SMALL_LEFT_CONTROL = new JoinControl() {
@@ -805,13 +808,13 @@ public class QueryTableJoinTest {
         showWithRowSet(rightQueryTable);
         final Table sortedRightQueryTable = rightQueryTable.sort("I1");
         showWithRowSet(sortedRightQueryTable);
-        final Table result = leftQueryTable.aj(sortedRightQueryTable, "C1,I1", "LI1=I1,LC1=C1,Sentinel");
+        final Table result = leftQueryTable.aj(sortedRightQueryTable, "C1,I1", "RI1=I1,RC1=C1,Sentinel");
         showWithRowSet(result);
 
-        assertEquals(100, DataAccessHelpers.getColumn(result, "Sentinel").get(3));
-        assertEquals(207, DataAccessHelpers.getColumn(result, "LI1").get(3));
-        assertEquals(140, DataAccessHelpers.getColumn(result, "Sentinel").get(4));
-        assertEquals(432, DataAccessHelpers.getColumn(result, "LI1").get(4));
+        assertEquals(100, result.getColumnSource("Sentinel", int.class).getInt(result.getRowSet().get(3)));
+        assertEquals(207, result.getColumnSource("RI1", int.class).getInt(result.getRowSet().get(3)));
+        assertEquals(140, result.getColumnSource("Sentinel", int.class).getInt(result.getRowSet().get(4)));
+        assertEquals(432, result.getColumnSource("RI1", int.class).getInt(result.getRowSet().get(4)));
     }
 
     @Test
@@ -834,8 +837,8 @@ public class QueryTableJoinTest {
         final Table result = leftQueryTable.aj(sortedRightQueryTable, "C1,I1", "LI1=I1,LC1=C1,Sentinel");
         showWithRowSet(result);
 
-        assertEquals(80, DataAccessHelpers.getColumn(result, "Sentinel").get(5));
-        assertEquals(821, DataAccessHelpers.getColumn(result, "LI1").get(5));
+        assertEquals(80, result.getColumnSource("Sentinel", int.class).getInt(result.getRowSet().get(5)));
+        assertEquals(821, result.getColumnSource("LI1", int.class).getInt(result.getRowSet().get(5)));
     }
 
 
@@ -849,10 +852,10 @@ public class QueryTableJoinTest {
         assertEquals(2, result.numColumns());
         assertEquals("X", result.getDefinition().getColumns().get(0).getName());
         assertEquals("Y", result.getDefinition().getColumns().get(1).getName());
-        assertEquals(Arrays.asList("a", "a", "b", "b", "c", "c"),
-                Arrays.asList(DataAccessHelpers.getColumn(result, "X").get(0, 6)));
-        assertEquals(Arrays.asList("x", "y", "x", "y", "x", "y"),
-                Arrays.asList(DataAccessHelpers.getColumn(result, "Y").get(0, 6)));
+        assertArrayEquals(new String[] {"a", "a", "b", "b", "c", "c"},
+                ColumnVectors.ofObject(result, "X", String.class).toArray());
+        assertArrayEquals(new String[] {"x", "y", "x", "y", "x", "y"},
+                ColumnVectors.ofObject(result, "Y", String.class).toArray());
 
         lTable = testRefreshingTable(col("X", "a", "b", "c"));
         rTable = testRefreshingTable(col("Y", "a", "b", "b"), col("Z", 1, 2, 3));
@@ -862,9 +865,9 @@ public class QueryTableJoinTest {
         assertEquals("X", result.getDefinition().getColumns().get(0).getName());
         assertEquals("Y", result.getDefinition().getColumns().get(1).getName());
         assertEquals("Z", result.getDefinition().getColumns().get(2).getName());
-        assertEquals(Arrays.asList("a", "b", "b"), Arrays.asList(DataAccessHelpers.getColumn(result, "X").get(0, 3)));
-        assertEquals(Arrays.asList("a", "b", "b"), Arrays.asList(DataAccessHelpers.getColumn(result, "Y").get(0, 3)));
-        assertEquals(Arrays.asList(1, 2, 3), Arrays.asList(DataAccessHelpers.getColumn(result, "Z").get(0, 3)));
+        assertArrayEquals(new String[] {"a", "b", "b"}, ColumnVectors.ofObject(result, "X", String.class).toArray());
+        assertArrayEquals(new String[] {"a", "b", "b"}, ColumnVectors.ofObject(result, "Y", String.class).toArray());
+        assertArrayEquals(new int[] {1, 2, 3}, ColumnVectors.ofInt(result, "Z").toArray());
 
         lTable = testRefreshingTable(col("X", "a", "b", "c"));
         rTable = testRefreshingTable(col("Y", "a", "b"));
@@ -874,8 +877,8 @@ public class QueryTableJoinTest {
         assertEquals(2, result.numColumns());
         assertEquals("X", result.getDefinition().getColumns().get(0).getName());
         assertEquals("Y", result.getDefinition().getColumns().get(1).getName());
-        assertEquals(Arrays.asList("a", "b"), Arrays.asList(DataAccessHelpers.getColumn(result, "X").get(0, 2)));
-        assertEquals(Arrays.asList("a", "b"), Arrays.asList(DataAccessHelpers.getColumn(result, "Y").get(0, 2)));
+        assertArrayEquals(new String[] {"a", "b"}, ColumnVectors.ofObject(result, "X", String.class).toArray());
+        assertArrayEquals(new String[] {"a", "b"}, ColumnVectors.ofObject(result, "Y", String.class).toArray());
 
         lTable = testRefreshingTable(col("X", "a", "b", "c"));
         rTable = testRefreshingTable(col("X", "a", "b", "d"));
@@ -884,7 +887,7 @@ public class QueryTableJoinTest {
         assertEquals(2, result.size());
         assertEquals(1, result.numColumns());
         assertEquals("X", result.getDefinition().getColumns().get(0).getName());
-        assertEquals(Arrays.asList("a", "b"), Arrays.asList(DataAccessHelpers.getColumn(result, "X").get(0, 2)));
+        assertArrayEquals(new String[] {"a", "b"}, ColumnVectors.ofObject(result, "X", String.class).toArray());
     }
 
     @Test
@@ -908,14 +911,15 @@ public class QueryTableJoinTest {
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(IntVector.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
         assertEquals(DoubleVector.class, pairMatch.getDefinition().getColumns().get(2).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
-        IntVector[] vValues = (IntVector[]) DataAccessHelpers.getColumn(pairMatch, "v").getDirect();
+        assertArrayEquals(new String[] {"c", "e", "g"}, ColumnVectors
+                .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(0).getName(), String.class).toArray());
+        IntVector[] vValues = ColumnVectors.ofObject(pairMatch, "v", IntVector.class).toArray();
         assertEquals(1, vValues[0].get(0));
         assertEquals(2, vValues[1].get(0));
         assertEquals(1, vValues[0].size());
         assertEquals(1, vValues[1].size());
         assertNull(vValues[2]);
-        DoubleVector[] uValues = (DoubleVector[]) DataAccessHelpers.getColumn(pairMatch, "u").getDirect();
+        DoubleVector[] uValues = ColumnVectors.ofObject(pairMatch, "u", DoubleVector.class).toArray();
         assertEquals(3.0, uValues[0].get(0), 0.000001);
         assertEquals(4.0, uValues[1].get(0), 0.000001);
         assertEquals(1, uValues[0].size());
@@ -929,8 +933,9 @@ public class QueryTableJoinTest {
         assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(IntVector.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
-        vValues = (IntVector[]) DataAccessHelpers.getColumn(pairMatch, "v").getDirect();
+        assertArrayEquals(new String[] {"c", "e", "g"}, ColumnVectors
+                .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(0).getName(), String.class).toArray());
+        vValues = ColumnVectors.ofObject(pairMatch, "v", IntVector.class).toArray();
         assertEquals(1, vValues[0].get(0));
         assertEquals(2, vValues[1].get(0));
         assertEquals(1, vValues[0].size());
@@ -946,14 +951,15 @@ public class QueryTableJoinTest {
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(DoubleVector.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
         assertEquals(IntVector.class, pairMatch.getDefinition().getColumns().get(2).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
-        vValues = (IntVector[]) DataAccessHelpers.getColumn(pairMatch, "v").getDirect();
+        assertArrayEquals(new String[] {"c", "e", "g"}, ColumnVectors
+                .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(0).getName(), String.class).toArray());
+        vValues = ColumnVectors.ofObject(pairMatch, "v", IntVector.class).toArray();
         assertEquals(1, vValues[0].get(0));
         assertEquals(2, vValues[1].get(0));
         assertEquals(1, vValues[0].size());
         assertEquals(1, vValues[1].size());
         assertNull(vValues[2]);
-        uValues = (DoubleVector[]) DataAccessHelpers.getColumn(pairMatch, "u").getDirect();
+        uValues = ColumnVectors.ofObject(pairMatch, "u", DoubleVector.class).toArray();
         assertEquals(3.0, uValues[0].get(0), 0.000001);
         assertEquals(4.0, uValues[1].get(0), 0.000001);
         assertEquals(1, uValues[0].size());
@@ -967,8 +973,9 @@ public class QueryTableJoinTest {
         assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(IntVector.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
-        vValues = (IntVector[]) DataAccessHelpers.getColumn(pairMatch, "v").getDirect();
+        assertArrayEquals(new String[] {"c", "e", "g"}, ColumnVectors
+                .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(0).getName(), String.class).toArray());
+        vValues = ColumnVectors.ofObject(pairMatch, "v", IntVector.class).toArray();
         assertEquals(1, vValues[0].get(0));
         assertEquals(2, vValues[1].get(0));
         assertEquals(1, vValues[0].size());
@@ -990,17 +997,20 @@ public class QueryTableJoinTest {
         assertEquals(String.class, noPairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(ObjectVector.class, noPairMatch.getDefinition().getColumns().get(1).getDataType());
         assertEquals(IntVector.class, noPairMatch.getDefinition().getColumns().get(2).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(noPairMatch, 0).getDirect()));
+        assertArrayEquals(new String[] {"c", "e", "g"},
+                ColumnVectors
+                        .ofObject(noPairMatch, noPairMatch.getDefinition().getColumns().get(0).getName(), String.class)
+                        .toArray());
         // noinspection unchecked
         final ObjectVector<String>[] aggregateString =
-                (ObjectVector<String>[]) DataAccessHelpers.getColumn(noPairMatch, "String2").getDirect();
-        assertEquals(asList("c", "e"), asList(aggregateString[0].toArray()));
-        assertEquals(asList("c", "e"), asList(aggregateString[1].toArray()));
-        assertEquals(asList("c", "e"), asList(aggregateString[2].toArray()));
-        vValues = (IntVector[]) DataAccessHelpers.getColumn(noPairMatch, "v").getDirect();
-        assertEquals(asList(1, 2), asList(ArrayTypeUtils.getBoxedArray(vValues[0].toArray())));
-        assertEquals(asList(1, 2), asList(ArrayTypeUtils.getBoxedArray(vValues[1].toArray())));
-        assertEquals(asList(1, 2), asList(ArrayTypeUtils.getBoxedArray(vValues[2].toArray())));
+                ColumnVectors.ofObject(noPairMatch, "String2", ObjectVector.class).toArray();
+        assertArrayEquals(new String[] {"c", "e"}, aggregateString[0].toArray());
+        assertArrayEquals(new String[] {"c", "e"}, aggregateString[1].toArray());
+        assertArrayEquals(new String[] {"c", "e"}, aggregateString[2].toArray());
+        vValues = ColumnVectors.ofObject(noPairMatch, "v", IntVector.class).toArray();
+        assertArrayEquals(new int[] {1, 2}, vValues[0].toArray());
+        assertArrayEquals(new int[] {1, 2}, vValues[1].toArray());
+        assertArrayEquals(new int[] {1, 2}, vValues[2].toArray());
 
         pairMatch = table1.naturalJoin(table2.groupBy("String2"), "String1=String2");
         assertEquals(3, pairMatch.size());
@@ -1011,14 +1021,15 @@ public class QueryTableJoinTest {
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
         assertEquals(IntVector.class, pairMatch.getDefinition().getColumns().get(2).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
+        assertArrayEquals(new String[] {"c", "e", "g"}, ColumnVectors
+                .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(0).getName(), String.class).toArray());
 
-        final String[] stringColumn = (String[]) DataAccessHelpers.getColumn(pairMatch, "String2").getDirect();
+        final String[] stringColumn = ColumnVectors.ofObject(pairMatch, "String2", String.class).toArray();
         assertEquals("c", stringColumn[0]);
         assertEquals("e", stringColumn[1]);
         assertNull(stringColumn[2]);
 
-        vValues = (IntVector[]) DataAccessHelpers.getColumn(pairMatch, "v").getDirect();
+        vValues = ColumnVectors.ofObject(pairMatch, "v", IntVector.class).toArray();
         assertEquals(1, vValues[0].get(0));
         assertEquals(2, vValues[1].get(0));
         assertEquals(1, vValues[0].size());

@@ -7,8 +7,6 @@ plugins {
     id 'io.deephaven.project.register'
 }
 
-apply from: "$rootDir/gradle/web-common.gradle"
-
 dependencies {
     implementation project(':Util')
     api project(':open-api-shared-fu')

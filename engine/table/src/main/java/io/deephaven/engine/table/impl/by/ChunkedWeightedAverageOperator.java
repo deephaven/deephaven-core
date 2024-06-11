@@ -14,8 +14,8 @@ import io.deephaven.engine.util.NullSafeAddition;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.table.impl.util.cast.ToDoubleCast;
+import io.deephaven.util.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableDouble;
-import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -142,8 +142,8 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
             MutableInt normalOut,
             MutableDouble sumOfWeightsOut,
             MutableDouble weightedSumOut) {
-        long nans = 0;
-        long normal = 0;
+        int nans = 0;
+        int normal = 0;
         double sumOfWeights = 0.0;
         double weightedSum = 0.0;
 
@@ -170,8 +170,8 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
             weightedSum += weight * component;
         }
 
-        nansOut.setValue(nans);
-        normalOut.setValue(normal);
+        nansOut.set(nans);
+        normalOut.set(normal);
         sumOfWeightsOut.setValue(sumOfWeights);
         weightedSumOut.setValue(weightedSum);
     }
@@ -185,8 +185,8 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
 
         sumChunks(doubleValues, weightValues, start, length, nanOut, normalOut, sumOfWeightsOut, weightedSumOut);
 
-        final long newNans = nanOut.intValue();
-        final long newNormal = normalOut.intValue();
+        final int newNans = nanOut.get();
+        final int newNormal = normalOut.get();
         final double newSumOfWeights = sumOfWeightsOut.doubleValue();
         final double newWeightedSum = weightedSumOut.doubleValue();
 
@@ -259,8 +259,8 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
 
         sumChunks(doubleValues, weightValues, start, length, nanOut, normalOut, sumOfWeightsOut, weightedSumOut);
 
-        final int newNans = nanOut.intValue();
-        final int newNormal = normalOut.intValue();
+        final int newNans = nanOut.get();
+        final int newNormal = normalOut.get();
         final double newSumOfWeights = sumOfWeightsOut.doubleValue();
         final double newWeightedSum = weightedSumOut.doubleValue();
 
@@ -331,15 +331,15 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
         sumChunks(prevDoubleValues, prevWeightValues, start, length, nanOut, normalOut, sumOfWeightsOut,
                 weightedSumOut);
 
-        final int prevNans = nanOut.intValue();
-        final int prevNormal = normalOut.intValue();
+        final int prevNans = nanOut.get();
+        final int prevNormal = normalOut.get();
         final double prevSumOfWeights = sumOfWeightsOut.doubleValue();
         final double prevWeightedSum = weightedSumOut.doubleValue();
 
         sumChunks(newDoubleValues, newWeightValues, start, length, nanOut, normalOut, sumOfWeightsOut, weightedSumOut);
 
-        final int newNans = nanOut.intValue();
-        final int newNormal = normalOut.intValue();
+        final int newNans = nanOut.get();
+        final int newNormal = normalOut.get();
         final double newSumOfWeights = sumOfWeightsOut.doubleValue();
         final double newWeightedSum = weightedSumOut.doubleValue();
 

@@ -26,6 +26,7 @@ public abstract class ReplayTableBase extends QueryTable implements Runnable {
         super(rowSet, columns);
         setRefreshing(true);
         sourceRefresher = new SourceRefresher(description);
+        initializeLastNotificationStep(getUpdateGraph().clock());
     }
 
     public void start() {

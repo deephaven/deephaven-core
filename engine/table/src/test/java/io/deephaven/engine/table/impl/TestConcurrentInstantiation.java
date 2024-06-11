@@ -21,6 +21,7 @@ import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.BooleanGenerator;
 import io.deephaven.engine.testutil.generator.DoubleGenerator;
@@ -34,8 +35,8 @@ import io.deephaven.gui.table.QuickFilterMode;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReflexiveUse;
+import io.deephaven.util.mutable.MutableInt;
 import junit.framework.TestCase;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.junit.experimental.categories.Category;
@@ -103,8 +104,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         final Table rawSorted = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
         TableTools.show(rawSorted);
 
-        assertArrayEquals(new int[] {1, 3, 4, 6, 9},
-                (int[]) DataAccessHelpers.getColumn(rawSorted, "Sentinel").getDirect());
+        assertArrayEquals(new int[] {1, 3, 4, 6, 9}, ColumnVectors.ofInt(rawSorted, "Sentinel").toArray());
 
         TstUtils.addToTable(source,
                 i(10),
@@ -142,7 +142,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         assertArrayEquals(
                 new int[] {1, 2, 3, 4, 6, 9, 10, 11, 12},
-                (int[]) DataAccessHelpers.getColumn(rawSorted, "Sentinel").getDirect());
+                ColumnVectors.ofInt(rawSorted, "Sentinel").toArray());
         assertTableEquals(rawSorted, table2);
         assertTableEquals(table2, table3);
         assertTableEquals(table3, table4);
@@ -693,7 +693,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         final int size = 100;
         final Random random = new Random(seed);
-        final int maxSteps = numSteps.intValue();
+        final int maxSteps = numSteps.get();
 
         final QueryTable table = getTable(size, random,
                 columnInfos = initColumnInfos(new String[] {"Sym", "intCol", "boolCol", "boolCol2", "doubleCol"},
@@ -769,8 +769,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                 showWithRowSet(table);
             }
 
-            for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
-                final int i = numSteps.intValue();
+            for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
+                final int i = numSteps.get();
                 if (RefreshingTableTestCase.printTableUpdates) {
                     System.out.println("Step = " + i);
                 }

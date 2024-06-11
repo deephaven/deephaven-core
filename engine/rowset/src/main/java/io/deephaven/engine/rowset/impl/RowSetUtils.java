@@ -8,12 +8,12 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.util.datastructures.LongRangeConsumer;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.util.datastructures.LongRangeConsumer;
+import io.deephaven.util.mutable.MutableLong;
 import gnu.trove.list.array.TLongArrayList;
 import org.apache.commons.lang3.mutable.MutableBoolean;
-import org.apache.commons.lang3.mutable.MutableLong;
 
 public class RowSetUtils {
 
@@ -199,23 +199,23 @@ public class RowSetUtils {
         final RowSequence.Iterator sourceProbe = sourceRowSet.getRowSequenceIterator();
         final MutableLong sourceOffset = new MutableLong();
         destRowSet.forAllRowKeyRanges((start, end) -> {
-            final long sourceStart = sourceOffset.getValue() + sourceProbe.advanceAndGetPositionDistance(start);
+            final long sourceStart = sourceOffset.get() + sourceProbe.advanceAndGetPositionDistance(start);
             final long sourceEnd = sourceStart + sourceProbe.advanceAndGetPositionDistance(end);
             if (!hasPending.booleanValue()) {
-                pendingStart.setValue(sourceStart);
-                pendingEnd.setValue(sourceEnd);
+                pendingStart.set(sourceStart);
+                pendingEnd.set(sourceEnd);
                 hasPending.setValue(true);
-            } else if (pendingEnd.longValue() + 1 == sourceStart) {
-                pendingEnd.setValue(sourceEnd);
+            } else if (pendingEnd.get() + 1 == sourceStart) {
+                pendingEnd.set(sourceEnd);
             } else {
-                lrc.accept(pendingStart.longValue(), pendingEnd.longValue());
-                pendingStart.setValue(sourceStart);
-                pendingEnd.setValue(sourceEnd);
+                lrc.accept(pendingStart.get(), pendingEnd.get());
+                pendingStart.set(sourceStart);
+                pendingEnd.set(sourceEnd);
             }
-            sourceOffset.setValue(sourceEnd);
+            sourceOffset.set(sourceEnd);
         });
         if (hasPending.booleanValue()) {
-            lrc.accept(pendingStart.longValue(), pendingEnd.longValue());
+            lrc.accept(pendingStart.get(), pendingEnd.get());
         }
     }
 

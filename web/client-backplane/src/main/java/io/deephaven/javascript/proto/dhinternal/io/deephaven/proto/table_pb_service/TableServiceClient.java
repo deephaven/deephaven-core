@@ -49,8 +49,6 @@ import jsinterop.annotations.JsType;
 import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
-import javax.validation.constraints.NotNull;
-
 @JsType(
         isNative = true,
         name = "dhinternal.io.deephaven.proto.table_pb_service.TableServiceClient",

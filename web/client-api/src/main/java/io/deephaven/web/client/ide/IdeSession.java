@@ -370,7 +370,7 @@ public class IdeSession extends HasEventHandling {
                 .timeout(JsTable.MAX_BATCH_TIME)
                 .asPromise()
                 .then(res -> Promise.resolve(
-                        res.getCompletionItems().getItemsList().map((item, index, arr) -> LspTranslate.toJs(item))),
+                        res.getCompletionItems().getItemsList().map((item, index) -> LspTranslate.toJs(item))),
                         fail -> {
                             // noinspection unchecked, rawtypes
                             return (Promise<JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem>>) (Promise) Promise
@@ -398,7 +398,7 @@ public class IdeSession extends HasEventHandling {
                 .timeout(JsTable.MAX_BATCH_TIME)
                 .asPromise()
                 .then(res -> Promise.resolve(
-                        res.getSignatures().getSignaturesList().map((item, index, arr) -> LspTranslate.toJs(item))),
+                        res.getSignatures().getSignaturesList().map((item, index) -> LspTranslate.toJs(item))),
                         fail -> {
                             // noinspection unchecked, rawtypes
                             return (Promise<JsArray<io.deephaven.web.shared.ide.lsp.SignatureInformation>>) (Promise) Promise

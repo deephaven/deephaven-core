@@ -115,10 +115,10 @@ public class JsRollupConfig {
         Map<String, LinkedHashSet<String>> aggs = new HashMap<>();
         List<String> colsNeedingCompoundNames = new ArrayList<>();
         Set<String> seenColNames = new HashSet<>();
-        groupingColumns.forEach((col, p1, p2) -> seenColNames.add(Js.cast(col)));
+        groupingColumns.forEach((col, p1) -> seenColNames.add(Js.cast(col)));
         this.aggregations.forEach(key -> {
             LinkedHashSet<String> cols = new LinkedHashSet<>();
-            this.aggregations.get(key).forEach((col, index, arr) -> {
+            this.aggregations.get(key).forEach((col, index) -> {
                 String colName = Js.cast(col);
                 cols.add(colName);
                 if (seenColNames.contains(colName)) {
@@ -297,14 +297,14 @@ public class JsRollupConfig {
     private String unusedColumnName(JsArray<Column> existingColumns, String... suggestedNames) {
         // Try to use the default column names
         for (String suggestedName : suggestedNames) {
-            if (!existingColumns.some((p0, p1, p2) -> p0.getName().equals(suggestedName))) {
+            if (!existingColumns.some((p0, p1) -> p0.getName().equals(suggestedName))) {
                 return suggestedName;
             }
         }
 
         // Next add a suffix and use that if possible
         for (String suggestedName : suggestedNames) {
-            if (!existingColumns.some((p0, p1, p2) -> p0.getName().equals(suggestedName + "_"))) {
+            if (!existingColumns.some((p0, p1) -> p0.getName().equals(suggestedName + "_"))) {
                 return suggestedName + "_";
             }
         }
@@ -312,7 +312,7 @@ public class JsRollupConfig {
         // Give up and add a timestamp suffix
         for (String suggestedName : suggestedNames) {
             if (!existingColumns
-                    .some((p0, p1, p2) -> p0.getName().equals(suggestedName + "_" + System.currentTimeMillis()))) {
+                    .some((p0, p1) -> p0.getName().equals(suggestedName + "_" + System.currentTimeMillis()))) {
                 return suggestedName + "_" + System.currentTimeMillis();
             }
         }

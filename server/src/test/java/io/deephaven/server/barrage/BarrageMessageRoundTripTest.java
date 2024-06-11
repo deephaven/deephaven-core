@@ -27,7 +27,6 @@ import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.BarrageStreamGenerator;
-import io.deephaven.extensions.barrage.BarrageStreamGeneratorImpl;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.extensions.barrage.util.BarrageProtoUtil;
@@ -40,10 +39,10 @@ import io.deephaven.server.util.TestControlledScheduler;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.annotations.ReferentialIntegrity;
+import io.deephaven.util.mutable.MutableInt;
 import io.grpc.Drainable;
 import io.grpc.stub.StreamObserver;
 import junit.framework.TestCase;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.experimental.categories.Category;
 
@@ -76,7 +75,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             ArrowModule.class
     })
     public interface TestComponent {
-        BarrageStreamGenerator.Factory<BarrageStreamGeneratorImpl.View> getStreamGeneratorFactory();
+        BarrageStreamGenerator.Factory getStreamGeneratorFactory();
 
         @Component.Builder
         interface Builder {
@@ -149,7 +148,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
 
         private final BarrageTable barrageTable;
         @ReferentialIntegrity
-        private final BarrageMessageProducer<BarrageStreamGeneratorImpl.View> barrageMessageProducer;
+        private final BarrageMessageProducer barrageMessageProducer;
 
         @ReferentialIntegrity
         private final TableUpdateValidator replicatedTUV;
@@ -163,14 +162,14 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         // The replicated table's TableUpdateValidator will be confused if the table is a viewport. Instead we rely on
         // comparing the producer table to the consumer table to validate contents are correct.
         RemoteClient(final RowSet viewport, final BitSet subscribedColumns,
-                final BarrageMessageProducer<BarrageStreamGeneratorImpl.View> barrageMessageProducer,
+                final BarrageMessageProducer barrageMessageProducer,
                 final Table sourceTable, final String name) {
             // assume a forward viewport when not specified
             this(viewport, subscribedColumns, barrageMessageProducer, sourceTable, name, false, false);
         }
 
         RemoteClient(final RowSet viewport, final BitSet subscribedColumns,
-                final BarrageMessageProducer<BarrageStreamGeneratorImpl.View> barrageMessageProducer,
+                final BarrageMessageProducer barrageMessageProducer,
                 final Table sourceTable,
                 final String name, final boolean reverseViewport, final boolean deferSubscription) {
             this.viewport = viewport;
@@ -342,7 +341,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
 
         private final QueryTable originalTable;
         @ReferentialIntegrity
-        private final BarrageMessageProducer<BarrageStreamGeneratorImpl.View> barrageMessageProducer;
+        private final BarrageMessageProducer barrageMessageProducer;
 
         @ReferentialIntegrity
         private final TableUpdateValidator originalTUV;
@@ -354,7 +353,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         RemoteNugget(final Supplier<Table> makeTable) {
             this.makeTable = makeTable;
             this.originalTable = (QueryTable) makeTable.get();
-            this.barrageMessageProducer = originalTable.getResult(new BarrageMessageProducer.Operation<>(scheduler,
+            this.barrageMessageProducer = originalTable.getResult(new BarrageMessageProducer.Operation(scheduler,
                     new SessionService.ObfuscatingErrorTransformer(), daggerRoot.getStreamGeneratorFactory(),
                     originalTable, UPDATE_INTERVAL, this::onGetSnapshot));
 
@@ -451,9 +450,9 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         void runTest(final Runnable simulateSourceStep) {
             createTable();
             createNuggets();
-            final int maxSteps = numSteps.getValue();
+            final int maxSteps = numSteps.get();
             final RemoteNugget[] nuggetsToValidate = nuggets.toArray(new RemoteNugget[0]);
-            for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
+            for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
                 for (int rt = 0; rt < numConsumerCoalesce; ++rt) {
                     // coalesce updates in producer
                     for (int pt = 0; pt < numProducerCoalesce; ++pt) {
@@ -473,7 +472,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                 TstUtils.validate("", nuggetsToValidate);
 
                 if (sourceTable.size() >= size) {
-                    numSteps.setValue(maxSteps); // pretend we finished
+                    numSteps.set(maxSteps); // pretend we finished
                     return;
                 }
             }
@@ -751,13 +750,13 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         void runTest() {
             createTable();
             createNuggets();
-            final int maxSteps = numSteps.getValue();
+            final int maxSteps = numSteps.get();
             final RemoteNugget[] nuggetsToValidate = nuggets.toArray(new RemoteNugget[0]);
-            for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
+            for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
                 for (int rt = 0; rt < numConsumerCoalesce; ++rt) {
                     // coalesce updates in producer
                     for (int pt = 0; pt < numProducerCoalesce; ++pt) {
-                        maybeChangeSub(numSteps.intValue(), rt, pt);
+                        maybeChangeSub(numSteps.get(), rt, pt);
 
                         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
                         updateGraph.runWithinUnitTestCycle(() -> GenerateTableUpdates.generateShiftAwareTableUpdates(
@@ -1410,7 +1409,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
-    public static class DummyObserver implements StreamObserver<BarrageStreamGeneratorImpl.View> {
+    public static class DummyObserver implements StreamObserver<BarrageStreamGenerator.MessageView> {
         volatile boolean completed = false;
 
         private final BarrageDataMarshaller marshaller;
@@ -1422,7 +1421,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         }
 
         @Override
-        public void onNext(final BarrageStreamGeneratorImpl.View messageView) {
+        public void onNext(final BarrageStreamGenerator.MessageView messageView) {
             try {
                 messageView.forEachStream(inputStream -> {
                     try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos =

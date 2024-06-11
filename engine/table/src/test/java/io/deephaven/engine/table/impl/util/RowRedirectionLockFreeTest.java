@@ -7,10 +7,10 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.updategraph.LogicalClock;
-import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.util.mutable.MutableInt;
+import gnu.trove.list.array.TLongArrayList;
 import junit.framework.TestCase;
-import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -219,11 +219,11 @@ public class RowRedirectionLockFreeTest {
             // A bit of a waste because we only look at the first 'numKeysToInsert' keys, but that's ok.
             updateGraph.runWithinUnitTestCycle(() -> {
                 final long step = updateGraph.clock().currentStep();
-                keysInThisGeneration.setValue((int) ((step - initialStep) * 1000 + 1000));
+                keysInThisGeneration.set((int) ((step - initialStep) * 1000 + 1000));
                 final Random rng = new Random(step);
-                final int numKeysToInsert = rng.nextInt(keysInThisGeneration.getValue());
+                final int numKeysToInsert = rng.nextInt(keysInThisGeneration.get());
                 // A bit of a waste because we only look at the first 'numKeysToInsert' keys, but that's ok.
-                long[] keys = fillAndShuffle(rng, keysInThisGeneration.getValue());
+                long[] keys = fillAndShuffle(rng, keysInThisGeneration.get());
                 final WritableRowRedirectionLockFree ix = index;
                 for (int ii1 = 0; ii1 < numKeysToInsert; ++ii1) {
                     final long key = keys[ii1];
@@ -239,7 +239,7 @@ public class RowRedirectionLockFreeTest {
             // waste some time doing something else
             final WritableRowRedirectionLockFree privateIndex =
                     new RowRedirectionLockFreeFactory().createRowRedirection(10);
-            for (long ii = 0; ii < keysInThisGeneration.getValue() * 4; ++ii) {
+            for (long ii = 0; ii < keysInThisGeneration.get() * 4L; ++ii) {
                 privateIndex.put(ii, ii);
             }
         }
