@@ -68,7 +68,7 @@ public class RangeFilter extends WhereFilterImpl {
      * @param parserConfiguration the parser configuration to use
      */
     public RangeFilter(String columnName, Condition condition, String value, String expression,
-                       FormulaParserConfiguration parserConfiguration) {
+            FormulaParserConfiguration parserConfiguration) {
         this(columnName, condition, value, expression, null, parserConfiguration);
     }
 
@@ -82,13 +82,13 @@ public class RangeFilter extends WhereFilterImpl {
      * @param parserConfiguration the parser configuration to useyy
      */
     public RangeFilter(String columnName, String conditionString, String value, String expression,
-                       FormulaParserConfiguration parserConfiguration) {
+            FormulaParserConfiguration parserConfiguration) {
         this(columnName, conditionFromString(conditionString), value, expression, parserConfiguration);
     }
 
     // Used for copy method
     private RangeFilter(String columnName, Condition condition, String value, String expression,
-                        WhereFilter filter, FormulaParserConfiguration parserConfiguration) {
+            WhereFilter filter, FormulaParserConfiguration parserConfiguration) {
         Assert.eqTrue(conditionSupported(condition), condition + " is not supported by RangeConditionFilter");
         this.columnName = columnName;
         this.condition = condition;
@@ -288,7 +288,7 @@ public class RangeFilter extends WhereFilterImpl {
 
     @Override
     public boolean isSimpleFilter() {
-        return true;
+        return filter.isSimpleFilter();
     }
 
     @Override
