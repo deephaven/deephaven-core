@@ -14,6 +14,7 @@ import java.util.Arrays;
 import static io.deephaven.base.CompareUtils.compare;
 import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.function.Basic.*;
+import static io.deephaven.function.Sort.*;
 import static io.deephaven.function.Cast.castDouble;
 
 /**
@@ -418,6 +419,7 @@ public class Numeric {
 
         double sum = 0;
         double count = 0;
+        long nullCount = 0;
 
         try ( final ${pt.vectorIterator} vi = values.iterator() ) {
             while ( vi.hasNext() ) {
@@ -431,8 +433,14 @@ public class Numeric {
                 if (!isNull(c)) {
                     sum += Math.abs(c);
                     count++;
+                } else {
+                    nullCount++;
                 }
             }
+        }
+
+        if (nullCount == values.size()) {
+            return NULL_DOUBLE;
         }
 
         return sum / count;
@@ -485,6 +493,7 @@ public class Numeric {
         double sum = 0;
         double sum2 = 0;
         long count = 0;
+        long nullCount = 0;
         try ( final ${pt.vectorIterator} vi = values.iterator() ) {
             while ( vi.hasNext() ) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
@@ -495,8 +504,14 @@ public class Numeric {
                     sum += (double)c;
                     sum2 += (double)c * (double)c;
                     count++;
+                } else {
+                    nullCount++;
                 }
             }
+        }
+
+        if (nullCount == values.size()) {
+            return NULL_DOUBLE;
         }
 
         // Return NaN if overflow or too few values to compute variance.
@@ -596,6 +611,7 @@ public class Numeric {
         double sum2 = 0;
         double count = 0;
         double count2 = 0;
+        long nullCount = 0;
 
         try (
             final ${pt.vectorIterator} vi = values.iterator();
@@ -615,8 +631,14 @@ public class Numeric {
                     sum2 += w * c * c;
                     count += w;
                     count2 += w * w;
+                } else {
+                    nullCount++;
                 }
             }
+        }
+
+        if (nullCount == values.size()) {
+            return NULL_DOUBLE;
         }
 
         // Return NaN if overflow or too few values to compute variance.
@@ -868,6 +890,11 @@ public class Numeric {
             throw new IllegalArgumentException("Incompatible input sizes: " + values.size() + ", " + weights.size());
         }
 
+        final double s = wstd(values, weights);
+        if (s == NULL_DOUBLE) {
+            return NULL_DOUBLE;
+        }
+
         // see https://stats.stackexchange.com/questions/25895/computing-standard-error-in-weighted-mean-estimation
         double sumw = 0;
         double sumw2 = 0;
@@ -887,7 +914,6 @@ public class Numeric {
             }
         }
 
-        final double s = wstd(values, weights);
         return s == NULL_DOUBLE ? NULL_DOUBLE : s * Math.sqrt(sumw2/sumw/sumw);
     }
 
@@ -996,7 +1022,15 @@ public class Numeric {
         }
 
         final double a = wavg(values, weights);
+        if (a == NULL_DOUBLE) {
+            return NULL_DOUBLE;
+        }
+
         final double s = wste(values, weights);
+        if (s == NULL_DOUBLE) {
+            return NULL_DOUBLE;
+        }
+
         return a / s;
     }
 
@@ -1226,13 +1260,38 @@ public class Numeric {
         int n = values.intSize("median");
 
         if (n == 0) {
-            return Double.NaN;
+            return NULL_DOUBLE;
         } else {
-            ${pt.primitive}[] copy = values.copyToArray();
-            Arrays.sort(copy);
-            if (n % 2 == 0)
-                return 0.5 * (copy[n / 2 - 1] + copy[n / 2]);
-            else return copy[n / 2];
+            // NULL values sorted to beginning of the array.
+            ${pt.primitive}[] copy = sort(values.toArray());
+
+            // Determine if there are any NULL in the array.
+            int nullCount = 0;
+            for (int i = 0; i < n; i++) {
+                if (isNull(copy[i])) {
+                    nullCount++;
+                } else {
+                    break;
+                }
+            }
+
+            if (nullCount == 0) {
+                // No NULL, so we can just compute the median and return.
+                if (n % 2 == 0)
+                    return 0.5 * (copy[n / 2 - 1] + copy[n / 2]);
+                else return copy[n / 2];
+            } else if (nullCount < n) {
+                // Some NULL, reduce the count and compute the median of the non-null values.
+                n -= nullCount;
+                if (n % 2 == 0) {
+                    int index = n / 2;
+                    return 0.5 * (copy[n / 2 - 1 + nullCount] + copy[n / 2 + nullCount]);
+                }
+                else return copy[n / 2 + nullCount];
+            } else {
+                // All values are NULL.
+                return NULL_DOUBLE;
+            }
         }
     }
 
@@ -1268,11 +1327,32 @@ public class Numeric {
         }
 
         int n = values.intSize("percentile");
-        ${pt.primitive}[] copy = values.copyToArray();
-        Arrays.sort(copy);
+        // NULL values sorted to beginning of the array.
+        ${pt.primitive}[] copy = sort(values.toArray());
 
-        int idx = (int) Math.round(percentile * (n - 1));
-        return copy[idx];
+        // Determine if there are any NULL in the array.
+        int nullCount = 0;
+        for (int i = 0; i < n; i++) {
+            if (isNull(copy[i])) {
+                nullCount++;
+            } else {
+                break;
+            }
+        }
+
+        if (nullCount == 0) {
+            // No NULL, so we can just compute the index and return.
+            int idx = (int) Math.round(percentile * (n - 1));
+            return copy[idx];
+        } else if (nullCount < n) {
+            // Some NULL, reduce the count and compute the median of the non-null values.
+            n -= nullCount;
+            int idx = (int) Math.round(percentile * (n - 1));
+            return copy[idx + nullCount];
+        } else {
+            // All values are NULL.
+            return ${pt.null};
+        }
     }
 
 
@@ -1344,6 +1424,7 @@ public class Numeric {
         double sum1 = 0;
         double sum01 = 0;
         double count = 0;
+        long nullCount = 0;
 
         try (
             final ${pt.vectorIterator} v0i = values0.iterator();
@@ -1364,8 +1445,14 @@ public class Numeric {
                     sum1 += v1;
                     sum01 += v0 * v1;
                     count++;
+                } else {
+                    nullCount++;
                 }
             }
+        }
+
+        if (nullCount == values0.size()) {
+            return NULL_DOUBLE;
         }
 
         return sum01 / count - sum0 * sum1 / count / count;
@@ -1438,6 +1525,7 @@ public class Numeric {
         double sum1Sq = 0;
         double sum01 = 0;
         double count = 0;
+        long nullCount = 0;
 
         try (
             final ${pt.vectorIterator} v0i = values0.iterator();
@@ -1460,8 +1548,14 @@ public class Numeric {
                     sum1Sq += v1 * v1;
                     sum01 += v0 * v1;
                     count++;
+                } else {
+                    nullCount++;
                 }
             }
+        }
+
+        if (nullCount == values0.size()) {
+            return NULL_DOUBLE;
         }
 
         double cov = sum01 / count - sum0 * sum1 / count / count;
