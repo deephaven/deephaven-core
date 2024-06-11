@@ -163,7 +163,7 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
         RangeSet added = eventData.getAdded().getRange();
         added.indexIterator().forEachRemaining((long index) -> {
             // extract the key to use
-            JsArray<Object> key = eventData.getColumns().map((c, p1, p2) -> eventData.getData(index, c));
+            JsArray<Object> key = eventData.getColumns().map((c, p1) -> eventData.getData(index, c));
             knownKeys.add(key.asList());
             CustomEventInit<JsArray<Object>> init = CustomEventInit.create();
             init.setDetail(key);
