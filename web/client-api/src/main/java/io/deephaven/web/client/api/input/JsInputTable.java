@@ -102,7 +102,7 @@ public class JsInputTable {
      */
     @JsProperty
     public Column[] getValueColumns() {
-        return table.findColumns(values);
+        return table.findColumns(values.get());
     }
 
     /**

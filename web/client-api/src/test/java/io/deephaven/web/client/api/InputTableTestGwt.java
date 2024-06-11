@@ -32,9 +32,9 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(JsTable::inputTable)
                 .then(inputTable -> {
                     JsArray<Column> keyColumns = Js.uncheckedCast(inputTable.getKeyColumns());
-                    assertEquals(2, keyColumns.length);
-//                    keyColumns.filter((col, index) -> col.getName() == "B")
-//                    keyColumns.map((col) -> col.getName())
+                    assertEquals(2, keyColumns.filter((col, idx) -> col.getName() == "A" || col.getName() == "B").length);
+                    JsArray<String> valueColumns = Js.uncheckedCast(inputTable.getValues());
+                    assertEquals(4, valueColumns.filter((colName, idx) -> colName == "C" || colName == "D" || colName == "E"  || colName == "F").length);
                     return null;
                 })
                 .then(this::finish).catch_(this::report);
@@ -44,7 +44,9 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(JsTable::inputTable)
                 .then(inputTable -> {
                     JsArray<Column> keyColumns = Js.uncheckedCast(inputTable.getKeyColumns());
-                    assertEquals(1, keyColumns.length);
+                    assertEquals(1, keyColumns.filter((col, idx) -> col.getName() == "C").length);
+                    JsArray<String> valueColumns = Js.uncheckedCast(inputTable.getValues());
+                    assertEquals(5, valueColumns.filter((colName, idx) -> colName == "A" || colName == "B" || colName == "D" || colName == "E" || colName == "F").length);
                     return null;
                 })
                 .then(this::finish).catch_(this::report);
@@ -54,7 +56,9 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(JsTable::inputTable)
                 .then(inputTable -> {
                     JsArray<Column> keyColumns = Js.uncheckedCast(inputTable.getKeyColumns());
-                    assertEquals(2, keyColumns.length);
+                    assertEquals(2, keyColumns.filter((col, idx) -> col.getName() == "E" || col.getName() == "F").length);
+                    JsArray<String> valueColumns = Js.uncheckedCast(inputTable.getValues());
+                    assertEquals(4, valueColumns.filter((colName, idx) -> colName == "A" || colName == "B" || colName == "C"  || colName == "D").length);
                     return null;
                 })
                 .then(this::finish).catch_(this::report);
