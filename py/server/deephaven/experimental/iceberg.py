@@ -12,12 +12,11 @@ from deephaven.column import Column
 from deephaven.dtypes import DType
 from deephaven.experimental import s3
 
-from deephaven.jcompat import j_list_to_list, j_table_definition
+from deephaven.jcompat import j_table_definition
 
 from deephaven.table import Table
 
 _JIcebergInstructions = jpy.get_type("io.deephaven.iceberg.util.IcebergInstructions")
-_JIcebergCatalog = jpy.get_type("io.deephaven.iceberg.util.IcebergCatalog")
 _JIcebergCatalogAdapter = jpy.get_type("io.deephaven.iceberg.util.IcebergCatalogAdapter")
 
 # IcebergToolsS3 is an optional library
@@ -29,8 +28,6 @@ except Exception:
 _JNamespace = jpy.get_type("org.apache.iceberg.catalog.Namespace")
 _JTableIdentifier = jpy.get_type("org.apache.iceberg.catalog.TableIdentifier")
 _JSnapshot = jpy.get_type("org.apache.iceberg.Snapshot")
-
-_JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
 
 
 class IcebergInstructions(JObjectWrapper):
@@ -45,7 +42,6 @@ class IcebergInstructions(JObjectWrapper):
                  table_definition: Optional[Union[Dict[str, DType], List[Column]]] = None,
                  data_instructions: Optional[s3.S3Instructions] = None,
                  column_renames: Optional[Dict[str, str]] = None):
-
         """
         Initializes the instructions using the provided parameters.
 

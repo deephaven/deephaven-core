@@ -14,9 +14,11 @@ import pandas as pd
 from deephaven import dtypes, DHError
 from deephaven._wrapper import unwrap, wrap_j_object, JObjectWrapper
 from deephaven.dtypes import DType, _PRIMITIVE_DTYPE_NULL_MAP
+from deephaven.column import Column
 
 _NULL_BOOLEAN_AS_BYTE = jpy.get_type("io.deephaven.util.BooleanUtils").NULL_BOOLEAN_AS_BYTE
 _JPrimitiveArrayConversionUtility = jpy.get_type("io.deephaven.integrations.common.PrimitiveArrayConversionUtility")
+_JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
 
 _DH_PANDAS_NULLABLE_TYPE_MAP: Dict[DType, pd.api.extensions.ExtensionDtype] = {
     dtypes.bool_: pd.BooleanDtype,
