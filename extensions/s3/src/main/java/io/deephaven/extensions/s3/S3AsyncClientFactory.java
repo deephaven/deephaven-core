@@ -55,8 +55,8 @@ class S3AsyncClientFactory {
                         // .addMetricPublisher(LoggingMetricPublisher.create(Level.INFO, Format.PRETTY))
                         .scheduledExecutorService(ensureScheduledExecutor())
                         .build())
-                .region(Region.of(instructions.regionName()))
                 .credentialsProvider(instructions.awsV2CredentialsProvider());
+        instructions.regionName().ifPresent(regionName -> builder.region(Region.of(regionName)));
         instructions.endpointOverride().ifPresent(builder::endpointOverride);
         final S3AsyncClient ret = builder.build();
         if (log.isDebugEnabled()) {

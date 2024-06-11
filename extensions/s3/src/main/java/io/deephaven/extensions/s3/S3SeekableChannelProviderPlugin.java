@@ -29,8 +29,11 @@ public final class S3SeekableChannelProviderPlugin implements SeekableChannelsPr
         if (!isCompatible(uri, config)) {
             throw new IllegalArgumentException("Arguments not compatible, provided uri " + uri);
         }
-        if (!(config instanceof S3Instructions)) {
+        if (config != null && !(config instanceof S3Instructions)) {
             throw new IllegalArgumentException("Must provide S3Instructions to read files from S3");
+        }
+        if (config == null) {
+            return new S3SeekableChannelProvider(S3Instructions.DEFAULT_S3_INSTRUCTIONS);
         }
         return new S3SeekableChannelProvider((S3Instructions) config);
     }
