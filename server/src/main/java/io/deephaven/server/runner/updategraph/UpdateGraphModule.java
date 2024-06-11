@@ -5,6 +5,7 @@ package io.deephaven.server.runner.updategraph;
 
 import dagger.Module;
 import dagger.Provides;
+import io.deephaven.engine.table.impl.GUISnapshotInitializationThreadPool;
 import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
 import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
@@ -24,7 +25,7 @@ public class UpdateGraphModule {
     @Named(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME)
     public static UpdateGraph provideUpdateGraph(
             final ThreadInitializationFactory threadInitializationFactory,
-            final OperationInitializer operationInitializer) {
+            @Named(OperationInitializationThreadPool.DEFAULT_OPERATION_INITIALIZER_NAME) final OperationInitializer operationInitializer) {
         return PeriodicUpdateGraph.newBuilder(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME)
                 .numUpdateThreads(PeriodicUpdateGraph.NUM_THREADS_DEFAULT_UPDATE_GRAPH)
                 .threadInitializationFactory(threadInitializationFactory)
@@ -34,8 +35,17 @@ public class UpdateGraphModule {
 
     @Provides
     @Singleton
+    @Named(OperationInitializationThreadPool.DEFAULT_OPERATION_INITIALIZER_NAME)
     public static OperationInitializer provideOperationInitializer(
             final ThreadInitializationFactory factory) {
         return new OperationInitializationThreadPool(factory);
+    }
+
+    @Provides
+    @Singleton
+    @Named(GUISnapshotInitializationThreadPool.DEFAULT_GUI_OPERATION_INITIALIZER_NAME)
+    public static OperationInitializer provideGUIOperationInitializer(
+            final ThreadInitializationFactory factory) {
+        return new GUISnapshotInitializationThreadPool(factory);
     }
 }

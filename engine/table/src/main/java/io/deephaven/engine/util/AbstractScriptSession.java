@@ -78,15 +78,18 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     protected AbstractScriptSession(
             final UpdateGraph updateGraph,
             final OperationInitializer operationInitializer,
+            final OperationInitializer guiOperationInitializer,
             final ObjectTypeLookup objectTypeLookup,
             @Nullable final Listener changeListener) {
-        this(updateGraph, operationInitializer, objectTypeLookup, changeListener, newClassCacheLocation().toFile(),
+        this(updateGraph, operationInitializer, guiOperationInitializer, objectTypeLookup, changeListener,
+                newClassCacheLocation().toFile(),
                 Thread.currentThread().getContextClassLoader());
     }
 
     protected AbstractScriptSession(
             final UpdateGraph updateGraph,
             final OperationInitializer operationInitializer,
+            final OperationInitializer guiOperationInitializer,
             final ObjectTypeLookup objectTypeLookup,
             @Nullable final Listener changeListener,
             @NotNull final File classCacheDirectory,
@@ -106,6 +109,7 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
                 .setQueryCompiler(compilerContext)
                 .setUpdateGraph(updateGraph)
                 .setOperationInitializer(operationInitializer)
+                .setGUIOperationInitializer(guiOperationInitializer)
                 .build();
     }
 

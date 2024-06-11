@@ -4,6 +4,7 @@
 package io.deephaven.engine.context;
 
 import io.deephaven.auth.AuthContext;
+import io.deephaven.engine.table.impl.GUISnapshotInitializationThreadPool;
 import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.util.thread.ThreadInitializationFactory;
@@ -12,6 +13,9 @@ public class TestExecutionContext {
 
     public static final OperationInitializationThreadPool OPERATION_INITIALIZATION =
             new OperationInitializationThreadPool(ThreadInitializationFactory.NO_OP);
+    public static final GUISnapshotInitializationThreadPool GUI_SNAPSHOT_OPERATION_INITIALIZATION =
+            new GUISnapshotInitializationThreadPool(ThreadInitializationFactory.NO_OP);
+
 
     public static final ControlledUpdateGraph UPDATE_GRAPH = new ControlledUpdateGraph(OPERATION_INITIALIZATION);
 
@@ -23,6 +27,7 @@ public class TestExecutionContext {
                 .setQueryCompiler(QueryCompilerImpl.createForUnitTests())
                 .setUpdateGraph(UPDATE_GRAPH)
                 .setOperationInitializer(OPERATION_INITIALIZATION)
+                .setGUIOperationInitializer(GUI_SNAPSHOT_OPERATION_INITIALIZATION)
                 .build();
     }
 }

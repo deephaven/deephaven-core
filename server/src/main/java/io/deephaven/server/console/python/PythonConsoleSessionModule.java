@@ -7,6 +7,8 @@ import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoMap;
 import dagger.multibindings.StringKey;
+import io.deephaven.engine.table.impl.GUISnapshotInitializationThreadPool;
+import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
 import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
@@ -34,14 +36,16 @@ public class PythonConsoleSessionModule {
     PythonDeephavenSession bindPythonSession(
             @Named(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME) final UpdateGraph updateGraph,
             final ThreadInitializationFactory threadInitializationFactory,
-            final OperationInitializer operationInitializer,
+            @Named(OperationInitializationThreadPool.DEFAULT_OPERATION_INITIALIZER_NAME) final OperationInitializer operationInitializer,
+            @Named(GUISnapshotInitializationThreadPool.DEFAULT_GUI_OPERATION_INITIALIZER_NAME) final OperationInitializer guiOperationInitializer,
             final ObjectTypeLookup lookup,
             final ScriptSession.Listener listener,
             final PythonEvaluatorJpy pythonEvaluator,
             final ScriptSessionCacheInit ignored) {
         try {
             return new PythonDeephavenSession(
-                    updateGraph, operationInitializer, threadInitializationFactory, lookup, listener,
+                    updateGraph, operationInitializer, guiOperationInitializer, threadInitializationFactory, lookup,
+                    listener,
                     true, pythonEvaluator);
         } catch (IOException e) {
             throw new UncheckedIOException("Unable to run python startup scripts", e);

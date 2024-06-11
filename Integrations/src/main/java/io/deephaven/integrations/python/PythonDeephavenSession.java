@@ -78,12 +78,13 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     public PythonDeephavenSession(
             final UpdateGraph updateGraph,
             final OperationInitializer operationInitializer,
+            final OperationInitializer guiOperationInitializer,
             final ThreadInitializationFactory threadInitializationFactory,
             final ObjectTypeLookup objectTypeLookup,
             @Nullable final Listener listener,
             final boolean runInitScripts,
             final PythonEvaluatorJpy pythonEvaluator) throws IOException {
-        super(updateGraph, operationInitializer, objectTypeLookup, listener);
+        super(updateGraph, operationInitializer, guiOperationInitializer, objectTypeLookup, listener);
 
         evaluator = pythonEvaluator;
         scope = pythonEvaluator.getScope();
@@ -115,9 +116,10 @@ public class PythonDeephavenSession extends AbstractScriptSession<PythonSnapshot
     public PythonDeephavenSession(
             final UpdateGraph updateGraph,
             final OperationInitializer operationInitializer,
+            final OperationInitializer guiOperationInitializer,
             final ThreadInitializationFactory threadInitializationFactory,
             final PythonScope<?> scope) {
-        super(updateGraph, operationInitializer, NoOp.INSTANCE, null);
+        super(updateGraph, operationInitializer, guiOperationInitializer, NoOp.INSTANCE, null);
 
         evaluator = null;
         this.scope = (PythonScope<PyObject>) scope;
