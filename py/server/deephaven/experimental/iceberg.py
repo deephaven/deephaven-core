@@ -125,21 +125,7 @@ class IcebergCatalogAdapter(JObjectWrapper):
     def __init__(self, j_object: _JIcebergCatalogAdapter):
         self.j_catalog_adapter = j_object
 
-    def namespaces(self, namespace: Optional[str] = None) -> Sequence[str]:
-        """
-        Returns the list of namespaces in the catalog.
-
-        Args:
-           namespace (Optional[str]): the higher-level namespace from which to list namespaces; if omitted, the
-                top-level namespaces are listed.
-        Returns:
-            Sequence[str]: the list of namespaces.
-        """
-        if namespace is not None:
-            return _j_object_list_to_str_list(self.j_object.listNamespaces(namespace))
-        return _j_object_list_to_str_list(self.j_object.listNamespaces())
-
-    def namespaces_as_table(self, namespace: Optional[str] = None) -> Table:
+    def namespaces(self, namespace: Optional[str] = None) -> Table:
         """
         Returns the namespaces in the catalog as a Deephaven table.
 
@@ -155,22 +141,7 @@ class IcebergCatalogAdapter(JObjectWrapper):
             return Table(self.j_object.listNamespaces(namespace))
         return Table(self.j_object.listNamespacesAsTable())
 
-    def tables(self, namespace: str) -> Sequence[str]:
-        """
-        Returns the list of tables in the provided namespace.
-
-        Args:
-            namespace (str): the namespace from which to list tables.
-
-        Returns:
-            Sequence[str]: the list of table names.
-        """
-
-        if namespace is not None:
-            return _j_object_list_to_str_list(self.j_object.listTables(namespace))
-        return _j_object_list_to_str_list(self.j_object.listTables())
-
-    def tables_as_table(self, namespace: Optional[str] = None) -> Table:
+    def tables(self, namespace: Optional[str] = None) -> Table:
         """
         Returns the list of tables in the provided namespace as a Deephaven table.
 
@@ -185,29 +156,7 @@ class IcebergCatalogAdapter(JObjectWrapper):
             return Table(self.j_object.listTablesAsTable(namespace))
         return Table(self.j_object.listTablesAsTable())
 
-    def snapshots(self, table_identifier: str) -> Sequence[str]:
-        """
-        Returns the list of snapshots for the provided table.
-
-        Args:
-            namespace (str): the table from which to list snapshots.
-
-        Returns:
-            the list of snapshots and additional information for each snapshot.
-        """
-
-        snaphot_list = []
-        for snapshot in j_list_to_list(self.j_object.listSnapshots(table_identifier)):
-            snaphot_list.append({
-                "id": snapshot.snapshotId(),
-                "timestamp_ms": snapshot.timestampMillis(),
-                "operation": snapshot.operation(),
-                "summary": snapshot.summary().toString()
-
-            })
-        return snaphot_list
-
-    def snapshots_as_table(self, table_identifier: str) -> Table:
+    def snapshots(self, table_identifier: str) -> Table:
         """
         Returns the list of snapshots of the provided table as a Deephaven table.
 
@@ -244,10 +193,11 @@ class IcebergCatalogAdapter(JObjectWrapper):
     def j_object(self) -> jpy.JType:
         return self.j_catalog_adapter
 
+
 def create_s3_rest_adapter(
+        catalog_uri: str,
+        warehouse_location: str,
         name: Optional[str] = None,
-        catalog_uri: Optional[str] = None,
-        warehouse_location: Optional[str] = None,
         region_name: Optional[str] = None,
         access_key_id: Optional[str] = None,
         secret_access_key: Optional[str] = None,
@@ -257,10 +207,10 @@ def create_s3_rest_adapter(
     Create a catalog adapter using an S3-compatible provider and a REST catalog.
 
     Args:
+        catalog_uri (str): the URI of the REST catalog.
+        warehouse_location (str): the location of the warehouse.
         name (Optional[str]): a descriptive name of the catalog; if omitted the catalog name is inferred from the
             catalog URI.
-        catalog_uri (Optional[str]): the URI of the REST catalog.
-        warehouse_location (Optional[str]): the location of the warehouse.
         region_name (Optional[str]): the S3 region name to use.
         access_key_id (Optional[str]): the access key for reading files. Both access key and secret access key must be
             provided to use static credentials, else default credentials will be used.
@@ -286,15 +236,30 @@ def create_s3_rest_adapter(
             secret_access_key,
             end_point_override))
 
-def create_s3_aws_glue_adapter() -> IcebergCatalogAdapter:
+
+def create_s3_aws_glue_adapter(
+        catalog_uri: str,
+        warehouse_location: str,
+        name: Optional[str] = None
+) -> IcebergCatalogAdapter:
     """
-    Create a catalog adapter using the S3 provider and an AWS Glue catalog .
+    Create a catalog adapter using an AWS Glue catalog .
 
     Args:
-        TBD:
+        catalog_uri (Optional[str]): the URI of the REST catalog.
+        warehouse_location (Optional[str]): the location of the warehouse.
+        name (Optional[str]): a descriptive name of the catalog; if omitted the catalog name is inferred from the
+            catalog URI.
 
     Returns:
         IcebergCatalogAdapter: the catalog adapter for the provided S3 REST catalog.
     """
-    # TODO: figure out the parameters to connect to an AWS-hosted Iceberg GLUE catalog
-    return IcebergCatalogAdapter(_JIcebergCatalogAdapter.builder().build())
+    if not _JIcebergToolsS3:
+        raise DHError(message="`create_s3_aws_glue_adapter` requires the Iceberg specific deephaven S3 extensions to "
+                              "be included in the package")
+
+    return IcebergCatalogAdapter(
+        _JIcebergToolsS3.createS3Glue(
+            name,
+            catalog_uri,
+            warehouse_location))
