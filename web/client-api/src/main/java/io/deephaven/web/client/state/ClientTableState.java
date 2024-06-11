@@ -127,6 +127,7 @@ public final class ClientTableState extends TableConfig {
     // Leftovers from Table.StackEntry
     // non-final fields, but can only be set once (consider moving these into a bean of their own)
     private Column[] columns;
+    private Column[] keyColumns;
     private Column[] allColumns; // includes invisible columns
     private JsLayoutHints layoutHints;
     private JsTotalsTableConfig totalsTableConfig;
@@ -320,6 +321,8 @@ public final class ClientTableState extends TableConfig {
         return columns;
     }
 
+    public Column[] getKeyColumns() { return keyColumns; }
+
     public Column[] getAllColumns() {
         return allColumns;
     }
@@ -392,6 +395,7 @@ public final class ClientTableState extends TableConfig {
             Map<Boolean, Map<String, ColumnDefinition>> byNameMap = tableDef.getColumnsByName();
             assert byNameMap.get(true).isEmpty() : "Unexpected constituent columns in table " + byNameMap.get(true);
             Column[] columns = new Column[0];
+            Column[] keyColumns = new Column[0];
             allColumns = new Column[0];
             for (ColumnDefinition definition : columnDefinitions) {
                 Column column = definition.makeJsColumn(columns.length, byNameMap);
@@ -407,9 +411,14 @@ public final class ClientTableState extends TableConfig {
                 if (definition.isVisible()) {
                     columns[columns.length] = allColumns[allColumns.length - 1];
                 }
+
+                if (definition.isInputTableKeyColumn()) {
+                    keyColumns[keyColumns.length] = allColumns[allColumns.length - 1];
+                }
             }
 
             this.columns = JsObject.freeze(columns);
+            this.keyColumns = JsObject.freeze(keyColumns);
             this.columnLookup = resetLookup();
         }
     }

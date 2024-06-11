@@ -4,6 +4,7 @@
 package io.deephaven.web.client.api.input;
 
 import elemental2.core.JsObject;
+import elemental2.core.JsArray;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.inputtable_pb.AddTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.inputtable_pb.DeleteTableRequest;
@@ -23,6 +24,7 @@ import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
+import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 import java.util.ArrayList;
@@ -71,13 +73,14 @@ public class JsInputTable {
 
     /**
      * A list of the key Column objects
-     * 
+     *
      * @return {@link Column} array.
      */
     @JsProperty
-    public Column[] getKeyColumns() {
-        return table.findColumns(keys);
+    public JsArray<Column> getKeyColumns() {
+        return Js.uncheckedCast(table.lastVisibleState().getKeyColumns());
     }
+
 
     /**
      * A list of the value columns, by name
