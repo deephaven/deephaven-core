@@ -49,76 +49,27 @@ public class WhereFilterFactory {
     private static final ExpressionParser<WhereFilter> parser = new ExpressionParser<>();
 
     static {
-        // <ColumnName> == <Number|Boolean|"String">
-        // <ColumnName> = <Number|Boolean|"String">
-        // <ColumnName> != <Number|Boolean|"String">
-        // <ColumnName> < <Number|Boolean|"String">
-        // <ColumnName> <= <Number|Boolean|"String">
-        // <ColumnName> > <Number|Boolean|"String">
-        // <ColumnName> >= <Number|Boolean|"String">
+        // Each side may fit: (<ColumnName>|<QueryScopeParam>|<Number|Boolean|"String"|Literal>)
+        // Supported ops: ==, =, !=, <, <=, >, >=
         parser.registerFactory(new AbstractExpressionFactory<>(
-                START_PTRN + "(" + ID_PTRN + ")\\s*((?:=|!|<|>)=?)\\s*(" + LITERAL_PTRN + ")" + END_PTRN) {
+                START_PTRN + "(?:(" + ID_PTRN + ")|(" + LITERAL_PTRN + "))\\s*((?:=|!|<|>)=?)\\s*(?:(" + ID_PTRN + ")|(" + LITERAL_PTRN + "))" + END_PTRN) {
             @Override
             public WhereFilter getExpression(String expression, Matcher matcher, Object... args) {
-                final String columnName = matcher.group(1);
-                final String op = matcher.group(2);
-                final String value = matcher.group(3);
-                final boolean mirrored = false;
+                // LITERAL_PTRN has 5 groups; mostly non-capturing
+                final boolean leftIsId = matcher.group(1) != null;
+                final boolean rightIsId = matcher.group(8) != null;
 
-                return getWhereFilterOneSideColumn(
-                        expression, (FormulaParserConfiguration) args[0], columnName, op, value, mirrored);
-            }
-        });
-
-        // <Number|Boolean|"String"> == <ColumnName>
-        // <Number|Boolean|"String"> = <ColumnName>
-        // <Number|Boolean|"String"> != <ColumnName>
-        // <Number|Boolean|"String"> < <ColumnName>
-        // <Number|Boolean|"String"> <= <ColumnName>
-        // <Number|Boolean|"String"> > <ColumnName>
-        // <Number|Boolean|"String"> >= <ColumnName>
-        parser.registerFactory(new AbstractExpressionFactory<>(
-                START_PTRN + "(" + LITERAL_PTRN + ")\\s*((?:=|!|<|>)=?)\\s*(" + ID_PTRN + ")" + END_PTRN) {
-            @Override
-            public WhereFilter getExpression(String expression, Matcher matcher, Object... args) {
-                final String value = matcher.group(1);
-                final String op = matcher.group(6);
-                final String columnName = matcher.group(7);
-                final boolean mirrored = true;
-
-                return getWhereFilterOneSideColumn(
-                        expression, (FormulaParserConfiguration) args[0], columnName, op, value, mirrored);
-            }
-        });
-
-        // <ColumnName> == <User QueryScopeParam>
-        // <ColumnName> = <User QueryScopeParam>
-        // <ColumnName> != <User QueryScopeParam>
-        // <ColumnName> < <User QueryScopeParam>
-        // <ColumnName> <= <User QueryScopeParam>
-        // <ColumnName> > <User QueryScopeParam>
-        // <ColumnName> >= <User QueryScopeParam>
-        parser.registerFactory(new AbstractExpressionFactory<>(
-                START_PTRN + "(" + ID_PTRN + ")\\s*((?:=|!|<|>)=?)\\s*(" + ID_PTRN + ")" + END_PTRN) {
-            @Override
-            public WhereFilter getExpression(String expression, Matcher matcher, Object... args) {
-                final String columnName = matcher.group(1);
-                final String op = matcher.group(2);
-                final String paramName = matcher.group(3);
-                final FormulaParserConfiguration parserConfiguration = (FormulaParserConfiguration) args[0];
-
-                boolean mirrored = false;
-                final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
-                if (!queryScope.hasParamName(paramName)) {
-                    if (queryScope.hasParamName(columnName)) {
-                        mirrored = true;
-                    } else {
-                        return ConditionFilter.createConditionFilter(expression, parserConfiguration);
-                    }
+                if (!leftIsId && !rightIsId) {
+                    return ConditionFilter.createConditionFilter(expression, (FormulaParserConfiguration) args[0]);
                 }
+                final boolean mirrored = !leftIsId;
+
+                final String columnName = leftIsId ? matcher.group(1) : matcher.group(8);
+                final String op = matcher.group(7);
+                final String value = leftIsId ? rightIsId ? matcher.group(8) : matcher.group(9) : matcher.group(2);
 
                 return getWhereFilterOneSideColumn(
-                        expression, parserConfiguration, columnName, op, paramName, mirrored);
+                        expression, (FormulaParserConfiguration) args[0], columnName, op, value, mirrored);
             }
         });
 
@@ -202,9 +153,10 @@ public class WhereFilterFactory {
             return ConditionFilter.createConditionFilter(expression, parserConfiguration);
         }
 
+        boolean inverted = false;
         switch (op) {
             case "!=":
-                mirrored = !mirrored;
+                inverted = !inverted;
             case "=":
             case "==":
                 log.debug().append("WhereFilterFactory creating MatchFilter for expression: ").append(expression)
@@ -212,7 +164,7 @@ public class WhereFilterFactory {
                 return new MatchFilter(
                         expression, parserConfiguration,
                         CaseSensitivity.MatchCase,
-                        mirrored ? MatchType.Inverted : MatchType.Regular,
+                        inverted ? MatchType.Inverted : MatchType.Regular,
                         columnName,
                         value);
 
