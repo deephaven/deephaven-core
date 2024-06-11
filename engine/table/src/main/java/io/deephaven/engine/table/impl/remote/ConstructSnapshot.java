@@ -1718,14 +1718,14 @@ public class ConstructSnapshot {
             final boolean usePrev,
             @NotNull final BarrageMessage snapshot) {
         final int colIdx = nonEmptyColumnsIndices.get(nonEmptyColRank);
-        final ColumnSource<?> columnSource = table.getColumnSource(columnSources[colIdx]);
-        final BarrageMessage.AddColumnData acd = snapshot.addColumnData[colIdx];
-        if (acd.data != null) {
+        final ColumnSource<?> sourceToUse =
+                ReinterpretUtils.maybeConvertToPrimitive(table.getColumnSource(columnSources[colIdx]));
+        if (snapshot.addColumnData[colIdx].data != null) {
             throw new IllegalStateException(
                     "Snapshot data for column " + columnSources[colIdx] + " is already populated");
         }
         snapshot.addColumnData[colIdx].data =
-                getSnapshotDataAsChunkList(columnSource, null, snapshot.rowsIncluded, usePrev);
+                getSnapshotDataAsChunkList(sourceToUse, null, snapshot.rowsIncluded, usePrev);
     }
 
     private static boolean serializeAllTables(
