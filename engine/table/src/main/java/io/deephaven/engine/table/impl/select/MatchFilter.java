@@ -235,6 +235,7 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
         } catch (final RuntimeException err) {
             if (expression != null) {
                 failoverFilter = ConditionFilter.createConditionFilter(expression, parserConfiguration);
+                failoverFilter.init(tableDefinition, compilationProcessor);
             } else {
                 throw new UncheckedDeephavenException("MatchFilter had an unexpected error", err);
             }
