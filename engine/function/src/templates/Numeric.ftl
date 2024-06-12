@@ -365,6 +365,7 @@ public class Numeric {
 
         double sum = 0;
         double count = 0;
+        long nullCount = 0;
 
         try ( final ${pt.vectorIterator} vi = values.iterator() ) {
             while ( vi.hasNext() ) {
@@ -375,8 +376,14 @@ public class Numeric {
                 if (!isNull(c)) {
                     sum += c;
                     count++;
+                } else {
+                    nullCount++;
                 }
             }
+        }
+
+        if (nullCount == values.size()) {
+            return NULL_DOUBLE;
         }
 
         return sum / count;

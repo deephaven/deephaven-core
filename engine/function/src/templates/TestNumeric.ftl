@@ -91,24 +91,28 @@ public class TestNumeric extends BaseArrayTestCase {
     public void test${pt.boxed}Avg() {
         assertEquals(50.0, avg(new ${pt.primitive}[]{40, 50, 60}));
         assertEquals(45.5, avg(new ${pt.primitive}[]{40, 51}));
-        assertTrue(Double.isNaN(avg(new ${pt.primitive}[]{})));
-        assertTrue(Double.isNaN(avg(new ${pt.primitive}[]{${pt.null}})));
+        assertEquals(NULL_DOUBLE, avg(new ${pt.primitive}[]{}));
+        assertEquals(NULL_DOUBLE, avg(new ${pt.primitive}[]{${pt.null}}));
         assertEquals(10.0, avg(new ${pt.primitive}[]{5, ${pt.null}, 15}));
         assertEquals(NULL_DOUBLE, avg((${pt.primitive}[])null));
 
         assertEquals(50.0, avg(new ${pt.boxed}[]{(${pt.primitive})40, (${pt.primitive})50, (${pt.primitive})60}));
         assertEquals(45.5, avg(new ${pt.boxed}[]{(${pt.primitive})40, (${pt.primitive})51}));
-        assertTrue(Double.isNaN(avg(new ${pt.boxed}[]{})));
-        assertTrue(Double.isNaN(avg(new ${pt.boxed}[]{${pt.null}})));
+        assertEquals(NULL_DOUBLE, avg(new ${pt.boxed}[]{}));
+        assertEquals(NULL_DOUBLE, avg(new ${pt.boxed}[]{${pt.null}}));
         assertEquals(10.0, avg(new ${pt.boxed}[]{(${pt.primitive})5, ${pt.null}, (${pt.primitive})15}));
         assertEquals(NULL_DOUBLE, avg((${pt.boxed}[])null));
 
         assertEquals(50.0, avg(new ${pt.vectorDirect}(new ${pt.primitive}[]{40, 50, 60})));
         assertEquals(45.5, avg(new ${pt.vectorDirect}(new ${pt.primitive}[]{40, 51})));
-        assertTrue(Double.isNaN(avg(new ${pt.vectorDirect}())));
-        assertTrue(Double.isNaN(avg(new ${pt.vectorDirect}(${pt.null}))));
+        assertEquals(NULL_DOUBLE, avg(new ${pt.vectorDirect}()));
+        assertEquals(NULL_DOUBLE, avg(new ${pt.vectorDirect}(${pt.null})));
         assertEquals(10.0, avg(new ${pt.vectorDirect}(new ${pt.primitive}[]{5, ${pt.null}, 15})));
         assertEquals(NULL_DOUBLE, avg((${pt.vectorDirect})null));
+
+        // verify the all-null case returns null
+        assertEquals(NULL_DOUBLE, avg(new ${pt.primitive}[]{${pt.null}, ${pt.null}, ${pt.null}}));
+        assertEquals(NULL_DOUBLE, avg(new ${pt.boxed}[]{${pt.null}, ${pt.null}, ${pt.null}}));
 
         // check that functions can be resolved with varargs
         assertEquals(45.0, avg((${pt.primitive})40, (${pt.primitive})50));
