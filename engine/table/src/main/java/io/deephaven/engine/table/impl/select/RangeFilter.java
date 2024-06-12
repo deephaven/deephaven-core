@@ -301,6 +301,6 @@ public class RangeFilter extends WhereFilterImpl {
 
     @Override
     public String toString() {
-        return "RangeConditionFilter(" + columnName + " " + condition.description + " " + value + ")";
+        return "RangeFilter(" + columnName + " " + condition.description + " " + value + ")";
     }
 }
