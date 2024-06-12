@@ -32,7 +32,7 @@ public class GroovyConsoleSessionModule {
     @Provides
     GroovyDeephavenSession bindGroovySession(
             @Named(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME) final UpdateGraph updateGraph,
-            final OperationInitializer operationInitializer,
+            @Named(OperationInitializer.DEFAULT_NAME) final OperationInitializer operationInitializer,
             final ObjectTypeLookup lookup,
             final ScriptSession.Listener listener,
             final RunScripts runScripts,

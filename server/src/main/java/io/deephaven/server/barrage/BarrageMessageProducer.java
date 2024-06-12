@@ -283,7 +283,8 @@ public class BarrageMessageProducer extends LivenessArtifact
         }
     }
 
-    private final UpdatePropagationJob updatePropagationJob = new UpdatePropagationJob();
+    private final OperationInitializer operationInitializer;
+    private final UpdatePropagationJob updatePropagationJob;
 
     /**
      * Subscription updates accumulate in pendingSubscriptions until the next time our update propagation job runs. See
@@ -308,8 +309,6 @@ public class BarrageMessageProducer extends LivenessArtifact
     private boolean onGetSnapshotIsPreSnap;
 
     private final boolean parentIsRefreshing;
-
-    private final OperationInitializer operationInitializer;
 
     public BarrageMessageProducer(
             final Scheduler scheduler,
@@ -338,6 +337,7 @@ public class BarrageMessageProducer extends LivenessArtifact
         this.propagationRowSet = RowSetFactory.empty();
         this.updateIntervalMs = updateIntervalMs;
         this.operationInitializer = operationInitializer;
+        this.updatePropagationJob = new UpdatePropagationJob();
         this.onGetSnapshot = onGetSnapshot;
 
         this.parentTableSize = parent.size();
