@@ -34,7 +34,7 @@ class S3Instructions(JObjectWrapper):
     j_object_type = _JS3Instructions or type(None)
 
     def __init__(self,
-                 region_name: str,
+                 region_name: Optional[str] = None,
                  max_concurrent_requests: Optional[int] = None,
                  read_ahead_count: Optional[int] = None,
                  fragment_size: Optional[int] = None,
@@ -52,7 +52,10 @@ class S3Instructions(JObjectWrapper):
         Initializes the instructions.
 
         Args:
-            region_name (str): the region name for reading parquet files, mandatory parameter.
+            region_name (str): the region name for reading parquet files. If not provided, the default region will be
+            picked by the AWS SDK from 'aws.region' system property, "AWS_REGION" environment variable, the
+            {user.home}/.aws/credentials or {user.home}/.aws/config files, or from EC2 metadata service, if running in
+            EC2.
             max_concurrent_requests (int): the maximum number of concurrent requests for reading files, default is 256.
             read_ahead_count (int): the number of fragments to send asynchronous read requests for while reading the current
                 fragment. Defaults to 32, which means fetch the next 32 fragments in advance when reading the current fragment.
@@ -87,7 +90,9 @@ class S3Instructions(JObjectWrapper):
 
         try:
             builder = self.j_object_type.builder()
-            builder.regionName(region_name)
+
+            if region_name is not None:
+                builder.regionName(region_name)
 
             if max_concurrent_requests is not None:
                 builder.maxConcurrentRequests(max_concurrent_requests)
