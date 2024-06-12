@@ -52,6 +52,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.HdrHistogram.Histogram;
 
+import javax.inject.Named;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -118,6 +119,7 @@ public class BarrageMessageProducer extends LivenessArtifact
         private final Scheduler scheduler;
         private final SessionService.ErrorTransformer errorTransformer;
         private final BarrageStreamGenerator.Factory streamGeneratorFactory;
+        final OperationInitializer operationInitializer;
         private final BaseTable<?> parent;
         private final long updateIntervalMs;
         private final Runnable onGetSnapshot;
@@ -127,9 +129,11 @@ public class BarrageMessageProducer extends LivenessArtifact
                 final Scheduler scheduler,
                 final SessionService.ErrorTransformer errorTransformer,
                 final BarrageStreamGenerator.Factory streamGeneratorFactory,
+                @Named(OperationInitializer.EGRESS_NAME) final OperationInitializer operationInitializer,
                 @Assisted final BaseTable<?> parent,
                 @Assisted final long updateIntervalMs) {
-            this(scheduler, errorTransformer, streamGeneratorFactory, parent, updateIntervalMs, null);
+            this(scheduler, errorTransformer, streamGeneratorFactory, operationInitializer, parent, updateIntervalMs,
+                    null);
         }
 
         @VisibleForTesting
@@ -137,12 +141,14 @@ public class BarrageMessageProducer extends LivenessArtifact
                 final Scheduler scheduler,
                 final SessionService.ErrorTransformer errorTransformer,
                 final BarrageStreamGenerator.Factory streamGeneratorFactory,
+                final OperationInitializer operationInitializer,
                 final BaseTable<?> parent,
                 final long updateIntervalMs,
                 @Nullable final Runnable onGetSnapshot) {
             this.scheduler = scheduler;
             this.errorTransformer = errorTransformer;
             this.streamGeneratorFactory = streamGeneratorFactory;
+            this.operationInitializer = operationInitializer;
             this.parent = parent;
             this.updateIntervalMs = updateIntervalMs;
             this.onGetSnapshot = onGetSnapshot;
@@ -166,7 +172,7 @@ public class BarrageMessageProducer extends LivenessArtifact
         @Override
         public Result<BarrageMessageProducer> initialize(final boolean usePrev, final long beforeClock) {
             final BarrageMessageProducer result = new BarrageMessageProducer(scheduler, errorTransformer,
-                    streamGeneratorFactory, parent, updateIntervalMs, onGetSnapshot);
+                    streamGeneratorFactory, parent, updateIntervalMs, operationInitializer, onGetSnapshot);
             return new Result<>(result, result.constructListener());
         }
     }
@@ -303,12 +309,15 @@ public class BarrageMessageProducer extends LivenessArtifact
 
     private final boolean parentIsRefreshing;
 
+    private final OperationInitializer operationInitializer;
+
     public BarrageMessageProducer(
             final Scheduler scheduler,
             final SessionService.ErrorTransformer errorTransformer,
             final BarrageStreamGenerator.Factory streamGeneratorFactory,
             final BaseTable<?> parent,
             final long updateIntervalMs,
+            final OperationInitializer operationInitializer,
             final Runnable onGetSnapshot) {
         this.logPrefix = "BarrageMessageProducer(" + Integer.toHexString(System.identityHashCode(this)) + "): ";
 
@@ -328,6 +337,7 @@ public class BarrageMessageProducer extends LivenessArtifact
 
         this.propagationRowSet = RowSetFactory.empty();
         this.updateIntervalMs = updateIntervalMs;
+        this.operationInitializer = operationInitializer;
         this.onGetSnapshot = onGetSnapshot;
 
         this.parentTableSize = parent.size();
@@ -1000,7 +1010,10 @@ public class BarrageMessageProducer extends LivenessArtifact
         private final ExecutionContext executionContext;
 
         UpdatePropagationJob() {
-            this.executionContext = ExecutionContext.newBuilder().markSystemic().build();
+            this.executionContext = ExecutionContext.newBuilder()
+                    .setOperationInitializer(operationInitializer)
+                    .markSystemic()
+                    .build();
         }
 
         @Override
