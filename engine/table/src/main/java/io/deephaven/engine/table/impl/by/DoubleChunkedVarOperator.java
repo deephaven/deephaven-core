@@ -23,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static io.deephaven.engine.table.impl.by.RollupConstants.*;
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 /**
  * Iterative variance operator.
@@ -114,8 +115,11 @@ final class DoubleChunkedVarOperator extends FpChunkedNonNormalCounter implement
                 resultColumn.set(destination, std ? Math.sqrt(variance) : variance);
             }
             return true;
-        } else if (forceNanResult || (nonNullCounter.getCountUnsafe(destination) <= 1)) {
+        } else if (forceNanResult || (nonNullCounter.getCountUnsafe(destination) == 1)) {
             resultColumn.set(destination, Double.NaN);
+            return true;
+        } else if (nonNullCounter.getCountUnsafe(destination) == 0) {
+            resultColumn.set(destination, NULL_DOUBLE);
             return true;
         } else {
             return false;
@@ -165,8 +169,11 @@ final class DoubleChunkedVarOperator extends FpChunkedNonNormalCounter implement
             }
             sumSource.set(destination, newSum);
             sum2Source.set(destination, newSum2);
-        } else if (totalNormalCount <= 1 || forceNanResult) {
+        } else if (totalNormalCount == 1 || forceNanResult) {
             resultColumn.set(destination, Double.NaN);
+            return true;
+        } else if (totalNormalCount == 0) {
+            resultColumn.set(destination, NULL_DOUBLE);
             return true;
         } else {
             newSum = sumSource.getUnsafe(destination);

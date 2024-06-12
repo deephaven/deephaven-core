@@ -23,6 +23,7 @@ import java.util.Map;
 
 import static io.deephaven.engine.table.impl.by.RollupConstants.*;
 import static io.deephaven.engine.util.NullSafeAddition.plusDouble;
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 /**
  * Iterative variance operator.
@@ -99,8 +100,10 @@ class IntChunkedVarOperator implements IterativeChunkedAggregationOperator {
                 final double variance = (newSum2 - (newSum * newSum / nonNullCount)) / (nonNullCount - 1);
                 resultColumn.set(destination, std ? Math.sqrt(variance) : variance);
             }
-        } else if (nonNullCounter.getCountUnsafe(destination) <= 1) {
+        } else if (nonNullCounter.getCountUnsafe(destination) == 1) {
             resultColumn.set(destination, Double.NaN);
+        } else if (nonNullCounter.getCountUnsafe(destination) == 0) {
+            resultColumn.set(destination, NULL_DOUBLE);
         }
         return true;
     }
@@ -129,7 +132,10 @@ class IntChunkedVarOperator implements IterativeChunkedAggregationOperator {
         sumSource.set(destination, newSum);
         sum2Source.set(destination, newSum2);
 
-        if (nonNullCount <= 1) {
+        if (nonNullCount == 0) {
+            resultColumn.set(destination, NULL_DOUBLE);
+            return true;
+        } else if (nonNullCount == 1) {
             resultColumn.set(destination, Double.NaN);
             return true;
         }
