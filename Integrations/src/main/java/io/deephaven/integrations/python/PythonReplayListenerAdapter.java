@@ -17,6 +17,7 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jpy.PyObject;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
 
 
@@ -37,25 +38,26 @@ public class PythonReplayListenerAdapter extends InstrumentedTableUpdateListener
     /**
      * Create a Python listener.
      *
-     * @param description A description for the UpdatePerformanceTracker to append to its entry description.
+     * @param description A description for the UpdatePerformanceTracker to append to its entry description, may be
+     *        null.
      * @param source The source table to which this listener will subscribe.
      * @param retain Whether a hard reference to this listener should be maintained to prevent it from being collected.
      * @param pyObjectIn Python listener object.
      * @param dependencies The tables that must be satisfied before this listener is executed.
      */
-    private PythonReplayListenerAdapter(String description, Table source, boolean retain, PyObject pyObjectIn,
-            Table... dependencies) {
-        super(description, source, retain);
-        this.dependencies = dependencies;
-        this.pyCallable = PythonUtils.pyListenerFunc(pyObjectIn);
-    }
-
-    public static PythonReplayListenerAdapter create(String description, Table source, boolean retain,
+    public static PythonReplayListenerAdapter create(@Nullable String description, Table source, boolean retain,
             PyObject pyObjectIn, Table... dependencies) {
         final UpdateGraph updateGraph = source.getUpdateGraph(dependencies);
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             return new PythonReplayListenerAdapter(description, source, retain, pyObjectIn, dependencies);
         }
+    }
+
+    private PythonReplayListenerAdapter(String description, Table source, boolean retain, PyObject pyObjectIn,
+            Table... dependencies) {
+        super(description, source, retain);
+        this.dependencies = dependencies;
+        this.pyCallable = PythonUtils.pyListenerFunc(pyObjectIn);
     }
 
     @Override
@@ -77,6 +79,7 @@ public class PythonReplayListenerAdapter extends InstrumentedTableUpdateListener
 
     @Override
     public boolean canExecute(final long step) {
-        return source.satisfied(step) && Arrays.stream(dependencies).allMatch(t -> t.satisfied(step));
+        return super.canExecute(step)
+                && (dependencies.length == 0 || Arrays.stream(dependencies).allMatch(t -> t.satisfied(step)));
     }
 }

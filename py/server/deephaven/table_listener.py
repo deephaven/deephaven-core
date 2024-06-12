@@ -330,10 +330,16 @@ class TableListenerHandle:
             listener (Union[Callable, TableListener]): listener for table changes
             description (str, optional): description for the UpdatePerformanceTracker to append to the listener's entry
                 description, default is None
-            dependencies (Union[Table, Sequence[Table]]): tables that must be safe to read during the listener's execution
+            dependencies (Union[Table, Sequence[Table]]): tables that must be satisfied before the listener's execution. A
+                refreshing table is considered to be satisfied if all updates to the table have been processed in the current
+                update graph cycle. A static table is always considered to be satisfied. If a specified table is refreshing,
+                it must belong to the same update graph as the table being listened to. Default is None.
+
+                Dependencies are used to ensure that the listener can safely access them during its execution, such as reading
+                the data from the tables or even performing table operations on them.
 
         Raises:
-            ValueError
+            DHError
         """
         self.t = t
         self.description = description
@@ -342,11 +348,14 @@ class TableListenerHandle:
         if callable(listener):
             self.listener_wrapped = _wrap_listener_func(t, listener)
         elif isinstance(listener, TableListener):
-            self.listener_wrapped = _wrap_listener_obj(t, listener)  # type: ignore
+            self.listener_wrapped = _wrap_listener_obj(t, listener)
         else:
-            raise ValueError("listener is neither callable nor TableListener object")
+            raise DHError(message="listener is neither callable nor TableListener object")
 
-        self.listener = _JPythonReplayListenerAdapter.create(description, t.j_table, False, self.listener_wrapped, self.dependencies)
+        try:
+            self.listener = _JPythonReplayListenerAdapter.create(description, t.j_table, False, self.listener_wrapped, self.dependencies)
+        except Exception as e:
+            raise DHError(e, "failed to create a table listener.") from e
         self.started = False
 
     def start(self, do_replay: bool = False, replay_lock: Literal["shared", "exclusive"] = "shared") -> None:
@@ -388,7 +397,8 @@ class TableListenerHandle:
 
 
 def listen(t: Table, listener: Union[Callable, TableListener], description: str = None, do_replay: bool = False,
-           replay_lock: Literal["shared", "exclusive"] = "shared", dependencies: Union[Table, Sequence[Table]] = None):
+           replay_lock: Literal["shared", "exclusive"] = "shared", dependencies: Union[Table, Sequence[Table]] = None)\
+        -> TableListenerHandle:
     """This is a convenience function that creates a TableListenerHandle object and immediately starts it to listen
     for table updates.
 
@@ -402,7 +412,13 @@ def listen(t: Table, listener: Union[Callable, TableListener], description: str 
             description, default is None
         do_replay (bool): whether to replay the initial snapshot of the table, default is False
         replay_lock (str): the lock type used during replay, default is 'shared', can also be 'exclusive'
-        dependencies (Union[Table, Sequence[Table]]): tables that must be safe to read during the listener's execution
+        dependencies (Union[Table, Sequence[Table]]): tables that must be satisfied before the listener's execution. A
+            refreshing table is considered to be satisfied if all updates to the table have been processed in the current
+            update graph cycle. A static table is always considered to be satisfied. If a specified table is refreshing,
+            it must belong to the same update graph as the table being listened to. Default is None.
+
+            Dependencies are used to ensure that the listener can safely access them during its execution, such as reading
+            the data from the tables or even performing table operations on them.
 
     Returns:
         a TableListenerHandle

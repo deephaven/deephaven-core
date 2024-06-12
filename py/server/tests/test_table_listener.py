@@ -9,7 +9,7 @@ from typing import List, Union
 import numpy
 import jpy
 
-from deephaven import time_table, new_table, input_table
+from deephaven import time_table, new_table, input_table, DHError
 from deephaven.column import bool_col, string_col
 from deephaven.experimental import time_window
 from deephaven.jcompat import to_sequence
@@ -283,7 +283,7 @@ class TableListenerTestCase(BaseTestCase):
 
         with self.subTest("do_replay=False"):
             table_update_recorder = TableUpdateRecorder(self.test_table)
-            table_listener_handle = TableListenerHandle(self.test_table,  listener_func, dependencies=dep_table)
+            table_listener_handle = TableListenerHandle(self.test_table, listener_func, dependencies=dep_table)
             table_listener_handle.start(do_replay=False)
             ensure_ugp_cycles(table_update_recorder, cycles=3)
             table_listener_handle.stop()
@@ -304,6 +304,28 @@ class TableListenerTestCase(BaseTestCase):
             ensure_ugp_cycles(table_update_recorder, cycles=3)
             table_listener_handle.stop()
             self.check_update_recorder(table_update_recorder, has_replay=True, has_added=True, has_removed=True, has_modified=False)
+
+    def test_listener_obj_with_deps_error(self):
+        _JPUG = jpy.get_type('io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph')
+        update_graph = _JPUG.newBuilder("TestUG").existingOrBuild()
+
+        from deephaven import execution_context
+        _JEC = jpy.get_type('io.deephaven.engine.context.ExecutionContext')
+        ug_ctx = execution_context.ExecutionContext(j_exec_ctx=_JEC.newBuilder()
+                                                    .emptyQueryScope()
+                                                    .newQueryLibrary()
+                                                    .captureQueryCompiler()
+                                                    .setUpdateGraph(update_graph)
+                                                    .build())
+
+        with ug_ctx:
+            dep_table = time_table("PT1s")
+
+        def listener_func(update, is_replay):
+            pass
+
+        with self.assertRaises(DHError):
+            table_listener_handle = TableListenerHandle(self.test_table, listener_func, dependencies=dep_table)
 
 
 if __name__ == "__main__":
