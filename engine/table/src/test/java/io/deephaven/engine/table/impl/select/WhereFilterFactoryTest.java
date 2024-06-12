@@ -59,9 +59,10 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
 
         try {
             filter.init(tableDef);
-        } catch (IllegalArgumentException e) {
+        } catch (FormulaCompilationException e) {
             assertEquals(e.getMessage(),
-                    "Failed to convert literal value <1> for column \"Maturity\" of type java.lang.String");
+                    "Formula compilation error for: Maturity in amExpiry,1 , \"AGAIN\"  ");
+
         }
     }
 
