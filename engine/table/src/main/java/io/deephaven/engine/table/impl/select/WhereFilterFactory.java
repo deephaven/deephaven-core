@@ -52,7 +52,8 @@ public class WhereFilterFactory {
         // Each side may fit: (<ColumnName>|<QueryScopeParam>|<Number|Boolean|"String"|Literal>)
         // Supported ops: ==, =, !=, <, <=, >, >=
         parser.registerFactory(new AbstractExpressionFactory<>(
-                START_PTRN + "(?:(" + ID_PTRN + ")|(" + LITERAL_PTRN + "))\\s*((?:=|!|<|>)=?)\\s*(?:(" + ID_PTRN + ")|(" + LITERAL_PTRN + "))" + END_PTRN) {
+                START_PTRN + "(?:(" + ID_PTRN + ")|(" + LITERAL_PTRN + "))\\s*((?:=|!|<|>)=?)\\s*(?:(" + ID_PTRN + ")|("
+                        + LITERAL_PTRN + "))" + END_PTRN) {
             @Override
             public WhereFilter getExpression(String expression, Matcher matcher, Object... args) {
                 // LITERAL_PTRN has 5 groups; mostly non-capturing
