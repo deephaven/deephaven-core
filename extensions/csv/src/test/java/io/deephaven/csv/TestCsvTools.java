@@ -210,7 +210,7 @@ public class TestCsvTools {
     public void testWriteCsv() throws Exception {
         final File csvFile = new File(tmpDir, "tmp.csv");
         final String[] colNames = {"Strings", "Chars", "Bytes", "Shorts", "Ints", "Longs", "Floats", "Doubles",
-                "Instants", "ZonedDateTimes"};
+                "Instants", "ZonedDateTimes", "Booleans"};
         final Table tableToTest = new InMemoryTable(
                 colNames,
                 new Object[] {
@@ -270,12 +270,15 @@ public class TestCsvTools {
                                 parseZonedDateTime("2022-11-06T02:59:59.999999999 America/New_York"),
                                 parseZonedDateTime("2022-11-06T03:00:00.000000000 America/New_York"),
                                 parseZonedDateTime("2022-11-06T03:00:00.000000000 America/New_York")
+                        },
+                        new Boolean[] {
+                                null, false, true, true, false, false, false, false, true, false, null, null, null
                         }
                 });
         final String[] casts = {
                 "Bytes = (byte) Bytes", "Shorts = (short) Shorts", "Floats = (float) Floats",
                 "ZonedDateTimes = toZonedDateTime(ZonedDateTimes, 'America/New_York')"};
-        final String allSeparators = ",|\tzZ- 9@";
+        final String allSeparators = ",|\tzZ- 90@";
         for (final char separator : allSeparators.toCharArray()) {
             CsvTools.writeCsv(
                     tableToTest, csvFile.getPath(), false, timeZone(), false, separator, colNames);
