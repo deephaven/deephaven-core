@@ -272,7 +272,7 @@ public class TestCsvTools {
                                 parseZonedDateTime("2022-11-06T03:00:00.000000000 America/New_York")
                         },
                         new Boolean[] {
-                                null, false, true, true, false, false, false, false, true, false, null, null, true
+                                null, false, true, true, false, false, false, false, true, false, null, null, null
                         }
                 });
         final String[] casts = {

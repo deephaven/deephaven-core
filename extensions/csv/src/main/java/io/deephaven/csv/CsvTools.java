@@ -531,7 +531,6 @@ public class CsvTools {
         }
 
         writeCsvHeader(out, fieldSeparator, columns);
-        out.write(System.lineSeparator());
 
         for (Table source : sources) {
             writeCsvContents(source, out, timeZone, null, nullsAsEmpty, fieldSeparator, columns);
@@ -647,6 +646,7 @@ public class CsvTools {
 
         writeCsvHeader(out, separator, columns);
         writeCsvContents(source, out, timeZone, progress, nullsAsEmpty, separator, columns);
+        out.write(System.lineSeparator());
 
         out.close();
     }
