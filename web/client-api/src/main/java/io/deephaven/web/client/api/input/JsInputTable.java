@@ -53,15 +53,17 @@ public class JsInputTable {
 
     private final JsTable table;
     private final String[] keys;
-    private final JsLazy<String[]> values;
+    private final String[] values;
     private final JsLazy<Column[]> keyColumns;
+    private final JsLazy<Column[]> valueColumns;
 
     @JsIgnore
     public JsInputTable(JsTable from, String[] keys, String[] values) {
         this.table = from;
         this.keys = JsObject.freeze(keys);
-        this.values = JsLazy.of(() -> JsObject.freeze(values));
+        this.values = JsObject.freeze(values);
         this.keyColumns = JsLazy.of(() -> JsObject.freeze(table.findColumns(keys)));
+        this.valueColumns = JsLazy.of(() -> JsObject.freeze(table.findColumns(values)));
     }
 
     /**
@@ -92,7 +94,7 @@ public class JsInputTable {
      */
     @JsProperty
     public String[] getValues() {
-        return values.get();
+        return values;
     }
 
     /**
@@ -102,7 +104,7 @@ public class JsInputTable {
      */
     @JsProperty
     public Column[] getValueColumns() {
-        return table.findColumns(values.get());
+        return valueColumns.get();
     }
 
     /**
