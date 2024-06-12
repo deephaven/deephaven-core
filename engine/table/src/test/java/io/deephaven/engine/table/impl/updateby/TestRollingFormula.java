@@ -112,6 +112,14 @@ public class TestRollingFormula extends BaseUpdateByTest {
     // region Static Zero Key Tests
 
     @Test
+    public void testStaticZeroKeyAllNullVector() {
+        final int prevTicks = 1;
+        final int postTicks = 0;
+
+        doTestStaticZeroKey(prevTicks, postTicks);
+    }
+
+    @Test
     public void testStaticZeroKeyRev() {
         final int prevTicks = 100;
         final int postTicks = 0;
@@ -263,12 +271,7 @@ public class TestRollingFormula extends BaseUpdateByTest {
         ////////////////////////////////////////////////////////////////////////////////////////////////////
 
         actual = t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "avg(x)", "x", primitiveColumns));
-
-        // avg return Double.NaN when the window is empty, so we should adjust our comparison table.
-        updateStrings = Arrays.stream(primitiveColumns).map(c -> c + "=isNull(" + c + ") ? Double.NaN : " + c)
-                .toArray(String[]::new);
-        expected = t.updateBy(UpdateByOperation.RollingAvg(prevTicks, postTicks, primitiveColumns))
-                .update(updateStrings);
+        expected = t.updateBy(UpdateByOperation.RollingAvg(prevTicks, postTicks, primitiveColumns));
 
         TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
 
@@ -386,12 +389,7 @@ public class TestRollingFormula extends BaseUpdateByTest {
 
         actual = t
                 .updateBy(UpdateByOperation.RollingFormula("ts", prevTime, postTime, "avg(x)", "x", primitiveColumns));
-
-        // avg return Double.NaN when the window is empty, so we should adjust our comparison table.
-        updateStrings = Arrays.stream(primitiveColumns).map(c -> c + "=isNull(" + c + ") ? Double.NaN : " + c)
-                .toArray(String[]::new);
-        expected = t.updateBy(UpdateByOperation.RollingAvg("ts", prevTime, postTime, primitiveColumns))
-                .update(updateStrings);
+        expected = t.updateBy(UpdateByOperation.RollingAvg("ts", prevTime, postTime, primitiveColumns));
 
         TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
 
@@ -601,12 +599,7 @@ public class TestRollingFormula extends BaseUpdateByTest {
 
         actual = t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "avg(x)", "x", primitiveColumns),
                 "Sym");
-
-        // avg return Double.NaN when the window is empty, so we should adjust our comparison table.
-        updateStrings = Arrays.stream(primitiveColumns).map(c -> c + "=isNull(" + c + ") ? Double.NaN : " + c)
-                .toArray(String[]::new);
-        expected = t.updateBy(UpdateByOperation.RollingAvg(prevTicks, postTicks, primitiveColumns), "Sym")
-                .update(updateStrings);
+        expected = t.updateBy(UpdateByOperation.RollingAvg(prevTicks, postTicks, primitiveColumns), "Sym");
 
         TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
 
@@ -726,12 +719,7 @@ public class TestRollingFormula extends BaseUpdateByTest {
 
         actual = t.updateBy(UpdateByOperation.RollingFormula("ts", prevTime, postTime, "avg(x)", "x", primitiveColumns),
                 "Sym");
-
-        // avg return Double.NaN when the window is empty, so we should adjust our comparison table.
-        updateStrings = Arrays.stream(primitiveColumns).map(c -> c + "=isNull(" + c + ") ? Double.NaN : " + c)
-                .toArray(String[]::new);
-        expected = t.updateBy(UpdateByOperation.RollingAvg("ts", prevTime, postTime, primitiveColumns), "Sym")
-                .update(updateStrings);
+        expected = t.updateBy(UpdateByOperation.RollingAvg("ts", prevTime, postTime, primitiveColumns), "Sym");
 
         TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
 
