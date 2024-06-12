@@ -31,7 +31,6 @@ import io.deephaven.engine.util.PathUtil;
 import io.deephaven.io.streams.BzipFileOutputStream;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.BooleanUtils;
-import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.NotNull;
@@ -1387,7 +1386,7 @@ public class CsvTools {
         protected void nullFlagsToValues(final int[] values, final boolean[] isNull, final int size) {
             for (int ii = 0; ii != size; ++ii) {
                 if (isNull[ii]) {
-                    values[ii] = QueryConstants.NULL_INT;
+                    values[ii] = NULL_INT;
                 }
             }
         }
@@ -1395,7 +1394,7 @@ public class CsvTools {
         @Override
         protected void valuesToNullFlags(final int[] values, final boolean[] isNull, final int size) {
             for (int ii = 0; ii < size; ++ii) {
-                isNull[ii] = values[ii] == QueryConstants.NULL_INT;
+                isNull[ii] = values[ii] == NULL_INT;
             }
         }
     }
@@ -1409,7 +1408,7 @@ public class CsvTools {
         protected void nullFlagsToValues(final long[] values, final boolean[] isNull, final int size) {
             for (int ii = 0; ii != size; ++ii) {
                 if (isNull[ii]) {
-                    values[ii] = QueryConstants.NULL_LONG;
+                    values[ii] = NULL_LONG;
                 }
             }
         }
@@ -1417,7 +1416,7 @@ public class CsvTools {
         @Override
         protected void valuesToNullFlags(final long[] values, final boolean[] isNull, final int size) {
             for (int ii = 0; ii < size; ++ii) {
-                isNull[ii] = values[ii] == QueryConstants.NULL_LONG;
+                isNull[ii] = values[ii] == NULL_LONG;
             }
         }
 
@@ -1432,7 +1431,7 @@ public class CsvTools {
         protected void nullFlagsToValues(final float[] values, final boolean[] isNull, final int size) {
             for (int ii = 0; ii != size; ++ii) {
                 if (isNull[ii]) {
-                    values[ii] = QueryConstants.NULL_FLOAT;
+                    values[ii] = NULL_FLOAT;
                 }
             }
         }
@@ -1447,7 +1446,7 @@ public class CsvTools {
         protected void nullFlagsToValues(final double[] values, final boolean[] isNull, final int size) {
             for (int ii = 0; ii != size; ++ii) {
                 if (isNull[ii]) {
-                    values[ii] = QueryConstants.NULL_DOUBLE;
+                    values[ii] = NULL_DOUBLE;
                 }
             }
         }
@@ -1477,7 +1476,7 @@ public class CsvTools {
         protected void nullFlagsToValues(final long[] values, final boolean[] isNull, final int size) {
             for (int ii = 0; ii != size; ++ii) {
                 if (isNull[ii]) {
-                    values[ii] = QueryConstants.NULL_LONG;
+                    values[ii] = NULL_LONG;
                 }
             }
         }
@@ -1485,16 +1484,16 @@ public class CsvTools {
 
     private static SinkFactory makeMySinkFactory() {
         return SinkFactory.of(
-                MyByteSink::new, QueryConstants.NULL_BYTE_BOXED,
-                MyShortSink::new, QueryConstants.NULL_SHORT_BOXED,
-                MyIntSink::new, QueryConstants.NULL_INT_BOXED,
-                MyLongSink::new, QueryConstants.NULL_LONG_BOXED,
-                MyFloatSink::new, QueryConstants.NULL_FLOAT_BOXED,
-                MyDoubleSink::new, QueryConstants.NULL_DOUBLE_BOXED,
+                MyByteSink::new, NULL_BYTE_BOXED,
+                MyShortSink::new, NULL_SHORT_BOXED,
+                MyIntSink::new, NULL_INT_BOXED,
+                MyLongSink::new, NULL_LONG_BOXED,
+                MyFloatSink::new, NULL_FLOAT_BOXED,
+                MyDoubleSink::new, NULL_DOUBLE_BOXED,
                 MyBooleanAsByteSink::new,
                 MyCharSink::new, NULL_CHAR,
                 MyStringSink::new, null,
-                MyInstantAsLongSink::new, QueryConstants.NULL_LONG,
-                MyInstantAsLongSink::new, QueryConstants.NULL_LONG);
+                MyInstantAsLongSink::new, NULL_LONG,
+                MyInstantAsLongSink::new, NULL_LONG);
     }
 }
