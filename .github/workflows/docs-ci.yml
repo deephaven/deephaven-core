@@ -36,9 +36,11 @@ jobs:
     steps:
       - name: Make Symlinks
         run: |
+          git tag -a -m "[Temp Tag] ${{ github.ref_name }}" ${{ github.ref_name }} release/${{ github.ref_name }}
+          LATEST=$(git tag --sort="version:refname" | grep -E "^v([0-9]+[.]?){3}$" | tail -1)
           mkdir -p tmp-deephaven-core-v2/symlinks
           cd tmp-deephaven-core-v2/symlinks
-          ln -s ../${{ github.ref_name }} latest
+          ln -s ../${LATEST} latest
           ln -s ../main next
           
       - name: Deploy Symlinks
