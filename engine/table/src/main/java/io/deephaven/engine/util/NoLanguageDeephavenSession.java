@@ -24,17 +24,15 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession<AbstractSc
 
     public NoLanguageDeephavenSession(
             final UpdateGraph updateGraph,
-            final OperationInitializer operationInitializer,
-            final OperationInitializer guiOperationInitializer) {
-        this(updateGraph, operationInitializer, guiOperationInitializer, SCRIPT_TYPE);
+            final OperationInitializer operationInitializer) {
+        this(updateGraph, operationInitializer, SCRIPT_TYPE);
     }
 
     public NoLanguageDeephavenSession(
             final UpdateGraph updateGraph,
             final OperationInitializer operationInitializer,
-            final OperationInitializer guiOperationInitializer,
             final String scriptType) {
-        super(updateGraph, operationInitializer, guiOperationInitializer, null, null);
+        super(updateGraph, operationInitializer, null, null);
 
         this.scriptType = scriptType;
         variables = Collections.synchronizedMap(new LinkedHashMap<>());

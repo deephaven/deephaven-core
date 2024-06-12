@@ -79,7 +79,6 @@ public class FuzzerTest {
         final GroovyDeephavenSession session = GroovyDeephavenSession.of(
                 ExecutionContext.getContext().getUpdateGraph(),
                 ExecutionContext.getContext().getOperationInitializer(),
-                ExecutionContext.getContext().getGUIOperationInitializer(),
                 NoOp.INSTANCE,
                 GroovyDeephavenSession.RunScripts.serviceLoader());
         session.getExecutionContext().open();

@@ -7,8 +7,6 @@ import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoMap;
 import dagger.multibindings.StringKey;
-import io.deephaven.engine.table.impl.GUISnapshotInitializationThreadPool;
-import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
 import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
@@ -30,9 +28,8 @@ public class NoConsoleSessionModule {
     @Provides
     NoLanguageDeephavenSession bindNoLanguageSession(
             @Named(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME) final UpdateGraph updateGraph,
-            @Named(OperationInitializationThreadPool.DEFAULT_OPERATION_INITIALIZER_NAME) final OperationInitializer operationInitializer,
-            @Named(GUISnapshotInitializationThreadPool.DEFAULT_GUI_OPERATION_INITIALIZER_NAME) final OperationInitializer guiOperationInitializer,
+            final OperationInitializer operationInitializer,
             final ScriptSessionCacheInit ignored) {
-        return new NoLanguageDeephavenSession(updateGraph, operationInitializer, guiOperationInitializer);
+        return new NoLanguageDeephavenSession(updateGraph, operationInitializer);
     }
 }

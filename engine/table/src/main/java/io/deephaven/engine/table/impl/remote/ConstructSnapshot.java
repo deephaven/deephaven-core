@@ -1598,8 +1598,7 @@ public class ConstructSnapshot {
                 return false;
             }
         }
-        final JobScheduler jobScheduler =
-                new OperationInitializerJobScheduler(ExecutionContext.getContext().getGUIOperationInitializer());
+        final JobScheduler jobScheduler = new OperationInitializerJobScheduler();
         final CompletableFuture<Void> waitForParallelSerialization =
                 new CompletableFuture<>();
         jobScheduler.iterateParallel(

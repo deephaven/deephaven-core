@@ -152,10 +152,9 @@ public abstract class FlightMessageRoundTripTest {
         @Provides
         AbstractScriptSession<?> provideAbstractScriptSession(
                 final UpdateGraph updateGraph,
-                final OperationInitializer operationInitializer,
-                final OperationInitializer guiOperationInitializer) {
+                final OperationInitializer operationInitializer) {
             return new NoLanguageDeephavenSession(
-                    updateGraph, operationInitializer, guiOperationInitializer, "non-script-session");
+                    updateGraph, operationInitializer, "non-script-session");
         }
 
         @Provides

@@ -33,8 +33,7 @@ public class ExecutionContext {
         ExecutionContext existing = getContext();
         return new Builder()
                 .setUpdateGraph(existing.getUpdateGraph())
-                .setOperationInitializer(existing.getOperationInitializer())
-                .setGUIOperationInitializer(existing.getGUIOperationInitializer());
+                .setOperationInitializer(existing.getOperationInitializer());
     }
 
     public static ExecutionContext makeExecutionContext(boolean isSystemic) {
@@ -102,7 +101,6 @@ public class ExecutionContext {
     private final QueryCompiler queryCompiler;
     private final UpdateGraph updateGraph;
     private final OperationInitializer operationInitializer;
-    private final OperationInitializer guiOperationInitializer;
 
     private ExecutionContext(
             final boolean isSystemic,
@@ -111,8 +109,7 @@ public class ExecutionContext {
             final QueryScope queryScope,
             final QueryCompiler queryCompiler,
             final UpdateGraph updateGraph,
-            OperationInitializer operationInitializer,
-            OperationInitializer guiOperationInitializer) {
+            OperationInitializer operationInitializer) {
         this.isSystemic = isSystemic;
         this.authContext = authContext;
         this.queryLibrary = Objects.requireNonNull(queryLibrary);
@@ -120,7 +117,6 @@ public class ExecutionContext {
         this.queryCompiler = Objects.requireNonNull(queryCompiler);
         this.updateGraph = Objects.requireNonNull(updateGraph);
         this.operationInitializer = Objects.requireNonNull(operationInitializer);
-        this.guiOperationInitializer = Objects.requireNonNull(guiOperationInitializer);
     }
 
     /**
@@ -135,7 +131,7 @@ public class ExecutionContext {
             return this;
         }
         return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler, updateGraph,
-                operationInitializer, guiOperationInitializer);
+                operationInitializer);
     }
 
     /**
@@ -150,7 +146,7 @@ public class ExecutionContext {
             return this;
         }
         return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler, updateGraph,
-                operationInitializer, guiOperationInitializer);
+                operationInitializer);
     }
 
     /**
@@ -165,7 +161,7 @@ public class ExecutionContext {
             return this;
         }
         return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler, updateGraph,
-                operationInitializer, guiOperationInitializer);
+                operationInitializer);
     }
 
     public ExecutionContext withOperationInitializer(final OperationInitializer operationInitializer) {
@@ -173,7 +169,7 @@ public class ExecutionContext {
             return this;
         }
         return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler, updateGraph,
-                operationInitializer, guiOperationInitializer);
+                operationInitializer);
     }
 
     /**
@@ -188,7 +184,7 @@ public class ExecutionContext {
             return this;
         }
         return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler, updateGraph,
-                operationInitializer, guiOperationInitializer);
+                operationInitializer);
     }
 
 
@@ -253,10 +249,6 @@ public class ExecutionContext {
         return operationInitializer;
     }
 
-    public OperationInitializer getGUIOperationInitializer() {
-        return guiOperationInitializer;
-    }
-
     @SuppressWarnings("unused")
     public static class Builder {
         private boolean isSystemic = false;
@@ -268,7 +260,6 @@ public class ExecutionContext {
         private QueryCompiler queryCompiler = PoisonedQueryCompiler.INSTANCE;
         private UpdateGraph updateGraph = PoisonedUpdateGraph.INSTANCE;
         private OperationInitializer operationInitializer = PoisonedOperationInitializer.INSTANCE;
-        private OperationInitializer guiOperationInitializer = PoisonedOperationInitializer.INSTANCE;
 
         private Builder() {
             // propagate the auth context from the current context
@@ -437,21 +428,12 @@ public class ExecutionContext {
         }
 
         /**
-         * Use the specified operation initializer for GUI snapshot
-         */
-        @ScriptApi
-        public Builder setGUIOperationInitializer(OperationInitializer operationInitializer) {
-            this.guiOperationInitializer = operationInitializer;
-            return this;
-        }
-
-        /**
          * @return the newly instantiated ExecutionContext
          */
         @ScriptApi
         public ExecutionContext build() {
             return new ExecutionContext(isSystemic, authContext, queryLibrary, queryScope, queryCompiler, updateGraph,
-                    operationInitializer, guiOperationInitializer);
+                    operationInitializer);
         }
     }
 }

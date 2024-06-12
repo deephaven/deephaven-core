@@ -5,7 +5,6 @@ package io.deephaven.server.jetty;
 
 import dagger.Component;
 import dagger.Module;
-import dagger.Provides;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.server.auth.CommunityAuthorizationModule;
 import io.deephaven.server.runner.CommunityDefaultsModule;

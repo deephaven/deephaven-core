@@ -167,17 +167,14 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     public static GroovyDeephavenSession of(
             final UpdateGraph updateGraph,
             final OperationInitializer operationInitializer,
-            final OperationInitializer guiOperationInitializer,
             final ObjectTypeLookup objectTypeLookup,
             final RunScripts runScripts) throws IOException {
-        return GroovyDeephavenSession.of(updateGraph, operationInitializer, guiOperationInitializer, objectTypeLookup,
-                null, runScripts);
+        return GroovyDeephavenSession.of(updateGraph, operationInitializer, objectTypeLookup, null, runScripts);
     }
 
     public static GroovyDeephavenSession of(
             final UpdateGraph updateGraph,
             final OperationInitializer operationInitializer,
-            final OperationInitializer guiOperationInitializer,
             ObjectTypeLookup objectTypeLookup,
             @Nullable final Listener changeListener,
             final RunScripts runScripts) throws IOException {
@@ -208,15 +205,14 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         DeephavenGroovyShell groovyShell = new DeephavenGroovyShell(scriptClassLoader, binding, consoleConfig);
 
 
-        return new GroovyDeephavenSession(updateGraph, operationInitializer, guiOperationInitializer, objectTypeLookup,
-                changeListener, runScripts, classCacheDirectory, consoleImports, loadedGroovyScriptImports,
-                bindingBackingMap, groovyShell);
+        return new GroovyDeephavenSession(updateGraph, operationInitializer, objectTypeLookup, changeListener,
+                runScripts, classCacheDirectory, consoleImports, loadedGroovyScriptImports, bindingBackingMap,
+                groovyShell);
     }
 
     private GroovyDeephavenSession(
             final UpdateGraph updateGraph,
             final OperationInitializer operationInitializer,
-            final OperationInitializer guiOperationInitializer,
             ObjectTypeLookup objectTypeLookup,
             @Nullable final Listener changeListener,
             final RunScripts runScripts,
@@ -226,8 +222,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
             final Map<String, Object> bindingBackingMap,
             final DeephavenGroovyShell groovyShell)
             throws IOException {
-        super(updateGraph, operationInitializer, guiOperationInitializer, objectTypeLookup, changeListener,
-                classCacheDirectory,
+        super(updateGraph, operationInitializer, objectTypeLookup, changeListener, classCacheDirectory,
                 groovyShell.getClassLoader());
 
         this.scriptFinder = new ScriptFinder(DEFAULT_SCRIPT_PATH);
