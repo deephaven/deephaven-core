@@ -34,6 +34,12 @@ jobs:
     needs: [javadoc, typedoc, pydoc, cppdoc, rdoc]
     runs-on: ubuntu-22.04
     steps:
+      - uses: actions/checkout@v4
+      - name: Setup Git
+        run: |
+          git config user.name "$(git --no-pager log --format=format:'%an' -n 1)"
+          git config user.email "$(git --no-pager log --format=format:'%ae' -n 1)"
+      
       - name: Make Symlinks
         run: |
           VERSION=$(basename ${{ github.ref_name }})
@@ -41,7 +47,7 @@ jobs:
           LATEST=$(git tag --sort="version:refname" | grep -E "^v([0-9]+[.]?){3}$" | tail -1)
           mkdir -p tmp-deephaven-core-v2/symlinks
           cd tmp-deephaven-core-v2/symlinks
-          ln -s ../${LATEST} latest
+          ln -s ../release/${LATEST} latest
           ln -s ../main next
           
       - name: Deploy Symlinks
