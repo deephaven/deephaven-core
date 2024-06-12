@@ -65,7 +65,7 @@ public class JsStorageService {
         return Callbacks.<ListItemsResponse, Object>grpcUnaryPromise(c -> client().listItems(req, metadata(), c::apply))
                 .then(response -> Promise
                         .resolve(response.getItemsList()
-                                .map((item, i, arr) -> JsItemDetails.fromProto(response.getCanonicalPath(), item))));
+                                .map((item, i) -> JsItemDetails.fromProto(response.getCanonicalPath(), item))));
     }
 
     /**

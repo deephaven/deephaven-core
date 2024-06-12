@@ -50,18 +50,18 @@ public class HandshakeStreamFactory {
                     Client<HandshakeRequest, HandshakeResponse> client = Grpc.client(FlightService.Handshake,
                             (io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.ClientRpcOptions) options);
                     client.onEnd((status, statusMessage, trailers) -> {
-                        listeners.get(STATUS_EVENT_LISTENER_NAME).forEach((item, index, arr) -> item.call(null,
+                        listeners.get(STATUS_EVENT_LISTENER_NAME).forEach((item, index) -> item.call(null,
                                 ResponseStreamWrapper.Status.of(status, statusMessage, metadata)));
-                        listeners.get(END_EVENT_LISTENER_NAME).forEach((item, index, arr) -> item.call(null,
+                        listeners.get(END_EVENT_LISTENER_NAME).forEach((item, index) -> item.call(null,
                                 ResponseStreamWrapper.Status.of(status, statusMessage, metadata)));
                         listeners.clear();
                     });
                     client.onMessage(message -> {
-                        listeners.get(DATA_EVENT_LISTENER_NAME).forEach((item, index, arr) -> item.call(null, message));
+                        listeners.get(DATA_EVENT_LISTENER_NAME).forEach((item, index) -> item.call(null, message));
                     });
                     client.onHeaders(headers -> {
                         listeners.get(HEADERS_EVENT_LISTENER_NAME)
-                                .forEach((item, index, arr) -> item.call(null, headers));
+                                .forEach((item, index) -> item.call(null, headers));
                     });
                     client.start(metadata);
 
@@ -103,20 +103,20 @@ public class HandshakeStreamFactory {
                     props.setDebug(false);
                     props.setOnMessage(responseMessage -> {
                         listeners.get(DATA_EVENT_LISTENER_NAME)
-                                .forEach((item, index, arr) -> item.call(null, responseMessage));
+                                .forEach((item, index) -> item.call(null, responseMessage));
                     });
                     props.setOnEnd((status, statusMessage, trailers) -> {
                         listeners.get(STATUS_EVENT_LISTENER_NAME).forEach(
-                                (item, index, arr) -> item.call(null,
+                                (item, index) -> item.call(null,
                                         ResponseStreamWrapper.Status.of(status, statusMessage, metadata)));
                         listeners.get(END_EVENT_LISTENER_NAME).forEach(
-                                (item, index, arr) -> item.call(null,
+                                (item, index) -> item.call(null,
                                         ResponseStreamWrapper.Status.of(status, statusMessage, metadata)));
                         listeners.clear();
                     });
                     props.setOnHeaders(headers -> {
                         listeners.get(HEADERS_EVENT_LISTENER_NAME)
-                                .forEach((item, index, arr) -> item.call(null, headers));
+                                .forEach((item, index) -> item.call(null, headers));
                     });
                     Request client = Grpc.invoke.onInvoke(BrowserFlightService.OpenHandshake, props);
 

@@ -4,7 +4,8 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.exceptions.NotSortableException;
-import io.deephaven.engine.table.DataColumn;
+import io.deephaven.engine.primitive.iterator.CloseableIterator;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfInt;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -22,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
 
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.junit.experimental.categories.Category;
 
@@ -39,7 +41,7 @@ public class TestSort extends RefreshingTableTestCase {
             r.consume(t);
             fail(failMessage);
         } catch (Exception e) {
-            assertTrue(e.getClass().toString() + " is not a " + excType.toString(), excType.isInstance(e));
+            assertTrue(e.getClass() + " is not a " + excType.toString(), excType.isInstance(e));
         }
     }
 
@@ -594,13 +596,16 @@ public class TestSort extends RefreshingTableTestCase {
         return new QueryTable(RowSetFactory.fromRange(0, size - 1).toTracking(), columns);
     }
 
-    private Comparable[][] createBoxedData(Table source, int ncols, int size) {
-        final Comparable[][] boxedData = new Comparable[ncols][];
+    private Comparable<?>[][] createBoxedData(Table source, int ncols, int size) {
+        final Comparable<?>[][] boxedData = new Comparable[ncols][];
         for (int ii = 0; ii < ncols; ++ii) {
-            final DataColumn column = DataAccessHelpers.getColumn(source, "Column" + ii);
-            boxedData[ii] = new Comparable[size];
-            for (int jj = 0; jj < size; ++jj) {
-                boxedData[ii][jj] = (Comparable) column.get(jj);
+            try (final CloseableIterator<? extends Comparable<?>> columnIter = source.columnIterator("Column" + ii)) {
+                boxedData[ii] = new Comparable[size];
+                int jj = 0;
+                while (columnIter.hasNext()) {
+                    boxedData[ii][jj] = columnIter.next();
+                    ++jj;
+                }
             }
         }
 
@@ -648,26 +653,21 @@ public class TestSort extends RefreshingTableTestCase {
     }
 
     private void sortTester(int ncols, int size, Comparable[][] columnData, Table source, boolean isRefreshing) {
-        ((QueryTable) source).setRefreshing(isRefreshing);
+        source.setRefreshing(isRefreshing);
 
         // Now sort the table by the sentinel, which should just give us a simple ordering.
         assertEquals(source.size(), size);
-        assertEquals(DataAccessHelpers.getColumn(source, "Sentinel").size(), size);
 
         Table result0 = source.sort("Sentinel");
-        // show(result0);
-        DataColumn col = DataAccessHelpers.getColumn(result0, "Sentinel");
-        assertEquals(col.size(), size);
-        for (int jj = 0; jj < size; ++jj) {
-            assertEquals(jj + 1, col.get(jj));
+        final MutableInt expected = new MutableInt(1);
+        try (final CloseablePrimitiveIteratorOfInt sentinelIterator = result0.integerColumnIterator("Sentinel")) {
+            sentinelIterator.forEachRemaining((final int actual) -> assertEquals(expected.getAndIncrement(), actual));
         }
 
         Table result1 = source.sortDescending("Sentinel");
-        // show(result1);
-        col = DataAccessHelpers.getColumn(result1, "Sentinel");
-        assertEquals(col.size(), size);
-        for (int jj = 0; jj < size; ++jj) {
-            assertEquals(size - jj, col.get(jj));
+        expected.set(size);
+        try (final CloseablePrimitiveIteratorOfInt sentinelIterator = result1.integerColumnIterator("Sentinel")) {
+            sentinelIterator.forEachRemaining((final int actual) -> assertEquals(expected.getAndAdd(-1), actual));
         }
 
         // Sort it by Column0 through (Column0, .. ColumnN-1)
@@ -680,19 +680,18 @@ public class TestSort extends RefreshingTableTestCase {
             System.out.println("Sorted by " + Arrays.toString(colNames));
             Table resultAscending = source.sort(colNames);
             Table resultDescending = source.sortDescending(colNames);
-            // TableTools.show(resultAscending);
-            // TableTools.show(resultDescending);
 
-
-            DataColumn colAscending = DataAccessHelpers.getColumn(resultAscending, "Sentinel");
-            assertEquals(colAscending.size(), size);
-            DataColumn colDescending = DataAccessHelpers.getColumn(resultDescending, "Sentinel");
-            assertEquals(colDescending.size(), size);
-
-            MultiColumnSortHelper multiColumnSortHelper = new MultiColumnSortHelper(columnData, ii);
-            for (int jj = 0; jj < size; ++jj) {
-                assertEquals(multiColumnSortHelper.getSentinel(jj), (int) colAscending.get(jj));
-                assertEquals(multiColumnSortHelper.getReverseSentinel(jj), (int) colDescending.get(jj));
+            final MultiColumnSortHelper multiColumnSortHelper = new MultiColumnSortHelper(columnData, ii);
+            try (final CloseablePrimitiveIteratorOfInt sentinelAscending =
+                    resultAscending.integerColumnIterator("Sentinel");
+                    final CloseablePrimitiveIteratorOfInt sentinelDescending =
+                            resultDescending.integerColumnIterator("Sentinel")) {
+                for (int jj = 0; jj < size; ++jj) {
+                    assertEquals(multiColumnSortHelper.getSentinel(jj), sentinelAscending.nextInt());
+                    assertEquals(multiColumnSortHelper.getReverseSentinel(jj), sentinelDescending.nextInt());
+                }
+                assertFalse(sentinelAscending.hasNext());
+                assertFalse(sentinelDescending.hasNext());
             }
         }
     }

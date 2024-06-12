@@ -48,10 +48,10 @@ public class TestSymbolTableSource {
     public void testWriteAndReadSymbols() {
         final Table t = TableTools.emptyTable(100).update("TheBestColumn=`S`+ (k % 10)", "Sentinel=k");
         final File toWrite = new File(dataDirectory, "table.parquet");
-        ParquetTools.writeTable(t, toWrite, t.getDefinition());
+        ParquetTools.writeTable(t, toWrite.getPath());
 
         // Make sure we have the expected symbol table (or not)
-        final Table readBack = ParquetTools.readTable(toWrite);
+        final Table readBack = ParquetTools.readTable(toWrite.getPath());
         final SymbolTableSource<String> source =
                 (SymbolTableSource<String>) readBack.getColumnSource("TheBestColumn", String.class);
         Assert.assertTrue(source.hasSymbolTable(readBack.getRowSet()));

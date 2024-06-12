@@ -128,7 +128,7 @@ public class ChartData {
             assert cachedData.values().stream().flatMap(m -> m.values().stream())
                     .allMatch(arr -> arr.length == indexes.length);
             assert cachedData.values().stream().flatMap(m -> m.values().stream()).allMatch(arr -> arr
-                    .reduce((Object val, Any p1, int p2, JsArray<Any> p3) -> ((Integer) val) + 1, 0) == indexes.length);
+                    .reduce((Object val, Any p1, int p2) -> ((Integer) val) + 1, 0) == indexes.length);
 
             JsRangeSet fullIndex = tableData.getFullIndex();
             PrimitiveIterator.OfLong iter = fullIndex.getRange().indexIterator();
@@ -240,10 +240,10 @@ public class ChartData {
     private JsArray<Any> collectAllData(String columnName, JsFunction<Any, Any> mappingFunc, TableData currentUpdate) {
         Column column = table.findColumn(columnName);
         if (mappingFunc == null) {
-            return currentUpdate.getRows().map((p0, p1, p2) -> p0.get(column));
+            return currentUpdate.getRows().map((p0, p1) -> p0.get(column));
         }
 
-        return currentUpdate.getRows().map((p0, p1, p2) -> mappingFunc.apply(p0.get(column)));
+        return currentUpdate.getRows().map((p0, p1) -> mappingFunc.apply(p0.get(column)));
     }
 
     /**

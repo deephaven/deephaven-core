@@ -6,29 +6,38 @@ package io.deephaven.extensions.barrage;
 import com.google.flatbuffers.FlatBufferBuilder;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
+import io.deephaven.extensions.barrage.util.DefensiveDrainable;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
 import java.util.BitSet;
+import java.util.function.Consumer;
 import java.util.function.ToIntFunction;
 
 /**
  * A StreamGenerator takes a BarrageMessage and re-uses portions of the serialized payload across different subscribers
  * that may subscribe to different viewports and columns.
- *
- * @param <MessageView> The sub-view type that the listener expects to receive.
  */
-public interface BarrageStreamGenerator<MessageView> extends SafeCloseable {
+public interface BarrageStreamGenerator extends SafeCloseable {
 
-    interface Factory<MessageView> {
+    /**
+     * Represents a single update, which might be sent as multiple distinct payloads as necessary based in the
+     * implementation.
+     */
+    interface MessageView {
+        void forEachStream(Consumer<DefensiveDrainable> visitor) throws IOException;
+    }
+
+    interface Factory {
         /**
          * Create a StreamGenerator that now owns the BarrageMessage.
          *
          * @param message the message that contains the update that we would like to propagate
          * @param metricsConsumer a method that can be used to record write metrics
          */
-        BarrageStreamGenerator<MessageView> newGenerator(
+        BarrageStreamGenerator newGenerator(
                 BarrageMessage message, BarragePerformanceLog.WriteMetricsConsumer metricsConsumer);
 
         /**

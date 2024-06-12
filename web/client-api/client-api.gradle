@@ -10,8 +10,6 @@ plugins {
 
 evaluationDependsOn(Docker.registryProject('selenium'))
 
-apply from: "$rootDir/gradle/web-client.gradle"
-
 configurations {
     js
     dts
@@ -35,6 +33,7 @@ dependencies {
 Classpaths.inheritElemental(project, 'elemental2-core', 'implementation')
 Classpaths.inheritElemental(project, 'elemental2-promise', 'implementation')
 Classpaths.inheritElemental(project, 'elemental2-dom', 'implementation')
+Classpaths.inheritGwt(project, 'gwt-user', 'testImplementation')
 
 GwtTools.gwtCompile project, 'io.deephaven.web.DeephavenApi', 'Create a jar of client JS API'
 
@@ -102,7 +101,7 @@ if (!hasProperty('selenium.port')) {
 
 def createSelenium = tasks.register('createSelenium', DockerCreateContainer) { t ->
     t.dependsOn(Docker.registryTask(project, 'selenium'), deephavenDocker.startTask)
-    t.targetImageId('deephaven/selenium:local-build')
+    t.targetImageId(Docker.localImageName('selenium'))
     t.containerName.set(seleniumContainerId)
     // Advised by the selenium documentation
     t.hostConfig.shmSize.set(2L * 1024 * 1024 * 1024)

@@ -32,7 +32,7 @@ def buildDocker = Docker.registerDockerImage(project, 'buildDocker') {
 
     inputDir.set dockerContext
 
-    images.add('deephaven/runtime-base:local-build')
+    images.add(Docker.localImageName('runtime-base'))
 }
 
 assemble.dependsOn buildDocker
