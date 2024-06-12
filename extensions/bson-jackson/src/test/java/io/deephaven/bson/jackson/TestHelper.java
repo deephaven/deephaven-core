@@ -4,11 +4,12 @@
 package io.deephaven.bson.jackson;
 
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.util.hashing.ChunkEquals;
-import io.deephaven.chunk.util.hashing.ChunkEquals.ObjectComparison;
+import io.deephaven.chunk.util.hashing.ObjectChunkDeepEquals;
 import io.deephaven.processor.ObjectProcessor;
 
 import java.io.IOException;
@@ -61,7 +62,12 @@ public class TestHelper {
     static void check(Chunk<?> actual, Chunk<?> expected) {
         assertThat(actual.getChunkType()).isEqualTo(expected.getChunkType());
         assertThat(actual.size()).isEqualTo(expected.size());
-        assertThat(ChunkEquals.makeEqual(actual.getChunkType(), ObjectComparison.DEEP_EQUALS).equalReduce(actual,
-                expected)).isTrue();
+        assertThat(getChunkEquals(actual).equalReduce(actual, expected)).isTrue();
+    }
+
+    private static ChunkEquals getChunkEquals(Chunk<?> actual) {
+        return actual.getChunkType() == ChunkType.Object
+                ? ObjectChunkDeepEquals.INSTANCE
+                : ChunkEquals.makeEqual(actual.getChunkType());
     }
 }
