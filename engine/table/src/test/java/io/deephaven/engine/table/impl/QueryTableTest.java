@@ -2705,6 +2705,24 @@ public class QueryTableTest extends QueryTableTestBase {
                 ColumnVectors.ofObject(t1, "Y", String.class).toArray());
     }
 
+    public void testEmptyTableSnapshot() {
+        final Table emptyTableNoColumns = emptyTable(0);
+        try (final BarrageMessage snap =
+                ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) emptyTableNoColumns)) {
+            assertTrue(snap.rowsIncluded.isEmpty());
+            assertTrue(snap.addColumnData.length == 0);
+        }
+
+        final Table emptyTableWithColumns = emptyTable(0).update("X = i");
+        try (final BarrageMessage snap =
+                ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) emptyTableWithColumns)) {
+            assertTrue(snap.rowsIncluded.isEmpty());
+            assertTrue(snap.addColumnData.length == 1);
+            assertTrue(snap.addColumnData[0].data.isEmpty());
+            assertTrue(snap.modColumnData[0].data.isEmpty());
+        }
+    }
+
     public void testUngroupConstructSnapshotOfBoxedNull() {
         final Table t =
                 testRefreshingTable(i(0).toTracking())
@@ -2748,6 +2766,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
     private static void testUnGroupConstructSnapshotBoxedNullFewColumnsHelper(@NotNull final BarrageMessage snap) {
         assertEquals(snap.rowsIncluded, i(1, 2));
+        assertTrue(snap.modColumnData[1].data.isEmpty());
         assertEquals(snap.addColumnData[1].data.get(0).asIntChunk().get(0), 5);
         assertEquals(snap.addColumnData[1].data.get(0).asIntChunk().get(1), QueryConstants.NULL_INT);
     }
