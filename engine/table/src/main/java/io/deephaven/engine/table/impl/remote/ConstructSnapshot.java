@@ -1605,14 +1605,14 @@ public class ConstructSnapshot {
         final int numcolumnsToSnapshot =
                 (columnsToSnapshot != null) ? columnsToSnapshot.cardinality() : columnSources.length;
         final TIntList nonEmptyColumnsIndices = new TIntArrayList(numcolumnsToSnapshot);
-        if (!populateSnapshotEmptyColumns(columnSources, columnsToSnapshot, table, logIdentityObject, snapshot,
-                nonEmptyColumnsIndices)) {
-            return false;
+        for (int colIdx = 0; colIdx < columnSources.length; ++colIdx) {
+            // This will only populate data for empty columns and populate the indices of non-empty columns, so we don't
+            // need a shared context
+            if (!snapshotColumnStep1(columnSources, colIdx, columnsToSnapshot, table, usePrev, logIdentityObject,
+                    false, null, snapshot, nonEmptyColumnsIndices)) {
+                return false;
+            }
         }
-        if (nonEmptyColumnsIndices.isEmpty()) {
-            return true;
-        }
-        // Each non-empty column to be populated in parallel
         final JobScheduler jobScheduler = new OperationInitializerJobScheduler();
         final CompletableFuture<Void> waitForParallelSnapshot =
                 new CompletableFuture<>();
@@ -1621,14 +1621,8 @@ public class ConstructSnapshot {
                 logOutput -> logOutput.append("snapshotColumnsParallel"),
                 JobScheduler.DEFAULT_CONTEXT_FACTORY,
                 0, nonEmptyColumnsIndices.size(),
-                (context, nonEmptyColRank, nestedErrorConsumer) -> populateSnapshotNonEmptyColumns(
-                        columnSources,
-                        new TIntArrayList(new int[] {nonEmptyColumnsIndices.get(nonEmptyColRank)}),
-                        table,
-                        null,
-                        snapshot.rowsIncluded,
-                        usePrev,
-                        snapshot),
+                (context, nonEmptyColRank, nestedErrorConsumer) -> snapshotColumnStep2(columnSources,
+                        nonEmptyColumnsIndices.get(nonEmptyColRank), table, usePrev, snapshot),
                 () -> waitForParallelSnapshot.complete(null),
                 waitForParallelSnapshot::completeExceptionally);
         try {
@@ -1649,74 +1643,100 @@ public class ConstructSnapshot {
             final boolean usePrev,
             @NotNull final Object logIdentityObject,
             @NotNull final BarrageMessage snapshot) {
-        final int numColumnsToSnapshot =
-                (columnsToSnapshot != null) ? columnsToSnapshot.cardinality() : columnSources.length;
-        final TIntList nonEmptyColumnsIndices = new TIntArrayList(numColumnsToSnapshot);
-        if (!populateSnapshotEmptyColumns(columnSources, columnsToSnapshot, table, logIdentityObject, snapshot,
-                nonEmptyColumnsIndices)) {
-            return false;
-        }
-        if (!nonEmptyColumnsIndices.isEmpty()) {
-            try (final SharedContext sharedContext =
-                    (columnSources.length > 1) ? SharedContext.makeSharedContext() : null) {
-                populateSnapshotNonEmptyColumns(columnSources, nonEmptyColumnsIndices, table, sharedContext,
-                        snapshot.rowsIncluded, usePrev, snapshot);
+        try (final SharedContext sharedContext =
+                (columnSources.length > 1) ? SharedContext.makeSharedContext() : null) {
+            for (int colIdx = 0; colIdx < columnSources.length; ++colIdx) {
+                // Snapshot all columns in one step, so no need to collect non-empty columns indices, that are needed
+                // for parallel snapshot in step 2
+                if (!snapshotColumnStep1(columnSources, colIdx, columnsToSnapshot, table, usePrev, logIdentityObject,
+                        true, sharedContext, snapshot, null)) {
+                    return false;
+                }
             }
         }
         return true;
     }
 
     /**
-     * Allocate add and mod column data for each column, and populate the snapshot data for empty columns. Also, collect
-     * the indices of non-empty columns, so we can populate them later.
+     * The first step of column snapshot. Here, we always allocate the column data and mod data for each column, and
+     * populate the snapshot data for empty columns. For non-empty columns, we populate the column data only if
+     * requested.
      * <p>
      * This method is intended to be called from the main thread.
      */
-    private static boolean populateSnapshotEmptyColumns(
+    private static boolean snapshotColumnStep1(
             final String[] columnSources,
+            final int colIdx,
             @Nullable final BitSet columnsToSnapshot,
             @NotNull final Table table,
+            final boolean usePrev,
             @NotNull final Object logIdentityObject,
+            final boolean snapshotNonEmptyColumns,
+            @Nullable final SharedContext sharedContext,
             @NotNull final BarrageMessage snapshot,
-            @NotNull final TIntCollection nonEmptyColumnsIndices) {
-        final boolean rowsetIsEmpty = snapshot.rowsIncluded.isEmpty();
-        for (int colIdx = 0; colIdx < columnSources.length; ++colIdx) {
-            if (concurrentAttemptInconsistent()) {
-                if (log.isDebugEnabled()) {
-                    final LogEntry logEntry = log.debug().append(System.identityHashCode(logIdentityObject))
-                            .append(" Bad snapshot before column ").append(columnSources[colIdx])
-                            .append(" at idx ").append(colIdx);
-                    appendConcurrentAttemptClockInfo(logEntry);
-                    logEntry.endl();
-                }
-                return false;
+            @Nullable final TIntCollection nonEmptyColumnsIndices) {
+        if (concurrentAttemptInconsistent()) {
+            if (log.isDebugEnabled()) {
+                final LogEntry logEntry = log.debug().append(System.identityHashCode(logIdentityObject))
+                        .append(" Bad snapshot before column ").append(columnSources[colIdx])
+                        .append(" at idx ").append(colIdx);
+                appendConcurrentAttemptClockInfo(logEntry);
+                logEntry.endl();
             }
-
-            final ColumnSource<?> columnSource = table.getColumnSource(columnSources[colIdx]);
-
-            final BarrageMessage.AddColumnData acd = new BarrageMessage.AddColumnData();
-            snapshot.addColumnData[colIdx] = acd;
-            final boolean columnIsEmpty = rowsetIsEmpty ||
-                    (columnsToSnapshot != null && !columnsToSnapshot.get(colIdx));
-            final ColumnSource<?> sourceToUse = ReinterpretUtils.maybeConvertToPrimitive(columnSource);
-            if (columnIsEmpty) {
-                acd.data = List.of();
-            } else {
-                nonEmptyColumnsIndices.add(colIdx);
-            }
-            acd.type = columnSource.getType();
-            acd.componentType = columnSource.getComponentType();
-            acd.chunkType = sourceToUse.getChunkType();
-
-            final BarrageMessage.ModColumnData mcd = new BarrageMessage.ModColumnData();
-            snapshot.modColumnData[colIdx] = mcd;
-            mcd.rowsModified = RowSetFactory.empty();
-            mcd.data = List.of();
-            mcd.type = acd.type;
-            mcd.componentType = acd.componentType;
-            mcd.chunkType = sourceToUse.getChunkType();
+            return false;
         }
+
+        final ColumnSource<?> columnSource = table.getColumnSource(columnSources[colIdx]);
+
+        final BarrageMessage.AddColumnData acd = new BarrageMessage.AddColumnData();
+        snapshot.addColumnData[colIdx] = acd;
+        final boolean columnIsEmpty = snapshot.rowsIncluded.isEmpty() ||
+                (columnsToSnapshot != null && !columnsToSnapshot.get(colIdx));
+        final ColumnSource<?> sourceToUse = ReinterpretUtils.maybeConvertToPrimitive(columnSource);
+        if (columnIsEmpty) {
+            acd.data = List.of();
+        } else if (!snapshotNonEmptyColumns) {
+            Assert.assertion(nonEmptyColumnsIndices != null, "nonEmptyColumnsIndices should not be be null " +
+                    "if we are planning to snapshot columns in parallel");
+            acd.data = null; // To be populated in Step 2
+            nonEmptyColumnsIndices.add(colIdx);
+        } else {
+            acd.data = getSnapshotDataAsChunkList(sourceToUse, sharedContext, snapshot.rowsIncluded, usePrev);
+        }
+        acd.type = columnSource.getType();
+        acd.componentType = columnSource.getComponentType();
+        acd.chunkType = sourceToUse.getChunkType();
+
+        final BarrageMessage.ModColumnData mcd = new BarrageMessage.ModColumnData();
+        snapshot.modColumnData[colIdx] = mcd;
+        mcd.rowsModified = RowSetFactory.empty();
+        mcd.data = List.of();
+        mcd.type = acd.type;
+        mcd.componentType = acd.componentType;
+        mcd.chunkType = sourceToUse.getChunkType();
         return true;
+    }
+
+    /**
+     * The second step of column snapshot, used for generating snapshot data for non-empty columns.
+     * <p>
+     * This method is intended to be called from a thread pool executor after completing the first step of the table
+     * snapshot.
+     */
+    private static void snapshotColumnStep2(
+            final String[] columnSources,
+            final int colIdx,
+            @NotNull final Table table,
+            final boolean usePrev,
+            @NotNull final BarrageMessage snapshot) {
+        final ColumnSource<?> sourceToUse =
+                ReinterpretUtils.maybeConvertToPrimitive(table.getColumnSource(columnSources[colIdx]));
+        if (snapshot.addColumnData[colIdx].data != null) {
+            throw new IllegalStateException(
+                    "Snapshot data for column " + columnSources[colIdx] + " is already populated");
+        }
+        snapshot.addColumnData[colIdx].data =
+                getSnapshotDataAsChunkList(sourceToUse, null, snapshot.rowsIncluded, usePrev);
     }
 
     private static boolean snapshotAllTables(
@@ -1769,37 +1789,41 @@ public class ConstructSnapshot {
         }
     }
 
-    private static void populateSnapshotNonEmptyColumns(
-            final String[] columnSources,
-            @NotNull final TIntList columnIndicesToSnapshot,
-            @NotNull final Table table,
+    private static <T> List<Chunk<Values>> getSnapshotDataAsChunkList(
+            @NotNull final ColumnSource<T> columnSource,
             @Nullable final SharedContext sharedContext,
-            @NotNull final RowSequence rowSet,
-            final boolean usePrev,
-            @NotNull final BarrageMessage snapshot) {
-        final int numNonEmptyColumns = columnIndicesToSnapshot.size();
+            @NotNull final RowSet rowSet,
+            final boolean usePrev) {
         final long size = rowSet.size();
-        Assert.assertion(size > 0, "size > 0"); // Empty columns should be handled by the caller
+        if (size == 0) {
+            return List.of();
+        }
+
         long offset = 0;
+        final ArrayList<Chunk<Values>> result = new ArrayList<>();
         final int maxChunkSize = (int) Math.min(size, SNAPSHOT_CHUNK_SIZE);
-        try (final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
+
+        try (final ColumnSource.FillContext context = columnSource.makeFillContext(maxChunkSize, sharedContext);
+                final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
             int chunkSize = maxChunkSize;
             while (it.hasMore()) {
                 final RowSequence reducedRowSet = it.getNextRowSequenceWithLength(chunkSize);
-                // Populate the snapshot data for each non-empty column for the current chunk of rows
-                for (int colRank = 0; colRank < numNonEmptyColumns; ++colRank) {
-                    final int colIdx = columnIndicesToSnapshot.get(colRank);
-                    final ColumnSource<?> columnSource =
-                            ReinterpretUtils.maybeConvertToPrimitive(table.getColumnSource(columnSources[colIdx]));
-                    if (snapshot.addColumnData[colIdx].data == null) {
-                        snapshot.addColumnData[colIdx].data = new ArrayList<>();
-                    }
-                    snapshot.addColumnData[colIdx].data.add(
-                            getSnapshotDataChunk(columnSource, sharedContext, reducedRowSet, chunkSize, usePrev));
+                final ChunkType chunkType = columnSource.getChunkType();
+
+                // create a new chunk
+                WritableChunk<Values> currentChunk = chunkType.makeWritableChunk(chunkSize);
+
+                if (usePrev) {
+                    columnSource.fillPrevChunk(context, currentChunk, reducedRowSet);
+                } else {
+                    columnSource.fillChunk(context, currentChunk, reducedRowSet);
                 }
 
-                // increment offset for the next chunk (assuming number of rows written for all columns is chunkSize)
-                offset += chunkSize;
+                // add the chunk to the current list
+                result.add(currentChunk);
+
+                // increment the offset for the next chunk (using the actual values written)
+                offset += currentChunk.size();
 
                 // recompute the size of the next chunk
                 if (size - offset > maxChunkSize) {
@@ -1814,33 +1838,7 @@ public class ConstructSnapshot {
                 }
             }
         }
-    }
-
-    /**
-     * Get a chunk of data for provided column source and row set.
-     */
-    private static <T> Chunk<Values> getSnapshotDataChunk(
-            @NotNull final ColumnSource<T> columnSource,
-            @Nullable final SharedContext sharedContext,
-            @NotNull final RowSequence rowSequence,
-            final int chunkSize,
-            final boolean usePrev) {
-        final long size = rowSequence.size();
-        if (size == 0) {
-            return columnSource.getChunkType().makeWritableChunk(0);
-        }
-        try (final ColumnSource.FillContext context = columnSource.makeFillContext(chunkSize, sharedContext)) {
-            final ChunkType chunkType = columnSource.getChunkType();
-
-            // create a new chunk
-            final WritableChunk<Values> currentChunk = chunkType.makeWritableChunk(chunkSize);
-            if (usePrev) {
-                columnSource.fillPrevChunk(context, currentChunk, rowSequence);
-            } else {
-                columnSource.fillChunk(context, currentChunk, rowSequence);
-            }
-            return currentChunk;
-        }
+        return result;
     }
 
     /**
