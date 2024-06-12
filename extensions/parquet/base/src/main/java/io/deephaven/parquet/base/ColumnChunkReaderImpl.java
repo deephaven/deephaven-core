@@ -4,6 +4,8 @@
 package io.deephaven.parquet.base;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.util.channel.ChannelPositionInputStream;
+import io.deephaven.util.channel.Channels;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.parquet.compress.CompressorAdapter;
@@ -23,6 +25,7 @@ import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Type;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -194,9 +197,9 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
         // Use the context object provided by the caller, or create (and close) a new one
         try (
                 final ContextHolder holder = SeekableChannelContext.ensureContext(channelsProvider, channelContext);
-                final SeekableByteChannel ch = channelsProvider.getReadChannel(holder.get(), getURI());
-                final InputStream in = channelsProvider.getInputStream(ch.position(dictionaryPageOffset))) {
-            return readDictionary(in, holder.get());
+                final SeekableByteChannel ch =
+                        channelsProvider.getReadChannel(holder.get(), getURI()).position(dictionaryPageOffset)) {
+            return readDictionary(ch, holder.get());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -218,9 +221,10 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
     }
 
     @NotNull
-    private Dictionary readDictionary(InputStream in, SeekableChannelContext channelContext) throws IOException {
+    private Dictionary readDictionary(SeekableByteChannel ch, SeekableChannelContext channelContext)
+            throws IOException {
         // explicitly not closing this, caller is responsible
-        final PageHeader pageHeader = Util.readPageHeader(in);
+        final PageHeader pageHeader = readPageHeader(ch);
         if (pageHeader.getType() != PageType.DICTIONARY_PAGE) {
             // In case our fallback in getDictionary was too optimistic...
             return NULL_DICTIONARY;
@@ -228,18 +232,21 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
         final DictionaryPageHeader dictHeader = pageHeader.getDictionary_page_header();
         final int compressedPageSize = pageHeader.getCompressed_page_size();
         final BytesInput payload;
-        if (compressedPageSize == 0) {
-            // Sometimes the size is explicitly empty, just use an empty payload
-            payload = BytesInput.empty();
-        } else {
-            payload = decompressor.decompress(in, compressedPageSize, pageHeader.getUncompressed_page_size(),
-                    channelContext);
+        try (final InputStream in = (compressedPageSize == 0) ? null
+                : ChannelPositionInputStream.of(ch, channelsProvider.getInputStream(ch, compressedPageSize))) {
+            if (compressedPageSize == 0) {
+                // Sometimes the size is explicitly empty, just use an empty payload
+                payload = BytesInput.empty();
+            } else {
+                payload = decompressor.decompress(in, compressedPageSize, pageHeader.getUncompressed_page_size(),
+                        channelContext);
+            }
+            final Encoding encoding = Encoding.valueOf(dictHeader.getEncoding().name());
+            final DictionaryPage dictionaryPage = new DictionaryPage(payload, dictHeader.getNum_values(), encoding);
+            // We are safe to not copy the payload because the Dictionary doesn't hold a reference to dictionaryPage or
+            // payload and thus doesn't hold a reference to the input stream.
+            return encoding.initDictionary(path, dictionaryPage);
         }
-        final Encoding encoding = Encoding.valueOf(dictHeader.getEncoding().name());
-        final DictionaryPage dictionaryPage = new DictionaryPage(payload, dictHeader.getNum_values(), encoding);
-        // We are safe to not copy the payload because the Dictionary doesn't hold a reference to dictionaryPage or
-        // payload and thus doesn't hold a reference to the input stream.
-        return encoding.initDictionary(path, dictionaryPage);
     }
 
     private final class ColumnPageReaderIteratorImpl implements ColumnPageReaderIterator {
@@ -315,7 +322,9 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
     }
 
     private PageHeader readPageHeader(final SeekableByteChannel ch) throws IOException {
-        try (final InputStream in = SeekableChannelsProvider.channelPositionInputStream(channelsProvider, ch)) {
+        // We don't know the exact size of page header, so we read it through a buffered stream in chunks of 128 bytes
+        try (final InputStream in = ChannelPositionInputStream.of(ch,
+                new BufferedInputStream(Channels.newInputStreamNoClose(ch), 128))) {
             return Util.readPageHeader(in);
         }
     }

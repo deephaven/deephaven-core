@@ -3,6 +3,7 @@
 //
 package io.deephaven.util.channel;
 
+import com.google.common.io.ByteStreams;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
@@ -80,6 +81,14 @@ public interface SeekableChannelsProvider extends SafeCloseable {
      * @throws IOException if an IO exception occurs
      */
     InputStream getInputStream(SeekableByteChannel channel) throws IOException;
+
+    /**
+     * Creates an {@link InputStream} from the current position of {@code channel} from which at most {@code sizeLimit}
+     * bytes can be read. More details in {@link #getInputStream(SeekableByteChannel)}.
+     */
+    default InputStream getInputStream(SeekableByteChannel channel, int sizeLimit) throws IOException {
+        return ByteStreams.limit(getInputStream(channel), sizeLimit);
+    }
 
     default SeekableByteChannel getWriteChannel(@NotNull final String path, final boolean append) throws IOException {
         return getWriteChannel(Paths.get(path), append);

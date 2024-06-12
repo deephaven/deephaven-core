@@ -107,6 +107,11 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
+    public InputStream getInputStream(SeekableByteChannel channel, int sizeLimit) throws IOException {
+        return wrappedProvider.getInputStream(channel, sizeLimit);
+    }
+
+    @Override
     public SeekableByteChannel getWriteChannel(@NotNull final Path path, final boolean append) throws IOException {
         final String pathKey = path.toAbsolutePath().toString();
         final ChannelType channelType = append ? ChannelType.WriteAppend : ChannelType.Write;

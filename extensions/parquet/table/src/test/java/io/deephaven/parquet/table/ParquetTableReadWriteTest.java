@@ -521,14 +521,10 @@ public final class ParquetTableReadWriteTest {
 
         final Table fromDisk = checkSingleTable(table, dest).select();
 
-        try {
-            // The following file is tagged as LZ4 compressed based on its metadata, but is actually compressed with
-            // LZ4_RAW. We should be able to read it anyway with no exceptions.
-            String path = TestParquetTools.class.getResource("/sample_lz4_compressed.parquet").getFile();
-            readTable(path, EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.SINGLE_FILE)).select();
-        } catch (RuntimeException e) {
-            TestCase.fail("Failed to read parquet file sample_lz4_compressed.parquet");
-        }
+        // The following file is tagged as LZ4 compressed based on its metadata, but is actually compressed with
+        // LZ4_RAW. We should be able to read it anyway with no exceptions.
+        String path = TestParquetTools.class.getResource("/sample_lz4_compressed.parquet").getFile();
+        readTable(path, EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.SINGLE_FILE)).select();
         final File randomDest = new File(rootFile, "random.parquet");
         writeTable(fromDisk, randomDest.getPath(), ParquetTools.LZ4_RAW);
 

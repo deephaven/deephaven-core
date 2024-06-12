@@ -154,8 +154,8 @@ public class DeephavenCompressorAdapterFactory {
             try {
                 // Note that we don't close the decompressed stream because doing so may return the decompressor to the
                 // pool
-                final InputStream buffered = ByteStreams.limit(IOUtils.buffer(inputStream), compressedSize);
-                final CompressionInputStream decompressed = compressionCodec.createInputStream(buffered, decompressor);
+                final CompressionInputStream decompressed =
+                        compressionCodec.createInputStream(inputStream, decompressor);
                 return BytesInput.copy(BytesInput.from(decompressed, uncompressedSize));
             } finally {
                 if (decompressor != null) {
