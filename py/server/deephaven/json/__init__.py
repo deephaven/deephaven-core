@@ -400,7 +400,7 @@ def object_kv_(
     might be modelled as the object kv type
 
     .. code-block:: python
-        object_kv_(value_element=int)
+        object_kv_(value_type=int)
 
     Args:
         key_type (JsonValueType): the key element, by defaults is type str
