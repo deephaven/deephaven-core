@@ -67,7 +67,7 @@ TaskProvider<Task> generateProtobuf = Docker.registerDockerTask(project, 'genera
   platform = 'linux/amd64'
 
   containerOutPath = '/generated'
-  imageName = 'deephaven/proto-backplane-grpc:local-build'
+  imageName = Docker.localImageName('proto-backplane-grpc')
   copyOut {
     into('build/generated/source/proto/main')
   }

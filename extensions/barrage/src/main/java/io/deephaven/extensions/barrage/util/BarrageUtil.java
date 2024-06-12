@@ -3,11 +3,13 @@
 //
 package io.deephaven.extensions.barrage.util;
 
+import com.google.flatbuffers.Constants;
 import com.google.flatbuffers.FlatBufferBuilder;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.base.ArrayUtil;
 import io.deephaven.base.ClassUtil;
 import io.deephaven.base.verify.Assert;
@@ -43,6 +45,7 @@ import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.Vector;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flatbuf.KeyValue;
+import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.util.Collections2;
 import org.apache.arrow.vector.types.TimeUnit;
 import org.apache.arrow.vector.types.Types;
@@ -55,6 +58,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Array;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -63,6 +68,8 @@ import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.function.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -103,6 +110,73 @@ public class BarrageUtil {
     private static final String ATTR_ATTR_TYPE_TAG = "attribute_type";
     private static final String ATTR_TYPE_TAG = "type";
     private static final String ATTR_COMPONENT_TYPE_TAG = "componentType";
+
+    private static final boolean ENFORCE_FLATBUFFER_VERSION_CHECK =
+            Configuration.getInstance().getBooleanWithDefault("barrage.version.check", true);
+
+    static {
+        verifyFlatbufferCompatibility(Message.class);
+        verifyFlatbufferCompatibility(BarrageMessageWrapper.class);
+    }
+
+    private static void verifyFlatbufferCompatibility(Class<?> clazz) {
+        try {
+            clazz.getMethod("ValidateVersion").invoke(null);
+        } catch (InvocationTargetException e) {
+            Throwable targetException = e.getTargetException();
+            if (targetException instanceof NoSuchMethodError) {
+                // Caused when the reflective method is found and cannot be used because the flatbuffer version doesn't
+                // match
+                String requiredVersion = extractFlatBufferVersion(targetException.getMessage())
+                        .orElseThrow(() -> new UncheckedDeephavenException(
+                                "FlatBuffers version mismatch, can't read expected version", targetException));
+                Optional<String> foundVersion = Arrays.stream(Constants.class.getDeclaredMethods())
+                        .map(Method::getName)
+                        .map(BarrageUtil::extractFlatBufferVersion)
+                        .filter(Optional::isPresent)
+                        .map(Optional::get)
+                        .findFirst();
+                String dependentLibrary = clazz.getPackage().getSpecificationTitle();
+                final String message;
+                if (foundVersion.isEmpty()) {
+                    message = "Library '" + dependentLibrary + "' requires FlatBuffer " + requiredVersion
+                            + ", cannot detect present version";
+                } else {
+                    message = "Library '" + dependentLibrary + "' requires FlatBuffer " + requiredVersion + ", found "
+                            + foundVersion.get();
+                }
+                if (ENFORCE_FLATBUFFER_VERSION_CHECK) {
+                    throw new UncheckedDeephavenException(message);
+                } else {
+                    log.warn().append(message).endl();
+                }
+            } else {
+                throw new UncheckedDeephavenException("Cannot validate flatbuffer compatibility, unexpected exception",
+                        targetException);
+            }
+        } catch (IllegalAccessException e) {
+            throw new UncheckedDeephavenException(
+                    "Cannot validate flatbuffer compatibility, " + clazz + "'s ValidateVersion() isn't accessible!", e);
+        } catch (NoSuchMethodException e) {
+            // Caused when the type isn't actually a flatbuffer Table (or the codegen format has changed)
+            throw new UncheckedDeephavenException(
+                    "Cannot validate flatbuffer compatibility, " + clazz + " is not a flatbuffer table!", e);
+        }
+    }
+
+    private static Optional<String> extractFlatBufferVersion(String method) {
+        Matcher matcher = Pattern.compile("FLATBUFFERS_([0-9]+)_([0-9]+)_([0-9]+)").matcher(method);
+
+        if (matcher.find()) {
+            if (Integer.valueOf(matcher.group(1)) <= 2) {
+                // semver, third decimal doesn't matter
+                return Optional.of(matcher.group(1) + "." + matcher.group(2) + ".x");
+            }
+            // "date" version, all three components should be shown
+            return Optional.of(matcher.group(1) + "." + matcher.group(2) + "." + matcher.group(3));
+        }
+        return Optional.empty();
+    }
 
     /**
      * These are the types that get special encoding but are otherwise not primitives. TODO (core#58): add custom
