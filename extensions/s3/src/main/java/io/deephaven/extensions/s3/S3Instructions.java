@@ -32,14 +32,18 @@ public abstract class S3Instructions implements LogOutputAppendable {
     private final static Duration DEFAULT_CONNECTION_TIMEOUT = Duration.ofSeconds(2);
     private final static Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(2);
 
+    static final S3Instructions DEFAULT = builder().build();
+
     public static Builder builder() {
         return ImmutableS3Instructions.builder();
     }
 
     /**
-     * The region name to use when reading or writing to S3.
+     * The region name to use when reading or writing to S3. If not provided, the region name is picked by the AWS SDK
+     * from 'aws.region' system property, "AWS_REGION" environment variable, the {user.home}/.aws/credentials or
+     * {user.home}/.aws/config files, or from EC2 metadata service, if running in EC2.
      */
-    public abstract String regionName();
+    public abstract Optional<String> regionName();
 
     /**
      * The maximum number of concurrent requests to make to S3, defaults to {@value #DEFAULT_MAX_CONCURRENT_REQUESTS}.
