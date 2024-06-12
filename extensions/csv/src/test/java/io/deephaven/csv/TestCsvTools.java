@@ -272,7 +272,7 @@ public class TestCsvTools {
                                 parseZonedDateTime("2022-11-06T03:00:00.000000000 America/New_York")
                         },
                         new Boolean[] {
-                                null, false, true, true, false, false, false, false, true, false, null, null, null
+                                null, false, true, true, false, false, false, false, true, false, null, null, true
                         }
                 });
         final String[] casts = {
@@ -280,11 +280,15 @@ public class TestCsvTools {
                 "ZonedDateTimes = toZonedDateTime(ZonedDateTimes, 'America/New_York')"};
         final String allSeparators = ",|\tzZ- 90@";
         for (final char separator : allSeparators.toCharArray()) {
-            CsvTools.writeCsv(
-                    tableToTest, csvFile.getPath(), false, timeZone(), false, separator, colNames);
-            final Table result = CsvTools.readCsv(csvFile.getPath(),
-                    CsvSpecs.builder().delimiter(separator).nullValueLiterals(List.of("(null)")).build());
-            TstUtils.assertTableEquals(tableToTest, result.updateView(casts));
+            for (final boolean nullAsEmpty : new boolean[] {false, true}) {
+                CsvTools.writeCsv(
+                        tableToTest, csvFile.getPath(), false, timeZone(), nullAsEmpty, separator, colNames);
+                final Table result = CsvTools.readCsv(csvFile.getPath(), CsvSpecs.builder()
+                        .delimiter(separator)
+                        .nullValueLiterals(List.of(nullAsEmpty ? "" : "(null)"))
+                        .build());
+                TstUtils.assertTableEquals(tableToTest, result.updateView(casts));
+            }
         }
     }
 }
