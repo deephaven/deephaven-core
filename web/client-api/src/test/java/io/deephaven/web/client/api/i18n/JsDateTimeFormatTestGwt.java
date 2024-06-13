@@ -83,11 +83,14 @@ public class JsDateTimeFormatTestGwt extends GWTTestCase {
         long millis = new Date(1970 - 1900, 0, 1, 12, 00).getTime();
         long baseDateNanos = millis * 1_000_000_000;
         for (int i = 0; i < 9; i++) {
-            assertEquals("000000000".substring(0, i), JsDateTimeFormat.format("SSSSSSSSS".substring(0, i), Js.asAny(LongWrapper.of(baseDateNanos)), null));
+            assertEquals("000000000".substring(0, i), JsDateTimeFormat.format("SSSSSSSSS".substring(0, i),
+                    Js.asAny(LongWrapper.of(baseDateNanos)), null));
             long nonZero = baseDateNanos + 123_123_123;
-            assertEquals("123123123".substring(0, i), JsDateTimeFormat.format("SSSSSSSSS".substring(0, i), Js.asAny(LongWrapper.of(nonZero)), null));
+            assertEquals("123123123".substring(0, i),
+                    JsDateTimeFormat.format("SSSSSSSSS".substring(0, i), Js.asAny(LongWrapper.of(nonZero)), null));
             long leadingZeroes = baseDateNanos + 1234;
-            assertEquals("000001234".substring(0, i), JsDateTimeFormat.format("SSSSSSSSS".substring(0, i), Js.asAny(LongWrapper.of(leadingZeroes)), null));
+            assertEquals("000001234".substring(0, i), JsDateTimeFormat.format("SSSSSSSSS".substring(0, i),
+                    Js.asAny(LongWrapper.of(leadingZeroes)), null));
         }
     }
 
