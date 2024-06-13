@@ -5,13 +5,13 @@
 
 import jpy
 
-from typing import Callable, Dict, Optional, Tuple
+from typing import Callable, Dict, Optional, Tuple, Union, List
 
 from deephaven._wrapper import JObjectWrapper
 from deephaven.column import Column
 from deephaven.dtypes import DType
 from deephaven.execution_context import get_exec_ctx
-from deephaven.jcompat import j_lambda, j_runnable
+from deephaven.jcompat import j_lambda, j_runnable, j_table_definition
 from deephaven.table import Table
 from deephaven.update_graph import UpdateGraph
 
@@ -75,7 +75,7 @@ class TablePublisher(JObjectWrapper):
 
 def table_publisher(
     name: str,
-    col_defs: Dict[str, DType],
+    col_defs: Union[Dict[str, DType], List[Column]],
     on_flush_callback: Optional[Callable[[TablePublisher], None]] = None,
     on_shutdown_callback: Optional[Callable[[], None]] = None,
     update_graph: Optional[UpdateGraph] = None,
@@ -107,12 +107,7 @@ def table_publisher(
 
     j_table_publisher = _JTablePublisher.of(
         name,
-        _JTableDefinition.of(
-            [
-                Column(name=name, data_type=dtype).j_column_definition
-                for name, dtype in col_defs.items()
-            ]
-        ),
+        j_table_definition(col_defs),
         j_lambda(adapt_callback, _JConsumer, None) if on_flush_callback else None,
         j_runnable(on_shutdown_callback) if on_shutdown_callback else None,
         (update_graph or get_exec_ctx().update_graph).j_update_graph,

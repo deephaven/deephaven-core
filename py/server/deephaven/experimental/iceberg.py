@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
-""" This module supports reading external Iceberg tables into Deephaven. """
+""" This module adds Iceberg table support into Deephaven. """
 from typing import List, Optional, Union, Dict, Sequence
 
 import jpy
@@ -36,7 +36,7 @@ class IcebergInstructions(JObjectWrapper):
     instructions and table definitions, as well as special data instructions for loading data files from the cloud.
     """
 
-    j_object_type = _JIcebergInstructions or type(None)
+    j_object_type = _JIcebergInstructions
 
     def __init__(self,
                  table_definition: Optional[Union[Dict[str, DType], List[Column]]] = None,
@@ -106,7 +106,7 @@ class IcebergCatalogAdapter(JObjectWrapper):
             return Table(self.j_object.listNamespaces(namespace))
         return Table(self.j_object.listNamespacesAsTable())
 
-    def tables(self, namespace: Optional[str] = None) -> Table:
+    def tables(self, namespace: str) -> Table:
         """
         Returns the list of tables in the provided namespace as a Deephaven table.
 
@@ -134,32 +134,37 @@ class IcebergCatalogAdapter(JObjectWrapper):
 
         return self.j_object.listSnapshotsAsTable(table_identifier)
 
-    def read_table(self, table_identifier: str, instructions: IcebergInstructions, snapshot_id: Optional[int] = None) -> Table:
+    def read_table(self, table_identifier: str, instructions: Optional[IcebergInstructions] = None, snapshot_id: Optional[int] = None) -> Table:
         """
         Reads the table from the catalog using the provided instructions. Optionally, a snapshot id can be provided to
         read a specific snapshot of the table.
 
         Args:
             table_identifier (str): the table to read.
-            instructions (IcebergInstructions): the instructions for reading the table. These instructions can include
-                column renames, table definition, and specific data instructions for reading the data files from the
-                provider.
+            instructions (Optional[IcebergInstructions]): the instructions for reading the table. These instructions
+                can include column renames, table definition, and specific data instructions for reading the data files
+                from the provider. If omitted, the table will be read with default instructions.
             snapshot_id (Optional[int]): the snapshot id to read; if omitted the most recent snapshot will be selected.
 
         Returns:
             Table: the table read from the catalog.
         """
 
+        if instructions is not None:
+            instructions_object = instructions.j_object
+        else:
+            instructions_object = _JIcebergInstructions.DEFAULT
+
         if snapshot_id is not None:
-            return Table(self.j_object.readTable(table_identifier, snapshot_id, instructions.j_object))
-        return Table(self.j_object.readTable(table_identifier, instructions.j_object))
+            return Table(self.j_object.readTable(table_identifier, snapshot_id, instructions_object))
+        return Table(self.j_object.readTable(table_identifier, instructions_object))
 
     @property
     def j_object(self) -> jpy.JType:
         return self.j_catalog_adapter
 
 
-def s3_rest_adapter(
+def adapter_s3_rest(
         catalog_uri: str,
         warehouse_location: str,
         name: Optional[str] = None,
@@ -176,7 +181,10 @@ def s3_rest_adapter(
         warehouse_location (str): the location of the warehouse.
         name (Optional[str]): a descriptive name of the catalog; if omitted the catalog name is inferred from the
             catalog URI.
-        region_name (Optional[str]): the S3 region name to use.
+        region_name (Optional[str]): the S3 region name to use; If not provided, the default region will be
+            picked by the AWS SDK from 'aws.region' system property, "AWS_REGION" environment variable, the
+            {user.home}/.aws/credentials or {user.home}/.aws/config files, or from EC2 metadata service, if running in
+            EC2.
         access_key_id (Optional[str]): the access key for reading files. Both access key and secret access key must be
             provided to use static credentials, else default credentials will be used.
         secret_access_key (Optional[str]): the secret access key for reading files. Both access key and secret key
@@ -186,45 +194,58 @@ def s3_rest_adapter(
 
     Returns:
         IcebergCatalogAdapter: the catalog adapter for the provided S3 REST catalog.
+
+    Raises:
+        DHError: If unable to build the catalog adapter.
     """
     if not _JIcebergToolsS3:
-        raise DHError(message="`create_s3_rest_adapter` requires the Iceberg specific deephaven S3 extensions to be "
+        raise DHError(message="`adapter_s3_rest` requires the Iceberg specific deephaven S3 extensions to be "
                               "included in the package")
 
-    return IcebergCatalogAdapter(
-        _JIcebergToolsS3.createS3Rest(
-            name,
-            catalog_uri,
-            warehouse_location,
-            region_name,
-            access_key_id,
-            secret_access_key,
-            end_point_override))
+    try:
+        return IcebergCatalogAdapter(
+            _JIcebergToolsS3.createS3Rest(
+                name,
+                catalog_uri,
+                warehouse_location,
+                region_name,
+                access_key_id,
+                secret_access_key,
+                end_point_override))
+    except Exception as e:
+        raise DHError(e, "Failed to build Iceberg Catalog Adapter") from e
 
 
-def aws_glue_adapter(
+def adapter_aws_glue(
         catalog_uri: str,
         warehouse_location: str,
         name: Optional[str] = None
 ) -> IcebergCatalogAdapter:
     """
-    Create a catalog adapter using an AWS Glue catalog .
+    Create a catalog adapter using an AWS Glue catalog.
 
     Args:
-        catalog_uri (Optional[str]): the URI of the REST catalog.
-        warehouse_location (Optional[str]): the location of the warehouse.
+        catalog_uri (str): the URI of the REST catalog.
+        warehouse_location (str): the location of the warehouse.
         name (Optional[str]): a descriptive name of the catalog; if omitted the catalog name is inferred from the
             catalog URI.
 
     Returns:
-        IcebergCatalogAdapter: the catalog adapter for the provided S3 REST catalog.
+        IcebergCatalogAdapter: the catalog adapter for the provided AWS Glue catalog.
+
+    Raises:
+        DHError: If unable to build the catalog adapter.
     """
     if not _JIcebergToolsS3:
-        raise DHError(message="`create_s3_aws_glue_adapter` requires the Iceberg specific deephaven S3 extensions to "
+        raise DHError(message="`adapter_aws_glue` requires the Iceberg specific deephaven S3 extensions to "
                               "be included in the package")
 
-    return IcebergCatalogAdapter(
-        _JIcebergToolsS3.createGlue(
-            name,
-            catalog_uri,
-            warehouse_location))
+    try:
+        return IcebergCatalogAdapter(
+            _JIcebergToolsS3.createGlue(
+                name,
+                catalog_uri,
+                warehouse_location))
+    except Exception as e:
+        raise DHError(e, "Failed to build Iceberg Catalog Adapter") from e
+

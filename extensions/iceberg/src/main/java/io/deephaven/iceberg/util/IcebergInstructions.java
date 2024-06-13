@@ -22,7 +22,7 @@ public abstract class IcebergInstructions {
      * defaults for cloud provider-specific parameters
      */
     @SuppressWarnings("unused")
-    public static IcebergInstructions DEFAULT = ImmutableIcebergInstructions.builder().build();
+    public static final IcebergInstructions DEFAULT = builder().build();
 
     public static Builder builder() {
         return ImmutableIcebergInstructions.builder();
