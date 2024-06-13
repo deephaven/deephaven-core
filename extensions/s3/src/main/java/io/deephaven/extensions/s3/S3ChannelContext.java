@@ -49,12 +49,6 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
     final S3RequestCache sharedCache;
 
     /**
-     * Used to cache recently fetched fragments as well as the ownership token for the request. This cache is local to
-     * the context and is used to keep the requests alive as long as the context is alive.
-     */
-    private final S3Request.AcquiredRequest[] localCache;
-
-    /**
      * The size of the object in bytes, stored in context to avoid fetching multiple times
      */
     long size;
@@ -72,7 +66,6 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
         this.provider = Objects.requireNonNull(provider);
         this.client = Objects.requireNonNull(client);
         this.instructions = Objects.requireNonNull(instructions);
-        this.localCache = new S3Request.AcquiredRequest[instructions.maxCacheSize()];
         this.sharedCache = sharedCache;
         if (sharedCache.getFragmentSize() != instructions.fragmentSize()) {
             throw new IllegalArgumentException("Fragment size mismatch between shared cache and instructions, "
@@ -121,22 +114,27 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
             final int impliedReadAhead = (int) (lastFragmentIx - firstFragmentIx);
             final int desiredReadAhead = instructions.readAheadCount();
             final long totalRemainingFragments = numFragments - firstFragmentIx - 1;
-            final int maxReadAhead = instructions.maxCacheSize() - 1;
-            readAhead = Math.min(
-                    Math.max(impliedReadAhead, desiredReadAhead),
-                    (int) Math.min(maxReadAhead, totalRemainingFragments));
+            readAhead = Math.min(Math.max(impliedReadAhead, desiredReadAhead), totalRemainingFragments);
         }
-        final S3Request firstRequest = getOrCreateRequest(firstFragmentIx);
+        // Hold a reference to the first request to ensure it is not evicted from the cache
+        S3Request.AcquiredRequest acquiredFirstRequest = getOrCreateRequest(firstFragmentIx);
         for (int i = 0; i < readAhead; ++i) {
+            // Do not hold references to the read ahead requests
             getOrCreateRequest(firstFragmentIx + i + 1);
         }
         // blocking
-        int filled = firstRequest.fill(position, dest);
+        int filled = acquiredFirstRequest.request.fill(position, dest);
+        acquiredFirstRequest.release();
+        acquiredFirstRequest = null;
+
         for (int i = 0; dest.hasRemaining(); ++i) {
-            // Since we have already created requests for read ahead fragments, we can retrieve them from the local
-            // cache
-            final S3Request request = getRequestFromLocalCache(firstFragmentIx + i + 1);
-            if (request == null || !request.isDone()) {
+            final S3Request.AcquiredRequest acquiredReadAheadRequest =
+                    getRequestFromSharedCache(firstFragmentIx + i + 1);
+            if (acquiredReadAheadRequest == null) {
+                break;
+            }
+            final S3Request request = acquiredReadAheadRequest.request;
+            if (!request.isDone()) {
                 break;
             }
             // non-blocking since we know isDone
@@ -146,7 +144,6 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
     }
 
     private void reset() {
-        releaseOutstanding();
         // Reset the internal state
         uri = null;
         size = UNINITIALIZED_SIZE;
@@ -162,49 +159,27 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
         if (log.isDebugEnabled()) {
             log.debug().append("Closing context: ").append(ctxStr()).endl();
         }
-        releaseOutstanding();
-    }
-
-    /**
-     * Release all outstanding requests associated with this context. Eventually, the request will be canceled when the
-     * objects are garbage collected.
-     */
-    private void releaseOutstanding() {
-        Arrays.fill(localCache, null);
     }
 
     // --------------------------------------------------------------------------------------------------
 
     @Nullable
-    private S3Request getRequestFromLocalCache(final long fragmentIndex) {
-        return getRequestFromLocalCache(fragmentIndex, cacheIndex(fragmentIndex));
-    }
-
-    @Nullable
-    private S3Request getRequestFromLocalCache(final long fragmentIndex, final int cacheIdx) {
-        if (localCache[cacheIdx] != null && localCache[cacheIdx].request.isFragment(fragmentIndex)) {
-            return localCache[cacheIdx].request;
+    private S3Request.AcquiredRequest getRequestFromSharedCache(final long fragmentIndex) {
+        final S3Request.AcquiredRequest cachedRequest = sharedCache.getRequest(uri, fragmentIndex);
+        if (cachedRequest == null) {
+            return null;
         }
-        return null;
+        // Send the request, if not sent already. The following method is idempotent, so we always call it.
+        cachedRequest.request.sendRequest();
+        return cachedRequest;
     }
 
     @NotNull
-    private S3Request getOrCreateRequest(final long fragmentIndex) {
-        final int cacheIdx = cacheIndex(fragmentIndex);
-        final S3Request locallyCached = getRequestFromLocalCache(fragmentIndex, cacheIdx);
-        if (locallyCached != null) {
-            return locallyCached;
-        }
-        final S3Request.AcquiredRequest sharedCacheRequest = sharedCache.getOrCreateRequest(uri, fragmentIndex, this);
-        // Cache the request and the ownership token locally
-        localCache[cacheIdx] = sharedCacheRequest;
+    private S3Request.AcquiredRequest getOrCreateRequest(final long fragmentIndex) {
+        final S3Request.AcquiredRequest cachedRequest = sharedCache.getOrCreateRequest(uri, fragmentIndex, this);
         // Send the request, if not sent already. The following method is idempotent, so we always call it.
-        sharedCacheRequest.request.sendRequest();
-        return sharedCacheRequest.request;
-    }
-
-    private int cacheIndex(final long fragmentIndex) {
-        return (int) (fragmentIndex % instructions.maxCacheSize());
+        cachedRequest.request.sendRequest();
+        return cachedRequest;
     }
 
     private long fragmentIndex(final long pos) {

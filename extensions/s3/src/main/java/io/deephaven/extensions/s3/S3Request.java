@@ -49,11 +49,15 @@ final class S3Request extends SoftReference<ByteBuffer>
          * The ownership token keeps the request alive. When the ownership token is GC'd, the request is no longer
          * usable and will be cleaned up.
          */
-        final Object ownershipToken;
+        Object ownershipToken;
 
         AcquiredRequest(final S3Request request, final Object ownershipToken) {
             this.request = request;
             this.ownershipToken = ownershipToken;
+        }
+
+        void release() {
+            ownershipToken = null;
         }
     }
 

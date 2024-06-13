@@ -8,6 +8,7 @@ import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import software.amazon.awssdk.services.s3.S3Uri;
 
 /**
@@ -44,6 +45,27 @@ final class S3RequestCache {
      */
     int getFragmentSize() {
         return fragmentSize;
+    }
+
+    /**
+     * Acquire a request for the given URI and fragment index if it already exists in the cache.
+     *
+     * @param uri the URI
+     * @param fragmentIndex the fragment index
+     * @return the request
+     */
+    @Nullable
+    S3Request.AcquiredRequest getRequest(@NotNull final S3Uri uri, final long fragmentIndex) {
+        final S3Request.ID key = new S3Request.ID(uri, fragmentIndex);
+        final S3Request existingRequest = requests.get(key);
+        if (existingRequest != null) {
+            final S3Request.AcquiredRequest acquired = existingRequest.tryAcquire();
+            if (acquired != null) {
+                return acquired;
+            }
+            remove(existingRequest);
+        }
+        return null;
     }
 
     /**
