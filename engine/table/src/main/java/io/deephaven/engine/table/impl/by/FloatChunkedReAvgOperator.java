@@ -127,12 +127,12 @@ class FloatChunkedReAvgOperator implements IterativeChunkedAggregationOperator {
             double sumSumValue) {
         if (nanValue > 0 || (picValue > 0 && nicValue > 0)) {
             return !Float.isNaN(resultColumn.getAndSetUnsafe(destination, Float.NaN));
-        } else if (nncValue == 0) {
-            return resultColumn.getAndSetUnsafe(destination, NULL_FLOAT) != NULL_FLOAT;
         } else if (picValue > 0) {
             return resultColumn.getAndSetUnsafe(destination, Float.POSITIVE_INFINITY) != Float.POSITIVE_INFINITY;
         } else if (nicValue > 0) {
             return resultColumn.getAndSetUnsafe(destination, Float.NEGATIVE_INFINITY) != Float.NEGATIVE_INFINITY;
+        } else if (nncValue == 0) {
+            return resultColumn.getAndSetUnsafe(destination, NULL_FLOAT) != NULL_FLOAT;
         } else {
             final float newValue = (float) (sumSumValue / nncValue);
             return resultColumn.getAndSetUnsafe(destination, newValue) != newValue;
