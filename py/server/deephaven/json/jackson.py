@@ -8,7 +8,7 @@ import jpy
 
 from typing import Optional
 
-from . import JsonValueType, json
+from . import JsonValueType, json_val
 
 
 def provider(
@@ -25,7 +25,7 @@ def provider(
     """
     _JProvider = jpy.get_type("io.deephaven.json.jackson.JacksonProvider")
     return (
-        _JProvider.of(json(json_value).j_value, factory)
+        _JProvider.of(json_val(json_value).j_value, factory)
         if factory
-        else _JProvider.of(json(json_value).j_value)
+        else _JProvider.of(json_val(json_value).j_value)
     )

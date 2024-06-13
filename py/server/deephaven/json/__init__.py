@@ -23,25 +23,25 @@ from deephaven._jpy import strict_cast
 
 
 __all__ = [
-    "string_",
-    "bool_",
-    "char_",
-    "byte_",
-    "short_",
-    "int_",
-    "long_",
-    "float_",
-    "double_",
-    "instant_",
-    "big_integer_",
-    "big_decimal_",
-    "array_",
-    "object_",
-    "object_kv_",
-    "tuple_",
-    "any_",
-    "skip_",
-    "json",
+    "string_val",
+    "bool_val",
+    "char_val",
+    "byte_val",
+    "short_val",
+    "int_val",
+    "long_val",
+    "float_val",
+    "double_val",
+    "instant_val",
+    "big_integer_val",
+    "big_decimal_val",
+    "array_val",
+    "object_val",
+    "object_kv_val",
+    "tuple_val",
+    "any_val",
+    "skip_val",
+    "json_val",
     "JsonValue",
     "JsonValueType",
     "RepeatedFieldBehavior",
@@ -164,7 +164,7 @@ class FieldOptions:
         builder = (
             _JObjectField.builder()
             .name(name)
-            .options(json(self.value).j_value)
+            .options(json_val(self.value).j_value)
             .repeatedBehavior(self.repeated_behavior.value)
             .caseSensitive(self.case_sensitive)
         )
@@ -198,7 +198,7 @@ def _build(
     )
 
 
-def object_(
+def object_val(
     fields: Dict[str, Union[JsonValueType, FieldOptions]],
     allow_unknown_fields: bool = True,
     allow_missing: bool = True,
@@ -214,13 +214,13 @@ def object_(
     might be modelled as the object type
 
     .. code-block:: python
-        object_({ "name": str, "age": int })
+        object_val({ "name": str, "age": int })
 
     In contexts where the user needs to create a JsonValueType and isn't changing any default values, the user can
     simplify by using a Dict[str, Union[JsonValueType, FieldOptions]]. For example,
 
     .. code-block:: python
-        some_method(object_({ "name": str, "age": int }))
+        some_method(object_val({ "name": str, "age": int }))
 
     could be simplified to
 
@@ -258,7 +258,7 @@ def object_(
     return JsonValue(builder.build())
 
 
-def typed_object_(
+def typed_object_val(
     type_field: str,
     shared_fields: Dict[str, Union[JsonValueType, FieldOptions]],
     objects: Dict[str, JsonValueType],
@@ -281,7 +281,7 @@ def typed_object_(
     field:
 
     .. code-block:: python
-        typed_object_(
+        typed_object_val(
             "type",
             {"symbol": str},
             {
@@ -334,12 +334,12 @@ def typed_object_(
         builder.addSharedFields(shared_field_opts._j_field_options(shared_field_name))
     for object_name, object_type in objects.items():
         builder.putObjects(
-            object_name, strict_cast(json(object_type).j_value, _JObjectValue)
+            object_name, strict_cast(json_val(object_type).j_value, _JObjectValue)
         )
     return JsonValue(builder.build())
 
 
-def array_(
+def array_val(
     element: JsonValueType,
     allow_missing: bool = True,
     allow_null: bool = True,
@@ -352,13 +352,13 @@ def array_(
     might be modelled as an array of ints
 
     .. code-block:: python
-        array_(int)
+        array_val(int)
 
     In contexts where the user needs to create a JsonValueType and isn't changing any default values, the user can
     simplify by using a list with a single element type. For example,
 
     .. code-block:: python
-        some_method(array_(element))
+        some_method(array_val(element))
 
     could be simplified to
 
@@ -374,12 +374,12 @@ def array_(
         the array value
     """
     builder = _JArrayValue.builder()
-    builder.element(json(element).j_value)
+    builder.element(json_val(element).j_value)
     _build(builder, allow_missing, allow_null, allow_array=True)
     return JsonValue(builder.build())
 
 
-def object_kv_(
+def object_kv_val(
     key_type: JsonValueType = str,
     value_type: Optional[JsonValueType] = None,
     allow_missing: bool = True,
@@ -400,7 +400,7 @@ def object_kv_(
     might be modelled as the object kv type
 
     .. code-block:: python
-        object_kv_(value_type=int)
+        object_kv_val(value_type=int)
 
     Args:
         key_type (JsonValueType): the key element, by defaults is type str
@@ -412,13 +412,13 @@ def object_kv_(
         the object kv value
     """
     builder = _JObjectKvValue.builder()
-    builder.key(json(key_type).j_value)
-    builder.value(json(value_type).j_value)
+    builder.key(json_val(key_type).j_value)
+    builder.value(json_val(value_type).j_value)
     _build(builder, allow_missing, allow_null, allow_object=True)
     return JsonValue(builder.build())
 
 
-def tuple_(
+def tuple_val(
     values: Union[Tuple[JsonValueType, ...], Dict[str, JsonValueType]],
     allow_missing: bool = True,
     allow_null: bool = True,
@@ -431,18 +431,18 @@ def tuple_(
     might be modelled as the tuple type
 
     .. code-block:: python
-        tuple_((str, int, float))
+        tuple_val((str, int, float))
 
     To provide meaningful names, a dictionary can be used:
 
     .. code-block:: python
-        tuple_({"name": str, "age": int, "height": float})
+        tuple_val({"name": str, "age": int, "height": float})
 
     In contexts where the user needs to create a JsonValueType and isn't changing any default values nor is setting
     names, the user can simplify passing through a python tuple type. For example,
 
     .. code-block:: python
-        some_method(tuple_((tuple_type_1, tuple_type_2)))
+        some_method(tuple_val((tuple_type_1, tuple_type_2)))
 
     could be simplified to
 
@@ -470,11 +470,11 @@ def tuple_(
         allow_array=True,
     )
     for name, json_value_type in kvs:
-        builder.putNamedValues(str(name), json(json_value_type).j_value)
+        builder.putNamedValues(str(name), json_val(json_value_type).j_value)
     return JsonValue(builder.build())
 
 
-def bool_(
+def bool_val(
     allow_string: bool = False,
     allow_missing: bool = True,
     allow_null: bool = True,
@@ -489,13 +489,13 @@ def bool_(
     might be modelled as the bool type
 
     .. code-block:: python
-        bool_()
+        bool_val()
 
     In contexts where the user needs to create a JsonValueType and isn't changing any default values, the user can
     simplify by using the python built-in bool type. For example,
 
     .. code-block:: python
-        some_method(bool_())
+        some_method(bool_val())
 
     could be simplified to
 
@@ -527,7 +527,7 @@ def bool_(
     return JsonValue(builder.build())
 
 
-def char_(
+def char_val(
     allow_missing: bool = True,
     allow_null: bool = True,
     on_missing: Optional[str] = None,
@@ -541,7 +541,7 @@ def char_(
     might be modelled as the char type
 
     .. code-block:: python
-        char_()
+        char_val()
 
     Args:
         allow_missing (bool): if the char value is allowed to be missing, default is True
@@ -566,7 +566,7 @@ def char_(
     return JsonValue(builder.build())
 
 
-def byte_(
+def byte_val(
     allow_decimal: bool = False,
     allow_string: bool = False,
     allow_missing: bool = True,
@@ -582,7 +582,7 @@ def byte_(
     might be modelled as the byte type
 
     .. code-block:: python
-        byte_()
+        byte_val()
 
     Args:
         allow_decimal (bool): if the byte value is allowed to be a JSON decimal type, default is False
@@ -611,7 +611,7 @@ def byte_(
     return JsonValue(builder.build())
 
 
-def short_(
+def short_val(
     allow_decimal: bool = False,
     allow_string: bool = False,
     allow_missing: bool = True,
@@ -627,7 +627,7 @@ def short_(
     might be modelled as the short type
 
     .. code-block:: python
-        short_()
+        short_val()
 
     Args:
         allow_decimal (bool): if the short value is allowed to be a JSON decimal type, default is False
@@ -656,7 +656,7 @@ def short_(
     return JsonValue(builder.build())
 
 
-def int_(
+def int_val(
     allow_decimal: bool = False,
     allow_string: bool = False,
     allow_missing: bool = True,
@@ -672,7 +672,7 @@ def int_(
     might be modelled as the int type
 
     .. code-block:: python
-        int_()
+        int_val()
 
     Args:
         allow_decimal (bool): if the int value is allowed to be a JSON decimal type, default is False
@@ -701,7 +701,7 @@ def int_(
     return JsonValue(builder.build())
 
 
-def long_(
+def long_val(
     allow_decimal: bool = False,
     allow_string: bool = False,
     allow_missing: bool = True,
@@ -717,13 +717,13 @@ def long_(
     might be modelled as the long type
 
     .. code-block:: python
-        long_()
+        long_val()
 
     In contexts where the user needs to create a JsonValueType and isn't changing any default values, the user can
     simplify by using the python built-in long type. For example,
 
     .. code-block:: python
-        some_method(long_())
+        some_method(long_val())
 
     could be simplified to
 
@@ -757,7 +757,7 @@ def long_(
     return JsonValue(builder.build())
 
 
-def float_(
+def float_val(
     allow_string: bool = False,
     allow_missing: bool = True,
     allow_null: bool = True,
@@ -772,7 +772,7 @@ def float_(
     might be modelled as the float type
 
     .. code-block:: python
-        float_()
+        float_val()
 
     Args:
         allow_string (bool): if the float value is allowed to be a JSON string type, default is False
@@ -800,7 +800,7 @@ def float_(
     return JsonValue(builder.build())
 
 
-def double_(
+def double_val(
     allow_string: bool = False,
     allow_missing: bool = True,
     allow_null: bool = True,
@@ -815,13 +815,13 @@ def double_(
     might be modelled as the double type
 
     .. code-block:: python
-        double_()
+        double_val()
 
     In contexts where the user needs to create a JsonValueType and isn't changing any default values, the user can
     simplify by using the python built-in float type. For example,
 
     .. code-block:: python
-        some_method(double_())
+        some_method(double_val())
 
     could be simplified to
 
@@ -854,7 +854,7 @@ def double_(
     return JsonValue(builder.build())
 
 
-def string_(
+def string_val(
     allow_int: bool = False,
     allow_decimal: bool = False,
     allow_bool: bool = False,
@@ -871,13 +871,13 @@ def string_(
     might be modelled as the string type
 
     .. code-block:: python
-        string_()
+        string_val()
 
     In contexts where the user needs to create a JsonValueType and isn't changing any default values, the user can
     simplify by using the python built-in str type. For example,
 
     .. code-block:: python
-        some_method(string_())
+        some_method(string_val())
 
     could be simplified to
 
@@ -914,7 +914,7 @@ def string_(
 
 
 # TODO(deephaven-core#5269): Create deephaven.time time-type aliases
-def instant_(
+def instant_val(
     allow_missing: bool = True,
     allow_null: bool = True,
     number_format: Literal[None, "s", "ms", "us", "ns"] = None,
@@ -930,7 +930,7 @@ def instant_(
     might be modelled as the Instant type
 
     .. code-block:: python
-        instant_()
+        instant_val()
 
     In another example, the JSON decimal
 
@@ -940,13 +940,13 @@ def instant_(
     might be modelled as the Instant type
 
     .. code-block:: python
-        instant_(number_format="s", allow_decimal=True)
+        instant_val(number_format="s", allow_decimal=True)
 
     In contexts where the user needs to create a JsonValueType and isn't changing any default values, the user can
     simplify by using the python datetime type. For example,
 
     .. code-block:: python
-        some_method(instant_())
+        some_method(instant_val())
 
     could be simplified to
 
@@ -1007,7 +1007,7 @@ def instant_(
         return JsonValue(builder.build())
 
 
-def big_integer_(
+def big_integer_val(
     allow_string: bool = False,
     allow_decimal: bool = False,
     allow_missing: bool = True,
@@ -1023,7 +1023,7 @@ def big_integer_(
     might be modelled as the BigInteger type
 
     .. code-block:: python
-        big_integer_()
+        big_integer_val()
 
     Args:
         allow_string (bool): if the BigInteger value is allowed to be a JSON string type, default is False.
@@ -1052,7 +1052,7 @@ def big_integer_(
     return JsonValue(builder.build())
 
 
-def big_decimal_(
+def big_decimal_val(
     allow_string: bool = False,
     allow_missing: bool = True,
     allow_null: bool = True,
@@ -1067,7 +1067,7 @@ def big_decimal_(
     might be modelled as the BigDecimal type
 
     .. code-block:: python
-        big_decimal_()
+        big_decimal_val()
 
     Args:
         allow_string (bool): if the BigDecimal value is allowed to be a JSON string type, default is False.
@@ -1095,7 +1095,7 @@ def big_decimal_(
     return JsonValue(builder.build())
 
 
-def any_() -> JsonValue:
+def any_val() -> JsonValue:
     """Creates an "any" value. The resulting type is implementation dependant.
 
     Returns:
@@ -1104,7 +1104,7 @@ def any_() -> JsonValue:
     return JsonValue(_JAnyValue.of())
 
 
-def skip_(
+def skip_val(
     allow_missing: Optional[bool] = None,
     allow_null: Optional[bool] = None,
     allow_int: Optional[bool] = None,
@@ -1124,7 +1124,7 @@ def skip_(
     might be modelled as the object type
 
     .. code-block:: python
-        object_({ "name": str, "age": skip_() }, allow_unknown_fields=False)
+        object_val({ "name": str, "age": skip_val() }, allow_unknown_fields=False)
 
     Args:
         allow_missing (Optional[bool]): if a missing JSON value is allowed, by default is None
@@ -1159,7 +1159,7 @@ def skip_(
     return JsonValue(builder.build())
 
 
-def json(json_value_type: JsonValueType) -> JsonValue:
+def json_val(json_value_type: JsonValueType) -> JsonValue:
     """Creates a JsonValue from a JsonValueType.
 
     Args:
@@ -1175,47 +1175,47 @@ def json(json_value_type: JsonValueType) -> JsonValue:
     if isinstance(json_value_type, type):
         return _type_dict[json_value_type]
     if isinstance(json_value_type, Dict):
-        return object_(json_value_type)
+        return object_val(json_value_type)
     if isinstance(json_value_type, List):
         if len(json_value_type) is not 1:
             raise TypeError("Expected List as json type to have exactly one element")
-        return array_(json_value_type[0])
+        return array_val(json_value_type[0])
     if isinstance(json_value_type, Tuple):
-        return tuple_(json_value_type)
+        return tuple_val(json_value_type)
     raise TypeError(f"Unsupported JSON value type {type(json_value_type)}")
 
 
 _dtype_dict = {
-    dtypes.bool_: bool_(),
-    dtypes.char: char_(),
-    dtypes.int8: byte_(),
-    dtypes.int16: short_(),
-    dtypes.int32: int_(),
-    dtypes.int64: long_(),
-    dtypes.float32: float_(),
-    dtypes.float64: double_(),
-    dtypes.string: string_(),
-    dtypes.Instant: instant_(),
-    dtypes.BigInteger: big_integer_(),
-    dtypes.BigDecimal: big_decimal_(),
-    dtypes.JObject: any_(),
-    dtypes.bool_array: array_(bool_()),
-    dtypes.char_array: array_(char_()),
-    dtypes.int8_array: array_(byte_()),
-    dtypes.int16_array: array_(short_()),
-    dtypes.int32_array: array_(int_()),
-    dtypes.int64_array: array_(long_()),
-    dtypes.float32_array: array_(float_()),
-    dtypes.float64_array: array_(double_()),
-    dtypes.string_array: array_(string_()),
-    dtypes.instant_array: array_(instant_()),
+    dtypes.bool_: bool_val(),
+    dtypes.char: char_val(),
+    dtypes.int8: byte_val(),
+    dtypes.int16: short_val(),
+    dtypes.int32: int_val(),
+    dtypes.int64: long_val(),
+    dtypes.float32: float_val(),
+    dtypes.float64: double_val(),
+    dtypes.string: string_val(),
+    dtypes.Instant: instant_val(),
+    dtypes.BigInteger: big_integer_val(),
+    dtypes.BigDecimal: big_decimal_val(),
+    dtypes.JObject: any_val(),
+    dtypes.bool_array: array_val(bool_val()),
+    dtypes.char_array: array_val(char_val()),
+    dtypes.int8_array: array_val(byte_val()),
+    dtypes.int16_array: array_val(short_val()),
+    dtypes.int32_array: array_val(int_val()),
+    dtypes.int64_array: array_val(long_val()),
+    dtypes.float32_array: array_val(float_val()),
+    dtypes.float64_array: array_val(double_val()),
+    dtypes.string_array: array_val(string_val()),
+    dtypes.instant_array: array_val(instant_val()),
 }
 
 _type_dict = {
-    bool: bool_(),
-    int: long_(),
-    float: double_(),
-    str: string_(),
-    datetime: instant_(),
-    object: any_(),
+    bool: bool_val(),
+    int: long_val(),
+    float: double_val(),
+    str: string_val(),
+    datetime: instant_val(),
+    object: any_val(),
 }
