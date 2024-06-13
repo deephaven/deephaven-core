@@ -19,24 +19,21 @@ import java.util.Set;
  *
  * <p>
  * For example, the following might be modelled as a type-discriminated object with "type" as the type field, "symbol"
- * as a shared field, with a "trade" object containing a "bid" and an "ask" field, and with a "quote" object containing
+ * as a shared field, with a "quote" object containing a "bid" and an "ask" field, and with a "trade" object containing
  * a "price" and a "size" field:
  *
- * <pre>
- * {
- *   "type": "trade",
- *   "symbol": "FOO",
- *   "price": 70.03,
- *   "size": 42
- * }
- * </pre>
- * 
  * <pre>
  * {
  *   "type": "quote",
  *   "symbol": "BAR",
  *   "bid": 10.01,
  *   "ask": 10.05
+ * }
+ * {
+ *   "type": "trade",
+ *   "symbol": "FOO",
+ *   "price": 70.03,
+ *   "size": 42
  * }
  * </pre>
  */

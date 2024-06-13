@@ -4,10 +4,24 @@
 package io.deephaven.json.jackson;
 
 import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.TreeNode;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.json.AnyValue;
+import io.deephaven.json.ArrayValue;
+import io.deephaven.json.DoubleValue;
+import io.deephaven.json.IntValue;
+import io.deephaven.json.LongValue;
+import io.deephaven.json.ObjectKvValue;
+import io.deephaven.json.ObjectValue;
+import io.deephaven.json.StringValue;
+import io.deephaven.json.TupleValue;
+import io.deephaven.json.TypedObjectValue;
 import io.deephaven.json.Value;
 import io.deephaven.processor.NamedObjectProcessor;
 import io.deephaven.processor.ObjectProcessor;
 import io.deephaven.qst.type.Type;
+import io.deephaven.util.annotations.FinalDefault;
 
 import java.io.File;
 import java.net.URL;
@@ -19,7 +33,123 @@ import java.util.Set;
 import java.util.function.Function;
 
 /**
- * A specific JSON processor implementation using Jackson.
+ * A {@link Value JSON value} {@link ObjectProcessor processor} implementation using Jackson.
+ *
+ * <p>
+ * This implementation allows users to efficiently parse / destructure a
+ * <a href="https://www.json.org/json-en.html">JSON value</a> (from a supported {@link JacksonProvider#getInputTypes()
+ * input type}) into {@link WritableChunk writable chunks} according to the type(s) as specified by its {@link Value
+ * Value type}. This is done using the <a href="https://github.com/FasterXML/jackson-core">Jackson <b>streaming
+ * API</b></a> {@link JsonParser} (as opposed to the databind / object mapping API, which must first create intermediate
+ * objects).
+ *
+ * <p>
+ * The "simple" types are self-explanatory. For example, the {@link StringValue} represents a {@link String} output
+ * type, and (by default) expects a JSON string as input; the {@link IntValue} represents an {@code int} output type,
+ * and (by default) expects a JSON number as input. The allowed JSON input types can be specified via
+ * {@link Value#allowedTypes() allowed types}; users are encouraged to use the strictest type they can according to how
+ * their JSON data is serialized.
+ *
+ * <p>
+ * The most common "complex" type is {@link ObjectValue}, which expects to parse a JSON object known fields. The object
+ * contains {@link ObjectValue#fields()}, which represent other {@link Value values}. The fields are recursively
+ * resolved and flattened into the {@link ObjectProcessor#outputTypes()}. For example, a JSON object, which itself
+ * contains another JSON object
+ *
+ * <pre>
+ * {
+ *   "city": "Plymouth",
+ *   "point": {
+ *       "latitude": 45.018269,
+ *       "longitude": -93.473892
+ *   }
+ * }
+ * </pre>
+ *
+ * when represented with structuring as one might expect ({@link ObjectValue}({@link StringValue},
+ * {@link ObjectValue}({@link DoubleValue}, {@link DoubleValue}))), will produce {@link ObjectProcessor#outputTypes()
+ * output types} representing {@code [String, double, double]}. Furthermore, the field names and delimiter "_" will be
+ * used by default to provide the {@link NamedObjectProcessor#names() names}
+ * {@code ["city", "point_latitude", "point_longitude"]}.
+ *
+ * <p>
+ * The {@link ArrayValue} represents a variable-length array, which expects to parse a JSON array where each element is
+ * expected to have the same {@link ArrayValue#element() element type}. (This is in contrast to JSON arrays more
+ * generally, where each element of the array can be a different JSON value type.) The output type will be the output
+ * type(s) of the element type as the component type of a native array, {@link Type#arrayType()}. For example, if we
+ * used the previous example as the {@link ArrayValue#element() array component type}, it will produce
+ * {@link ObjectProcessor#outputTypes() output types} representing {@code [String[], double[], double[]]} (the
+ * {@link NamedObjectProcessor#names() names} will remain unchanged).
+ *
+ * <p>
+ * The {@link TupleValue} represents a fixed number of {@link TupleValue#namedValues() value types}, which expects to
+ * parse a fixed-length JSON array where each element is has the corresponding value type. The values are recursively
+ * resolved and flattened into the {@link ObjectProcessor#outputTypes()}; for example, the earlier example's data could
+ * be re-represented as the JSON array
+ *
+ * <pre>
+ * ["Plymouth", 45.018269, -93.473892]
+ * </pre>
+ * 
+ * and structured as one might expect ({@link TupleValue}({@link StringValue}, {@link DoubleValue},
+ * {@link DoubleValue})), and will produce {@link ObjectProcessor#outputTypes() output types} representing
+ * {@code [String, double, double]}. Even though no field names are present in the JSON value, users may set names for
+ * each element {@link TupleValue#namedValues()} (and will otherwise inherit integer-indexed default names).
+ *
+ * <p>
+ * The {@link TypedObjectValue} represents a union of {@link ObjectValue object values} where the first field is
+ * type-discriminating. For example, the following might be modelled as a type-discriminated object with
+ * type-discriminating field "type", shared "symbol" {@link StringValue}, "quote" object of "bid" {@link DoubleValue}
+ * and an "ask" {@link DoubleValue}, and "trade" object containing a "price" {@link DoubleValue} and a "size"
+ * {@link LongValue}.
+ *
+ * <pre>
+ * {
+ *   "type": "quote",
+ *   "symbol": "BAR",
+ *   "bid": 10.01,
+ *   "ask": 10.05
+ * }
+ * {
+ *   "type": "trade",
+ *   "symbol": "FOO",
+ *   "price": 70.03,
+ *   "size": 42
+ * }
+ * </pre>
+ *
+ * The {@link ObjectProcessor#outputTypes() output types} are first the type-discriminating field, then the shared
+ * fields (if any), followed by the individual {@link ObjectValue object value} fields; with the above example, that
+ * would result in {@link ObjectProcessor#outputTypes() output types}
+ * {@code [String, String, double, double, double long]} and {@link NamedObjectProcessor#names() names}
+ * {@code ["type", "symbol", "quote_bid", "quote_ask", "trade_price", "trade_size"]}.
+ *
+ * <p>
+ * The {@link ObjectKvValue} represents a variable-length object, which expects to parse a JSON object where each
+ * key-value pair has a common {@link ObjectKvValue#value() value type}. The output type will be the output type of the
+ * key and value element types as components types of native arrays ({@link Type#arrayType()}. For example, a JSON
+ * object, whose values are also JSON objects
+ *
+ * <pre>
+ * {
+ *   "Plymouth": {
+ *       "latitude": 45.018269,
+ *       "longitude": -93.473892
+ *   },
+ *   "New York": {
+ *       "latitude": 40.730610,
+ *       "longitude": -73.935242
+ *   }
+ * }
+ * </pre>
+ *
+ * when represented with structuring as one might expect ({@link ObjectKvValue}({@link StringValue},
+ * {@link ObjectValue}({@link DoubleValue}, {@link DoubleValue}))), will produce {@link ObjectProcessor#outputTypes()
+ * output types} representing {@code [String[], double[], double[]]}.
+ *
+ * <p>
+ * The {@link AnyValue} type represents a {@link TreeNode} output; this requires that the Jackson databinding API be
+ * available on the classpath. This is useful for initial modelling and debugging purposes.
  */
 public interface JacksonProvider extends NamedObjectProcessor.Provider {
 
@@ -71,6 +201,7 @@ public interface JacksonProvider extends NamedObjectProcessor.Provider {
      * @return the supported types
      */
     @Override
+    @FinalDefault
     default Set<Type<?>> inputTypes() {
         return getInputTypes();
     }
