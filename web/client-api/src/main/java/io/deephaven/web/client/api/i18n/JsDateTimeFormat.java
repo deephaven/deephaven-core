@@ -237,7 +237,7 @@ public class JsDateTimeFormat {
             // append required digits (may truncate the number if requested)
             String nanoString = Integer.toString(nanos);
             assert nanoString.length() <= 9;
-            for (int i = nanoString.length(); i < 9; i++) {
+            for (int i = 0; i < 9 - nanoString.length() && i < nanoCount; i++) {
                 sb.append('0');
                 remainingNanoDigits--;
             }
