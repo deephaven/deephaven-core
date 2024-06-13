@@ -65,6 +65,7 @@ import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.*;
@@ -86,9 +87,6 @@ import static org.junit.Assert.assertArrayEquals;
  */
 @Category(OutOfBandTest.class)
 public class QueryTableTest extends QueryTableTestBase {
-
-    private static final EgressInitializationThreadPool EGRESS_INITIALIZATION =
-            new EgressInitializationThreadPool(ThreadInitializationFactory.NO_OP);
 
     public void testUngroupWithNullSecondColumn() {
         final QueryTable qt = testRefreshingTable(
@@ -2709,10 +2707,35 @@ public class QueryTableTest extends QueryTableTestBase {
                 ColumnVectors.ofObject(t1, "Y", String.class).toArray());
     }
 
+    private static class CustomOperationInitializationThreadPool extends EgressInitializationThreadPool {
+        private final AtomicBoolean isUsed = new AtomicBoolean(false);
+
+        CustomOperationInitializationThreadPool() {
+            super(ThreadInitializationFactory.NO_OP);
+        }
+
+        boolean isUsed() {
+            return isUsed.get();
+        }
+
+        @Override
+        public Future<?> submit(Runnable runnable) {
+            isUsed.set(true);
+            return super.submit(runnable);
+        }
+
+        void reset() {
+            isUsed.set(false);
+        }
+    }
+
     public void testEmptyTableSnapshot() {
+        final Table emptyTableNoColumns = emptyTable(0);
+        final Table emptyTableWithColumns = emptyTable(0).update("X = i");
+        final CustomOperationInitializationThreadPool customOperationInitilaizer =
+                new CustomOperationInitializationThreadPool();
         try (SafeCloseable ignored =
-                ExecutionContext.getContext().withOperationInitializer(EGRESS_INITIALIZATION).open()) {
-            final Table emptyTableNoColumns = emptyTable(0);
+                ExecutionContext.getContext().withOperationInitializer(customOperationInitilaizer).open()) {
             try (final BarrageMessage snap =
                     ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) emptyTableNoColumns)) {
                 assertTrue(snap.rowsIncluded.isEmpty());
@@ -2720,7 +2743,6 @@ public class QueryTableTest extends QueryTableTestBase {
                 assertTrue(snap.modColumnData.length == 0);
             }
 
-            final Table emptyTableWithColumns = emptyTable(0).update("X = i");
             try (final BarrageMessage snap =
                     ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) emptyTableWithColumns)) {
                 assertTrue(snap.rowsIncluded.isEmpty());
@@ -2729,6 +2751,10 @@ public class QueryTableTest extends QueryTableTestBase {
                 assertTrue(snap.modColumnData[0].data.isEmpty());
             }
         }
+
+        // Verify that the custom operation initializer thread pool was not used because empty tables should not be
+        // snapshot in parallel
+        assertFalse(customOperationInitilaizer.isUsed());
     }
 
     public void testUngroupConstructSnapshotOfBoxedNull() {
@@ -2736,9 +2762,18 @@ public class QueryTableTest extends QueryTableTestBase {
                 testRefreshingTable(i(0).toTracking())
                         .update("X = new Integer[]{null, 2, 3}", "Z = new Integer[]{4, 5, null}");
         final Table ungrouped = t.ungroup();
-        try (final BarrageMessage snap = ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) ungrouped)) {
-            testUngroupConstructSnashotBoxedNullAllColumnHelper(snap);
+        final CustomOperationInitializationThreadPool customOperationInitilaizer =
+                new CustomOperationInitializationThreadPool();
+        try (SafeCloseable ignored =
+                ExecutionContext.getContext().withOperationInitializer(customOperationInitilaizer).open()) {
+            try (final BarrageMessage snap =
+                    ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) ungrouped)) {
+                testUngroupConstructSnashotBoxedNullAllColumnHelper(snap);
+            }
         }
+        // Verify that the custom operation initializer thread pool was used
+        assertTrue(customOperationInitilaizer.isUsed());
+
         // Snapshot the second column for last two rows
         final BitSet columnsToSnapshot = new BitSet(2);
         columnsToSnapshot.set(1);
@@ -2750,9 +2785,17 @@ public class QueryTableTest extends QueryTableTestBase {
         }
 
         final Table selected = ungrouped.select(); // Will convert column sources to in memory
-        try (final BarrageMessage snap = ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) selected)) {
-            testUngroupConstructSnashotBoxedNullAllColumnHelper(snap);
+        customOperationInitilaizer.reset();
+        try (SafeCloseable ignored =
+                ExecutionContext.getContext().withOperationInitializer(customOperationInitilaizer).open()) {
+            try (final BarrageMessage snap =
+                    ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) selected)) {
+                testUngroupConstructSnashotBoxedNullAllColumnHelper(snap);
+            }
         }
+        // Verify that the custom operation initializer thread pool was not used because all columns in memory
+        assertFalse(customOperationInitilaizer.isUsed());
+
         try (final BarrageMessage snap =
                 ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(this, (BaseTable<?>) selected,
                         columnsToSnapshot, RowSequenceFactory.forRange(1, 2), null)) {
@@ -2784,9 +2827,18 @@ public class QueryTableTest extends QueryTableTestBase {
                 testRefreshingTable(i(0).toTracking())
                         .update("X = new Integer[]{null, 2, 3}");
         final Table ungrouped = t.ungroup();
-        try (final BarrageMessage snap = ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) ungrouped)) {
-            testUngroupConstructSnashotSinlgeColumnHelper(snap);
+        CustomOperationInitializationThreadPool customOperationInitilaizer =
+                new CustomOperationInitializationThreadPool();
+        try (SafeCloseable ignored =
+                ExecutionContext.getContext().withOperationInitializer(customOperationInitilaizer).open()) {
+            try (final BarrageMessage snap =
+                    ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) ungrouped)) {
+                testUngroupConstructSnashotSinlgeColumnHelper(snap);
+            }
         }
+        // Verify that the custom operation initializer thread pool was not used because single column table
+        assertFalse(customOperationInitilaizer.isUsed());
+
         final Table selected = ungrouped.select(); // Will convert column sources to in memory
         try (final BarrageMessage snap = ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) selected)) {
             testUngroupConstructSnashotSinlgeColumnHelper(snap);

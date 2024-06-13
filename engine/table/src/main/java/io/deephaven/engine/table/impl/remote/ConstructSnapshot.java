@@ -1542,7 +1542,9 @@ public class ConstructSnapshot {
         if (!nonEmptyColumnsIndices.isEmpty()) {
             final ExecutionContext executionContext = ExecutionContext.getContext();
             final boolean canParallelize =
-                    ENABLE_PARALLEL_SNAPSHOT && executionContext.getOperationInitializer().canParallelize() &&
+                    ENABLE_PARALLEL_SNAPSHOT &&
+                            executionContext.getOperationInitializer().canParallelize() &&
+                            nonEmptyColumnsIndices.size() > 1 &&
                             (snapshot.rowsIncluded.size() > MINIMUM_PARALLEL_SNAPSHOT_ROWS ||
                                     !allColumnSourcesInMemory(table, columnSources, nonEmptyColumnsIndices));
             if (canParallelize) {
