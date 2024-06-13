@@ -18,15 +18,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class ObjectKvValueTest {
 
-    private static final ObjectKvValue STRING_INT_KV =
-            ObjectKvValue.standard(IntValue.standard());
+    private static final ObjectEntriesValue STRING_INT_KV =
+            ObjectEntriesValue.standard(IntValue.standard());
 
     private static final ObjectValue NAME_AGE_OBJ = ObjectValue.builder()
             .putFields("name", StringValue.standard())
             .putFields("age", IntValue.standard())
             .build();
 
-    private static final ObjectKvValue STRING_OBJ_KV = ObjectKvValue.standard(NAME_AGE_OBJ);
+    private static final ObjectEntriesValue STRING_OBJ_KV = ObjectEntriesValue.standard(NAME_AGE_OBJ);
 
     @Test
     void kvPrimitiveValue() throws IOException {
@@ -47,14 +47,14 @@ public class ObjectKvValueTest {
 
     @Test
     void kvPrimitiveKey() throws IOException {
-        parse(ObjectKvValue.builder().key(IntValue.lenient()).value(SkipValue.lenient()).build(), List.of(
+        parse(ObjectEntriesValue.builder().key(IntValue.lenient()).value(SkipValue.lenient()).build(), List.of(
                 "{\"42\": null, \"43\": null}"),
                 ObjectChunk.chunkWrap(new Object[] {new int[] {42, 43}}));
     }
 
     @Test
     void kvObjectKey() throws IOException {
-        parse(ObjectKvValue.builder().key(InstantValue.standard()).value(SkipValue.lenient()).build(), List.of(
+        parse(ObjectEntriesValue.builder().key(InstantValue.standard()).value(SkipValue.lenient()).build(), List.of(
                 "{\"2009-02-13T23:31:30.123456788Z\": null, \"2009-02-13T23:31:30.123456789Z\": null}"),
                 ObjectChunk.chunkWrap(new Object[] {new Instant[] {
                         Instant.parse("2009-02-13T23:31:30.123456788Z"),

@@ -22,7 +22,7 @@ import io.deephaven.json.JsonValueTypes;
 import io.deephaven.json.LocalDateValue;
 import io.deephaven.json.LongValue;
 import io.deephaven.json.ObjectField;
-import io.deephaven.json.ObjectKvValue;
+import io.deephaven.json.ObjectEntriesValue;
 import io.deephaven.json.ObjectValue;
 import io.deephaven.json.ShortValue;
 import io.deephaven.json.SkipValue;
@@ -306,8 +306,8 @@ abstract class Mixin<T extends Value> implements JacksonProvider {
         }
 
         @Override
-        public Mixin<?> visit(ObjectKvValue objectKv) {
-            return new ObjectKvMixin(objectKv, factory);
+        public Mixin<?> visit(ObjectEntriesValue objectKv) {
+            return new ObjectEntriesMixin(objectKv, factory);
         }
 
         @Override

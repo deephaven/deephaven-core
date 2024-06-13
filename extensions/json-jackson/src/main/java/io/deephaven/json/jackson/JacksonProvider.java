@@ -12,7 +12,7 @@ import io.deephaven.json.ArrayValue;
 import io.deephaven.json.DoubleValue;
 import io.deephaven.json.IntValue;
 import io.deephaven.json.LongValue;
-import io.deephaven.json.ObjectKvValue;
+import io.deephaven.json.ObjectEntriesValue;
 import io.deephaven.json.ObjectValue;
 import io.deephaven.json.StringValue;
 import io.deephaven.json.TupleValue;
@@ -126,10 +126,10 @@ import java.util.function.Function;
  * {@code ["type", "symbol", "quote_bid", "quote_ask", "trade_price", "trade_size"]}.
  *
  * <p>
- * The {@link ObjectKvValue} represents a variable-length object, which expects to parse a JSON object where each
- * key-value pair has a common {@link ObjectKvValue#value() value type}. The output type will be the key and value
- * element types as component of native arrays ({@link Type#arrayType()}). For example, a JSON object, whose values are
- * also JSON objects
+ * The {@link ObjectEntriesValue} represents a variable-length object, which expects to parse a JSON object where each
+ * key-value entry has a common {@link ObjectEntriesValue#value() value type}. The output type will be the key and value
+ * element types as a component of native arrays ({@link Type#arrayType()}). For example, a JSON object, whose values
+ * are also JSON objects
  *
  * <pre>
  * {
@@ -144,7 +144,7 @@ import java.util.function.Function;
  * }
  * </pre>
  *
- * when represented with structuring as one might expect ({@link ObjectKvValue}({@link StringValue},
+ * when represented with structuring as one might expect ({@link ObjectEntriesValue}({@link StringValue},
  * {@link ObjectValue}({@link DoubleValue}, {@link DoubleValue}))), will produce {@link ObjectProcessor#outputTypes()
  * output types} representing {@code [String[], double[], double[]]}, and {@link NamedObjectProcessor#names() names}
  * {@code ["Key", "latitude", "longitude"]}.

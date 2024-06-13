@@ -11,8 +11,8 @@ import org.immutables.value.Value.Immutable;
 import java.util.Set;
 
 /**
- * Processes a JSON object of variable size with a given key and value options. For example, when a JSON object
- * structure represents a typed map-like structure (as opposed to a set of typed fields):
+ * Represents a JSON object of variable size with a given key and value type. For example, when a JSON object structure
+ * represents a list of key-value entries (as opposed to a set of separately typed fields):
  *
  * <pre>
  * {
@@ -26,17 +26,17 @@ import java.util.Set;
  */
 @Immutable
 @BuildableStyle
-public abstract class ObjectKvValue extends ValueRestrictedUniverseBase {
+public abstract class ObjectEntriesValue extends ValueRestrictedUniverseBase {
 
     public static Builder builder() {
-        return ImmutableObjectKvValue.builder();
+        return ImmutableObjectEntriesValue.builder();
     }
 
-    public static ObjectKvValue standard(Value value) {
+    public static ObjectEntriesValue standard(Value value) {
         return builder().value(value).build();
     }
 
-    public static ObjectKvValue strict(Value value) {
+    public static ObjectEntriesValue strict(Value value) {
         return builder()
                 .allowMissing(false)
                 .allowedTypes(JsonValueTypes.object())
@@ -78,7 +78,7 @@ public abstract class ObjectKvValue extends ValueRestrictedUniverseBase {
         return visitor.visit(this);
     }
 
-    public interface Builder extends Value.Builder<ObjectKvValue, Builder> {
+    public interface Builder extends Value.Builder<ObjectEntriesValue, Builder> {
 
         Builder key(Value key);
 

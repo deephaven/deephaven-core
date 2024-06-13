@@ -37,7 +37,7 @@ __all__ = [
     "big_decimal_val",
     "array_val",
     "object_val",
-    "object_kv_val",
+    "object_entries_val",
     "tuple_val",
     "any_val",
     "skip_val",
@@ -52,7 +52,7 @@ _JValue = jpy.get_type("io.deephaven.json.Value")
 _JObjectValue = jpy.get_type("io.deephaven.json.ObjectValue")
 _JTypedObjectValue = jpy.get_type("io.deephaven.json.TypedObjectValue")
 _JArrayValue = jpy.get_type("io.deephaven.json.ArrayValue")
-_JObjectKvValue = jpy.get_type("io.deephaven.json.ObjectKvValue")
+_JObjectEntriesValue = jpy.get_type("io.deephaven.json.ObjectEntriesValue")
 _JTupleValue = jpy.get_type("io.deephaven.json.TupleValue")
 _JObjectField = jpy.get_type("io.deephaven.json.ObjectField")
 _JRepeatedFieldBehavior = jpy.get_type("io.deephaven.json.ObjectField$RepeatedBehavior")
@@ -379,13 +379,13 @@ def array_val(
     return JsonValue(builder.build())
 
 
-def object_kv_val(
+def object_entries_val(
     key_type: JsonValueType = str,
     value_type: Optional[JsonValueType] = None,
     allow_missing: bool = True,
     allow_null: bool = True,
 ) -> JsonValue:
-    """Creates an object key-value options. This is used in situations where the number of fields in an object is
+    """Creates an object entries value. This is used in situations where the number of fields in an object is
     variable and all the values types are the same. For example, the JSON object
 
     .. code-block:: json
@@ -400,7 +400,7 @@ def object_kv_val(
     might be modelled as the object kv type
 
     .. code-block:: python
-        object_kv_val(value_type=int)
+        object_entries_val(value_type=int)
 
     Args:
         key_type (JsonValueType): the key element, by defaults is type str
@@ -409,9 +409,9 @@ def object_kv_val(
         allow_null (bool): if the object is allowed to be a JSON null type, by default is True
 
     Returns:
-        the object kv value
+        the object entries value
     """
-    builder = _JObjectKvValue.builder()
+    builder = _JObjectEntriesValue.builder()
     builder.key(json_val(key_type).j_value)
     builder.value(json_val(value_type).j_value)
     _build(builder, allow_missing, allow_null, allow_object=True)

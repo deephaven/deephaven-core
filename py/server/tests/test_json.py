@@ -25,7 +25,7 @@ class JsonTestCase(BaseTestCase):
         self.all_same_json_internal(
             [array_val(x) for x in items] + [[x] for x in items]
         )
-        self.all_same_json_internal([object_kv_val(value_type=x) for x in items])
+        self.all_same_json_internal([object_entries_val(value_type=x) for x in items])
         self.all_same_json_internal([object_val({"Foo": x}) for x in items])
         self.all_same_json_internal(
             [tuple_val((x,)) for x in items] + [(x,) for x in items]
@@ -35,7 +35,7 @@ class JsonTestCase(BaseTestCase):
             [array_val(array_val(x)) for x in items] + [[[x]] for x in items]
         )
         self.all_same_json_internal(
-            [object_kv_val(value_type=array_val(x)) for x in items]
+            [object_entries_val(value_type=array_val(x)) for x in items]
         )
 
     def test_bool(self):
@@ -158,11 +158,11 @@ class JsonTestCase(BaseTestCase):
                 ]
             )
 
-    def test_object_kv(self):
+    def test_object_entries(self):
         self.all_same_json(
             [
-                object_kv_val(value_type=int),
-                object_kv_val(value_type=long_val()),
+                object_entries_val(value_type=int),
+                object_entries_val(value_type=long_val()),
             ]
         )
 

@@ -6,18 +6,18 @@ package io.deephaven.json.jackson;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import io.deephaven.chunk.WritableChunk;
-import io.deephaven.json.ObjectKvValue;
+import io.deephaven.json.ObjectEntriesValue;
 import io.deephaven.qst.type.Type;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Stream;
 
-final class ObjectKvMixin extends Mixin<ObjectKvValue> {
+final class ObjectEntriesMixin extends Mixin<ObjectEntriesValue> {
     private final Mixin<?> key;
     private final Mixin<?> value;
 
-    public ObjectKvMixin(ObjectKvValue options, JsonFactory factory) {
+    public ObjectEntriesMixin(ObjectEntriesValue options, JsonFactory factory) {
         super(factory, options);
         key = Mixin.of(options.key(), factory);
         value = Mixin.of(options.value(), factory);
@@ -48,20 +48,20 @@ final class ObjectKvMixin extends Mixin<ObjectKvValue> {
 
     @Override
     public ValueProcessor processor(String context) {
-        return new ObjectKvMixinProcessor();
+        return new ObjectEntriesMixinProcessor();
     }
 
     @Override
     RepeaterProcessor repeaterProcessor() {
-        return new ValueInnerRepeaterProcessor(new ObjectKvMixinProcessor());
+        return new ValueInnerRepeaterProcessor(new ObjectEntriesMixinProcessor());
     }
 
-    private class ObjectKvMixinProcessor extends ValueProcessorMixinBase {
+    private class ObjectEntriesMixinProcessor extends ValueProcessorMixinBase {
 
         private final RepeaterProcessor keyProcessor;
         private final RepeaterProcessor valueProcessor;
 
-        ObjectKvMixinProcessor() {
+        ObjectEntriesMixinProcessor() {
             this.keyProcessor = key.repeaterProcessor();
             this.valueProcessor = value.repeaterProcessor();
         }

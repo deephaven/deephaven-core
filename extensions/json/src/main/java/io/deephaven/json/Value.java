@@ -89,7 +89,7 @@ public abstract class Value {
 
         T visit(ObjectValue object);
 
-        T visit(ObjectKvValue objectKv);
+        T visit(ObjectEntriesValue objectKv);
 
         T visit(InstantValue instant);
 
