@@ -364,9 +364,9 @@ public class QueryTableAggregationTestFormulaStaticMethods {
         for (int ii = 0; ii < values.size(); ++ii) {
             final char c = values.get(ii);
             if (c != QueryConstants.NULL_CHAR) {
-                    sum += c;
+                sum += c;
                 sum2 += c * c;
-                    count++;
+                count++;
             } else {
                 nullCount++;
             }
