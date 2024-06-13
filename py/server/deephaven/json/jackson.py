@@ -25,7 +25,7 @@ def provider(
     """
     _JProvider = jpy.get_type("io.deephaven.json.jackson.JacksonProvider")
     return (
-        _JProvider.of(json(json_value).j_options, factory)
+        _JProvider.of(json(json_value).j_value, factory)
         if factory
-        else _JProvider.of(json(json_value).j_options)
+        else _JProvider.of(json(json_value).j_value)
     )

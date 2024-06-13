@@ -33,7 +33,8 @@ import java.util.Set;
 import java.util.function.Function;
 
 /**
- * A {@link Value JSON value} {@link ObjectProcessor processor} implementation using Jackson.
+ * A {@link Value JSON value} {@link ObjectProcessor processor} implementation using
+ * <a href="https://github.com/FasterXML/jackson">Jackson</a>>.
  *
  * <p>
  * This implementation allows users to efficiently parse / destructure a
@@ -51,8 +52,8 @@ import java.util.function.Function;
  * their JSON data is serialized.
  *
  * <p>
- * The most common "complex" type is {@link ObjectValue}, which expects to parse a JSON object known fields. The object
- * contains {@link ObjectValue#fields()}, which represent other {@link Value values}. The fields are recursively
+ * The most common "complex" type is {@link ObjectValue}, which expects to parse a JSON object of known fields. The
+ * object contains {@link ObjectValue#fields()}, which represent other {@link Value values}. The fields are recursively
  * resolved and flattened into the {@link ObjectProcessor#outputTypes()}. For example, a JSON object, which itself
  * contains another JSON object
  *
@@ -83,9 +84,9 @@ import java.util.function.Function;
  *
  * <p>
  * The {@link TupleValue} represents a fixed number of {@link TupleValue#namedValues() value types}, which expects to
- * parse a fixed-length JSON array where each element is has the corresponding value type. The values are recursively
- * resolved and flattened into the {@link ObjectProcessor#outputTypes()}; for example, the earlier example's data could
- * be re-represented as the JSON array
+ * parse a fixed-length JSON array where each element corresponds to the same-indexed value type. The values are
+ * recursively resolved and flattened into the {@link ObjectProcessor#outputTypes()}; for example, the earlier example's
+ * data could be re-represented as the JSON array
  *
  * <pre>
  * ["Plymouth", 45.018269, -93.473892]
@@ -93,8 +94,8 @@ import java.util.function.Function;
  * 
  * and structured as one might expect ({@link TupleValue}({@link StringValue}, {@link DoubleValue},
  * {@link DoubleValue})), and will produce {@link ObjectProcessor#outputTypes() output types} representing
- * {@code [String, double, double]}. Even though no field names are present in the JSON value, users may set names for
- * each element {@link TupleValue#namedValues()} (and will otherwise inherit integer-indexed default names).
+ * {@code [String, double, double]}. Even though no field names are present in the JSON value, users may set
+ * {@link TupleValue#namedValues() names} for each element (and will otherwise inherit integer-indexed default names).
  *
  * <p>
  * The {@link TypedObjectValue} represents a union of {@link ObjectValue object values} where the first field is
@@ -126,9 +127,9 @@ import java.util.function.Function;
  *
  * <p>
  * The {@link ObjectKvValue} represents a variable-length object, which expects to parse a JSON object where each
- * key-value pair has a common {@link ObjectKvValue#value() value type}. The output type will be the output type of the
- * key and value element types as components types of native arrays ({@link Type#arrayType()}. For example, a JSON
- * object, whose values are also JSON objects
+ * key-value pair has a common {@link ObjectKvValue#value() value type}. The output type will be the key and value
+ * element types as component of native arrays ({@link Type#arrayType()}). For example, a JSON object, whose values are
+ * also JSON objects
  *
  * <pre>
  * {
@@ -145,7 +146,8 @@ import java.util.function.Function;
  *
  * when represented with structuring as one might expect ({@link ObjectKvValue}({@link StringValue},
  * {@link ObjectValue}({@link DoubleValue}, {@link DoubleValue}))), will produce {@link ObjectProcessor#outputTypes()
- * output types} representing {@code [String[], double[], double[]]}.
+ * output types} representing {@code [String[], double[], double[]]}, and {@link NamedObjectProcessor#names() names}
+ * {@code ["Key", "latitude", "longitude"]}.
  *
  * <p>
  * The {@link AnyValue} type represents a {@link TreeNode} output; this requires that the Jackson databinding API be

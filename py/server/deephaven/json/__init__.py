@@ -42,7 +42,7 @@ __all__ = [
     "any_",
     "skip_",
     "json",
-    "JsonOptions",
+    "JsonValue",
     "JsonValueType",
     "RepeatedFieldBehavior",
     "FieldOptions",
@@ -89,21 +89,21 @@ _EPOCH_MICROS = _JInstantNumberValueFormat.EPOCH_MICROS
 _EPOCH_NANOS = _JInstantNumberValueFormat.EPOCH_NANOS
 
 
-class JsonOptions(JObjectWrapper):
-    """The JSON options object."""
+class JsonValue(JObjectWrapper):
+    """The JSON Value type."""
 
     j_object_type = _JValue
 
-    def __init__(self, j_options: jpy.JType):
-        self.j_options = j_options
+    def __init__(self, j_value: jpy.JType):
+        self.j_value = j_value
 
     @property
     def j_object(self) -> jpy.JType:
-        return self.j_options
+        return self.j_value
 
 
 JsonValueType = Union[
-    JsonOptions,
+    JsonValue,
     dtypes.DType,
     type,
     Dict[str, Union["JsonValueType", "FieldOptions"]],
@@ -164,7 +164,7 @@ class FieldOptions:
         builder = (
             _JObjectField.builder()
             .name(name)
-            .options(json(self.value).j_options)
+            .options(json(self.value).j_value)
             .repeatedBehavior(self.repeated_behavior.value)
             .caseSensitive(self.case_sensitive)
         )
@@ -205,8 +205,8 @@ def object_(
     allow_null: bool = True,
     repeated_field_behavior: RepeatedFieldBehavior = RepeatedFieldBehavior.ERROR,
     case_sensitive: bool = True,
-) -> JsonOptions:
-    """Creates an object options. For example, the JSON object
+) -> JsonValue:
+    """Creates an object value. For example, the JSON object
 
     .. code-block:: json
         { "name": "foo", "age": 42 }
@@ -238,7 +238,7 @@ def object_(
             using JsonValueType, by default is True
 
     Returns:
-        the object options
+        the object value
     """
     builder = _JObjectValue.builder()
     _build(builder, allow_missing, allow_null, allow_object=True)
@@ -255,7 +255,7 @@ def object_(
         )
         # noinspection PyProtectedMember
         builder.addFields(field_opts._j_field_options(field_name))
-    return JsonOptions(builder.build())
+    return JsonValue(builder.build())
 
 
 def typed_object_(
@@ -267,8 +267,8 @@ def typed_object_(
     allow_null: bool = True,
     on_missing: Optional[str] = None,
     on_null: Optional[str] = None,
-) -> JsonOptions:
-    """Creates a type-discriminated object options. For example, the JSON objects
+) -> JsonValue:
+    """Creates a type-discriminated object value. For example, the JSON objects
 
     .. code-block:: json
         { "type": "trade", "symbol": "FOO", "price": 70.03, "size": 42 }
@@ -310,7 +310,7 @@ def typed_object_(
             None
 
     Returns:
-        the object options
+        the typed object value
     """
     builder = _JTypedObjectValue.builder()
     _build(builder, allow_missing, allow_null, allow_object=True)
@@ -334,16 +334,16 @@ def typed_object_(
         builder.addSharedFields(shared_field_opts._j_field_options(shared_field_name))
     for object_name, object_type in objects.items():
         builder.putObjects(
-            object_name, strict_cast(json(object_type).j_options, _JObjectValue)
+            object_name, strict_cast(json(object_type).j_value, _JObjectValue)
         )
-    return JsonOptions(builder.build())
+    return JsonValue(builder.build())
 
 
 def array_(
     element: JsonValueType,
     allow_missing: bool = True,
     allow_null: bool = True,
-) -> JsonOptions:
+) -> JsonValue:
     """Creates a "typed array", where all elements of the array have the same element type. For example, the JSON array
 
     .. code-block:: json
@@ -371,12 +371,12 @@ def array_(
         allow_null (bool): if the array is allowed to be a JSON null type, by default is True
 
     Returns:
-        the array options
+        the array value
     """
     builder = _JArrayValue.builder()
-    builder.element(json(element).j_options)
+    builder.element(json(element).j_value)
     _build(builder, allow_missing, allow_null, allow_array=True)
-    return JsonOptions(builder.build())
+    return JsonValue(builder.build())
 
 
 def object_kv_(
@@ -384,7 +384,7 @@ def object_kv_(
     value_type: Optional[JsonValueType] = None,
     allow_missing: bool = True,
     allow_null: bool = True,
-) -> JsonOptions:
+) -> JsonValue:
     """Creates an object key-value options. This is used in situations where the number of fields in an object is
     variable and all the values types are the same. For example, the JSON object
 
@@ -409,21 +409,21 @@ def object_kv_(
         allow_null (bool): if the object is allowed to be a JSON null type, by default is True
 
     Returns:
-        the object kv options
+        the object kv value
     """
     builder = _JObjectKvValue.builder()
-    builder.key(json(key_type).j_options)
-    builder.value(json(value_type).j_options)
+    builder.key(json(key_type).j_value)
+    builder.value(json(value_type).j_value)
     _build(builder, allow_missing, allow_null, allow_object=True)
-    return JsonOptions(builder.build())
+    return JsonValue(builder.build())
 
 
 def tuple_(
     values: Union[Tuple[JsonValueType, ...], Dict[str, JsonValueType]],
     allow_missing: bool = True,
     allow_null: bool = True,
-) -> JsonOptions:
-    """Creates a tuple options. For example, the JSON array
+) -> JsonValue:
+    """Creates a tuple value. For example, the JSON array
 
     .. code-block:: json
         ["foo", 42, 5.72]
@@ -454,7 +454,7 @@ def tuple_(
         allow_missing (bool): if the array is allowed to be missing, by default is True
         allow_null (bool): if the array is allowed to be a JSON null type, by default is True
     Returns:
-        the tuple options
+        the tuple value
     """
     if isinstance(values, Tuple):
         kvs = enumerate(values)
@@ -470,8 +470,8 @@ def tuple_(
         allow_array=True,
     )
     for name, json_value_type in kvs:
-        builder.putNamedValues(str(name), json(json_value_type).j_options)
-    return JsonOptions(builder.build())
+        builder.putNamedValues(str(name), json(json_value_type).j_value)
+    return JsonValue(builder.build())
 
 
 def bool_(
@@ -480,8 +480,8 @@ def bool_(
     allow_null: bool = True,
     on_missing: Optional[bool] = None,
     on_null: Optional[bool] = None,
-) -> JsonOptions:
-    """Creates a bool options. For example, the JSON boolean
+) -> JsonValue:
+    """Creates a bool value. For example, the JSON boolean
 
     .. code-block:: json
         True
@@ -510,7 +510,7 @@ def bool_(
         on_null (Optional[bool]): the value to use when the JSON value is null and allow_null is True, default is None
 
     Returns:
-        the bool options
+        the bool value
     """
     builder = _JBoolValue.builder()
     _build(
@@ -524,7 +524,7 @@ def bool_(
         builder.onNull(on_null)
     if on_missing:
         builder.onMissing(on_missing)
-    return JsonOptions(builder.build())
+    return JsonValue(builder.build())
 
 
 def char_(
@@ -532,8 +532,8 @@ def char_(
     allow_null: bool = True,
     on_missing: Optional[str] = None,
     on_null: Optional[str] = None,
-) -> JsonOptions:
-    """Creates a char options. For example, the JSON string
+) -> JsonValue:
+    """Creates a char value. For example, the JSON string
 
     .. code-block:: json
         "F"
@@ -550,7 +550,7 @@ def char_(
         on_null (Optional[str]): the value to use when the JSON value is null and allow_null is True, default is None. If specified, must be a single character.
 
     Returns:
-        the char options
+        the char value
     """
     builder = _JCharValue.builder()
     _build(
@@ -563,7 +563,7 @@ def char_(
         builder.onNull(ord(on_null))
     if on_missing:
         builder.onMissing(ord(on_missing))
-    return JsonOptions(builder.build())
+    return JsonValue(builder.build())
 
 
 def byte_(
@@ -573,8 +573,8 @@ def byte_(
     allow_null: bool = True,
     on_missing: Optional[int] = None,
     on_null: Optional[int] = None,
-) -> JsonOptions:
-    """Creates a byte (signed 8-bit) options. For example, the JSON integer
+) -> JsonValue:
+    """Creates a byte (signed 8-bit) value. For example, the JSON integer
 
     .. code-block:: json
         42
@@ -593,7 +593,7 @@ def byte_(
         on_null (Optional[int]): the value to use when the JSON value is null and allow_null is True, default is None.
 
     Returns:
-        the byte options
+        the byte value
     """
     builder = _JByteValue.builder()
     _build(
@@ -608,7 +608,7 @@ def byte_(
         builder.onNull(on_null)
     if on_missing:
         builder.onMissing(on_missing)
-    return JsonOptions(builder.build())
+    return JsonValue(builder.build())
 
 
 def short_(
@@ -618,8 +618,8 @@ def short_(
     allow_null: bool = True,
     on_missing: Optional[int] = None,
     on_null: Optional[int] = None,
-) -> JsonOptions:
-    """Creates a short (signed 16-bit) options. For example, the JSON integer
+) -> JsonValue:
+    """Creates a short (signed 16-bit) value. For example, the JSON integer
 
     .. code-block:: json
         30000
@@ -638,7 +638,7 @@ def short_(
         on_null (Optional[int]): the value to use when the JSON value is null and allow_null is True, default is None.
 
     Returns:
-        the short options
+        the short value
     """
     builder = _JShortValue.builder()
     _build(
@@ -653,7 +653,7 @@ def short_(
         builder.onNull(on_null)
     if on_missing:
         builder.onMissing(on_missing)
-    return JsonOptions(builder.build())
+    return JsonValue(builder.build())
 
 
 def int_(
@@ -663,8 +663,8 @@ def int_(
     allow_null: bool = True,
     on_missing: Optional[int] = None,
     on_null: Optional[int] = None,
-) -> JsonOptions:
-    """Creates an int (signed 32-bit) options. For example, the JSON integer
+) -> JsonValue:
+    """Creates an int (signed 32-bit) value. For example, the JSON integer
 
     .. code-block:: json
         100000
@@ -683,7 +683,7 @@ def int_(
         on_null (Optional[int]): the value to use when the JSON value is null and allow_null is True, default is None.
 
     Returns:
-        the int options
+        the int value
     """
     builder = _JIntValue.builder()
     _build(
@@ -698,7 +698,7 @@ def int_(
         builder.onNull(on_null)
     if on_missing:
         builder.onMissing(on_missing)
-    return JsonOptions(builder.build())
+    return JsonValue(builder.build())
 
 
 def long_(
@@ -708,8 +708,8 @@ def long_(
     allow_null: bool = True,
     on_missing: Optional[int] = None,
     on_null: Optional[int] = None,
-) -> JsonOptions:
-    """Creates a long (signed 64-bit) options. For example, the JSON integer
+) -> JsonValue:
+    """Creates a long (signed 64-bit) value. For example, the JSON integer
 
     .. code-block:: json
         8000000000
@@ -739,7 +739,7 @@ def long_(
         on_null (Optional[int]): the value to use when the JSON value is null and allow_null is True, default is None.
 
     Returns:
-        the long options
+        the long value
     """
     builder = _JLongValue.builder()
     _build(
@@ -754,7 +754,7 @@ def long_(
         builder.onNull(on_null)
     if on_missing:
         builder.onMissing(on_missing)
-    return JsonOptions(builder.build())
+    return JsonValue(builder.build())
 
 
 def float_(
@@ -763,8 +763,8 @@ def float_(
     allow_null: bool = True,
     on_missing: Optional[float] = None,
     on_null: Optional[float] = None,
-) -> JsonOptions:
-    """Creates a float (signed 32-bit) options. For example, the JSON decimal
+) -> JsonValue:
+    """Creates a float (signed 32-bit) value. For example, the JSON decimal
 
     .. code-block:: json
         42.42
@@ -782,7 +782,7 @@ def float_(
         on_null (Optional[float]): the value to use when the JSON value is null and allow_null is True, default is None.
 
     Returns:
-        the float options
+        the float value
     """
     builder = _JFloatValue.builder()
     _build(
@@ -797,7 +797,7 @@ def float_(
         builder.onNull(on_null)
     if on_missing:
         builder.onMissing(on_missing)
-    return JsonOptions(builder.build())
+    return JsonValue(builder.build())
 
 
 def double_(
@@ -806,8 +806,8 @@ def double_(
     allow_null: bool = True,
     on_missing: Optional[float] = None,
     on_null: Optional[float] = None,
-) -> JsonOptions:
-    """Creates a double (signed 64-bit) options. For example, the JSON decimal
+) -> JsonValue:
+    """Creates a double (signed 64-bit) value. For example, the JSON decimal
 
     .. code-block:: json
         42.42424242
@@ -836,7 +836,7 @@ def double_(
         on_null (Optional[int]): the value to use when the JSON value is null and allow_null is True, default is None.
 
     Returns:
-        the double options
+        the double value
     """
     builder = _JDoubleValue.builder()
     _build(
@@ -851,7 +851,7 @@ def double_(
         builder.onNull(on_null)
     if on_missing:
         builder.onMissing(on_missing)
-    return JsonOptions(builder.build())
+    return JsonValue(builder.build())
 
 
 def string_(
@@ -862,8 +862,8 @@ def string_(
     allow_null: bool = True,
     on_missing: Optional[str] = None,
     on_null: Optional[str] = None,
-) -> JsonOptions:
-    """Creates a String options. For example, the JSON string
+) -> JsonValue:
+    """Creates a String value. For example, the JSON string
 
     .. code-block:: json
         "Hello, world!"
@@ -894,7 +894,7 @@ def string_(
         on_null (Optional[str]): the value to use when the JSON value is null and allow_null is True, default is None.
 
     Returns:
-        the double options
+        the String value
     """
     builder = _JStringValue.builder()
     _build(
@@ -910,7 +910,7 @@ def string_(
         builder.onNull(on_null)
     if on_missing:
         builder.onMissing(on_missing)
-    return JsonOptions(builder.build())
+    return JsonValue(builder.build())
 
 
 # TODO(deephaven-core#5269): Create deephaven.time time-type aliases
@@ -921,8 +921,8 @@ def instant_(
     allow_decimal: bool = False,
     on_missing: Optional[Any] = None,
     on_null: Optional[Any] = None,
-) -> JsonOptions:
-    """Creates an Instant options. For example, the JSON string
+) -> JsonValue:
+    """Creates an Instant value. For example, the JSON string
 
     .. code-block:: json
         "2009-02-13T23:31:30.123456789Z"
@@ -964,7 +964,7 @@ def instant_(
         on_null (Optional[Any]): the value to use when the JSON value is null and allow_null is True, default is None.
 
     Returns:
-        the Instant options
+        the Instant value
     """
     if number_format:
         builder = _JInstantNumberValue.builder()
@@ -989,7 +989,7 @@ def instant_(
             builder.format(_EPOCH_NANOS)
         else:
             raise TypeError(f"Invalid number format: {number_format}")
-        return JsonOptions(builder.build())
+        return JsonValue(builder.build())
     else:
         if allow_decimal:
             raise TypeError("allow_decimal is only valid when using number_format")
@@ -1004,7 +1004,7 @@ def instant_(
             allow_null,
             allow_string=True,
         )
-        return JsonOptions(builder.build())
+        return JsonValue(builder.build())
 
 
 def big_integer_(
@@ -1014,8 +1014,8 @@ def big_integer_(
     allow_null: bool = True,
     on_missing: Optional[Union[int, str]] = None,
     on_null: Optional[Union[int, str]] = None,
-) -> JsonOptions:
-    """Creates a BigInteger options. For example, the JSON integer
+) -> JsonValue:
+    """Creates a BigInteger value. For example, the JSON integer
 
     .. code-block:: json
         123456789012345678901
@@ -1034,7 +1034,7 @@ def big_integer_(
         on_null (Optional[Union[int, str]]): the value to use when the JSON value is null and allow_null is True, default is None.
 
     Returns:
-        the BigInteger options
+        the BigInteger value
     """
     builder = _JBigIntegerValue.builder()
     _build(
@@ -1049,7 +1049,7 @@ def big_integer_(
         builder.onMissing(dtypes.BigInteger(str(on_missing)))
     if on_null:
         builder.onNull(dtypes.BigInteger(str(on_null)))
-    return JsonOptions(builder.build())
+    return JsonValue(builder.build())
 
 
 def big_decimal_(
@@ -1058,8 +1058,8 @@ def big_decimal_(
     allow_null: bool = True,
     on_missing: Optional[Union[float, str]] = None,
     on_null: Optional[Union[float, str]] = None,
-) -> JsonOptions:
-    """Creates a BigDecimal options. For example, the JSON decimal
+) -> JsonValue:
+    """Creates a BigDecimal value. For example, the JSON decimal
 
     .. code-block:: json
         123456789012345678901.42
@@ -1077,7 +1077,7 @@ def big_decimal_(
         on_null (Optional[Union[float, str]]): the value to use when the JSON value is null and allow_null is True, default is None.
 
     Returns:
-        the BigDecimal options
+        the BigDecimal value
     """
     builder = _JBigDecimalValue.builder()
     _build(
@@ -1092,16 +1092,16 @@ def big_decimal_(
         builder.onMissing(dtypes.BigDecimal(str(on_missing)))
     if on_null:
         builder.onNull(dtypes.BigDecimal(str(on_null)))
-    return JsonOptions(builder.build())
+    return JsonValue(builder.build())
 
 
-def any_() -> JsonOptions:
-    """Creates an "any" options. The resulting type is implementation dependant.
+def any_() -> JsonValue:
+    """Creates an "any" value. The resulting type is implementation dependant.
 
     Returns:
-        the "any" options
+        the "any" value
     """
-    return JsonOptions(_JAnyValue.of())
+    return JsonValue(_JAnyValue.of())
 
 
 def skip_(
@@ -1114,8 +1114,8 @@ def skip_(
     allow_object: Optional[bool] = None,
     allow_array: Optional[bool] = None,
     allow_by_default: bool = True,
-) -> JsonOptions:
-    """Creates a "skip" type. No resulting type will be returned, but the JSON types will be validated as configured.
+) -> JsonValue:
+    """Creates a "skip" value. No resulting type will be returned, but the JSON types will be validated as configured.
     This may be useful in combination with an object type where allow_unknown_fields=False. For example, the JSON object
 
     .. code-block:: json
@@ -1138,7 +1138,7 @@ def skip_(
         allow_by_default (bool): the default behavior for the other arguments when they are set to None, by default is True
 
     Returns:
-        the "skip" options
+        the "skip" value
     """
 
     def _allow(x: Optional[bool]) -> bool:
@@ -1156,19 +1156,19 @@ def skip_(
         allow_object=_allow(allow_object),
         allow_array=_allow(allow_array),
     )
-    return JsonOptions(builder.build())
+    return JsonValue(builder.build())
 
 
-def json(json_value_type: JsonValueType) -> JsonOptions:
-    """Creates a JsonOptions from a JsonValueType.
+def json(json_value_type: JsonValueType) -> JsonValue:
+    """Creates a JsonValue from a JsonValueType.
 
     Args:
         json_value_type (JsonValueType): the JSON value type
 
     Returns:
-        the JSON options
+        the JSON value
     """
-    if isinstance(json_value_type, JsonOptions):
+    if isinstance(json_value_type, JsonValue):
         return json_value_type
     if isinstance(json_value_type, dtypes.DType):
         return _dtype_dict[json_value_type]
