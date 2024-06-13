@@ -521,7 +521,7 @@ def bool_(
         allow_string=allow_string,
     )
     if on_null:
-        builder.onNull(onNull)
+        builder.onNull(on_null)
     if on_missing:
         builder.onMissing(on_missing)
     return JsonOptions(builder.build())
@@ -560,9 +560,9 @@ def char_(
         allow_string=True,
     )
     if on_null:
-        builder.onNull(onNull)
+        builder.onNull(ord(on_null))
     if on_missing:
-        builder.onMissing(on_missing)
+        builder.onMissing(ord(on_missing))
     return JsonOptions(builder.build())
 
 
@@ -605,7 +605,7 @@ def byte_(
         allow_string=allow_string,
     )
     if on_null:
-        builder.onNull(onNull)
+        builder.onNull(on_null)
     if on_missing:
         builder.onMissing(on_missing)
     return JsonOptions(builder.build())
@@ -650,7 +650,7 @@ def short_(
         allow_string=allow_string,
     )
     if on_null:
-        builder.onNull(onNull)
+        builder.onNull(on_null)
     if on_missing:
         builder.onMissing(on_missing)
     return JsonOptions(builder.build())
@@ -695,7 +695,7 @@ def int_(
         allow_string=allow_string,
     )
     if on_null:
-        builder.onNull(onNull)
+        builder.onNull(on_null)
     if on_missing:
         builder.onMissing(on_missing)
     return JsonOptions(builder.build())
@@ -751,7 +751,7 @@ def long_(
         allow_string=allow_string,
     )
     if on_null:
-        builder.onNull(onNull)
+        builder.onNull(on_null)
     if on_missing:
         builder.onMissing(on_missing)
     return JsonOptions(builder.build())
@@ -794,7 +794,7 @@ def float_(
         allow_string=allow_string,
     )
     if on_null:
-        builder.onNull(onNull)
+        builder.onNull(on_null)
     if on_missing:
         builder.onMissing(on_missing)
     return JsonOptions(builder.build())
@@ -848,7 +848,7 @@ def double_(
         allow_string=allow_string,
     )
     if on_null:
-        builder.onNull(onNull)
+        builder.onNull(on_null)
     if on_missing:
         builder.onMissing(on_missing)
     return JsonOptions(builder.build())
@@ -890,8 +890,8 @@ def string_(
         allow_bool (bool): if the string value is allowed to be a JSON boolean type, default is False
         allow_missing (bool): if the double value is allowed to be missing, default is True
         allow_null (bool): if the double value is allowed to be a JSON null type, default is True
-        on_missing (Optional[int]): the value to use when the JSON value is missing and allow_missing is True, default is None.
-        on_null (Optional[int]): the value to use when the JSON value is null and allow_null is True, default is None.
+        on_missing (Optional[str]): the value to use when the JSON value is missing and allow_missing is True, default is None.
+        on_null (Optional[str]): the value to use when the JSON value is null and allow_null is True, default is None.
 
     Returns:
         the double options
@@ -907,7 +907,7 @@ def string_(
         allow_bool=allow_bool,
     )
     if on_null:
-        builder.onNull(onNull)
+        builder.onNull(on_null)
     if on_missing:
         builder.onMissing(on_missing)
     return JsonOptions(builder.build())
@@ -969,7 +969,7 @@ def instant_(
     if number_format:
         builder = _JInstantNumberValue.builder()
         if on_missing:
-            builder.onMull(to_j_instant(on_missing))
+            builder.onMissing(to_j_instant(on_missing))
         if on_null:
             builder.onNull(to_j_instant(on_null))
         _build(
@@ -995,7 +995,7 @@ def instant_(
             raise TypeError("allow_decimal is only valid when using number_format")
         builder = _JInstantValue.builder()
         if on_missing:
-            builder.onMull(to_j_instant(on_missing))
+            builder.onMissing(to_j_instant(on_missing))
         if on_null:
             builder.onNull(to_j_instant(on_null))
         _build(
@@ -1012,7 +1012,8 @@ def big_integer_(
     allow_decimal: bool = False,
     allow_missing: bool = True,
     allow_null: bool = True,
-    # todo on_null, on_missing
+    on_missing: Optional[Union[int, str]] = None,
+    on_null: Optional[Union[int, str]] = None,
 ) -> JsonOptions:
     """Creates a BigInteger options. For example, the JSON integer
 
@@ -1029,6 +1030,8 @@ def big_integer_(
         allow_decimal (bool): if the BigInteger value is allowed to be a JSON decimal type, default is False.
         allow_missing (bool): if the BigInteger value is allowed to be missing, default is True
         allow_null (bool): if the BigInteger value is allowed to be a JSON null type, default is True
+        on_missing (Optional[Union[int, str]]): the value to use when the JSON value is missing and allow_missing is True, default is None.
+        on_null (Optional[Union[int, str]]): the value to use when the JSON value is null and allow_null is True, default is None.
 
     Returns:
         the BigInteger options
@@ -1042,6 +1045,10 @@ def big_integer_(
         allow_decimal=allow_decimal,
         allow_string=allow_string,
     )
+    if on_missing:
+        builder.onMissing(dtypes.BigInteger(str(on_missing)))
+    if on_null:
+        builder.onNull(dtypes.BigInteger(str(on_null)))
     return JsonOptions(builder.build())
 
 
@@ -1049,7 +1056,8 @@ def big_decimal_(
     allow_string: bool = False,
     allow_missing: bool = True,
     allow_null: bool = True,
-    # todo on_null, on_missing
+    on_missing: Optional[Union[float, str]] = None,
+    on_null: Optional[Union[float, str]] = None,
 ) -> JsonOptions:
     """Creates a BigDecimal options. For example, the JSON decimal
 
@@ -1065,6 +1073,8 @@ def big_decimal_(
         allow_string (bool): if the BigDecimal value is allowed to be a JSON string type, default is False.
         allow_missing (bool): if the BigDecimal value is allowed to be missing, default is True
         allow_null (bool): if the BigDecimal value is allowed to be a JSON null type, default is True
+        on_missing (Optional[Union[float, str]]): the value to use when the JSON value is missing and allow_missing is True, default is None.
+        on_null (Optional[Union[float, str]]): the value to use when the JSON value is null and allow_null is True, default is None.
 
     Returns:
         the BigDecimal options
@@ -1078,6 +1088,10 @@ def big_decimal_(
         allow_decimal=True,
         allow_string=allow_string,
     )
+    if on_missing:
+        builder.onMissing(dtypes.BigDecimal(str(on_missing)))
+    if on_null:
+        builder.onNull(dtypes.BigDecimal(str(on_null)))
     return JsonOptions(builder.build())
 
 

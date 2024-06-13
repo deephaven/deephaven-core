@@ -36,42 +36,90 @@ class JsonTestCase(BaseTestCase):
 
     def test_bool(self):
         self.all_same_json([bool_(), dtypes.bool_, bool])
+        with self.subTest("on_missing"):
+            bool_(on_missing=False)
+        with self.subTest("on_null"):
+            bool_(on_null=False)
 
     def test_char(self):
         self.all_same_json([char_(), dtypes.char])
+        with self.subTest("on_missing"):
+            char_(on_missing="m")
+        with self.subTest("on_null"):
+            char_(on_null="n")
 
     def test_byte(self):
         self.all_same_json([byte_(), dtypes.byte])
+        with self.subTest("on_missing"):
+            byte_(on_missing=-1)
+        with self.subTest("on_null"):
+            byte_(on_null=-1)
 
     def test_short(self):
         self.all_same_json([short_(), dtypes.short])
+        with self.subTest("on_missing"):
+            short_(on_missing=-1)
+        with self.subTest("on_null"):
+            short_(on_null=-1)
 
     def test_int(self):
         self.all_same_json([int_(), dtypes.int32])
+        with self.subTest("on_missing"):
+            int_(on_missing=-1)
+        with self.subTest("on_null"):
+            int_(on_null=-1)
 
     def test_long(self):
         self.all_same_json([long_(), dtypes.long, int])
+        with self.subTest("on_missing"):
+            long_(on_missing=-1)
+        with self.subTest("on_null"):
+            long_(on_null=-1)
 
     def test_float(self):
         self.all_same_json([float_(), dtypes.float32])
+        with self.subTest("on_missing"):
+            float_(on_missing=-1.0)
+        with self.subTest("on_null"):
+            float_(on_null=-1.0)
 
     def test_double(self):
         self.all_same_json([double_(), dtypes.double, float])
+        with self.subTest("on_missing"):
+            double_(on_missing=-1.0)
+        with self.subTest("on_null"):
+            double_(on_null=-1.0)
 
     def test_string(self):
         self.all_same_json([string_(), dtypes.string, str])
+        with self.subTest("on_missing"):
+            string_(on_missing="(missing)")
+        with self.subTest("on_null"):
+            string_(on_null="(null)")
 
     def test_instant(self):
         self.all_same_json([instant_(), dtypes.Instant, datetime])
+        with self.subTest("on_missing"):
+            instant_(on_missing=datetime.fromtimestamp(0))
+        with self.subTest("on_null"):
+            instant_(on_null=datetime.fromtimestamp(0))
 
     def test_any(self):
         self.all_same_json([any_(), dtypes.JObject, object])
 
     def test_big_integer(self):
         self.all_same_json([big_integer_(), dtypes.BigInteger])
+        with self.subTest("on_missing"):
+            big_integer_(on_missing=123456789012345678901234567890)
+        with self.subTest("on_null"):
+            big_integer_(on_null=123456789012345678901234567890)
 
     def test_big_decimal(self):
         self.all_same_json([big_decimal_(), dtypes.BigDecimal])
+        with self.subTest("on_missing"):
+            big_decimal_(on_missing="123456789012345678901234567890.999999999999")
+        with self.subTest("on_null"):
+            big_decimal_(on_null="123456789012345678901234567890.999999999999")
 
     def test_object(self):
         e1 = [
