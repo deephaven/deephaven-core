@@ -16,7 +16,6 @@ import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
@@ -35,6 +34,11 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
     final S3SeekableChannelProvider provider;
     final S3AsyncClient client;
     final S3Instructions instructions;
+
+    /**
+     * Used to temporarily hold a request to prevent it from being GC'd.
+     */
+    S3Request.AcquiredRequest acquiredRequest;
 
     /**
      * The URI associated with this context. A single context object can only be associated with a single URI at a time.
@@ -117,15 +121,14 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
             readAhead = Math.min(Math.max(impliedReadAhead, desiredReadAhead), totalRemainingFragments);
         }
         // Hold a reference to the first request to ensure it is not evicted from the cache
-        S3Request.AcquiredRequest acquiredFirstRequest = getOrCreateRequest(firstFragmentIx);
+        acquiredRequest = getOrCreateRequest(firstFragmentIx);
         for (int i = 0; i < readAhead; ++i) {
-            // Do not hold references to the read ahead requests
+            // Do not hold references to the read-ahead requests
             getOrCreateRequest(firstFragmentIx + i + 1);
         }
         // blocking
-        int filled = acquiredFirstRequest.request.fill(position, dest);
-        acquiredFirstRequest.release();
-        acquiredFirstRequest = null;
+        int filled = acquiredRequest.request.fill(position, dest);
+        acquiredRequest = null;
 
         for (int i = 0; dest.hasRemaining(); ++i) {
             final S3Request.AcquiredRequest acquiredReadAheadRequest =
