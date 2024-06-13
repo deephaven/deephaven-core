@@ -48,6 +48,7 @@ import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.locks.AwareFunctionalLock;
+import io.deephaven.util.thread.ThreadInitializationFactory;
 import io.deephaven.vector.*;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -85,6 +86,9 @@ import static org.junit.Assert.assertArrayEquals;
  */
 @Category(OutOfBandTest.class)
 public class QueryTableTest extends QueryTableTestBase {
+
+    private static final EgressInitializationThreadPool EGRESS_INITIALIZATION =
+            new EgressInitializationThreadPool(ThreadInitializationFactory.NO_OP);
 
     public void testUngroupWithNullSecondColumn() {
         final QueryTable qt = testRefreshingTable(
@@ -2706,21 +2710,24 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testEmptyTableSnapshot() {
-        final Table emptyTableNoColumns = emptyTable(0);
-        try (final BarrageMessage snap =
-                ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) emptyTableNoColumns)) {
-            assertTrue(snap.rowsIncluded.isEmpty());
-            assertTrue(snap.addColumnData.length == 0);
-            assertTrue(snap.modColumnData.length == 0);
-        }
+        try (SafeCloseable ignored =
+                ExecutionContext.getContext().withOperationInitializer(EGRESS_INITIALIZATION).open()) {
+            final Table emptyTableNoColumns = emptyTable(0);
+            try (final BarrageMessage snap =
+                    ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) emptyTableNoColumns)) {
+                assertTrue(snap.rowsIncluded.isEmpty());
+                assertTrue(snap.addColumnData.length == 0);
+                assertTrue(snap.modColumnData.length == 0);
+            }
 
-        final Table emptyTableWithColumns = emptyTable(0).update("X = i");
-        try (final BarrageMessage snap =
-                ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) emptyTableWithColumns)) {
-            assertTrue(snap.rowsIncluded.isEmpty());
-            assertTrue(snap.addColumnData.length == 1);
-            assertTrue(snap.addColumnData[0].data.isEmpty());
-            assertTrue(snap.modColumnData[0].data.isEmpty());
+            final Table emptyTableWithColumns = emptyTable(0).update("X = i");
+            try (final BarrageMessage snap =
+                    ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) emptyTableWithColumns)) {
+                assertTrue(snap.rowsIncluded.isEmpty());
+                assertTrue(snap.addColumnData.length == 1);
+                assertTrue(snap.addColumnData[0].data.isEmpty());
+                assertTrue(snap.modColumnData[0].data.isEmpty());
+            }
         }
     }
 

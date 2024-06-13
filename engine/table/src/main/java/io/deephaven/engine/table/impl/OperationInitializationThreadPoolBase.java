@@ -62,4 +62,16 @@ class OperationInitializationThreadPoolBase implements OperationInitializer {
     public int parallelismFactor() {
         return numThreads;
     }
+
+    @Override
+    public final void shutdownNow() {
+        executorService.shutdownNow();
+        try {
+            if (!executorService.awaitTermination(5, TimeUnit.SECONDS)) {
+                throw new RuntimeException("concurrentDelegate not shutdown within 5 seconds");
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException("Interrupted while waiting for shutdown", e);
+        }
+    }
 }

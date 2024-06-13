@@ -6,9 +6,13 @@ package io.deephaven.server.netty;
 import dagger.Component;
 import dagger.Module;
 import dagger.Provides;
+import io.deephaven.engine.table.impl.EgressInitializationThreadPool;
+import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.server.runner.ExecutionContextUnitTestModule;
 import io.deephaven.server.test.FlightMessageRoundTripTest;
+import io.deephaven.util.thread.ThreadInitializationFactory;
 
+import javax.inject.Named;
 import javax.inject.Singleton;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -23,6 +27,13 @@ public class NettyFlightRoundTripTest extends FlightMessageRoundTripTest {
                     .port(0)
                     .tokenExpire(Duration.of(5, ChronoUnit.MINUTES))
                     .build();
+        }
+
+        @Provides
+        @Singleton
+        @Named(OperationInitializer.EGRESS_NAME)
+        static OperationInitializer provideEgressOperationInitializer() {
+            return new EgressInitializationThreadPool(ThreadInitializationFactory.NO_OP);
         }
     }
 

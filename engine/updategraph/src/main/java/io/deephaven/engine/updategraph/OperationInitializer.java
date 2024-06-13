@@ -30,6 +30,11 @@ public interface OperationInitializer {
         public int parallelismFactor() {
             return 1;
         }
+
+        @Override
+        public void shutdownNow() {
+            // no-op
+        }
     };
 
     /**
@@ -46,4 +51,9 @@ public interface OperationInitializer {
      * Number of threads that are potentially available.
      */
     int parallelismFactor();
+
+    /**
+     * Shutdown the thread pool.
+     */
+    void shutdownNow();
 }

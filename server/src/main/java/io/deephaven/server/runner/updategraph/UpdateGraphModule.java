@@ -43,7 +43,7 @@ public class UpdateGraphModule {
     @Provides
     @Singleton
     @Named(OperationInitializer.EGRESS_NAME)
-    public static OperationInitializer provideGRPCOperationInitializer(
+    public static OperationInitializer provideEgressOperationInitializer(
             final ThreadInitializationFactory factory) {
         return new EgressInitializationThreadPool(factory);
     }
