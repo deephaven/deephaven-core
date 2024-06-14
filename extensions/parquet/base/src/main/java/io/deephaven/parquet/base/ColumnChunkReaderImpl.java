@@ -4,8 +4,6 @@
 package io.deephaven.parquet.base;
 
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.util.channel.ChannelPositionInputStream;
-import io.deephaven.util.channel.Channels;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.parquet.compress.CompressorAdapter;
@@ -25,7 +23,6 @@ import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Type;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -233,7 +230,7 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
         final int compressedPageSize = pageHeader.getCompressed_page_size();
         final BytesInput payload;
         try (final InputStream in = (compressedPageSize == 0) ? null
-                : ChannelPositionInputStream.of(ch, channelsProvider.getInputStream(ch, compressedPageSize))) {
+                : SeekableChannelsProvider.channelPositionInputStream(channelsProvider, ch, compressedPageSize)) {
             if (compressedPageSize == 0) {
                 // Sometimes the size is explicitly empty, just use an empty payload
                 payload = BytesInput.empty();
@@ -322,9 +319,8 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
     }
 
     private PageHeader readPageHeader(final SeekableByteChannel ch) throws IOException {
-        // We don't know the exact size of page header, so we read it through a buffered stream in chunks of 128 bytes
-        try (final InputStream in = ChannelPositionInputStream.of(ch,
-                new BufferedInputStream(Channels.newInputStreamNoClose(ch), 128))) {
+        // We expect page headers to be smaller than 128 bytes
+        try (final InputStream in = SeekableChannelsProvider.channelPositionInputStream(channelsProvider, ch, 128)) {
             return Util.readPageHeader(in);
         }
     }

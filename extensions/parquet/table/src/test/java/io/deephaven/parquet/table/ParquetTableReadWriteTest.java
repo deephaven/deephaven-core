@@ -1652,7 +1652,7 @@ public final class ParquetTableReadWriteTest {
 
     /**
      * Reference data is generated using the following code:
-     * 
+     *
      * <pre>
      *      num_rows = 100000
      *      dh_table = empty_table(num_rows).update(formulas=[
