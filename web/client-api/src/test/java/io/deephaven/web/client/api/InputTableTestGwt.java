@@ -27,6 +27,7 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
                 })
                 .then(this::finish).catch_(this::report);
     }
+
     public void testFirstColsAreKeyCols() {
         connect(tables)
                 .then(table("result2"))
@@ -42,6 +43,7 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
                 })
                 .then(this::finish).catch_(this::report);
     }
+
     public void testOneKeyCol() {
         connect(tables)
                 .then(table("result3"))
@@ -56,6 +58,7 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
                 })
                 .then(this::finish).catch_(this::report);
     }
+
     public void testLaterColsAreKeyCols() {
         connect(tables)
                 .then(table("result4"))
