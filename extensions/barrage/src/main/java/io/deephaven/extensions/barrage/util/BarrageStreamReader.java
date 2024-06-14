@@ -59,7 +59,6 @@ public class BarrageStreamReader implements StreamReader {
 
     @Override
     public BarrageMessage safelyParseFrom(final StreamReaderOptions options,
-            final BitSet expectedColumns,
             final ChunkType[] columnChunkTypes,
             final Class<?>[] columnTypes,
             final Class<?>[] componentTypes,
