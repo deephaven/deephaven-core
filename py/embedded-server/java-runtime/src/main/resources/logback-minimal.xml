@@ -15,7 +15,7 @@
   <!--<logger name="io.netty" level="INFO"/>-->
   <!--<logger name="io.deephaven" level="INFO"/>-->
 
-  <root level="info">
+  <root level="warn">
     <appender-ref ref="LOGBUFFER" />
   </root>
 </configuration>

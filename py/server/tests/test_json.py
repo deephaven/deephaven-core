@@ -25,7 +25,7 @@ class JsonTestCase(BaseTestCase):
         self.all_same_json_internal(
             [array_val(x) for x in items] + [[x] for x in items]
         )
-        self.all_same_json_internal([object_entries_val(value_type=x) for x in items])
+        self.all_same_json_internal([object_entries_val(x) for x in items])
         self.all_same_json_internal([object_val({"Foo": x}) for x in items])
         self.all_same_json_internal(
             [tuple_val((x,)) for x in items] + [(x,) for x in items]
@@ -34,9 +34,7 @@ class JsonTestCase(BaseTestCase):
         self.all_same_json_internal(
             [array_val(array_val(x)) for x in items] + [[[x]] for x in items]
         )
-        self.all_same_json_internal(
-            [object_entries_val(value_type=array_val(x)) for x in items]
-        )
+        self.all_same_json_internal([object_entries_val(array_val(x)) for x in items])
 
     def test_bool(self):
         self.all_same_json([bool_val(), dtypes.bool_, bool])
@@ -129,8 +127,8 @@ class JsonTestCase(BaseTestCase):
         e1 = [
             {"name": str, "age": int},
             {"name": string_val(), "age": long_val()},
-            {"name": FieldOptions(str), "age": FieldOptions(int)},
-            {"name": FieldOptions(string_val()), "age": FieldOptions(long_val())},
+            {"name": ObjectField(str), "age": ObjectField(int)},
+            {"name": ObjectField(string_val()), "age": ObjectField(long_val())},
         ]
         e2 = [object_val(x) for x in e1]
         self.all_same_json(e1 + e2)
@@ -161,8 +159,8 @@ class JsonTestCase(BaseTestCase):
     def test_object_entries(self):
         self.all_same_json(
             [
-                object_entries_val(value_type=int),
-                object_entries_val(value_type=long_val()),
+                object_entries_val(int),
+                object_entries_val(long_val()),
             ]
         )
 

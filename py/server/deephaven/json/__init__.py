@@ -37,6 +37,7 @@ __all__ = [
     "big_decimal_val",
     "array_val",
     "object_val",
+    "typed_object_val",
     "object_entries_val",
     "tuple_val",
     "any_val",
@@ -45,7 +46,7 @@ __all__ = [
     "JsonValue",
     "JsonValueType",
     "RepeatedFieldBehavior",
-    "FieldOptions",
+    "ObjectField",
 ]
 
 _JValue = jpy.get_type("io.deephaven.json.Value")
@@ -106,10 +107,37 @@ JsonValueType = Union[
     JsonValue,
     dtypes.DType,
     type,
-    Dict[str, Union["JsonValueType", "FieldOptions"]],
+    Dict[str, Union["JsonValueType", "ObjectField"]],
     List["JsonValueType"],
     Tuple["JsonValueType", ...],
 ]
+"""The JSON value alias"""
+
+
+def json_val(json_value_type: JsonValueType) -> JsonValue:
+    """Creates a JsonValue from a JsonValueType.
+
+    Args:
+        json_value_type (JsonValueType): the JSON value type
+
+    Returns:
+        the JSON value
+    """
+    if isinstance(json_value_type, JsonValue):
+        return json_value_type
+    if isinstance(json_value_type, dtypes.DType):
+        return _dtype_dict[json_value_type]
+    if isinstance(json_value_type, type):
+        return _type_dict[json_value_type]
+    if isinstance(json_value_type, Dict):
+        return object_val(json_value_type)
+    if isinstance(json_value_type, List):
+        if len(json_value_type) is not 1:
+            raise TypeError("Expected List as json type to have exactly one element")
+        return array_val(json_value_type[0])
+    if isinstance(json_value_type, Tuple):
+        return tuple_val(json_value_type)
+    raise TypeError(f"Unsupported JSON value type {type(json_value_type)}")
 
 
 class RepeatedFieldBehavior(Enum):
@@ -130,7 +158,7 @@ class RepeatedFieldBehavior(Enum):
 
 
 @dataclass
-class FieldOptions:
+class ObjectField:
     """The object field options.
 
     In contexts where the user needs to create an object field value and isn't changing any default values, the user can
@@ -138,8 +166,8 @@ class FieldOptions:
 
     .. code-block:: python
         {
-            "name": FieldOptions(str),
-            "age": FieldOptions(int),
+            "name": ObjectField(str),
+            "age": ObjectField(int),
         }
 
     could be simplified to
@@ -151,7 +179,7 @@ class FieldOptions:
         }
     """
 
-    value: JsonValueType
+    value_type: JsonValueType
     """The json value type"""
     aliases: Union[str, List[str]] = field(default_factory=list)
     """The field name aliases. By default, is an empty list."""
@@ -164,7 +192,7 @@ class FieldOptions:
         builder = (
             _JObjectField.builder()
             .name(name)
-            .options(json_val(self.value).j_value)
+            .options(json_val(self.value_type).j_value)
             .repeatedBehavior(self.repeated_behavior.value)
             .caseSensitive(self.case_sensitive)
         )
@@ -199,7 +227,7 @@ def _build(
 
 
 def object_val(
-    fields: Dict[str, Union[JsonValueType, FieldOptions]],
+    fields: Dict[str, Union[JsonValueType, ObjectField]],
     allow_unknown_fields: bool = True,
     allow_missing: bool = True,
     allow_null: bool = True,
@@ -217,7 +245,7 @@ def object_val(
         object_val({ "name": str, "age": int })
 
     In contexts where the user needs to create a JsonValueType and isn't changing any default values, the user can
-    simplify by using a Dict[str, Union[JsonValueType, FieldOptions]]. For example,
+    simplify by using a Dict[str, Union[JsonValueType, ObjectField]]. For example,
 
     .. code-block:: python
         some_method(object_val({ "name": str, "age": int }))
@@ -228,14 +256,14 @@ def object_val(
         some_method({ "name": str, "age": int })
 
     Args:
-        fields (Dict[str, Union[JsonValueType, FieldOptions]]): the fields
+        fields (Dict[str, Union[JsonValueType, ObjectField]]): the fields
         allow_unknown_fields (bool): if unknown fields are allow, by default is True
         allow_missing (bool): if the object is allowed to be missing, by default is True
         allow_null (bool): if the object is allowed to be a JSON null type, by default is True
         repeated_field_behavior (RepeatedFieldBehavior): the default repeated field behavior, only used for fields that
             are specified using JsonValueType, by default is RepeatedFieldBehavior.ERROR
-        case_sensitive (bool): if default to use for field case-sensitivity. Only used for fields that are specified
-            using JsonValueType, by default is True
+        case_sensitive (bool): if the field name and aliases should be compared using case-sensitive equality, only used
+            for fields that are specified using JsonValueType, by default is True
 
     Returns:
         the object value
@@ -246,8 +274,8 @@ def object_val(
     for field_name, field_opts in fields.items():
         field_opts = (
             field_opts
-            if isinstance(field_opts, FieldOptions)
-            else FieldOptions(
+            if isinstance(field_opts, ObjectField)
+            else ObjectField(
                 field_opts,
                 repeated_behavior=repeated_field_behavior,
                 case_sensitive=case_sensitive,
@@ -260,7 +288,7 @@ def object_val(
 
 def typed_object_val(
     type_field: str,
-    shared_fields: Dict[str, Union[JsonValueType, FieldOptions]],
+    shared_fields: Dict[str, Union[JsonValueType, ObjectField]],
     objects: Dict[str, JsonValueType],
     allow_unknown_types: bool = True,
     allow_missing: bool = True,
@@ -298,8 +326,8 @@ def typed_object_val(
 
     Args:
         type_field (str): the type-discriminating field
-        shared_fields (Dict[str, Union[JsonValueType, FieldOptions]]): the shared fields
-        objects (Dict[str, Union[JsonValueType, FieldOptions]]): the individual objects, keyed by their
+        shared_fields (Dict[str, Union[JsonValueType, ObjectField]]): the shared fields
+        objects (Dict[str, Union[JsonValueType, ObjectField]]): the individual objects, keyed by their
             type-discriminated value. The values must be object options.
         allow_unknown_types (bool): if unknown types are allow, by default is True
         allow_missing (bool): if the object is allowed to be missing, by default is True
@@ -323,8 +351,8 @@ def typed_object_val(
     for shared_field_name, shared_field_opts in shared_fields.items():
         shared_field_opts = (
             shared_field_opts
-            if isinstance(shared_field_opts, FieldOptions)
-            else FieldOptions(
+            if isinstance(shared_field_opts, ObjectField)
+            else ObjectField(
                 shared_field_opts,
                 repeated_behavior=RepeatedFieldBehavior.ERROR,
                 case_sensitive=True,
@@ -380,8 +408,8 @@ def array_val(
 
 
 def object_entries_val(
+    value_type: JsonValueType,
     key_type: JsonValueType = str,
-    value_type: Optional[JsonValueType] = None,
     allow_missing: bool = True,
     allow_null: bool = True,
 ) -> JsonValue:
@@ -400,11 +428,11 @@ def object_entries_val(
     might be modelled as the object kv type
 
     .. code-block:: python
-        object_entries_val(value_type=int)
+        object_entries_val(int)
 
     Args:
-        key_type (JsonValueType): the key element, by defaults is type str
-        value_type (Optional[JsonValueType]): the value element, required
+        value_type (JsonValueType): the value type element, required
+        key_type (JsonValueType): the key type element, by default is type str
         allow_missing (bool): if the object is allowed to be missing, by default is True
         allow_null (bool): if the object is allowed to be a JSON null type, by default is True
 
@@ -437,6 +465,8 @@ def tuple_val(
 
     .. code-block:: python
         tuple_val({"name": str, "age": int, "height": float})
+
+    otherwise, default names based on the indexes of the values will be used.
 
     In contexts where the user needs to create a JsonValueType and isn't changing any default values nor is setting
     names, the user can simplify passing through a python tuple type. For example,
@@ -957,7 +987,8 @@ def instant_val(
         allow_missing (bool): if the Instant value is allowed to be missing, default is True
         allow_null (bool): if the Instant value is allowed to be a JSON null type, default is True
         number_format (Literal[None, "s", "ms", "us", "ns"]): when set, signifies that a JSON numeric type is expected.
-            "s" is for seconds, "ms" is for milliseconds, "us" is for microseconds, and "ns" is for nanoseconds.
+            "s" is for seconds, "ms" is for milliseconds, "us" is for microseconds, and "ns" is for nanoseconds since
+            the epoch. When not set, a JSON string in the ISO-8601 format is expected.
         allow_decimal (bool): if the Instant value is allowed to be a JSON decimal type, default is False. Only valid
             when number_format is specified.
         on_missing (Optional[Any]): the value to use when the JSON value is missing and allow_missing is True, default is None.
@@ -1157,32 +1188,6 @@ def skip_val(
         allow_array=_allow(allow_array),
     )
     return JsonValue(builder.build())
-
-
-def json_val(json_value_type: JsonValueType) -> JsonValue:
-    """Creates a JsonValue from a JsonValueType.
-
-    Args:
-        json_value_type (JsonValueType): the JSON value type
-
-    Returns:
-        the JSON value
-    """
-    if isinstance(json_value_type, JsonValue):
-        return json_value_type
-    if isinstance(json_value_type, dtypes.DType):
-        return _dtype_dict[json_value_type]
-    if isinstance(json_value_type, type):
-        return _type_dict[json_value_type]
-    if isinstance(json_value_type, Dict):
-        return object_val(json_value_type)
-    if isinstance(json_value_type, List):
-        if len(json_value_type) is not 1:
-            raise TypeError("Expected List as json type to have exactly one element")
-        return array_val(json_value_type[0])
-    if isinstance(json_value_type, Tuple):
-        return tuple_val(json_value_type)
-    raise TypeError(f"Unsupported JSON value type {type(json_value_type)}")
 
 
 _dtype_dict = {
