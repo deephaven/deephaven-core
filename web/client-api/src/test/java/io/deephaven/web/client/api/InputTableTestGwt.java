@@ -34,7 +34,7 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
                     JsArray<Column> keyColumns = Js.uncheckedCast(inputTable.getKeyColumns());
                     assertEquals(2,
                             keyColumns.filter((col, idx) -> col.getName() == "A" || col.getName() == "B").length);
-                    JsArray<Column> valueColumns = Js.uncheckedCast(inputTable.getValues());
+                    JsArray<Column> valueColumns = Js.uncheckedCast(inputTable.getValueColumns());
                     assertEquals(4, valueColumns.filter((col, idx) -> col.getName() == "C" || col.getName() == "D"
                             || col.getName() == "E" || col.getName() == "F").length);
                     return null;
@@ -47,7 +47,7 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
                 .then(inputTable -> {
                     JsArray<Column> keyColumns = Js.uncheckedCast(inputTable.getKeyColumns());
                     assertEquals(1, keyColumns.filter((col, idx) -> col.getName() == "C").length);
-                    JsArray<Column> valueColumns = Js.uncheckedCast(inputTable.getValues());
+                    JsArray<Column> valueColumns = Js.uncheckedCast(inputTable.getValueColumns());
                     assertEquals(5, valueColumns.filter((col, idx) -> col.getName() == "A" || col.getName() == "B"
                             || col.getName() == "D" || col.getName() == "E" || col.getName() == "F").length);
                     return null;
@@ -61,7 +61,7 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
                     JsArray<Column> keyColumns = Js.uncheckedCast(inputTable.getKeyColumns());
                     assertEquals(2,
                             keyColumns.filter((col, idx) -> col.getName() == "E" || col.getName() == "F").length);
-                    JsArray<Column> valueColumns = Js.uncheckedCast(inputTable.getValues());
+                    JsArray<Column> valueColumns = Js.uncheckedCast(inputTable.getValueColumns());
                     assertEquals(4, valueColumns.filter((col, idx) -> col.getName() == "A" || col.getName() == "B"
                             || col.getName() == "C" || col.getName() == "D").length);
                     return null;
