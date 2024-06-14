@@ -16,7 +16,7 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
             .script("result3", "input_table(init_table=source, key_cols=[\"C\"])")
             .script("result4", "input_table(init_table=source, key_cols=[\"E\" , \"F\" ])");
 
-    public void testInputTable() {
+    public void testNoKeyCols() {
         connect(tables)
                 .then(table("result1"))
                 .then(JsTable::inputTable)
@@ -26,7 +26,8 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
                     return null;
                 })
                 .then(this::finish).catch_(this::report);
-
+    }
+    public void testFirstColsAreKeyCols() {
         connect(tables)
                 .then(table("result2"))
                 .then(JsTable::inputTable)
@@ -40,7 +41,8 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
                     return null;
                 })
                 .then(this::finish).catch_(this::report);
-
+    }
+    public void testOneKeyCol() {
         connect(tables)
                 .then(table("result3"))
                 .then(JsTable::inputTable)
@@ -53,7 +55,8 @@ public class InputTableTestGwt extends AbstractAsyncGwtTestCase {
                     return null;
                 })
                 .then(this::finish).catch_(this::report);
-
+    }
+    public void testLaterColsAreKeyCols() {
         connect(tables)
                 .then(table("result4"))
                 .then(JsTable::inputTable)
