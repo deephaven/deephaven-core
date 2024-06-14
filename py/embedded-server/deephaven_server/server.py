@@ -32,7 +32,6 @@ class ServerConfig:
         """
         return self.j_server_config.targetUrlOrDefault()
 
-
 class AuthenticationHandler:
     """
     Represents an authentication handler for a Deephaven server.
@@ -127,7 +126,9 @@ class Server:
 
         Args:
             host (Optional[str]): The host to bind the server to, defaults to None, meaning local host.
-            port (Optional[int]): The port to bind the server to, defaults to None, meaning 10000.
+            port (Optional[int]): The port to bind the server to, defaults to None. When None, if a user defined
+                configuration file is present and a port number is specified in it, use that port, otherwise, use the
+                default 10000. Refer to the Deephaven documentation for more information on the configuration file.
             jvm_args (Optional[List[str]]): The common, user specific JVM arguments, such as JVM heap size, the
                 authentication handler to use, and other related JVM options. Defaults to None.
             extra_classpath (Optional[List[str]]): The extra classpath to use.

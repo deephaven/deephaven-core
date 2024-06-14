@@ -6,6 +6,7 @@ import glob
 import itertools
 import os
 import pathlib
+import types
 from typing import Optional, List, Dict
 
 from deephaven_internal import jvm
@@ -55,10 +56,25 @@ def start_jvm(
         java_home: Optional[str] = None,
         extra_classpath: Optional[List[str]] = None,
         prop_file: str = None,
-        config = None,
+        config: Optional[types.ModuleType] = None,
 ) -> None:
     """ This function uses the default DH property file to embed the Deephaven server and starts a Deephaven Python
-    Script session. """
+    Script session.
+
+    Args:
+        jvm_args (Optional[List[str]]): The common, user specific JVM arguments, such as JVM heap size, the
+            authentication handler to use, and other related JVM options. Defaults to None.
+        default_jvm_args (Optional[List[str]]): The advanced JVM arguments to use instead of the default ones that
+            Deephaven recommends, such as a specific garbage collector and related tuning parameters, or whether to
+            let Python or Java handle signals. Defaults to None, the Deephaven defaults as defined in DEFAULT_JVM_ARGS.
+        jvm_properties (Optional[Dict[str, str]]): The JVM properties to use. Defaults to None, meaning to use the
+            predefined DEFAULT_JVM_PROPERTIES .
+        java_home (Optional[str]): The JAVA_HOME path to use. Defaults to None, meaning using the JAVA_HOME environment
+            variable.
+        extra_classpath (Optional[List[str]]): The extra classpath to use.
+        prop_file (str): The property file to use. Defaults to None.
+        config (Optional[types.ModuleType]): The JPY configuration module to use. Defaults to None.
+    """
     default_jvm_args = default_jvm_args or DEFAULT_JVM_ARGS
     jvm_args = default_jvm_args + jvm_args if jvm_args else default_jvm_args
 
