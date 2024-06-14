@@ -36,14 +36,6 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
     final S3Instructions instructions;
 
     /**
-     * Used to temporarily hold a request to prevent it from being GC'd.
-     * <p>
-     * This field should <b>NOT</b> be converted to a local variable, so that it is not optimized away by the compiler,
-     * and the request is not prematurely GC'd.
-     */
-    private S3Request.AcquiredRequest acquiredRequest;
-
-    /**
      * The URI associated with this context. A single context object can only be associated with a single URI at a time.
      * But it can be re-associated with a different URI after {@link #reset() resetting}.
      */
@@ -124,14 +116,14 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
             readAhead = Math.min(Math.max(impliedReadAhead, desiredReadAhead), totalRemainingFragments);
         }
         // Hold a reference to the first request to ensure it is not evicted from the cache
-        acquiredRequest = getOrCreateRequest(firstFragmentIx);
+        S3Request.AcquiredRequest firstRequest = getOrCreateRequest(firstFragmentIx);
         for (int i = 0; i < readAhead; ++i) {
             // Do not hold references to the read-ahead requests
             getOrCreateRequest(firstFragmentIx + i + 1);
         }
         // blocking
-        int filled = acquiredRequest.fill(position, dest);
-        acquiredRequest = null; // release the reference
+        int filled = firstRequest.fill(position, dest);
+        firstRequest = null; // release the reference
 
         for (int i = 0; dest.hasRemaining(); ++i) {
             final S3Request.AcquiredRequest readAheadRequest =
