@@ -29,6 +29,7 @@ public interface SeekableChannelsProvider extends SafeCloseable {
      *
      * @param provider the provider
      * @param ch the seekable channel
+     * @param sizeHint the number of bytes the caller expects to read from the input stream
      * @return the position-safe input stream
      * @throws IOException if an IO exception occurs
      * @see ChannelPositionInputStream#of(SeekableByteChannel, InputStream)
@@ -77,6 +78,7 @@ public interface SeekableChannelsProvider extends SafeCloseable {
      * {@link #channelPositionInputStream(SeekableChannelsProvider, SeekableByteChannel, int)}.
      *
      * @param channel the channel
+     * @param sizeHint the number of bytes the caller expects to read from the input stream
      * @return the input stream
      * @throws IOException if an IO exception occurs
      */
