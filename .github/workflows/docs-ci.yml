@@ -39,7 +39,7 @@ jobs:
         run: |
           git config user.name "$(git --no-pager log --format=format:'%an' -n 1)"
           git config user.email "$(git --no-pager log --format=format:'%ae' -n 1)"
-          git remote add upstream https://github.com/deephaven/deephaven-core.git
+          git remote remove upstream 2>/dev/null || git remote add upstream https://github.com/deephaven/deephaven-core.git
           git fetch --tags upstream
       
       - name: Make Symlinks
