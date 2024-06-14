@@ -201,7 +201,7 @@ final class S3Request extends SoftReference<ByteBuffer>
     }
 
     private boolean isDone() {
-        return consumerFuture.isDone();
+        return consumerFuture != null && consumerFuture.isDone();
     }
 
     /**

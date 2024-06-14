@@ -135,7 +135,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
 
         for (int i = 0; dest.hasRemaining(); ++i) {
             final S3Request.AcquiredRequest readAheadRequest =
-                    getRequestFromSharedCache(firstFragmentIx + i + 1);
+                    sharedCache.getRequest(uri, firstFragmentIx + i + 1);
             if (readAheadRequest == null || !readAheadRequest.isDone()) {
                 break;
             }
@@ -164,17 +164,6 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
     }
 
     // --------------------------------------------------------------------------------------------------
-
-    @Nullable
-    private S3Request.AcquiredRequest getRequestFromSharedCache(final long fragmentIndex) {
-        final S3Request.AcquiredRequest cachedRequest = sharedCache.getRequest(uri, fragmentIndex);
-        if (cachedRequest == null) {
-            return null;
-        }
-        // Send the request, if not sent already. The following method is idempotent, so we always call it.
-        cachedRequest.sendRequest();
-        return cachedRequest;
-    }
 
     @NotNull
     private S3Request.AcquiredRequest getOrCreateRequest(final long fragmentIndex) {
