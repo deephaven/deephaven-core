@@ -31,14 +31,17 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
     static final long UNINITIALIZED_SIZE = -1;
     private static final long UNINITIALIZED_NUM_FRAGMENTS = -1;
 
-    final S3SeekableChannelProvider provider;
+    private final S3SeekableChannelProvider provider;
     final S3AsyncClient client;
     final S3Instructions instructions;
 
     /**
      * Used to temporarily hold a request to prevent it from being GC'd.
+     * <p>
+     * This field should <b>NOT</b> be converted to a local variable, so that it is not optimized away by the compiler,
+     * and the request is not prematurely GC'd.
      */
-    S3Request.AcquiredRequest acquiredRequest;
+    private S3Request.AcquiredRequest acquiredRequest;
 
     /**
      * The URI associated with this context. A single context object can only be associated with a single URI at a time.
@@ -127,21 +130,17 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
             getOrCreateRequest(firstFragmentIx + i + 1);
         }
         // blocking
-        int filled = acquiredRequest.request.fill(position, dest);
-        acquiredRequest = null;
+        int filled = acquiredRequest.fill(position, dest);
+        acquiredRequest = null; // release the reference
 
         for (int i = 0; dest.hasRemaining(); ++i) {
-            final S3Request.AcquiredRequest acquiredReadAheadRequest =
+            final S3Request.AcquiredRequest readAheadRequest =
                     getRequestFromSharedCache(firstFragmentIx + i + 1);
-            if (acquiredReadAheadRequest == null) {
-                break;
-            }
-            final S3Request request = acquiredReadAheadRequest.request;
-            if (!request.isDone()) {
+            if (readAheadRequest == null || !readAheadRequest.isDone()) {
                 break;
             }
             // non-blocking since we know isDone
-            filled += request.fill(position + filled, dest);
+            filled += readAheadRequest.fill(position + filled, dest);
         }
         return filled;
     }
@@ -173,7 +172,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
             return null;
         }
         // Send the request, if not sent already. The following method is idempotent, so we always call it.
-        cachedRequest.request.sendRequest();
+        cachedRequest.sendRequest();
         return cachedRequest;
     }
 
@@ -181,7 +180,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
     private S3Request.AcquiredRequest getOrCreateRequest(final long fragmentIndex) {
         final S3Request.AcquiredRequest cachedRequest = sharedCache.getOrCreateRequest(uri, fragmentIndex, this);
         // Send the request, if not sent already. The following method is idempotent, so we always call it.
-        cachedRequest.request.sendRequest();
+        cachedRequest.sendRequest();
         return cachedRequest;
     }
 
