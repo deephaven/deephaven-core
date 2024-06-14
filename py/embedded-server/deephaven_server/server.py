@@ -133,7 +133,7 @@ class Server:
             extra_classpath (Optional[List[str]]): The extra classpath to use.
             default_jvm_args (Optional[List[str]]): The advanced JVM arguments to use instead of the default ones that
                 Deephaven recommends, such as a specific garbage collector and related tuning parameters, or whether to
-                let Python or Java to handle signals. Defaults to None.
+                let Python or Java handle signals. Defaults to None, the Deephaven defaults.
         """
         # TODO deephaven-core#2453 consider providing @dataclass for arguments
 
