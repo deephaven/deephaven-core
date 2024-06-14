@@ -22,7 +22,7 @@ def cli():
 @click.option("--port", default=None, type=int, help="The port to bind to.")
 @click.option("--jvm-args", default=None, help="The JVM arguments to use.")
 @click.option("--extra-classpath", default=None, help="The extra classpath to use.")
-@click.option("--default-jvm_args", default=None, help="The advanced JVM arguments to use in place of the default ones that Deephaven recommends.")
+@click.option("--default-jvm-args", default=None, help="The advanced JVM arguments to use in place of the default ones that Deephaven recommends.")
 def server(host, port, jvm_args, extra_classpath, default_jvm_args):
     """
     Start the Deephaven server.
