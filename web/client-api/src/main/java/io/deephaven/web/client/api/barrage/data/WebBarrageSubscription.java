@@ -3,10 +3,8 @@
 //
 package io.deephaven.web.client.api.barrage.data;
 
-import com.google.flatbuffers.FlatBufferBuilder;
 import elemental2.core.JsArray;
 import elemental2.dom.DomGlobal;
-import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
 import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.DoubleChunk;
@@ -15,7 +13,6 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.ShortChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.web.client.api.barrage.CompressedRangeSetReader;
 import io.deephaven.web.client.api.barrage.WebBarrageMessage;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.fu.JsData;
@@ -25,7 +22,6 @@ import io.deephaven.web.shared.data.RangeSet;
 import io.deephaven.web.shared.data.ShiftedRange;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.BitSet;
@@ -171,28 +167,6 @@ public abstract class WebBarrageSubscription {
         return new RedirectedImpl(cts, viewportChangedHandler, dataChangedHandler, dataSinks);
     }
 
-    public static FlatBufferBuilder subscriptionRequest(byte[] tableTicket, BitSet columns, @Nullable RangeSet viewport,
-            io.deephaven.extensions.barrage.BarrageSubscriptionOptions options, boolean isReverseViewport) {
-        FlatBufferBuilder sub = new FlatBufferBuilder(1024);
-        int colOffset = BarrageSubscriptionRequest.createColumnsVector(sub, columns.toByteArray());
-        int viewportOffset = 0;
-        if (viewport != null) {
-            viewportOffset =
-                    BarrageSubscriptionRequest.createViewportVector(sub, CompressedRangeSetReader.writeRange(viewport));
-        }
-        int optionsOffset = options.appendTo(sub);
-        int tableTicketOffset = BarrageSubscriptionRequest.createTicketVector(sub, tableTicket);
-        BarrageSubscriptionRequest.startBarrageSubscriptionRequest(sub);
-        BarrageSubscriptionRequest.addColumns(sub, colOffset);
-        BarrageSubscriptionRequest.addViewport(sub, viewportOffset);
-        BarrageSubscriptionRequest.addSubscriptionOptions(sub, optionsOffset);
-        BarrageSubscriptionRequest.addTicket(sub, tableTicketOffset);
-        BarrageSubscriptionRequest.addReverseViewport(sub, isReverseViewport);
-        sub.finish(BarrageSubscriptionRequest.endBarrageSubscriptionRequest(sub));
-
-        return sub;
-    }
-
     public interface ViewportChangedHandler {
         void onServerViewportChanged(RangeSet serverViewport, BitSet serverColumns, boolean serverReverseViewport);
     }
@@ -215,13 +189,13 @@ public abstract class WebBarrageSubscription {
     protected final RangeSet currentRowSet = RangeSet.empty();
 
     protected long capacity = 0;
-    protected final WebDataSink[] destSources;
+    protected WebDataSink[] destSources;
 
     protected RangeSet serverViewport;
     protected BitSet serverColumns;
     protected boolean serverReverseViewport;
 
-    public WebBarrageSubscription(ClientTableState state, ViewportChangedHandler viewportChangedHandler,
+    protected WebBarrageSubscription(ClientTableState state, ViewportChangedHandler viewportChangedHandler,
             DataChangedHandler dataChangedHandler, WebDataSink[] dataSinks) {
         this.state = state;
         destSources = dataSinks;
@@ -253,6 +227,14 @@ public abstract class WebBarrageSubscription {
         return serverViewport;
     }
 
+    /**
+     * Reads a value from the table subscription.
+     *
+     * @param key the row to read in key-space
+     * @param col the index of the column to read
+     * @return the value read from the table
+     * @param <T> the expected type of the column to read
+     */
     public abstract <T> T getData(long key, int col);
 
     protected boolean isSubscribedColumn(int ii) {
@@ -510,7 +492,6 @@ public abstract class WebBarrageSubscription {
                 Iterator<Range> iterator = freeset.rangeIterator();
                 int required = (int) size;
                 while (required > 0 && iterator.hasNext()) {
-                    assert iterator.hasNext();
                     Range next = iterator.next();
                     Range range =
                             next.size() < required ? next : new Range(next.getFirst(), next.getFirst() + required - 1);
@@ -560,7 +541,7 @@ public abstract class WebBarrageSubscription {
 
     /**
      * Helper to avoid appending many times when modifying indexes. The append() method should be called for each key
-     * _in order_ to ensure that addRange/removeRange isn't called excessively. When no more items will be added,
+     * <i>in order</i> to ensure that addRange/removeRange isn't called excessively. When no more items will be added,
      * flush() must be called.
      */
     private static class RangeSetBulkHelper {

@@ -50,13 +50,10 @@ import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
-import org.apache.arrow.flatbuf.Schema;
 
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static io.deephaven.web.client.api.barrage.WebBarrageUtils.serializeRanges;
 
 /**
  * Behaves like a {@link JsTable} externally, but data, state, and viewports are managed by an entirely different
@@ -184,10 +181,9 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                 HierarchicalTableDescriptor.deserializeBinary(widget.getDataAsU8());
 
         Uint8Array flightSchemaMessage = treeDescriptor.getSnapshotSchema_asU8();
-        Schema schema = WebBarrageUtils.readSchemaMessage(flightSchemaMessage);
 
         this.isRefreshing = !treeDescriptor.getIsStatic();
-        this.tableDefinition = WebBarrageUtils.readTableDefinition(schema);
+        this.tableDefinition = WebBarrageUtils.readTableDefinition(flightSchemaMessage);
         Column[] columns = new Column[0];
         Map<Boolean, Map<String, ColumnDefinition>> columnDefsByName = tableDefinition.getColumnsByName();
         int rowFormatColumn = -1;
@@ -581,6 +577,11 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         }
 
         @Override
+        protected void sendFirstSubscriptionRequest() {
+            setViewport(firstRow, lastRow, Js.uncheckedCast(columns), (double) updateInterval);
+        }
+
+        @Override
         protected BitSet makeColumnBitset(JsArray<Column> columns) {
             BitSet requested = super.makeColumnBitset(columns);
             requested.or(makeColumnSubscriptionBitset());
@@ -686,7 +687,6 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                     state.applyTableCreationResponse(def);
 
                     TreeSubscription subscription = new TreeSubscription(state, connection);
-                    subscription.setViewport(firstRow, lastRow, Js.uncheckedCast(columns), (double) updateInterval);
 
                     subscription.addEventListener(TreeSubscription.EVENT_UPDATED,
                             (CustomEvent<AbstractTableSubscription.UpdateEventData> data) -> {

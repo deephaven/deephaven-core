@@ -26,10 +26,18 @@ import jsinterop.annotations.JsType;
 @JsType(namespace = "dh")
 public final class TableSubscription extends AbstractTableSubscription {
 
+    private final JsArray<Column> columns;
+    private final Double updateIntervalMs;
+
     @JsIgnore
     public TableSubscription(JsArray<Column> columns, JsTable existingTable, Double updateIntervalMs) {
         super(existingTable.state(), existingTable.getConnection());
+        this.columns = columns;
+        this.updateIntervalMs = updateIntervalMs;
+    }
 
+    @Override
+    protected void sendFirstSubscriptionRequest() {
         changeSubscription(columns, updateIntervalMs);
     }
 

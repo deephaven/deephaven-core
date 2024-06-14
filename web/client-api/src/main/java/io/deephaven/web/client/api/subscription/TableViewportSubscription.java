@@ -3,51 +3,24 @@
 //
 package io.deephaven.web.client.api.subscription;
 
-import com.google.flatbuffers.FlatBufferBuilder;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
-import elemental2.core.Uint8Array;
 import elemental2.dom.CustomEvent;
 import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
-import io.deephaven.barrage.flatbuf.BarrageMessageType;
-import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
-import io.deephaven.barrage.flatbuf.BarrageSnapshotOptions;
-import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
-import io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
-import io.deephaven.barrage.flatbuf.ColumnConversionMode;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
-import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.JsRangeSet;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.TableData;
-import io.deephaven.web.client.api.WorkerConnection;
-import io.deephaven.web.client.api.barrage.WebBarrageUtils;
-import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
-import io.deephaven.web.client.api.barrage.stream.BiDiStream;
-import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.shared.data.RangeSet;
 import io.deephaven.web.shared.data.ShiftedRange;
-import io.deephaven.web.shared.data.TableSnapshot;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
 import jsinterop.base.Js;
-import org.apache.arrow.flatbuf.Message;
-import org.apache.arrow.flatbuf.MessageHeader;
-import org.apache.arrow.flatbuf.RecordBatch;
-import org.gwtproject.nio.TypedArrayHelper;
-
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.Collections;
-
-import static io.deephaven.web.client.api.barrage.WebBarrageUtils.serializeRanges;
-import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMAT_COLUMN;
 
 /**
  * Encapsulates event handling around table subscriptions by "cheating" and wrapping up a JsTable instance to do the
@@ -84,28 +57,10 @@ public class TableViewportSubscription extends AbstractTableSubscription {
     // TODO move to superclass and check on viewport change
     private RangeSet serverViewport;
 
-    /**
-     * Describes the possible lifecycle of the viewport as far as anything external cares about it
-     */
-    public enum Status {
-        /**
-         * Waiting for some prerequisite before we can begin, usually waiting to make sure the original table is ready
-         * to be subscribed to. Once the original table is ready, we will enter the ACTIVE state, even if the first
-         * update hasn't yet arrived.
-         */
-        STARTING,
-        /**
-         * Successfully created, viewport is at least begun on the server, updates are subscribed and if changes happen
-         * on the server, we will be notified.
-         */
-        ACTIVE,
-        /**
-         * Closed or otherwise dead, can not be used again.
-         */
-        DONE
-    }
-
-    private final double refresh;
+    private double firstRow;
+    private double lastRow;
+    private Column[] columns;
+    private double refresh;
 
     private final JsTable original;
 
@@ -119,18 +74,23 @@ public class TableViewportSubscription extends AbstractTableSubscription {
      */
     private boolean retained;
 
-    private Status status = Status.STARTING;
 
     private UpdateEventData viewportData;
 
     public TableViewportSubscription(double firstRow, double lastRow, Column[] columns, Double updateIntervalMs,
             JsTable existingTable) {
         super(existingTable.state(), existingTable.getConnection());
-
-        setInternalViewport(firstRow, lastRow, columns, updateIntervalMs, null);
+        this.firstRow = firstRow;
+        this.lastRow = lastRow;
+        this.columns = columns;
 
         refresh = updateIntervalMs == null ? 1000.0 : updateIntervalMs;
         this.original = existingTable;
+    }
+
+    @Override
+    protected void sendFirstSubscriptionRequest() {
+        setInternalViewport(firstRow, lastRow, columns, refresh, null);
     }
 
     @Override
@@ -233,6 +193,13 @@ public class TableViewportSubscription extends AbstractTableSubscription {
 
     public void setInternalViewport(double firstRow, double lastRow, Column[] columns, Double updateIntervalMs,
             Boolean isReverseViewport) {
+        if (status == Status.STARTING) {
+            this.firstRow = firstRow;
+            this.lastRow = lastRow;
+            this.columns = columns;
+            this.refresh = updateIntervalMs == null ? 1000.0 : updateIntervalMs;
+            return;
+        }
         if (updateIntervalMs != null && refresh != updateIntervalMs) {
             throw new IllegalArgumentException(
                     "Can't change refreshIntervalMs on a later call to setViewport, it must be consistent or omitted");
@@ -253,9 +220,9 @@ public class TableViewportSubscription extends AbstractTableSubscription {
      */
     @JsMethod
     public void close() {
-        if (status == Status.DONE) {
-            JsLog.warn("TableViewportSubscription.close called on subscription that's already done.");
-        }
+//        if (status == Status.DONE) {
+//            JsLog.warn("TableViewportSubscription.close called on subscription that's already done.");
+//        }
         retained = false;
 
         // Instead of calling super.close(), we delegate to internalClose()
@@ -270,13 +237,13 @@ public class TableViewportSubscription extends AbstractTableSubscription {
         // indicate that the base table shouldn't get events anymore, even if it is still retained elsewhere
         originalActive = false;
 
-        if (retained || status == Status.DONE) {
-            // the JsTable has indicated it is no longer interested in this viewport, but other calling
-            // code has retained it, keep it open for now.
-            return;
-        }
-
-        status = Status.DONE;
+//        if (retained || status == Status.DONE) {
+//            // the JsTable has indicated it is no longer interested in this viewport, but other calling
+//            // code has retained it, keep it open for now.
+//            return;
+//        }
+//
+//        status = Status.DONE;
 
         super.close();
     }

@@ -1065,9 +1065,7 @@ public final class ClientTableState extends TableConfig {
         Uint8Array flightSchemaMessage = def.getSchemaHeader_asU8();
         isStatic = def.getIsStatic();
 
-        Schema schema = WebBarrageUtils.readSchemaMessage(flightSchemaMessage);
-
-        setTableDef(WebBarrageUtils.readTableDefinition(schema));
+        setTableDef(WebBarrageUtils.readTableDefinition(WebBarrageUtils.readSchemaMessage(flightSchemaMessage)));
 
         setResolution(ResolutionState.RUNNING);
         setSize(Long.parseLong(def.getSize()));

@@ -96,8 +96,8 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
                     keys = result;
 
                     keyColumnTypes = new ArrayList<>();
-                    InitialTableDefinition tableDefinition = WebBarrageUtils.readTableDefinition(
-                            WebBarrageUtils.readSchemaMessage(descriptor.getConstituentDefinitionSchema_asU8()));
+                    InitialTableDefinition tableDefinition =
+                            WebBarrageUtils.readTableDefinition(descriptor.getConstituentDefinitionSchema_asU8());
                     ColumnDefinition[] columnDefinitions = tableDefinition.getColumns();
                     Column[] columns = new Column[0];
                     for (int i = 0; i < columnDefinitions.length; i++) {

@@ -69,6 +69,10 @@ public class WebBarrageUtils {
         return bbToUint8ArrayView(builder.dataBuffer());
     }
 
+    public static InitialTableDefinition readTableDefinition(Uint8Array flightSchemaMessage) {
+        return readTableDefinition(readSchemaMessage(flightSchemaMessage));
+    }
+
     public static InitialTableDefinition readTableDefinition(Schema schema) {
         ColumnDefinition[] cols = readColumnDefinitions(schema);
 
@@ -82,7 +86,7 @@ public class WebBarrageUtils {
                 .setColumns(cols);
     }
 
-    public static ColumnDefinition[] readColumnDefinitions(Schema schema) {
+    private static ColumnDefinition[] readColumnDefinitions(Schema schema) {
         ColumnDefinition[] cols = new ColumnDefinition[(int) schema.fieldsLength()];
         for (int i = 0; i < schema.fieldsLength(); i++) {
             cols[i] = new ColumnDefinition(i, schema.fields(i));
