@@ -206,7 +206,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             @NotNull final SeekableChannelContext channelContext) throws IOException {
         switch (pageHeader.type) {
             case DATA_PAGE:
-                try (final InputStream in = channelsProvider.getInputStream(ch)) {
+                try (final InputStream in = channelsProvider.getInputStream(ch, pageHeader.getCompressed_page_size())) {
                     return readRowCountFromPageV1(readV1Unsafe(in, channelContext));
                 }
             case DATA_PAGE_V2:
@@ -225,12 +225,12 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             @NotNull final SeekableChannelContext channelContext) throws IOException {
         switch (pageHeader.type) {
             case DATA_PAGE:
-                try (final InputStream in = channelsProvider.getInputStream(ch)) {
+                try (final InputStream in = channelsProvider.getInputStream(ch, pageHeader.getCompressed_page_size())) {
                     return readKeysFromPageV1(readV1Unsafe(in, channelContext), keyDest, nullPlaceholder,
                             channelContext);
                 }
             case DATA_PAGE_V2:
-                try (final InputStream in = channelsProvider.getInputStream(ch)) {
+                try (final InputStream in = channelsProvider.getInputStream(ch, pageHeader.getCompressed_page_size())) {
                     return readKeysFromPageV2(readV2Unsafe(in, channelContext), keyDest, nullPlaceholder,
                             channelContext);
                 }
@@ -246,11 +246,11 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             @NotNull final SeekableChannelContext channelContext) throws IOException {
         switch (pageHeader.type) {
             case DATA_PAGE:
-                try (final InputStream in = channelsProvider.getInputStream(ch)) {
+                try (final InputStream in = channelsProvider.getInputStream(ch, pageHeader.getCompressed_page_size())) {
                     return readPageV1(readV1Unsafe(in, channelContext), nullValue, channelContext);
                 }
             case DATA_PAGE_V2:
-                try (final InputStream in = channelsProvider.getInputStream(ch)) {
+                try (final InputStream in = channelsProvider.getInputStream(ch, pageHeader.getCompressed_page_size())) {
                     return readPageV2(readV2Unsafe(in, channelContext), nullValue, channelContext);
                 }
             default:
