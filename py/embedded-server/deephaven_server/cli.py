@@ -2,6 +2,7 @@
 # Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
 import click
+import os
 import signal
 import sys
 import webbrowser
@@ -58,4 +59,8 @@ def server(host, port, jvm_args, extra_classpath, default_jvm_args):
         sys.exit(0)
 
     signal.signal(signal.SIGINT, signal_handler)
-    signal.pause()
+    try:
+        signal.pause()
+    except AttributeError:
+        # signal.pause() is not available on Windows
+        os.system("pause")
