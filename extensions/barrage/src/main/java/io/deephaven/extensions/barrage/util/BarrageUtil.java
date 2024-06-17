@@ -103,8 +103,6 @@ public class BarrageUtil {
     /** The name of the attribute that indicates that a table is flat. */
     public static final String TABLE_ATTRIBUTE_IS_FLAT = "IsFlat";
 
-    private static final int ATTR_STRING_LEN_CUTOFF = 1024;
-
     private static final String ATTR_DH_PREFIX = "deephaven:";
     private static final String ATTR_ATTR_TAG = "attribute";
     private static final String ATTR_ATTR_TYPE_TAG = "attribute_type";
@@ -255,8 +253,7 @@ public class BarrageUtil {
             final Object val = entry.getValue();
             if (val instanceof Byte || val instanceof Short || val instanceof Integer ||
                     val instanceof Long || val instanceof Float || val instanceof Double ||
-                    val instanceof Character || val instanceof Boolean ||
-                    (val instanceof String && ((String) val).length() < ATTR_STRING_LEN_CUTOFF)) {
+                    val instanceof Character || val instanceof Boolean || val instanceof String) {
                 // Copy primitives as strings
                 putMetadata(metadata, ATTR_ATTR_TAG + "." + key, val.toString());
                 putMetadata(metadata, ATTR_ATTR_TYPE_TAG + "." + key, val.getClass().getCanonicalName());
