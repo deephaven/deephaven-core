@@ -55,7 +55,7 @@ public class IcebergCatalogAdapter {
 
     /**
      * Create a single {@link TableDefinition} from a given Schema, PartitionSpec, and TableDefinition. Takes into
-     * account {@link Map<String,String> column rename instructions}
+     * account {@link Map<> column rename instructions}
      *
      * @param schema The schema of the table.
      * @param partitionSpec The partition specification of the table.
@@ -173,18 +173,6 @@ public class IcebergCatalogAdapter {
     }
 
     /**
-     * List all {@link Namespace namespaces} in a given namespace. This method is only supported if the catalog
-     * implements {@link SupportsNamespaces} for namespace discovery. See
-     * {@link SupportsNamespaces#listNamespaces(Namespace)}.
-     *
-     * @param namespace The namespace(s) to list namespaces in.
-     * @return A list of all namespaces in the given namespace.
-     */
-    public List<Namespace> listNamespaces(@NotNull final String... namespace) {
-        return listNamespaces(Namespace.of(namespace));
-    }
-
-    /**
      * List all {@link Namespace namespaces} in the catalog as a Deephaven {@link Table table}. The resulting table will
      * be static and contain the same information as {@link #listNamespaces()}.
      *
@@ -248,16 +236,6 @@ public class IcebergCatalogAdapter {
     }
 
     /**
-     * List all Iceberg {@link TableIdentifier tables} in a given namespace.
-     *
-     * @param namespace The namespace to list tables in.
-     * @return A list of all tables in the given namespace.
-     */
-    public List<TableIdentifier> listTables(@NotNull final String... namespace) {
-        return listTables(Namespace.of(namespace));
-    }
-
-    /**
      * List all Iceberg {@link TableIdentifier tables} in a given namespace as a Deephaven {@link Table table}. The
      * resulting table will be static and contain the same information as {@link #listTables(Namespace)}.
      *
@@ -310,16 +288,6 @@ public class IcebergCatalogAdapter {
         final List<Snapshot> snapshots = new ArrayList<>();
         catalog.loadTable(tableIdentifier).snapshots().forEach(snapshots::add);
         return snapshots;
-    }
-
-    /**
-     * List all {@link Snapshot snapshots} of a given Iceberg table.
-     *
-     * @param tableIdentifier The identifier of the table from which to gather snapshots.
-     * @return A list of all snapshots of the given table.
-     */
-    public List<Snapshot> listSnapshots(@NotNull final String tableIdentifier) {
-        return listSnapshots(TableIdentifier.parse(tableIdentifier));
     }
 
     /**
@@ -391,7 +359,7 @@ public class IcebergCatalogAdapter {
     @SuppressWarnings("unused")
     public Table readTable(
             @NotNull final TableIdentifier tableIdentifier,
-            @NotNull final IcebergInstructions instructions) {
+            @Nullable final IcebergInstructions instructions) {
         return readTableInternal(tableIdentifier, null, instructions);
     }
 
@@ -405,7 +373,7 @@ public class IcebergCatalogAdapter {
     @SuppressWarnings("unused")
     public Table readTable(
             @NotNull final String tableIdentifier,
-            @NotNull final IcebergInstructions instructions) {
+            @Nullable final IcebergInstructions instructions) {
         return readTable(TableIdentifier.parse(tableIdentifier), instructions);
     }
 
@@ -421,7 +389,7 @@ public class IcebergCatalogAdapter {
     public Table readTable(
             @NotNull final TableIdentifier tableIdentifier,
             final long tableSnapshotId,
-            @NotNull final IcebergInstructions instructions) {
+            @Nullable final IcebergInstructions instructions) {
 
         // Find the snapshot with the given snapshot id
         final Snapshot tableSnapshot = listSnapshots(tableIdentifier).stream()
@@ -444,7 +412,7 @@ public class IcebergCatalogAdapter {
     public Table readTable(
             @NotNull final String tableIdentifier,
             final long tableSnapshotId,
-            @NotNull final IcebergInstructions instructions) {
+            @Nullable final IcebergInstructions instructions) {
         return readTable(TableIdentifier.parse(tableIdentifier), tableSnapshotId, instructions);
     }
 
@@ -460,32 +428,35 @@ public class IcebergCatalogAdapter {
     public Table readTable(
             @NotNull final TableIdentifier tableIdentifier,
             @NotNull final Snapshot tableSnapshot,
-            @NotNull final IcebergInstructions instructions) {
+            @Nullable final IcebergInstructions instructions) {
         return readTableInternal(tableIdentifier, tableSnapshot, instructions);
     }
 
     private Table readTableInternal(
             @NotNull final TableIdentifier tableIdentifier,
             @Nullable final Snapshot tableSnapshot,
-            @NotNull final IcebergInstructions instructions) {
+            @Nullable final IcebergInstructions instructions) {
 
-        // Load the table from the catalog
+        // Load the table from the catalog.
         final org.apache.iceberg.Table table = catalog.loadTable(tableIdentifier);
 
         // Do we want the latest or a specific snapshot?
         final Snapshot snapshot = tableSnapshot != null ? tableSnapshot : table.currentSnapshot();
         final Schema schema = table.schemas().get(snapshot.schemaId());
 
-        // Load the partitioning schema
+        // Load the partitioning schema.
         final org.apache.iceberg.PartitionSpec partitionSpec = table.spec();
 
+        // Get default instructions if none are provided
+        final IcebergInstructions userInstructions = instructions == null ? IcebergInstructions.DEFAULT : instructions;
+
         // Get the user supplied table definition.
-        final TableDefinition userTableDef = instructions.tableDefinition().orElse(null);
+        final TableDefinition userTableDef = userInstructions.tableDefinition().orElse(null);
 
         // Get the table definition from the schema (potentially limited by the user supplied table definition and
         // applying column renames).
         final TableDefinition icebergTableDef =
-                fromSchema(schema, partitionSpec, userTableDef, instructions.columnRenames());
+                fromSchema(schema, partitionSpec, userTableDef, userInstructions.columnRenames());
 
         // If the user supplied a table definition, make sure it's fully compatible.
         final TableDefinition tableDef;
@@ -520,11 +491,11 @@ public class IcebergCatalogAdapter {
 
         if (partitionSpec.isUnpartitioned()) {
             // Create the flat layout location key finder
-            keyFinder = new IcebergFlatLayout(tableDef, table, snapshot, fileIO, instructions);
+            keyFinder = new IcebergFlatLayout(tableDef, table, snapshot, fileIO, userInstructions);
         } else {
             // Create the partitioning column location key finder
             keyFinder = new IcebergKeyValuePartitionedLayout(tableDef, table, snapshot, fileIO, partitionSpec,
-                    instructions);
+                    userInstructions);
         }
 
         refreshService = null;
@@ -545,5 +516,13 @@ public class IcebergCatalogAdapter {
                 updateSourceRegistrar);
 
         return result;
+    }
+
+    /**
+     * Returns the underlying Iceberg {@link Catalog catalog} used by this adapter.
+     */
+    @SuppressWarnings("unused")
+    public Catalog catalog() {
+        return catalog;
     }
 }

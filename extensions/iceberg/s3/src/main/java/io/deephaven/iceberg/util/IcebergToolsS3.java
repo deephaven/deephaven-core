@@ -68,7 +68,6 @@ public class IcebergToolsS3 extends IcebergTools {
             properties.put(S3FileIOProperties.ENDPOINT, endpointOverride);
         }
 
-        // TODO: create a FileIO interface wrapping the Deephaven S3SeekableByteChannel/Provider
         final FileIO fileIO = CatalogUtil.loadFileIO(S3_FILE_IO_CLASS, properties, null);
 
         final String catalogName = name != null ? name : "IcebergCatalog-" + catalogURI;
@@ -102,7 +101,6 @@ public class IcebergToolsS3 extends IcebergTools {
         properties.put(CatalogProperties.URI, catalogURI);
         properties.put(CatalogProperties.WAREHOUSE_LOCATION, warehouseLocation);
 
-        // TODO: create a FileIO interface wrapping the Deephaven S3SeekableByteChannel/Provider
         final FileIO fileIO = CatalogUtil.loadFileIO(S3_FILE_IO_CLASS, properties, null);
 
         final String catalogName = name != null ? name : "IcebergCatalog-" + catalogURI;

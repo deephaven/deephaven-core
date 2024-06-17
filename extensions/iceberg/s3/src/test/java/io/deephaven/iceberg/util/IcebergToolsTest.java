@@ -144,13 +144,6 @@ public abstract class IcebergToolsTest {
                 "table_identifier_object column type");
 
         // Test the string versions of the methods
-        tables = adapter.listTables("sales");
-        Assert.eq(tables.size(), "tables.size()", 3, "3 tables in the namespace");
-        Assert.eqTrue(tables.contains(TableIdentifier.of(ns, "sales_multi")), "tables.contains(sales_multi)");
-        Assert.eqTrue(tables.contains(TableIdentifier.of(ns, "sales_partitioned")),
-                "tables.contains(sales_partitioned)");
-        Assert.eqTrue(tables.contains(TableIdentifier.of(ns, "sales_single")), "tables.contains(sales_single)");
-
         table = adapter.listTablesAsTable("sales");
         Assert.eq(table.size(), "table.size()", 3, "3 tables in the namespace");
     }
@@ -181,17 +174,6 @@ public abstract class IcebergToolsTest {
                 "snapshot_object column type");
 
         // Test the string versions of the methods
-        snapshotIds.clear();
-        adapter.listSnapshots("sales.sales_multi")
-                .forEach(snapshot -> snapshotIds.add(snapshot.snapshotId()));
-
-        Assert.eq(snapshotIds.size(), "snapshots.size()", 4, "4 snapshots for sales/sales_multi");
-
-        Assert.eqTrue(snapshotIds.contains(2001582482032951248L), "snapshots.contains(2001582482032951248)");
-        Assert.eqTrue(snapshotIds.contains(8325605756612719366L), "snapshots.contains(8325605756612719366L)");
-        Assert.eqTrue(snapshotIds.contains(3247344357341484163L), "snapshots.contains(3247344357341484163L)");
-        Assert.eqTrue(snapshotIds.contains(1792185872197984875L), "snapshots.contains(1792185872197984875L)");
-
         table = adapter.listSnapshotsAsTable("sales.sales_multi");
         Assert.eq(table.size(), "table.size()", 4, "4 snapshots for sales/sales_multi");
     }
