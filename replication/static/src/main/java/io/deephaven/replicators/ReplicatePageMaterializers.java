@@ -24,6 +24,8 @@ public class ReplicatePageMaterializers {
     private static final String INT_MATERIALIZER_PATH = MATERIALIZER_DIR + "IntMaterializer.java";
     private static final String STRING_MATERIALIZER_PATH = MATERIALIZER_DIR + "StringMaterializer.java";
 
+    private static final String LOCAL_TIME_MATERIALIZER_BASE_PATH =
+            MATERIALIZER_DIR + "LocalTimePageMaterializerBase.java";
     private static final String LOCAL_TIME_FROM_MILLIS_MATERIALIZER_PATH =
             MATERIALIZER_DIR + "LocalTimeFromMillisMaterializer.java";
     private static final String LOCAL_TIME_FROM_MICROS_MATERIALIZER_PATH =
@@ -31,6 +33,8 @@ public class ReplicatePageMaterializers {
     private static final String LOCAL_TIME_FROM_NANOS_MATERIALIZER_PATH =
             MATERIALIZER_DIR + "LocalTimeFromNanosMaterializer.java";
 
+    private static final String LOCAL_DATE_TIME_MATERIALIZER_BASE_PATH =
+            MATERIALIZER_DIR + "LocalDateTimePageMaterializerBase.java";
     private static final String LOCAL_DATE_TIME_FROM_MILLIS_MATERIALIZER_PATH =
             MATERIALIZER_DIR + "LocalDateTimeFromMillisMaterializer.java";
     private static final String LOCAL_DATE_TIME_FROM_MICROS_MATERIALIZER_PATH =
@@ -85,6 +89,15 @@ public class ReplicatePageMaterializers {
         replaceAll(TASK,
                 LOCAL_TIME_FROM_MICROS_MATERIALIZER_PATH,
                 LOCAL_TIME_FROM_MILLIS_MATERIALIZER_PATH,
+                null, NO_EXCEPTIONS, pairs);
+
+        // LocalTimeBase -> LocalDateTimeBase
+        pairs = new String[][] {
+                {"LocalTime", "LocalDateTime"}
+        };
+        replaceAll(TASK,
+                LOCAL_TIME_MATERIALIZER_BASE_PATH,
+                LOCAL_DATE_TIME_MATERIALIZER_BASE_PATH,
                 null, NO_EXCEPTIONS, pairs);
 
         // LocalDateTimeFromMicros -> LocalDateTimeFromNanos
