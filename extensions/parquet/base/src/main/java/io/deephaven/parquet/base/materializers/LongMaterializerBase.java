@@ -7,12 +7,12 @@ import io.deephaven.parquet.base.PageMaterializer;
 
 import java.util.Arrays;
 
-abstract class LongPageMaterializerBase implements PageMaterializer {
+abstract class LongMaterializerBase implements PageMaterializer {
 
     final long nullValue;
     final long[] data;
 
-    LongPageMaterializerBase(long nullValue, int numValues) {
+    LongMaterializerBase(long nullValue, int numValues) {
         this.nullValue = nullValue;
         this.data = new long[numValues];
     }

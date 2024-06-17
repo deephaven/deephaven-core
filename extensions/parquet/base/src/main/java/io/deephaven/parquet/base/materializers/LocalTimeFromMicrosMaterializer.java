@@ -10,39 +10,35 @@ import org.apache.parquet.column.values.ValuesReader;
 
 import java.time.LocalTime;
 
-public class LocalTimeFromMicrosMaterializer {
+public class LocalTimeFromMicrosMaterializer extends LocalTimeMaterializerBase implements PageMaterializer {
 
     public static final PageMaterializerFactory Factory = new PageMaterializerFactory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
-            return new LocalTimeFromMicrosPageMaterializer(dataReader, (LocalTime) nullValue, numValues);
+            return new LocalTimeFromMicrosMaterializer(dataReader, (LocalTime) nullValue, numValues);
         }
 
         @Override
         public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
-            return new LocalTimeFromMicrosPageMaterializer(dataReader, numValues);
+            return new LocalTimeFromMicrosMaterializer(dataReader, numValues);
         }
     };
 
-    private static final class LocalTimeFromMicrosPageMaterializer extends LocalTimePageMaterializerBase
-            implements PageMaterializer {
+    final ValuesReader dataReader;
 
-        final ValuesReader dataReader;
+    private LocalTimeFromMicrosMaterializer(ValuesReader dataReader, int numValues) {
+        this(dataReader, null, numValues);
+    }
 
-        private LocalTimeFromMicrosPageMaterializer(ValuesReader dataReader, int numValues) {
-            this(dataReader, null, numValues);
-        }
+    private LocalTimeFromMicrosMaterializer(ValuesReader dataReader, LocalTime nullValue, int numValues) {
+        super(nullValue, numValues);
+        this.dataReader = dataReader;
+    }
 
-        private LocalTimeFromMicrosPageMaterializer(ValuesReader dataReader, LocalTime nullValue, int numValues) {
-            super(nullValue, numValues);
-            this.dataReader = dataReader;
-        }
-
-        @Override
-        public void fillValues(int startIndex, int endIndex) {
-            for (int ii = startIndex; ii < endIndex; ii++) {
-                data[ii] = DateTimeUtils.microsOfDayToLocalTime(dataReader.readLong());
-            }
+    @Override
+    public void fillValues(int startIndex, int endIndex) {
+        for (int ii = startIndex; ii < endIndex; ii++) {
+            data[ii] = DateTimeUtils.microsOfDayToLocalTime(dataReader.readLong());
         }
     }
 }

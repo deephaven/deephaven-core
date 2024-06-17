@@ -1,21 +1,25 @@
 //
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit LocalTimeMaterializerBase and run "./gradlew replicatePageMaterializers" to regenerate
+//
+// @formatter:off
 package io.deephaven.parquet.base.materializers;
 
 import io.deephaven.parquet.base.PageMaterializer;
 
-import java.time.LocalTime;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 
-abstract class LocalTimePageMaterializerBase implements PageMaterializer {
+abstract class LocalDateTimeMaterializerBase implements PageMaterializer {
 
-    final LocalTime nullValue;
-    final LocalTime[] data;
+    final LocalDateTime nullValue;
+    final LocalDateTime[] data;
 
-    LocalTimePageMaterializerBase(LocalTime nullValue, int numValues) {
+    LocalDateTimeMaterializerBase(LocalDateTime nullValue, int numValues) {
         this.nullValue = nullValue;
-        this.data = new LocalTime[numValues];
+        this.data = new LocalDateTime[numValues];
     }
 
     @Override

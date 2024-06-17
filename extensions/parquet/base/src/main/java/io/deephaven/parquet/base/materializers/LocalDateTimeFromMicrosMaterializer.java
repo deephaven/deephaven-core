@@ -1,6 +1,10 @@
 //
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit LocalDateTimeFromMillisMaterializer and run "./gradlew replicatePageMaterializers" to regenerate
+//
+// @formatter:off
 package io.deephaven.parquet.base.materializers;
 
 import io.deephaven.parquet.base.PageMaterializer;
@@ -10,40 +14,36 @@ import org.apache.parquet.column.values.ValuesReader;
 
 import java.time.LocalDateTime;
 
-public class LocalDateTimeFromMicrosMaterializer {
+public class LocalDateTimeFromMicrosMaterializer extends LocalDateTimeMaterializerBase implements PageMaterializer {
 
     public static final PageMaterializerFactory Factory = new PageMaterializerFactory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
-            return new LocalDateTimeFromMicrosPageMaterializer(dataReader, (LocalDateTime) nullValue, numValues);
+            return new LocalDateTimeFromMicrosMaterializer(dataReader, (LocalDateTime) nullValue, numValues);
         }
 
         @Override
         public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
-            return new LocalDateTimeFromMicrosPageMaterializer(dataReader, numValues);
+            return new LocalDateTimeFromMicrosMaterializer(dataReader, numValues);
         }
     };
 
-    private static final class LocalDateTimeFromMicrosPageMaterializer extends LocalDateTimePageMaterializerBase
-            implements PageMaterializer {
+    final ValuesReader dataReader;
 
-        final ValuesReader dataReader;
+    private LocalDateTimeFromMicrosMaterializer(ValuesReader dataReader, int numValues) {
+        this(dataReader, null, numValues);
+    }
 
-        private LocalDateTimeFromMicrosPageMaterializer(ValuesReader dataReader, int numValues) {
-            this(dataReader, null, numValues);
-        }
+    private LocalDateTimeFromMicrosMaterializer(ValuesReader dataReader, LocalDateTime nullValue,
+            int numValues) {
+        super(nullValue, numValues);
+        this.dataReader = dataReader;
+    }
 
-        private LocalDateTimeFromMicrosPageMaterializer(ValuesReader dataReader, LocalDateTime nullValue,
-                int numValues) {
-            super(nullValue, numValues);
-            this.dataReader = dataReader;
-        }
-
-        @Override
-        public void fillValues(int startIndex, int endIndex) {
-            for (int ii = startIndex; ii < endIndex; ii++) {
-                data[ii] = ParquetTimeUtils.epochMicrosToLocalDateTimeUTC(dataReader.readLong());
-            }
+    @Override
+    public void fillValues(int startIndex, int endIndex) {
+        for (int ii = startIndex; ii < endIndex; ii++) {
+            data[ii] = ParquetTimeUtils.epochMicrosToLocalDateTimeUTC(dataReader.readLong());
         }
     }
 }

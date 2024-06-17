@@ -14,39 +14,35 @@ import org.apache.parquet.column.values.ValuesReader;
 
 import java.time.LocalTime;
 
-public class LocalTimeFromNanosMaterializer {
+public class LocalTimeFromNanosMaterializer extends LocalTimeMaterializerBase implements PageMaterializer {
 
     public static final PageMaterializerFactory Factory = new PageMaterializerFactory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
-            return new LocalTimeFromNanosPageMaterializer(dataReader, (LocalTime) nullValue, numValues);
+            return new LocalTimeFromNanosMaterializer(dataReader, (LocalTime) nullValue, numValues);
         }
 
         @Override
         public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
-            return new LocalTimeFromNanosPageMaterializer(dataReader, numValues);
+            return new LocalTimeFromNanosMaterializer(dataReader, numValues);
         }
     };
 
-    private static final class LocalTimeFromNanosPageMaterializer extends LocalTimePageMaterializerBase
-            implements PageMaterializer {
+    final ValuesReader dataReader;
 
-        final ValuesReader dataReader;
+    private LocalTimeFromNanosMaterializer(ValuesReader dataReader, int numValues) {
+        this(dataReader, null, numValues);
+    }
 
-        private LocalTimeFromNanosPageMaterializer(ValuesReader dataReader, int numValues) {
-            this(dataReader, null, numValues);
-        }
+    private LocalTimeFromNanosMaterializer(ValuesReader dataReader, LocalTime nullValue, int numValues) {
+        super(nullValue, numValues);
+        this.dataReader = dataReader;
+    }
 
-        private LocalTimeFromNanosPageMaterializer(ValuesReader dataReader, LocalTime nullValue, int numValues) {
-            super(nullValue, numValues);
-            this.dataReader = dataReader;
-        }
-
-        @Override
-        public void fillValues(int startIndex, int endIndex) {
-            for (int ii = startIndex; ii < endIndex; ii++) {
-                data[ii] = DateTimeUtils.nanosOfDayToLocalTime(dataReader.readLong());
-            }
+    @Override
+    public void fillValues(int startIndex, int endIndex) {
+        for (int ii = startIndex; ii < endIndex; ii++) {
+            data[ii] = DateTimeUtils.nanosOfDayToLocalTime(dataReader.readLong());
         }
     }
 }

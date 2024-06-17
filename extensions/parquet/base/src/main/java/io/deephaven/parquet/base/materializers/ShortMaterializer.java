@@ -13,58 +13,55 @@ import org.apache.parquet.column.values.ValuesReader;
 
 import java.util.Arrays;
 
-public class ShortMaterializer {
+public class ShortMaterializer implements PageMaterializer {
 
     public static final PageMaterializerFactory Factory = new PageMaterializerFactory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
-            return new ShortPageMaterializer(dataReader, (short) nullValue, numValues);
+            return new ShortMaterializer(dataReader, (short) nullValue, numValues);
         }
 
         @Override
         public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
-            return new ShortPageMaterializer(dataReader, numValues);
+            return new ShortMaterializer(dataReader, numValues);
         }
     };
 
-    private static final class ShortPageMaterializer implements PageMaterializer {
+    final ValuesReader dataReader;
 
-        final ValuesReader dataReader;
+    final short nullValue;
+    final short[] data;
 
-        final short nullValue;
-        final short[] data;
+    private ShortMaterializer(ValuesReader dataReader, int numValues) {
+        this(dataReader, (short) 0, numValues);
+    }
 
-        private ShortPageMaterializer(ValuesReader dataReader, int numValues) {
-            this(dataReader, (short) 0, numValues);
+    private ShortMaterializer(ValuesReader dataReader, short nullValue, int numValues) {
+        this.dataReader = dataReader;
+        this.nullValue = nullValue;
+        this.data = new short[numValues];
+    }
+
+    @Override
+    public void fillNulls(int startIndex, int endIndex) {
+        Arrays.fill(data, startIndex, endIndex, nullValue);
+    }
+
+    @Override
+    public void fillValues(int startIndex, int endIndex) {
+        for (int ii = startIndex; ii < endIndex; ii++) {
+            data[ii] = (short) dataReader.readInteger();
         }
+    }
 
-        private ShortPageMaterializer(ValuesReader dataReader, short nullValue, int numValues) {
-            this.dataReader = dataReader;
-            this.nullValue = nullValue;
-            this.data = new short[numValues];
-        }
+    @Override
+    public Object fillAll() {
+        fillValues(0, data.length);
+        return data;
+    }
 
-        @Override
-        public void fillNulls(int startIndex, int endIndex) {
-            Arrays.fill(data, startIndex, endIndex, nullValue);
-        }
-
-        @Override
-        public void fillValues(int startIndex, int endIndex) {
-            for (int ii = startIndex; ii < endIndex; ii++) {
-                data[ii] = (short) dataReader.readInteger();
-            }
-        }
-
-        @Override
-        public Object fillAll() {
-            fillValues(0, data.length);
-            return data;
-        }
-
-        @Override
-        public Object data() {
-            return data;
-        }
+    @Override
+    public Object data() {
+        return data;
     }
 }

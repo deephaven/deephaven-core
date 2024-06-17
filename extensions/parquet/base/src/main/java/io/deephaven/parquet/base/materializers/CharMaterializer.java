@@ -9,58 +9,55 @@ import org.apache.parquet.column.values.ValuesReader;
 
 import java.util.Arrays;
 
-public class CharMaterializer {
+public class CharMaterializer implements PageMaterializer {
 
     public static final PageMaterializerFactory Factory = new PageMaterializerFactory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
-            return new CharPageMaterializer(dataReader, (char) nullValue, numValues);
+            return new CharMaterializer(dataReader, (char) nullValue, numValues);
         }
 
         @Override
         public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
-            return new CharPageMaterializer(dataReader, numValues);
+            return new CharMaterializer(dataReader, numValues);
         }
     };
 
-    private static final class CharPageMaterializer implements PageMaterializer {
+    final ValuesReader dataReader;
 
-        final ValuesReader dataReader;
+    final char nullValue;
+    final char[] data;
 
-        final char nullValue;
-        final char[] data;
+    private CharMaterializer(ValuesReader dataReader, int numValues) {
+        this(dataReader, (char) 0, numValues);
+    }
 
-        private CharPageMaterializer(ValuesReader dataReader, int numValues) {
-            this(dataReader, (char) 0, numValues);
+    private CharMaterializer(ValuesReader dataReader, char nullValue, int numValues) {
+        this.dataReader = dataReader;
+        this.nullValue = nullValue;
+        this.data = new char[numValues];
+    }
+
+    @Override
+    public void fillNulls(int startIndex, int endIndex) {
+        Arrays.fill(data, startIndex, endIndex, nullValue);
+    }
+
+    @Override
+    public void fillValues(int startIndex, int endIndex) {
+        for (int ii = startIndex; ii < endIndex; ii++) {
+            data[ii] = (char) dataReader.readInteger();
         }
+    }
 
-        private CharPageMaterializer(ValuesReader dataReader, char nullValue, int numValues) {
-            this.dataReader = dataReader;
-            this.nullValue = nullValue;
-            this.data = new char[numValues];
-        }
+    @Override
+    public Object fillAll() {
+        fillValues(0, data.length);
+        return data;
+    }
 
-        @Override
-        public void fillNulls(int startIndex, int endIndex) {
-            Arrays.fill(data, startIndex, endIndex, nullValue);
-        }
-
-        @Override
-        public void fillValues(int startIndex, int endIndex) {
-            for (int ii = startIndex; ii < endIndex; ii++) {
-                data[ii] = (char) dataReader.readInteger();
-            }
-        }
-
-        @Override
-        public Object fillAll() {
-            fillValues(0, data.length);
-            return data;
-        }
-
-        @Override
-        public Object data() {
-            return data;
-        }
+    @Override
+    public Object data() {
+        return data;
     }
 }
