@@ -1150,6 +1150,12 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals(3.0, median(new ${pt.boxed}[]{(${pt.primitive})4,(${pt.primitive})2,(${pt.primitive})3,${pt.null},${pt.null}}));
         assertEquals(3.5, median(new ${pt.boxed}[]{(${pt.primitive})4,(${pt.primitive})2,(${pt.primitive})3,(${pt.primitive})5,${pt.null},${pt.null}}));
 
+    <#if pt.valueType.isFloat >
+        assertEquals(Double.NaN, median(new ${pt.primitive}[]{4,2,3, ${pt.boxed}.NaN}));
+        assertEquals(3.0, median(new ${pt.primitive}[]{4,2,3, ${pt.boxed}.POSITIVE_INFINITY, ${pt.null}, ${pt.null}, ${pt.boxed}.NEGATIVE_INFINITY}));
+        assertEquals(3.5, median(new ${pt.primitive}[]{4,2,3,5, ${pt.boxed}.POSITIVE_INFINITY, ${pt.null}, ${pt.null}, ${pt.boxed}.NEGATIVE_INFINITY}));
+    </#if>
+
         // check that functions can be resolved with varargs
         assertEquals(3.0, median((${pt.primitive})4, (${pt.primitive})2, (${pt.primitive})3));
     }
@@ -1188,6 +1194,16 @@ public class TestNumeric extends BaseArrayTestCase {
         assertEquals((${pt.primitive})2, percentile(0.00, new ${pt.primitive}[]{4,2,3,${pt.null}}));
         assertEquals((${pt.primitive})3, percentile(0.50, new ${pt.primitive}[]{4,2,3,${pt.null},${pt.null}}));
         assertEquals((${pt.primitive})4, percentile(1.0, new ${pt.primitive}[]{4,2,3,${pt.null},${pt.null},${pt.null}}));
+
+    <#if pt.valueType.isFloat >
+        assertEquals(${pt.boxed}.NaN, percentile(1.0, new ${pt.primitive}[]{4,2,3, ${pt.boxed}.NaN}));
+
+        assertEquals(${pt.boxed}.NEGATIVE_INFINITY, percentile(0.0, new ${pt.primitive}[]{4,2,3, ${pt.boxed}.POSITIVE_INFINITY, ${pt.null}, ${pt.null}, ${pt.boxed}.NEGATIVE_INFINITY}));
+        assertEquals((${pt.primitive})2, percentile(0.25, new ${pt.primitive}[]{4,2,3, ${pt.boxed}.POSITIVE_INFINITY, ${pt.null}, ${pt.null}, ${pt.boxed}.NEGATIVE_INFINITY}));
+        assertEquals((${pt.primitive})3, percentile(0.5, new ${pt.primitive}[]{4,2,3, ${pt.boxed}.POSITIVE_INFINITY, ${pt.null}, ${pt.null}, ${pt.boxed}.NEGATIVE_INFINITY}));
+        assertEquals((${pt.primitive})4, percentile(0.75, new ${pt.primitive}[]{4,2,3, ${pt.boxed}.POSITIVE_INFINITY, ${pt.null}, ${pt.null}, ${pt.boxed}.NEGATIVE_INFINITY}));
+        assertEquals(${pt.boxed}.POSITIVE_INFINITY, percentile(1.0, new ${pt.primitive}[]{4,2,3, ${pt.boxed}.POSITIVE_INFINITY, ${pt.null}, ${pt.null}, ${pt.boxed}.NEGATIVE_INFINITY}));
+    </#if>
     }
 
     public void test${pt.boxed}Wsum() {

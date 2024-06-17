@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.by;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
@@ -99,7 +100,8 @@ final class FloatChunkedVarOperator extends FpChunkedNonNormalCounter implements
             sumSource.set(destination, newSum);
             sum2Source.set(destination, newSum2);
 
-            if (forceNanResult || nonNullCount <= 1) {
+            Assert.neqZero(nonNullCount, "nonNullCount");
+            if (forceNanResult || nonNullCount == 1) {
                 resultColumn.set(destination, Double.NaN);
             } else {
                 // If the sum or sumSquared has reached +/-Infinity, we are stuck with NaN forever.
@@ -111,15 +113,20 @@ final class FloatChunkedVarOperator extends FpChunkedNonNormalCounter implements
                 resultColumn.set(destination, std ? Math.sqrt(variance) : variance);
             }
             return true;
-        } else if (forceNanResult || (nonNullCounter.getCountUnsafe(destination) == 1)) {
+        } else if (forceNanResult) {
             resultColumn.set(destination, Double.NaN);
             return true;
-        } else if (nonNullCounter.getCountUnsafe(destination) == 0) {
-            resultColumn.set(destination, NULL_DOUBLE);
-            return true;
         } else {
-            return false;
+            final long totalNormalCount = nonNullCounter.getCountUnsafe(destination);
+            if (totalNormalCount == 0) {
+                resultColumn.set(destination, NULL_DOUBLE);
+                return true;
+            } else if (totalNormalCount == 1) {
+                resultColumn.set(destination, Double.NaN);
+                return true;
+            }
         }
+        return false;
     }
 
     private static double computeVariance(long nonNullCount, double newSum, double newSum2) {
@@ -174,10 +181,6 @@ final class FloatChunkedVarOperator extends FpChunkedNonNormalCounter implements
         } else {
             newSum = sumSource.getUnsafe(destination);
             newSum2 = sum2Source.getUnsafe(destination);
-        }
-        if (totalNormalCount <= 1) {
-            resultColumn.set(destination, Double.NaN);
-            return true;
         }
 
         // If the sum has reach +/-Infinity, we are stuck with NaN forever.
