@@ -62,8 +62,8 @@ def start_jvm(
     Script session.
 
     Args:
-        jvm_args (Optional[List[str]]): The common, user specific JVM arguments, such as JVM heap size, the
-            authentication handler to use, and other related JVM options. Defaults to None.
+        jvm_args (Optional[List[str]]): The common, user specific JVM arguments, such as JVM heap size, and other
+            related JVM options. Defaults to None.
         default_jvm_args (Optional[List[str]]): The advanced JVM arguments to use instead of the default ones that
             Deephaven recommends, such as a specific garbage collector and related tuning parameters, or whether to
             let Python or Java handle signals. Defaults to None, the Deephaven defaults as defined in DEFAULT_JVM_ARGS.
@@ -72,8 +72,9 @@ def start_jvm(
         java_home (Optional[str]): The JAVA_HOME path to use. Defaults to None, meaning using the JAVA_HOME environment
             variable.
         extra_classpath (Optional[List[str]]): The extra classpath to use.
-        prop_file (str): The property file to use. Defaults to None.
-        config (Optional[types.ModuleType]): The JPY configuration module to use. Defaults to None.
+        prop_file (str): The property file to use. Defaults to None, meaning not loading any JVM properties from a file.
+        config (Optional[types.ModuleType]): The JPY configuration module to use. Defaults to None, meaning not providing
+            a JPY configuration module for the jpyutil module to load and config the JVM.
     """
     default_jvm_args = default_jvm_args or DEFAULT_JVM_ARGS
     jvm_args = default_jvm_args + jvm_args if jvm_args else default_jvm_args

@@ -131,8 +131,8 @@ class Server:
             port (Optional[int]): The port to bind the server to, defaults to None. When None, if a user defined
                 configuration file is present and 'http.port' is specified in it, use that port, otherwise, use the
                 default 10000. Refer to the Deephaven documentation for more information on the configuration file.
-            jvm_args (Optional[List[str]]): The common, user specific JVM arguments, such as JVM heap size, the
-                authentication handler to use, and other related JVM options. Defaults to None.
+            jvm_args (Optional[List[str]]): The common, user specific JVM arguments, such as JVM heap size, and other
+                related JVM options. Defaults to None.
             extra_classpath (Optional[List[str]]): The extra classpath to use.
             default_jvm_args (Optional[List[str]]): The advanced JVM arguments to use instead of the default ones that
                 Deephaven recommends, such as a specific garbage collector and related tuning parameters, or whether to
