@@ -63,4 +63,5 @@ def server(host, port, jvm_args, extra_classpath, default_jvm_args):
         signal.pause()
     except AttributeError:
         # signal.pause() is not available on Windows
-        os.system("pause")
+        while True:
+            input('')
