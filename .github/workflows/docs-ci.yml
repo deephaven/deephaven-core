@@ -37,6 +37,7 @@ jobs:
       - name: Setup Git
         uses: actions/checkout@v4
         with:
+          fetch-depth: 0      # Fixes Bug: https://github.com/actions/checkout/issues/1471
           fetch-tags: true
       - run: |
           git config user.name "github-actions[bot]"
