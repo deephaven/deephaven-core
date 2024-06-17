@@ -6,9 +6,9 @@ importlib_resources==6.4.0
 java-utilities==0.3.0
 jedi==0.18.2
 jpy==0.17.0
-llvmlite==0.42.0
-numba==0.59.1
-numpy==1.26.4
+llvmlite==0.43.0
+numba==0.60.0
+numpy==2.0.0
 pandas==2.2.2
 parso==0.8.4
 pyarrow==14.0.2
@@ -16,5 +16,5 @@ python-dateutil==2.9.0.post0
 pytz==2024.1
 six==1.16.0
 turbodbc==4.8.0
-typing_extensions==4.11.0
+typing_extensions==4.12.2
 tzdata==2024.1
