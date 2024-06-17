@@ -1276,58 +1276,54 @@ public class Numeric {
         ${pt.primitive}[] sorted = values.copyToArray();
         Arrays.sort(sorted);
 
+        <#if pt.valueType.isFloat >
+        if (isNaN(sorted[sorted.length - 1])) {
+            return Double.NaN; // Any NaN will pollute the result and NaN always sorted to the end.
+        }
+        </#if>
+
         int nullStart = -1;
         int nullCount = 0;
 
-        <#if pt.valueType.isFloat >
         for (int i = 0; i < n; i++) {
             final ${pt.primitive} val = sorted[i];
-            if (isNaN(val)) {
-                return Double.NaN; // Any NaN will pollute the result.
-            }
-            if (nullStart == -1) {
-                if (isNull(val)) {
-                    nullStart = i;
-                    nullCount++;
-                }
-            } else if (isNull(val)) {
-                nullCount++;
-            }
-        }
-        <#else>
-        for (int i = 0; i < n; i++) {
-            final ${pt.primitive} val = sorted[i];
-            if (nullStart == -1) {
-                if (isNull(val)) {
-                    nullStart = i;
-                    nullCount++;
-                }
-            } else if (isNull(val)) {
-                nullCount++;
-            } else {
+            if (val > ${pt.null}) {
                 break; // no more NULL possible
+            } else if (nullStart == -1) {
+                if (isNull(val)) {
+                    nullStart = i;
+                    nullCount++;
+                }
+            } else if (isNull(val)) {
+                nullCount++;
             }
         }
-        </#if>
 
         if (nullCount == n) {
             return NULL_DOUBLE;
         } else if (nullCount > 0) {
-            if (nullStart > 0) {
-                // Move the pre-NULL data so we have a contiguous block of non-NULL values.
-                System.arraycopy(sorted, 0, sorted, nullCount, nullStart);
-            }
             n -= nullCount;
+            <#if pt.valueType.isFloat >
+            if (nullStart > 0) {
+                final int medianIndex = n / 2;
+                if (n % 2 == 0) {
+                    final int idx1 = (medianIndex - 1) >= nullStart ? (medianIndex - 1) + nullCount : (medianIndex - 1);
+                    final int idx2 = medianIndex >= nullStart ? medianIndex + nullCount : medianIndex;
+                    return 0.5 * (sorted[idx1] + sorted[idx2]);
+                }
+                final int adjustedIndex = medianIndex >= nullStart ? medianIndex + nullCount : medianIndex;
+                return sorted[adjustedIndex];
+            }
+            </#if>
             if (n % 2 == 0) {
                 int index = n / 2;
                 return 0.5 * (sorted[n / 2 - 1 + nullCount] + sorted[n / 2 + nullCount]);
             }
-            else return sorted[n / 2 + nullCount];
-        } else {
-            if (n % 2 == 0)
-                return 0.5 * (sorted[n / 2 - 1] + sorted[n / 2]);
-            else return sorted[n / 2];
+            return sorted[n / 2 + nullCount];
         }
+        if (n % 2 == 0)
+            return 0.5 * (sorted[n / 2 - 1] + sorted[n / 2]);
+        return sorted[n / 2];
     }
 
     /**
@@ -1372,53 +1368,45 @@ public class Numeric {
         ${pt.primitive}[] sorted = values.copyToArray();
         Arrays.sort(sorted);
 
+        <#if pt.valueType.isFloat >
+        if (isNaN(sorted[sorted.length - 1])) {
+            return ${pt.boxed}.NaN; // Any NaN will pollute the result and NaN always sorted to the end.
+        }
+        </#if>
+
         int nullStart = -1;
         int nullCount = 0;
 
-        <#if pt.valueType.isFloat >
         for (int i = 0; i < n; i++) {
             final ${pt.primitive} val = sorted[i];
-            if (isNaN(val)) {
-                return ${pt.boxed}.NaN; // Any NaN will pollute the result.
-            }
-            if (nullStart == -1) {
-                if (isNull(val)) {
-                    nullStart = i;
-                    nullCount++;
-                }
-            } else if (isNull(val)) {
-                nullCount++;
-            }
-        }
-        <#else>
-        for (int i = 0; i < n; i++) {
-            final ${pt.primitive} val = sorted[i];
-            if (nullStart == -1) {
-                if (isNull(val)) {
-                    nullStart = i;
-                    nullCount++;
-                }
-            } else if (isNull(val)) {
-                nullCount++;
-            } else {
+            if (val > ${pt.null}) {
                 break; // no more NULL possible
+            } else if (nullStart == -1) {
+                if (isNull(val)) {
+                    nullStart = i;
+                    nullCount++;
+                }
+            } else if (isNull(val)) {
+                nullCount++;
             }
         }
-        </#if>
 
         if (nullCount == n) {
             return ${pt.null};
         } else if (nullCount > 0) {
+            n -= nullCount;
+            <#if pt.valueType.isFloat >
             if (nullStart > 0) {
-                // Move the pre-NULL data so we have a contiguous block of non-NULL values.
-                System.arraycopy(sorted, 0, sorted, nullCount, nullStart);
+                int idx = (int) Math.round(percentile * (n - 1));
+                final int adjustedIndex = idx >= nullStart ? idx + nullCount : idx;
+                return sorted[adjustedIndex];
             }
-            int idx = (int) Math.round(percentile * (n - nullCount - 1));
-            return sorted[idx + nullCount];
-        } else {
+            </#if>
             int idx = (int) Math.round(percentile * (n - 1));
-            return sorted[idx];
+            return sorted[idx + nullCount];
         }
+        int idx = (int) Math.round(percentile * (n - 1));
+        return sorted[idx];
     }
 
 
