@@ -273,3 +273,24 @@ def simple_spec(col_name: str) -> KeyValueSpec:
         return KeyValueSpec(_JKafkaTools_Produce.simpleSpec(col_name))
     except Exception as e:
         raise DHError(e, "failed to create a Kafka key/value spec.") from e
+
+
+def raw_spec(col_name: str, serializer: str) -> KeyValueSpec:
+    """Creates a raw spec with explicit kafka serializer.
+
+    Args:
+        col_name (str): the Deephaven column name
+        serializer (str): the kafka serializer class
+
+    Returns:
+        a KeyValueSpec
+
+    Raises:
+        DHError
+    """
+    try:
+        return KeyValueSpec(
+            _JKafkaTools_Produce.simpleSpec(col_name, jpy.get_type(serializer).jclass)
+        )
+    except Exception as e:
+        raise DHError(e, "failed to create a Kafka key/value spec.") from e

@@ -25,6 +25,7 @@ _JProtocol = jpy.get_type("io.deephaven.kafka.protobuf.Protocol")
 _JFieldOptions = jpy.get_type("io.deephaven.protobuf.FieldOptions")
 _JFieldPath = jpy.get_type("io.deephaven.protobuf.FieldPath")
 _JPythonTools = jpy.get_type("io.deephaven.integrations.python.PythonTools")
+_JColumnHeader = jpy.get_type("io.deephaven.qst.column.header.ColumnHeader")
 ALL_PARTITIONS = _JKafkaTools.ALL_PARTITIONS
 
 SEEK_TO_BEGINNING = _JKafkaTools.SEEK_TO_BEGINNING
@@ -480,6 +481,31 @@ def simple_spec(col_name: str, data_type: DType = None) -> KeyValueSpec:
             return KeyValueSpec(j_spec=_JKafkaTools_Consume.simpleSpec(col_name))
         return KeyValueSpec(
             j_spec=_JKafkaTools_Consume.simpleSpec(col_name, data_type.qst_type.clazz())
+        )
+    except Exception as e:
+        raise DHError(e, "failed to create a Kafka key/value spec") from e
+
+
+def raw_spec(col_name: str, data_type: str, deserializer: str) -> KeyValueSpec:
+    """Creates a raw spec with explicit expected data_type and kafka deserializer.
+
+    Args:
+        col_name (str): the Deephaven column name
+        data_type (str): the column data type class
+        deserializer (str): the kafka deserializer class
+
+    Returns:
+        a KeyValueSpec
+
+    Raises:
+        DHError
+    """
+    try:
+        return KeyValueSpec(
+            j_spec=_JKafkaTools_Consume.rawSpec(
+                _JColumnHeader.of(col_name, jpy.get_type(data_type).jclass),
+                jpy.get_type(deserializer).jclass,
+            )
         )
     except Exception as e:
         raise DHError(e, "failed to create a Kafka key/value spec") from e
