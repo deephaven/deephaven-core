@@ -622,9 +622,7 @@ class ParquetTestCase(BaseTestCase):
 
         # Fails since we have a negative read_ahead_count
         with self.assertRaises(DHError):
-            s3.S3Instructions(region_name="us-east-1",
-                              read_ahead_count=-1,
-                              )
+            s3.S3Instructions(read_ahead_count=-1)
 
         # Fails since we provide the key without the secret key
         with self.assertRaises(DHError):
@@ -632,9 +630,8 @@ class ParquetTestCase(BaseTestCase):
                               access_key_id="Some key without secret",
                               )
 
-        s3_instructions = s3.S3Instructions(region_name="us-east-1",
-                                            read_ahead_count=1,
-                                            )
+        s3_instructions = s3.S3Instructions()
+
         # Fails because we don't have the right credentials
         with self.assertRaises(Exception):
             read("s3://dh-s3-parquet-test1/multiColFile.parquet", special_instructions=s3_instructions).select()
@@ -740,13 +737,7 @@ class ParquetTestCase(BaseTestCase):
         shutil.rmtree(".dh_metadata")
 
         second_table = empty_table(10).update(formulas=["x=i*5", "y=(double)(i/5.0)", "z=(double)(i*i*i)"])
-        table_definition = {
-            "x": dtypes.int32,
-            "y": dtypes.double,
-            "z": dtypes.double,
-        }
-        batch_write([first_table, second_table], ["X.parquet", "Y.parquet"], index_columns=[["x"], ["y", "z"]],
-                    table_definition=table_definition)
+        batch_write([first_table, second_table], ["X.parquet", "Y.parquet"], index_columns=[["x"], ["y", "z"]])
         from_disk_first_table = read("X.parquet")
         self.assert_table_equals(first_table, from_disk_first_table)
         from_disk_second_table = read("Y.parquet")
@@ -803,6 +794,30 @@ class ParquetTestCase(BaseTestCase):
         test_v2_pages_helper(dh_table1)
         dh_table2 = self.get_table_with_array_data()
         test_v2_pages_helper(dh_table2)
+
+    def test_batch_write_definition_handling(self):
+        table = empty_table(3).update(
+            formulas=["x=i", "y=(double)(i/10.0)", "z=(double)(i*i)"]
+        )
+        table2 = empty_table(3).update(
+            formulas=["x=i*2", "y=(double)(i/5.0)", "z=(double)(i*i*i)"]
+        )
+        # Should succeed because both tables have the same definition
+        batch_write([table, table2], ["X.parquet", "Y.parquet"])
+        self.assert_table_equals(read("X.parquet"), table)
+        self.assert_table_equals(read("Y.parquet"), table2)
+
+        table_definition = {
+            "x": dtypes.int32,
+            "y": dtypes.double,
+        }
+        batch_write([table, table2], ["X.parquet", "Y.parquet"], table_definition=table_definition)
+        self.assert_table_equals(read("X.parquet"), table.view(["x", "y"]))
+        self.assert_table_equals(read("Y.parquet"), table2.view(["x", "y"]))
+
+        # Fails because we don't provide a table definition and the tables have different definition
+        with self.assertRaises(DHError):
+            batch_write([table, table2.view(["x", "y"])],["X.parquet", "Y.parquet"])
 
 if __name__ == '__main__':
     unittest.main()

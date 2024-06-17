@@ -178,7 +178,7 @@ public class HasEventHandling {
         }
         if (map.has(e.type)) {
             final JsArray<EventFn<T>> callbacks = Js.cast(JsArray.from((JsArrayLike<EventFn<?>>) map.get(e.type)));
-            callbacks.forEach((item, ind, all) -> {
+            callbacks.forEach((item, ind) -> {
                 try {
                     item.onEvent(e);
                 } catch (Throwable t) {

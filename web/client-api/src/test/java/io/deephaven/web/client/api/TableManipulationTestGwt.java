@@ -505,7 +505,7 @@ public class TableManipulationTestGwt extends AbstractAsyncGwtTestCase {
                     table.setViewport(0, 2, null);
 
                     return assertUpdateReceived(table, viewportData -> {
-                        viewportData.getRows().forEach((row, index, all) -> {
+                        viewportData.getRows().forEach((row, index) -> {
                             dates.add(row.get(table.findColumn("Timestamp")).cast());
                             return null;
                         });

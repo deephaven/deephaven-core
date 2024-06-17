@@ -187,7 +187,7 @@ public abstract class BiDiStream<Req, Resp> {
         public void send(T payload) {
             if (responseStream == null) {
                 responseStream = responseStreamFactory.apply(payload);
-                pending.forEach((p0, p1, p2) -> {
+                pending.forEach((p0, p1) -> {
                     p0.apply(responseStream);
                     return null;
                 });

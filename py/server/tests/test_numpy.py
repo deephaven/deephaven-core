@@ -58,7 +58,7 @@ class NumpyTestCase(BaseTestCase):
             "NPLong": np.array([1, -1], dtype=np.int8),
             "Float": np.array([1.01, -1.01], dtype=np.float32),
             "Double": np.array([1.01, -1.01]),
-            "String": np.array(["foo", "bar"], dtype=np.string_),
+            "String": np.array(["foo", "bar"], dtype=np.str_),
             "Datetime": np.array([1, -1], dtype=np.dtype("datetime64[ns]")),
             "PyObj": np.array([CustomClass(1, "1"), CustomClass(-1, "-1")]),
             "PyObj1": np.array([[1, 2, 3], CustomClass(-1, "-1")], dtype=np.object_),

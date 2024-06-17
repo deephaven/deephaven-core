@@ -43,7 +43,7 @@ public class JsFigureFactory {
         FetchObjectResponse response = new FetchObjectResponse();
         response.setData(figureDescriptor.serializeBinary());
         Promise<?>[] tableCopyPromises =
-                tables.map((table, index, all) -> table.copy(false)).asArray(new Promise[0]);
+                tables.map((table, index) -> table.copy(false)).asArray(new Promise[0]);
         return Promise.all(tableCopyPromises)
                 .then(unknownTableCopies -> {
                     JsArray<JsTable> jsTableCopies = Js.cast(unknownTableCopies);

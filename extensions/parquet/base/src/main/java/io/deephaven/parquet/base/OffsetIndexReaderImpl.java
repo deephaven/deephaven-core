@@ -55,7 +55,8 @@ final class OffsetIndexReaderImpl implements OffsetIndexReader {
                         SeekableChannelContext.ensureContext(channelsProvider, channelContext);
                 final SeekableByteChannel readChannel = channelsProvider.getReadChannel(holder.get(), columnChunkURI);
                 final InputStream in =
-                        channelsProvider.getInputStream(readChannel.position(columnChunk.getOffset_index_offset()))) {
+                        channelsProvider.getInputStream(readChannel.position(columnChunk.getOffset_index_offset()),
+                                columnChunk.getOffset_index_length())) {
             return (offsetIndex = ParquetMetadataConverter.fromParquetOffsetIndex(Util.readOffsetIndex(in)));
         } catch (final IOException e) {
             throw new UncheckedIOException(e);

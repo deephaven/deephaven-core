@@ -397,7 +397,7 @@ def write_partitioned(
 def batch_write(
     tables: List[Table],
     paths: List[str],
-    table_definition: Union[Dict[str, DType], List[Column]],
+    table_definition: Optional[Union[Dict[str, DType], List[Column]]] = None,
     col_instructions: Optional[List[ColumnInstruction]] = None,
     compression_codec_name: Optional[str] = None,
     max_dictionary_keys: Optional[int] = None,
@@ -415,9 +415,10 @@ def batch_write(
         paths (List[str]): the destination paths. Any non-existing directories in the paths provided are
             created. If there is an error, any intermediate directories previously created are removed; note this makes
             this method unsafe for concurrent use
-        table_definition (Union[Dict[str, DType], List[Column]]): the table definition to use for writing, instead of
-            the definitions implied by the tables. This definition can be used to skip some columns or add additional
-            columns with null values.
+        table_definition (Optional[Union[Dict[str, DType], List[Column]]]): the table definition to use for writing.
+            This definition can be used to skip some columns or add additional columns with null values. Default is
+            None, which means if all tables have the same definition, use the common table definition implied by the
+            tables. Otherwise, this parameter must be specified.
         col_instructions (Optional[List[ColumnInstruction]]): instructions for customizations while writing
         compression_codec_name (Optional[str]): the compression codec to use. Allowed values include "UNCOMPRESSED",
             "SNAPPY", "GZIP", "LZO", "LZ4", "LZ4_RAW", "ZSTD", etc. If not specified, defaults to "SNAPPY".
