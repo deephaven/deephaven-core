@@ -3,11 +3,57 @@
 #
 
 """The deephaven JSON module presents a declarative and composable configuration layer for describing the structure of a
-JSON value. It is meant to have sane defaults while also providing finer-grained configuration options for typical
-scenarios. The primary purpose of this module is to provide a common layer that various consumers can use to parse JSON
-values into appropriate Deephaven structures. As such (and by the very nature of JSON), these types represent a superset
-of JSON. This module can also service other use cases where the JSON structuring is necessary (for example, producing a
-JSON value from a Deephaven structure).
+JSON (https://www.json.org) value. Most commonly, this will be used to model the structure for a JSON object. For
+example, the JSON object
+
+.. code-block:: json
+    { "name": "Foo", "age": 42, "location": { "lat": 45.018269, "lon": -93.473892 } }
+
+can be modelled with the dictionary
+
+.. code-block:: python
+    { "name": str, "age": int, "location": { "lat": float, "lon": float } }
+
+Notice that this allows for the nested modelling of JSON values. Other common constructions involve the modelling of
+JSON arrays. For example, a variable-length JSON array where the elements are the same type
+
+.. code-block:: json
+    [42, 31, ..., 12345]
+
+can be modelled with a single-element list containing the element type
+
+.. code-block:: python
+    [ int ]
+
+If the JSON array is a fixed size and each elements' type is known, for example
+
+.. code-block:: json
+    ["Foo", 42, [45.018269, -93.473892]]
+
+can be modelled with a tuple containing each type
+
+.. code-block:: python
+    (str, int, (float, float))
+
+Notice again that this allows for the nested modelling of JSON values. Of course, these constructions can be all be used
+together. For example, the JSON object
+
+.. code-block:: json
+    {
+      "name": "Foo",
+      "locations": [
+        [45.018269, -93.473892],
+        ...,
+        [40.730610, -73.935242]
+      ]
+    }
+
+can be modelled as
+
+.. code-block:: python
+    {"name": str, "locations": [(float, float)]}
+
+See the methods in this module more more details on modelling JSON values.
 """
 
 import jpy
@@ -116,6 +162,17 @@ JsonValueType = Union[
 
 def json_val(json_value_type: JsonValueType) -> JsonValue:
     """Creates a JsonValue from a JsonValueType.
+
+     - JsonValue is returned unchanged
+     - bool returns bool_val()
+     - int returns long_val()
+     - float returns double_val()
+     - str returns string_val()
+     - datetime.datetime returns instant_val()
+     - object returns any_val()
+     - Dictionaries returns object_val(json_value_type)
+     - Lists of length 1 returns array_val(json_value_type[0]) (Lists of other sizes are not supported)
+     - Tuples returns tuple_val(json_value_type)
 
     Args:
         json_value_type (JsonValueType): the JSON value type
@@ -973,7 +1030,7 @@ def instant_val(
         instant_val(number_format="s", allow_decimal=True)
 
     In contexts where the user needs to create a JsonValueType and isn't changing any default values, the user can
-    simplify by using the python datetime type. For example,
+    simplify by using the python datetime.datetime type. For example,
 
     .. code-block:: python
         some_method(instant_val())
@@ -981,7 +1038,7 @@ def instant_val(
     could be simplified to
 
     .. code-block:: python
-        some_method(datetime)
+        some_method(datetime.datetime)
 
     Args:
         allow_missing (bool): if the Instant value is allowed to be missing, default is True
