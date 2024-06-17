@@ -12,6 +12,7 @@ import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ScriptApi;
@@ -33,7 +34,7 @@ public class PythonReplayListenerAdapter extends InstrumentedTableUpdateListener
         implements TableSnapshotReplayer {
     private static final long serialVersionUID = -8882402061960621245L;
     private final PyObject pyCallable;
-    private final Table[] dependencies;
+    private final NotificationQueue.Dependency[] dependencies;
 
     /**
      * Create a Python listener.
@@ -46,15 +47,15 @@ public class PythonReplayListenerAdapter extends InstrumentedTableUpdateListener
      * @param dependencies The tables that must be satisfied before this listener is executed.
      */
     public static PythonReplayListenerAdapter create(@Nullable String description, Table source, boolean retain,
-            PyObject pyObjectIn, Table... dependencies) {
+            PyObject pyObjectIn, NotificationQueue.Dependency... dependencies) {
         final UpdateGraph updateGraph = source.getUpdateGraph(dependencies);
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             return new PythonReplayListenerAdapter(description, source, retain, pyObjectIn, dependencies);
         }
     }
 
-    private PythonReplayListenerAdapter(String description, Table source, boolean retain, PyObject pyObjectIn,
-            Table... dependencies) {
+    private PythonReplayListenerAdapter(@Nullable String description, Table source, boolean retain, PyObject pyObjectIn,
+            NotificationQueue.Dependency... dependencies) {
         super(description, source, retain);
         this.dependencies = dependencies;
         this.pyCallable = PythonUtils.pyListenerFunc(pyObjectIn);

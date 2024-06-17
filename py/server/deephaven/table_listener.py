@@ -330,13 +330,14 @@ class TableListenerHandle:
             listener (Union[Callable, TableListener]): listener for table changes
             description (str, optional): description for the UpdatePerformanceTracker to append to the listener's entry
                 description, default is None
-            dependencies (Union[Table, Sequence[Table]]): tables that must be satisfied before the listener's execution. A
-                refreshing table is considered to be satisfied if all updates to the table have been processed in the current
-                update graph cycle. A static table is always considered to be satisfied. If a specified table is refreshing,
-                it must belong to the same update graph as the table being listened to. Default is None.
+            dependencies (Union[Table, Sequence[Table]]): tables that must be satisfied before the listener's execution.
+                A refreshing table is considered to be satisfied if all possible updates to the table have been processed
+                in the current update graph cycle. A static table is always considered to be satisfied. If a specified
+                table is refreshing, it must belong to the same update graph as the table being listened to. Default is
+                None.
 
-                Dependencies are used to ensure that the listener can safely access them during its execution, such as reading
-                the data from the tables or even performing table operations on them.
+                Dependencies are used to ensure that the listener can safely access them during its execution, such as
+                reading the data from the tables or even performing certain table operations on them.
 
         Raises:
             DHError
@@ -412,13 +413,14 @@ def listen(t: Table, listener: Union[Callable, TableListener], description: str 
             description, default is None
         do_replay (bool): whether to replay the initial snapshot of the table, default is False
         replay_lock (str): the lock type used during replay, default is 'shared', can also be 'exclusive'
-        dependencies (Union[Table, Sequence[Table]]): tables that must be satisfied before the listener's execution. A
-            refreshing table is considered to be satisfied if all updates to the table have been processed in the current
-            update graph cycle. A static table is always considered to be satisfied. If a specified table is refreshing,
-            it must belong to the same update graph as the table being listened to. Default is None.
+        dependencies (Union[Table, Sequence[Table]]): tables that must be satisfied before the listener's execution.
+            A refreshing table is considered to be satisfied if all possible updates to the table have been processed
+            in the current update graph cycle. A static table is always considered to be satisfied. If a specified
+            table is refreshing, it must belong to the same update graph as the table being listened to. Default is
+            None.
 
-            Dependencies are used to ensure that the listener can safely access them during its execution, such as reading
-            the data from the tables or even performing table operations on them.
+            Dependencies are used to ensure that the listener can safely access them during its execution, such as
+            reading the data from the tables or even performing certain table operations on them.
 
     Returns:
         a TableListenerHandle
