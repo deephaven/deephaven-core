@@ -131,12 +131,12 @@ class DoubleChunkedReAvgOperator implements IterativeChunkedAggregationOperator 
             double sumSumValue) {
         if (nanValue > 0 || (picValue > 0 && nicValue > 0)) {
             return !Double.isNaN(resultColumn.getAndSetUnsafe(destination, Double.NaN));
-        } else if (nncValue == 0) {
-            return resultColumn.getAndSetUnsafe(destination, NULL_DOUBLE) != NULL_DOUBLE;
         } else if (picValue > 0) {
             return resultColumn.getAndSetUnsafe(destination, Double.POSITIVE_INFINITY) != Double.POSITIVE_INFINITY;
         } else if (nicValue > 0) {
             return resultColumn.getAndSetUnsafe(destination, Double.NEGATIVE_INFINITY) != Double.NEGATIVE_INFINITY;
+        } else if (nncValue == 0) {
+            return resultColumn.getAndSetUnsafe(destination, NULL_DOUBLE) != NULL_DOUBLE;
         } else {
             final double newValue = (double) (sumSumValue / nncValue);
             return resultColumn.getAndSetUnsafe(destination, newValue) != newValue;

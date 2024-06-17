@@ -100,10 +100,13 @@ class ByteChunkedVarOperator implements IterativeChunkedAggregationOperator {
                 final double variance = (newSum2 - (newSum * newSum / nonNullCount)) / (nonNullCount - 1);
                 resultColumn.set(destination, std ? Math.sqrt(variance) : variance);
             }
-        } else if (nonNullCounter.getCountUnsafe(destination) == 1) {
-            resultColumn.set(destination, Double.NaN);
-        } else if (nonNullCounter.getCountUnsafe(destination) == 0) {
-            resultColumn.set(destination, NULL_DOUBLE);
+        } else {
+            final long nonNullCount = nonNullCounter.getCountUnsafe(destination);
+            if (nonNullCount == 0) {
+                resultColumn.set(destination, NULL_DOUBLE);
+            } else if (nonNullCount == 1) {
+                resultColumn.set(destination, Double.NaN);
+            }
         }
         return true;
     }

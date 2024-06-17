@@ -1230,7 +1230,8 @@ public class Numeric {
     }
 
     /**
-     * Returns the median.
+     * Returns the median. {@code null} input values are ignored but {@code NaN} values will poison the computation,
+     * and {@code NaN} will be returned
      *
      * @param values values.
      * @return median.
@@ -1240,7 +1241,8 @@ public class Numeric {
     }
 
     /**
-     * Returns the median.
+     * Returns the median. {@code null} input values are ignored but {@code NaN} values will poison the computation,
+     * and {@code NaN} will be returned
      *
      * @param values values.
      * @return median.
@@ -1254,7 +1256,8 @@ public class Numeric {
     }
 
     /**
-     * Returns the median.
+     * Returns the median. {@code null} input values are ignored but {@code NaN} values will poison the computation,
+     * and {@code NaN} will be returned
      *
      * @param values values.
      * @return median.
@@ -1328,7 +1331,8 @@ public class Numeric {
     }
 
     /**
-     * Returns the percentile.
+     * Returns the percentile. {@code null} input values are ignored but {@code NaN} values will poison the computation,
+     * and {@code NaN} will be returned
      *
      * @param percentile percentile to compute.
      * @param values values.
@@ -1343,7 +1347,8 @@ public class Numeric {
     }
 
     /**
-     * Returns the percentile.
+     * Returns the percentile. {@code null} input values are ignored but {@code NaN} values will poison the computation,
+     * and {@code NaN} will be returned
      *
      * @param percentile percentile to compute.
      * @param values values.
