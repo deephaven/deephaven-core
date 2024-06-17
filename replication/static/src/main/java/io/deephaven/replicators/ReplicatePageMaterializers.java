@@ -38,10 +38,10 @@ public class ReplicatePageMaterializers {
     private static final String LOCAL_DATE_TIME_FROM_NANOS_MATERIALIZER_PATH =
             MATERIALIZER_DIR + "LocalDateTimeFromNanosMaterializer.java";
 
-    private static final String INSTANT_NANOS_FROM_MICROS_MATERIALIZER_PATH =
-            MATERIALIZER_DIR + "InstantNanosFromMicrosMaterializer.java";
     private static final String INSTANT_NANOS_FROM_MILLIS_MATERIALIZER_PATH =
             MATERIALIZER_DIR + "InstantNanosFromMillisMaterializer.java";
+    private static final String INSTANT_NANOS_FROM_MICROS_MATERIALIZER_PATH =
+            MATERIALIZER_DIR + "InstantNanosFromMicrosMaterializer.java";
 
     public static void main(String... args) throws IOException {
         charToShortAndByte(TASK, CHAR_MATERIALIZER_PATH, NO_EXCEPTIONS);
