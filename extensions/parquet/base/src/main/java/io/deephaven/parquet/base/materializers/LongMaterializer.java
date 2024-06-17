@@ -35,8 +35,10 @@ public class LongMaterializer {
         }
 
         @Override
-        long readLong() {
-            return dataReader.readLong();
+        public void fillValues(int startIndex, int endIndex) {
+            for (int ii = startIndex; ii < endIndex; ii++) {
+                data[ii] = dataReader.readLong();
+            }
         }
     }
 }

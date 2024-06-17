@@ -16,15 +16,38 @@ public class ReplicatePageMaterializers {
     private static final String TASK = "replicatePageMaterializers";
     private static final String[] NO_EXCEPTIONS = new String[0];
 
+    private static final String MATERIALIZER_DIR =
+            "extensions/parquet/base/src/main/java/io/deephaven/parquet/base/materializers/";
+
+    private static final String CHAR_MATERIALIZER_PATH = MATERIALIZER_DIR + "CharMaterializer.java";
+    private static final String FLOAT_MATERIALIZER_PATH = MATERIALIZER_DIR + "FloatMaterializer.java";
+    private static final String INT_MATERIALIZER_PATH = MATERIALIZER_DIR + "IntMaterializer.java";
+    private static final String STRING_MATERIALIZER_PATH = MATERIALIZER_DIR + "StringMaterializer.java";
+
+    private static final String LOCAL_TIME_FROM_MILLIS_MATERIALIZER_PATH =
+            MATERIALIZER_DIR + "LocalTimeFromMillisMaterializer.java";
+    private static final String LOCAL_TIME_FROM_MICROS_MATERIALIZER_PATH =
+            MATERIALIZER_DIR + "LocalTimeFromMicrosMaterializer.java";
+    private static final String LOCAL_TIME_FROM_NANOS_MATERIALIZER_PATH =
+            MATERIALIZER_DIR + "LocalTimeFromNanosMaterializer.java";
+
+    private static final String LOCAL_DATE_TIME_FROM_MILLIS_MATERIALIZER_PATH =
+            MATERIALIZER_DIR + "LocalDateTimeFromMillisMaterializer.java";
+    private static final String LOCAL_DATE_TIME_FROM_MICROS_MATERIALIZER_PATH =
+            MATERIALIZER_DIR + "LocalDateTimeFromMicrosMaterializer.java";
+    private static final String LOCAL_DATE_TIME_FROM_NANOS_MATERIALIZER_PATH =
+            MATERIALIZER_DIR + "LocalDateTimeFromNanosMaterializer.java";
+
+    private static final String INSTANT_NANOS_FROM_MICROS_MATERIALIZER_PATH =
+            MATERIALIZER_DIR + "InstantNanosFromMicrosMaterializer.java";
+    private static final String INSTANT_NANOS_FROM_MILLIS_MATERIALIZER_PATH =
+            MATERIALIZER_DIR + "InstantNanosFromMillisMaterializer.java";
+
     public static void main(String... args) throws IOException {
-        charToShortAndByte(TASK,
-                "extensions/parquet/base/src/main/java/io/deephaven/parquet/base/materializers/CharMaterializer.java",
-                NO_EXCEPTIONS);
+        charToShortAndByte(TASK, CHAR_MATERIALIZER_PATH, NO_EXCEPTIONS);
 
         // Float -> Double
-        floatToAllFloatingPoints(TASK,
-                "extensions/parquet/base/src/main/java/io/deephaven/parquet/base/materializers/FloatMaterializer.java",
-                NO_EXCEPTIONS);
+        floatToAllFloatingPoints(TASK, FLOAT_MATERIALIZER_PATH, NO_EXCEPTIONS);
 
         // Float -> Int
         String[][] pairs = new String[][] {
@@ -32,10 +55,7 @@ public class ReplicatePageMaterializers {
                 {"Float", "Int"},
                 {"float", "int"}
         };
-        replaceAll(TASK,
-                "extensions/parquet/base/src/main/java/io/deephaven/parquet/base/materializers/FloatMaterializer.java",
-                "extensions/parquet/base/src/main/java/io/deephaven/parquet/base/materializers/IntMaterializer.java",
-                null, NO_EXCEPTIONS, pairs);
+        replaceAll(TASK, FLOAT_MATERIALIZER_PATH, INT_MATERIALIZER_PATH, null, NO_EXCEPTIONS, pairs);
 
         // Float -> String
         pairs = new String[][] {
@@ -44,10 +64,7 @@ public class ReplicatePageMaterializers {
                 {"float", "String"},
                 {"dataReader, 0, numValues", "dataReader, null, numValues"}
         };
-        replaceAll(TASK,
-                "extensions/parquet/base/src/main/java/io/deephaven/parquet/base/materializers/FloatMaterializer.java",
-                "extensions/parquet/base/src/main/java/io/deephaven/parquet/base/materializers/StringMaterializer.java",
-                null, NO_EXCEPTIONS, pairs);
+        replaceAll(TASK, FLOAT_MATERIALIZER_PATH, STRING_MATERIALIZER_PATH, null, NO_EXCEPTIONS, pairs);
 
         // LocalTimeFromMicros -> LocalTimeFromNanos
         pairs = new String[][] {
@@ -55,8 +72,8 @@ public class ReplicatePageMaterializers {
                 {"micros", "nanos"},
         };
         replaceAll(TASK,
-                "extensions/parquet/base/src/main/java/io/deephaven/parquet/base/materializers/LocalTimeFromMicrosMaterializer.java",
-                "extensions/parquet/base/src/main/java/io/deephaven/parquet/base/materializers/LocalTimeFromNanosMaterializer.java",
+                LOCAL_TIME_FROM_MICROS_MATERIALIZER_PATH,
+                LOCAL_TIME_FROM_NANOS_MATERIALIZER_PATH,
                 null, NO_EXCEPTIONS, pairs);
 
         // LocalTimeFromMicros -> LocalTimeFromMillis
@@ -66,18 +83,36 @@ public class ReplicatePageMaterializers {
                 {"readLong", "readInteger"},
         };
         replaceAll(TASK,
-                "extensions/parquet/base/src/main/java/io/deephaven/parquet/base/materializers/LocalTimeFromMicrosMaterializer.java",
-                "extensions/parquet/base/src/main/java/io/deephaven/parquet/base/materializers/LocalTimeFromMillisMaterializer.java",
+                LOCAL_TIME_FROM_MICROS_MATERIALIZER_PATH,
+                LOCAL_TIME_FROM_MILLIS_MATERIALIZER_PATH,
                 null, NO_EXCEPTIONS, pairs);
 
-        // TimestampNanosFromMicros -> TimestampNanosFromMillis
+        // LocalDateTimeFromMicros -> LocalDateTimeFromNanos
+        pairs = new String[][] {
+                {"Micros", "Nanos"}
+        };
+        replaceAll(TASK,
+                LOCAL_DATE_TIME_FROM_MICROS_MATERIALIZER_PATH,
+                LOCAL_DATE_TIME_FROM_NANOS_MATERIALIZER_PATH,
+                null, NO_EXCEPTIONS, pairs);
+
+        // LocalDateTimeFromMicros -> LocalDateTimeFromMillis
+        pairs = new String[][] {
+                {"Micros", "Millis"}
+        };
+        replaceAll(TASK,
+                LOCAL_DATE_TIME_FROM_MICROS_MATERIALIZER_PATH,
+                LOCAL_DATE_TIME_FROM_MILLIS_MATERIALIZER_PATH,
+                null, NO_EXCEPTIONS, pairs);
+
+        // InstantNanosFromMicros -> InstantNanosFromMillis
         pairs = new String[][] {
                 {"Micros", "Millis"},
                 {"micros", "millis"}
         };
         replaceAll(TASK,
-                "extensions/parquet/base/src/main/java/io/deephaven/parquet/base/materializers/TimestampNanosFromMicrosMaterializer.java",
-                "extensions/parquet/base/src/main/java/io/deephaven/parquet/base/materializers/TimestampNanosFromMillisMaterializer.java",
+                INSTANT_NANOS_FROM_MICROS_MATERIALIZER_PATH,
+                INSTANT_NANOS_FROM_MILLIS_MATERIALIZER_PATH,
                 null, NO_EXCEPTIONS, pairs);
     }
 }

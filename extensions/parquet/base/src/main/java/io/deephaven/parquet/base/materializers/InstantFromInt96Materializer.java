@@ -29,8 +29,8 @@ public class InstantFromInt96Materializer {
     };
 
     /**
-     * {@link PageMaterializer} implementation for {@link Instant}s stored as Int96s representing an Impala format
-     * Timestamp (nanoseconds of day and Julian date encoded as 8 bytes and 4 bytes, respectively)
+     * {@link PageMaterializer} implementation for {@link Instant Instants} stored as Int96s representing an Impala
+     * format Timestamp (nanoseconds of day and Julian date encoded as 8 bytes and 4 bytes, respectively)
      */
     private static final class InstantFromInt96PageMaterializer extends LongPageMaterializerBase
             implements PageMaterializer {
@@ -68,11 +68,17 @@ public class InstantFromInt96Materializer {
          */
         private static void setReferenceTimeZone(@NotNull final String timeZone) {
             offset = DateTimeUtils.nanosOfDay(DateTimeUtils.parseInstant("1970-01-01T00:00:00 " + timeZone),
-                    ZoneId.of("UTC"));
+                    ZoneId.of("UTC"), false);
         }
 
         @Override
-        long readLong() {
+        public void fillValues(int startIndex, int endIndex) {
+            for (int ii = startIndex; ii < endIndex; ii++) {
+                data[ii] = readInstantNanos();
+            }
+        }
+
+        long readInstantNanos() {
             final ByteBuffer resultBuffer = ByteBuffer.wrap(dataReader.readBytes().getBytesUnsafe());
             resultBuffer.order(java.nio.ByteOrder.LITTLE_ENDIAN);
             final long nanos = resultBuffer.getLong();

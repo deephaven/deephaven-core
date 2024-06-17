@@ -36,8 +36,10 @@ public class LongFromUnsignedIntMaterializer {
         }
 
         @Override
-        long readLong() {
-            return Integer.toUnsignedLong(dataReader.readInteger());
+        public void fillValues(int startIndex, int endIndex) {
+            for (int ii = startIndex; ii < endIndex; ii++) {
+                data[ii] = Integer.toUnsignedLong(dataReader.readInteger());
+            }
         }
     }
 }

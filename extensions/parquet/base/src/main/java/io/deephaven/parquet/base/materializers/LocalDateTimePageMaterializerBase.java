@@ -5,16 +5,17 @@ package io.deephaven.parquet.base.materializers;
 
 import io.deephaven.parquet.base.PageMaterializer;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 
-abstract class LongPageMaterializerBase implements PageMaterializer {
+abstract class LocalDateTimePageMaterializerBase implements PageMaterializer {
 
-    final long nullValue;
-    final long[] data;
+    final LocalDateTime nullValue;
+    final LocalDateTime[] data;
 
-    LongPageMaterializerBase(long nullValue, int numValues) {
+    LocalDateTimePageMaterializerBase(LocalDateTime nullValue, int numValues) {
         this.nullValue = nullValue;
-        this.data = new long[numValues];
+        this.data = new LocalDateTime[numValues];
     }
 
     @Override

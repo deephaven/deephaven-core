@@ -57,9 +57,9 @@ public interface PageMaterializer {
                         // The column will store nanoseconds elapsed since epoch as long values
                         switch (timestampLogicalType.getUnit()) {
                             case MILLIS:
-                                return TimestampNanosFromMillisMaterializer.Factory;
+                                return InstantNanosFromMillisMaterializer.Factory;
                             case MICROS:
-                                return TimestampNanosFromMicrosMaterializer.Factory;
+                                return InstantNanosFromMicrosMaterializer.Factory;
                             case NANOS:
                                 return LongMaterializer.Factory;
                         }
@@ -68,11 +68,11 @@ public interface PageMaterializer {
                         // Ref:https://github.com/apache/parquet-format/blob/master/LogicalTypes.md#local-semantics-timestamps-not-normalized-to-utc
                         switch (timestampLogicalType.getUnit()) {
                             case MILLIS:
-                                return LocalDateTimeMaterializer.FromMillisFactory;
+                                return LocalDateTimeFromMillisMaterializer.Factory;
                             case MICROS:
-                                return LocalDateTimeMaterializer.FromMicrosFactory;
+                                return LocalDateTimeFromMicrosMaterializer.Factory;
                             case NANOS:
-                                return LocalDateTimeMaterializer.FromNanosFactory;
+                                return LocalDateTimeFromNanosMaterializer.Factory;
                         }
                     }
                 } else if (logicalTypeAnnotation instanceof LogicalTypeAnnotation.TimeLogicalTypeAnnotation) {
@@ -101,7 +101,7 @@ public interface PageMaterializer {
                 if (logicalTypeAnnotation instanceof LogicalTypeAnnotation.StringLogicalTypeAnnotation) {
                     return StringMaterializer.Factory;
                 }
-            case FIXED_LEN_BYTE_ARRAY:
+            case FIXED_LEN_BYTE_ARRAY: // fall through
                 return BlobMaterializer.Factory;
             default:
                 throw new RuntimeException("Unexpected type name:" + primitiveTypeName);

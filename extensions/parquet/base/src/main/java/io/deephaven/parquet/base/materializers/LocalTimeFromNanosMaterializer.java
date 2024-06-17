@@ -43,8 +43,10 @@ public class LocalTimeFromNanosMaterializer {
         }
 
         @Override
-        LocalTime readNext() {
-            return DateTimeUtils.nanosOfDayToLocalTime(dataReader.readLong());
+        public void fillValues(int startIndex, int endIndex) {
+            for (int ii = startIndex; ii < endIndex; ii++) {
+                data[ii] = DateTimeUtils.nanosOfDayToLocalTime(dataReader.readLong());
+            }
         }
     }
 }

@@ -13,11 +13,6 @@ abstract class LocalTimePageMaterializerBase implements PageMaterializer {
     final LocalTime nullValue;
     final LocalTime[] data;
 
-    /**
-     * @return a {@link LocalTime} value read from the dataReader.
-     */
-    abstract LocalTime readNext();
-
     LocalTimePageMaterializerBase(LocalTime nullValue, int numValues) {
         this.nullValue = nullValue;
         this.data = new LocalTime[numValues];
@@ -26,13 +21,6 @@ abstract class LocalTimePageMaterializerBase implements PageMaterializer {
     @Override
     public final void fillNulls(int startIndex, int endIndex) {
         Arrays.fill(data, startIndex, endIndex, nullValue);
-    }
-
-    @Override
-    public final void fillValues(int startIndex, int endIndex) {
-        for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = readNext();
-        }
     }
 
     @Override

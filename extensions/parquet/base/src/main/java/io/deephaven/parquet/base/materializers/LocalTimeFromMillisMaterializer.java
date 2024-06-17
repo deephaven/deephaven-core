@@ -43,8 +43,10 @@ public class LocalTimeFromMillisMaterializer {
         }
 
         @Override
-        LocalTime readNext() {
-            return DateTimeUtils.millisOfDayToLocalTime(dataReader.readInteger());
+        public void fillValues(int startIndex, int endIndex) {
+            for (int ii = startIndex; ii < endIndex; ii++) {
+                data[ii] = DateTimeUtils.millisOfDayToLocalTime(dataReader.readInteger());
+            }
         }
     }
 }
