@@ -11,7 +11,7 @@ import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.parquet.table.util.TransferUtils;
+import io.deephaven.parquet.base.ParquetTimeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.LongBuffer;
@@ -30,7 +30,7 @@ final class LocalDateTimeTransfer extends GettingPrimitiveTransfer<ObjectChunk<L
     void copyAllFromChunkToBuffer() {
         final int chunkSize = chunk.size();
         for (int chunkIdx = 0; chunkIdx < chunkSize; ++chunkIdx) {
-            buffer.put(TransferUtils.epochNanosUTC(chunk.get(chunkIdx)));
+            buffer.put(ParquetTimeUtils.epochNanosUTC(chunk.get(chunkIdx)));
         }
     }
 }
