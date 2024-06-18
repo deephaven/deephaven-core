@@ -3,103 +3,106 @@
 //
 package io.deephaven.parquet.base;
 
-import org.apache.parquet.column.values.ValuesReader;
-import org.apache.parquet.io.api.Binary;
+import io.deephaven.parquet.base.materializers.*;
+import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.PrimitiveType;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.Arrays;
+public interface PageMaterializer {
 
-interface PageMaterializer {
-
-    PageMaterializerFactory IntFactory = new PageMaterializerFactory() {
-        @Override
-        public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
-            return new IntMaterializer(dataReader, (int) nullValue, numValues);
-        }
-
-        @Override
-        public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
-            return new IntMaterializer(dataReader, numValues);
-        }
-    };
-
-    PageMaterializerFactory LongFactory = new PageMaterializerFactory() {
-        @Override
-        public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
-            return new LongMaterializer(dataReader, (long) nullValue, numValues);
-        }
-
-        @Override
-        public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
-            return new LongMaterializer(dataReader, numValues);
-        }
-    };
-
-    PageMaterializerFactory FloatFactory = new PageMaterializerFactory() {
-        @Override
-        public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
-            return new FloatMaterializer(dataReader, (float) nullValue, numValues);
-        }
-
-        @Override
-        public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
-            return new FloatMaterializer(dataReader, numValues);
-        }
-    };
-
-    PageMaterializerFactory DoubleFactory = new PageMaterializerFactory() {
-        @Override
-        public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
-            return new DoubleMaterializer(dataReader, (double) nullValue, numValues);
-        }
-
-        @Override
-        public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
-            return new DoubleMaterializer(dataReader, numValues);
-        }
-    };
-
-    PageMaterializerFactory BoolFactory = new PageMaterializerFactory() {
-        @Override
-        public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
-            return new BoolMaterializer(dataReader, (byte) nullValue, numValues);
-        }
-
-        @Override
-        public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
-            return new BoolMaterializer(dataReader, numValues);
-        }
-    };
-
-    PageMaterializerFactory BlobFactory = new PageMaterializerFactory() {
-        @Override
-        public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
-            return new BlobMaterializer(dataReader, (Binary) nullValue, numValues);
-        }
-
-        @Override
-        public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
-            return new BlobMaterializer(dataReader, numValues);
-        }
-    };
-
-    static PageMaterializerFactory factoryForType(PrimitiveType.PrimitiveTypeName primitiveTypeName) {
+    static PageMaterializerFactory factoryForType(@NotNull final PrimitiveType primitiveType) {
+        final PrimitiveType.PrimitiveTypeName primitiveTypeName = primitiveType.getPrimitiveTypeName();
+        final LogicalTypeAnnotation logicalTypeAnnotation = primitiveType.getLogicalTypeAnnotation();
         switch (primitiveTypeName) {
             case INT32:
-                return IntFactory;
+                if (logicalTypeAnnotation instanceof LogicalTypeAnnotation.IntLogicalTypeAnnotation) {
+                    final LogicalTypeAnnotation.IntLogicalTypeAnnotation intLogicalType =
+                            (LogicalTypeAnnotation.IntLogicalTypeAnnotation) logicalTypeAnnotation;
+                    if (intLogicalType.isSigned()) {
+                        switch (intLogicalType.getBitWidth()) {
+                            case 8:
+                                return ByteMaterializer.Factory;
+                            case 16:
+                                return ShortMaterializer.Factory;
+                            case 32:
+                                return IntMaterializer.Factory;
+                        }
+                    } else {
+                        switch (intLogicalType.getBitWidth()) {
+                            case 8:
+                            case 16:
+                                return CharMaterializer.Factory;
+                            case 32:
+                                return LongFromUnsignedIntMaterializer.Factory;
+                        }
+                    }
+                } else if (logicalTypeAnnotation instanceof LogicalTypeAnnotation.DateLogicalTypeAnnotation) {
+                    return LocalDateMaterializer.Factory;
+                } else if (logicalTypeAnnotation instanceof LogicalTypeAnnotation.TimeLogicalTypeAnnotation) {
+                    final LogicalTypeAnnotation.TimeLogicalTypeAnnotation timeLogicalType =
+                            (LogicalTypeAnnotation.TimeLogicalTypeAnnotation) logicalTypeAnnotation;
+                    if (timeLogicalType.getUnit() != LogicalTypeAnnotation.TimeUnit.MILLIS) {
+                        throw new IllegalArgumentException(
+                                "Expected unit type to be MILLIS, found " + timeLogicalType.getUnit());
+                    }
+                    // isAdjustedToUTC parameter is ignored while reading LocalTime from Parquet files
+                    return LocalTimeFromMillisMaterializer.Factory;
+                }
+                return IntMaterializer.Factory;
             case INT64:
-                return LongFactory;
+                if (logicalTypeAnnotation instanceof LogicalTypeAnnotation.TimestampLogicalTypeAnnotation) {
+                    final LogicalTypeAnnotation.TimestampLogicalTypeAnnotation timestampLogicalType =
+                            (LogicalTypeAnnotation.TimestampLogicalTypeAnnotation) logicalTypeAnnotation;
+                    if (timestampLogicalType.isAdjustedToUTC()) {
+                        // The column will store nanoseconds elapsed since epoch as long values
+                        switch (timestampLogicalType.getUnit()) {
+                            case MILLIS:
+                                return InstantNanosFromMillisMaterializer.Factory;
+                            case MICROS:
+                                return InstantNanosFromMicrosMaterializer.Factory;
+                            case NANOS:
+                                return LongMaterializer.Factory;
+                        }
+                    } else {
+                        // The column will be stored as LocalDateTime values
+                        // Ref:https://github.com/apache/parquet-format/blob/master/LogicalTypes.md#local-semantics-timestamps-not-normalized-to-utc
+                        switch (timestampLogicalType.getUnit()) {
+                            case MILLIS:
+                                return LocalDateTimeFromMillisMaterializer.Factory;
+                            case MICROS:
+                                return LocalDateTimeFromMicrosMaterializer.Factory;
+                            case NANOS:
+                                return LocalDateTimeFromNanosMaterializer.Factory;
+                        }
+                    }
+                } else if (logicalTypeAnnotation instanceof LogicalTypeAnnotation.TimeLogicalTypeAnnotation) {
+                    final LogicalTypeAnnotation.TimeLogicalTypeAnnotation timeLogicalType =
+                            (LogicalTypeAnnotation.TimeLogicalTypeAnnotation) logicalTypeAnnotation;
+                    // isAdjustedToUTC parameter is ignored while reading LocalTime from Parquet files
+                    switch (timeLogicalType.getUnit()) {
+                        case MICROS:
+                            return LocalTimeFromMicrosMaterializer.Factory;
+                        case NANOS:
+                            return LocalTimeFromNanosMaterializer.Factory;
+                        default:
+                            throw new IllegalArgumentException("Unsupported unit=" + timeLogicalType.getUnit());
+                    }
+                }
+                return LongMaterializer.Factory;
+            case INT96:
+                return InstantFromInt96Materializer.Factory;
             case FLOAT:
-                return FloatFactory;
+                return FloatMaterializer.Factory;
             case DOUBLE:
-                return DoubleFactory;
+                return DoubleMaterializer.Factory;
             case BOOLEAN:
-                return BoolFactory;
+                return BoolMaterializer.Factory;
             case BINARY:
-            case FIXED_LEN_BYTE_ARRAY:
-            case INT96: {
-                return BlobFactory;
-            }
+                if (logicalTypeAnnotation instanceof LogicalTypeAnnotation.StringLogicalTypeAnnotation) {
+                    return StringMaterializer.Factory;
+                }
+            case FIXED_LEN_BYTE_ARRAY: // fall through
+                return BlobMaterializer.Factory;
             default:
                 throw new RuntimeException("Unexpected type name:" + primitiveTypeName);
         }
@@ -112,249 +115,4 @@ interface PageMaterializer {
     Object fillAll();
 
     Object data();
-
-    class IntMaterializer implements PageMaterializer {
-        final ValuesReader dataReader;
-
-        final int nullValue;
-        final int[] data;
-
-        IntMaterializer(ValuesReader dataReader, int numValues) {
-            this(dataReader, 0, numValues);
-        }
-
-        IntMaterializer(ValuesReader dataReader, int nullValue, int numValues) {
-            this.dataReader = dataReader;
-            this.nullValue = nullValue;
-            this.data = new int[numValues];
-        }
-
-        @Override
-        public void fillNulls(int startIndex, int endIndex) {
-            Arrays.fill(data, startIndex, endIndex, nullValue);
-        }
-
-        @Override
-        public void fillValues(int startIndex, int endIndex) {
-            for (int ii = startIndex; ii < endIndex; ii++) {
-                data[ii] = dataReader.readInteger();
-            }
-        }
-
-        @Override
-        public Object fillAll() {
-            fillValues(0, data.length);
-            return data;
-        }
-
-        @Override
-        public Object data() {
-            return data;
-        }
-    }
-
-    class LongMaterializer implements PageMaterializer {
-
-        final ValuesReader dataReader;
-
-        final long nullValue;
-        final long[] data;
-
-        LongMaterializer(ValuesReader dataReader, int numValues) {
-            this(dataReader, 0, numValues);
-        }
-
-        LongMaterializer(ValuesReader dataReader, long nullValue, int numValues) {
-            this.dataReader = dataReader;
-            this.nullValue = nullValue;
-            this.data = new long[numValues];
-        }
-
-        @Override
-        public void fillNulls(int startIndex, int endIndex) {
-            Arrays.fill(data, startIndex, endIndex, nullValue);
-        }
-
-        @Override
-        public void fillValues(int startIndex, int endIndex) {
-            for (int ii = startIndex; ii < endIndex; ii++) {
-                data[ii] = dataReader.readLong();
-            }
-        }
-
-        @Override
-        public Object fillAll() {
-            fillValues(0, data.length);
-            return data;
-        }
-
-        @Override
-        public Object data() {
-            return data;
-        }
-    }
-
-    class FloatMaterializer implements PageMaterializer {
-
-        final ValuesReader dataReader;
-
-        final float nullValue;
-        final float[] data;
-
-        FloatMaterializer(ValuesReader dataReader, int numValues) {
-            this(dataReader, 0.0f, numValues);
-        }
-
-        FloatMaterializer(ValuesReader dataReader, float nullValue, int numValues) {
-            this.dataReader = dataReader;
-            this.nullValue = nullValue;
-            this.data = new float[numValues];
-        }
-
-        @Override
-        public void fillNulls(int startIndex, int endIndex) {
-            Arrays.fill(data, startIndex, endIndex, nullValue);
-        }
-
-        @Override
-        public void fillValues(int startIndex, int endIndex) {
-            for (int ii = startIndex; ii < endIndex; ii++) {
-                data[ii] = dataReader.readFloat();
-            }
-        }
-
-        @Override
-        public Object fillAll() {
-            fillValues(0, data.length);
-            return data;
-        }
-
-        @Override
-        public Object data() {
-            return data;
-        }
-    }
-
-    class DoubleMaterializer implements PageMaterializer {
-
-        final ValuesReader dataReader;
-
-        final double nullValue;
-        final double[] data;
-
-        DoubleMaterializer(ValuesReader dataReader, int numValues) {
-            this(dataReader, 0.0, numValues);
-        }
-
-        DoubleMaterializer(ValuesReader dataReader, double nullValue, int numValues) {
-            this.dataReader = dataReader;
-            this.nullValue = nullValue;
-            this.data = new double[numValues];
-        }
-
-        @Override
-        public void fillNulls(int startIndex, int endIndex) {
-            Arrays.fill(data, startIndex, endIndex, nullValue);
-        }
-
-        @Override
-        public void fillValues(int startIndex, int endIndex) {
-            for (int ii = startIndex; ii < endIndex; ii++) {
-                data[ii] = dataReader.readDouble();
-            }
-        }
-
-        @Override
-        public Object fillAll() {
-            fillValues(0, data.length);
-            return data;
-        }
-
-        @Override
-        public Object data() {
-            return data;
-        }
-    }
-
-    class BoolMaterializer implements PageMaterializer {
-
-        final ValuesReader dataReader;
-
-        final byte nullValue;
-        final byte[] data;
-
-        BoolMaterializer(ValuesReader dataReader, int numValues) {
-            this(dataReader, (byte) 0, numValues);
-        }
-
-        BoolMaterializer(ValuesReader dataReader, byte nullValue, int numValues) {
-            this.dataReader = dataReader;
-            this.nullValue = nullValue;
-            this.data = new byte[numValues];
-        }
-
-        @Override
-        public void fillNulls(int startIndex, int endIndex) {
-            Arrays.fill(data, startIndex, endIndex, nullValue);
-        }
-
-        @Override
-        public void fillValues(int startIndex, int endIndex) {
-            for (int ii = startIndex; ii < endIndex; ii++) {
-                data[ii] = (byte) (dataReader.readBoolean() ? 1 : 0);
-            }
-        }
-
-        @Override
-        public Object fillAll() {
-            fillValues(0, data.length);
-            return data;
-        }
-
-        @Override
-        public Object data() {
-            return data;
-        }
-    }
-
-    class BlobMaterializer implements PageMaterializer {
-
-        final ValuesReader dataReader;
-
-        final Binary nullValue;
-        final Binary[] data;
-
-        BlobMaterializer(ValuesReader dataReader, int numValues) {
-            this(dataReader, null, numValues);
-        }
-
-        BlobMaterializer(ValuesReader dataReader, Binary nullValue, int numValues) {
-            this.dataReader = dataReader;
-            this.nullValue = nullValue;
-            this.data = new Binary[numValues];
-        }
-
-        @Override
-        public void fillNulls(int startIndex, int endIndex) {
-            Arrays.fill(data, startIndex, endIndex, nullValue);
-        }
-
-        @Override
-        public void fillValues(int startIndex, int endIndex) {
-            for (int ii = startIndex; ii < endIndex; ii++) {
-                data[ii] = dataReader.readBytes();
-            }
-        }
-
-        @Override
-        public Object fillAll() {
-            fillValues(0, data.length);
-            return data;
-        }
-
-        @Override
-        public Object data() {
-            return data;
-        }
-    }
 }
