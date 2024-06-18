@@ -43,20 +43,20 @@ public class TestYearMonthSummaryCache extends BaseArrayTestCase {
         monthCount[0] = 0;
         yearCount[0] = 0;
 
-        assertEquals("month202101", cache.getMonthSummary(202101).getValue());
+        assertEquals("month202101", cache.getMonthSummary(2021, 1).getValue());
         assertEquals(1, monthCount[0]);
         assertEquals(0, yearCount[0]);
         assertEquals("year2021", cache.getYearSummary(2021).getValue());
         assertEquals(1, monthCount[0]);
         assertEquals(1, yearCount[0]);
-        assertEquals("month202101", cache.getMonthSummary(202101).getValue());
+        assertEquals("month202101", cache.getMonthSummary(2021, 1).getValue());
         assertEquals(1, monthCount[0]);
         assertEquals(1, yearCount[0]);
         assertEquals("year2021", cache.getYearSummary(2021).getValue());
         assertEquals(1, monthCount[0]);
         assertEquals(1, yearCount[0]);
 
-        assertEquals("month202102", cache.getMonthSummary(202102).getValue());
+        assertEquals("month202102", cache.getMonthSummary(2021, 2).getValue());
         assertEquals(2, monthCount[0]);
         assertEquals(1, yearCount[0]);
         assertEquals("year2022", cache.getYearSummary(2022).getValue());
@@ -65,27 +65,25 @@ public class TestYearMonthSummaryCache extends BaseArrayTestCase {
 
         cache.clear();
 
-        assertEquals("month202101", cache.getMonthSummary(202101).getValue());
+        assertEquals("month202101", cache.getMonthSummary(2021, 1).getValue());
         assertEquals(3, monthCount[0]);
         assertEquals(2, yearCount[0]);
         assertEquals("year2021", cache.getYearSummary(2021).getValue());
         assertEquals(3, monthCount[0]);
         assertEquals(3, yearCount[0]);
-        assertEquals("month202101", cache.getMonthSummary(202101).getValue());
+        assertEquals("month202101", cache.getMonthSummary(2021, 1).getValue());
         assertEquals(3, monthCount[0]);
         assertEquals(3, yearCount[0]);
         assertEquals("year2021", cache.getYearSummary(2021).getValue());
         assertEquals(3, monthCount[0]);
         assertEquals(3, yearCount[0]);
 
-        assertEquals("month202102", cache.getMonthSummary(202102).getValue());
+        assertEquals("month202102", cache.getMonthSummary(2021, 2).getValue());
         assertEquals(4, monthCount[0]);
         assertEquals(3, yearCount[0]);
         assertEquals("year2022", cache.getYearSummary(2022).getValue());
         assertEquals(4, monthCount[0]);
         assertEquals(4, yearCount[0]);
-
-        assertEquals(cache.getMonthSummary(202101).getValue(), cache.getMonthSummary(2021, 1).getValue());
     }
 
     private static <T> Stream<T> iteratorToStream(Iterator<T> iterator) {

@@ -39,22 +39,13 @@ class YearMonthSummaryCache<T extends ImmutableConcurrentCache.IntKeyedValue> {
     /**
      * Gets the month summary for the specified year and month.
      *
-     * @param yearMonth the year and month
-     * @return the month summary
-     */
-    T getMonthSummary(int yearMonth) {
-        return monthCache.computeIfAbsent(yearMonth);
-    }
-
-    /**
-     * Gets the month summary for the specified year and month.
-     *
      * @param year the year
      * @param month the month
      * @return the month summary
      */
     T getMonthSummary(int year, int month) {
-        return getMonthSummary(year * 100 + month);
+        final int yearMonth = year * 100 + month;
+        return monthCache.computeIfAbsent(yearMonth);
     }
 
     /**
@@ -138,7 +129,7 @@ class YearMonthSummaryCache<T extends ImmutableConcurrentCache.IntKeyedValue> {
                 val = getYearSummary(currentYear);
                 incrementCurrentByYear();
             } else {
-                val = getMonthSummary(currentYear * 100 + currentMonth);
+                val = getMonthSummary(currentYear, currentMonth);
                 incrementCurrentByMonth();
             }
 
