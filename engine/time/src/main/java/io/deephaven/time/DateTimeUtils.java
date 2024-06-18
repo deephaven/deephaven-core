@@ -24,8 +24,7 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static io.deephaven.util.QueryConstants.NULL_INT;
-import static io.deephaven.util.QueryConstants.NULL_LONG;
+import static io.deephaven.util.QueryConstants.*;
 import static java.time.format.DateTimeFormatter.*;
 
 /**
@@ -1614,7 +1613,7 @@ public class DateTimeUtils {
      * @param days number of days to add
      * @return {@code null} if either input is {@code null} or {@link QueryConstants#NULL_LONG}; otherwise the starting
      *         local date time plus the specified number of days
-     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows
      */
     @ScriptApi
     @Nullable
@@ -1625,7 +1624,7 @@ public class DateTimeUtils {
 
         try {
             return localDateTime.plusDays(days);
-        } catch (Exception ex) {
+        } catch (DateTimeException | ArithmeticException ex) {
             throw new DateTimeOverflowException(ex);
         }
     }
@@ -1637,7 +1636,7 @@ public class DateTimeUtils {
      * @param days number of days to add
      * @return {@code null} if either input is {@code null} or {@link QueryConstants#NULL_LONG}; otherwise the starting
      *         local date plus the specified number of days
-     * @throws DateTimeOverflowException if the resultant localDate time exceeds the supported range
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows
      */
     @ScriptApi
     @Nullable
@@ -1648,7 +1647,7 @@ public class DateTimeUtils {
 
         try {
             return localDate.plusDays(days);
-        } catch (Exception ex) {
+        } catch (DateTimeException | ArithmeticException ex) {
             throw new DateTimeOverflowException(ex);
         }
     }
@@ -1660,7 +1659,7 @@ public class DateTimeUtils {
      * @param period time period
      * @return {@code null} if either input is {@code null}; otherwise the starting local date time plus the specified
      *         time period
-     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows
      */
     @ScriptApi
     @Nullable
@@ -1671,7 +1670,7 @@ public class DateTimeUtils {
 
         try {
             return localDateTime.plus(period);
-        } catch (Exception ex) {
+        } catch (DateTimeException | ArithmeticException ex) {
             throw new DateTimeOverflowException(ex);
         }
     }
@@ -1683,7 +1682,7 @@ public class DateTimeUtils {
      * @param period time period
      * @return {@code null} if either input is {@code null}; otherwise the starting local date plus the specified time
      *         period
-     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows
      */
     @ScriptApi
     @Nullable
@@ -1694,7 +1693,7 @@ public class DateTimeUtils {
 
         try {
             return localDate.plus(period);
-        } catch (Exception ex) {
+        } catch (DateTimeException | ArithmeticException ex) {
             throw new DateTimeOverflowException(ex);
         }
     }
@@ -1706,7 +1705,7 @@ public class DateTimeUtils {
      * @param nanos number of nanoseconds to add
      * @return {@code null} if either input is {@code null} or {@link QueryConstants#NULL_LONG}; otherwise the starting
      *         instant plus the specified number of nanoseconds
-     * @throws DateTimeOverflowException if the resultant instant exceeds the supported range
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows
      */
     @ScriptApi
     @Nullable
@@ -1717,7 +1716,7 @@ public class DateTimeUtils {
 
         try {
             return instant.plusNanos(nanos);
-        } catch (Exception ex) {
+        } catch (DateTimeException | ArithmeticException ex) {
             throw new DateTimeOverflowException(ex);
         }
     }
@@ -1729,7 +1728,7 @@ public class DateTimeUtils {
      * @param nanos number of nanoseconds to add
      * @return {@code null} if either input is {@code null} or {@link QueryConstants#NULL_LONG}; otherwise the starting
      *         zoned date time plus the specified number of nanoseconds
-     * @throws DateTimeOverflowException if the resultant zoned date time exceeds the supported range
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows
      */
     @ScriptApi
     @Nullable
@@ -1740,7 +1739,7 @@ public class DateTimeUtils {
 
         try {
             return dateTime.plusNanos(nanos);
-        } catch (Exception ex) {
+        } catch (DateTimeException | ArithmeticException ex) {
             throw new DateTimeOverflowException(ex);
         }
     }
@@ -1752,7 +1751,7 @@ public class DateTimeUtils {
      * @param duration time period
      * @return {@code null} if either input is {@code null} or {@link QueryConstants#NULL_LONG}; otherwise the starting
      *         instant plus the specified time period
-     * @throws DateTimeOverflowException if the resultant instant exceeds the supported range
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows
      */
     @ScriptApi
     @Nullable
@@ -1763,7 +1762,7 @@ public class DateTimeUtils {
 
         try {
             return instant.plus(duration);
-        } catch (Exception ex) {
+        } catch (DateTimeException | ArithmeticException ex) {
             throw new DateTimeOverflowException(ex);
         }
     }
@@ -1775,7 +1774,7 @@ public class DateTimeUtils {
      * @param period time period
      * @return {@code null} if either input is {@code null} or {@link QueryConstants#NULL_LONG}; otherwise the starting
      *         instant plus the specified time period
-     * @throws DateTimeOverflowException if the resultant instant exceeds the supported range
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows
      */
     @ScriptApi
     @Nullable
@@ -1786,7 +1785,7 @@ public class DateTimeUtils {
 
         try {
             return instant.plus(period);
-        } catch (Exception ex) {
+        } catch (DateTimeException | ArithmeticException ex) {
             throw new DateTimeOverflowException(ex);
         }
     }
@@ -1798,7 +1797,7 @@ public class DateTimeUtils {
      * @param duration time period
      * @return {@code null} if either input is {@code null} or {@link QueryConstants#NULL_LONG}; otherwise the starting
      *         zoned date time plus the specified time period
-     * @throws DateTimeOverflowException if the resultant zoned date time exceeds the supported range
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows
      */
     @ScriptApi
     @Nullable
@@ -1809,7 +1808,7 @@ public class DateTimeUtils {
 
         try {
             return dateTime.plus(duration);
-        } catch (Exception ex) {
+        } catch (DateTimeException | ArithmeticException ex) {
             throw new DateTimeOverflowException(ex);
         }
     }
@@ -1821,7 +1820,7 @@ public class DateTimeUtils {
      * @param period time period
      * @return {@code null} if either input is {@code null} or {@link QueryConstants#NULL_LONG}; otherwise the starting
      *         zoned date time plus the specified time period
-     * @throws DateTimeOverflowException if the resultant zoned date time exceeds the supported range
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows
      */
     @ScriptApi
     @Nullable
@@ -1832,7 +1831,47 @@ public class DateTimeUtils {
 
         try {
             return dateTime.plus(period);
-        } catch (Exception ex) {
+        } catch (DateTimeException | ArithmeticException ex) {
+            throw new DateTimeOverflowException(ex);
+        }
+    }
+
+    /**
+     * Adds two durations.
+     *
+     * @param duration1 first duration
+     * @param duration2 second duration
+     * @return {@code null} if either input is {@code null}; otherwise the sum of the two durations
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows
+     */
+    public static Duration plus(@Nullable final Duration duration1, @Nullable final Duration duration2) {
+        if (duration1 == null || duration2 == null) {
+            return null;
+        }
+
+        try {
+            return duration1.plus(duration2);
+        } catch (DateTimeException | ArithmeticException ex) {
+            throw new DateTimeOverflowException(ex);
+        }
+    }
+
+    /**
+     * Adds two periods.
+     *
+     * @param period1 first period
+     * @param period2 second period
+     * @return {@code null} if either input is {@code null}; otherwise the sum of the two periods
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows
+     */
+    public static Period plus(@Nullable final Period period1, @Nullable final Period period2) {
+        if (period1 == null || period2 == null) {
+            return null;
+        }
+
+        try {
+            return period1.plus(period2);
+        } catch (DateTimeException | ArithmeticException ex) {
             throw new DateTimeOverflowException(ex);
         }
     }
@@ -1844,7 +1883,7 @@ public class DateTimeUtils {
      * @param days number of days to subtract
      * @return {@code null} if either input is {@code null} or {@link QueryConstants#NULL_LONG}; otherwise the starting
      *         local date time minus the specified number of days
-     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows
      */
     @ScriptApi
     @Nullable
@@ -1855,7 +1894,7 @@ public class DateTimeUtils {
 
         try {
             return localDateTime.minusDays(days);
-        } catch (Exception ex) {
+        } catch (DateTimeException | ArithmeticException ex) {
             throw new DateTimeOverflowException(ex);
         }
     }
@@ -1867,7 +1906,7 @@ public class DateTimeUtils {
      * @param days number of days to subtract
      * @return {@code null} if either input is {@code null} or {@link QueryConstants#NULL_LONG}; otherwise the starting
      *         local date minus the specified number of days
-     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows
      */
     @ScriptApi
     @Nullable
@@ -1878,7 +1917,7 @@ public class DateTimeUtils {
 
         try {
             return localDate.minusDays(days);
-        } catch (Exception ex) {
+        } catch (DateTimeException | ArithmeticException ex) {
             throw new DateTimeOverflowException(ex);
         }
     }
@@ -1890,7 +1929,7 @@ public class DateTimeUtils {
      * @param period time period
      * @return {@code null} if either input is {@code null}; otherwise the starting local date time minus the specified
      *         time period
-     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows
      */
     @ScriptApi
     @Nullable
@@ -1901,7 +1940,7 @@ public class DateTimeUtils {
 
         try {
             return localDateTime.minus(period);
-        } catch (Exception ex) {
+        } catch (DateTimeException | ArithmeticException ex) {
             throw new DateTimeOverflowException(ex);
         }
     }
@@ -1913,7 +1952,7 @@ public class DateTimeUtils {
      * @param period time period
      * @return {@code null} if either input is {@code null}; otherwise the starting local date minus the specified time
      *         period
-     * @throws DateTimeOverflowException if the resultant date time exceeds the supported range
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows
      */
     @ScriptApi
     @Nullable
@@ -1924,7 +1963,7 @@ public class DateTimeUtils {
 
         try {
             return localDate.minus(period);
-        } catch (Exception ex) {
+        } catch (DateTimeException | ArithmeticException ex) {
             throw new DateTimeOverflowException(ex);
         }
     }
@@ -1936,7 +1975,7 @@ public class DateTimeUtils {
      * @param nanos number of nanoseconds to subtract
      * @return {@code null} if either input is {@code null} or {@link QueryConstants#NULL_LONG}; otherwise the starting
      *         instant minus the specified number of nanoseconds
-     * @throws DateTimeOverflowException if the resultant instant exceeds the supported range
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows
      */
     @ScriptApi
     @Nullable
@@ -1947,7 +1986,7 @@ public class DateTimeUtils {
 
         try {
             return instant.minusNanos(nanos);
-        } catch (Exception ex) {
+        } catch (DateTimeException | ArithmeticException ex) {
             throw new DateTimeOverflowException(ex);
         }
     }
@@ -1959,7 +1998,7 @@ public class DateTimeUtils {
      * @param nanos number of nanoseconds to subtract
      * @return {@code null} if either input is {@code null} or {@link QueryConstants#NULL_LONG}; otherwise the starting
      *         zoned date time minus the specified number of nanoseconds
-     * @throws DateTimeOverflowException if the resultant zoned date time exceeds the supported range
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows
      */
     @ScriptApi
     @Nullable
@@ -1970,7 +2009,7 @@ public class DateTimeUtils {
 
         try {
             return dateTime.minusNanos(nanos);
-        } catch (Exception ex) {
+        } catch (DateTimeException | ArithmeticException ex) {
             throw new DateTimeOverflowException(ex);
         }
     }
@@ -1982,7 +2021,7 @@ public class DateTimeUtils {
      * @param duration time period
      * @return {@code null} if either input is {@code null} or {@link QueryConstants#NULL_LONG}; otherwise the starting
      *         instant minus the specified time period
-     * @throws DateTimeOverflowException if the resultant instant exceeds the supported range
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows
      */
     @ScriptApi
     @Nullable
@@ -1993,7 +2032,7 @@ public class DateTimeUtils {
 
         try {
             return instant.minus(duration);
-        } catch (Exception ex) {
+        } catch (DateTimeException | ArithmeticException ex) {
             throw new DateTimeOverflowException(ex);
         }
     }
@@ -2005,7 +2044,7 @@ public class DateTimeUtils {
      * @param period time period
      * @return {@code null} if either input is {@code null} or {@link QueryConstants#NULL_LONG}; otherwise the starting
      *         instant minus the specified time period
-     * @throws DateTimeOverflowException if the resultant instant exceeds the supported range
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows
      */
     @ScriptApi
     @Nullable
@@ -2016,7 +2055,7 @@ public class DateTimeUtils {
 
         try {
             return instant.minus(period);
-        } catch (Exception ex) {
+        } catch (DateTimeException | ArithmeticException ex) {
             throw new DateTimeOverflowException(ex);
         }
     }
@@ -2028,7 +2067,7 @@ public class DateTimeUtils {
      * @param duration time period
      * @return {@code null} if either input is {@code null} or {@link QueryConstants#NULL_LONG}; otherwise the starting
      *         zoned date time minus the specified time period
-     * @throws DateTimeOverflowException if the resultant zoned date time exceeds the supported range
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows
      */
     @ScriptApi
     @Nullable
@@ -2039,7 +2078,7 @@ public class DateTimeUtils {
 
         try {
             return dateTime.minus(duration);
-        } catch (Exception ex) {
+        } catch (DateTimeException | ArithmeticException ex) {
             throw new DateTimeOverflowException(ex);
         }
     }
@@ -2051,7 +2090,7 @@ public class DateTimeUtils {
      * @param period time period
      * @return {@code null} if either input is {@code null} or {@link QueryConstants#NULL_LONG}; otherwise the starting
      *         zoned date time minus the specified time period
-     * @throws DateTimeOverflowException if the resultant zoned date time exceeds the supported range
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows
      */
     @ScriptApi
     @Nullable
@@ -2062,7 +2101,7 @@ public class DateTimeUtils {
 
         try {
             return dateTime.minus(period);
-        } catch (Exception ex) {
+        } catch (DateTimeException | ArithmeticException ex) {
             throw new DateTimeOverflowException(ex);
         }
     }
@@ -2101,6 +2140,130 @@ public class DateTimeUtils {
         }
 
         return checkUnderflowMinus(epochNanos(dateTime1), epochNanos(dateTime2), true);
+    }
+
+    /**
+     * Subtracts two durations.
+     *
+     * @param duration1 first duration
+     * @param duration2 second duration
+     * @return {@code null} if either input is {@code null}; otherwise the difference of the two durations
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows
+     */
+    public static Duration minus(@Nullable final Duration duration1, @Nullable final Duration duration2) {
+        if (duration1 == null || duration2 == null) {
+            return null;
+        }
+
+        try {
+            return duration1.minus(duration2);
+        } catch (DateTimeException | ArithmeticException ex) {
+            throw new DateTimeOverflowException(ex);
+        }
+    }
+
+    /**
+     * Subtracts two periods.
+     *
+     * @param period1 first period
+     * @param period2 second period
+     * @return {@code null} if either input is {@code null}; otherwise the difference of the two periods
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows
+     */
+    public static Period minus(@Nullable final Period period1, @Nullable final Period period2) {
+        if (period1 == null || period2 == null) {
+            return null;
+        }
+
+        try {
+            return period1.minus(period2);
+        } catch (DateTimeException | ArithmeticException ex) {
+            throw new DateTimeOverflowException(ex);
+        }
+    }
+
+    /**
+     * Multiply a duration by a scalar.
+     *
+     * @param duration the duration to multiply
+     * @param scalar the scalar to multiply by
+     * @return {@code null} if either input is {@code null}; otherwise the duration multiplied by the scalar
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows
+     */
+    public static Duration multiply(final Duration duration, final long scalar) {
+        if (duration == null || scalar == NULL_LONG) {
+            return null;
+        }
+
+        try {
+            return duration.multipliedBy(scalar);
+        } catch (DateTimeException | ArithmeticException ex) {
+            throw new DateTimeOverflowException(ex);
+        }
+    }
+
+    /**
+     * Multiply a duration by a scalar.
+     *
+     * @param duration the duration to multiply
+     * @param scalar the scalar to multiply by
+     * @return {@code null} if either input is {@code null}; otherwise the duration multiplied by the scalar
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows
+     */
+    public static Duration multiply(final long scalar, final Duration duration) {
+        return multiply(duration, scalar);
+    }
+
+    /**
+     * Multiply a period by a scalar.
+     *
+     * @param period the period to multiply
+     * @param scalar the scalar to multiply by
+     * @return {@code null} if either input is {@code null}; otherwise the period multiplied by the scalar
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows
+     */
+    public static Period multiply(final Period period, final int scalar) {
+        if (period == null || scalar == NULL_INT) {
+            return null;
+        }
+
+        try {
+            return period.multipliedBy(scalar);
+        } catch (DateTimeException | ArithmeticException ex) {
+            throw new DateTimeOverflowException(ex);
+        }
+    }
+
+    /**
+     * Multiply a period by a scalar.
+     *
+     * @param period the period to multiply
+     * @param scalar the scalar to multiply by
+     * @return {@code null} if either input is {@code null}; otherwise the period multiplied by the scalar
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows
+     */
+    public static Period multiply(final int scalar, final Period period) {
+        return multiply(period, scalar);
+    }
+
+    /**
+     * Divide a duration by a scalar.
+     *
+     * @param duration the duration to divide
+     * @param scalar the scalar to divide by
+     * @return {@code null} if either input is {@code null}; otherwise the duration divide by the scalar
+     * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows
+     */
+    public static Duration divide(final Duration duration, final long scalar) {
+        if (duration == null || scalar == NULL_LONG) {
+            return null;
+        }
+
+        try {
+            return duration.dividedBy(scalar);
+        } catch (DateTimeException | ArithmeticException ex) {
+            throw new DateTimeOverflowException(ex);
+        }
     }
 
     /**
