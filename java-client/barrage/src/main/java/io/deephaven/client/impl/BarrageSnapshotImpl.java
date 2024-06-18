@@ -63,8 +63,6 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
     private final BarrageTable resultTable;
     private final CompletableFuture<Table> future;
 
-    private volatile BitSet expectedColumns;
-
     private volatile int connected = 1;
     private static final AtomicIntegerFieldUpdater<BarrageSnapshotImpl> CONNECTED_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(BarrageSnapshotImpl.class, "connected");
@@ -209,9 +207,6 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
             alreadyUsed = true;
         }
 
-        // store this for streamreader parser
-        expectedColumns = columns;
-
         // Send the snapshot request:
         observer.onNext(FlightData.newBuilder()
                 .setAppMetadata(ByteStringAccess.wrap(makeRequestInternal(viewport, columns, reverseViewport, options)))
@@ -355,8 +350,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
         @Override
         public BarrageMessage parse(final InputStream stream) {
-            return streamReader.safelyParseFrom(options, expectedColumns, columnChunkTypes, columnTypes, componentTypes,
-                    stream);
+            return streamReader.safelyParseFrom(options, columnChunkTypes, columnTypes, componentTypes, stream);
         }
     }
 
