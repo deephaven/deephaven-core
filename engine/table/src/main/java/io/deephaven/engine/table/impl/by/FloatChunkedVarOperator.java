@@ -113,18 +113,18 @@ final class FloatChunkedVarOperator extends FpChunkedNonNormalCounter implements
                 resultColumn.set(destination, std ? Math.sqrt(variance) : variance);
             }
             return true;
-        } else if (forceNanResult) {
+        }
+        if (forceNanResult) {
             resultColumn.set(destination, Double.NaN);
             return true;
-        } else {
-            final long totalNormalCount = nonNullCounter.getCountUnsafe(destination);
-            if (totalNormalCount == 0) {
-                resultColumn.set(destination, NULL_DOUBLE);
-                return true;
-            } else if (totalNormalCount == 1) {
-                resultColumn.set(destination, Double.NaN);
-                return true;
-            }
+        }
+        final long totalNormalCount = nonNullCounter.getCountUnsafe(destination);
+        if (totalNormalCount == 0) {
+            resultColumn.set(destination, NULL_DOUBLE);
+            return true;
+        } else if (totalNormalCount == 1) {
+            resultColumn.set(destination, Double.NaN);
+            return true;
         }
         return false;
     }

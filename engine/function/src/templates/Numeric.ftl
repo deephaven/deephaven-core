@@ -370,9 +370,11 @@ public class Numeric {
         try ( final ${pt.vectorIterator} vi = values.iterator() ) {
             while ( vi.hasNext() ) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
+                <#if pt.valueType.isFloat >
                 if (isNaN(c)) {
                     return Double.NaN;
                 }
+                </#if>
                 if (!isNull(c)) {
                     sum += c;
                     count++;
@@ -431,12 +433,14 @@ public class Numeric {
         try ( final ${pt.vectorIterator} vi = values.iterator() ) {
             while ( vi.hasNext() ) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
+                <#if pt.valueType.isFloat >
                 if (isNaN(c)) {
                     return Double.NaN;
                 }
                 if (isInf(c)) {
                     return Double.POSITIVE_INFINITY;
                 }
+                </#if>
                 if (!isNull(c)) {
                     sum += Math.abs(c);
                     count++;
@@ -504,9 +508,11 @@ public class Numeric {
         try ( final ${pt.vectorIterator} vi = values.iterator() ) {
             while ( vi.hasNext() ) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
+                <#if pt.valueType.isFloat >
                 if (isNaN(c) || isInf(c)) {
                     return Double.NaN;
                 }
+                </#if>
                 if (!isNull(c)) {
                     sum += (double)c;
                     sum2 += (double)c * (double)c;
@@ -619,6 +625,7 @@ public class Numeric {
         double count = 0;
         double count2 = 0;
         long nullCount = 0;
+        long valueCount = 0;
 
         try (
             final ${pt.vectorIterator} vi = values.iterator();
@@ -627,17 +634,22 @@ public class Numeric {
             while (vi.hasNext()) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
                 final ${pt2.primitive} w = wi.${pt2.iteratorNext}();
+                <#if pt.valueType.isFloat >
                 if (isNaN(c) || isInf(c)) {
                     return Double.NaN;
                 }
+                </#if>
+                <#if pt2.valueType.isFloat >
                 if (isNaN(w) || isInf(w)) {
                     return Double.NaN;
                 }
+                </#if>
                 if (!isNull(c) && !isNull(w)) {
                     sum += w * c;
                     sum2 += w * c * c;
                     count += w;
                     count2 += w * w;
+                    valueCount++;
                 } else {
                     nullCount++;
                 }
@@ -649,7 +661,7 @@ public class Numeric {
         }
 
         // Return NaN if overflow or too few values to compute variance.
-        if (count <= 1 || Double.isInfinite(sum) || Double.isInfinite(sum2)) {
+        if (valueCount <= 1 || Double.isInfinite(sum) || Double.isInfinite(sum2)) {
             return Double.NaN;
         }
 
@@ -921,7 +933,7 @@ public class Numeric {
             }
         }
 
-        return s == NULL_DOUBLE ? NULL_DOUBLE : s * Math.sqrt(sumw2/sumw/sumw);
+        return s * Math.sqrt(sumw2/sumw/sumw);
     }
 
     </#if>
@@ -1280,51 +1292,63 @@ public class Numeric {
         if (isNaN(sorted[sorted.length - 1])) {
             return Double.NaN; // Any NaN will pollute the result and NaN always sorted to the end.
         }
-        </#if>
 
         int nullStart = -1;
         int nullCount = 0;
-
         for (int i = 0; i < n; i++) {
             final ${pt.primitive} val = sorted[i];
             if (val > ${pt.null}) {
                 break; // no more NULL possible
-            } else if (nullStart == -1) {
-                if (isNull(val)) {
-                    nullStart = i;
-                    nullCount++;
-                }
-            } else if (isNull(val)) {
+            }
+            if (isNull(val)) {
                 nullCount++;
+                if (nullStart == -1) {
+                    nullStart = i;
+                }
             }
         }
+        <#else>
+        int nullCount = 0;
+        for (int i = 0; i < n && isNull(sorted[i]); i++) {
+            nullCount++;
+            <#if pt.valueType.isFloat >
+            if (nullStart == -1) {
+                nullStart = i;
+            }
+            </#if>
+        }
+        </#if>
 
         if (nullCount == n) {
             return NULL_DOUBLE;
-        } else if (nullCount > 0) {
-            n -= nullCount;
-            <#if pt.valueType.isFloat >
-            if (nullStart > 0) {
-                final int medianIndex = n / 2;
-                if (n % 2 == 0) {
-                    final int idx1 = (medianIndex - 1) >= nullStart ? (medianIndex - 1) + nullCount : (medianIndex - 1);
-                    final int idx2 = medianIndex >= nullStart ? medianIndex + nullCount : medianIndex;
-                    return 0.5 * (sorted[idx1] + sorted[idx2]);
-                }
-                final int adjustedIndex = medianIndex >= nullStart ? medianIndex + nullCount : medianIndex;
-                return sorted[adjustedIndex];
-            }
-            </#if>
-            if (n % 2 == 0) {
-                int index = n / 2;
-                return 0.5 * (sorted[n / 2 - 1 + nullCount] + sorted[n / 2 + nullCount]);
-            }
-            return sorted[n / 2 + nullCount];
         }
-        if (n % 2 == 0)
-            return 0.5 * (sorted[n / 2 - 1] + sorted[n / 2]);
-        return sorted[n / 2];
+        if (nullCount > 0) {
+            n -= nullCount;
+            final int medianIndex = n / 2;
+            if (n % 2 == 0) {
+            <#if pt.valueType.isFloat >
+                final int idx1 = (medianIndex - 1) < nullStart ? (medianIndex - 1) : (medianIndex - 1) + nullCount;
+                final int idx2 =  medianIndex < nullStart ? medianIndex : medianIndex + nullCount;
+            <#else>
+                final int idx1 = (medianIndex - 1) + nullCount;
+                final int idx2 = medianIndex + nullCount;
+            </#if>
+                return 0.5 * (sorted[idx1] + sorted[idx2]);
+            }
+            <#if pt.valueType.isFloat >
+            final int adjustedIndex = medianIndex < nullStart ? medianIndex : medianIndex + nullCount;
+            <#else>
+            final int adjustedIndex = medianIndex + nullCount;
+            </#if>
+            return sorted[adjustedIndex];
+        }
+        final int medianIndex = n / 2;
+        if (n % 2 == 0) {
+            return 0.5 * (sorted[medianIndex - 1] + sorted[medianIndex]);
+        }
+        return sorted[medianIndex];
     }
+
 
     /**
      * Returns the percentile. {@code null} input values are ignored but {@code NaN} values will poison the computation,
@@ -1361,10 +1385,6 @@ public class Numeric {
 
         int n = values.intSize("percentile");
 
-        if (n == 0) {
-            return ${pt.null};
-        }
-
         ${pt.primitive}[] sorted = values.copyToArray();
         Arrays.sort(sorted);
 
@@ -1372,38 +1392,45 @@ public class Numeric {
         if (isNaN(sorted[sorted.length - 1])) {
             return ${pt.boxed}.NaN; // Any NaN will pollute the result and NaN always sorted to the end.
         }
-        </#if>
-
         int nullStart = -1;
         int nullCount = 0;
-
         for (int i = 0; i < n; i++) {
             final ${pt.primitive} val = sorted[i];
             if (val > ${pt.null}) {
                 break; // no more NULL possible
-            } else if (nullStart == -1) {
-                if (isNull(val)) {
-                    nullStart = i;
-                    nullCount++;
-                }
-            } else if (isNull(val)) {
+            }
+            if (isNull(val)) {
                 nullCount++;
+                if (nullStart == -1) {
+                    nullStart = i;
+                }
             }
         }
+        <#else>
+        int nullCount = 0;
+        for (int i = 0; i < n && isNull(sorted[i]); i++) {
+            nullCount++;
+            <#if pt.valueType.isFloat >
+            if (nullStart == -1) {
+                nullStart = i;
+            }
+            </#if>
+        }
+        </#if>
 
         if (nullCount == n) {
             return ${pt.null};
-        } else if (nullCount > 0) {
+        }
+        if (nullCount > 0) {
             n -= nullCount;
             <#if pt.valueType.isFloat >
-            if (nullStart > 0) {
-                int idx = (int) Math.round(percentile * (n - 1));
-                final int adjustedIndex = idx >= nullStart ? idx + nullCount : idx;
-                return sorted[adjustedIndex];
-            }
-            </#if>
+            final int idx = (int) Math.round(percentile * (n - 1));
+            final int adjustedIndex = idx >= nullStart ? idx + nullCount : idx;
+            return sorted[adjustedIndex];
+            <#else>
             int idx = (int) Math.round(percentile * (n - 1));
             return sorted[idx + nullCount];
+            </#if>
         }
         int idx = (int) Math.round(percentile * (n - 1));
         return sorted[idx];
@@ -1487,12 +1514,16 @@ public class Numeric {
             while (v0i.hasNext()) {
                 final ${pt.primitive} v0 = v0i.${pt.iteratorNext}();
                 final ${pt2.primitive} v1 = v1i.${pt2.iteratorNext}();
+                <#if pt.valueType.isFloat >
                 if (isNaN(v0) || isInf(v0)) {
                     return Double.NaN;
                 }
+                </#if>
+                <#if pt2.valueType.isFloat >
                 if (isNaN(v1) || isInf(v1)) {
                     return Double.NaN;
                 }
+                </#if>
 
                 if (!isNull(v0) && !isNull(v1)) {
                     sum0 += v0;
@@ -1588,12 +1619,16 @@ public class Numeric {
             while (v0i.hasNext()) {
                 final ${pt.primitive} v0 = v0i.${pt.iteratorNext}();
                 final ${pt2.primitive} v1 = v1i.${pt2.iteratorNext}();
+                <#if pt.valueType.isFloat >
                 if (isNaN(v0) || isInf(v0)) {
                     return Double.NaN;
                 }
+                </#if>
+                <#if pt2.valueType.isFloat >
                 if (isNaN(v1) || isInf(v1)) {
                     return Double.NaN;
                 }
+                </#if>
 
                 if (!isNull(v0) && !isNull(v1)) {
                     sum0 += v0;
@@ -2904,12 +2939,16 @@ public class Numeric {
             while (vi.hasNext()) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
                 final ${pt2.primitive} w = wi.${pt2.iteratorNext}();
+                <#if pt.valueType.isFloat >
                 if (isNaN(c)) {
                     return Double.NaN;
                 }
+                </#if>
+                <#if pt2.valueType.isFloat >
                 if (isNaN(w)) {
                     return Double.NaN;
                 }
+                </#if>
                 if (!isNull(c) && !isNull(w)) {
                     vsum += c * w;
                     wsum += w;

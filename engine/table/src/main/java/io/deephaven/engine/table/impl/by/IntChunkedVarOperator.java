@@ -140,7 +140,8 @@ class IntChunkedVarOperator implements IterativeChunkedAggregationOperator {
         if (totalNormalCount == 0) {
             resultColumn.set(destination, NULL_DOUBLE);
             return true;
-        } else if (totalNormalCount == 1) {
+        }
+        if (totalNormalCount == 1) {
             resultColumn.set(destination, Double.NaN);
             return true;
         }
