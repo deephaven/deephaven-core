@@ -172,8 +172,22 @@ public class WhereFilterFactory {
             case "<=":
             case ">=":
                 if (mirrored) {
-                    final String dir = op.substring(0, 1);
-                    op = op.replaceFirst(dir, dir.equals("<") ? ">" : "<");
+                    switch (op) {
+                        case "<":
+                            op = ">";
+                            break;
+                        case "<=":
+                            op = ">=";
+                            break;
+                        case ">":
+                            op = "<";
+                            break;
+                        case ">=":
+                            op = "<=";
+                            break;
+                        default:
+                            throw new IllegalStateException("Unexpected operator: " + op);
+                    }
                 }
                 log.debug().append("WhereFilterFactory creating RangeFilter for expression: ")
                         .append(expression).endl();
