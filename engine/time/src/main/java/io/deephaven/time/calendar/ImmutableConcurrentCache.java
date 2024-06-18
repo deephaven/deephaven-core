@@ -70,22 +70,13 @@ class ImmutableConcurrentCache<V extends ImmutableConcurrentCache.IntKeyedValue>
         }
     }
 
-    private static class KeyDef<V extends IntKeyedValue> extends KeyedIntObjectKey.Strict<V> {
+    private static class KeyDef<V extends IntKeyedValue> extends KeyedIntObjectKey.BasicStrict<V> {
 
         @Override
         public int getIntKey(V v) {
             return v.getKey();
         }
 
-        @Override
-        public int hashIntKey(int i) {
-            return i;
-        }
-
-        @Override
-        public boolean equalIntKey(int i, V v) {
-            return i == v.getKey();
-        }
     }
 
     private final IntFunction<V> valueComputer;
