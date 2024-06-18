@@ -49,4 +49,14 @@ public final class CachingSupplier<OUTPUT_TYPE> implements Supplier<OUTPUT_TYPE>
         }
         return cachedResult;
     }
+
+    public OUTPUT_TYPE getIfCached() {
+        if (hasCachedResult) { // force a volatile read
+            if (errorResult != null) {
+                throw errorResult;
+            }
+            return cachedResult;
+        }
+        return null;
+    }
 }

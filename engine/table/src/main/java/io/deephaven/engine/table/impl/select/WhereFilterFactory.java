@@ -7,8 +7,6 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.filter.FilterPattern;
 import io.deephaven.api.filter.FilterPattern.Mode;
 import io.deephaven.base.Pair;
-import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.QueryScope;
 import io.deephaven.api.expression.AbstractExpressionFactory;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
@@ -22,6 +20,7 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.annotations.VisibleForTesting;
+import io.deephaven.util.datastructures.CachingSupplier;
 import io.deephaven.util.text.SplitIgnoreQuotes;
 import org.jetbrains.annotations.NotNull;
 
@@ -83,12 +82,10 @@ public class WhereFilterFactory {
                 final boolean icase = matcher.group(2) != null;
                 final boolean inverted = matcher.group(3) != null;
                 final String[] values = new SplitIgnoreQuotes().split(matcher.group(4), ',');
-                final FormulaParserConfiguration parserConfiguration = (FormulaParserConfiguration) args[0];
 
                 log.debug().append("WhereFilterFactory creating MatchFilter for expression: ").append(expression)
                         .endl();
                 return new MatchFilter(
-                        expression, parserConfiguration,
                         icase ? MatchFilter.CaseSensitivity.IgnoreCase : MatchFilter.CaseSensitivity.MatchCase,
                         inverted ? MatchFilter.MatchType.Inverted : MatchFilter.MatchType.Regular,
                         columnName,
@@ -163,7 +160,8 @@ public class WhereFilterFactory {
                 log.debug().append("WhereFilterFactory creating MatchFilter for expression: ").append(expression)
                         .endl();
                 return new MatchFilter(
-                        expression, parserConfiguration,
+                        new CachingSupplier<>(
+                                () -> ConditionFilter.createConditionFilter(expression, parserConfiguration)),
                         CaseSensitivity.MatchCase,
                         inverted ? MatchType.Inverted : MatchType.Regular,
                         columnName,
@@ -173,20 +171,13 @@ public class WhereFilterFactory {
             case ">":
             case "<=":
             case ">=":
-                try {
-                    if (mirrored) {
-                        final String dir = op.substring(0, 1);
-                        op = op.replaceFirst(dir, dir.equals("<") ? ">" : "<");
-                    }
-                    log.debug().append("WhereFilterFactory creating RangeFilter for expression: ")
-                            .append(expression).endl();
-                    return new RangeFilter(columnName, op, value, expression, parserConfiguration);
-                } catch (Exception e) {
-                    log.warn().append("WhereFilterFactory could not make RangeFilter for expression: ")
-                            .append(expression).append(" due to ").append(e)
-                            .append(" Creating ConditionFilter instead.").endl();
-                    return ConditionFilter.createConditionFilter(expression, parserConfiguration);
+                if (mirrored) {
+                    final String dir = op.substring(0, 1);
+                    op = op.replaceFirst(dir, dir.equals("<") ? ">" : "<");
                 }
+                log.debug().append("WhereFilterFactory creating RangeFilter for expression: ")
+                        .append(expression).endl();
+                return new RangeFilter(columnName, op, value, expression, parserConfiguration);
 
             default:
                 throw new IllegalStateException("Unexpected operator: " + op);
