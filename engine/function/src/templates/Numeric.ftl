@@ -1311,11 +1311,6 @@ public class Numeric {
         int nullCount = 0;
         for (int i = 0; i < n && isNull(sorted[i]); i++) {
             nullCount++;
-            <#if pt.valueType.isFloat >
-            if (nullStart == -1) {
-                nullStart = i;
-            }
-            </#if>
         }
         </#if>
 
@@ -1410,11 +1405,6 @@ public class Numeric {
         int nullCount = 0;
         for (int i = 0; i < n && isNull(sorted[i]); i++) {
             nullCount++;
-            <#if pt.valueType.isFloat >
-            if (nullStart == -1) {
-                nullStart = i;
-            }
-            </#if>
         }
         </#if>
 
