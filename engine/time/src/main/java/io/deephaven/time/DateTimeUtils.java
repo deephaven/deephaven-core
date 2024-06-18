@@ -1680,7 +1680,8 @@ public class DateTimeUtils {
      *
      * @param localDate starting local date
      * @param period time period
-     * @return {@code null} if either input is {@code null}; otherwise the starting local date plus the specified time period
+     * @return {@code null} if either input is {@code null}; otherwise the starting local date plus the specified time
+     *         period
      * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows
      */
     @ScriptApi
@@ -1949,7 +1950,8 @@ public class DateTimeUtils {
      *
      * @param localDate starting local date
      * @param period time period
-     * @return {@code null} if either input is {@code null}; otherwise the starting local date minus the specified time period
+     * @return {@code null} if either input is {@code null}; otherwise the starting local date minus the specified time
+     *         period
      * @throws DateTimeOverflowException if the datetime arithmetic overflows or underflows
      */
     @ScriptApi
