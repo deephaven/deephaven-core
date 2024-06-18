@@ -53,14 +53,10 @@ def server(host, port, jvm_args, extra_classpath, default_jvm_args):
     )
     click.echo("Press Control-C to exit")
 
-    def signal_handler(sig, frame):
+    try:
+        while True:
+            input()
+    except KeyboardInterrupt:
+        # signal_handler should already be called
         click.echo("Exiting Deephaven...")
         sys.exit(0)
-
-    signal.signal(signal.SIGINT, signal_handler)
-    try:
-        signal.pause()
-    except AttributeError:
-        # signal.pause() is not available on Windows
-        while True:
-            input('')
