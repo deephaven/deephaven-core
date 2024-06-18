@@ -9,7 +9,6 @@ from __future__ import annotations
 import jpy
 
 from deephaven import DHError
-from deephaven.jcompat import j_hashmap
 from deephaven.table import Table
 
 _JURI = jpy.get_type("java.net.URI")
@@ -216,7 +215,8 @@ def _build_client_config(target_uri: str, tls_root_certs: bytes, extra_headers: 
     j_client_config_builder = _JClientConfig.builder()
     j_client_config_builder.target(_JDeephavenTarget.of(_JURI(target_uri)))
     if extra_headers:
-        j_client_config_builder.putAllExtraHeaders(j_hashmap(extra_headers))
+        for header, value in extra_headers.items():
+            j_client_config_builder.putExtraHeaders(header, value)
     if tls_root_certs:
         j_ssl_config = _JSSLConfig.builder().trust(
             _JTrustCustom.ofX509(tls_root_certs, 0, len(tls_root_certs))).build()
