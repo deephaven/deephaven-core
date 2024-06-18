@@ -411,7 +411,7 @@ def listen(t: Table, listener: Union[Callable, TableListener], description: str 
     The function returns the created TableListenerHandle object whose 'stop' method can be called to stop listening.
     If it goes out of scope and is garbage collected, the listener will stop receiving any table updates.
 
-    Note: Don't do table operation in the listener. Do them beforehand, and add the results as dependencies.
+    Note: Don't do table operations in the listener. Do them beforehand, and add the results as dependencies.
 
     Args:
         t (Table): table to listen to
