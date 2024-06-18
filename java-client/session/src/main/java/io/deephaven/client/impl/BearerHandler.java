@@ -20,6 +20,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static io.deephaven.client.impl.Authentication.AUTHORIZATION_HEADER;
 
@@ -33,7 +34,7 @@ public final class BearerHandler extends CallCredentials implements ClientInterc
 
     // this is really about "authentication" not "authorization"
     public static final String BEARER_PREFIX = "Bearer ";
-    private volatile String bearerToken;
+    private final AtomicReference<BearerTokenState> state = new AtomicReference<>(new BearerTokenState(null, null));
 
     private static Optional<String> parseBearerToken(Metadata metadata) {
         final Iterable<String> authenticationValues = metadata.getAll(AUTHORIZATION_HEADER);
@@ -54,16 +55,18 @@ public final class BearerHandler extends CallCredentials implements ClientInterc
 
     // exposed for flight
     public void setBearerToken(String bearerToken) {
-        String localBearerToken = this.bearerToken;
-        // Only follow through with the volatile write if it's a different value.
-        if (!Objects.equals(localBearerToken, bearerToken)) {
-            this.bearerToken = Objects.requireNonNull(bearerToken);
+        BearerTokenState current;
+        while ((current = state.get()).isRotation(bearerToken)) {
+            final BearerTokenState next = current.rotate(bearerToken);
+            if (state.compareAndSet(current, next)) {
+                break;
+            }
         }
     }
 
     @VisibleForTesting
     public UUID getCurrentToken() {
-        return UUID.fromString(bearerToken);
+        return UUID.fromString(state.get().current);
     }
 
     private void handleMetadata(Metadata metadata) {
@@ -72,18 +75,18 @@ public final class BearerHandler extends CallCredentials implements ClientInterc
 
     // exposed for flight
     String authenticationValue() {
-        return BEARER_PREFIX + bearerToken;
+        return BEARER_PREFIX + state.get().current;
     }
 
     @Override
     public void applyRequestMetadata(RequestInfo requestInfo, Executor appExecutor, MetadataApplier applier) {
-        final String bearerToken = this.bearerToken;
+        final String bearerToken = state.get().current;
         if (bearerToken == null) {
             applier.fail(Status.UNAUTHENTICATED);
             return;
         }
         final Metadata headers = new Metadata();
-        headers.put(AUTHORIZATION_HEADER, authenticationValue());
+        headers.put(AUTHORIZATION_HEADER, BEARER_PREFIX + bearerToken);
         applier.apply(headers);
     }
 
@@ -130,6 +133,24 @@ public final class BearerHandler extends CallCredentials implements ClientInterc
             } finally {
                 super.onClose(status, trailers);
             }
+        }
+    }
+
+    private static class BearerTokenState {
+        private final String previous;
+        private final String current;
+
+        BearerTokenState(String previous, String current) {
+            this.previous = previous;
+            this.current = current;
+        }
+
+        boolean isRotation(String token) {
+            return !Objects.equals(token, current) && !Objects.equals(token, previous);
+        }
+
+        BearerTokenState rotate(String newToken) {
+            return new BearerTokenState(current, newToken);
         }
     }
 }
