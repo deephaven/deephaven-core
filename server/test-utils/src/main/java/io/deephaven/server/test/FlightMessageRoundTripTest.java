@@ -38,7 +38,6 @@ import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
-import io.deephaven.extensions.barrage.util.BarrageChunkAppendingMarshaller;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
@@ -1063,53 +1062,6 @@ public abstract class FlightMessageRoundTripTest {
         assertEquals(deephavenTable.getDefinition(), uploadedTable.getDefinition());
         assertEquals(0, (long) TableTools
                 .diffPair(deephavenTable, uploadedTable, 0, EnumSet.noneOf(TableDiff.DiffItems.class)).getSecond());
-    }
-
-
-    @Test
-    public void testBarrageMessageAppendingMarshaller() {
-        final int size = 100;
-        final Table source = TableTools.emptyTable(size).update("I = ii", "J = `str_` + i");
-        ExecutionContext.getContext().getQueryScope().putParam("test", source);
-
-        // fetch schema over flight
-        final SchemaResult schema = flightClient.getSchema(arrowFlightDescriptorForName("test"));
-        final BarrageUtil.ConvertedArrowSchema convertedSchema = BarrageUtil.convertArrowSchema(schema.getSchema());
-
-        // The wire chunk types are the chunk types that barrage will fill in.
-        final ChunkType[] wireChunkTypes = convertedSchema.computeWireChunkTypes();
-
-        // The wire types are the expected result types of each column.
-        final Class<?>[] wireTypes = convertedSchema.computeWireTypes();
-        final Class<?>[] wireComponentTypes = convertedSchema.computeWireComponentTypes();
-
-        // noinspection unchecked
-        final WritableChunk<Values>[] destChunks = Arrays.stream(wireChunkTypes)
-                .map(chunkType -> chunkType.makeWritableChunk(size)).toArray(WritableChunk[]::new);
-        // zero out the chunks as the marshaller will append to them.
-        Arrays.stream(destChunks).forEach(dest -> dest.setSize(0));
-
-        final MethodDescriptor<Flight.Ticket, Integer> methodDescriptor = BarrageChunkAppendingMarshaller
-                .getClientDoGetDescriptor(wireChunkTypes, wireTypes, wireComponentTypes, destChunks);
-
-        final Ticket ticket = new Ticket("s/test".getBytes(StandardCharsets.UTF_8));
-        final Iterator<Integer> msgIter = ClientCalls.blockingServerStreamingCall(
-                clientChannel, methodDescriptor, CallOptions.DEFAULT,
-                Flight.Ticket.newBuilder().setTicket(ByteString.copyFrom(ticket.getBytes())).build());
-
-        long totalRows = 0;
-        while (msgIter.hasNext()) {
-            totalRows += msgIter.next();
-        }
-        Assert.eq(totalRows, "totalRows", size, "size");
-        final LongChunk<Values> col_i = destChunks[0].asLongChunk();
-        final ObjectChunk<String, Values> col_j = destChunks[1].asObjectChunk();
-        Assert.eq(col_i.size(), "col_i.size()", size, "size");
-        Assert.eq(col_j.size(), "col_j.size()", size, "size");
-        for (int i = 0; i < size; ++i) {
-            Assert.eq(col_i.get(i), "col_i.get(i)", i, "i");
-            Assert.equals(col_j.get(i), "col_j.get(i)", "str_" + i, "str_" + i);
-        }
     }
 
     @Test
