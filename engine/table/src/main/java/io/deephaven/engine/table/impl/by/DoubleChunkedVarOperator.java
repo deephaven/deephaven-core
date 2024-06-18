@@ -176,7 +176,7 @@ final class DoubleChunkedVarOperator extends FpChunkedNonNormalCounter implement
             }
             sumSource.set(destination, newSum);
             sum2Source.set(destination, newSum2);
-        }  else {
+        } else {
             newSum = sumSource.getUnsafe(destination);
             newSum2 = sum2Source.getUnsafe(destination);
         }
