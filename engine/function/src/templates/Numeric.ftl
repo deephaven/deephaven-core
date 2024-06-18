@@ -1414,7 +1414,7 @@ public class Numeric {
             n -= nullCount;
             <#if pt.valueType.isFloat >
             final int idx = (int) Math.round(percentile * (n - 1));
-            final int adjustedIndex = idx >= nullStart ? idx + nullCount : idx;
+            final int adjustedIndex = idx < nullStart ? idx : idx + nullCount;
             return sorted[adjustedIndex];
             <#else>
             int idx = (int) Math.round(percentile * (n - 1));
