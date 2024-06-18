@@ -47,6 +47,13 @@ public class ReplicatePageMaterializers {
     private static final String INSTANT_NANOS_FROM_MICROS_MATERIALIZER_PATH =
             MATERIALIZER_DIR + "InstantNanosFromMicrosMaterializer.java";
 
+    private static final String BIG_DECIMAL_MATERIALIZER_BASE_PATH =
+            MATERIALIZER_DIR + "BigDecimalMaterializerBase.java";
+    private static final String BIG_DECIMAL_FROM_INT_MATERIALIZER_PATH =
+            MATERIALIZER_DIR + "BigDecimalFromIntMaterializer.java";
+    private static final String BIG_DECIMAL_FROM_LONG_MATERIALIZER_PATH =
+            MATERIALIZER_DIR + "BigDecimalFromLongMaterializer.java";
+
     public static void main(String... args) throws IOException {
         charToShortAndByte(TASK, CHAR_MATERIALIZER_PATH, NO_EXCEPTIONS);
 
@@ -128,6 +135,26 @@ public class ReplicatePageMaterializers {
         replaceAll(TASK,
                 INSTANT_NANOS_FROM_MICROS_MATERIALIZER_PATH,
                 INSTANT_NANOS_FROM_MILLIS_MATERIALIZER_PATH,
+                null, NO_EXCEPTIONS, pairs);
+
+        // LocalTimeBase -> BigDecimalBase
+        pairs = new String[][] {
+                {"time.LocalTime", "math.BigDecimal"},
+                {"LocalTime", "BigDecimal"}
+        };
+        replaceAll(TASK,
+                LOCAL_TIME_MATERIALIZER_BASE_PATH,
+                BIG_DECIMAL_MATERIALIZER_BASE_PATH,
+                null, NO_EXCEPTIONS, pairs);
+
+        // BigDecimalFromLong -> BigDecimalFromInt
+        pairs = new String[][] {
+                {"readLong", "readInteger"},
+                {"Long", "Int"}
+        };
+        replaceAll(TASK,
+                BIG_DECIMAL_FROM_LONG_MATERIALIZER_PATH,
+                BIG_DECIMAL_FROM_INT_MATERIALIZER_PATH,
                 null, NO_EXCEPTIONS, pairs);
     }
 }

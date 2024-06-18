@@ -37,6 +37,7 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.BigDecimalUtils;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
+import io.deephaven.parquet.base.BigDecimalParquetBytesCodec;
 import io.deephaven.parquet.base.InvalidParquetFileException;
 import io.deephaven.parquet.base.NullStatistics;
 import io.deephaven.parquet.table.location.ParquetTableLocation;
@@ -1365,6 +1366,16 @@ public final class ParquetTableReadWriteTest {
         }
     }
 
+    @Test
+    public void decimalLogicalTypeTest() {
+        final String path =
+                ParquetTableReadWriteTest.class.getResource("/ReferenceDecimalLogicalType.parquet").getFile();
+        final Table fromDisk = readParquetFileFromGitLFS(new File(path));
+        final Table expected = TableTools.emptyTable(100_000).update(
+                "DecimalIntCol = java.math.BigDecimal.valueOf(ii*12, 5)",
+                "DecimalLongCol = java.math.BigDecimal.valueOf(ii*212, 8)");
+        assertTableEquals(expected, fromDisk);
+    }
 
     @Test
     public void testVectorColumns() {
@@ -1529,7 +1540,7 @@ public final class ParquetTableReadWriteTest {
      */
     private Table maybeFixBigDecimal(Table toFix) {
         final BigDecimalUtils.PrecisionAndScale pas = BigDecimalUtils.computePrecisionAndScale(toFix, "bdColumn");
-        final BigDecimalParquetBytesCodec codec = new BigDecimalParquetBytesCodec(pas.precision, pas.scale, -1);
+        final BigDecimalParquetBytesCodec codec = new BigDecimalParquetBytesCodec(pas.precision, pas.scale);
 
         ExecutionContext.getContext()
                 .getQueryScope()

@@ -16,8 +16,6 @@ import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.AbstractColumnLocation;
 import io.deephaven.engine.table.impl.sources.regioned.*;
 import io.deephaven.parquet.base.ColumnChunkReader;
-import io.deephaven.parquet.table.BigDecimalParquetBytesCodec;
-import io.deephaven.parquet.table.BigIntegerParquetBytesCodec;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.metadata.CodecInfo;
 import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
@@ -44,6 +42,9 @@ import java.util.function.LongFunction;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+
+import static io.deephaven.parquet.base.BigDecimalParquetBytesCodec.verifyScaleAndPrecision;
+import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.BINARY;
 
 final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLocation {
 
@@ -506,37 +507,28 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                 final LogicalTypeAnnotation.DecimalLogicalTypeAnnotation decimalLogicalType) {
             final PrimitiveType type = columnChunkReader.getType();
             final PrimitiveType.PrimitiveTypeName typeName = type.getPrimitiveTypeName();
-            switch (typeName) {
-                case INT32:
-                    return Optional.of(ToBigDecimalFromIntPage.create(
-                            componentType, decimalLogicalType.getPrecision(), decimalLogicalType.getScale()));
-                case INT64:
-                    return Optional.of(ToBigDecimalFromLongPage.create(
-                            componentType, decimalLogicalType.getPrecision(), decimalLogicalType.getScale()));
-                case FIXED_LEN_BYTE_ARRAY:
-                case BINARY:
-                    final int encodedSizeInBytes =
-                            (typeName == PrimitiveType.PrimitiveTypeName.BINARY) ? -1 : type.getTypeLength();
-                    if (BigDecimal.class.equals(componentType)) {
-                        return Optional.of(
-                                ToObjectPage.create(
-                                        BigDecimal.class,
-                                        new BigDecimalParquetBytesCodec(
-                                                decimalLogicalType.getPrecision(), decimalLogicalType.getScale(),
-                                                encodedSizeInBytes),
-                                        columnChunkReader.getDictionarySupplier()));
-                    } else if (BigInteger.class.equals(componentType)) {
-                        return Optional.of(
-                                ToObjectPage.create(
-                                        BigInteger.class,
-                                        new BigIntegerParquetBytesCodec(encodedSizeInBytes),
-                                        columnChunkReader.getDictionarySupplier()));
-                    }
-
-                    // We won't blow up here, Maybe someone will provide us a codec instead.
-                default:
-                    return Optional.empty();
+            final int encodedSizeInBytes = (typeName == BINARY) ? -1 : type.getTypeLength();
+            if (BigDecimal.class.equals(componentType)) {
+                try {
+                    verifyScaleAndPrecision(decimalLogicalType.getScale(), decimalLogicalType.getPrecision(), typeName);
+                } catch (final IllegalArgumentException exception) {
+                    throw new TableDataException(
+                            "Invalid scale and precision for column " + name + ": " + exception.getMessage());
+                }
+                return Optional.of(ToBigDecimalPage.create(
+                        componentType,
+                        decimalLogicalType.getPrecision(),
+                        decimalLogicalType.getScale(),
+                        columnChunkReader.getDictionarySupplier(),
+                        encodedSizeInBytes));
+            } else if (BigInteger.class.equals(componentType)) {
+                return Optional.of(ToBigIntegerPage.create(
+                        componentType,
+                        columnChunkReader.getDictionarySupplier(),
+                        encodedSizeInBytes));
             }
+            // We won't blow up here, Maybe someone will provide us a codec instead.
+            return Optional.empty();
         }
     }
 }
