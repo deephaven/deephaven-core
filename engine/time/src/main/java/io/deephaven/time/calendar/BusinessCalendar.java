@@ -148,12 +148,12 @@ public class BusinessCalendar extends Calendar {
                 nonBusinessDates);
     }
 
-    private SummaryData computeMonthSummary(final int yearMonth) {
-        final int year = yearMonth / 100;
-        final int month = yearMonth % 100;
+    private SummaryData computeMonthSummary(final int key) {
+        final int year = YearMonthSummaryCache.yearFromMonthKey(key);
+        final int month = YearMonthSummaryCache.monthFromMonthKey(key);
         final LocalDate startDate = LocalDate.of(year, month, 1);
         final LocalDate endDate = startDate.plusMonths(1); // exclusive
-        return summarize(yearMonth, startDate, endDate);
+        return summarize(key, startDate, endDate);
     }
 
     private SummaryData computeYearSummary(final int year) {
@@ -208,13 +208,28 @@ public class BusinessCalendar extends Calendar {
         return summaryCache.getYearSummary(year);
     }
 
+    /**
+     * Creates a key for the schedules cache.
+     *
+     * @param date date
+     * @return key
+     */
+    static int schedulesCacheKey(final LocalDate date) {
+        return date.getYear() * 10000 + date.getMonthValue() * 100 + date.getDayOfMonth();
+    }
 
-    private ImmutableConcurrentCache.Pair<CalendarDay<Instant>> computeCalendarDay(final int yearMonthDay) {
-        final int year = yearMonthDay / 10000;
-        final int monthDay = yearMonthDay % 10000;
-        final int month = monthDay / 100;
-        final int day = monthDay % 100;
-        final LocalDate date = LocalDate.of(year, month, day);
+    /**
+     * Creates a date from a schedules cache key.
+     *
+     * @param key key
+     * @return date
+     */
+    static LocalDate dateFromSchedulesCacheKey(final int key) {
+        return LocalDate.of(key / 10000, (key % 10000) / 100, key % 100);
+    }
+
+    private ImmutableConcurrentCache.Pair<CalendarDay<Instant>> computeCalendarDay(final int key) {
+        final LocalDate date = dateFromSchedulesCacheKey(key);
         final CalendarDay<Instant> h = holidays.get(date);
         final CalendarDay<Instant> v;
 
@@ -226,7 +241,7 @@ public class BusinessCalendar extends Calendar {
             v = CalendarDay.toInstant(standardBusinessDay, date, timeZone());
         }
 
-        return new ImmutableConcurrentCache.Pair<>(yearMonthDay, v);
+        return new ImmutableConcurrentCache.Pair<>(key, v);
     }
 
     // endregion
@@ -358,8 +373,8 @@ public class BusinessCalendar extends Calendar {
                     + " lastValidDate=" + lastValidDate);
         }
 
-        final int yearMonthDay = date.getYear() * 10000 + date.getMonthValue() * 100 + date.getDayOfMonth();
-        return schedulesCache.computeIfAbsent(yearMonthDay).getValue();
+        final int key = schedulesCacheKey(date);
+        return schedulesCache.computeIfAbsent(key).getValue();
     }
 
     /**

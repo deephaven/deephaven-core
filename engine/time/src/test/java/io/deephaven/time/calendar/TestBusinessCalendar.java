@@ -43,6 +43,17 @@ public class TestBusinessCalendar extends TestCalendar {
         calendar = bCalendar;
     }
 
+    public void testSchedulesCacheKeys() {
+        final int y = 2023;
+        final int m = 7;
+        final int d = 11;
+        final LocalDate ld = LocalDate.of(y, m, d);
+
+        final int key = BusinessCalendar.schedulesCacheKey(ld);
+        assertEquals(key, y * 10000 + m * 100 + d);
+        assertEquals(ld, BusinessCalendar.dateFromSchedulesCacheKey(key));
+    }
+
     public void testBusinessGetters() {
         assertEquals(schedule, bCalendar.standardBusinessDay());
         assertEquals(schedule.businessNanos(), bCalendar.standardBusinessNanos());

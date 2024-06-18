@@ -9,7 +9,6 @@ import java.time.LocalDate;
 import java.util.Iterator;
 import java.util.Spliterator;
 import java.util.Spliterators;
-import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -21,6 +20,15 @@ public class TestYearMonthSummaryCache extends BaseArrayTestCase {
         Value(int key, String value) {
             super(key, value);
         }
+    }
+
+    public void testKeys() {
+        final int y = 2021;
+        final int m = 3;
+        final int key = YearMonthSummaryCache.monthKey(y, m);
+        assertEquals(key, 2021 * 100 + m);
+        assertEquals(y, YearMonthSummaryCache.yearFromMonthKey(key));
+        assertEquals(m, YearMonthSummaryCache.monthFromMonthKey(key));
     }
 
     public void testGetters() {
