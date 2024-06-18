@@ -165,7 +165,7 @@ public class RangeFilter extends WhereFilterImpl {
             boolean wasAnArrayType = convertor.convertValue(
                     def, value, compilationProcessor.getQueryScopeVariables(), realValue::setValue);
             if (wasAnArrayType) {
-                throw new IllegalArgumentException("RangeConditionFilter does not support array types for column "
+                throw new IllegalArgumentException("RangeFilter does not support array types for column "
                         + columnName + " with value <" + value + ">");
             }
         } catch (final RuntimeException err) {
