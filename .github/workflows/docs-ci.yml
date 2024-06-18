@@ -2,7 +2,7 @@ name: Docs CI
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [ 'main', 'rc/v*' ]
   push:
     branches: [ 'main', 'release/v*' ]
 
