@@ -21,10 +21,10 @@ import org.gradle.internal.Actions
 class Classpaths {
 
     static final String ELEMENTAL_GROUP = 'com.google.elemental2'
-    static final String ELEMENTAL_VERSION = '1.1.0'
+    static final String ELEMENTAL_VERSION = '1.2.1'
 
-    static final String GWT_GROUP = 'com.google.gwt'
-    static final String GWT_VERSION = '2.9.0'
+    static final String GWT_GROUP = 'org.gwtproject'
+    static final String GWT_VERSION = '2.11.0'
 
     static final String JAVA_PARSER_GROUP = 'com.github.javaparser'
     static final String JAVA_PARSER_NAME = 'javaparser-core'
@@ -36,11 +36,10 @@ class Classpaths {
     static final String JAVAX_ANNOTATIONS_NAME = 'validation-api'
     static final String JAVAX_ANNOTATIONS_VERSION = '1.0.0.GA'
 
-    static final String JETTY_GROUP = 'org.eclipse.jetty'
-    static final String JETTY_VERSION = '9.4.20.v20190813'
+    static final String JETTY_VERSION = '9.4.44.v20210927'
 
     static final String JS_INTEROP_GROUP = 'com.google.jsinterop'
-    static final String JS_INTEROP_VERSION = '2.0.0'
+    static final String JS_INTEROP_VERSION = '2.0.2'
 
     static final String COMMONS_GROUP = 'org.apache.commons'
 
@@ -52,7 +51,7 @@ class Classpaths {
 
     static final String FLATBUFFER_GROUP = 'com.google.flatbuffers'
     static final String FLATBUFFER_NAME = 'flatbuffers-java'
-    static final String FLATBUFFER_VERSION = '2.0.3'
+    static final String FLATBUFFER_VERSION = '1.12.0'
 
     static final String DAGGER_GROUP = 'com.google.dagger'
     static final String DAGGER_NAME = 'dagger'
@@ -110,7 +109,7 @@ class Classpaths {
 
     static final String JACKSON_GROUP = 'com.fasterxml.jackson'
     static final String JACKSON_NAME = 'jackson-bom'
-    static final String JACKSON_VERSION = '2.14.1'
+    static final String JACKSON_VERSION = '2.17.0'
 
     static final String SSLCONTEXT_GROUP = 'io.github.hakky54'
     static final String SSLCONTEXT_VERSION = '8.1.1'
@@ -158,9 +157,9 @@ class Classpaths {
         if (addDependency(config, GWT_GROUP, name, GWT_VERSION)) {
             // when we add gwt-dev, lets also force asm version, just to be safe.
             name == 'gwt-dev' && config.resolutionStrategy {
-                force 'org.ow2.asm:asm:5.0.3'
-                force 'org.ow2.asm:asm-util:5.0.3'
-                force 'org.ow2.asm:asm-commons:5.0.3'
+                force 'org.ow2.asm:asm:9.2'
+                force 'org.ow2.asm:asm-util:9.2'
+                force 'org.ow2.asm:asm-commons:9.2'
             }
         }
     }
@@ -180,7 +179,7 @@ class Classpaths {
         addDependency config, JS_INTEROP_GROUP, name,
                 // google is annoying, and have different versions released for the same groupId
                 // :base: is the only one that is different, so we'll use it in the ternary.
-                name == 'base'? '1.0.0' : JS_INTEROP_VERSION
+                name == 'base'? '1.0.1' : JS_INTEROP_VERSION
     }
 
     static void inheritElemental(Project p, String name, String configName) {

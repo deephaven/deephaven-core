@@ -6,6 +6,7 @@ package io.deephaven.parquet.base;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Require;
+import io.deephaven.parquet.base.materializers.IntMaterializer;
 import io.deephaven.parquet.compress.CompressorAdapter;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
@@ -206,7 +207,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             @NotNull final SeekableChannelContext channelContext) throws IOException {
         switch (pageHeader.type) {
             case DATA_PAGE:
-                try (final InputStream in = channelsProvider.getInputStream(ch)) {
+                try (final InputStream in = channelsProvider.getInputStream(ch, pageHeader.getCompressed_page_size())) {
                     return readRowCountFromPageV1(readV1Unsafe(in, channelContext));
                 }
             case DATA_PAGE_V2:
@@ -225,12 +226,12 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             @NotNull final SeekableChannelContext channelContext) throws IOException {
         switch (pageHeader.type) {
             case DATA_PAGE:
-                try (final InputStream in = channelsProvider.getInputStream(ch)) {
+                try (final InputStream in = channelsProvider.getInputStream(ch, pageHeader.getCompressed_page_size())) {
                     return readKeysFromPageV1(readV1Unsafe(in, channelContext), keyDest, nullPlaceholder,
                             channelContext);
                 }
             case DATA_PAGE_V2:
-                try (final InputStream in = channelsProvider.getInputStream(ch)) {
+                try (final InputStream in = channelsProvider.getInputStream(ch, pageHeader.getCompressed_page_size())) {
                     return readKeysFromPageV2(readV2Unsafe(in, channelContext), keyDest, nullPlaceholder,
                             channelContext);
                 }
@@ -246,11 +247,11 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             @NotNull final SeekableChannelContext channelContext) throws IOException {
         switch (pageHeader.type) {
             case DATA_PAGE:
-                try (final InputStream in = channelsProvider.getInputStream(ch)) {
+                try (final InputStream in = channelsProvider.getInputStream(ch, pageHeader.getCompressed_page_size())) {
                     return readPageV1(readV1Unsafe(in, channelContext), nullValue, channelContext);
                 }
             case DATA_PAGE_V2:
-                try (final InputStream in = channelsProvider.getInputStream(ch)) {
+                try (final InputStream in = channelsProvider.getInputStream(ch, pageHeader.getCompressed_page_size())) {
                     return readPageV2(readV2Unsafe(in, channelContext), nullValue, channelContext);
                 }
             default:
@@ -344,8 +345,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             final RunLengthBitPackingHybridBufferDecoder rlDecoder,
             final RunLengthBitPackingHybridBufferDecoder dlDecoder,
             final ValuesReader dataReader) throws IOException {
-        final Object result = materialize(PageMaterializer.IntFactory, dlDecoder, rlDecoder, dataReader,
-                nullPlaceholder);
+        final Object result = materialize(IntMaterializer.Factory, dlDecoder, rlDecoder, dataReader, nullPlaceholder);
         if (result instanceof DataWithOffsets) {
             keyDest.put((int[]) ((DataWithOffsets) result).materializeResult);
             return ((DataWithOffsets) result).offsets;

@@ -158,7 +158,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
 
             // Without modifying this.columns (copied and frozen), make sure our key columns are present
             // in the list of columns that we will copy data for the viewport
-            keyColumns.forEach((col, p1, p2) -> {
+            keyColumns.forEach((col, p1) -> {
                 if (this.columns.indexOf(col) == -1) {
                     columns[columns.length] = col;
                 }
@@ -567,8 +567,8 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         keyTableColumns.push(rowDepthCol);
         keyTableColumns.push(actionCol);
         keyTable = connection.newTable(
-                Js.uncheckedCast(keyTableColumns.map((p0, p1, p2) -> p0.getName())),
-                Js.uncheckedCast(keyTableColumns.map((p0, p1, p2) -> p0.getType())),
+                Js.uncheckedCast(keyTableColumns.map((p0, p1) -> p0.getName())),
+                Js.uncheckedCast(keyTableColumns.map((p0, p1) -> p0.getType())),
                 keyTableData,
                 null,
                 null);
@@ -804,7 +804,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         }
         columnsBitset.set(rowDepthCol.getIndex());
         columnsBitset.set(rowExpandedCol.getIndex());
-        keyColumns.forEach((p0, p1, p2) -> {
+        keyColumns.forEach((p0, p1) -> {
             columnsBitset.set(p0.getIndex());
             return null;
         });

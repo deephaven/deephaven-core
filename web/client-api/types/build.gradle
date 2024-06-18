@@ -35,7 +35,7 @@ def typedocAndTarball = Docker.registerDockerTask(project, 'typedoc') {
     }
     dockerfile {
         // share the common base image to keep it simple
-        from 'deephaven/node:local-build'
+        from Docker.localImageName('node')
 
         copyFile('.', '/project')
         environmentVariable('VERSION', npmVersion)

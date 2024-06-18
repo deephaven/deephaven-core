@@ -5,7 +5,8 @@
 import unittest
 
 from deephaven import dtypes, DHError
-from deephaven import read_csv, write_csv
+from deephaven import read_csv, write_csv, new_table
+from deephaven.column import bool_col, byte_col, char_col, short_col, int_col, long_col, float_col, double_col
 from tests.testbase import BaseTestCase
 
 
@@ -65,6 +66,29 @@ class CsvTestCase(BaseTestCase):
 
         with self.assertRaises(DHError):
             t1 = read_csv("tests/data/small_sample.csv", headless=True, header_row=2)
+
+    def test_primitive_types(self):
+        actual = read_csv("tests/data/primitive_types.csv", {
+            'Bool': dtypes.bool_,
+            'Byte': dtypes.byte,
+            'Char': dtypes.char,
+            'Short': dtypes.short,
+            'Int': dtypes.int32,
+            'Long': dtypes.long,
+            'Float': dtypes.float32,
+            'Double': dtypes.double,
+        })
+        expected = new_table([
+            bool_col('Bool', [True]),
+            byte_col('Byte', [42]),
+            char_col('Char', [ord('a')]),
+            short_col('Short', [42]),
+            int_col('Int', [42]),
+            long_col('Long', [42]),
+            float_col('Float', [42.42]),
+            double_col('Double', [42.42])
+        ])
+        self.assert_table_equals(actual, expected)
 
 
 if __name__ == '__main__':

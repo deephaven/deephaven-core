@@ -102,8 +102,8 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public InputStream getInputStream(SeekableByteChannel channel) throws IOException {
-        return wrappedProvider.getInputStream(channel);
+    public InputStream getInputStream(final SeekableByteChannel channel, final int sizeHint) throws IOException {
+        return wrappedProvider.getInputStream(channel, sizeHint);
     }
 
     @Override
@@ -115,7 +115,7 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
         return result == null
                 ? new CachedChannel(wrappedProvider.getWriteChannel(path, append), channelType, pathKey)
                 : result.position(append ? result.size() : 0); // The seek isn't really necessary for append; will be at
-                                                               // end no matter what.
+        // end no matter what.
     }
 
     @Override

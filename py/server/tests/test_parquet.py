@@ -455,6 +455,58 @@ class ParquetTestCase(BaseTestCase):
         schema_msec = table.schema.set(0, pyarrow.field('f', pyarrow.timestamp('ms')))
         timestamp_test_helper(table, schema_msec, 'timestamp_test_msec.parquet')
 
+    def test_timestamp_with_different_units(self):
+        # Create a DataFrame with a Timestamp column
+        df = pandas.DataFrame({
+            "time_ms": pandas.date_range("11:00:00", "11:00:01", freq="1ms"),
+            "time_us": pandas.date_range("11:00:01", "11:00:02", freq="1ms"),
+            "time_ns": pandas.date_range("11:00:02", "11:00:03", freq="1ms")
+        })
+
+        # Sprinkle some nulls
+        df["time_ms"][0] = df["time_ms"][5] = None
+        df["time_us"][0] = df["time_us"][5] = None
+        df["time_ns"][0] = df["time_ns"][5] = None
+
+        # Set the appropriate unit and timezone
+        df['time_ms'] = df["time_ms"].astype("datetime64[ms]").dt.tz_localize('UTC')
+        df['time_us'] = df["time_us"].astype("datetime64[us]").dt.tz_localize('UTC')
+        df['time_ns'] = df["time_ns"].astype("datetime64[ns]").dt.tz_localize('UTC')
+
+        dest = "timestamp_data_from_pd.parquet"
+        df.to_parquet(dest)
+
+        metadata = pyarrow.parquet.read_metadata(dest)
+        ms_col_metadata = str(metadata.row_group(0).column(0))
+        if "isAdjustedToUTC=true" not in ms_col_metadata:
+            self.fail("isAdjustedToUTC is not set to true")
+        if "timeUnit=milliseconds" not in ms_col_metadata:
+            self.fail("timeUnit is not milliseconds")
+        us_col_metadata = str(metadata.row_group(0).column(1))
+        if "isAdjustedToUTC=true" not in us_col_metadata:
+            self.fail("isAdjustedToUTC is not set to true")
+        if "timeUnit=microseconds" not in us_col_metadata:
+            self.fail("timeUnit is not microseconds")
+        ns_col_metadata = str(metadata.row_group(0).column(2))
+        if "isAdjustedToUTC=true" not in ns_col_metadata:
+            self.fail("isAdjustedToUTC is not set to true")
+        if "timeUnit=nanoseconds" not in ns_col_metadata:
+            self.fail("timeUnit is not nanoseconds")
+
+        # Read the parquet file back using deephaven and write it back
+        dh_table_from_disk = read(dest).select()
+        dh_dest = "dh_" + dest
+        write(dh_table_from_disk, dh_dest)
+
+        # Read the new parquet file using pyarrow and compare against original table
+        df_from_disk = pyarrow.parquet.read_table(dh_dest).to_pandas()
+
+        # Deephaven writes timestamps as nsec, so need to convert them back
+        df_from_disk['time_ms'] = df_from_disk["time_ms"].dt.tz_localize(None).astype("datetime64[ms]").dt.tz_localize('UTC')
+        df_from_disk['time_us'] = df_from_disk["time_us"].dt.tz_localize(None).astype("datetime64[us]").dt.tz_localize('UTC')
+        self.assertTrue(df_from_disk.equals(df))
+
+
     def test_read_single_file(self):
         table = empty_table(3).update(
             formulas=["x=i", "y=(double)(i/10.0)", "z=(double)(i*i)"]
@@ -570,9 +622,7 @@ class ParquetTestCase(BaseTestCase):
 
         # Fails since we have a negative read_ahead_count
         with self.assertRaises(DHError):
-            s3.S3Instructions(region_name="us-east-1",
-                              read_ahead_count=-1,
-                              )
+            s3.S3Instructions(read_ahead_count=-1)
 
         # Fails since we provide the key without the secret key
         with self.assertRaises(DHError):
@@ -580,9 +630,8 @@ class ParquetTestCase(BaseTestCase):
                               access_key_id="Some key without secret",
                               )
 
-        s3_instructions = s3.S3Instructions(region_name="us-east-1",
-                                            read_ahead_count=1,
-                                            )
+        s3_instructions = s3.S3Instructions()
+
         # Fails because we don't have the right credentials
         with self.assertRaises(Exception):
             read("s3://dh-s3-parquet-test1/multiColFile.parquet", special_instructions=s3_instructions).select()
@@ -688,13 +737,7 @@ class ParquetTestCase(BaseTestCase):
         shutil.rmtree(".dh_metadata")
 
         second_table = empty_table(10).update(formulas=["x=i*5", "y=(double)(i/5.0)", "z=(double)(i*i*i)"])
-        table_definition = {
-            "x": dtypes.int32,
-            "y": dtypes.double,
-            "z": dtypes.double,
-        }
-        batch_write([first_table, second_table], ["X.parquet", "Y.parquet"], index_columns=[["x"], ["y", "z"]],
-                    table_definition=table_definition)
+        batch_write([first_table, second_table], ["X.parquet", "Y.parquet"], index_columns=[["x"], ["y", "z"]])
         from_disk_first_table = read("X.parquet")
         self.assert_table_equals(first_table, from_disk_first_table)
         from_disk_second_table = read("Y.parquet")
@@ -751,6 +794,30 @@ class ParquetTestCase(BaseTestCase):
         test_v2_pages_helper(dh_table1)
         dh_table2 = self.get_table_with_array_data()
         test_v2_pages_helper(dh_table2)
+
+    def test_batch_write_definition_handling(self):
+        table = empty_table(3).update(
+            formulas=["x=i", "y=(double)(i/10.0)", "z=(double)(i*i)"]
+        )
+        table2 = empty_table(3).update(
+            formulas=["x=i*2", "y=(double)(i/5.0)", "z=(double)(i*i*i)"]
+        )
+        # Should succeed because both tables have the same definition
+        batch_write([table, table2], ["X.parquet", "Y.parquet"])
+        self.assert_table_equals(read("X.parquet"), table)
+        self.assert_table_equals(read("Y.parquet"), table2)
+
+        table_definition = {
+            "x": dtypes.int32,
+            "y": dtypes.double,
+        }
+        batch_write([table, table2], ["X.parquet", "Y.parquet"], table_definition=table_definition)
+        self.assert_table_equals(read("X.parquet"), table.view(["x", "y"]))
+        self.assert_table_equals(read("Y.parquet"), table2.view(["x", "y"]))
+
+        # Fails because we don't provide a table definition and the tables have different definition
+        with self.assertRaises(DHError):
+            batch_write([table, table2.view(["x", "y"])],["X.parquet", "Y.parquet"])
 
 if __name__ == '__main__':
     unittest.main()
