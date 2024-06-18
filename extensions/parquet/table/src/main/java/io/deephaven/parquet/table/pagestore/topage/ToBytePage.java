@@ -2,7 +2,7 @@
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit ToCharPageFromInt and run "./gradlew replicateToPage" to regenerate
+// ****** Edit ToIntPage and run "./gradlew replicateToPage" to regenerate
 //
 // @formatter:off
 package io.deephaven.parquet.table.pagestore.topage;
@@ -11,15 +11,13 @@ import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Any;
 import org.jetbrains.annotations.NotNull;
 
-import static io.deephaven.util.QueryConstants.NULL_BYTE;
+import static io.deephaven.util.QueryConstants.NULL_BYTE_BOXED;
 
-public class ToBytePageFromInt<ATTR extends Any> implements ToPage<ATTR, byte[]> {
+public class ToBytePage<ATTR extends Any> implements ToPage<ATTR, byte[]> {
 
-    private static final ToBytePageFromInt INSTANCE = new ToBytePageFromInt<>();
+    private static final ToBytePage INSTANCE = new ToBytePage<>();
 
-    private static final Integer NULL_BYTE_AS_INT = (int) NULL_BYTE;
-
-    public static <ATTR extends Any> ToBytePageFromInt<ATTR> create(Class<?> nativeType) {
+    public static <ATTR extends Any> ToBytePage<ATTR> create(Class<?> nativeType) {
         if (nativeType == null || byte.class.equals(nativeType)) {
             // noinspection unchecked
             return INSTANCE;
@@ -28,7 +26,7 @@ public class ToBytePageFromInt<ATTR extends Any> implements ToPage<ATTR, byte[]>
         throw new IllegalArgumentException("The native type for a Byte column is " + nativeType.getCanonicalName());
     }
 
-    private ToBytePageFromInt() {}
+    private ToBytePage() {}
 
     @Override
     @NotNull
@@ -45,19 +43,6 @@ public class ToBytePageFromInt<ATTR extends Any> implements ToPage<ATTR, byte[]>
     @Override
     @NotNull
     public final Object nullValue() {
-        return NULL_BYTE_AS_INT;
-    }
-
-    @Override
-    @NotNull
-    public final byte[] convertResult(Object result) {
-        int[] from = (int[]) result;
-        byte[] to = new byte[from.length];
-
-        for (int i = 0; i < from.length; ++i) {
-            to[i] = (byte) from[i];
-        }
-
-        return to;
+        return NULL_BYTE_BOXED;
     }
 }

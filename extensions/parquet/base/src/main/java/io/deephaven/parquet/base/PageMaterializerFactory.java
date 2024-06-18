@@ -5,7 +5,7 @@ package io.deephaven.parquet.base;
 
 import org.apache.parquet.column.values.ValuesReader;
 
-interface PageMaterializerFactory {
+public interface PageMaterializerFactory {
     PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues);
 
     PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues);

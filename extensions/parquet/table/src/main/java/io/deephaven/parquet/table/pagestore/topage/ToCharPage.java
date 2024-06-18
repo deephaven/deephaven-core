@@ -1,21 +1,23 @@
 //
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit ToIntPage and run "./gradlew replicateToPage" to regenerate
+//
+// @formatter:off
 package io.deephaven.parquet.table.pagestore.topage;
 
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Any;
 import org.jetbrains.annotations.NotNull;
 
-import static io.deephaven.util.QueryConstants.NULL_CHAR;
+import static io.deephaven.util.QueryConstants.NULL_CHAR_BOXED;
 
-public class ToCharPageFromInt<ATTR extends Any> implements ToPage<ATTR, char[]> {
+public class ToCharPage<ATTR extends Any> implements ToPage<ATTR, char[]> {
 
-    private static final ToCharPageFromInt INSTANCE = new ToCharPageFromInt<>();
+    private static final ToCharPage INSTANCE = new ToCharPage<>();
 
-    private static final Integer NULL_CHAR_AS_INT = (int) NULL_CHAR;
-
-    public static <ATTR extends Any> ToCharPageFromInt<ATTR> create(Class<?> nativeType) {
+    public static <ATTR extends Any> ToCharPage<ATTR> create(Class<?> nativeType) {
         if (nativeType == null || char.class.equals(nativeType)) {
             // noinspection unchecked
             return INSTANCE;
@@ -24,7 +26,7 @@ public class ToCharPageFromInt<ATTR extends Any> implements ToPage<ATTR, char[]>
         throw new IllegalArgumentException("The native type for a Char column is " + nativeType.getCanonicalName());
     }
 
-    private ToCharPageFromInt() {}
+    private ToCharPage() {}
 
     @Override
     @NotNull
@@ -41,19 +43,6 @@ public class ToCharPageFromInt<ATTR extends Any> implements ToPage<ATTR, char[]>
     @Override
     @NotNull
     public final Object nullValue() {
-        return NULL_CHAR_AS_INT;
-    }
-
-    @Override
-    @NotNull
-    public final char[] convertResult(Object result) {
-        int[] from = (int[]) result;
-        char[] to = new char[from.length];
-
-        for (int i = 0; i < from.length; ++i) {
-            to[i] = (char) from[i];
-        }
-
-        return to;
+        return NULL_CHAR_BOXED;
     }
 }

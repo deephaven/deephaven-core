@@ -67,6 +67,7 @@ task replicateAllSafe {
     dependsOn Tasks.registerMainExecTask(project, 'replicateRegionAndRegionedSourceTests', 'io.deephaven.replicators.ReplicateRegionAndRegionedSourceTests')
 
     dependsOn Tasks.registerMainExecTask(project, 'replicateToPage', 'io.deephaven.replicators.ReplicateToPage')
+    dependsOn Tasks.registerMainExecTask(project, 'replicatePageMaterializers', 'io.deephaven.replicators.ReplicatePageMaterializers')
 
     dependsOn Tasks.registerMainExecTask(project, 'replicateDownsamplingValueTrackers', 'io.deephaven.replicators.ReplicateDownsamplingValueTrackers')
 

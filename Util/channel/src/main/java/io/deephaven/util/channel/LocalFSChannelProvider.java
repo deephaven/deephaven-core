@@ -19,6 +19,8 @@ import java.nio.file.StandardOpenOption;
 import java.util.stream.Stream;
 
 public class LocalFSChannelProvider implements SeekableChannelsProvider {
+    private static final int MAX_READ_BUFFER_SIZE = 1 << 16; // 64 KiB
+
     @Override
     public SeekableChannelContext makeContext() {
         // No additional context required for local FS
@@ -40,9 +42,10 @@ public class LocalFSChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public InputStream getInputStream(SeekableByteChannel channel) {
+    public InputStream getInputStream(final SeekableByteChannel channel, final int sizeHint) {
         // FileChannel is not buffered, need to buffer
-        return new BufferedInputStream(Channels.newInputStreamNoClose(channel));
+        final int bufferSize = Math.min(sizeHint, MAX_READ_BUFFER_SIZE);
+        return new BufferedInputStream(Channels.newInputStreamNoClose(channel), bufferSize);
     }
 
     @Override

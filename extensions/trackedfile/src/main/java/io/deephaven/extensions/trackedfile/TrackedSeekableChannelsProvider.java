@@ -34,6 +34,8 @@ import static io.deephaven.base.FileUtils.FILE_URI_SCHEME;
  */
 final class TrackedSeekableChannelsProvider implements SeekableChannelsProvider {
 
+    private static final int MAX_READ_BUFFER_SIZE = 1 << 16; // 64 KiB
+
     private final TrackedFileHandleFactory fileHandleFactory;
 
     TrackedSeekableChannelsProvider(@NotNull final TrackedFileHandleFactory fileHandleFactory) {
@@ -59,9 +61,10 @@ final class TrackedSeekableChannelsProvider implements SeekableChannelsProvider 
     }
 
     @Override
-    public InputStream getInputStream(SeekableByteChannel channel) {
-        // TrackedSeekableByteChannel is not buffered, need to buffer
-        return new BufferedInputStream(Channels.newInputStreamNoClose(channel));
+    public InputStream getInputStream(SeekableByteChannel channel, int sizeHint) {
+        // The following stream will read from the channel in chunks of bufferSize bytes
+        final int bufferSize = Math.min(sizeHint, MAX_READ_BUFFER_SIZE);
+        return new BufferedInputStream(Channels.newInputStreamNoClose(channel), bufferSize);
     }
 
     @Override
