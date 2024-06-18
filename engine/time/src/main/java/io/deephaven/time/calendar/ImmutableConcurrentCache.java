@@ -107,7 +107,7 @@ class ImmutableConcurrentCache<V extends ImmutableConcurrentCache.IntKeyedValue>
      * @return the value
      * @throws IllegalArgumentException if the value is not found
      */
-    public V get(int key) {
+    public V computeIfAbsent(int key) {
         V existing = cache.get(key);
 
         if (existing != null) {

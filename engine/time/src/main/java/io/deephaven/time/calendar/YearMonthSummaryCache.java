@@ -43,7 +43,7 @@ class YearMonthSummaryCache<T extends ImmutableConcurrentCache.IntKeyedValue> {
      * @return the month summary
      */
     T getMonthSummary(int yearMonth) {
-        return monthCache.get(yearMonth);
+        return monthCache.computeIfAbsent(yearMonth);
     }
 
     /**
@@ -64,7 +64,7 @@ class YearMonthSummaryCache<T extends ImmutableConcurrentCache.IntKeyedValue> {
      * @return the year summary
      */
     T getYearSummary(int year) {
-        return yearCache.get(year);
+        return yearCache.computeIfAbsent(year);
     }
 
     private class YearMonthSummaryIterator implements Iterator<T> {

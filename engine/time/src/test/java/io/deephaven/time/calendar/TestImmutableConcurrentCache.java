@@ -27,27 +27,27 @@ public class TestImmutableConcurrentCache extends BaseArrayTestCase {
         final ImmutableConcurrentCache<Value> cache =
                 new ImmutableConcurrentCache<>(10, TestImmutableConcurrentCache::makeVal);
 
-        assertEquals("A", cache.get(0).getValue());
-        assertEquals("A", cache.get(0).getValue());
+        assertEquals("A", cache.computeIfAbsent(0).getValue());
+        assertEquals("A", cache.computeIfAbsent(0).getValue());
 
-        assertEquals("A", cache.get(0).getValue());
-        assertEquals("B", cache.get(1).getValue());
-        assertEquals("C", cache.get(2).getValue());
+        assertEquals("A", cache.computeIfAbsent(0).getValue());
+        assertEquals("B", cache.computeIfAbsent(1).getValue());
+        assertEquals("C", cache.computeIfAbsent(2).getValue());
 
         try {
-            cache.get(3);
+            cache.computeIfAbsent(3);
             fail("Expected exception");
         } catch (final IllegalArgumentException e) {
             // pass
         }
 
         cache.clear();
-        assertEquals("A", cache.get(0).getValue());
-        assertEquals("B", cache.get(1).getValue());
-        assertEquals("C", cache.get(2).getValue());
+        assertEquals("A", cache.computeIfAbsent(0).getValue());
+        assertEquals("B", cache.computeIfAbsent(1).getValue());
+        assertEquals("C", cache.computeIfAbsent(2).getValue());
 
         try {
-            cache.get(3);
+            cache.computeIfAbsent(3);
             fail("Expected exception");
         } catch (final IllegalArgumentException e) {
             // pass

@@ -359,7 +359,7 @@ public class BusinessCalendar extends Calendar {
         }
 
         final int yearMonthDay = date.getYear() * 10000 + date.getMonthValue() * 100 + date.getDayOfMonth();
-        return schedulesCache.get(yearMonthDay).getValue();
+        return schedulesCache.computeIfAbsent(yearMonthDay).getValue();
     }
 
     /**
