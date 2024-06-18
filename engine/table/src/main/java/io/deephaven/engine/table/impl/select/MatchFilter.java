@@ -340,32 +340,31 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                 @NotNull final String strValue,
                 @NotNull final Map<String, Object> queryScopeVariables,
                 @NotNull final Consumer<Object> valueConsumer) {
-            if (queryScopeVariables.containsKey(strValue)) {
-                Object paramValue = queryScopeVariables.get(strValue);
-                if (paramValue != null && paramValue.getClass().isArray()) {
-                    ArrayTypeUtils.ArrayAccessor<?> accessor = ArrayTypeUtils.getArrayAccessor(paramValue);
-                    for (int ai = 0; ai < accessor.length(); ++ai) {
-                        valueConsumer.accept(convertParamValue(accessor.get(ai)));
-                    }
-                    return true;
-                } else if (paramValue != null && Collection.class.isAssignableFrom(paramValue.getClass())) {
-                    for (final Object paramValueMember : (Collection<?>) paramValue) {
-                        valueConsumer.accept(convertParamValue(paramValueMember));
-                    }
-                    return true;
-                } else {
-                    valueConsumer.accept(convertParamValue(paramValue));
-                }
-            } else {
-                try {
-                    valueConsumer.accept(convertStringLiteral(strValue));
-                } catch (Throwable t) {
-                    throw new IllegalArgumentException("Failed to convert literal value <" + strValue +
-                            "> for column \"" + column.getName() + "\" of type " + column.getDataType().getName(), t);
-                }
+    if (queryScopeVariables.containsKey(strValue)) {
+        Object paramValue = queryScopeVariables.get(strValue);
+        if (paramValue != null && paramValue.getClass().isArray()) {
+            ArrayTypeUtils.ArrayAccessor<?> accessor = ArrayTypeUtils.getArrayAccessor(paramValue);
+            for (int ai = 0; ai < accessor.length(); ++ai) {
+                valueConsumer.accept(convertParamValue(accessor.get(ai)));
             }
-            return false;
+            return true;
         }
+        if (paramValue != null && Collection.class.isAssignableFrom(paramValue.getClass())) {
+            for (final Object paramValueMember : (Collection<?>) paramValue) {
+                valueConsumer.accept(convertParamValue(paramValueMember));
+            }
+            return true;
+        }
+        valueConsumer.accept(convertParamValue(paramValue));
+        return false;
+    }
+    try {
+        valueConsumer.accept(convertStringLiteral(strValue));
+    } catch (Throwable t) {
+        throw new IllegalArgumentException("Failed to convert literal value <" + strValue +
+                "> for column \"" + column.getName() + "\" of type " + column.getDataType().getName(), t);
+    }
+    return false;
     }
 
     public static class ColumnTypeConvertorFactory {
