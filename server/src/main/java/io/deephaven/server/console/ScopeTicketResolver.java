@@ -51,8 +51,8 @@ public class ScopeTicketResolver extends TicketResolverBase {
         // there is no mechanism to wait for a scope variable to resolve; require that the scope variable exists now
         final String scopeName = nameForDescriptor(descriptor, logId);
 
-        QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
-        Object scopeVar = queryScope.unwrapObject(queryScope.readParamValue(scopeName, null));
+        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
+        final Object scopeVar = queryScope.unwrapObject(queryScope.readParamValue(scopeName, null));
         if (scopeVar == null) {
             throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
                     "Could not resolve '" + logId + ": no table exists with name '" + scopeName + "'");
@@ -62,8 +62,12 @@ public class ScopeTicketResolver extends TicketResolverBase {
                     "Could not resolve '" + logId + "': no table exists with name '" + scopeName + "'");
         }
 
-        Table transformed = authorization.transform((Table) scopeVar);
-        Flight.FlightInfo flightInfo =
+        final Table transformed = authorization.transform((Table) scopeVar);
+        if (transformed == null) {
+            throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
+                    "Could not resolve '" + logId + "': no table exists with name '" + scopeName + "'");
+        }
+        final Flight.FlightInfo flightInfo =
                 TicketRouter.getFlightInfo(transformed, descriptor, flightTicketForName(scopeName));
 
         return SessionState.wrapAsExport(flightInfo);

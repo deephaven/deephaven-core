@@ -70,10 +70,12 @@ public class SharedTicketResolver extends TicketResolverBase {
         return session.<Flight.FlightInfo>nonExport()
                 .require(export)
                 .submit(() -> {
-                    final Object result = export.get();
+                    Object result = export.get();
                     if (result instanceof Table) {
-                        final Table table = (Table) authorization.transform(result);
-                        return TicketRouter.getFlightInfo(table, descriptor,
+                        result = authorization.transform(result);
+                    }
+                    if (result instanceof Table) {
+                        return TicketRouter.getFlightInfo((Table) result, descriptor,
                                 FlightExportTicketHelper.descriptorToFlightTicket(descriptor, logId));
                     }
 
@@ -117,8 +119,14 @@ public class SharedTicketResolver extends TicketResolverBase {
         return session.<T>nonExport()
                 .require(sharedVar)
                 .submit(() -> {
-                    final T result = sharedVar.get();
-                    return authorization.transform(result);
+                    T result = sharedVar.get();
+                    result = authorization.transform(result);
+                    if (result == null) {
+                        throw Exceptions.statusRuntimeException(Code.NOT_FOUND, String.format(
+                                "Could not resolve '%s': no shared ticket exists with id '%s'",
+                                logId, toHexString(sharedId)));
+                    }
+                    return result;
                 });
     }
 
