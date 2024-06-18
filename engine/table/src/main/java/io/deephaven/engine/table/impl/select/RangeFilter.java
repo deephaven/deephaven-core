@@ -79,7 +79,7 @@ public class RangeFilter extends WhereFilterImpl {
      * @param conditionString the String representation of a condition for filtering
      * @param value a String representation of the numeric filter value
      * @param expression the original expression prior to being parsed
-     * @param parserConfiguration the parser configuration to useyy
+     * @param parserConfiguration the parser configuration to use
      */
     public RangeFilter(String columnName, String conditionString, String value, String expression,
             FormulaParserConfiguration parserConfiguration) {
