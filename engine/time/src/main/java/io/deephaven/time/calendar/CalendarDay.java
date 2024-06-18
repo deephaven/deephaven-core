@@ -31,7 +31,7 @@ public class CalendarDay<T extends Comparable<T> & Temporal> {
     public static final CalendarDay<LocalTime> HOLIDAY = new CalendarDay<>();
 
     private final TimeRange<T>[] businessTimeRanges;
-    private volatile long businessNanos = -1;
+    private final long businessNanos;
 
     /**
      * Creates a CalendarDay instance.
@@ -65,6 +65,7 @@ public class CalendarDay<T extends Comparable<T> & Temporal> {
         }
 
         this.businessTimeRanges = ranges;
+        this.businessNanos = Arrays.stream(businessTimeRanges).map(TimeRange::nanos).reduce(0L, Long::sum);
     }
 
     /**
@@ -118,15 +119,7 @@ public class CalendarDay<T extends Comparable<T> & Temporal> {
      * @return length of the day in nanoseconds
      */
     public long businessNanos() {
-        // Only read volatile 1x
-        long bn = businessNanos;
-
-        if (bn < 0) {
-            bn = Arrays.stream(businessTimeRanges).map(TimeRange::nanos).reduce(0L, Long::sum);
-            businessNanos = bn;
-        }
-
-        return bn;
+        return businessNanos;
     }
 
     /**
