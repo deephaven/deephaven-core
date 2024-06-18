@@ -113,7 +113,7 @@ public class Calendar {
     /**
      * Clears the cache. This should not generally be used and is provided for benchmarking.
      */
-    public synchronized void clearCache() {
+    synchronized void clearCache() {
         summaryCache.clear();
     }
 

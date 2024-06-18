@@ -100,7 +100,7 @@ public class BusinessCalendar extends Calendar {
     private final int yearCacheEnd;
 
     @Override
-    public synchronized void clearCache() {
+    synchronized void clearCache() {
         super.clearCache();
         schedulesCache.clear();
         summaryCache.clear();
