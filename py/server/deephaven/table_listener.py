@@ -325,7 +325,7 @@ class TableListenerHandle:
         The 'is_replay' parameter is used only by replay listeners, it is set to 'true' when replaying the initial
         snapshot and 'false' during normal updates.
 
-        Note: Don't do table operation in the listener. Do them beforehand, and add the results as dependencies.
+        Note: Don't do table operations in the listener. Do them beforehand, and add the results as dependencies.
 
         Args:
             t (Table): table to listen to
