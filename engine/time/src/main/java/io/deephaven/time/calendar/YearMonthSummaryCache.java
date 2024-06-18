@@ -14,6 +14,17 @@ import java.util.function.IntFunction;
  */
 class YearMonthSummaryCache<T extends ImmutableConcurrentCache.IntKeyedValue> {
 
+    /**
+     * Creates a key for a year and month.
+     *
+     * @param year the year
+     * @param month the month
+     * @return the key
+     */
+    private static int yearMonthKey(int year, int month) {
+        return year * 100 + month;
+    }
+
     private final ImmutableConcurrentCache<T> monthCache;
     private final ImmutableConcurrentCache<T> yearCache;
 
@@ -44,8 +55,7 @@ class YearMonthSummaryCache<T extends ImmutableConcurrentCache.IntKeyedValue> {
      * @return the month summary
      */
     T getMonthSummary(int year, int month) {
-        final int yearMonth = year * 100 + month;
-        return monthCache.computeIfAbsent(yearMonth);
+        return monthCache.computeIfAbsent(yearMonthKey(year, month));
     }
 
     /**
@@ -80,7 +90,7 @@ class YearMonthSummaryCache<T extends ImmutableConcurrentCache.IntKeyedValue> {
                 incrementCurrentByMonth();
             }
 
-            currentYearMonth = currentYear * 100 + currentMonth;
+            currentYearMonth = yearMonthKey(currentYear, currentMonth);
 
             final LocalDate endPlus1 = end.plusDays(1);
             final int endPlus1Month = endPlus1.getMonthValue();
@@ -97,7 +107,7 @@ class YearMonthSummaryCache<T extends ImmutableConcurrentCache.IntKeyedValue> {
                 }
             }
 
-            finalYearMonth = finalYear * 100 + finalMonth;
+            finalYearMonth = yearMonthKey(finalYear, finalMonth);
         }
 
         private void incrementCurrentByMonth() {
@@ -108,12 +118,12 @@ class YearMonthSummaryCache<T extends ImmutableConcurrentCache.IntKeyedValue> {
                 currentMonth = currentMonth + 1;
             }
 
-            currentYearMonth = currentYear * 100 + currentMonth;
+            currentYearMonth = yearMonthKey(currentYear, currentMonth);
         }
 
         private void incrementCurrentByYear() {
             currentYear++;
-            currentYearMonth = currentYear * 100 + currentMonth;
+            currentYearMonth = yearMonthKey(currentYear, currentMonth);
         }
 
         @Override
