@@ -325,6 +325,8 @@ class TableListenerHandle:
         The 'is_replay' parameter is used only by replay listeners, it is set to 'true' when replaying the initial
         snapshot and 'false' during normal updates.
 
+        Note: Don't do table operation in the listener. Do them beforehand, and add the results as dependencies.
+
         Args:
             t (Table): table to listen to
             listener (Union[Callable, TableListener]): listener for table changes
@@ -337,12 +339,10 @@ class TableListenerHandle:
                 None.
 
                 Dependencies ensure that the listener can safely access the dependent tables during its execution. This
-                includes reading the data from the tables or even performing table operations on them. While performing
-                operations on the dependent tables is safe in the listener, reading or operating on the result tables of
-                those operations may not be if they are refreshing and thus can't be guaranteed to be satisfied in the
-                current update graph cycle. In such cases, snapshotting the result tables before reading or operating on
-                them is recommended.
-
+                mainly includes reading the data from the tables. While performing operations on the dependent tables in
+                the listener is safe, it is not recommended because reading or operating on the result tables of those
+                operations may not be safe. It is best to perform the operations on the dependent tables beforehand,
+                and then add the result tables as dependencies to the listener so that they can be safely read in it.
 
         Raises:
             DHError
@@ -411,6 +411,8 @@ def listen(t: Table, listener: Union[Callable, TableListener], description: str 
     The function returns the created TableListenerHandle object whose 'stop' method can be called to stop listening.
     If it goes out of scope and is garbage collected, the listener will stop receiving any table updates.
 
+    Note: Don't do table operation in the listener. Do them beforehand, and add the results as dependencies.
+
     Args:
         t (Table): table to listen to
         listener (Union[Callable, TableListener]): listener for table changes
@@ -425,11 +427,10 @@ def listen(t: Table, listener: Union[Callable, TableListener], description: str 
             None.
 
             Dependencies ensure that the listener can safely access the dependent tables during its execution. This
-            includes reading the data from the tables or even performing table operations on them. While performing
-            operations on the dependent tables is safe in the listener, reading or operating on the result tables of
-            those operations may not be if they are refreshing and thus can't be guaranteed to be satisfied in the
-            current update graph cycle. In such cases, snapshotting the result tables before reading or operating on
-            them is recommended.
+            mainly includes reading the data from the tables. While performing operations on the dependent tables in
+            the listener is safe, it is not recommended because reading or operating on the result tables of those
+            operations may not be safe. It is best to perform the operations on the dependent tables beforehand,
+            and then add the result tables as dependencies to the listener so that they can be safely read in it.
 
     Returns:
         a TableListenerHandle
