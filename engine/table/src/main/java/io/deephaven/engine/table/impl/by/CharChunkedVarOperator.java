@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.by;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
@@ -83,24 +84,25 @@ class CharChunkedVarOperator implements IterativeChunkedAggregationOperator {
         final double sum = SumCharChunk.sum2CharChunk(values, chunkStart, chunkSize, chunkNonNull, sum2);
 
         if (chunkNonNull.get() > 0) {
-            final long nonNullCount = nonNullCounter.addNonNullUnsafe(destination, chunkNonNull.get());
+            final long totalNormalCount = nonNullCounter.addNonNullUnsafe(destination, chunkNonNull.get());
             final double newSum = plusDouble(sumSource.getUnsafe(destination), sum);
             final double newSum2 = plusDouble(sum2Source.getUnsafe(destination), sum2.doubleValue());
 
             sumSource.set(destination, newSum);
             sum2Source.set(destination, newSum2);
 
-            if (nonNullCount <= 1) {
+            Assert.neqZero(totalNormalCount, "totalNormalCount");
+            if (totalNormalCount == 1) {
                 resultColumn.set(destination, Double.NaN);
             } else {
-                final double variance = (newSum2 - (newSum * newSum / nonNullCount)) / (nonNullCount - 1);
+                final double variance = (newSum2 - (newSum * newSum / totalNormalCount)) / (totalNormalCount - 1);
                 resultColumn.set(destination, std ? Math.sqrt(variance) : variance);
             }
         } else {
-            final long nonNullCount = nonNullCounter.getCountUnsafe(destination);
-            if (nonNullCount == 0) {
+            final long totalNormalCount = nonNullCounter.getCountUnsafe(destination);
+            if (totalNormalCount == 0) {
                 resultColumn.set(destination, NULL_DOUBLE);
-            } else if (nonNullCount == 1) {
+            } else if (totalNormalCount == 1) {
                 resultColumn.set(destination, Double.NaN);
             }
         }
@@ -116,12 +118,12 @@ class CharChunkedVarOperator implements IterativeChunkedAggregationOperator {
             return false;
         }
 
-        final long nonNullCount = nonNullCounter.addNonNullUnsafe(destination, -chunkNonNull.get());
+        final long totalNormalCount = nonNullCounter.addNonNullUnsafe(destination, -chunkNonNull.get());
 
         final double newSum;
         final double newSum2;
 
-        if (nonNullCount == 0) {
+        if (totalNormalCount == 0) {
             newSum = newSum2 = 0;
         } else {
             newSum = plusDouble(sumSource.getUnsafe(destination), -sum);
@@ -131,15 +133,15 @@ class CharChunkedVarOperator implements IterativeChunkedAggregationOperator {
         sumSource.set(destination, newSum);
         sum2Source.set(destination, newSum2);
 
-        if (nonNullCount == 0) {
+        if (totalNormalCount == 0) {
             resultColumn.set(destination, NULL_DOUBLE);
             return true;
-        } else if (nonNullCount == 1) {
+        } else if (totalNormalCount == 1) {
             resultColumn.set(destination, Double.NaN);
             return true;
         }
 
-        final double variance = (newSum2 - (newSum * newSum / nonNullCount)) / (nonNullCount - 1);
+        final double variance = (newSum2 - (newSum * newSum / totalNormalCount)) / (totalNormalCount - 1);
         resultColumn.set(destination, std ? Math.sqrt(variance) : variance);
 
         return true;

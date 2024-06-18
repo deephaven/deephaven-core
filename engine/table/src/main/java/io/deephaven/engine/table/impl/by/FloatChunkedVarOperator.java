@@ -93,15 +93,15 @@ final class FloatChunkedVarOperator extends FpChunkedNonNormalCounter implements
         final boolean forceNanResult = totalNegativeInfinities > 0 || totalPositiveInfinities > 0 || totalNanCount > 0;
 
         if (chunkNormalCount.get() > 0) {
-            final long nonNullCount = nonNullCounter.addNonNullUnsafe(destination, chunkNormalCount.get());
+            final long totalNormalCount = nonNullCounter.addNonNullUnsafe(destination, chunkNormalCount.get());
             final double newSum = NullSafeAddition.plusDouble(sumSource.getUnsafe(destination), sum);
             final double newSum2 = NullSafeAddition.plusDouble(sum2Source.getUnsafe(destination), sum2.doubleValue());
 
             sumSource.set(destination, newSum);
             sum2Source.set(destination, newSum2);
 
-            Assert.neqZero(nonNullCount, "nonNullCount");
-            if (forceNanResult || nonNullCount == 1) {
+            Assert.neqZero(totalNormalCount, "totalNormalCount");
+            if (forceNanResult || totalNormalCount == 1) {
                 resultColumn.set(destination, Double.NaN);
             } else {
                 // If the sum or sumSquared has reached +/-Infinity, we are stuck with NaN forever.
@@ -109,7 +109,7 @@ final class FloatChunkedVarOperator extends FpChunkedNonNormalCounter implements
                     resultColumn.set(destination, Double.NaN);
                     return true;
                 }
-                final double variance = computeVariance(nonNullCount, newSum, newSum2);
+                final double variance = computeVariance(totalNormalCount, newSum, newSum2);
                 resultColumn.set(destination, std ? Math.sqrt(variance) : variance);
             }
             return true;
@@ -172,15 +172,17 @@ final class FloatChunkedVarOperator extends FpChunkedNonNormalCounter implements
             }
             sumSource.set(destination, newSum);
             sum2Source.set(destination, newSum2);
-        } else if (totalNormalCount == 1 || forceNanResult) {
+        }  else {
+            newSum = sumSource.getUnsafe(destination);
+            newSum2 = sum2Source.getUnsafe(destination);
+        }
+
+        if (totalNormalCount == 1 || forceNanResult) {
             resultColumn.set(destination, Double.NaN);
             return true;
         } else if (totalNormalCount == 0) {
             resultColumn.set(destination, NULL_DOUBLE);
             return true;
-        } else {
-            newSum = sumSource.getUnsafe(destination);
-            newSum2 = sum2Source.getUnsafe(destination);
         }
 
         // If the sum has reach +/-Infinity, we are stuck with NaN forever.
@@ -192,6 +194,7 @@ final class FloatChunkedVarOperator extends FpChunkedNonNormalCounter implements
         // Perform the calculation in a way that minimizes the impact of FP error.
         final double variance = computeVariance(totalNormalCount, newSum, newSum2);
         resultColumn.set(destination, std ? Math.sqrt(variance) : variance);
+
         return true;
     }
 
