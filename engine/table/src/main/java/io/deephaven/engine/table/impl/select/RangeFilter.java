@@ -48,7 +48,7 @@ public class RangeFilter extends WhereFilterImpl {
     private final FormulaParserConfiguration parserConfiguration;
 
     /**
-     * Creates a RangeConditionFilter.
+     * Creates a RangeFilter.
      *
      * @param columnName the column to filter
      * @param condition the condition for filtering
@@ -59,7 +59,7 @@ public class RangeFilter extends WhereFilterImpl {
     }
 
     /**
-     * Creates a RangeConditionFilter.
+     * Creates a RangeFilter.
      *
      * @param columnName the column to filter
      * @param condition the condition for filtering
@@ -73,7 +73,7 @@ public class RangeFilter extends WhereFilterImpl {
     }
 
     /**
-     * Creates a RangeConditionFilter.
+     * Creates a RangeFilter.
      *
      * @param columnName the column to filter
      * @param conditionString the String representation of a condition for filtering
@@ -89,7 +89,7 @@ public class RangeFilter extends WhereFilterImpl {
     // Used for copy method
     private RangeFilter(String columnName, Condition condition, String value, String expression,
             WhereFilter filter, FormulaParserConfiguration parserConfiguration) {
-        Assert.eqTrue(conditionSupported(condition), condition + " is not supported by RangeConditionFilter");
+        Assert.eqTrue(conditionSupported(condition), condition + " is not supported by RangeFilter");
         this.columnName = columnName;
         this.condition = condition;
         this.value = value;
@@ -121,7 +121,7 @@ public class RangeFilter extends WhereFilterImpl {
             case ">=":
                 return Condition.GREATER_THAN_OR_EQUAL;
             default:
-                throw new IllegalArgumentException(conditionString + " is not supported by RangeConditionFilter");
+                throw new IllegalArgumentException(conditionString + " is not supported by RangeFilter");
         }
     }
 
@@ -218,7 +218,7 @@ public class RangeFilter extends WhereFilterImpl {
             if (expression != null) {
                 filter = ConditionFilter.createConditionFilter(expression, parserConfiguration);
             } else {
-                throw new IllegalArgumentException("RangeConditionFilter does not support type "
+                throw new IllegalArgumentException("RangeFilter does not support type "
                         + colClass.getSimpleName() + " for column " + columnName);
             }
         }
@@ -237,7 +237,7 @@ public class RangeFilter extends WhereFilterImpl {
             case GREATER_THAN_OR_EQUAL:
                 return new InstantRangeFilter(columnName, value, Long.MAX_VALUE, true, true);
             default:
-                throw new IllegalArgumentException("RangeConditionFilter does not support condition " + condition);
+                throw new IllegalArgumentException("RangeFilter does not support condition " + condition);
         }
     }
 
@@ -252,7 +252,7 @@ public class RangeFilter extends WhereFilterImpl {
             case GREATER_THAN_OR_EQUAL:
                 return new ZonedDateTimeRangeFilter(columnName, value, Long.MAX_VALUE, true, true);
             default:
-                throw new IllegalArgumentException("RangeConditionFilter does not support condition " + condition);
+                throw new IllegalArgumentException("RangeFilter does not support condition " + condition);
         }
     }
 
@@ -268,7 +268,7 @@ public class RangeFilter extends WhereFilterImpl {
             case GREATER_THAN_OR_EQUAL:
                 return new SingleSidedComparableRangeFilter(columnName, comparable, true, true);
             default:
-                throw new IllegalArgumentException("RangeConditionFilter does not support condition " + condition);
+                throw new IllegalArgumentException("RangeFilter does not support condition " + condition);
         }
     }
 

@@ -241,8 +241,8 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
                 this.lhs = Objects.requireNonNull(lhs);
             }
 
-            // The String vs non-String cases are separated out, as it's necessary in the RangeConditionFilter case to
-            // wrap String literals with quotes (as that's what RangeConditionFilter expects wrt parsing). MatchFilter
+            // The String vs non-String cases are separated out, as it's necessary in the RangeFilter case to
+            // wrap String literals with quotes (as that's what RangeFilter expects wrt parsing). MatchFilter
             // allows us to pass in the already parsed Object (otherwise, if we were passing strValues we would need to
             // wrap them)
 

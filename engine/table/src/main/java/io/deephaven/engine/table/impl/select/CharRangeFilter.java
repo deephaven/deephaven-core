@@ -58,7 +58,7 @@ public class CharRangeFilter extends AbstractRangeFilter {
             case GREATER_THAN_OR_EQUAL:
                 return geq(columnName, value);
             default:
-                throw new IllegalArgumentException("RangeConditionFilter does not support condition " + condition);
+                throw new IllegalArgumentException("RangeFilter does not support condition " + condition);
         }
     }
 
