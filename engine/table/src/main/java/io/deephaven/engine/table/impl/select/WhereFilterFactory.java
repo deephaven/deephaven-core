@@ -178,7 +178,7 @@ public class WhereFilterFactory {
                         final String dir = op.substring(0, 1);
                         op = op.replaceFirst(dir, dir.equals("<") ? ">" : "<");
                     }
-                    log.debug().append("WhereFilterFactory creating RangeConditionFilter for expression: ")
+                    log.debug().append("WhereFilterFactory creating RangeFilter for expression: ")
                             .append(expression).endl();
                     return new RangeFilter(columnName, op, value, expression, parserConfiguration);
                 } catch (Exception e) {
