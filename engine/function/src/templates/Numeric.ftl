@@ -1344,7 +1344,6 @@ public class Numeric {
         return sorted[medianIndex];
     }
 
-
     /**
      * Returns the percentile. {@code null} input values are ignored but {@code NaN} values will poison the computation,
      * and {@code NaN} will be returned
