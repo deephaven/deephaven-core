@@ -107,7 +107,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         final RollupTable transformedResult = authTransformation.transform(result);
                         if (transformedResult == null) {
                             throw Exceptions.statusRuntimeException(
-                                    Code.FAILED_PRECONDITION, "Not authorized to rollup hierarchical table.");
+                                    Code.FAILED_PRECONDITION, "Not authorized to rollup hierarchical table");
                         }
                         safelyComplete(responseObserver, RollupResponse.getDefaultInstance());
                         return transformedResult;
@@ -167,7 +167,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         final TreeTable transformedResult = authTransformation.transform(result);
                         if (transformedResult == null) {
                             throw Exceptions.statusRuntimeException(
-                                    Code.FAILED_PRECONDITION, "Not authorized to tree hierarchical table.");
+                                    Code.FAILED_PRECONDITION, "Not authorized to tree hierarchical table");
                         }
                         safelyComplete(responseObserver, TreeResponse.getDefaultInstance());
                         return transformedResult;
@@ -272,7 +272,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         final HierarchicalTable<?> transformedResult = authTransformation.transform(result);
                         if (transformedResult == null) {
                             throw Exceptions.statusRuntimeException(
-                                    Code.FAILED_PRECONDITION, "Not authorized to apply to hierarchical table.");
+                                    Code.FAILED_PRECONDITION, "Not authorized to apply to hierarchical table");
                         }
                         safelyComplete(responseObserver, HierarchicalTableApplyResponse.getDefaultInstance());
                         return transformedResult;
@@ -437,7 +437,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         final HierarchicalTableView transformedResult = authTransformation.transform(result);
                         if (transformedResult == null) {
                             throw Exceptions.statusRuntimeException(
-                                    Code.FAILED_PRECONDITION, "Not authorized to view hierarchical table.");
+                                    Code.FAILED_PRECONDITION, "Not authorized to view hierarchical table");
                         }
                         safelyComplete(responseObserver, HierarchicalTableViewResponse.getDefaultInstance());
                         return transformedResult;
@@ -497,7 +497,7 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         if (transformedResult == null) {
                             throw Exceptions.statusRuntimeException(
                                     Code.FAILED_PRECONDITION,
-                                    "Not authorized to export source from hierarchical table.");
+                                    "Not authorized to export source from hierarchical table");
                         }
                         final ExportedTableCreationResponse response =
                                 ExportUtil.buildTableCreationResponse(request.getResultTableId(), transformedResult);

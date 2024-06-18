@@ -15,6 +15,7 @@ import io.deephaven.proto.util.ByteHelper;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.proto.util.SharedTicketHelper;
 import io.deephaven.server.auth.AuthorizationProvider;
+import io.grpc.StatusRuntimeException;
 import org.apache.arrow.flight.impl.Flight;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -63,8 +64,7 @@ public class SharedTicketResolver extends TicketResolverBase {
 
         SessionState.ExportObject<?> export = sharedVariables.get(sharedId);
         if (export == null) {
-            throw Exceptions.statusRuntimeException(Code.NOT_FOUND, String.format(
-                    "Could not resolve '%s': no shared ticket exists with id 0x%s", logId, toHexString(sharedId)));
+            throw newNotFoundSRE(logId, descriptor.toString());
         }
 
         return session.<Flight.FlightInfo>nonExport()
@@ -79,8 +79,7 @@ public class SharedTicketResolver extends TicketResolverBase {
                                 FlightExportTicketHelper.descriptorToFlightTicket(descriptor, logId));
                     }
 
-                    throw Exceptions.statusRuntimeException(Code.NOT_FOUND, String.format(
-                            "Could not resolve '%s': flight '%s' is not a table", logId, descriptor));
+                    throw newNotFoundSRE(logId, descriptor.toString());
                 });
     }
 
@@ -111,8 +110,7 @@ public class SharedTicketResolver extends TicketResolverBase {
         // noinspection unchecked
         final SessionState.ExportObject<T> sharedVar = (SessionState.ExportObject<T>) sharedVariables.get(sharedId);
         if (sharedVar == null) {
-            return SessionState.wrapAsFailedExport(Exceptions.statusRuntimeException(Code.NOT_FOUND, String.format(
-                    "Could not resolve '%s': no shared ticket exists with id '%s'", logId, toHexString(sharedId))));
+            return SessionState.wrapAsFailedExport(newNotFoundSRE(logId, toHexString(sharedId)));
         }
 
         // we need to wrap this in a new export object to hand off to the new session and defer checking permissions
@@ -122,9 +120,7 @@ public class SharedTicketResolver extends TicketResolverBase {
                     T result = sharedVar.get();
                     result = authorization.transform(result);
                     if (result == null) {
-                        throw Exceptions.statusRuntimeException(Code.NOT_FOUND, String.format(
-                                "Could not resolve '%s': no shared ticket exists with id '%s'",
-                                logId, toHexString(sharedId)));
+                        throw newNotFoundSRE(logId, toHexString(sharedId));
                     }
                     return result;
                 });
@@ -291,5 +287,10 @@ public class SharedTicketResolver extends TicketResolverBase {
      */
     public static Flight.Ticket descriptorToTicket(final Flight.FlightDescriptor descriptor, final String logId) {
         return flightTicketForId(idForDescriptor(descriptor, logId).toByteArray());
+    }
+
+    private static @NotNull StatusRuntimeException newNotFoundSRE(String logId, String sharedId) {
+        return Exceptions.statusRuntimeException(Code.NOT_FOUND, String.format(
+                "Could not resolve '%s': ticket '%s' not found", logId, sharedId));
     }
 }
