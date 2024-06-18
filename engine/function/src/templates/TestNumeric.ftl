@@ -613,7 +613,7 @@ public class TestNumeric extends BaseArrayTestCase {
         </#if>
         <#if pt2.valueType.isFloat >
         // verify the NaN short-circuit case
-        assertEquals(Double.NaN, cov(new ${pt.primitive}[]{1, 2, 3}, new ${pt2.primitive}[]{1, 2, ${pt2.boxed}.NaN}));
+        assertEquals(Double.NaN, cor(new ${pt.primitive}[]{1, 2, 3}, new ${pt2.primitive}[]{1, 2, ${pt2.boxed}.NaN}));
         </#if>
 
         try {
