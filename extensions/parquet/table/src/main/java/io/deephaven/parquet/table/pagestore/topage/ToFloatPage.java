@@ -26,8 +26,7 @@ public class ToFloatPage<ATTR extends Any> implements ToPage<ATTR, float[]> {
         throw new IllegalArgumentException("The native type for a Float column is " + nativeType.getCanonicalName());
     }
 
-    @SuppressWarnings("WeakerAccess")
-    ToFloatPage() {}
+    private ToFloatPage() {}
 
     @Override
     @NotNull

@@ -252,7 +252,7 @@ class Session:
                 self._auth_header_value = v if isinstance(v, bytes) else v.encode('ascii')
                 break
 
-    def wrap_rpc(self, stub_call: NotBidiRpc, *args, **kwargs) -> Any:
+    def wrap_rpc(self, stub_call: _NotBidiRpc, *args, **kwargs) -> Any:
         if 'metadata' in kwargs:
             raise DHError('Internal error: "metadata" in kwargs not supported in wrap_rpc.')
         kwargs["metadata"] = self.grpc_metadata
@@ -263,7 +263,7 @@ class Session:
         # Now block until we get the result (or an exception)
         return future.result()
 
-    def wrap_bidi_rpc(self, stub_call: BidiRpc, *args, **kwargs) -> Any:
+    def wrap_bidi_rpc(self, stub_call: _BidiRpc, *args, **kwargs) -> Any:
         if 'metadata' in kwargs:
             raise DHError('Internal error: "metadata" in kwargs not supported in wrap_bidi_rpc.')
         kwargs["metadata"] = self.grpc_metadata

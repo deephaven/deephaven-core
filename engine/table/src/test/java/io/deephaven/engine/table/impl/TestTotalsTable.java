@@ -5,40 +5,26 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.EvalNuggetInterface;
 import io.deephaven.engine.util.TotalsTableBuilder;
-import io.deephaven.function.Numeric;
-import io.deephaven.vector.DoubleVectorDirect;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.util.QueryConstants;
 
 import java.util.Arrays;
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
 import static io.deephaven.engine.testutil.TstUtils.getTable;
 import static io.deephaven.engine.testutil.TstUtils.initColumnInfos;
+import static io.deephaven.function.Numeric.*;
 
 public class TestTotalsTable extends RefreshingTableTestCase {
 
     private static final double EPSILON = 0.000000001;
-
-    private long shortSum(short[] values) {
-        long sum = 0;
-        for (short value : values) {
-            if (value == QueryConstants.NULL_SHORT) {
-                continue;
-            }
-            sum += value;
-        }
-        return sum;
-    }
 
     public void testTotalsTable() {
         final int size = 1000;
@@ -67,16 +53,16 @@ public class TestTotalsTable extends RefreshingTableTestCase {
         assertEquals(new LinkedHashSet<>(Arrays.asList("intCol", "intCol2", "doubleCol", "doubleNullCol", "doubleCol2",
                 "floatCol", "byteCol", "shortCol")), resultColumns);
 
-        assertEquals((long) Numeric.sum((int[]) DataAccessHelpers.getColumn(queryTable, "intCol").getDirect()),
-                DataAccessHelpers.getColumn(totals, "intCol").get(0));
-        assertEquals(Numeric.sum((double[]) DataAccessHelpers.getColumn(queryTable, "doubleCol").getDirect()),
-                DataAccessHelpers.getColumn(totals, "doubleCol").get(0));
-        assertEquals(Numeric.sum((double[]) DataAccessHelpers.getColumn(queryTable, "doubleNullCol").getDirect()),
-                DataAccessHelpers.getColumn(totals, "doubleNullCol").get(0));
-        assertEquals("floatCol", Numeric.sum((float[]) DataAccessHelpers.getColumn(queryTable, "floatCol").getDirect()),
-                (float) DataAccessHelpers.getColumn(totals, "floatCol").get(0), 0.02);
-        assertEquals(shortSum((short[]) DataAccessHelpers.getColumn(queryTable, "shortCol").getDirect()),
-                DataAccessHelpers.getColumn(totals, "shortCol").get(0));
+        assertEquals(sum(ColumnVectors.ofInt(queryTable, "intCol")),
+                totals.getColumnSource("intCol").getLong(totals.getRowSet().firstRowKey()));
+        assertEquals(sum(ColumnVectors.ofDouble(queryTable, "doubleCol")),
+                totals.getColumnSource("doubleCol").getDouble(totals.getRowSet().firstRowKey()));
+        assertEquals(sum(ColumnVectors.ofDouble(queryTable, "doubleNullCol")),
+                totals.getColumnSource("doubleNullCol").getDouble(totals.getRowSet().firstRowKey()));
+        assertEquals(sum(ColumnVectors.ofFloat(queryTable, "floatCol")),
+                totals.getColumnSource("floatCol").getFloat(totals.getRowSet().firstRowKey()), 0.02);
+        assertEquals(sum(ColumnVectors.ofShort(queryTable, "shortCol")),
+                totals.getColumnSource("shortCol").getLong(totals.getRowSet().firstRowKey()));
 
         builder.setDefaultOperation("skip");
         builder.setOperation("byteCol", "min");
@@ -87,12 +73,12 @@ public class TestTotalsTable extends RefreshingTableTestCase {
                 () -> TotalsTableBuilder.makeTotalsTable(queryTable, builder));
         assertEquals(new LinkedHashSet<>(Arrays.asList("Sym", "intCol2", "byteCol")),
                 totals2.getDefinition().getColumnNameSet());
-        assertEquals(Numeric.min((byte[]) DataAccessHelpers.getColumn(queryTable, "byteCol").getDirect()),
-                DataAccessHelpers.getColumn(totals2, "byteCol").get(0));
-        assertEquals(DataAccessHelpers.getColumn(queryTable, "Sym").get(0),
-                DataAccessHelpers.getColumn(totals2, "Sym").get(0));
-        assertEquals(DataAccessHelpers.getColumn(queryTable, "intCol2").get(queryTable.size() - 1),
-                DataAccessHelpers.getColumn(totals2, "intCol2").get(0));
+        assertEquals(min(ColumnVectors.ofByte(queryTable, "byteCol")),
+                totals2.getColumnSource("byteCol").getByte(totals2.getRowSet().firstRowKey()));
+        assertEquals(queryTable.getColumnSource("Sym").get(queryTable.getRowSet().firstRowKey()),
+                totals2.getColumnSource("Sym").get(totals2.getRowSet().firstRowKey()));
+        assertEquals(queryTable.getColumnSource("intCol2").getInt(queryTable.getRowSet().lastRowKey()),
+                totals2.getColumnSource("intCol2").getInt(totals2.getRowSet().get(totals2.getRowSet().firstRowKey())));
 
         builder.setOperation("byteCol", "max");
         builder.setOperation("doubleCol", "var");
@@ -109,26 +95,19 @@ public class TestTotalsTable extends RefreshingTableTestCase {
                     new LinkedHashSet<>(Arrays.asList("Sym", "intCol2", "doubleCol", "doubleNullCol__Std",
                             "doubleNullCol__Count", "doubleCol2", "byteCol", "shortCol")),
                     totals3.getDefinition().getColumnNameSet());
-            assertEquals(
-                    Numeric.max((byte[]) DataAccessHelpers.getColumn(queryTable, "byteCol").getDirect()),
-                    DataAccessHelpers.getColumn(totals3, "byteCol").getByte(0));
-            assertEquals(
-                    Numeric.var(new DoubleVectorDirect(
-                            (double[]) DataAccessHelpers.getColumn(queryTable, "doubleCol").getDirect())),
-                    DataAccessHelpers.getColumn(totals3, "doubleCol").getDouble(0),
+            assertEquals(max(ColumnVectors.ofByte(queryTable, "byteCol")),
+                    totals3.getColumnSource("byteCol").getByte(totals3.getRowSet().firstRowKey()));
+            assertEquals(var(ColumnVectors.ofDouble(queryTable, "doubleCol")),
+                    totals3.getColumnSource("doubleCol").getDouble(totals3.getRowSet().firstRowKey()), EPSILON);
+            assertEquals(std(ColumnVectors.ofDouble(queryTable, "doubleNullCol")),
+                    totals3.getColumnSource("doubleNullCol__Std").getDouble(totals3.getRowSet().firstRowKey()),
                     EPSILON);
-            assertEquals(
-                    Numeric.std(new DoubleVectorDirect(
-                            (double[]) DataAccessHelpers.getColumn(queryTable, "doubleNullCol").getDirect())),
-                    DataAccessHelpers.getColumn(totals3, "doubleNullCol__Std").getDouble(0),
-                    EPSILON);
-            assertEquals(queryTable.size(), DataAccessHelpers.getColumn(totals3, "doubleNullCol__Count").getLong(0));
-            assertEquals(
-                    Numeric.avg(new DoubleVectorDirect(
-                            (double[]) DataAccessHelpers.getColumn(queryTable, "doubleCol2").getDirect())),
-                    DataAccessHelpers.getColumn(totals3, "doubleCol2").getDouble(0),
-                    EPSILON);
-            assertEquals(queryTable.size(), (long) DataAccessHelpers.getColumn(totals3, "shortCol").get(0));
+            assertEquals(queryTable.size(),
+                    totals3.getColumnSource("doubleNullCol__Count").getLong(totals3.getRowSet().firstRowKey()));
+            assertEquals(avg(ColumnVectors.ofDouble(queryTable, "doubleCol2")),
+                    totals3.getColumnSource("doubleCol2").getDouble(totals3.getRowSet().firstRowKey()), EPSILON);
+            assertEquals(queryTable.size(),
+                    totals3.getColumnSource("shortCol").getLong(totals3.getRowSet().firstRowKey()));
 
             final Table totals4 = ExecutionContext.getContext().getUpdateGraph().exclusiveLock().computeLocked(
                     () -> TotalsTableBuilder.makeTotalsTable(queryTable, builder));

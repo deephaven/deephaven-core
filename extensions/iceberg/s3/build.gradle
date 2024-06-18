@@ -1,0 +1,48 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+evaluationDependsOn Docker.registryProject('localstack')
+evaluationDependsOn Docker.registryProject('minio')
+
+description 'Iceberg: Support to read iceberg catalogs.'
+
+dependencies {
+    implementation project(':extensions-iceberg')
+
+    // Bring in the AWS / S3 extensions
+    Classpaths.inheritIcebergCore(project)
+
+    implementation project(':extensions-s3')
+    implementation "org.apache.iceberg:iceberg-aws"
+    runtimeOnly "org.apache.iceberg:iceberg-aws-bundle"
+    Classpaths.inheritAWSSDK(project)
+
+    Classpaths.inheritTestContainers(project)
+
+    testImplementation TestTools.projectDependency(project, 'extensions-s3')
+    testImplementation TestTools.projectDependency(project, 'extensions-iceberg')
+
+    testRuntimeOnly project(':test-configs')
+    testRuntimeOnly project(':log-to-slf4j')
+    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+}
+
+test {
+    useJUnitPlatform {
+        excludeTags("testcontainers")
+    }
+}
+
+tasks.register('testOutOfBand', Test) {
+    useJUnitPlatform {
+        includeTags("testcontainers")
+    }
+
+    dependsOn Docker.registryTask(project, 'localstack')
+    systemProperty 'testcontainers.localstack.image', Docker.localImageName('localstack')
+
+    dependsOn Docker.registryTask(project, 'minio')
+    systemProperty 'testcontainers.minio.image', Docker.localImageName('minio')
+}

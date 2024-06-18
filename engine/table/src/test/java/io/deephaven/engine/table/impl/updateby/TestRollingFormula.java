@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl.updateby;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -18,6 +17,8 @@ import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.annotations.TestUseOnly;
+import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.vector.ObjectVector;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -28,7 +29,6 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-import java.util.function.Function;
 
 import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
@@ -69,39 +69,45 @@ public class TestRollingFormula extends BaseUpdateByTest {
     final int DYNAMIC_UPDATE_SIZE = 10;
     final int DYNAMIC_UPDATE_STEPS = 20;
 
-    final Function<ObjectVector<BigDecimal>, BigDecimal> sumBigDecimal = bigDecimalObjectVector -> {
-        if (bigDecimalObjectVector == null) {
-            return null;
-        }
+    @SuppressWarnings("unused") // Functions used via QueryLibrary
+    @VisibleForTesting
+    @TestUseOnly
+    public static class Helpers {
 
-        BigDecimal sum = BigDecimal.ZERO;
-        final long n = bigDecimalObjectVector.size();
-
-        for (long i = 0; i < n; i++) {
-            BigDecimal val = bigDecimalObjectVector.get(i);
-            if (!isNull(val)) {
-                sum = sum.add(val);
+        public static BigDecimal sumBigDecimal(ObjectVector<BigDecimal> bigDecimalObjectVector) {
+            if (bigDecimalObjectVector == null) {
+                return null;
             }
-        }
-        return sum;
-    };
 
-    final Function<ObjectVector<BigInteger>, BigInteger> sumBigInteger = bigIntegerObjectVector -> {
-        if (bigIntegerObjectVector == null) {
-            return null;
-        }
+            BigDecimal sum = BigDecimal.ZERO;
+            final long n = bigDecimalObjectVector.size();
 
-        BigInteger sum = BigInteger.ZERO;
-        final long n = bigIntegerObjectVector.size();
-
-        for (long i = 0; i < n; i++) {
-            BigInteger val = bigIntegerObjectVector.get(i);
-            if (!isNull(val)) {
-                sum = sum.add(val);
+            for (long i = 0; i < n; i++) {
+                BigDecimal val = bigDecimalObjectVector.get(i);
+                if (!isNull(val)) {
+                    sum = sum.add(val);
+                }
             }
+            return sum;
         }
-        return sum;
-    };
+
+        public static BigInteger sumBigInteger(ObjectVector<BigInteger> bigIntegerObjectVector) {
+            if (bigIntegerObjectVector == null) {
+                return null;
+            }
+
+            BigInteger sum = BigInteger.ZERO;
+            final long n = bigIntegerObjectVector.size();
+
+            for (long i = 0; i < n; i++) {
+                BigInteger val = bigIntegerObjectVector.get(i);
+                if (!isNull(val)) {
+                    sum = sum.add(val);
+                }
+            }
+            return sum;
+        }
+    }
 
     // region Static Zero Key Tests
 
@@ -280,17 +286,16 @@ public class TestRollingFormula extends BaseUpdateByTest {
         // BigDecimal / BigInteger custom sum function vs. RollingSum
         ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        QueryScope.addParam("sumBigDecimal", sumBigDecimal);
-        QueryScope.addParam("sumBigInteger", sumBigInteger);
+        ExecutionContext.getContext().getQueryLibrary().importStatic(Helpers.class);
 
         actual = t.updateBy(List.of(
-                UpdateByOperation.RollingFormula(prevTicks, postTicks, "sumBigDecimal.apply(x)", "x", "bigDecimalCol"),
-                UpdateByOperation.RollingFormula(prevTicks, postTicks, "sumBigInteger.apply(x)", "x", "bigIntCol")));
+                UpdateByOperation.RollingFormula(prevTicks, postTicks, "sumBigDecimal(x)", "x", "bigDecimalCol"),
+                UpdateByOperation.RollingFormula(prevTicks, postTicks, "sumBigInteger(x)", "x", "bigIntCol")));
 
         // RollingSum returns null when the window is empty, replace that with zeros.
         expected = t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks, "bigDecimalCol", "bigIntCol"))
-                .update("bigDecimalCol=(Object)(bigDecimalCol == null ? java.math.BigDecimal.ZERO : bigDecimalCol)",
-                        "bigIntCol=(Object)(bigIntCol == null ? java.math.BigInteger.ZERO : bigIntCol)");
+                .update("bigDecimalCol=bigDecimalCol == null ? java.math.BigDecimal.ZERO : bigDecimalCol",
+                        "bigIntCol=bigIntCol == null ? java.math.BigInteger.ZERO : bigIntCol");
 
         TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
 
@@ -404,19 +409,18 @@ public class TestRollingFormula extends BaseUpdateByTest {
         // BigDecimal / BigInteger custom sum function vs. RollingSum
         ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        QueryScope.addParam("sumBigDecimal", sumBigDecimal);
-        QueryScope.addParam("sumBigInteger", sumBigInteger);
+        ExecutionContext.getContext().getQueryLibrary().importStatic(Helpers.class);
 
         actual = t.updateBy(List.of(
-                UpdateByOperation.RollingFormula("ts", prevTime, postTime, "sumBigDecimal.apply(x)", "x",
+                UpdateByOperation.RollingFormula("ts", prevTime, postTime, "sumBigDecimal(x)", "x",
                         "bigDecimalCol"),
-                UpdateByOperation.RollingFormula("ts", prevTime, postTime, "sumBigInteger.apply(x)", "x",
+                UpdateByOperation.RollingFormula("ts", prevTime, postTime, "sumBigInteger(x)", "x",
                         "bigIntCol")));
 
         // RollingSum returns null when the window is empty, replace that with zeros.
         expected = t.updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "bigDecimalCol", "bigIntCol"))
-                .update("bigDecimalCol=(Object)(bigDecimalCol == null ? java.math.BigDecimal.ZERO : bigDecimalCol)",
-                        "bigIntCol=(Object)(bigIntCol == null ? java.math.BigInteger.ZERO : bigIntCol)");
+                .update("bigDecimalCol=bigDecimalCol == null ? java.math.BigDecimal.ZERO : bigDecimalCol",
+                        "bigIntCol=bigIntCol == null ? java.math.BigInteger.ZERO : bigIntCol");
 
         TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
 
@@ -620,18 +624,17 @@ public class TestRollingFormula extends BaseUpdateByTest {
         // BigDecimal / BigInteger custom sum function vs. RollingSum
         ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        QueryScope.addParam("sumBigDecimal", sumBigDecimal);
-        QueryScope.addParam("sumBigInteger", sumBigInteger);
+        ExecutionContext.getContext().getQueryLibrary().importStatic(Helpers.class);
 
         actual = t.updateBy(List.of(
-                UpdateByOperation.RollingFormula(prevTicks, postTicks, "sumBigDecimal.apply(x)", "x", "bigDecimalCol"),
-                UpdateByOperation.RollingFormula(prevTicks, postTicks, "sumBigInteger.apply(x)", "x", "bigIntCol")),
+                UpdateByOperation.RollingFormula(prevTicks, postTicks, "sumBigDecimal(x)", "x", "bigDecimalCol"),
+                UpdateByOperation.RollingFormula(prevTicks, postTicks, "sumBigInteger(x)", "x", "bigIntCol")),
                 "Sym");
 
         // RollingSum returns null when the window is empty, replace that with zeros.
         expected = t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks, "bigDecimalCol", "bigIntCol"), "Sym")
-                .update("bigDecimalCol=(Object)(bigDecimalCol == null ? java.math.BigDecimal.ZERO : bigDecimalCol)",
-                        "bigIntCol=(Object)(bigIntCol == null ? java.math.BigInteger.ZERO : bigIntCol)");
+                .update("bigDecimalCol=bigDecimalCol == null ? java.math.BigDecimal.ZERO : bigDecimalCol",
+                        "bigIntCol=bigIntCol == null ? java.math.BigInteger.ZERO : bigIntCol");
 
         TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
 
@@ -746,20 +749,19 @@ public class TestRollingFormula extends BaseUpdateByTest {
         // BigDecimal / BigInteger custom sum function vs. RollingSum
         ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        QueryScope.addParam("sumBigDecimal", sumBigDecimal);
-        QueryScope.addParam("sumBigInteger", sumBigInteger);
+        ExecutionContext.getContext().getQueryLibrary().importStatic(Helpers.class);
 
         actual = t.updateBy(List.of(
-                UpdateByOperation.RollingFormula("ts", prevTime, postTime, "sumBigDecimal.apply(x)", "x",
+                UpdateByOperation.RollingFormula("ts", prevTime, postTime, "sumBigDecimal(x)", "x",
                         "bigDecimalCol"),
-                UpdateByOperation.RollingFormula("ts", prevTime, postTime, "sumBigInteger.apply(x)", "x", "bigIntCol")),
+                UpdateByOperation.RollingFormula("ts", prevTime, postTime, "sumBigInteger(x)", "x", "bigIntCol")),
                 "Sym");
 
         // RollingSum returns null when the window is empty, replace that with zeros.
         expected = t
                 .updateBy(UpdateByOperation.RollingSum("ts", prevTime, postTime, "bigDecimalCol", "bigIntCol"), "Sym")
-                .update("bigDecimalCol=(Object)(bigDecimalCol == null ? java.math.BigDecimal.ZERO : bigDecimalCol)",
-                        "bigIntCol=(Object)(bigIntCol == null ? java.math.BigInteger.ZERO : bigIntCol)");
+                .update("bigDecimalCol=bigDecimalCol == null ? java.math.BigDecimal.ZERO : bigDecimalCol",
+                        "bigIntCol=bigIntCol == null ? java.math.BigInteger.ZERO : bigIntCol");
 
         TstUtils.assertTableEquals(expected, actual, TableDiff.DiffItems.DoublesExact);
 
@@ -937,8 +939,7 @@ public class TestRollingFormula extends BaseUpdateByTest {
         final QueryTable t = result.t;
         t.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
 
-        QueryScope.addParam("sumBigDecimal", sumBigDecimal);
-        QueryScope.addParam("sumBigInteger", sumBigInteger);
+        ExecutionContext.getContext().getQueryLibrary().importStatic(Helpers.class);
 
         final EvalNugget[] nuggets = new EvalNugget[] {
                 EvalNugget.from(() -> bucketed
@@ -952,9 +953,9 @@ public class TestRollingFormula extends BaseUpdateByTest {
                         : t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "avg(x * x + x)", "x",
                                 primitiveColumns))),
                 EvalNugget.from(() -> bucketed
-                        ? t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "sumBigDecimal.apply(x)",
+                        ? t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "sumBigDecimal(x)",
                                 "x", "bigDecimalCol"), "Sym")
-                        : t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "sumBigDecimal.apply(x)",
+                        : t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "sumBigDecimal(x)",
                                 "x", "bigDecimalCol"))),
         };
 
@@ -975,8 +976,7 @@ public class TestRollingFormula extends BaseUpdateByTest {
         final QueryTable t = result.t;
         t.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
 
-        QueryScope.addParam("sumBigDecimal", sumBigDecimal);
-        QueryScope.addParam("sumBigInteger", sumBigInteger);
+        ExecutionContext.getContext().getQueryLibrary().importStatic(Helpers.class);
 
         final EvalNugget[] nuggets = new EvalNugget[] {
                 EvalNugget.from(() -> bucketed
@@ -991,9 +991,9 @@ public class TestRollingFormula extends BaseUpdateByTest {
                                 primitiveColumns))),
                 EvalNugget.from(() -> bucketed
                         ? t.updateBy(UpdateByOperation.RollingFormula("ts", prevTime, postTime,
-                                "sumBigDecimal.apply(x)", "x", "bigDecimalCol"), "Sym")
+                                "sumBigDecimal(x)", "x", "bigDecimalCol"), "Sym")
                         : t.updateBy(UpdateByOperation.RollingFormula("ts", prevTime, postTime,
-                                "sumBigDecimal.apply(x)", "x", "bigDecimalCol"))),
+                                "sumBigDecimal(x)", "x", "bigDecimalCol"))),
         };
 
         final Random billy = new Random(0xB177B177);
@@ -1126,8 +1126,7 @@ public class TestRollingFormula extends BaseUpdateByTest {
                 new TestDataGenerator[] {new CharGenerator('A', 'z', 0.1)});
         final QueryTable t = result.t;
 
-        QueryScope.addParam("sumBigDecimal", sumBigDecimal);
-        QueryScope.addParam("sumBigInteger", sumBigInteger);
+        ExecutionContext.getContext().getQueryLibrary().importStatic(Helpers.class);
 
         final EvalNugget[] nuggets = new EvalNugget[] {
                 EvalNugget.from(() -> bucketed
@@ -1141,9 +1140,9 @@ public class TestRollingFormula extends BaseUpdateByTest {
                         : t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "avg(x * x + x)", "x",
                                 primitiveColumns))),
                 EvalNugget.from(() -> bucketed
-                        ? t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "sumBigDecimal.apply(x)",
+                        ? t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "sumBigDecimal(x)",
                                 "x", "bigDecimalCol"), "Sym")
-                        : t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "sumBigDecimal.apply(x)",
+                        : t.updateBy(UpdateByOperation.RollingFormula(prevTicks, postTicks, "sumBigDecimal(x)",
                                 "x", "bigDecimalCol"))),
         };
 
@@ -1164,8 +1163,7 @@ public class TestRollingFormula extends BaseUpdateByTest {
 
         final QueryTable t = result.t;
 
-        QueryScope.addParam("sumBigDecimal", sumBigDecimal);
-        QueryScope.addParam("sumBigInteger", sumBigInteger);
+        ExecutionContext.getContext().getQueryLibrary().importStatic(Helpers.class);
 
         final EvalNugget[] nuggets = new EvalNugget[] {
                 EvalNugget.from(() -> bucketed
@@ -1180,9 +1178,9 @@ public class TestRollingFormula extends BaseUpdateByTest {
                                 primitiveColumns))),
                 EvalNugget.from(() -> bucketed
                         ? t.updateBy(UpdateByOperation.RollingFormula("ts", prevTime, postTime,
-                                "sumBigDecimal.apply(x)", "x", "bigDecimalCol"), "Sym")
+                                "sumBigDecimal(x)", "x", "bigDecimalCol"), "Sym")
                         : t.updateBy(UpdateByOperation.RollingFormula("ts", prevTime, postTime,
-                                "sumBigDecimal.apply(x)", "x", "bigDecimalCol"))),
+                                "sumBigDecimal(x)", "x", "bigDecimalCol"))),
         };
 
         final Random billy = new Random(0xB177B177);

@@ -49,7 +49,7 @@ def pyClientTickingWheel = { String pythonTag -> Docker.registerDockerTask(proje
         into layout.buildDirectory.dir("pyClientTickingWheel/${pythonTag}")
     }
     dockerfile {
-        from('deephaven/cpp-client-py:local-build')
+        from(Docker.localImageName('cpp-client-py'))
         runCommand("""mkdir -p \\
                         /out \\
                         '${prefix}/log' \\
@@ -101,7 +101,7 @@ def testCPythonClientTicking = { String pythonVersion, String image -> Docker.re
         }
     }
     dockerfile {
-        from("deephaven/${image}:local-build")
+        from(Docker.localImageName(image))
         runCommand(
                 '''set -eux; \
                    DNF=`type microdnf >/dev/null 2>&1 && echo 'microdnf --disableplugin=subscription-manager' || echo 'dnf -q'`; \

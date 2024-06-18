@@ -278,7 +278,7 @@ public class WorkerConnection {
                             }),
                             info.getConnectOptions().then(options -> {
                                 // set other specified headers, if any
-                                JsObject.keys(options.headers).forEach((key, index, arr) -> {
+                                JsObject.keys(options.headers).forEach((key, index) -> {
                                     metadata.set(key, options.headers.get(key));
                                     return null;
                                 });

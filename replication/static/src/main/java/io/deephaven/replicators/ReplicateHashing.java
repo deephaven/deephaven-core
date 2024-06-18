@@ -48,6 +48,10 @@ public class ReplicateHashing {
                 charToObject(TASK, "engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharChunkEquals.java");
         fixupObjectChunkIdentityEquals(objectIdentityEquals);
 
+        final String objectDeepEquals =
+                charToObject(TASK, "engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharChunkEquals.java");
+        fixupObjectChunkDeepEquals(objectDeepEquals);
+
         final String objectEquals =
                 charToObject(TASK, "engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharChunkEquals.java");
         fixupObjectChunkEquals(objectEquals);
@@ -144,6 +148,27 @@ public class ReplicateHashing {
         final List<String> lines = FileUtils.readLines(objectChunkIdentifyEqualsFileName, Charset.defaultCharset());
         FileUtils.writeLines(objectChunkIdentifyEqualsFileName, simpleFixup(fixupChunkAttributes(lines),
                 "name", "ObjectChunkEquals", "ObjectChunkIdentityEquals"));
+    }
+
+    private static void fixupObjectChunkDeepEquals(String objectPath) throws IOException {
+        final File objectChunkEqualsFileName = new File(objectPath);
+        final File objectChunkIdentifyEqualsFileName =
+                new File(objectChunkEqualsFileName.getParent(), "ObjectChunkDeepEquals.java");
+        Assert.eqTrue(objectChunkEqualsFileName.renameTo(objectChunkIdentifyEqualsFileName),
+                "objectChunkEqualsFileName.renameTo(objectChunkIdentifyEqualsFileName)");
+
+        {
+            List<String> lines = FileUtils.readLines(objectChunkIdentifyEqualsFileName, Charset.defaultCharset());
+            lines = addImport(lines, Objects.class);
+            FileUtils.writeLines(objectChunkIdentifyEqualsFileName, simpleFixup(fixupChunkAttributes(lines),
+                    "name", "ObjectChunkEquals", "ObjectChunkDeepEquals"));
+        }
+        {
+            final List<String> lines = FileUtils.readLines(objectChunkIdentifyEqualsFileName, Charset.defaultCharset());
+            FileUtils.writeLines(objectChunkIdentifyEqualsFileName, simpleFixup(lines,
+                    "eq", "lhs == rhs", "Objects.deepEquals(lhs, rhs)"));
+        }
+
     }
 
     private static void fixupDoubleChunkEquals(String doublePath) throws IOException {

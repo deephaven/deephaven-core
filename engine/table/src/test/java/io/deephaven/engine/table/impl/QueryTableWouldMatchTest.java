@@ -8,6 +8,7 @@ import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.WouldMatchPair;
 import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import junit.framework.TestCase;
@@ -18,6 +19,7 @@ import java.util.Random;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.col;
 import static io.deephaven.engine.util.TableTools.show;
+import static org.junit.Assert.assertArrayEquals;
 
 public class QueryTableWouldMatchTest extends QueryTableTestBase {
 
@@ -33,12 +35,12 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
         t1Matched.addUpdateListener(t1MatchedListener);
 
         show(t1Matched);
-        assertEquals(Arrays.asList(true, false, true, false, false, true),
-                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "HasAnE").get(0, 6)));
-        assertEquals(Arrays.asList(false, false, false, false, true, true),
-                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "isGt3").get(0, 6)));
-        assertEquals(Arrays.asList(true, true, true, true, true, false),
-                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "Compound").get(0, 6)));
+        assertArrayEquals(new Boolean[] {true, false, true, false, false, true},
+                ColumnVectors.ofObject(t1Matched, "HasAnE", Boolean.class).toArray());
+        assertArrayEquals(new Boolean[] {false, false, false, false, true, true},
+                ColumnVectors.ofObject(t1Matched, "isGt3", Boolean.class).toArray());
+        assertArrayEquals(new Boolean[] {true, true, true, true, true, false},
+                ColumnVectors.ofObject(t1Matched, "Compound", Boolean.class).toArray());
 
         // Add
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
@@ -52,12 +54,12 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
         assertEquals(added, i(7, 9));
         assertEquals(modified, i());
         assertEquals(removed, i());
-        assertEquals(Arrays.asList(true, false, true, false, false, true, true, false),
-                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "HasAnE").get(0, 8)));
-        assertEquals(Arrays.asList(false, false, false, false, true, true, true, false),
-                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "isGt3").get(0, 8)));
-        assertEquals(Arrays.asList(true, true, true, true, true, false, true, false),
-                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "Compound").get(0, 8)));
+        assertArrayEquals(new Boolean[] {true, false, true, false, false, true, true, false},
+                ColumnVectors.ofObject(t1Matched, "HasAnE", Boolean.class).toArray());
+        assertArrayEquals(new Boolean[] {false, false, false, false, true, true, true, false},
+                ColumnVectors.ofObject(t1Matched, "isGt3", Boolean.class).toArray());
+        assertArrayEquals(new Boolean[] {true, true, true, true, true, false, true, false},
+                ColumnVectors.ofObject(t1Matched, "Compound", Boolean.class).toArray());
 
         // Remove
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -68,12 +70,12 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
         assertEquals(added, i());
         assertEquals(modified, i());
         assertEquals(removed, i(1, 3));
-        assertEquals(Arrays.asList(true, true, false, true, true, false),
-                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "HasAnE").get(0, 8)));
-        assertEquals(Arrays.asList(false, false, true, true, true, false),
-                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "isGt3").get(0, 8)));
-        assertEquals(Arrays.asList(true, true, true, false, true, false),
-                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "Compound").get(0, 8)));
+        assertArrayEquals(new Boolean[] {true, true, false, true, true, false},
+                ColumnVectors.ofObject(t1Matched, "HasAnE", Boolean.class).toArray());
+        assertArrayEquals(new Boolean[] {false, false, true, true, true, false},
+                ColumnVectors.ofObject(t1Matched, "isGt3", Boolean.class).toArray());
+        assertArrayEquals(new Boolean[] {true, true, true, false, true, false},
+                ColumnVectors.ofObject(t1Matched, "Compound", Boolean.class).toArray());
 
         // Modify
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -87,12 +89,12 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
         assertEquals(added, i());
         assertEquals(modified, i(4, 5));
         assertEquals(removed, i());
-        assertEquals(Arrays.asList(true, true, true, false, true, false),
-                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "HasAnE").get(0, 8)));
-        assertEquals(Arrays.asList(false, false, false, false, true, false),
-                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "isGt3").get(0, 8)));
-        assertEquals(Arrays.asList(true, true, true, true, true, false),
-                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "Compound").get(0, 8)));
+        assertArrayEquals(new Boolean[] {true, true, true, false, true, false},
+                ColumnVectors.ofObject(t1Matched, "HasAnE", Boolean.class).toArray());
+        assertArrayEquals(new Boolean[] {false, false, false, false, true, false},
+                ColumnVectors.ofObject(t1Matched, "isGt3", Boolean.class).toArray());
+        assertArrayEquals(new Boolean[] {true, true, true, true, true, false},
+                ColumnVectors.ofObject(t1Matched, "Compound", Boolean.class).toArray());
 
         // All 3
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -107,12 +109,12 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
         assertEquals(added, i(1, 11));
         assertEquals(modified, i(0, 4));
         assertEquals(removed, i(9, 5));
-        assertEquals(Arrays.asList(true, true, true, false, true, false),
-                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "HasAnE").get(0, 11)));
-        assertEquals(Arrays.asList(true, false, false, true, true, true),
-                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "isGt3").get(0, 11)));
-        assertEquals(Arrays.asList(true, false, true, true, true, true),
-                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "Compound").get(0, 11)));
+        assertArrayEquals(new Boolean[] {true, true, true, false, true, false},
+                ColumnVectors.ofObject(t1Matched, "HasAnE", Boolean.class).toArray());
+        assertArrayEquals(new Boolean[] {true, false, false, true, true, true},
+                ColumnVectors.ofObject(t1Matched, "isGt3", Boolean.class).toArray());
+        assertArrayEquals(new Boolean[] {true, false, true, true, true, true},
+                ColumnVectors.ofObject(t1Matched, "Compound", Boolean.class).toArray());
     }
 
     public void testMatchRefilter() {
@@ -138,10 +140,10 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
         final QueryTable t1Matched = (QueryTable) t1.wouldMatch(sp1, sp2);
         show(t1Matched);
 
-        assertEquals(Arrays.asList(false, false, false, true, true, false),
-                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "InText").get(0, 6)));
-        assertEquals(Arrays.asList(true, false, false, false, false, true),
-                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "InNum").get(0, 6)));
+        assertArrayEquals(new Boolean[] {false, false, false, true, true, false},
+                ColumnVectors.ofObject(t1Matched, "InText", Boolean.class).toArray());
+        assertArrayEquals(new Boolean[] {true, false, false, false, false, true},
+                ColumnVectors.ofObject(t1Matched, "InNum", Boolean.class).toArray());
 
         // Tick one filter table
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
@@ -150,10 +152,10 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
             textTable.notifyListeners(i(2), i(), i(0));
         });
 
-        assertEquals(Arrays.asList(false, true, false, false, true, true),
-                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "InText").get(0, 6)));
-        assertEquals(Arrays.asList(true, false, false, false, false, true),
-                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "InNum").get(0, 6)));
+        assertArrayEquals(new Boolean[] {false, true, false, false, true, true},
+                ColumnVectors.ofObject(t1Matched, "InText", Boolean.class).toArray());
+        assertArrayEquals(new Boolean[] {true, false, false, false, false, true},
+                ColumnVectors.ofObject(t1Matched, "InNum", Boolean.class).toArray());
 
         // Tick both of them
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -165,10 +167,10 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
             numberTable.notifyListeners(i(2), i(0), i());
         });
 
-        assertEquals(Arrays.asList(true, false, true, false, true, false),
-                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "InText").get(0, 6)));
-        assertEquals(Arrays.asList(false, false, true, false, false, true),
-                Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "InNum").get(0, 6)));
+        assertArrayEquals(new Boolean[] {true, false, true, false, true, false},
+                ColumnVectors.ofObject(t1Matched, "InText", Boolean.class).toArray());
+        assertArrayEquals(new Boolean[] {false, false, true, false, false, true},
+                ColumnVectors.ofObject(t1Matched, "InNum", Boolean.class).toArray());
 
         if (isRefreshing) {
             // Tick both of them, and the table itself
@@ -191,10 +193,10 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
             show(textTable);
             show(numberTable);
 
-            assertEquals(Arrays.asList(true, false, false, false, false, true),
-                    Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "InText").get(0, 11)));
-            assertEquals(Arrays.asList(false, true, true, false, true, true),
-                    Arrays.asList(DataAccessHelpers.getColumn(t1Matched, "InNum").get(0, 11)));
+            assertArrayEquals(new Boolean[] {true, false, false, false, false, true},
+                    ColumnVectors.ofObject(t1Matched, "InText", Boolean.class).toArray());
+            assertArrayEquals(new Boolean[] {false, true, true, false, true, true},
+                    ColumnVectors.ofObject(t1Matched, "InNum", Boolean.class).toArray());
         }
     }
 

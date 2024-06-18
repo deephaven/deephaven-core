@@ -4,6 +4,7 @@
 package io.deephaven.web.client.api.input;
 
 import elemental2.core.JsObject;
+import elemental2.core.JsArray;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.inputtable_pb.AddTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.inputtable_pb.DeleteTableRequest;
@@ -16,6 +17,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.batc
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.Column;
+import io.deephaven.web.client.api.JsLazy;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.shared.fu.JsRunnable;
@@ -23,6 +25,7 @@ import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsOptional;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
+import jsinterop.base.Js;
 import jsinterop.base.JsPropertyMap;
 
 import java.util.ArrayList;
@@ -51,12 +54,16 @@ public class JsInputTable {
     private final JsTable table;
     private final String[] keys;
     private final String[] values;
+    private final JsLazy<Column[]> keyColumns;
+    private final JsLazy<Column[]> valueColumns;
 
     @JsIgnore
     public JsInputTable(JsTable from, String[] keys, String[] values) {
         this.table = from;
         this.keys = JsObject.freeze(keys);
         this.values = JsObject.freeze(values);
+        this.keyColumns = JsLazy.of(() -> JsObject.freeze(table.findColumns(keys)));
+        this.valueColumns = JsLazy.of(() -> JsObject.freeze(table.findColumns(values)));
     }
 
     /**
@@ -70,14 +77,15 @@ public class JsInputTable {
     }
 
     /**
-     * A list of the key Column objects
-     * 
-     * @return {@link Column} array.
+     * A list of the key columns.
+     *
+     * @return Column array.
      */
     @JsProperty
     public Column[] getKeyColumns() {
-        return table.findColumns(keys);
+        return keyColumns.get();
     }
+
 
     /**
      * A list of the value columns, by name
@@ -96,7 +104,7 @@ public class JsInputTable {
      */
     @JsProperty
     public Column[] getValueColumns() {
-        return table.findColumns(values);
+        return valueColumns.get();
     }
 
     /**

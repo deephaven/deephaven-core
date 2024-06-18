@@ -106,8 +106,8 @@ public class TestMapCodecColumns {
         final File dir = Files.createTempDirectory(Paths.get(""), "CODEC_TEST").toFile();
         final File dest = new File(dir, "Table.parquet");
         try {
-            ParquetTools.writeTable(table, dest, table.getDefinition(), writeInstructions);
-            final Table result = ParquetTools.readTable(dest);
+            ParquetTools.writeTable(table, dest.getPath(), writeInstructions);
+            final Table result = ParquetTools.readTable(dest.getPath());
             TableTools.show(result);
             TestCase.assertEquals(TABLE_DEFINITION, result.getDefinition());
             TstUtils.assertTableEquals(table, result);

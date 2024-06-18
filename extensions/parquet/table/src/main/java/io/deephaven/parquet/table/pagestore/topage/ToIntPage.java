@@ -22,8 +22,7 @@ public class ToIntPage<ATTR extends Any> implements ToPage<ATTR, int[]> {
         throw new IllegalArgumentException("The native type for a Int column is " + nativeType.getCanonicalName());
     }
 
-    @SuppressWarnings("WeakerAccess")
-    ToIntPage() {}
+    private ToIntPage() {}
 
     @Override
     @NotNull
