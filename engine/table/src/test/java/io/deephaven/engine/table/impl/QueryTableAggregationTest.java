@@ -2120,39 +2120,39 @@ public class QueryTableAggregationTest {
                         return queryTable.sort("Sym").stdBy("Sym");
                     }
                 },
-                // new EvalNugget() {
-                // public Table e() {
-                // return queryTable.sort("Sym").varBy("Sym");
-                // }
-                // },
-                // new EvalNugget() {
-                // public Table e() {
-                // return queryTable.dropColumns("Sym").stdBy();
-                // }
-                // },
-                // new EvalNugget() {
-                // public Table e() {
-                // return queryTable.dropColumns("Sym").varBy();
-                // }
-                // },
-                // new TableComparator(doubleComparisonVar, trueForSyms) {
-                // @Override
-                // public void show() {
-                // System.out.println("Big vs Double (var):");
-                // TableTools.showWithRowSet(bigVsDoubleVar);
-                // System.out.println("Double Comparison (var)");
-                // TableTools.showWithRowSet(doubleComparisonVar);
-                // }
-                // },
-                // new TableComparator(doubleComparisonStd, trueForSyms) {
-                // @Override
-                // public void show() {
-                // System.out.println("Big vs Double (std):");
-                // TableTools.showWithRowSet(bigVsDoubleStd);
-                // System.out.println("Double Comparison (std)");
-                // TableTools.showWithRowSet(doubleComparisonStd);
-                // }
-                // }
+                new EvalNugget() {
+                    public Table e() {
+                        return queryTable.sort("Sym").varBy("Sym");
+                    }
+                },
+                new EvalNugget() {
+                    public Table e() {
+                        return queryTable.dropColumns("Sym").stdBy();
+                    }
+                },
+                new EvalNugget() {
+                    public Table e() {
+                        return queryTable.dropColumns("Sym").varBy();
+                    }
+                },
+                new TableComparator(doubleComparisonVar, trueForSyms) {
+                    @Override
+                    public void show() {
+                        System.out.println("Big vs Double (var):");
+                        TableTools.showWithRowSet(bigVsDoubleVar);
+                        System.out.println("Double Comparison (var)");
+                        TableTools.showWithRowSet(doubleComparisonVar);
+                    }
+                },
+                new TableComparator(doubleComparisonStd, trueForSyms) {
+                    @Override
+                    public void show() {
+                        System.out.println("Big vs Double (std):");
+                        TableTools.showWithRowSet(bigVsDoubleStd);
+                        System.out.println("Double Comparison (std)");
+                        TableTools.showWithRowSet(doubleComparisonStd);
+                    }
+                }
         };
         for (int i = 0; i < 50; i++) {
             RefreshingTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
