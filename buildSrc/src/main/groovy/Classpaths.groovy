@@ -126,10 +126,10 @@ class Classpaths {
     static final String HADOOP_VERSION = '3.4.0'
 
     static final String ICEBERG_GROUP = 'org.apache.iceberg'
-    static final String ICEBERG_VERSION = '1.5.0'
+    static final String ICEBERG_VERSION = '1.5.2'
 
     static final String AWSSDK_GROUP = 'software.amazon.awssdk'
-    static final String AWSSDK_VERSION = '2.23.19'
+    static final String AWSSDK_VERSION = '2.24.5'
 
     static final String TESTCONTAINER_GROUP = 'org.testcontainers'
     static final String TESTCONTAINER_VERSION = '1.19.4'
