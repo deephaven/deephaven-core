@@ -336,8 +336,13 @@ class TableListenerHandle:
                 table is refreshing, it must belong to the same update graph as the table being listened to. Default is
                 None.
 
-                Dependencies are used to ensure that the listener can safely access them during its execution, such as
-                reading the data from the tables or even performing certain table operations on them.
+                Dependencies ensure that the listener can safely access the dependent tables during its execution. This
+                includes reading the data from the tables or even performing table operations on them. While performing
+                operations on the dependent tables is safe in the listener, reading or operating on the result tables of
+                those operations may not be if they are refreshing and thus can't be guaranteed to be satisfied in the
+                current update graph cycle. In such cases, snapshotting the result tables before reading or operating on
+                them is recommended.
+
 
         Raises:
             DHError
@@ -419,8 +424,12 @@ def listen(t: Table, listener: Union[Callable, TableListener], description: str 
             table is refreshing, it must belong to the same update graph as the table being listened to. Default is
             None.
 
-            Dependencies are used to ensure that the listener can safely access them during its execution, such as
-            reading the data from the tables or even performing certain table operations on them.
+            Dependencies ensure that the listener can safely access the dependent tables during its execution. This
+            includes reading the data from the tables or even performing table operations on them. While performing
+            operations on the dependent tables is safe in the listener, reading or operating on the result tables of
+            those operations may not be if they are refreshing and thus can't be guaranteed to be satisfied in the
+            current update graph cycle. In such cases, snapshotting the result tables before reading or operating on
+            them is recommended.
 
     Returns:
         a TableListenerHandle
