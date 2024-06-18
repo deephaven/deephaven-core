@@ -157,7 +157,7 @@ public class WhereFilterFactory {
         boolean inverted = false;
         switch (op) {
             case "!=":
-                inverted = !inverted;
+                inverted = true;
             case "=":
             case "==":
                 log.debug().append("WhereFilterFactory creating MatchFilter for expression: ").append(expression)
