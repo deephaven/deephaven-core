@@ -31,7 +31,6 @@ public class CalendarDay<T extends Comparable<T> & Temporal> {
     public static final CalendarDay<LocalTime> HOLIDAY = new CalendarDay<>();
 
     private final TimeRange<T>[] businessTimeRanges;
-    private final List<TimeRange<T>> businessTimeRangesList;
     private volatile long businessNanos = -1;
 
     /**
@@ -66,7 +65,6 @@ public class CalendarDay<T extends Comparable<T> & Temporal> {
         }
 
         this.businessTimeRanges = ranges;
-        this.businessTimeRangesList = List.of(ranges);
     }
 
     /**
@@ -83,7 +81,7 @@ public class CalendarDay<T extends Comparable<T> & Temporal> {
      * @return business time ranges for the day
      */
     public List<TimeRange<T>> businessTimeRanges() {
-        return businessTimeRangesList;
+        return List.of(businessTimeRanges);
     }
 
     /**
