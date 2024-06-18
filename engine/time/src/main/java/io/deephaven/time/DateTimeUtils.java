@@ -83,6 +83,13 @@ public class DateTimeUtils {
             "(?<date>[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9])(?<t>[tT]?) (?<timezone>[a-zA-Z_/]+)");
 
     /**
+     * Matches dates without time zones.
+     */
+    private static final Pattern LOCAL_DATE_PATTERN = Pattern.compile(
+            "(?<date>[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9])(?<t>[tT]?)");
+
+
+    /**
      * Matches time durations.
      */
     private static final Pattern TIME_DURATION_PATTERN = Pattern.compile(
@@ -4377,19 +4384,18 @@ public class DateTimeUtils {
      * Parses the string argument as a {@link LocalDateTime}.
      * <p>
      * Date time strings are formatted according to the ISO 8601 date time format
-     * {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others.
+     * {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS]} and others.
      *
      * @param s date time string
      * @return a {@link LocalDateTime} represented by the input string
      * @throws DateTimeParseException if the string cannot be parsed
-     * @see DateTimeFormatter#ISO_INSTANT
      */
     @ScriptApi
     @NotNull
     public static LocalDateTime parseLocalDateTime(@NotNull final String s) {
         // noinspection ConstantConditions
         if (s == null) {
-            throw new DateTimeParseException("Cannot parse datetime (null): " + s);
+            throw new DateTimeParseException("Cannot parse local date time (null): " + s);
         }
 
         try {
@@ -4399,21 +4405,12 @@ public class DateTimeUtils {
         }
 
         try {
-            final Matcher dtzMatcher = DATE_TZ_PATTERN.matcher(s);
-            if (dtzMatcher.matches()) {
-                final String dateString = dtzMatcher.group("date");
+            final Matcher dtMatcher = LOCAL_DATE_PATTERN.matcher(s);
+            if (dtMatcher.matches()) {
+                final String dateString = dtMatcher.group("date");
                 return LocalDate.parse(dateString, FORMATTER_ISO_LOCAL_DATE).atTime(LocalTime.of(0, 0));
             }
-
-            final String dateTimeString;
-            final int spaceIndex = s.indexOf(' ');
-            if (spaceIndex != -1) {
-                dateTimeString = s.substring(0, spaceIndex);
-            } else {
-                dateTimeString = s;
-            }
-
-            return LocalDateTime.parse(dateTimeString, FORMATTER_ISO_LOCAL_DATE_TIME);
+            return LocalDateTime.parse(s, FORMATTER_ISO_LOCAL_DATE_TIME);
         } catch (Exception ex) {
             throw new DateTimeParseException("Cannot parse local date time: " + s, ex);
         }
