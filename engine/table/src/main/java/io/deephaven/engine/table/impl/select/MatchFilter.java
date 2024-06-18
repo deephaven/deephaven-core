@@ -302,10 +302,10 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
         /**
          * Convert the string value to the appropriate type for the column.
          *
-         * @param column              the column definition
-         * @param strValue            the string value to convert
+         * @param column the column definition
+         * @param strValue the string value to convert
          * @param queryScopeVariables the query scope variables
-         * @param valueConsumer       the consumer for the converted value
+         * @param valueConsumer the consumer for the converted value
          * @return whether the value was an array or collection
          */
         final boolean convertValue(
@@ -340,7 +340,7 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
             return false;
         }
     }
-    
+
     public static class ColumnTypeConvertorFactory {
         public static ColumnTypeConvertor getConvertor(final Class<?> cls) {
             if (cls == byte.class) {
