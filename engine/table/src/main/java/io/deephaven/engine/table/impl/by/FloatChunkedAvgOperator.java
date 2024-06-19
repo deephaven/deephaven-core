@@ -18,6 +18,7 @@ import java.util.Map;
 
 import static io.deephaven.engine.table.impl.by.RollupConstants.*;
 import static io.deephaven.engine.util.NullSafeAddition.plusDouble;
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 class FloatChunkedAvgOperator extends FpChunkedNonNormalCounter implements IterativeChunkedAggregationOperator {
     private final String name;
@@ -137,6 +138,8 @@ class FloatChunkedAvgOperator extends FpChunkedNonNormalCounter implements Itera
             resultColumn.set(destination, Double.POSITIVE_INFINITY);
         } else if (totalNegativeInfinityCount > 0) {
             resultColumn.set(destination, Double.NEGATIVE_INFINITY);
+        } else if (totalNormal == 0) {
+            resultColumn.set(destination, NULL_DOUBLE);
         } else {
             resultColumn.set(destination, newSum / totalNormal);
         }
@@ -144,12 +147,14 @@ class FloatChunkedAvgOperator extends FpChunkedNonNormalCounter implements Itera
 
     private void updateResultSumUnchanged(long destination, long totalNormal, long totalNanCount,
             long totalInfinityCount, long totalNegativeInfinityCount) {
-        if (totalNanCount > 0 || totalNormal == 0 || (totalInfinityCount > 0 && totalNegativeInfinityCount > 0)) {
+        if (totalNanCount > 0 || (totalInfinityCount > 0 && totalNegativeInfinityCount > 0)) {
             resultColumn.set(destination, Double.NaN);
         } else if (totalInfinityCount > 0) {
             resultColumn.set(destination, Double.POSITIVE_INFINITY);
         } else if (totalNegativeInfinityCount > 0) {
             resultColumn.set(destination, Double.NEGATIVE_INFINITY);
+        } else if (totalNormal == 0) {
+            resultColumn.set(destination, NULL_DOUBLE);
         } else {
             resultColumn.set(destination, runningSum.getUnsafe(destination) / totalNormal);
         }

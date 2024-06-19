@@ -62,7 +62,7 @@ public class TestRollingSum extends BaseUpdateByTest {
     // region Static Zero Key Tests
 
     @Test
-    public void testStaticZeroKeyWithAllNullWindows() {
+    public void testStaticZeroKeyAllNullVector() {
         final QueryTable t = createTestTable(10000, false, false, false, 0x31313131).t;
         t.setRefreshing(false);
 
