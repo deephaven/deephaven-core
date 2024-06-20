@@ -95,10 +95,11 @@ final class S3RequestCache {
             if (newAcquiredRequest == null) {
                 newAcquiredRequest = S3Request.createAndAcquire(fragmentIndex, context);
             }
-            if ((existingRequest = requests.putIfAbsent(key, newAcquiredRequest.request)) == null) {
+            if ((existingRequest = requests.putIfAbsent(key, newAcquiredRequest.getRequest())) == null) {
                 if (log.isDebugEnabled()) {
                     log.debug().append("Added new request to cache: ").append(String.format("ctx=%d ",
-                            System.identityHashCode(context))).append(newAcquiredRequest.request.requestStr()).endl();
+                            System.identityHashCode(context))).append(newAcquiredRequest.getRequest().requestStr())
+                            .endl();
                 }
                 return newAcquiredRequest;
             }
