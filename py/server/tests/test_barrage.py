@@ -59,7 +59,7 @@ class BarrageTestCase(BaseTestCase):
         self.pub_session.close()
 
     def test_barrage_session(self):
-        session = barrage_session(host="localhost", port=10000, auth_type="Anonymous")
+        session = barrage_session(host="localhost", port=10000, auth_type="Anonymous", extra_headers={"envoy-prefix": "test"})
         self.assertIsNotNone(session)
 
         with self.assertRaises(DHError):
