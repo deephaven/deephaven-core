@@ -10,7 +10,7 @@ import org.apache.parquet.column.values.ValuesReader;
 
 import java.time.LocalTime;
 
-public class LocalTimeFromMicrosMaterializer extends LocalTimeMaterializerBase implements PageMaterializer {
+public class LocalTimeFromMicrosMaterializer extends ObjectMaterializerBase<LocalTime> implements PageMaterializer {
 
     public static final PageMaterializerFactory Factory = new PageMaterializerFactory() {
         @Override
@@ -24,14 +24,14 @@ public class LocalTimeFromMicrosMaterializer extends LocalTimeMaterializerBase i
         }
     };
 
-    final ValuesReader dataReader;
+    private final ValuesReader dataReader;
 
     private LocalTimeFromMicrosMaterializer(ValuesReader dataReader, int numValues) {
         this(dataReader, null, numValues);
     }
 
     private LocalTimeFromMicrosMaterializer(ValuesReader dataReader, LocalTime nullValue, int numValues) {
-        super(nullValue, numValues);
+        super(nullValue, new LocalTime[numValues]);
         this.dataReader = dataReader;
     }
 

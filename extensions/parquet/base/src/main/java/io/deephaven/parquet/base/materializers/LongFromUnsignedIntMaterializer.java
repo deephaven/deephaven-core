@@ -21,7 +21,7 @@ public class LongFromUnsignedIntMaterializer extends LongMaterializerBase implem
         }
     };
 
-    final ValuesReader dataReader;
+    private final ValuesReader dataReader;
 
     private LongFromUnsignedIntMaterializer(ValuesReader dataReader, int numValues) {
         this(dataReader, 0, numValues);

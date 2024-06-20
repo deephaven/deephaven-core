@@ -8,7 +8,26 @@ import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.apache.parquet.schema.PrimitiveType;
 import org.jetbrains.annotations.NotNull;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
+
+import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.BINARY;
+
 public interface PageMaterializer {
+
+    /**
+     * Get the internal type used by Deephaven to represent a Parquet
+     * {@link LogicalTypeAnnotation.DecimalLogicalTypeAnnotation Decimal} logical type
+     */
+    static Class<?> resolveDecimalLogicalType(
+            final LogicalTypeAnnotation.DecimalLogicalTypeAnnotation decimalLogicalType) {
+        // This pair of values (precision=1, scale=0) is set at write time as a marker so that we can recover
+        // the fact that the type is a BigInteger, not a BigDecimal when the fies are read.
+        if (decimalLogicalType.getPrecision() == 1 && decimalLogicalType.getScale() == 0) {
+            return BigInteger.class;
+        }
+        return BigDecimal.class;
+    }
 
     static PageMaterializerFactory factoryForType(@NotNull final PrimitiveType primitiveType) {
         final PrimitiveType.PrimitiveTypeName primitiveTypeName = primitiveType.getPrimitiveTypeName();
@@ -47,6 +66,10 @@ public interface PageMaterializer {
                     }
                     // isAdjustedToUTC parameter is ignored while reading LocalTime from Parquet files
                     return LocalTimeFromMillisMaterializer.Factory;
+                } else if (logicalTypeAnnotation instanceof LogicalTypeAnnotation.DecimalLogicalTypeAnnotation) {
+                    final LogicalTypeAnnotation.DecimalLogicalTypeAnnotation decimalLogicalType =
+                            (LogicalTypeAnnotation.DecimalLogicalTypeAnnotation) logicalTypeAnnotation;
+                    return new BigDecimalFromIntMaterializer.Factory(decimalLogicalType.getScale());
                 }
                 return IntMaterializer.Factory;
             case INT64:
@@ -87,6 +110,10 @@ public interface PageMaterializer {
                         default:
                             throw new IllegalArgumentException("Unsupported unit=" + timeLogicalType.getUnit());
                     }
+                } else if (logicalTypeAnnotation instanceof LogicalTypeAnnotation.DecimalLogicalTypeAnnotation) {
+                    final LogicalTypeAnnotation.DecimalLogicalTypeAnnotation decimalLogicalType =
+                            (LogicalTypeAnnotation.DecimalLogicalTypeAnnotation) logicalTypeAnnotation;
+                    return new BigDecimalFromLongMaterializer.Factory(decimalLogicalType.getScale());
                 }
                 return LongMaterializer.Factory;
             case INT96:
@@ -102,6 +129,16 @@ public interface PageMaterializer {
                     return StringMaterializer.Factory;
                 }
             case FIXED_LEN_BYTE_ARRAY: // fall through
+                if (logicalTypeAnnotation instanceof LogicalTypeAnnotation.DecimalLogicalTypeAnnotation) {
+                    final LogicalTypeAnnotation.DecimalLogicalTypeAnnotation decimalLogicalType =
+                            (LogicalTypeAnnotation.DecimalLogicalTypeAnnotation) logicalTypeAnnotation;
+                    final int encodedSizeInBytes = primitiveTypeName == BINARY ? -1 : primitiveType.getTypeLength();
+                    if (resolveDecimalLogicalType(decimalLogicalType) == BigInteger.class) {
+                        return new BigIntegerMaterializer.Factory(new BigIntegerParquetBytesCodec(encodedSizeInBytes));
+                    }
+                    return new BigDecimalFromBytesMaterializer.Factory(new BigDecimalParquetBytesCodec(
+                            decimalLogicalType.getPrecision(), decimalLogicalType.getScale(), encodedSizeInBytes));
+                }
                 return BlobMaterializer.Factory;
             default:
                 throw new RuntimeException("Unexpected type name:" + primitiveTypeName);

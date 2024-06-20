@@ -8,6 +8,8 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.CodecLookup;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.util.BigDecimalUtils;
+import io.deephaven.parquet.base.BigDecimalParquetBytesCodec;
+import io.deephaven.parquet.base.BigIntegerParquetBytesCodec;
 import io.deephaven.parquet.table.*;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.codec.ObjectCodec;
@@ -87,11 +89,11 @@ public interface TransferObject<BUFFER_TYPE> extends SafeCloseable {
             final BigDecimalUtils.PrecisionAndScale precisionAndScale = TypeInfos.getPrecisionAndScale(
                     computedCache, columnName, tableRowSet, () -> bigDecimalColumnSource);
             final ObjectCodec<BigDecimal> codec = new BigDecimalParquetBytesCodec(
-                    precisionAndScale.precision, precisionAndScale.scale, -1);
+                    precisionAndScale.precision, precisionAndScale.scale);
             return new CodecTransfer<>(bigDecimalColumnSource, codec, tableRowSet, instructions.getTargetPageSize());
         }
         if (columnType == BigInteger.class) {
-            return new CodecTransfer<>(columnSource, new BigIntegerParquetBytesCodec(-1), tableRowSet,
+            return new CodecTransfer<>(columnSource, new BigIntegerParquetBytesCodec(), tableRowSet,
                     instructions.getTargetPageSize());
         }
         if (columnType == LocalDate.class) {
@@ -135,7 +137,7 @@ public interface TransferObject<BUFFER_TYPE> extends SafeCloseable {
                 return new StringArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
             if (componentType == BigInteger.class) {
-                return new CodecArrayTransfer<>(columnSource, new BigIntegerParquetBytesCodec(-1),
+                return new CodecArrayTransfer<>(columnSource, new BigIntegerParquetBytesCodec(),
                         tableRowSet, instructions.getTargetPageSize());
             }
             if (componentType == Instant.class) {
@@ -181,7 +183,7 @@ public interface TransferObject<BUFFER_TYPE> extends SafeCloseable {
                 return new StringVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
             if (componentType == BigInteger.class) {
-                return new CodecVectorTransfer<>(columnSource, new BigIntegerParquetBytesCodec(-1),
+                return new CodecVectorTransfer<>(columnSource, new BigIntegerParquetBytesCodec(),
                         tableRowSet, instructions.getTargetPageSize());
             }
             if (componentType == Instant.class) {
