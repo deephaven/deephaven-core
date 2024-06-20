@@ -16,7 +16,7 @@ from deephaven import update_graph
 from deephaven._wrapper import JObjectWrapper
 from deephaven.jcompat import to_sequence
 from deephaven.table import Table
-from deephaven.table_reader import _table_reader_by_row_set
+from deephaven._table_reader import _table_reader_chunks
 from deephaven.update_graph import UpdateGraph
 
 _JPythonReplayListenerAdapter = jpy.get_type("io.deephaven.integrations.python.PythonReplayListenerAdapter")
@@ -50,8 +50,8 @@ class TableUpdate(JObjectWrapper):
 
         try:
             return next(
-                _table_reader_by_row_set(table=self.table, cols=cols, row_set=self.j_table_update.added.asRowSet(),
-                                  chunk_size=None))
+                _table_reader_chunks(table=self.table, cols=cols, row_set=self.j_table_update.added.asRowSet(),
+                                     chunk_size=None))
         except StopIteration:
             return {}
 
@@ -70,8 +70,8 @@ class TableUpdate(JObjectWrapper):
         if not self.j_table_update.added:
             return (_ for _ in ())
 
-        return _table_reader_by_row_set(table=self.table, cols=cols, row_set=self.j_table_update.added.asRowSet(),
-                                 chunk_size=chunk_size)
+        return _table_reader_chunks(table=self.table, cols=cols, row_set=self.j_table_update.added.asRowSet(),
+                                    chunk_size=chunk_size)
 
     def removed(self, cols: Union[str, List[str]] = None) -> Dict[str, numpy.ndarray]:
         """Returns a dict with each key being a column name and each value being a NumPy array of
@@ -88,8 +88,8 @@ class TableUpdate(JObjectWrapper):
 
         try:
             return next(
-                _table_reader_by_row_set(table=self.table, cols=cols, row_set=self.j_table_update.removed.asRowSet(),
-                                  chunk_size=None, prev=True))
+                _table_reader_chunks(table=self.table, cols=cols, row_set=self.j_table_update.removed.asRowSet(),
+                                     chunk_size=None, prev=True))
         except StopIteration:
             return {}
 
@@ -108,8 +108,8 @@ class TableUpdate(JObjectWrapper):
         if not self.j_table_update.removed:
             return (_ for _ in ())
 
-        return _table_reader_by_row_set(table=self.table, cols=cols, row_set=self.j_table_update.removed.asRowSet(),
-                                 chunk_size=chunk_size, prev=True)
+        return _table_reader_chunks(table=self.table, cols=cols, row_set=self.j_table_update.removed.asRowSet(),
+                                    chunk_size=chunk_size, prev=True)
 
     def modified(self, cols: Union[str, List[str]] = None) -> Dict[str, numpy.ndarray]:
         """Returns a dict with each key being a column name and each value being a NumPy array of the current values of
@@ -126,8 +126,8 @@ class TableUpdate(JObjectWrapper):
 
         try:
             return next(
-                _table_reader_by_row_set(self.table, cols=cols, row_set=self.j_table_update.modified.asRowSet(),
-                                  chunk_size=None))
+                _table_reader_chunks(self.table, cols=cols, row_set=self.j_table_update.modified.asRowSet(),
+                                     chunk_size=None))
         except StopIteration:
             return {}
 
@@ -146,8 +146,8 @@ class TableUpdate(JObjectWrapper):
         if not self.j_table_update.modified:
             return (_ for _ in ())
 
-        return _table_reader_by_row_set(self.table, cols=cols, row_set=self.j_table_update.modified.asRowSet(),
-                                 chunk_size=chunk_size)
+        return _table_reader_chunks(self.table, cols=cols, row_set=self.j_table_update.modified.asRowSet(),
+                                    chunk_size=chunk_size)
 
     def modified_prev(self, cols: Union[str, List[str]] = None) -> Dict[str, numpy.ndarray]:
         """Returns a dict with each key being a column name and each value being a NumPy array of the previous values of
@@ -164,8 +164,8 @@ class TableUpdate(JObjectWrapper):
 
         try:
             return next(
-                _table_reader_by_row_set(self.table, cols=cols, row_set=self.j_table_update.modified.asRowSet(),
-                                  chunk_size=None, prev=True))
+                _table_reader_chunks(self.table, cols=cols, row_set=self.j_table_update.modified.asRowSet(),
+                                     chunk_size=None, prev=True))
         except StopIteration:
             return {}
 
@@ -184,8 +184,8 @@ class TableUpdate(JObjectWrapper):
         if not self.j_table_update.modified:
             return (_ for _ in ())
 
-        return _table_reader_by_row_set(self.table, cols=cols, row_set=self.j_table_update.modified.asRowSet(),
-                                 chunk_size=chunk_size, prev=True)
+        return _table_reader_chunks(self.table, cols=cols, row_set=self.j_table_update.modified.asRowSet(),
+                                    chunk_size=chunk_size, prev=True)
 
     @property
     def shifted(self):
