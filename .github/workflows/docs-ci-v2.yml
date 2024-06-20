@@ -38,7 +38,6 @@ jobs:
         run: |
           mkdir -p tmp-deephaven-core-v2/symlinks
           cd tmp-deephaven-core-v2/symlinks
-          ln -s ../${{ github.ref_name }} latest
           ln -s ../main next
           
       - name: Deploy Symlinks
