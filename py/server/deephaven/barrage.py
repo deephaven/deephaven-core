@@ -136,7 +136,7 @@ def barrage_session(host: str,
         tls_root_certs (bytes): PEM encoded root certificates to use for TLS connection, or None to use system defaults.
              If not None implies use a TLS connection and the use_tls argument should have been passed
              as True. Defaults to None
-        extra_headers (Dict[str, str]): extra headers to set when configuring the gRPC channel
+        extra_headers (Dict[str, str]): extra headers to set when configuring the gRPC channel. Defaults to None.
 
     Returns:
         a Deephaven Barrage session
