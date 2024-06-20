@@ -6,7 +6,7 @@
 from abc import ABC, abstractmethod
 from functools import wraps
 from inspect import signature
-from typing import Callable, Union, List, Generator, Dict, Optional, Literal, Sequence
+from typing import Callable, Union, List, Generator, Dict, Literal, Sequence
 
 import jpy
 import numpy
@@ -14,51 +14,13 @@ import numpy
 from deephaven import DHError
 from deephaven import update_graph
 from deephaven._wrapper import JObjectWrapper
-from deephaven.column import Column
 from deephaven.jcompat import to_sequence
-from deephaven.numpy import _column_to_numpy_array
 from deephaven.table import Table
+from deephaven.table_reader import _table_reader_by_row_set
 from deephaven.update_graph import UpdateGraph
 
 _JPythonReplayListenerAdapter = jpy.get_type("io.deephaven.integrations.python.PythonReplayListenerAdapter")
 _JTableUpdate = jpy.get_type("io.deephaven.engine.table.TableUpdate")
-_JTableUpdateDataReader = jpy.get_type("io.deephaven.integrations.python.PythonListenerTableUpdateDataReader")
-
-
-def _col_defs(table: Table, cols: Union[str, List[str]]) -> List[Column]:
-    if not cols:
-        col_defs = table.columns
-    else:
-        cols = to_sequence(cols)
-        col_defs = [col for col in table.columns if col.name in cols]
-
-    return col_defs
-
-
-def _changes_to_numpy(table: Table, cols: Union[str, List[str]], row_set, chunk_size: Optional[int],
-                      prev: bool = False) -> Generator[Dict[str, numpy.ndarray], None, None]:
-    col_defs = _col_defs(table, cols)
-
-    row_sequence_iterator = row_set.getRowSequenceIterator()
-    col_sources = [table.j_table.getColumnSource(col_def.name) for col_def in col_defs]
-    chunk_size = row_set.size() if not chunk_size else chunk_size
-    j_reader_context = _JTableUpdateDataReader.makeContext(chunk_size, *col_sources)
-    try:
-        while row_sequence_iterator.hasMore():
-            chunk_row_set = row_sequence_iterator.getNextRowSequenceWithLength(chunk_size)
-
-            j_array = _JTableUpdateDataReader.readChunkColumnMajor(j_reader_context, chunk_row_set, col_sources, prev)
-
-            col_dict = {}
-            for i, col_def in enumerate(col_defs):
-                np_array = _column_to_numpy_array(col_def, j_array[i])
-                col_dict[col_def.name] = np_array
-
-            yield col_dict
-    finally:
-        j_reader_context.close()
-        row_sequence_iterator.close()
-
 
 class TableUpdate(JObjectWrapper):
     """A TableUpdate object represents a table update event.  It contains the added, removed, and modified rows in the
@@ -88,7 +50,7 @@ class TableUpdate(JObjectWrapper):
 
         try:
             return next(
-                _changes_to_numpy(table=self.table, cols=cols, row_set=self.j_table_update.added.asRowSet(),
+                _table_reader_by_row_set(table=self.table, cols=cols, row_set=self.j_table_update.added.asRowSet(),
                                   chunk_size=None))
         except StopIteration:
             return {}
@@ -108,7 +70,7 @@ class TableUpdate(JObjectWrapper):
         if not self.j_table_update.added:
             return (_ for _ in ())
 
-        return _changes_to_numpy(table=self.table, cols=cols, row_set=self.j_table_update.added.asRowSet(),
+        return _table_reader_by_row_set(table=self.table, cols=cols, row_set=self.j_table_update.added.asRowSet(),
                                  chunk_size=chunk_size)
 
     def removed(self, cols: Union[str, List[str]] = None) -> Dict[str, numpy.ndarray]:
@@ -126,7 +88,7 @@ class TableUpdate(JObjectWrapper):
 
         try:
             return next(
-                _changes_to_numpy(table=self.table, cols=cols, row_set=self.j_table_update.removed.asRowSet(),
+                _table_reader_by_row_set(table=self.table, cols=cols, row_set=self.j_table_update.removed.asRowSet(),
                                   chunk_size=None, prev=True))
         except StopIteration:
             return {}
@@ -146,7 +108,7 @@ class TableUpdate(JObjectWrapper):
         if not self.j_table_update.removed:
             return (_ for _ in ())
 
-        return _changes_to_numpy(table=self.table, cols=cols, row_set=self.j_table_update.removed.asRowSet(),
+        return _table_reader_by_row_set(table=self.table, cols=cols, row_set=self.j_table_update.removed.asRowSet(),
                                  chunk_size=chunk_size, prev=True)
 
     def modified(self, cols: Union[str, List[str]] = None) -> Dict[str, numpy.ndarray]:
@@ -164,7 +126,7 @@ class TableUpdate(JObjectWrapper):
 
         try:
             return next(
-                _changes_to_numpy(self.table, cols=cols, row_set=self.j_table_update.modified.asRowSet(),
+                _table_reader_by_row_set(self.table, cols=cols, row_set=self.j_table_update.modified.asRowSet(),
                                   chunk_size=None))
         except StopIteration:
             return {}
@@ -184,7 +146,7 @@ class TableUpdate(JObjectWrapper):
         if not self.j_table_update.modified:
             return (_ for _ in ())
 
-        return _changes_to_numpy(self.table, cols=cols, row_set=self.j_table_update.modified.asRowSet(),
+        return _table_reader_by_row_set(self.table, cols=cols, row_set=self.j_table_update.modified.asRowSet(),
                                  chunk_size=chunk_size)
 
     def modified_prev(self, cols: Union[str, List[str]] = None) -> Dict[str, numpy.ndarray]:
@@ -202,7 +164,7 @@ class TableUpdate(JObjectWrapper):
 
         try:
             return next(
-                _changes_to_numpy(self.table, cols=cols, row_set=self.j_table_update.modified.asRowSet(),
+                _table_reader_by_row_set(self.table, cols=cols, row_set=self.j_table_update.modified.asRowSet(),
                                   chunk_size=None, prev=True))
         except StopIteration:
             return {}
@@ -222,7 +184,7 @@ class TableUpdate(JObjectWrapper):
         if not self.j_table_update.modified:
             return (_ for _ in ())
 
-        return _changes_to_numpy(self.table, cols=cols, row_set=self.j_table_update.modified.asRowSet(),
+        return _table_reader_by_row_set(self.table, cols=cols, row_set=self.j_table_update.modified.asRowSet(),
                                  chunk_size=chunk_size, prev=True)
 
     @property
