@@ -13,6 +13,8 @@ dependencies {
     implementation project(':extensions-parquet-compression')
     implementation project(':Base')
     implementation project(':Util')
+    implementation project(':engine-time')
+    implementation project(':Configuration')
     implementation depCommonsIo
 
     compileOnly depAnnotations

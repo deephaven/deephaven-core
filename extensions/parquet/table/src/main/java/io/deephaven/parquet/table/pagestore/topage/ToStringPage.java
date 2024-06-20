@@ -7,14 +7,13 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.util.channel.SeekableChannelContext;
 import org.apache.parquet.column.Dictionary;
-import org.apache.parquet.io.api.Binary;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Function;
 
 public class ToStringPage<ATTR extends Any> implements ToPage<ATTR, String[]> {
 
-    static final ToStringPage<? extends Any> INSTANCE = new ToStringPage<>();
+    private static final ToStringPage<? extends Any> INSTANCE = new ToStringPage<>();
 
     public static <ATTR extends Any> ToPage<ATTR, String[]> create(
             final Class<?> nativeType,
@@ -46,18 +45,5 @@ public class ToStringPage<ATTR extends Any> implements ToPage<ATTR, String[]> {
     @NotNull
     public final ChunkType getChunkType() {
         return ChunkType.Object;
-    }
-
-    @Override
-    @NotNull
-    public final String[] convertResult(final Object result) {
-        final Binary[] from = (Binary[]) result;
-        final String[] to = new String[from.length];
-        for (int ri = 0; ri < to.length; ++ri) {
-            if (from[ri] != null) {
-                to[ri] = from[ri].toStringUsingUTF8();
-            }
-        }
-        return to;
     }
 }
