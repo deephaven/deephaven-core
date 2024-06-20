@@ -3,7 +3,7 @@
 #
 """This module supports reading the data in a Deephaven table in a chunked manner."""
 
-from typing import Union, Sequence, Generator, Dict, Optional
+from typing import Union, Sequence, Generator, Dict, Optional, Any
 
 import jpy
 import numpy as np
@@ -46,12 +46,33 @@ def table_reader(table: Table, cols: Optional[Union[str, Sequence[str]]] = None,
     Returns:
         A generator that yields a dictionary of column names to numpy arrays.
     """
-    return _table_reader_by_row_set(table, cols, table.j_table.getRowSet(), chunk_size, False)
+    return _table_reader_chunks(table, cols, table.j_table.getRowSet(), chunk_size, False)
 
 
-def _table_reader_by_row_set(table: Table, cols: Optional[Union[str, Sequence[str]]], row_set: jpy.JType, chunk_size: Optional[int],
-                             prev: bool = False) -> Generator[Dict[str, np.ndarray], None, None]:
-    """ A generator that reads the chunks of rows from a table into a dictionary.  The dictionary is a map of column
+def _table_reader_rows(table: Table, cols: Optional[Union[str, Sequence[str]]]) -> Generator[Dict[str, Any], None, None]:
+    """ A generator that reads one row at a time from a table into a dictionary. The dictionary is a map of column names
+    to scalar values.
+
+    Args:
+        table (Table): The table to read.
+        cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
+
+    Returns:
+        A generator that yields a dictionary of column names to a value.
+    """
+    col_defs = _col_defs(table, cols)
+
+    for chunk_dict in  _table_reader_chunks(table, cols, table.j_table.getRowSet(), chunk_size=4096):
+        chunk_size = len(chunk_dict[col_defs[0].name])
+        for i in range(chunk_size):
+            col_dict = {}
+            for col_def in col_defs:
+                col_dict[col_def.name] = chunk_dict[col_def.name][i]
+            yield col_dict
+
+def _table_reader_chunks(table: Table, cols: Optional[Union[str, Sequence[str]]], row_set: jpy.JType, chunk_size: Optional[int],
+                         prev: bool = False) -> Generator[Dict[str, np.ndarray], None, None]:
+    """ A generator that reads the chunks of rows from a table into a dictionary. The dictionary is a map of column
     names to numpy arrays.
 
     Args:

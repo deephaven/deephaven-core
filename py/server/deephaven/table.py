@@ -11,7 +11,7 @@ import contextlib
 import inspect
 from enum import Enum
 from enum import auto
-from typing import Any, Optional, Callable, Dict
+from typing import Any, Optional, Callable, Dict, Generator
 from typing import Sequence, List, Union, Protocol
 
 import jpy
@@ -502,6 +502,34 @@ class Table(JObjectWrapper):
     @property
     def j_object(self) -> jpy.JType:
         return self.j_table
+
+    def iter_rows(self, cols: Optional[Union[str, Sequence[str]]] = None, *, chunk_size: Optional[int] = 1) \
+            -> Generator[Dict[str, Any], None, None]:
+        """ Returns a generator that reads one row or the chunks of rows from the table into a dictionary.
+        The dictionary is a map of column names to either numpy arrays or scalar values.
+
+        If the table is refreshing and no update graph locks are currently being held, the generator will try to acquire
+        the shared lock of the update graph before reading the table data. This provides a consistent view of the data.
+        The side effect of this is that the table will not be able to refresh while the table is being iterated on.
+        Additionally, the generator internally maintains a fill context. The auto acquired shared lock and the fill
+        context will be released after the table reader is destroyed. That can happen (1) implicitly when the generator
+        is used in a for-loop, (2) by setting it to None, (3) using the del statement, or (4) calling the close() method
+        on it.
+
+        Args:
+            cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
+            chunk_size (Optional[int]): The number of rows to read at a time. Default is 1, meaning one row at a time.
+                When chunk_size is greater than 1, the generator will yield a dictionary of column names to numpy arrays.
+                When chunk_size is 1, the generator will yield a dictionary of column names to scalar values.
+
+        Returns:
+            A generator that yields a dictionary of column names to numpy arrays.
+        """
+        from deephaven._table_reader import _table_reader_chunks, _table_reader_rows
+        if chunk_size == 1:
+            return _table_reader_rows(self, cols)
+        else:
+            return _table_reader_chunks(self, cols, self.j_table.getRowSet(), chunk_size, False)
 
     def has_columns(self, cols: Union[str, Sequence[str]]):
         """Whether this table contains a column for each of the provided names, return False if any of the columns is
