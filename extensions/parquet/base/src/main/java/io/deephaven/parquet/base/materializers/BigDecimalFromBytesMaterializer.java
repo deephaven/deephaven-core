@@ -3,7 +3,6 @@
 //
 package io.deephaven.parquet.base.materializers;
 
-import io.deephaven.parquet.base.BigDecimalParquetBytesCodec;
 import io.deephaven.parquet.base.PageMaterializer;
 import io.deephaven.parquet.base.PageMaterializerFactory;
 import io.deephaven.util.codec.ObjectCodec;
@@ -11,14 +10,14 @@ import org.apache.parquet.column.values.ValuesReader;
 
 import java.math.BigDecimal;
 
-public class BigDecimalFromBytesMaterializer extends BigDecimalMaterializerBase implements PageMaterializer {
+public class BigDecimalFromBytesMaterializer extends ObjectMaterializerBase<BigDecimal> implements PageMaterializer {
 
     public static final class Factory implements PageMaterializerFactory {
 
         final ObjectCodec<BigDecimal> codec;
 
-        public Factory(int precision, int scale) {
-            this.codec = new BigDecimalParquetBytesCodec(precision, scale);
+        public Factory(ObjectCodec<BigDecimal> codec) {
+            this.codec = codec;
         }
 
         @Override
@@ -32,8 +31,8 @@ public class BigDecimalFromBytesMaterializer extends BigDecimalMaterializerBase 
         }
     }
 
-    final ValuesReader dataReader;
-    final ObjectCodec<BigDecimal> codec;
+    private final ValuesReader dataReader;
+    private final ObjectCodec<BigDecimal> codec;
 
     private BigDecimalFromBytesMaterializer(ValuesReader dataReader, int numValues,
             ObjectCodec<BigDecimal> codec) {
@@ -42,7 +41,7 @@ public class BigDecimalFromBytesMaterializer extends BigDecimalMaterializerBase 
 
     private BigDecimalFromBytesMaterializer(ValuesReader dataReader, BigDecimal nullValue, int numValues,
             ObjectCodec<BigDecimal> codec) {
-        super(nullValue, numValues);
+        super(nullValue, new BigDecimal[numValues]);
         this.dataReader = dataReader;
         this.codec = codec;
     }

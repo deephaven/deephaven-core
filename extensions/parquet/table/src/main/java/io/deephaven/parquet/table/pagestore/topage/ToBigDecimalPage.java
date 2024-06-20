@@ -1,6 +1,10 @@
 //
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit ToBigIntegerPage and run "./gradlew replicateToPage" to regenerate
+//
+// @formatter:off
 package io.deephaven.parquet.table.pagestore.topage;
 
 import io.deephaven.chunk.ChunkType;
@@ -20,18 +24,16 @@ public class ToBigDecimalPage<ATTR extends Any> implements ToPage<ATTR, BigDecim
 
     public static <ATTR extends Any> ToPage<ATTR, BigDecimal[]> create(
             final Class<?> nativeType,
-            final int precision,
-            final int scale,
-            final Function<SeekableChannelContext, Dictionary> dictionarySupplier,
-            final int encodedSizeInBytes) {
-        if (BigDecimal.class.equals(nativeType)) {
+            @NotNull final ObjectCodec<BigDecimal> codec,
+            final Function<SeekableChannelContext, Dictionary> dictionarySupplier) {
+        if (nativeType == null || BigDecimal.class.equals(nativeType)) {
             if (dictionarySupplier == null) {
                 // noinspection unchecked
                 return (ToPage<ATTR, BigDecimal[]>) INSTANCE;
             }
-            // Codec is only used for dictionary encoding
-            // TODO Currently codec is always made, even if dictionary is NONE
-            final ObjectCodec<BigDecimal> codec = new BigDecimalParquetBytesCodec(precision, scale, encodedSizeInBytes);
+            // Note that dictionary supplier is never null, even if it points to a NULL_DICTIONARY.
+            // So we always use the following dictionary version of ToPage but internally, we check if the dictionary is
+            // NULL and fall back to the default implementation.
             return new ToPageWithDictionary<>(
                     BigDecimal.class,
                     new ChunkDictionary<>(

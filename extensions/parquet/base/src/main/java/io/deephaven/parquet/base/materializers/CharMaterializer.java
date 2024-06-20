@@ -23,10 +23,10 @@ public class CharMaterializer implements PageMaterializer {
         }
     };
 
-    final ValuesReader dataReader;
+    private final ValuesReader dataReader;
 
-    final char nullValue;
-    final char[] data;
+    private final char nullValue;
+    private final char[] data;
 
     private CharMaterializer(ValuesReader dataReader, int numValues) {
         this(dataReader, (char) 0, numValues);

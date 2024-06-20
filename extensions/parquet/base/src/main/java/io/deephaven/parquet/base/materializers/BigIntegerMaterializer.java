@@ -1,70 +1,60 @@
 //
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit BigDecimalFromBytesMaterializer and run "./gradlew replicatePageMaterializers" to regenerate
+//
+// @formatter:off
 package io.deephaven.parquet.base.materializers;
 
-import io.deephaven.parquet.base.BigIntegerParquetBytesCodec;
 import io.deephaven.parquet.base.PageMaterializer;
 import io.deephaven.parquet.base.PageMaterializerFactory;
 import io.deephaven.util.codec.ObjectCodec;
 import org.apache.parquet.column.values.ValuesReader;
 
 import java.math.BigInteger;
-import java.util.Arrays;
 
-public class BigIntegerMaterializer implements PageMaterializer {
+public class BigIntegerMaterializer extends ObjectMaterializerBase<BigInteger> implements PageMaterializer {
 
-    public static final PageMaterializerFactory Factory = new PageMaterializerFactory() {
+    public static final class Factory implements PageMaterializerFactory {
+
+        final ObjectCodec<BigInteger> codec;
+
+        public Factory(ObjectCodec<BigInteger> codec) {
+            this.codec = codec;
+        }
 
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
-            return new BigIntegerMaterializer(dataReader, (BigInteger) nullValue, numValues);
+            return new BigIntegerMaterializer(dataReader, (BigInteger) nullValue, numValues, codec);
         }
 
         @Override
         public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
-            return new BigIntegerMaterializer(dataReader, numValues);
+            return new BigIntegerMaterializer(dataReader, numValues, codec);
         }
-    };
-
-    private static final ObjectCodec<BigInteger> CODEC = new BigIntegerParquetBytesCodec();
-
-    final ValuesReader dataReader;
-
-    final BigInteger nullValue;
-    final BigInteger[] data;
-
-    private BigIntegerMaterializer(ValuesReader dataReader, int numValues) {
-        this(dataReader, null, numValues);
     }
 
-    private BigIntegerMaterializer(ValuesReader dataReader, BigInteger nullValue, int numValues) {
+    private final ValuesReader dataReader;
+    private final ObjectCodec<BigInteger> codec;
+
+    private BigIntegerMaterializer(ValuesReader dataReader, int numValues,
+            ObjectCodec<BigInteger> codec) {
+        this(dataReader, null, numValues, codec);
+    }
+
+    private BigIntegerMaterializer(ValuesReader dataReader, BigInteger nullValue, int numValues,
+            ObjectCodec<BigInteger> codec) {
+        super(nullValue, new BigInteger[numValues]);
         this.dataReader = dataReader;
-        this.nullValue = nullValue;
-        this.data = new BigInteger[numValues];
-    }
-
-    @Override
-    public void fillNulls(int startIndex, int endIndex) {
-        Arrays.fill(data, startIndex, endIndex, nullValue);
+        this.codec = codec;
     }
 
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
             final byte[] bytes = dataReader.readBytes().getBytes();
-            data[ii] = CODEC.decode(bytes, 0, bytes.length);
+            data[ii] = codec.decode(bytes, 0, bytes.length);
         }
-    }
-
-    @Override
-    public Object fillAll() {
-        fillValues(0, data.length);
-        return data;
-    }
-
-    @Override
-    public Object data() {
-        return data;
     }
 }

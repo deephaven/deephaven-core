@@ -35,7 +35,6 @@ import org.apache.parquet.schema.PrimitiveType;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
-import java.math.BigInteger;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -44,7 +43,7 @@ import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
-import static io.deephaven.parquet.base.PageMaterializer.getDHTypeForDecimalType;
+import static io.deephaven.parquet.base.PageMaterializer.resolveDecimalLogicalType;
 import static io.deephaven.parquet.base.ParquetUtils.METADATA_KEY;
 
 public class ParquetSchemaReader {
@@ -403,7 +402,7 @@ public class ParquetSchemaReader {
             @Override
             public Optional<Class<?>> visit(
                     final LogicalTypeAnnotation.DecimalLogicalTypeAnnotation decimalLogicalType) {
-                return Optional.of(getDHTypeForDecimalType(decimalLogicalType));
+                return Optional.of(resolveDecimalLogicalType(decimalLogicalType));
             }
 
             @Override

@@ -1368,13 +1368,49 @@ public final class ParquetTableReadWriteTest {
 
     @Test
     public void decimalLogicalTypeTest() {
-        final String path =
-                ParquetTableReadWriteTest.class.getResource("/ReferenceDecimalLogicalType.parquet").getFile();
-        final Table fromDisk = readParquetFileFromGitLFS(new File(path));
         final Table expected = TableTools.emptyTable(100_000).update(
                 "DecimalIntCol = java.math.BigDecimal.valueOf(ii*12, 5)",
                 "DecimalLongCol = java.math.BigDecimal.valueOf(ii*212, 8)");
-        assertTableEquals(expected, fromDisk);
+
+        {
+            // This reference file has Decimal logical type columns stored as INT32 and INT64 physical types
+            final String path =
+                    ParquetTableReadWriteTest.class.getResource("/ReferenceDecimalLogicalType.parquet").getFile();
+            final Table fromDisk = readParquetFileFromGitLFS(new File(path));
+            final ParquetMetadata metadata =
+                    new ParquetTableLocationKey(new File(path).toURI(), 0, null, ParquetInstructions.EMPTY)
+                            .getMetadata();
+            final List<ColumnDescriptor> columnsMetadata = metadata.getFileMetaData().getSchema().getColumns();
+            assertEquals("DECIMAL(7,5)",
+                    columnsMetadata.get(0).getPrimitiveType().getLogicalTypeAnnotation().toString());
+            assertEquals(PrimitiveType.PrimitiveTypeName.INT32,
+                    columnsMetadata.get(0).getPrimitiveType().getPrimitiveTypeName());
+            assertEquals("DECIMAL(12,8)",
+                    columnsMetadata.get(1).getPrimitiveType().getLogicalTypeAnnotation().toString());
+            assertEquals(PrimitiveType.PrimitiveTypeName.INT64,
+                    columnsMetadata.get(1).getPrimitiveType().getPrimitiveTypeName());
+            assertTableEquals(expected, fromDisk);
+        }
+
+        {
+            // This reference file has Decimal logical type columns stored as FIXED_LEN_BYTE_ARRAY physical types
+            final String path =
+                    ParquetTableReadWriteTest.class.getResource("/ReferenceDecimalLogicalType2.parquet").getFile();
+            final Table fromDisk = readParquetFileFromGitLFS(new File(path));
+            final ParquetMetadata metadata =
+                    new ParquetTableLocationKey(new File(path).toURI(), 0, null, ParquetInstructions.EMPTY)
+                            .getMetadata();
+            final List<ColumnDescriptor> columnsMetadata = metadata.getFileMetaData().getSchema().getColumns();
+            assertEquals("DECIMAL(7,5)",
+                    columnsMetadata.get(0).getPrimitiveType().getLogicalTypeAnnotation().toString());
+            assertEquals(PrimitiveType.PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY,
+                    columnsMetadata.get(0).getPrimitiveType().getPrimitiveTypeName());
+            assertEquals("DECIMAL(12,8)",
+                    columnsMetadata.get(1).getPrimitiveType().getLogicalTypeAnnotation().toString());
+            assertEquals(PrimitiveType.PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY,
+                    columnsMetadata.get(1).getPrimitiveType().getPrimitiveTypeName());
+            assertTableEquals(expected, fromDisk);
+        }
     }
 
     @Test

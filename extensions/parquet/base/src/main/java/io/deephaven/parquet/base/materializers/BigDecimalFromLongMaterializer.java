@@ -9,7 +9,7 @@ import org.apache.parquet.column.values.ValuesReader;
 
 import java.math.BigDecimal;
 
-public class BigDecimalFromLongMaterializer extends BigDecimalMaterializerBase implements PageMaterializer {
+public class BigDecimalFromLongMaterializer extends ObjectMaterializerBase<BigDecimal> implements PageMaterializer {
 
     public static final class Factory implements PageMaterializerFactory {
         final int scale;
@@ -29,15 +29,15 @@ public class BigDecimalFromLongMaterializer extends BigDecimalMaterializerBase i
         }
     };
 
-    final ValuesReader dataReader;
-    final int scale;
+    private final ValuesReader dataReader;
+    private final int scale;
 
     private BigDecimalFromLongMaterializer(ValuesReader dataReader, int numValues, int scale) {
         this(dataReader, null, numValues, scale);
     }
 
     private BigDecimalFromLongMaterializer(ValuesReader dataReader, BigDecimal nullValue, int numValues, int scale) {
-        super(nullValue, numValues);
+        super(nullValue, new BigDecimal[numValues]);
         this.dataReader = dataReader;
         this.scale = scale;
     }

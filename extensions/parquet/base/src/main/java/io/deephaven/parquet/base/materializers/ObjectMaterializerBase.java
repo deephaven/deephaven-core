@@ -7,17 +7,14 @@ import io.deephaven.parquet.base.PageMaterializer;
 
 import java.util.Arrays;
 
-// TODO Is it okay if I use this class as a base class for the other object type materializers, like LocalDate,
-// LocalDateTime, String, BigDecimal, BigInteger?
 abstract class ObjectMaterializerBase<TYPE> implements PageMaterializer {
 
-    final TYPE nullValue;
+    private final TYPE nullValue;
     final TYPE[] data;
 
-    ObjectMaterializerBase(TYPE nullValue, int numValues) {
+    ObjectMaterializerBase(TYPE nullValue, TYPE[] data) {
         this.nullValue = nullValue;
-        // noinspection unchecked
-        this.data = (TYPE[]) new Object[numValues];
+        this.data = data;
     }
 
     @Override

@@ -413,7 +413,7 @@ public class TypeInfos {
      * external compatibility by encoding them as fixed length decimals of scale 1. Internally, we'll record that we
      * wrote this as a decimal, so we can properly decode it back to BigInteger.
      *
-     * @see PageMaterializer#getDHTypeForDecimalType
+     * @see PageMaterializer#resolveDecimalLogicalType
      */
     private enum BigIntegerType implements TypeInfo {
         INSTANCE;

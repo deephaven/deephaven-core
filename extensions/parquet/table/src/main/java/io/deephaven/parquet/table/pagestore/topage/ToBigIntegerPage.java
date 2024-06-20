@@ -20,15 +20,16 @@ public class ToBigIntegerPage<ATTR extends Any> implements ToPage<ATTR, BigInteg
 
     public static <ATTR extends Any> ToPage<ATTR, BigInteger[]> create(
             final Class<?> nativeType,
-            final Function<SeekableChannelContext, Dictionary> dictionarySupplier,
-            final int encodedSizeInBytes) {
+            @NotNull final ObjectCodec<BigInteger> codec,
+            final Function<SeekableChannelContext, Dictionary> dictionarySupplier) {
         if (nativeType == null || BigInteger.class.equals(nativeType)) {
             if (dictionarySupplier == null) {
                 // noinspection unchecked
                 return (ToPage<ATTR, BigInteger[]>) INSTANCE;
             }
-            // Codec is only used for dictionary encoding
-            final ObjectCodec<BigInteger> codec = new BigIntegerParquetBytesCodec(encodedSizeInBytes);
+            // Note that dictionary supplier is never null, even if it points to a NULL_DICTIONARY.
+            // So we always use the following dictionary version of ToPage but internally, we check if the dictionary is
+            // NULL and fall back to the default implementation.
             return new ToPageWithDictionary<>(
                     BigInteger.class,
                     new ChunkDictionary<>(

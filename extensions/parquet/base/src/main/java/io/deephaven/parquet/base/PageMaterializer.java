@@ -11,14 +11,15 @@ import org.jetbrains.annotations.NotNull;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
+import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.BINARY;
+
 public interface PageMaterializer {
 
     /**
      * Get the internal type used by Deephaven to represent a Parquet
      * {@link LogicalTypeAnnotation.DecimalLogicalTypeAnnotation Decimal} logical type
      */
-    // TODO Better name for this?
-    static Class<?> getDHTypeForDecimalType(
+    static Class<?> resolveDecimalLogicalType(
             final LogicalTypeAnnotation.DecimalLogicalTypeAnnotation decimalLogicalType) {
         // This pair of values (precision=1, scale=0) is set at write time as a marker so that we can recover
         // the fact that the type is a BigInteger, not a BigDecimal when the fies are read.
@@ -131,11 +132,12 @@ public interface PageMaterializer {
                 if (logicalTypeAnnotation instanceof LogicalTypeAnnotation.DecimalLogicalTypeAnnotation) {
                     final LogicalTypeAnnotation.DecimalLogicalTypeAnnotation decimalLogicalType =
                             (LogicalTypeAnnotation.DecimalLogicalTypeAnnotation) logicalTypeAnnotation;
-                    if (getDHTypeForDecimalType(decimalLogicalType) == BigInteger.class) {
-                        return BigIntegerMaterializer.Factory;
+                    final int encodedSizeInBytes = primitiveTypeName == BINARY ? -1 : primitiveType.getTypeLength();
+                    if (resolveDecimalLogicalType(decimalLogicalType) == BigInteger.class) {
+                        return new BigIntegerMaterializer.Factory(new BigIntegerParquetBytesCodec(encodedSizeInBytes));
                     }
-                    return new BigDecimalFromBytesMaterializer.Factory(
-                            decimalLogicalType.getPrecision(), decimalLogicalType.getScale());
+                    return new BigDecimalFromBytesMaterializer.Factory(new BigDecimalParquetBytesCodec(
+                            decimalLogicalType.getPrecision(), decimalLogicalType.getScale(), encodedSizeInBytes));
                 }
                 return BlobMaterializer.Factory;
             default:
