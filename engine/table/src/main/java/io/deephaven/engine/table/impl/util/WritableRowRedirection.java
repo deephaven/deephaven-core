@@ -11,7 +11,7 @@ import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -132,7 +132,7 @@ public interface WritableRowRedirection extends RowRedirection, ChunkSink<RowKey
         final MutableInt offset = new MutableInt();
         final LongChunk<? extends RowKeys> innerRowKeysTyped = innerRowKeys.asLongChunk();
         outerRowKeys.forAllRowKeys(outerRowKey -> {
-            final long innerRowKey = innerRowKeysTyped.get(offset.intValue());
+            final long innerRowKey = innerRowKeysTyped.get(offset.get());
             if (innerRowKey == RowSequence.NULL_ROW_KEY) {
                 removeVoid(outerRowKey);
             } else {

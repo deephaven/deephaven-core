@@ -10,7 +10,7 @@ package io.deephaven.parquet.table.transfer;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.parquet.table.util.TransferUtils;
+import io.deephaven.parquet.base.ParquetTimeUtils;
 import io.deephaven.vector.ObjectVector;
 import org.jetbrains.annotations.NotNull;
 
@@ -33,7 +33,7 @@ final class LocalDateTimeVectorTransfer extends PrimitiveVectorTransfer<ObjectVe
     @Override
     void copyToBuffer(@NotNull final EncodedData<ObjectVector<LocalDateTime>> data) {
         try (final CloseableIterator<LocalDateTime> dataIterator = data.encodedValues.iterator()) {
-            dataIterator.forEachRemaining((LocalDateTime t) -> buffer.put(TransferUtils.epochNanosUTC(t)));
+            dataIterator.forEachRemaining((LocalDateTime t) -> buffer.put(ParquetTimeUtils.epochNanosUTC(t)));
         }
     }
 }

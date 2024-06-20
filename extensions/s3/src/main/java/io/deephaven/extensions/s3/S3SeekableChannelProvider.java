@@ -89,19 +89,19 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public InputStream getInputStream(final SeekableByteChannel channel) {
+    public InputStream getInputStream(final SeekableByteChannel channel, final int sizeHint) {
         // S3SeekableByteChannel is internally buffered, no need to re-buffer
         return Channels.newInputStreamNoClose(channel);
     }
 
     @Override
     public SeekableChannelContext makeContext() {
-        return new S3ChannelContext(s3AsyncClient, s3Instructions, sharedCache);
+        return new S3ChannelContext(this, s3AsyncClient, s3Instructions, sharedCache);
     }
 
     @Override
     public SeekableChannelContext makeSingleUseContext() {
-        return new S3ChannelContext(s3AsyncClient, s3Instructions.singleUse(), sharedCache);
+        return new S3ChannelContext(this, s3AsyncClient, s3Instructions.singleUse(), sharedCache);
     }
 
     @Override
@@ -208,7 +208,7 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
                                         + s3Object.key() + " and bucket " + bucketName + " inside directory "
                                         + directory, e);
                             }
-                            updateFileSizeCache(getFileSizeCache(), uri, s3Object.size());
+                            updateFileSizeCache(uri, s3Object.size());
                             return uri;
                         }).iterator();
                 // The following token is null when the last batch is fetched.
@@ -235,12 +235,10 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     }
 
     /**
-     * Update the given file size cache with the given URI and size.
+     * Cache the file size for the given URI.
      */
-    private static void updateFileSizeCache(
-            @NotNull final Map<URI, FileSizeInfo> fileSizeCache,
-            @NotNull final URI uri,
-            final long size) {
+    void updateFileSizeCache(@NotNull final URI uri, final long size) {
+        final Map<URI, FileSizeInfo> fileSizeCache = getFileSizeCache();
         fileSizeCache.compute(uri, (key, existingInfo) -> {
             if (existingInfo == null) {
                 return new FileSizeInfo(uri, size);

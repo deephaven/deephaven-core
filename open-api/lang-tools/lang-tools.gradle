@@ -4,8 +4,6 @@ plugins {
     id 'java-library'
 }
 
-apply from: "$rootDir/gradle/web-common.gradle"
-
 Classpaths.inheritCommonsText(project, 'implementation')
 dependencies {
 

@@ -11,7 +11,7 @@ import io.deephaven.engine.table.impl.sources.DoubleArraySource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -20,6 +20,7 @@ import java.util.Map;
 import static io.deephaven.engine.table.impl.by.RollupConstants.*;
 import static io.deephaven.engine.util.NullSafeAddition.plusLong;
 import static io.deephaven.engine.util.NullSafeAddition.minusLong;
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 /**
  * Iterative average operator.
@@ -82,13 +83,13 @@ class CharChunkedAvgOperator implements IterativeChunkedAggregationOperator {
         final CharChunk<? extends Values> asCharChunk = values.asCharChunk();
         final long chunkSum = SumCharChunk.sumCharChunk(asCharChunk, chunkStart, chunkSize, chunkNonNull);
 
-        if (chunkNonNull.intValue() > 0) {
-            final long newCount = nonNullCount.addNonNullUnsafe(destination, chunkNonNull.intValue());
+        if (chunkNonNull.get() > 0) {
+            final long newCount = nonNullCount.addNonNullUnsafe(destination, chunkNonNull.get());
             final long newSum = plusLong(runningSum.getUnsafe(destination), chunkSum);
             runningSum.set(destination, newSum);
             resultColumn.set(destination, (double) newSum / newCount);
         } else if (nonNullCount.onlyNullsUnsafe(destination)) {
-            resultColumn.set(destination, Double.NaN);
+            resultColumn.set(destination, NULL_DOUBLE);
         } else {
             return false;
         }
@@ -99,15 +100,18 @@ class CharChunkedAvgOperator implements IterativeChunkedAggregationOperator {
         final MutableInt chunkNonNull = new MutableInt(0);
         final long chunkSum = SumCharChunk.sumCharChunk(values, chunkStart, chunkSize, chunkNonNull);
 
-        if (chunkNonNull.intValue() == 0) {
+        if (chunkNonNull.get() == 0) {
             return false;
         }
 
-        final long newCount = nonNullCount.addNonNullUnsafe(destination, -chunkNonNull.intValue());
+        final long newCount = nonNullCount.addNonNullUnsafe(destination, -chunkNonNull.get());
         final long newSum = minusLong(runningSum.getUnsafe(destination), chunkSum);
         runningSum.set(destination, newSum);
-        resultColumn.set(destination, (double) newSum / newCount);
-
+        if (newCount == 0) {
+            resultColumn.set(destination, NULL_DOUBLE);
+        } else {
+            resultColumn.set(destination, (double) newSum / newCount);
+        }
         return true;
     }
 

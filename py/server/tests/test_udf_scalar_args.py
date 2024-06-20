@@ -2,6 +2,7 @@
 # Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
 import typing
+import warnings
 from datetime import datetime
 from typing import Optional, Union, Any, Sequence
 import unittest
@@ -548,7 +549,7 @@ def test_udf(x: {np_type}) -> bool:
                 ...
 
             t = empty_table(1).update("X = f2(f1(ii))")
-            self.assertEqual(t.columns[0].data_type, dtypes.int_)
+            self.assertEqual(t.columns[0].data_type, dtypes.int64)
 
         with self.subTest("jpy.JType"):
             def f1(x: jpy.JType) -> bool:
@@ -594,12 +595,24 @@ def test_udf(x: {np_type}) -> bool:
 
             t = empty_table(3).update(["C = make_c()", "V = use_c(C)"])
             self.assertIsNotNone(t)
-            self.assertEqual(t.columns[1].data_type, dtypes.int_)
+            self.assertEqual(t.columns[1].data_type, dtypes.int64)
 
             def misuse_c(c: int) -> int:
                 return c
             with self.assertRaises(DHError) as cm:
                 t.update("V = misuse_c(C)")
+
+    def test_boxed_type_arg(self):
+        def f(p1: float, p2: np.float64) -> bool:
+            return p1 == 0.05
+
+        dv = 0.05
+        with warnings.catch_warnings(record=True) as w:
+            t = empty_table(10).update("X = f(dv, dv)")
+            self.assertEqual(w[-1].category, UserWarning)
+            self.assertRegex(str(w[-1].message), "numpy scalar type.*is used")
+            self.assertEqual(10, t.to_string().count("true"))
+
 
 if __name__ == "__main__":
     unittest.main()

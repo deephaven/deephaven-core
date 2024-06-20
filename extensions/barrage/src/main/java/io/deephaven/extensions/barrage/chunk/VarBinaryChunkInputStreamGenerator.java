@@ -15,8 +15,8 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.util.pools.PoolableChunk;
 import io.deephaven.engine.rowset.RowSet;
-import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -280,11 +280,11 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             subset.forAllRowKeyRanges((s, e) -> {
                 numPayloadBytes.add(byteStorage.getPayloadSize((int) s, (int) e));
             });
-            final long payloadExtended = numPayloadBytes.longValue() & REMAINDER_MOD_8_MASK;
+            final long payloadExtended = numPayloadBytes.get() & REMAINDER_MOD_8_MASK;
             if (payloadExtended > 0) {
                 numPayloadBytes.add(8 - payloadExtended);
             }
-            listener.noteLogicalBuffer(numPayloadBytes.longValue());
+            listener.noteLogicalBuffer(numPayloadBytes.get());
         }
 
         @Override
@@ -314,7 +314,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
                     // then we must also align offset array
                     totalCachedSize.add(Integer.BYTES);
                 }
-                cachedSize = LongSizedDataStructure.intSize(DEBUG_NAME, totalCachedSize.longValue());
+                cachedSize = LongSizedDataStructure.intSize(DEBUG_NAME, totalCachedSize.get());
             }
             return cachedSize;
         }
@@ -361,8 +361,9 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             final MutableInt logicalSize = new MutableInt();
             subset.forAllRowKeys((idx) -> {
                 try {
-                    logicalSize.add(byteStorage.getPayloadSize((int) idx, (int) idx));
-                    dos.writeInt(logicalSize.intValue());
+                    logicalSize.add(LongSizedDataStructure.intSize("int cast",
+                            byteStorage.getPayloadSize((int) idx, (int) idx)));
+                    dos.writeInt(logicalSize.get());
                 } catch (final IOException e) {
                     throw new UncheckedDeephavenException("couldn't drain data to OutputStream", e);
                 }
@@ -383,7 +384,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
                     throw new UncheckedDeephavenException("couldn't drain data to OutputStream", err);
                 }
             });
-            bytesWritten += payloadLen.longValue();
+            bytesWritten += payloadLen.get();
 
             final long bytesExtended = bytesWritten & REMAINDER_MOD_8_MASK;
             if (bytesExtended > 0) {

@@ -21,7 +21,7 @@ Docker.registerDockerImage(project, 'buildDocker') {
     inputDir.set dockerContext
     inputs.files prepareDocker.get().outputs.files
     buildArgs.put('DEEPHAVEN_VERSION', project.version)
-    images.add('deephaven/web-plugin-packager:local-build')
+    images.add(Docker.localImageName('web-plugin-packager'))
 }
 
 assemble.dependsOn buildDocker

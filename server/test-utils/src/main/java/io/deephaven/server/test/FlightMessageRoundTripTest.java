@@ -8,6 +8,7 @@ import com.google.protobuf.ByteString;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoSet;
+import io.deephaven.auth.AuthContext;
 import io.deephaven.auth.ServiceAuthWiring;
 import io.deephaven.auth.codegen.impl.ConsoleServiceAuthWiring;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
@@ -28,9 +29,9 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
-import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.NoLanguageDeephavenSession;
 import io.deephaven.engine.util.ScriptSession;
@@ -64,7 +65,9 @@ import io.deephaven.server.test.TestAuthModule.FakeBearer;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.auth.AuthContext;
+import io.deephaven.util.mutable.MutableInt;
+import io.deephaven.vector.DoubleVector;
+import io.deephaven.vector.IntVector;
 import io.grpc.*;
 import io.grpc.CallOptions;
 import io.grpc.stub.ClientCalls;
@@ -95,7 +98,6 @@ import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.commons.lang3.mutable.MutableBoolean;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Before;
@@ -716,7 +718,7 @@ public abstract class FlightMessageRoundTripTest {
             }
         });
 
-        Assert.eq(seenTables.intValue(), "seenTables.intValue()", 2);
+        Assert.eq(seenTables.get(), "seenTables.get()", 2);
     }
 
     @Test
@@ -749,7 +751,7 @@ public abstract class FlightMessageRoundTripTest {
             }
         });
 
-        Assert.eq(seenTables.intValue(), "seenTables.intValue()", 2);
+        Assert.eq(seenTables.get(), "seenTables.get()", 2);
     }
 
     @Test
@@ -810,16 +812,18 @@ public abstract class FlightMessageRoundTripTest {
                 totalRowCount += rowCount;
 
                 // check the values against the source table
-                org.apache.arrow.vector.IntVector iv =
-                        (org.apache.arrow.vector.IntVector) root.getVector(0);
+                final org.apache.arrow.vector.IntVector iv = (org.apache.arrow.vector.IntVector) root.getVector(0);
+                final IntVector sourceInts =
+                        ColumnVectors.ofInt(table, table.getDefinition().getColumns().get(0).getName());
                 for (int i = 0; i < rowCount; ++i) {
-                    assertEquals("int match:", DataAccessHelpers.getColumn(table, 0).get(offset + i), iv.get(i));
+                    assertEquals("int match:", sourceInts.get(offset + i), iv.get(i));
                 }
-                org.apache.arrow.vector.Float8Vector dv =
+                final org.apache.arrow.vector.Float8Vector dv =
                         (org.apache.arrow.vector.Float8Vector) root.getVector(1);
+                final DoubleVector sourceDoubles =
+                        ColumnVectors.ofDouble(table, table.getDefinition().getColumns().get(1).getName());
                 for (int i = 0; i < rowCount; ++i) {
-                    assertEquals("double match: ", DataAccessHelpers.getColumn(table, 1).get(offset + i),
-                            dv.get(i));
+                    assertEquals("double match: ", sourceDoubles.get(offset + i), dv.get(i), 0.000001);
                 }
             }
             assertEquals(table.size(), totalRowCount);
@@ -881,13 +885,13 @@ public abstract class FlightMessageRoundTripTest {
         ExecutionContext.getContext().getQueryScope().putParam(tableName, table);
 
         // export from query scope to our session; this transforms the table
-        assertEquals(0, numTransforms.intValue());
+        assertEquals(0, numTransforms.get());
         try (final TableHandle handle = clientSession.execute(TicketTable.fromQueryScopeField(tableName))) {
             // place the transformed table into the scope; wait on the future to ensure the server-side operation
             // completes
             clientSession.publish(resultTableName, handle).get();
         }
-        assertEquals(1, numTransforms.intValue());
+        assertEquals(1, numTransforms.get());
 
         // check that the table was transformed
         Object result = ExecutionContext.getContext().getQueryScope().readParamValue(resultTableName, null);

@@ -70,9 +70,11 @@ import io.deephaven.kafka.protobuf.ProtobufConsumeOptions;
 import io.deephaven.kafka.publish.KafkaPublisherException;
 import io.deephaven.kafka.publish.KeyOrValueSerializer;
 import io.deephaven.kafka.publish.PublishToKafka;
+import io.deephaven.processor.NamedObjectProcessor;
 import io.deephaven.processor.ObjectProcessor;
 import io.deephaven.protobuf.ProtobufDescriptorParserOptions;
 import io.deephaven.qst.column.header.ColumnHeader;
+import io.deephaven.qst.type.Type;
 import io.deephaven.stream.StreamChunkUtils;
 import io.deephaven.stream.StreamConsumer;
 import io.deephaven.stream.StreamPublisher;
@@ -81,7 +83,7 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.ScriptApi;
 import org.apache.avro.Schema;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.ListTopicsResult;
@@ -580,8 +582,7 @@ public class KafkaTools {
          * Creates a kafka key or value spec implementation from an {@link ObjectProcessor}.
          *
          * <p>
-         * The respective column definitions are derived from the combination of {@code columnNames} and
-         * {@link ObjectProcessor#outputTypes()}.
+         * Equivalent to {@code objectProcessorSpec(deserializer, NamedObjectProcessor.of(processor, columnNames))}.
          *
          * @param deserializer the deserializer
          * @param processor the object processor
@@ -593,14 +594,14 @@ public class KafkaTools {
                 Deserializer<? extends T> deserializer,
                 ObjectProcessor<? super T> processor,
                 List<String> columnNames) {
-            return new KeyOrValueSpecObjectProcessorImpl<>(deserializer, processor, columnNames);
+            return objectProcessorSpec(deserializer, NamedObjectProcessor.of(processor, columnNames));
         }
 
         /**
          * Creates a kafka key or value spec implementation from a byte-array {@link ObjectProcessor}.
          *
          * <p>
-         * Equivalent to {@code objectProcessorSpec(new ByteArrayDeserializer(), processor, columnNames)}.
+         * Equivalent to {@code objectProcessorSpec(NamedObjectProcessor.of(processor, columnNames))}.
          *
          * @param processor the byte-array object processor
          * @param columnNames the column names
@@ -609,7 +610,51 @@ public class KafkaTools {
         @SuppressWarnings("unused")
         public static KeyOrValueSpec objectProcessorSpec(ObjectProcessor<? super byte[]> processor,
                 List<String> columnNames) {
-            return objectProcessorSpec(new ByteArrayDeserializer(), processor, columnNames);
+            return objectProcessorSpec(NamedObjectProcessor.of(processor, columnNames));
+        }
+
+        /**
+         * Creates a kafka key or value spec implementation from a {@link NamedObjectProcessor}.
+         *
+         * @param deserializer the deserializer
+         * @param processor the named object processor
+         * @return the Kafka key or value spec
+         * @param <T> the object type
+         */
+        public static <T> KeyOrValueSpec objectProcessorSpec(
+                Deserializer<? extends T> deserializer,
+                NamedObjectProcessor<? super T> processor) {
+            return new KeyOrValueSpecObjectProcessorImpl<>(deserializer, processor);
+        }
+
+        /**
+         * Creates a kafka key or value spec implementation from the named object processor.
+         *
+         * <p>
+         * Equivalent to {@code objectProcessorSpec(new ByteArrayDeserializer(), processor)}.
+         *
+         * @param processor the named object processor
+         * @return the Kafka key or value spec
+         * @see #objectProcessorSpec(Deserializer, NamedObjectProcessor)
+         * @see ByteArrayDeserializer
+         */
+        public static KeyOrValueSpec objectProcessorSpec(NamedObjectProcessor<? super byte[]> processor) {
+            return objectProcessorSpec(new ByteArrayDeserializer(), processor);
+        }
+
+        /**
+         * Creates a kafka key or value spec implementation from a named object processor provider. It must be capable
+         * of supporting {@code byte[]}.
+         *
+         * <p>
+         * Equivalent to {@code objectProcessorSpec(provider.named(Type.byteType().arrayType()))}.
+         *
+         * @param provider the named object processor provider
+         * @return the Kafka key or value spec
+         * @see #objectProcessorSpec(NamedObjectProcessor)
+         */
+        public static KeyOrValueSpec objectProcessorSpec(NamedObjectProcessor.Provider provider) {
+            return objectProcessorSpec(provider.named(Type.byteType().arrayType()));
         }
     }
 

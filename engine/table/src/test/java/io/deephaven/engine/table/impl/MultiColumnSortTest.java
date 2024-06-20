@@ -9,6 +9,7 @@ import io.deephaven.api.SortColumn;
 import io.deephaven.benchmarking.generator.ColumnGenerator;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.SerialTest;
@@ -158,10 +159,10 @@ public class MultiColumnSortTest {
         final String[] columns = Arrays.stream(sortColumns).map(SortColumn::column).map(ColumnName::name)
                 .toArray(String[]::new);
 
-        Object[] lastRow = DataAccessHelpers.getRecord(sorted, 0, columns);
+        Object[] lastRow = TstUtils.getRowData(sorted, 0, columns);
 
         for (int ii = 1; ii < sorted.intSize(); ++ii) {
-            final Object[] rowData = DataAccessHelpers.getRecord(sorted, ii, columns);
+            final Object[] rowData = TstUtils.getRowData(sorted, ii, columns);
 
             for (int jj = 0; jj < rowData.length; ++jj) {
                 // make sure lastRow <= rowData

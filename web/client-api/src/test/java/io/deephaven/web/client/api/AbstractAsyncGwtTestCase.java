@@ -250,9 +250,9 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
     }
 
     protected <T> IThenable.ThenOnFulfilledCallbackFn<T, T> delayFinish(int timeout) {
-        return table -> {
+        return object -> {
             delayTestFinish(timeout);
-            return Promise.resolve(table);
+            return Promise.resolve(object);
         };
     }
 
@@ -376,7 +376,7 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
     }
 
     protected Object getColumnData(ViewportData viewportData, Column a) {
-        return viewportData.getRows().map((r, index, all) -> r.get(a));
+        return viewportData.getRows().map((r, index) -> r.get(a));
     }
 
     protected Promise<JsTable> assertNextViewportIs(JsTable table, double... expected) {
@@ -389,7 +389,7 @@ public abstract class AbstractAsyncGwtTestCase extends GWTTestCase {
 
     public static List<Column> filterColumns(JsTable table, JsPredicate<Column> filter) {
         List<Column> matches = new ArrayList<>();
-        table.getColumns().forEach((c, i, arr) -> {
+        table.getColumns().forEach((c, i) -> {
             if (filter.test(c)) {
                 matches.add(c);
             }

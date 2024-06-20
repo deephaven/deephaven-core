@@ -634,7 +634,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     @JsMethod
     @SuppressWarnings("unusable-by-js")
     public JsArray<CustomColumn> applyCustomColumns(JsArray<CustomColumnArgUnionType> customColumns) {
-        String[] customColumnStrings = customColumns.map((item, index, array) -> {
+        String[] customColumnStrings = customColumns.map((item, index) -> {
             if (item.isString() || item.isCustomColumn()) {
                 return item.toString();
             }
@@ -1728,7 +1728,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 return;
             }
             JsArray<Column> viewportColumns =
-                    getColumns().filter((item, index, all) -> debounce.columns.get(item.getIndex()));
+                    getColumns().filter((item, index) -> debounce.columns.get(item.getIndex()));
             ViewportData data = new ViewportData(debounce.includedRows, debounce.dataColumns, viewportColumns,
                     currentState.getRowFormatColumn() == null ? NO_ROW_FORMAT_COLUMN
                             : currentState.getRowFormatColumn().getIndex(),

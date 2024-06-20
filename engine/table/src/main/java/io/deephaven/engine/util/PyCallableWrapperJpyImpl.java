@@ -6,6 +6,7 @@ package io.deephaven.engine.util;
 import io.deephaven.engine.table.impl.select.python.ArgumentsChunked;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jpy.PyModule;
 import org.jpy.PyObject;
@@ -68,6 +69,13 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
         for (Map.Entry<Character, Class<?>> classClassEntry : numpyType2JavaArrayClass.entrySet()) {
             javaClass2NumpyType.put(classClassEntry.getValue(), classClassEntry.getKey());
         }
+        javaClass2NumpyType.put(Byte.class, 'b');
+        javaClass2NumpyType.put(Short.class, 'h');
+        javaClass2NumpyType.put(Character.class, 'H');
+        javaClass2NumpyType.put(Integer.class, 'i');
+        javaClass2NumpyType.put(Long.class, 'l');
+        javaClass2NumpyType.put(Float.class, 'f');
+        javaClass2NumpyType.put(Double.class, 'd');
     }
 
     /**
@@ -235,15 +243,19 @@ public class PyCallableWrapperJpyImpl implements PyCallableWrapper {
 
     }
 
-    private boolean hasSafelyCastable(Set<Class<?>> types, @NotNull Class<?> type) {
+    private boolean hasSafelyCastable(Set<Class<?>> types, @NotNull Class<?> argType) {
         for (Class<?> t : types) {
             if (t == null) {
                 continue;
             }
-            if (t.isAssignableFrom(type)) {
+            if (t.isAssignableFrom(argType)) {
                 return true;
             }
-            if (t.isPrimitive() && type.isPrimitive() && isLosslessWideningPrimitiveConversion(type, t)) {
+            if (t.isPrimitive() && argType.isPrimitive() && isLosslessWideningPrimitiveConversion(argType, t)) {
+                return true;
+            }
+            if (t.isPrimitive() && TypeUtils.isBoxedType(argType)
+                    && isLosslessWideningPrimitiveConversion(TypeUtils.getUnboxedType(argType), t)) {
                 return true;
             }
         }

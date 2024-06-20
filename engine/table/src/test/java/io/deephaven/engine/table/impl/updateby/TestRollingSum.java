@@ -9,9 +9,9 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableDefaults;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
@@ -62,7 +62,7 @@ public class TestRollingSum extends BaseUpdateByTest {
     // region Static Zero Key Tests
 
     @Test
-    public void testStaticZeroKeyWithAllNullWindows() {
+    public void testStaticZeroKeyAllNullVector() {
         final QueryTable t = createTestTable(10000, false, false, false, 0x31313131).t;
         t.setRefreshing(false);
 
@@ -73,9 +73,10 @@ public class TestRollingSum extends BaseUpdateByTest {
         final Table summed = t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks));
 
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithRollingSumTicks(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getType(), prevTicks, postTicks);
+            assertWithRollingSumTicks(
+                    ColumnVectors.of(t, col).toArray(),
+                    ColumnVectors.of(summed, col).toArray(),
+                    summed.getDefinition().getColumn(col).getDataType(), prevTicks, postTicks);
         }
     }
 
@@ -89,9 +90,8 @@ public class TestRollingSum extends BaseUpdateByTest {
 
         final Table summed = t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks));
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithRollingSumTicks(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getType(), prevTicks, postTicks);
+            assertWithRollingSumTicks(ColumnVectors.of(t, col).toArray(), ColumnVectors.of(summed, col).toArray(),
+                    summed.getDefinition().getColumn(col).getDataType(), prevTicks, postTicks);
         }
     }
 
@@ -105,9 +105,8 @@ public class TestRollingSum extends BaseUpdateByTest {
 
         final Table summed = t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks));
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithRollingSumTicks(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getType(), prevTicks, postTicks);
+            assertWithRollingSumTicks(ColumnVectors.of(t, col).toArray(), ColumnVectors.of(summed, col).toArray(),
+                    summed.getDefinition().getColumn(col).getDataType(), prevTicks, postTicks);
         }
     }
 
@@ -121,9 +120,8 @@ public class TestRollingSum extends BaseUpdateByTest {
 
         final Table summed = t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks));
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithRollingSumTicks(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getType(), prevTicks, postTicks);
+            assertWithRollingSumTicks(ColumnVectors.of(t, col).toArray(), ColumnVectors.of(summed, col).toArray(),
+                    summed.getDefinition().getColumn(col).getDataType(), prevTicks, postTicks);
         }
     }
 
@@ -137,9 +135,8 @@ public class TestRollingSum extends BaseUpdateByTest {
 
         final Table summed = t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks));
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithRollingSumTicks(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getType(), prevTicks, postTicks);
+            assertWithRollingSumTicks(ColumnVectors.of(t, col).toArray(), ColumnVectors.of(summed, col).toArray(),
+                    summed.getDefinition().getColumn(col).getDataType(), prevTicks, postTicks);
         }
     }
 
@@ -153,9 +150,8 @@ public class TestRollingSum extends BaseUpdateByTest {
 
         final Table summed = t.updateBy(UpdateByOperation.RollingSum(prevTicks, postTicks));
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithRollingSumTicks(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getType(), prevTicks, postTicks);
+            assertWithRollingSumTicks(ColumnVectors.of(t, col).toArray(), ColumnVectors.of(summed, col).toArray(),
+                    summed.getDefinition().getColumn(col).getDataType(), prevTicks, postTicks);
         }
     }
 
@@ -175,16 +171,16 @@ public class TestRollingSum extends BaseUpdateByTest {
                         "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"));
 
 
-        final Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(t, "ts").getDirect();
+        final Instant[] ts = ColumnVectors.ofObject(t, "ts", Instant.class).toArray();
         final long[] timestamps = new long[t.intSize()];
         for (int i = 0; i < t.intSize(); i++) {
             timestamps[i] = DateTimeUtils.epochNanos(ts[i]);
         }
 
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithRollingSumTime(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getDirect(), timestamps,
-                    DataAccessHelpers.getColumn(summed, col).getType(), prevTime.toNanos(), postTime.toNanos());
+            assertWithRollingSumTime(ColumnVectors.of(t, col).toArray(), ColumnVectors.of(summed, col).toArray(),
+                    timestamps, summed.getDefinition().getColumn(col).getDataType(),
+                    prevTime.toNanos(), postTime.toNanos());
         }
     }
 
@@ -204,16 +200,16 @@ public class TestRollingSum extends BaseUpdateByTest {
                         "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"));
 
 
-        final Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(t, "ts").getDirect();
+        final Instant[] ts = ColumnVectors.ofObject(t, "ts", Instant.class).toArray();
         final long[] timestamps = new long[t.intSize()];
         for (int i = 0; i < t.intSize(); i++) {
             timestamps[i] = DateTimeUtils.epochNanos(ts[i]);
         }
 
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithRollingSumTime(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getDirect(), timestamps,
-                    DataAccessHelpers.getColumn(summed, col).getType(), prevTime.toNanos(), postTime.toNanos());
+            assertWithRollingSumTime(ColumnVectors.of(t, col).toArray(), ColumnVectors.of(summed, col).toArray(),
+                    timestamps, summed.getDefinition().getColumn(col).getDataType(),
+                    prevTime.toNanos(), postTime.toNanos());
         }
     }
 
@@ -233,16 +229,16 @@ public class TestRollingSum extends BaseUpdateByTest {
                         "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"));
 
 
-        final Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(t, "ts").getDirect();
+        final Instant[] ts = ColumnVectors.ofObject(t, "ts", Instant.class).toArray();
         final long[] timestamps = new long[t.intSize()];
         for (int i = 0; i < t.intSize(); i++) {
             timestamps[i] = DateTimeUtils.epochNanos(ts[i]);
         }
 
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithRollingSumTime(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getDirect(), timestamps,
-                    DataAccessHelpers.getColumn(summed, col).getType(), prevTime.toNanos(), postTime.toNanos());
+            assertWithRollingSumTime(ColumnVectors.of(t, col).toArray(), ColumnVectors.of(summed, col).toArray(),
+                    timestamps, summed.getDefinition().getColumn(col).getDataType(),
+                    prevTime.toNanos(), postTime.toNanos());
         }
     }
 
@@ -262,16 +258,16 @@ public class TestRollingSum extends BaseUpdateByTest {
                         "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"));
 
 
-        final Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(t, "ts").getDirect();
+        final Instant[] ts = ColumnVectors.ofObject(t, "ts", Instant.class).toArray();
         final long[] timestamps = new long[t.intSize()];
         for (int i = 0; i < t.intSize(); i++) {
             timestamps[i] = DateTimeUtils.epochNanos(ts[i]);
         }
 
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithRollingSumTime(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getDirect(), timestamps,
-                    DataAccessHelpers.getColumn(summed, col).getType(), prevTime.toNanos(), postTime.toNanos());
+            assertWithRollingSumTime(ColumnVectors.of(t, col).toArray(), ColumnVectors.of(summed, col).toArray(),
+                    timestamps, summed.getDefinition().getColumn(col).getDataType(),
+                    prevTime.toNanos(), postTime.toNanos());
         }
     }
 
@@ -291,16 +287,16 @@ public class TestRollingSum extends BaseUpdateByTest {
                         "doubleCol", "boolCol", "bigIntCol", "bigDecimalCol"));
 
 
-        final Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(t, "ts").getDirect();
+        final Instant[] ts = ColumnVectors.ofObject(t, "ts", Instant.class).toArray();
         final long[] timestamps = new long[t.intSize()];
         for (int i = 0; i < t.intSize(); i++) {
             timestamps[i] = DateTimeUtils.epochNanos(ts[i]);
         }
 
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithRollingSumTime(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getDirect(), timestamps,
-                    DataAccessHelpers.getColumn(summed, col).getType(), prevTime.toNanos(), postTime.toNanos());
+            assertWithRollingSumTime(ColumnVectors.of(t, col).toArray(), ColumnVectors.of(summed, col).toArray(),
+                    timestamps, summed.getDefinition().getColumn(col).getDataType(),
+                    prevTime.toNanos(), postTime.toNanos());
         }
     }
 
@@ -391,9 +387,10 @@ public class TestRollingSum extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOp, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                assertWithRollingSumTicks(DataAccessHelpers.getColumn(source, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col).getType(), prevTicks, postTicks);
+                assertWithRollingSumTicks(
+                        ColumnVectors.of(source, col).toArray(),
+                        ColumnVectors.of(actual, col).toArray(),
+                        actual.getDefinition().getColumn(col).getDataType(), prevTicks, postTicks);
             });
             return source;
         });
@@ -452,16 +449,17 @@ public class TestRollingSum extends BaseUpdateByTest {
         String[] columns = t.getDefinition().getColumnStream().map(ColumnDefinition::getName).toArray(String[]::new);
 
         preOp.partitionedTransform(postOp, (source, actual) -> {
-            Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(source, "ts").getDirect();
+            Instant[] ts = ColumnVectors.ofObject(source, "ts", Instant.class).toArray();
             long[] timestamps = new long[source.intSize()];
             for (int i = 0; i < source.intSize(); i++) {
                 timestamps[i] = DateTimeUtils.epochNanos(ts[i]);
             }
             Arrays.stream(columns).forEach(col -> {
-                assertWithRollingSumTime(DataAccessHelpers.getColumn(source, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col).getDirect(),
-                        timestamps,
-                        DataAccessHelpers.getColumn(actual, col).getType(), prevTime.toNanos(), postTime.toNanos());
+                assertWithRollingSumTime(
+                        ColumnVectors.of(source, col).toArray(),
+                        ColumnVectors.of(actual, col).toArray(),
+                        timestamps, actual.getDefinition().getColumn(col).getDataType(),
+                        prevTime.toNanos(), postTime.toNanos());
             });
             return source;
         });

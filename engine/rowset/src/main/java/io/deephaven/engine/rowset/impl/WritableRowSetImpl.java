@@ -17,7 +17,7 @@ import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
 import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
 import io.deephaven.util.annotations.VisibleForTesting;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
@@ -374,17 +374,17 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
         final RowSequence.Iterator iter = getRowSequenceIterator();
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         positions.forEachRowKeyRange((start, end) -> {
-            if (currentOffset.longValue() < start) {
+            if (currentOffset.get() < start) {
                 // skip items until the beginning of this range
-                iter.getNextRowSequenceWithLength(start - currentOffset.longValue());
-                currentOffset.setValue(start);
+                iter.getNextRowSequenceWithLength(start - currentOffset.get());
+                currentOffset.set(start);
             }
             if (!iter.hasMore()) {
                 return false;
             }
-            iter.getNextRowSequenceWithLength(end + 1 - currentOffset.longValue())
+            iter.getNextRowSequenceWithLength(end + 1 - currentOffset.get())
                     .forAllRowKeyRanges(builder::appendRange);
-            currentOffset.setValue(end + 1);
+            currentOffset.set(end + 1);
             return iter.hasMore();
         });
         return builder.build();

@@ -14,22 +14,25 @@ import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.mutable.MutableInt;
+import io.deephaven.vector.IntVector;
+import io.deephaven.vector.ObjectVector;
 import junit.framework.TestCase;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.junit.experimental.categories.Category;
 
@@ -47,7 +50,7 @@ import static io.deephaven.engine.testutil.GenerateTableUpdates.generateAppends;
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.NULL_INT;
-import static java.util.Arrays.asList;
+import static org.junit.Assert.assertArrayEquals;
 
 @Category(OutOfBandTest.class)
 public class QueryTableNaturalJoinTest extends QueryTableTestBase {
@@ -123,12 +126,12 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                     final int ii = (int) ll;
                     if (ii % 2 == 0) {
                         // make something that exists go away
-                        rightModifications[position.intValue()] = Integer.toString(ii * 10 + 2);
+                        rightModifications[position.get()] = Integer.toString(ii * 10 + 2);
                     } else {
                         // make something that did not exist come back
-                        rightModifications[position.intValue()] = Integer.toString(ii * 10);
+                        rightModifications[position.get()] = Integer.toString(ii * 10);
                     }
-                    rightModifySentinel[position.intValue()] = ii * 100 + 25;
+                    rightModifySentinel[position.get()] = ii * 100 + 25;
                     position.increment();
                 });
 
@@ -249,33 +252,30 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
     private void testNaturalJoinIncremental(boolean leftStatic, boolean rightStatic, int leftSize, int rightSize,
             boolean leftIndexed, boolean rightIndexed,
-            JoinIncrement joinIncrement, long seed, long maxSteps) {
+            JoinIncrement joinIncrement, long seed, int maxSteps) {
         testNaturalJoinIncremental(leftStatic, rightStatic, leftSize, rightSize, leftIndexed, rightIndexed,
-                joinIncrement, seed,
-                new MutableInt((int) maxSteps));
+                joinIncrement, seed, new MutableInt(maxSteps));
     }
 
     private void testNaturalJoinIncremental(boolean leftStatic, boolean rightStatic, int leftSize, int rightSize,
             boolean leftIndexed, boolean rightIndexed,
             JoinIncrement joinIncrement, long seed, MutableInt numSteps) {
         testNaturalJoinIncremental(leftStatic, rightStatic, leftSize, rightSize, leftIndexed, rightIndexed,
-                joinIncrement, seed, numSteps,
-                new JoinControl());
+                joinIncrement, seed, numSteps, new JoinControl());
     }
 
     private static void testNaturalJoinIncremental(boolean leftStatic, boolean rightStatic, int leftSize, int rightSize,
-            boolean leftIndexed, boolean rightIndexed, JoinIncrement joinIncrement, long seed, long maxSteps,
+            boolean leftIndexed, boolean rightIndexed, JoinIncrement joinIncrement, long seed, int maxSteps,
             JoinControl control) {
         testNaturalJoinIncremental(leftStatic, rightStatic, leftSize, rightSize, leftIndexed, rightIndexed,
-                joinIncrement, seed,
-                new MutableInt((int) maxSteps), control);
+                joinIncrement, seed, new MutableInt(maxSteps), control);
     }
 
     private static void testNaturalJoinIncremental(boolean leftStatic, boolean rightStatic, int leftSize, int rightSize,
             boolean leftIndexed, boolean rightIndexed, JoinIncrement joinIncrement, long seed, MutableInt numSteps,
             JoinControl control) {
         final Random random = new Random(seed);
-        final int maxSteps = numSteps.intValue();
+        final int maxSteps = numSteps.get();
 
         final ColumnInfo<?, ?>[] rightColumnInfo;
         final UniqueIntGenerator rightIntGenerator =
@@ -346,9 +346,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final int leftStepSize = (int) Math.ceil(Math.sqrt(leftSize));
         final int rightStepSize = (int) Math.ceil(Math.sqrt(rightSize));
 
-        for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
+        for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
             if (printTableUpdates) {
-                System.out.println("Step = " + numSteps.intValue() + ", leftSize=" + leftSize + ", rightSize="
+                System.out.println("Step = " + numSteps.get() + ", leftSize=" + leftSize + ", rightSize="
                         + rightSize + ", seed = " + seed + ", joinIncrement=" + joinIncrement);
                 System.out.println("Left Table:" + leftTable.size());
                 TableTools.showWithRowSet(leftTable, 100);
@@ -444,7 +444,6 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     }
 
     public void testNaturalJoinGroupedStatic() {
-        // noinspection unchecked
         testNaturalJoinSimpleStatic(TstUtils::colIndexed);
     }
 
@@ -892,10 +891,10 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals("String", result.getDefinition().getColumns().get(0).getName());
         assertEquals("Int", result.getDefinition().getColumns().get(1).getName());
         assertEquals("Int2", result.getDefinition().getColumns().get(2).getName());
-        assertEquals(Arrays.asList("a", "b", "c"),
-                Arrays.asList(DataAccessHelpers.getColumn(result, "String").get(0, 3)));
-        assertEquals(Arrays.asList(1, 2, 3), Arrays.asList(DataAccessHelpers.getColumn(result, "Int").get(0, 3)));
-        assertEquals(Arrays.asList(10, 20, 30), Arrays.asList(DataAccessHelpers.getColumn(result, "Int2").get(0, 3)));
+        assertArrayEquals(new String[] {"a", "b", "c"},
+                ColumnVectors.ofObject(result, "String", String.class).toArray());
+        assertArrayEquals(new int[] {1, 2, 3}, ColumnVectors.ofInt(result, "Int").toArray());
+        assertArrayEquals(new int[] {10, 20, 30}, ColumnVectors.ofInt(result, "Int2").toArray());
 
 
         Table table1 = TstUtils.testRefreshingTable(
@@ -909,8 +908,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
-        assertEquals(asList(1, 2, null), asList(DataAccessHelpers.getColumn(pairMatch, "v").get(0, 3)));
+        assertArrayEquals(new String[] {"c", "e", "g"}, ColumnVectors
+                .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(0).getName(), String.class).toArray());
+        assertArrayEquals(new int[] {1, 2, NULL_INT}, ColumnVectors.ofInt(pairMatch, "v").toArray());
 
 
         table2 = TstUtils.testRefreshingTable(
@@ -923,8 +923,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
-        assertEquals(asList(1, 2, 3), asList(DataAccessHelpers.getColumn(pairMatch, "v").get(0, 3)));
+        assertArrayEquals(new String[] {"c", "e", "g"}, ColumnVectors
+                .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(0).getName(), String.class).toArray());
+        assertArrayEquals(new int[] {1, 2, 3}, ColumnVectors.ofInt(pairMatch, "v").toArray());
 
         pairMatch = table2.naturalJoin(table1, "String", "");
         assertEquals(3, pairMatch.size());
@@ -933,8 +934,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
-        assertEquals(asList(1, 2, 3), asList(DataAccessHelpers.getColumn(pairMatch, "v").get(0, 3)));
+        assertArrayEquals(new String[] {"c", "e", "g"}, ColumnVectors
+                .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(0).getName(), String.class).toArray());
+        assertArrayEquals(new int[] {1, 2, 3}, ColumnVectors.ofInt(pairMatch, "v").toArray());
 
         pairMatch = table1.naturalJoin(table2, "String=String", "v");
         assertEquals(3, pairMatch.size());
@@ -943,8 +945,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
-        assertEquals(asList(1, 2, 3), asList(DataAccessHelpers.getColumn(pairMatch, "v").get(0, 3)));
+        assertArrayEquals(new String[] {"c", "e", "g"}, ColumnVectors
+                .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(0).getName(), String.class).toArray());
+        assertArrayEquals(new int[] {1, 2, 3}, ColumnVectors.ofInt(pairMatch, "v").toArray());
 
         pairMatch = table2.naturalJoin(table1, "String=String", "");
 
@@ -954,10 +957,12 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
-        assertEquals(1, DataAccessHelpers.getColumn(pairMatch, "v").getInt(0));
-        assertEquals(2, DataAccessHelpers.getColumn(pairMatch, "v").getInt(1));
-        assertEquals(3, DataAccessHelpers.getColumn(pairMatch, "v").getInt(2));
+        assertArrayEquals(new String[] {"c", "e", "g"}, ColumnVectors
+                .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(0).getName(), String.class).toArray());
+        IntVector vValues = ColumnVectors.ofInt(pairMatch, "v");
+        assertEquals(1, vValues.get(0));
+        assertEquals(2, vValues.get(1));
+        assertEquals(3, vValues.get(2));
 
 
         table1 = TstUtils.testRefreshingTable(
@@ -977,9 +982,12 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumns().get(2).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
-        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 1).getDirect()));
-        assertEquals(asList(1, 2, 3), asList(DataAccessHelpers.getColumn(pairMatch, 2).get(0, 3)));
+        assertArrayEquals(new String[] {"c", "e", "g"}, ColumnVectors
+                .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(0).getName(), String.class).toArray());
+        assertArrayEquals(new String[] {"c", "e", "g"}, ColumnVectors
+                .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(1).getName(), String.class).toArray());
+        assertArrayEquals(new int[] {1, 2, 3},
+                ColumnVectors.ofInt(pairMatch, pairMatch.getDefinition().getColumns().get(2).getName()).toArray());
 
 
         pairMatch = table2.naturalJoin(table1, "String2=String1", "String1");
@@ -992,11 +1000,11 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals(String.class, pairMatch.getDefinition().getColumn("String1").getDataType());
         assertEquals(String.class, pairMatch.getDefinition().getColumn("String2").getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumn("v").getDataType());
-        assertEquals(asList("c", "e", "g"),
-                asList((Object[]) DataAccessHelpers.getColumn(pairMatch, "String1").getDirect()));
-        assertEquals(asList("c", "e", "g"),
-                asList((Object[]) DataAccessHelpers.getColumn(pairMatch, "String2").getDirect()));
-        assertEquals(asList(1, 2, 3), asList(DataAccessHelpers.getColumn(pairMatch, "v").get(0, 3)));
+        assertArrayEquals(new String[] {"c", "e", "g"},
+                ColumnVectors.ofObject(pairMatch, "String1", String.class).toArray());
+        assertArrayEquals(new String[] {"c", "e", "g"},
+                ColumnVectors.ofObject(pairMatch, "String2", String.class).toArray());
+        assertArrayEquals(new int[] {1, 2, 3}, ColumnVectors.ofInt(pairMatch, "v").toArray());
     }
 
     public void testNaturalJoinNull() {
@@ -1007,10 +1015,12 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         TableTools.show(cj);
 
-        assertEquals(1, DataAccessHelpers.getColumn(cj, "X").get(0));
-        assertEquals(2, DataAccessHelpers.getColumn(cj, "X").get(1));
-        assertEquals(3, DataAccessHelpers.getColumn(cj, "Y").get(0));
-        assertEquals(4, DataAccessHelpers.getColumn(cj, "Y").get(1));
+        final IntVector xValues = ColumnVectors.ofInt(cj, "X");
+        assertEquals(1, xValues.get(0));
+        assertEquals(2, xValues.get(1));
+        final IntVector yValues = ColumnVectors.ofInt(cj, "Y");
+        assertEquals(3, yValues.get(0));
+        assertEquals(4, yValues.get(1));
     }
 
     public void testNaturalJoinInactive() {
@@ -1024,10 +1034,12 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         System.out.println("Result:");
         TableTools.showWithRowSet(cj);
 
-        assertEquals(1, DataAccessHelpers.getColumn(cj, "X").get(0));
-        assertEquals(2, DataAccessHelpers.getColumn(cj, "X").get(1));
-        assertEquals(3, DataAccessHelpers.getColumn(cj, "Y").get(0));
-        assertNull(DataAccessHelpers.getColumn(cj, "Y").get(1));
+        IntVector xValues = ColumnVectors.ofInt(cj, "X");
+        assertEquals(1, xValues.get(0));
+        assertEquals(2, xValues.get(1));
+        IntVector yValues = ColumnVectors.ofInt(cj, "Y");
+        assertEquals(3, yValues.get(0));
+        assertEquals(NULL_INT, yValues.get(1));
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -1037,10 +1049,12 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         System.out.println("Right:");
         TableTools.showWithRowSet(c1);
 
-        assertEquals(1, DataAccessHelpers.getColumn(cj, "X").get(0));
-        assertEquals(2, DataAccessHelpers.getColumn(cj, "X").get(1));
-        assertEquals(3, DataAccessHelpers.getColumn(cj, "Y").get(0));
-        assertNull(DataAccessHelpers.getColumn(cj, "Y").get(1));
+        xValues = ColumnVectors.ofInt(cj, "X");
+        assertEquals(1, xValues.get(0));
+        assertEquals(2, xValues.get(1));
+        yValues = ColumnVectors.ofInt(cj, "Y");
+        assertEquals(3, yValues.get(0));
+        assertEquals(NULL_INT, yValues.get(1));
 
         updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(c0, i(2), col("USym0", "B"), col("X", 6));
@@ -1053,12 +1067,14 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         System.out.println("Result:");
         TableTools.showWithRowSet(cj);
 
-        assertEquals(1, DataAccessHelpers.getColumn(cj, "X").get(0));
-        assertEquals(2, DataAccessHelpers.getColumn(cj, "X").get(1));
-        assertEquals(6, DataAccessHelpers.getColumn(cj, "X").get(2));
-        assertEquals(3, DataAccessHelpers.getColumn(cj, "Y").get(0));
-        assertNull(DataAccessHelpers.getColumn(cj, "Y").get(1));
-        assertEquals(4, DataAccessHelpers.getColumn(cj, "Y").get(2));
+        xValues = ColumnVectors.ofInt(cj, "X");
+        assertEquals(1, xValues.get(0));
+        assertEquals(2, xValues.get(1));
+        assertEquals(6, xValues.get(2));
+        yValues = ColumnVectors.ofInt(cj, "Y");
+        assertEquals(3, yValues.get(0));
+        assertEquals(NULL_INT, yValues.get(1));
+        assertEquals(4, yValues.get(2));
     }
 
     public void testNaturalJoinLeftIncrementalRightStaticSimple() {
@@ -1501,8 +1517,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
-        assertEquals(asList(1, 2, 3), asList(DataAccessHelpers.getColumn(pairMatch, "v").get(0, 3)));
+        assertArrayEquals(new String[] {"c", "e", "g"}, ColumnVectors
+                .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(0).getName(), String.class).toArray());
+        assertArrayEquals(new int[] {1, 2, 3}, ColumnVectors.ofInt(pairMatch, "v").toArray());
 
         pairMatch = table2.exactJoin(table1, "String");
         assertEquals(3, pairMatch.size());
@@ -1511,8 +1528,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
-        assertEquals(asList(1, 2, 3), asList(DataAccessHelpers.getColumn(pairMatch, "v").get(0, 3)));
+        assertArrayEquals(new String[] {"c", "e", "g"}, ColumnVectors
+                .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(0).getName(), String.class).toArray());
+        assertArrayEquals(new int[] {1, 2, 3}, ColumnVectors.ofInt(pairMatch, "v").toArray());
 
         pairMatch = table1.exactJoin(table2, "String=String");
         assertEquals(3, pairMatch.size());
@@ -1521,8 +1539,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
-        assertEquals(asList(1, 2, 3), asList(DataAccessHelpers.getColumn(pairMatch, "v").get(0, 3)));
+        assertArrayEquals(new String[] {"c", "e", "g"}, ColumnVectors
+                .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(0).getName(), String.class).toArray());
+        assertArrayEquals(new int[] {1, 2, 3}, ColumnVectors.ofInt(pairMatch, "v").toArray());
 
         pairMatch = table2.exactJoin(table1, "String=String");
 
@@ -1532,11 +1551,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals("v", pairMatch.getDefinition().getColumns().get(1).getName());
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
-        assertEquals(1, DataAccessHelpers.getColumn(pairMatch, "v").getInt(0));
-        assertEquals(2, DataAccessHelpers.getColumn(pairMatch, "v").getInt(1));
-        assertEquals(3, DataAccessHelpers.getColumn(pairMatch, "v").getInt(2));
-
+        assertArrayEquals(new String[] {"c", "e", "g"}, ColumnVectors
+                .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(0).getName(), String.class).toArray());
+        assertArrayEquals(new int[] {1, 2, 3}, ColumnVectors.ofInt(pairMatch, "v").toArray());
 
         table1 = testRefreshingTable(col("String1", "c", "e", "g"));
 
@@ -1551,9 +1568,12 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(0).getDataType());
         assertEquals(String.class, pairMatch.getDefinition().getColumns().get(1).getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumns().get(2).getDataType());
-        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 0).getDirect()));
-        assertEquals(asList("c", "e", "g"), asList((Object[]) DataAccessHelpers.getColumn(pairMatch, 1).getDirect()));
-        assertEquals(asList(1, 2, 3), asList(DataAccessHelpers.getColumn(pairMatch, 2).get(0, 3)));
+        assertArrayEquals(new String[] {"c", "e", "g"}, ColumnVectors
+                .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(0).getName(), String.class).toArray());
+        assertArrayEquals(new String[] {"c", "e", "g"}, ColumnVectors
+                .ofObject(pairMatch, pairMatch.getDefinition().getColumns().get(1).getName(), String.class).toArray());
+        assertArrayEquals(new int[] {1, 2, 3},
+                ColumnVectors.ofInt(pairMatch, pairMatch.getDefinition().getColumns().get(2).getName()).toArray());
 
 
         pairMatch = table2.exactJoin(table1, "String2=String1");
@@ -1566,11 +1586,11 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals(String.class, pairMatch.getDefinition().getColumn("String1").getDataType());
         assertEquals(String.class, pairMatch.getDefinition().getColumn("String2").getDataType());
         assertEquals(int.class, pairMatch.getDefinition().getColumn("v").getDataType());
-        assertEquals(asList("c", "e", "g"),
-                asList((Object[]) DataAccessHelpers.getColumn(pairMatch, "String1").getDirect()));
-        assertEquals(asList("c", "e", "g"),
-                asList((Object[]) DataAccessHelpers.getColumn(pairMatch, "String2").getDirect()));
-        assertEquals(asList(1, 2, 3), asList(DataAccessHelpers.getColumn(pairMatch, "v").get(0, 3)));
+        assertArrayEquals(new String[] {"c", "e", "g"},
+                ColumnVectors.ofObject(pairMatch, "String1", String.class).toArray());
+        assertArrayEquals(new String[] {"c", "e", "g"},
+                ColumnVectors.ofObject(pairMatch, "String2", String.class).toArray());
+        assertArrayEquals(new int[] {1, 2, 3}, ColumnVectors.ofInt(pairMatch, "v").toArray());
     }
 
     public void testSymbolTableJoin() throws IOException {
@@ -1655,7 +1675,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             assertEquals(rightValue, ck.get(1));
             assertNull(ck.get(2));
         }
-        final DataColumn<?> colRight = DataAccessHelpers.getColumn(vanillaVanilla, "ColRight");
+        final ObjectVector<String> colRight = ColumnVectors.ofObject(vanillaVanilla, "ColRight", String.class);
         assertEquals(rightValue, colRight.get(0));
         assertEquals(rightValue, colRight.get(1));
         assertNull(colRight.get(2));
@@ -1687,8 +1707,9 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final String[] leftSyms = new String[] {"Apple", "Banana", "Cantaloupe", "DragonFruit",
                 "Apple", "Cantaloupe", "Banana", "Banana", "Cantaloupe"};
         final Table leftTable = newTable(stringCol("Symbol", leftSyms)).update("LeftSentinel=i");
-        ParquetTools.writeTable(leftTable, leftLocation, leftDefinition);
-        return ParquetTools.readTable(leftLocation);
+        ParquetTools.writeTable(leftTable, leftLocation.getPath(),
+                ParquetInstructions.EMPTY.withTableDefinition(leftDefinition));
+        return ParquetTools.readTable(leftLocation.getPath());
     }
 
     @NotNull
@@ -1698,7 +1719,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 ColumnDefinition.ofInt("RightSentinel"));
         final String[] rightSyms = new String[] {"Elderberry", "Apple", "Banana", "Cantaloupe"};
         final Table rightTable = newTable(stringCol("Symbol", rightSyms)).update("RightSentinel=100+i");
-        ParquetTools.writeTable(rightTable, rightLocation, rightDefinition);
-        return ParquetTools.readTable(rightLocation);
+        ParquetTools.writeTable(rightTable, rightLocation.getPath(),
+                ParquetInstructions.EMPTY.withTableDefinition(rightDefinition));
+        return ParquetTools.readTable(rightLocation.getPath());
     }
 }

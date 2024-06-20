@@ -213,7 +213,7 @@ class Docker {
     static TaskProvider<? extends Task> registerDockerTask(Project project, String taskName, Action<? super DockerTaskConfig> action) {
         // create instance, assign defaults
         DockerTaskConfig cfg = project.objects.newInstance(DockerTaskConfig);
-        cfg.imageName = "deephaven/${taskName.replaceAll(/\B[A-Z]/) { String str -> '-' + str }.toLowerCase()}:${LOCAL_BUILD_TAG}"
+        cfg.imageName = localImageName(taskName.replaceAll(/\B[A-Z]/) { String str -> '-' + str }.toLowerCase())
 
         // ask for more configuration
         action.execute(cfg)
@@ -582,14 +582,14 @@ class Docker {
             action.execute(buildImage)
             checkValidTwoPhase(buildImage)
             buildImage.target.set(intermediate)
-            buildImage.images.add("deephaven/${baseName}-${intermediate}:local-build".toString())
+            buildImage.images.add(localImageName("${baseName}-${intermediate}".toString()))
         }
 
         return registerDockerImage(project, "buildDocker-${baseName}") { DockerBuildImage buildImage ->
             action.execute(buildImage)
             checkValidTwoPhase(buildImage)
             buildImage.dependsOn(intermediateTask)
-            buildImage.images.add("deephaven/${baseName}:local-build".toString())
+            buildImage.images.add(localImageName(baseName))
         }
     }
 
@@ -642,37 +642,6 @@ class Docker {
 
         return makeImage;
     }
-
-    static TaskProvider<? extends Task> buildPyWheel(Project project, String taskName, String imgName, String sourcePath) {
-        project.evaluationDependsOn(registryProject('python'))
-        return registerDockerTask(project, taskName) { DockerTaskConfig config ->
-            config.copyIn { Sync sync ->
-                sync.from(sourcePath) { CopySpec copySpec ->
-                    copySpec.exclude 'build', 'dist'
-                    copySpec.into 'src'
-                }
-            }
-            config.imageName = "${imgName}:local-build"
-            config.dockerfile { Dockerfile action ->
-                // set up the container, env vars - things that aren't likely to change
-                action.from 'deephaven/python:local-build as sources'
-                action.arg 'DEEPHAVEN_VERSION'
-                action.environmentVariable 'DEEPHAVEN_VERSION', project.version.toString()
-                action.workingDir '/usr/src/app'
-                action.copyFile '/src', '.'
-                action.from 'sources as build'
-                action.runCommand '''set -eux; \\
-                      test -n "${DEEPHAVEN_VERSION}";\\
-                      python setup.py bdist_wheel'''
-            }
-            config.parentContainers = [ registryTask(project, 'python') ]
-            config.containerOutPath='/usr/src/app/dist'
-            config.copyOut { Sync sync ->
-                sync.into "build/wheel${taskName}"
-            }
-        }
-    }
-
 
     static TaskProvider<? extends DockerBuildImage> registryRegister(Project project) {
 
@@ -765,7 +734,7 @@ class Docker {
         }
 
         def dockerfile = project.tasks.register('dockerfile', Dockerfile) { dockerfile ->
-            dockerfile.description = "Internal task: creates a dockerfile, to be (built) tagged as 'deephaven/${project.projectDir.name}:local-build'."
+            dockerfile.description = "Internal task: creates a dockerfile, to be (built) tagged as '${localImageName(project.projectDir.name)}'."
             dockerfile.from(imageId)
         }
 
@@ -784,10 +753,10 @@ class Docker {
             def dockerFileTask = dockerfile.get()
 
             build.group = 'Docker Registry'
-            build.description = "Creates 'deephaven/${project.projectDir.name}:local-build'."
+            build.description = "Creates '${localImageName(project.projectDir.name)}'."
             build.inputs.files dockerFileTask.outputs.files
             build.dockerFile.set dockerFileTask.outputs.files.singleFile
-            build.images.add("deephaven/${project.projectDir.name}:local-build".toString())
+            build.images.add(localImageName(project.projectDir.name))
             if (platform != null) {
                 build.platform.set platform
             }
@@ -800,6 +769,10 @@ class Docker {
 
     static Task registryTask(Project project, String name) {
         project.project(":docker-${name}").tasks.findByName('tagLocalBuild')
+    }
+
+    static String localImageName(String name) {
+        return "deephaven/${name}:${LOCAL_BUILD_TAG}".toString()
     }
 
     static FileCollection registryFiles(Project project, String name) {

@@ -21,7 +21,7 @@ import io.deephaven.engine.table.impl.util.ShiftData;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
 import io.deephaven.vector.*;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 
 import java.util.ArrayList;
 import java.util.Arrays;

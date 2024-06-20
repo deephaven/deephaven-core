@@ -5,7 +5,7 @@ package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.attributes.Values;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
 
 import java.math.BigInteger;

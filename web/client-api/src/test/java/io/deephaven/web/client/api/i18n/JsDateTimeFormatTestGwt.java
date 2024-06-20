@@ -6,6 +6,7 @@ package io.deephaven.web.client.api.i18n;
 import com.google.gwt.i18n.shared.DateTimeFormat;
 import com.google.gwt.junit.client.GWTTestCase;
 import io.deephaven.web.client.api.LongWrapper;
+import jsinterop.base.Js;
 
 import java.util.Date;
 
@@ -60,6 +61,8 @@ public class JsDateTimeFormatTestGwt extends GWTTestCase {
         nanos = assertRoundTrip("yyyy-MM-dd'T'HH:mm:ss.SSS zzzz", "2018-04-26T12:34:56.001 " + tz);
         assertEquals(1_000_000, nanos % 1_000_000_000);
 
+        nanos = assertRoundTrip("yyyy-MM-dd'T'HH:mm:ss.SSSSSS zzzz", "2018-04-26T12:34:56.000000 " + tz);
+        assertEquals(0, nanos % 1_000_000_000);
         nanos = assertRoundTrip("yyyy-MM-dd'T'HH:mm:ss.SSSSSS zzzz", "2018-04-26T12:34:56.001000 " + tz);
         assertEquals(1_000_000, nanos % 1_000_000_000);
         nanos = assertRoundTrip("yyyy-MM-dd'T'HH:mm:ss.SSSSSS zzzz", "2018-04-26T12:34:56.001001 " + tz);
@@ -75,6 +78,20 @@ public class JsDateTimeFormatTestGwt extends GWTTestCase {
         assertEquals(10, nanos % 1_000_000_000);
         nanos = assertRoundTrip("yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSS zzzz", "2018-04-26T12:34:56.000001234 " + tz);
         assertEquals(1234, nanos % 1_000_000_000);
+
+        // Test formatting a date with more subsecond precision than we will format
+        long millis = new Date(1970 - 1900, 0, 1, 12, 00).getTime();
+        long baseDateNanos = millis * 1_000_000_000;
+        for (int i = 0; i < 9; i++) {
+            assertEquals("000000000".substring(0, i), JsDateTimeFormat.format("SSSSSSSSS".substring(0, i),
+                    Js.asAny(LongWrapper.of(baseDateNanos)), null));
+            long nonZero = baseDateNanos + 123_123_123;
+            assertEquals("123123123".substring(0, i),
+                    JsDateTimeFormat.format("SSSSSSSSS".substring(0, i), Js.asAny(LongWrapper.of(nonZero)), null));
+            long leadingZeroes = baseDateNanos + 1234;
+            assertEquals("000001234".substring(0, i), JsDateTimeFormat.format("SSSSSSSSS".substring(0, i),
+                    Js.asAny(LongWrapper.of(leadingZeroes)), null));
+        }
     }
 
     /**
