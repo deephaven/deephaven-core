@@ -1,6 +1,5 @@
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
-import java.util.function.Supplier
 
 plugins {
     id 'com.bmuschko.docker-remote-api'
@@ -23,8 +22,9 @@ dependencies {
     implementation project(':log-factory')
 
     testImplementation project(':engine-test-utils')
-    testImplementation TestTools.projectDependency(project, 'engine-time')
 
+    // Needed for CalendarInit
+    testRuntimeOnly TestTools.projectDependency(project, 'engine-time')
     testRuntimeOnly project(':log-to-slf4j')
     // add configs, and some runtime dependencies to test classpaths
     testRuntimeOnly project(':configs')
@@ -48,17 +48,9 @@ sourceSets {
 
 SourceSet test = extensions.findByType(JavaPluginExtension).sourceSets.maybeCreate('test')
 
-def runInDocker = { String name, String sourcePath, def command, Closure addConfig = {} ->
+def runInDocker = { String name, String sourcePath, List<String> command, Closure addConfig = {} ->
     Docker.registerDockerTask(project, name) {
-        final String JPY_SOURCE_PATH = project.hasProperty("customJpy") ? project.property("customJpy") : null
-
         copyIn {
-            if (JPY_SOURCE_PATH != null) {
-                from (JPY_SOURCE_PATH) {
-                    into 'custom_jpy'
-                }
-            }
-
             from(sourcePath) {
                 include 'deephaven/**'
                 include 'deephaven_internal/**'
@@ -70,6 +62,12 @@ def runInDocker = { String name, String sourcePath, def command, Closure addConf
             from(test.runtimeClasspath) {
                 into 'classpath'
             }
+            from("${sourcePath}/../client") {
+                include 'setup.py'
+                include 'pydeephaven/**'
+                include 'README.md'
+                into 'python/client'
+            }
 
             // Unpack the config contents for now, since we don't seem to read the configs from inside a jar.
             // This does not add a task dependency, but we already put :configs in the testRuntime classpath,
@@ -80,13 +78,13 @@ def runInDocker = { String name, String sourcePath, def command, Closure addConf
         }
         parentContainers = [project(':docker-server-jetty').tasks.findByName('buildDocker-server-jetty')] // deephaven/server-jetty
 
-        imageName = 'deephaven/py-integrations:local-build'
+        imageName = Docker.localImageName('py-integrations')
 
         addConfig(it)
 
         dockerfile {
             // set up the container, env vars - things that aren't likely to change
-            from 'deephaven/server-jetty:local-build'
+            from Docker.localImageName('server-jetty')
             runCommand '''set -eux; \\
                       pip3 install unittest-xml-reporting==3.0.4; \\
                       mkdir -p /out/report; \\
@@ -106,29 +104,10 @@ def runInDocker = { String name, String sourcePath, def command, Closure addConf
             // copy in the contents that we do expect to change as the project updates
             copyFile 'python', '/python'
             copyFile 'classpath', '/classpath'
+            runCommand '''pip3 install /python/client'''
 
-            if (JPY_SOURCE_PATH != null) {
-                runCommand 'apt-get update && apt-get install -y build-essential python3-dev maven'
-
-                copyFile "custom_jpy", '/custom_jpy'
-                runCommand '''set -eux; \\
-                cd /custom_jpy; \\
-                rm -rf dist; \\
-                python3 setup.py build maven bdist_wheel; \\
-                pip3 install /custom_jpy/dist/*.whl; \\
-                cd ..;
-                '''
-            }
         }
-
-        List<String> entrypointFinal;
-        if (command instanceof List) {
-            entrypointFinal = command as List<String>
-        } else {
-            entrypointFinal = ((Supplier<List<String>>) command).get()
-        }
-
-        entrypoint = entrypointFinal
+        entrypoint = command
 
         copyOut {
             into layout.buildDirectory.dir('test-results')
@@ -158,32 +137,7 @@ Closure composeConfig = { task ->
 
 def pyTest = runInDocker('test-py-deephaven', '../py/server', ['python3', '-m', 'xmlrunner', 'discover', '-s', 'tests', '-t', '.', '-v', '-o', '/out/report'], composeConfig)
 
-def pyTestSpecific = runInDocker(
-        'test-py-deephaven-specific', '../py/server',
-        { ->
-            def baseCommand = ['python3', '-m', 'xmlrunner', '-v', '-o', '/out/report']
-
-            if(project.hasProperty("pyTestFiles")) {
-//                test-py-deephaven-specific --stacktrace -PpyTestFiles="test_keyed_record_adapter.py"
-//                project.setProperty("pyTestFiles", "test_keyed_record_adapter.py")
-                def testFilesProp = (String) project.property('pyTestFiles')
-                for (final String pyTestFile in testFilesProp.split(/,\s*/)) {
-                    final String testFilePath = "tests/$pyTestFile"
-                    println "Including Python tests in $testFilePath"
-                    baseCommand.add(testFilePath)
-                }
-            }
-
-            return baseCommand
-        },
-        composeConfig)
-
 pyTest.configure({
     onlyIf { TestTools.shouldRunTests(project) }
 })
-
-pyTestSpecific.configure({
-    onlyIf { TestTools.shouldRunTests(project) }
-})
-
 tasks.getByName('check').dependsOn(pyTest)

@@ -25,7 +25,7 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.VisibleForTesting;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -151,7 +151,10 @@ public class TreeTableFilter {
         parentIdColumnName = tree.getParentIdentifierColumn();
         sourceRowLookup = tree.getSourceRowLookup();
         this.filters = filters;
-        Arrays.stream(filters).forEach((final WhereFilter filter) -> filter.init(source.getDefinition()));
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
+        Arrays.stream(filters)
+                .forEach((final WhereFilter filter) -> filter.init(source.getDefinition(), compilationProcessor));
+        compilationProcessor.compile();
 
         idSource = source.getColumnSource(tree.getIdentifierColumn().name());
         parentIdSource = source.getColumnSource(tree.getParentIdentifierColumn().name());
@@ -240,7 +243,7 @@ public class TreeTableFilter {
                                     childRowsToProcessIter.getNextRowSequenceWithLength(CHUNK_SIZE);
                             final ObjectChunk<?, ? extends Values> parentIds =
                                     getIds(usePrev, parentIdSource, parentIdGetContext, boxer, chunkChildRows);
-                            chunkOffset.setValue(0);
+                            chunkOffset.set(0);
                             chunkChildRows.forAllRowKeys((final long childRow) -> {
                                 final Object parentId = parentIds.get(chunkOffset.getAndIncrement());
                                 expectedParents.computeIfAbsent(parentId, pid -> RowSetFactory.builderRandom())
@@ -369,7 +372,7 @@ public class TreeTableFilter {
                 final RowSequence chunkRowsToCheck = rowsToCheckIter.getNextRowSequenceWithLength(CHUNK_SIZE);
                 final ObjectChunk<?, ? extends Values> ids =
                         getIds(false, idSource, idGetContext, boxer, chunkRowsToCheck);
-                chunkOffset.setValue(0);
+                chunkOffset.set(0);
                 chunkRowsToCheck.forAllRowKeys((final long rowKeyToCheck) -> {
                     final Object id = ids.get(chunkOffset.getAndIncrement());
                     if (id != null && parentIdToChildRows.containsKey(id)) {
@@ -430,7 +433,7 @@ public class TreeTableFilter {
                 final RowSequence chunkChildRows = childRowsIter.getNextRowSequenceWithLength(CHUNK_SIZE);
                 final ObjectChunk<?, ? extends Values> parentIds =
                         getIds(usePrev, parentIdSource, parentIdGetContext, boxer, chunkChildRows);
-                chunkOffset.setValue(0);
+                chunkOffset.set(0);
                 chunkChildRows.forAllRowKeys((final long childRowKey) -> {
                     final Object parentId = parentIds.get(chunkOffset.getAndIncrement());
                     if (parentId != null) {

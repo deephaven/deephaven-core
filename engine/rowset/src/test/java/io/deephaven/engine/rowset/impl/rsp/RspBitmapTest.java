@@ -17,8 +17,8 @@ import io.deephaven.engine.rowset.impl.rsp.container.Container;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
-import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableLong;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -3454,7 +3454,7 @@ public class RspBitmapTest {
             rb2.addRange(start, end);
             return true;
         });
-        assertEquals(2, rangeCount.intValue());
+        assertEquals(2, rangeCount.get());
         assertEquals(rb, rb2);
     }
 
@@ -3616,7 +3616,7 @@ public class RspBitmapTest {
         rb = rb.addRange(start2, end2);
         final MutableLong prev = new MutableLong(-1);
         final LongAbortableConsumer lac = (final long v) -> {
-            final long p = prev.longValue();
+            final long p = prev.get();
             final String m = "p==" + p + " && v==" + v;
             assertTrue(m, v <= end2);
             assertTrue(m, p < v);
@@ -3627,12 +3627,12 @@ public class RspBitmapTest {
             } else {
                 assertEquals(m, p + 1, v);
             }
-            prev.setValue(v);
+            prev.set(v);
             return true;
         };
         rb.forEachLong(lac);
         final RspIterator rit = rb.getIterator();
-        prev.setValue(-1);
+        prev.set(-1);
         rit.forEachLong(lac);
     }
 

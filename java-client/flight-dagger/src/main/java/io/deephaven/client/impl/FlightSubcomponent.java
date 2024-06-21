@@ -17,7 +17,11 @@ import java.util.concurrent.ScheduledExecutorService;
 @Subcomponent(modules = {SessionImplModule.class, FlightSessionModule.class})
 public interface FlightSubcomponent extends FlightSessionFactory {
 
+    @Override
     FlightSession newFlightSession();
+
+    @Override
+    ManagedChannel managedChannel();
 
     @Module(subcomponents = {FlightSubcomponent.class})
     interface FlightSubcomponentModule {

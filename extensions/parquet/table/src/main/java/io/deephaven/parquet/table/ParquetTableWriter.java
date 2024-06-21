@@ -3,10 +3,12 @@
 //
 package io.deephaven.parquet.table;
 
+import io.deephaven.api.SortColumn;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.SortedColumnsAttribute;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.select.NullSelectColumn;
@@ -18,10 +20,7 @@ import io.deephaven.parquet.base.ParquetMetadataFileWriter;
 import io.deephaven.parquet.base.ParquetFileWriter;
 import io.deephaven.parquet.base.ParquetUtils;
 import io.deephaven.parquet.base.RowGroupWriter;
-import io.deephaven.parquet.table.metadata.CodecInfo;
-import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
-import io.deephaven.parquet.table.metadata.DataIndexInfo;
-import io.deephaven.parquet.table.metadata.TableInfo;
+import io.deephaven.parquet.table.metadata.*;
 import io.deephaven.parquet.table.transfer.ArrayAndVectorTransfer;
 import io.deephaven.parquet.table.transfer.StringDictionary;
 import io.deephaven.parquet.table.transfer.TransferObject;
@@ -44,7 +43,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.IntBuffer;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 
 import static io.deephaven.parquet.base.ParquetUtils.METADATA_KEY;
@@ -68,7 +66,7 @@ public class ParquetTableWriter {
         /**
          * Names of the indexing key columns
          */
-        final String[] indexColumnNames;
+        final List<String> indexColumnNames;
         /**
          * Parquet names of the indexing key columns
          */
@@ -85,7 +83,7 @@ public class ParquetTableWriter {
         final File destFile;
 
         IndexWritingInfo(
-                final String[] indexColumnNames,
+                final List<String> indexColumnNames,
                 final String[] parquetColumnNames,
                 final File destFileForMetadata,
                 final File destFile) {
@@ -152,7 +150,11 @@ public class ParquetTableWriter {
                                 .or(() -> Optional.of(DataIndexer.getOrCreateDataIndex(t, info.indexColumnNames)))
                                 .get()
                                 .transform(DataIndexTransformer.builder().invertRowSet(t.getRowSet()).build());
-                        final Table indexTable = dataIndex.table();
+                        final Table indexTable = dataIndex.table().sort(info.indexColumnNames.toArray(new String[0]));
+                        final TableInfo.Builder indexTableInfoBuilder = TableInfo.builder().addSortingColumns(
+                                info.indexColumnNames.stream()
+                                        .map(cn -> SortColumnInfo.of(cn, SortColumnInfo.SortDirection.Ascending))
+                                        .toArray(SortColumnInfo[]::new));
 
                         cleanupFiles.add(info.destFile);
                         tableInfoBuilder.addDataIndexes(DataIndexInfo.of(
@@ -168,10 +170,18 @@ public class ParquetTableWriter {
                         }
                         write(indexTable, indexTable.getDefinition(), writeInstructionsToUse,
                                 info.destFile.getAbsolutePath(), info.destFileForMetadata.getAbsolutePath(),
-                                Collections.emptyMap(), TableInfo.builder(), NullParquetMetadataFileWriter.INSTANCE,
+                                Collections.emptyMap(), indexTableInfoBuilder, NullParquetMetadataFileWriter.INSTANCE,
                                 computedCache);
                     }
                 }
+            }
+
+            // SortedColumnsAttribute effectively only stores (zero or more) individual columns by which the table is
+            // sorted, rather than ordered sets expressing multi-column sorts. Given that mismatch, we can only reflect
+            // a single column sort in the metadata at this time.
+            final List<SortColumn> sortedColumns = SortedColumnsAttribute.getSortedColumns(t);
+            if (!sortedColumns.isEmpty()) {
+                tableInfoBuilder.addSortingColumns(SortColumnInfo.of(sortedColumns.get(0)));
             }
             write(t, definition, writeInstructions, destFilePath, destFilePathForMetadata, incomingMeta,
                     tableInfoBuilder, metadataFileWriter, computedCache);

@@ -7,11 +7,15 @@ import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateSource;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
 
 public abstract class ReplayTableBase extends QueryTable implements Runnable {
+
+    private static final Logger log = LoggerFactory.getLogger(ReplayTableBase.class);
 
     private final SourceRefresher sourceRefresher;
 
@@ -22,6 +26,7 @@ public abstract class ReplayTableBase extends QueryTable implements Runnable {
         super(rowSet, columns);
         setRefreshing(true);
         sourceRefresher = new SourceRefresher(description);
+        initializeLastNotificationStep(getUpdateGraph().clock());
     }
 
     public void start() {
@@ -40,6 +45,12 @@ public abstract class ReplayTableBase extends QueryTable implements Runnable {
         @Override
         protected void instrumentedRefresh() {
             ReplayTableBase.this.run();
+        }
+
+        @Override
+        protected void onRefreshError(@NotNull final Exception error) {
+            log.error().append("Error refreshing ").append(ReplayTableBase.this).append(": ").append(error).endl();
+            super.onRefreshError(error);
         }
     }
 }

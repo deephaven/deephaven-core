@@ -4,8 +4,6 @@ plugins {
     id 'java-library'
 }
 
-apply from: "$rootDir/gradle/web-common.gradle"
-
 Classpaths.inheritCommonsText(project, 'implementation')
 dependencies {
 
@@ -23,9 +21,9 @@ dependencies {
     Classpaths.inheritGroovy(project, 'groovy', 'testImplementation')
     Classpaths.inheritGroovy(project, 'groovy-templates', 'testImplementation')
 
-    testImplementation TestTools.projectDependency(project, 'engine-table')
+    testImplementation project(':engine-test-utils')
     testRuntimeOnly project(':configs')
-    testRuntimeOnly  project(':test-configs')
+    testRuntimeOnly project(':test-configs')
     testRuntimeOnly project(':Numerics')
     // intellij can be dumb and leave out our resources directory (sometimes)...
     // Do not cargo-cult this unless you have similar issues

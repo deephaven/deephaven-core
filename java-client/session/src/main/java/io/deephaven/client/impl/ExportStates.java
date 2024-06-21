@@ -366,7 +366,7 @@ final class ExportStates implements ExportService {
 
         @Override
         public void onError(Throwable t) {
-            log.error(String.format("onError releasing export id %d", exportId), t);
+            log.error(String.format("onError releasing export id %d%n", exportId), t);
         }
 
         @Override

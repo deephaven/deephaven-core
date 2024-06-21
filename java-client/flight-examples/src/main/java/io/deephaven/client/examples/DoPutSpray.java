@@ -3,8 +3,9 @@
 //
 package io.deephaven.client.examples;
 
-import io.deephaven.client.impl.DaggerDeephavenFlightRoot;
 import io.deephaven.client.impl.FlightSession;
+import io.deephaven.client.impl.FlightSessionFactoryConfig;
+import io.deephaven.client.impl.FlightSessionFactoryConfig.Factory;
 import io.deephaven.client.impl.TableHandle;
 import io.deephaven.qst.table.TicketTable;
 import io.grpc.ManagedChannel;
@@ -16,6 +17,7 @@ import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -44,40 +46,46 @@ class DoPutSpray implements Callable<Void> {
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(4);
         ConnectOptions source = connects.get(0);
 
-        final ManagedChannel sourceChannel = source.open();
-        Runtime.getRuntime()
-                .addShutdownHook(new Thread(() -> onShutdown(scheduler, sourceChannel)));
+        final Factory sourceFactory = FlightSessionFactoryConfig.builder()
+                .clientConfig(source.config())
+                .allocator(bufferAllocator)
+                .scheduler(scheduler)
+                .build()
+                .factory();
 
-        final FlightSession sourceSession = session(bufferAllocator, scheduler, sourceChannel);
-        try (final TableHandle sourceHandle = sourceSession.session().execute(TicketTable.of(ticket))) {
-            for (ConnectOptions other : connects.subList(1, connects.size())) {
-                final FlightSession destSession = session(bufferAllocator, scheduler, other.open());
-                try (final FlightStream in = sourceSession.stream(sourceHandle)) {
-                    final TableHandle destHandle = destSession.putExport(in);
-                    destSession.session().publish(variableName, destHandle).get();
-                } finally {
-                    close(destSession);
+        Runtime.getRuntime()
+                .addShutdownHook(new Thread(() -> onShutdown(scheduler, sourceFactory.managedChannel())));
+
+        try (final FlightSession sourceSession = sourceFactory.newFlightSession()) {
+            try (final TableHandle sourceHandle =
+                    sourceSession.session().execute(TicketTable.of(ticket.getBytes(StandardCharsets.UTF_8)))) {
+                for (ConnectOptions other : connects.subList(1, connects.size())) {
+                    final Factory otherFactory = FlightSessionFactoryConfig.builder()
+                            .clientConfig(other.config())
+                            .allocator(bufferAllocator)
+                            .scheduler(scheduler)
+                            .build()
+                            .factory();
+                    try (final FlightSession destSession = otherFactory.newFlightSession()) {
+                        try (final FlightStream in = sourceSession.stream(sourceHandle)) {
+                            final TableHandle destHandle = destSession.putExport(in);
+                            destSession.session().publish(variableName, destHandle).get();
+                        } finally {
+                            closeFutureWait(destSession);
+                        }
+                    }
+                    otherFactory.managedChannel().shutdown().awaitTermination(5, TimeUnit.SECONDS);
                 }
+            } finally {
+                closeFutureWait(sourceSession);
             }
-        } finally {
-            close(sourceSession);
         }
         return null;
     }
 
-    private static void close(FlightSession session) throws InterruptedException, ExecutionException, TimeoutException {
-        session.close();
+    private static void closeFutureWait(FlightSession session)
+            throws InterruptedException, ExecutionException, TimeoutException {
         session.session().closeFuture().get(5, TimeUnit.SECONDS);
-    }
-
-    private FlightSession session(BufferAllocator bufferAllocator, ScheduledExecutorService scheduler,
-            ManagedChannel sourceChannel) {
-        return DaggerDeephavenFlightRoot.create().factoryBuilder()
-                .managedChannel(sourceChannel)
-                .scheduler(scheduler)
-                .allocator(bufferAllocator)
-                .build()
-                .newFlightSession();
     }
 
     public static void main(String[] args) {

@@ -16,8 +16,8 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.mutable.MutableInt;
 import junit.framework.TestCase;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.Rule;
 import org.junit.Test;
 

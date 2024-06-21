@@ -3,13 +3,11 @@
 //
 package io.deephaven.client.examples;
 
-import io.deephaven.client.impl.ChannelHelper;
 import io.deephaven.client.impl.ClientConfig;
 import io.deephaven.client.impl.ClientConfig.Builder;
 import io.deephaven.ssl.config.SSLConfig;
 import io.deephaven.uri.DeephavenTarget;
 import io.deephaven.uri.DeephavenUri;
-import io.grpc.ManagedChannel;
 import picocli.CommandLine.Option;
 
 import java.util.Map;
@@ -25,13 +23,13 @@ public class ConnectOptions {
 
     public static final String DEFAULT_TARGET_VALUE = DeephavenUri.PLAINTEXT_SCHEME + "://" + DEFAULT_HOST;
 
-    public static ManagedChannel open(ConnectOptions options) {
+    public static ConnectOptions options(ConnectOptions options) {
         if (options == null) {
             options = new ConnectOptions();
             // https://github.com/remkop/picocli/issues/844
             options.target = DEFAULT_TARGET;
         }
-        return options.open();
+        return options;
     }
 
     @Option(names = {"-t", "--target"}, description = "The target, defaults to ${DEFAULT-VALUE}",
@@ -54,7 +52,7 @@ public class ConnectOptions {
     @Option(names = {"--header"})
     Map<String, String> headers;
 
-    private ClientConfig config() {
+    public ClientConfig config() {
         final Builder builder = ClientConfig.builder().target(target);
         if (userAgent != null) {
             builder.userAgent(userAgent);
@@ -72,9 +70,5 @@ public class ConnectOptions {
             builder.putAllExtraHeaders(headers);
         }
         return builder.build();
-    }
-
-    public ManagedChannel open() {
-        return ChannelHelper.channel(config());
     }
 }

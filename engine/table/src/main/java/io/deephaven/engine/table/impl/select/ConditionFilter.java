@@ -5,8 +5,9 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.base.Pair;
 import io.deephaven.chunk.attributes.Any;
-import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryCompilerImpl;
+import io.deephaven.engine.context.QueryCompilerRequest;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.SharedContext;
@@ -14,11 +15,11 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.util.codegen.CodeGenerator;
 import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.time.TimeLiteralReplacedExpression;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
@@ -34,6 +35,10 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 import static io.deephaven.engine.table.impl.select.DhFormulaColumn.COLUMN_SUFFIX;
@@ -44,7 +49,7 @@ import static io.deephaven.engine.table.impl.select.DhFormulaColumn.COLUMN_SUFFI
 public class ConditionFilter extends AbstractConditionFilter {
 
     public static final int CHUNK_SIZE = 4096;
-    private Class<?> filterKernelClass = null;
+    private Future<Class<?>> filterKernelClassFuture = null;
     private List<Pair<String, Class<?>>> usedInputs; // that is columns and special variables
     private String classBody;
     private Filter filter = null;
@@ -65,7 +70,7 @@ public class ConditionFilter extends AbstractConditionFilter {
             case Numba:
                 throw new UnsupportedOperationException("Python condition filter should be created from python");
             default:
-                throw new UnsupportedOperationException("Unknow parser type " + parser);
+                throw new UnsupportedOperationException("Unknown parser type " + parser);
         }
     }
 
@@ -378,47 +383,54 @@ public class ConditionFilter extends AbstractConditionFilter {
 
     @Override
     protected void generateFilterCode(
-            TableDefinition tableDefinition,
-            TimeLiteralReplacedExpression timeConversionResult,
-            QueryLanguageParser.Result result) {
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final TimeLiteralReplacedExpression timeConversionResult,
+            @NotNull final QueryLanguageParser.Result result,
+            @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
         final StringBuilder classBody = getClassBody(tableDefinition, timeConversionResult, result);
-        if (classBody == null)
+        if (classBody == null) {
             return;
-        try (final SafeCloseable ignored = QueryPerformanceRecorder.getInstance().getCompilationNugget(formula)) {
-            final List<Class<?>> paramClasses = new ArrayList<>();
-            final Consumer<Class<?>> addParamClass = (cls) -> {
-                if (cls != null) {
-                    paramClasses.add(cls);
-                }
-            };
-            for (String usedColumn : usedColumns) {
-                usedColumn = outerToInnerNames.getOrDefault(usedColumn, usedColumn);
-                final ColumnDefinition<?> column = tableDefinition.getColumn(usedColumn);
-                addParamClass.accept(column.getDataType());
-                addParamClass.accept(column.getComponentType());
-            }
-            for (String usedColumn : usedColumnArrays) {
-                usedColumn = outerToInnerNames.getOrDefault(usedColumn, usedColumn);
-                final ColumnDefinition<?> column = tableDefinition.getColumn(usedColumn);
-                addParamClass.accept(column.getDataType());
-                addParamClass.accept(column.getComponentType());
-            }
-            for (final QueryScopeParam<?> param : params) {
-                addParamClass.accept(QueryScopeParamTypeUtil.getDeclaredClass(param.getValue()));
-            }
-
-            filterKernelClass = ExecutionContext.getContext().getQueryCompiler()
-                    .compile("GeneratedFilterKernel", this.classBody = classBody.toString(),
-                            QueryCompiler.FORMULA_PREFIX, QueryScopeParamTypeUtil.expandParameterClasses(paramClasses));
         }
+
+        final List<Class<?>> paramClasses = new ArrayList<>();
+        final Consumer<Class<?>> addParamClass = (cls) -> {
+            if (cls != null) {
+                paramClasses.add(cls);
+            }
+        };
+        for (String usedColumn : usedColumns) {
+            usedColumn = outerToInnerNames.getOrDefault(usedColumn, usedColumn);
+            final ColumnDefinition<?> column = tableDefinition.getColumn(usedColumn);
+            addParamClass.accept(column.getDataType());
+            addParamClass.accept(column.getComponentType());
+        }
+        for (String usedColumn : usedColumnArrays) {
+            usedColumn = outerToInnerNames.getOrDefault(usedColumn, usedColumn);
+            final ColumnDefinition<?> column = tableDefinition.getColumn(usedColumn);
+            addParamClass.accept(column.getDataType());
+            addParamClass.accept(column.getComponentType());
+        }
+        for (final QueryScopeParam<?> param : params) {
+            addParamClass.accept(QueryScopeParamTypeUtil.getDeclaredClass(param.getValue()));
+        }
+
+        this.classBody = classBody.toString();
+
+        filterKernelClassFuture = compilationProcessor.submit(QueryCompilerRequest.builder()
+                .description("Filter Expression: " + formula)
+                .className("GeneratedFilterKernel")
+                .classBody(this.classBody)
+                .packageNameRoot(QueryCompilerImpl.FORMULA_CLASS_PREFIX)
+                .putAllParameterClasses(QueryScopeParamTypeUtil.expandParameterClasses(paramClasses))
+                .build());
     }
 
     @Nullable
     private StringBuilder getClassBody(
-            TableDefinition tableDefinition,
-            TimeLiteralReplacedExpression timeConversionResult,
-            QueryLanguageParser.Result result) {
-        if (filterKernelClass != null) {
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final TimeLiteralReplacedExpression timeConversionResult,
+            @NotNull final QueryLanguageParser.Result result) {
+        if (filterKernelClassFuture != null) {
             return null;
         }
         usedInputs = new ArrayList<>();
@@ -516,7 +528,7 @@ public class ConditionFilter extends AbstractConditionFilter {
 
                 final String arrayType = columnType.getCanonicalName().replace(
                         "io.deephaven.vector",
-                        "io.deephaven.engine.table.impl.vector") + "ColumnWrapper";
+                        "io.deephaven.engine.table.vectors") + "ColumnWrapper";
 
                 /*
                  * Adding array column fields.
@@ -577,15 +589,23 @@ public class ConditionFilter extends AbstractConditionFilter {
     protected Filter getFilter(Table table, RowSet fullSet)
             throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
         if (filter == null) {
-            final FilterKernel<?> filterKernel = (FilterKernel<?>) filterKernelClass
-                    .getConstructor(Table.class, RowSet.class, QueryScopeParam[].class)
-                    .newInstance(table, fullSet, (Object) params);
-            final String[] columnNames = usedInputs.stream()
-                    .map(p -> outerToInnerNames.getOrDefault(p.first, p.first))
-                    .toArray(String[]::new);
-            filter = new ChunkFilter(filterKernel, columnNames, CHUNK_SIZE);
-            // note this filter is not valid for use in other contexts, as it captures references from the source table
-            filterValidForCopy = false;
+            try {
+                final FilterKernel<?> filterKernel = (FilterKernel<?>) filterKernelClassFuture
+                        .get(0, TimeUnit.SECONDS)
+                        .getConstructor(Table.class, RowSet.class, QueryScopeParam[].class)
+                        .newInstance(table, fullSet, (Object) params);
+                final String[] columnNames = usedInputs.stream()
+                        .map(p -> outerToInnerNames.getOrDefault(p.first, p.first))
+                        .toArray(String[]::new);
+                filter = new ChunkFilter(filterKernel, columnNames, CHUNK_SIZE);
+                // note this filter is not valid for use in other contexts, as it captures references from the source
+                // table
+                filterValidForCopy = false;
+            } catch (InterruptedException | TimeoutException e) {
+                throw new IllegalStateException("Formula factory not already compiled!");
+            } catch (ExecutionException e) {
+                throw new FormulaCompilationException("Formula compilation error for: " + formula, e.getCause());
+            }
         }
         return filter;
     }
@@ -600,7 +620,7 @@ public class ConditionFilter extends AbstractConditionFilter {
         final ConditionFilter copy = new ConditionFilter(formula, outerToInnerNames);
         onCopy(copy);
         if (initialized) {
-            copy.filterKernelClass = filterKernelClass;
+            copy.filterKernelClassFuture = filterKernelClassFuture;
             copy.usedInputs = usedInputs;
             copy.classBody = classBody;
             if (filterValidForCopy) {

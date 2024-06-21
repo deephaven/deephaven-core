@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 
 public abstract class DeephavenSessionTestBase extends DeephavenApiServerTestBase {
 
-    private ScheduledExecutorService sessionScheduler;
+    protected ScheduledExecutorService sessionScheduler;
     protected Session session;
     protected SessionState serverSessionState;
 
@@ -29,9 +29,12 @@ public abstract class DeephavenSessionTestBase extends DeephavenApiServerTestBas
         ManagedChannel channel = channelBuilder().build();
         register(channel);
         sessionScheduler = Executors.newScheduledThreadPool(2);
-        final SessionImpl clientSessionImpl =
-                DaggerDeephavenSessionRoot.create().factoryBuilder().managedChannel(channel)
-                        .scheduler(sessionScheduler).build().newSession();
+        final SessionImpl clientSessionImpl = DaggerDeephavenSessionRoot.create()
+                .factoryBuilder()
+                .managedChannel(channel)
+                .scheduler(sessionScheduler)
+                .build()
+                .newSession();
         session = clientSessionImpl;
         serverSessionState = Require.neqNull(server().sessionService().getSessionForToken(
                 clientSessionImpl._hackBearerHandler().getCurrentToken()), "SessionState");

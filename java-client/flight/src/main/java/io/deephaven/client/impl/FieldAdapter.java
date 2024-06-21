@@ -13,11 +13,13 @@ import io.deephaven.qst.type.CustomType;
 import io.deephaven.qst.type.DoubleType;
 import io.deephaven.qst.type.FloatType;
 import io.deephaven.qst.type.GenericType;
-import io.deephaven.qst.type.GenericType.Visitor;
+import io.deephaven.qst.type.GenericVectorType;
 import io.deephaven.qst.type.InstantType;
 import io.deephaven.qst.type.IntType;
 import io.deephaven.qst.type.LongType;
+import io.deephaven.qst.type.NativeArrayType;
 import io.deephaven.qst.type.PrimitiveType;
+import io.deephaven.qst.type.PrimitiveVectorType;
 import io.deephaven.qst.type.ShortType;
 import io.deephaven.qst.type.StringType;
 import io.deephaven.qst.type.Type;
@@ -33,7 +35,8 @@ import java.util.Objects;
 /**
  * Utilities for creating a {@link Field}.
  */
-public class FieldAdapter implements Type.Visitor<Field>, PrimitiveType.Visitor<Field> {
+public class FieldAdapter implements Type.Visitor<Field>, PrimitiveType.Visitor<Field>, GenericType.Visitor<Field>,
+        ArrayType.Visitor<Field> {
 
     /**
      * Convert a {@code header} into a {@link Field}.
@@ -98,6 +101,10 @@ public class FieldAdapter implements Type.Visitor<Field>, PrimitiveType.Visitor<
         return new Field(name, type, null);
     }
 
+    private static UnsupportedOperationException unsupported(Type<?> type) {
+        return new UnsupportedOperationException(String.format("Field type '%s' is not supported yet", type));
+    }
+
     private final String name;
 
     private FieldAdapter(String name) {
@@ -107,40 +114,6 @@ public class FieldAdapter implements Type.Visitor<Field>, PrimitiveType.Visitor<
     @Override
     public Field visit(PrimitiveType<?> primitive) {
         return primitive.walk((PrimitiveType.Visitor<Field>) this);
-    }
-
-    @Override
-    public Field visit(GenericType<?> generic) {
-        return generic.walk(new Visitor<Field>() {
-            @Override
-            public Field visit(BoxedType<?> boxedType) {
-                return FieldAdapter.this.visit(boxedType.primitiveType());
-            }
-
-            @Override
-            public Field visit(StringType stringType) {
-                return stringField(name);
-            }
-
-            @Override
-            public Field visit(InstantType instantType) {
-                return instantField(name);
-            }
-
-            @Override
-            public Field visit(ArrayType<?, ?> arrayType) {
-                if (arrayType.componentType().equals(Type.find(byte.class))) {
-                    return byteVectorField(name);
-                } else {
-                    throw new UnsupportedOperationException();
-                }
-            }
-
-            @Override
-            public Field visit(CustomType<?> customType) {
-                throw new UnsupportedOperationException();
-            }
-        });
     }
 
     @Override
@@ -181,5 +154,137 @@ public class FieldAdapter implements Type.Visitor<Field>, PrimitiveType.Visitor<
     @Override
     public Field visit(DoubleType doubleType) {
         return doubleField(name);
+    }
+
+    // ----------------------------------------------------------
+
+    @Override
+    public Field visit(GenericType<?> generic) {
+        return generic.walk((GenericType.Visitor<Field>) this);
+    }
+
+    @Override
+    public Field visit(BoxedType<?> boxedType) {
+        // same field type as primitives
+        return boxedType.primitiveType().walk((PrimitiveType.Visitor<Field>) this);
+    }
+
+    @Override
+    public Field visit(StringType stringType) {
+        return stringField(name);
+    }
+
+    @Override
+    public Field visit(InstantType instantType) {
+        return instantField(name);
+    }
+
+    @Override
+    public Field visit(CustomType<?> customType) {
+        throw unsupported(customType);
+    }
+
+    // ----------------------------------------------------------
+
+    @Override
+    public Field visit(ArrayType<?, ?> arrayType) {
+        return arrayType.walk((ArrayType.Visitor<Field>) this);
+    }
+
+    @Override
+    public Field visit(NativeArrayType<?, ?> nativeArrayType) {
+        return nativeArrayType.componentType().walk(new NativeArrayVisitor());
+    }
+
+    @Override
+    public Field visit(PrimitiveVectorType<?, ?> vectorPrimitiveType) {
+        throw unsupported(vectorPrimitiveType);
+    }
+
+    @Override
+    public Field visit(GenericVectorType<?, ?> genericVectorType) {
+        throw unsupported(genericVectorType);
+    }
+
+    // ----------------------------------------------------------
+
+    final class NativeArrayVisitor
+            implements Type.Visitor<Field>, PrimitiveType.Visitor<Field>, GenericType.Visitor<Field> {
+        @Override
+        public Field visit(PrimitiveType<?> primitiveType) {
+            return primitiveType.walk((PrimitiveType.Visitor<Field>) this);
+        }
+
+        @Override
+        public Field visit(BooleanType booleanType) {
+            return field(name, MinorType.LIST.getType(), "java.lang.Boolean[]");
+        }
+
+        @Override
+        public Field visit(ByteType byteType) {
+            return byteVectorField(name);
+        }
+
+        @Override
+        public Field visit(CharType charType) {
+            return field(name, MinorType.LIST.getType(), "char[]");
+        }
+
+        @Override
+        public Field visit(ShortType shortType) {
+            return field(name, MinorType.LIST.getType(), "short[]");
+        }
+
+        @Override
+        public Field visit(IntType intType) {
+            return field(name, MinorType.LIST.getType(), "int[]");
+        }
+
+        @Override
+        public Field visit(LongType longType) {
+            return field(name, MinorType.LIST.getType(), "long[]");
+        }
+
+        @Override
+        public Field visit(FloatType floatType) {
+            return field(name, MinorType.LIST.getType(), "float[]");
+        }
+
+        @Override
+        public Field visit(DoubleType doubleType) {
+            return field(name, MinorType.LIST.getType(), "double[]");
+        }
+
+        // ----------------------------------------------------------
+
+        @Override
+        public Field visit(GenericType<?> genericType) {
+            return genericType.walk((GenericType.Visitor<Field>) this);
+        }
+
+        @Override
+        public Field visit(BoxedType<?> boxedType) {
+            throw unsupported(boxedType.arrayType());
+        }
+
+        @Override
+        public Field visit(StringType stringType) {
+            return field(name, MinorType.LIST.getType(), "java.lang.String[]");
+        }
+
+        @Override
+        public Field visit(InstantType instantType) {
+            return field(name, MinorType.LIST.getType(), "java.time.Instant[]");
+        }
+
+        @Override
+        public Field visit(ArrayType<?, ?> arrayType) {
+            throw unsupported(arrayType.arrayType());
+        }
+
+        @Override
+        public Field visit(CustomType<?> customType) {
+            throw unsupported(customType.arrayType());
+        }
     }
 }

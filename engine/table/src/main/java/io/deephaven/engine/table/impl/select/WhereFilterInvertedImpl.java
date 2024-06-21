@@ -10,6 +10,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.DependencyStreamProvider;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
@@ -57,8 +58,15 @@ class WhereFilterInvertedImpl
     }
 
     @Override
-    public void init(TableDefinition tableDefinition) {
-        filter.init(tableDefinition);
+    public void init(@NotNull TableDefinition tableDefinition) {
+        init(tableDefinition, QueryCompilerRequestProcessor.immediate());
+    }
+
+    @Override
+    public void init(
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
+        filter.init(tableDefinition, compilationProcessor);
     }
 
     @Override

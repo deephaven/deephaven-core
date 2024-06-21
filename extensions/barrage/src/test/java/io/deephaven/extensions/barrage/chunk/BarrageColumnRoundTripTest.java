@@ -26,15 +26,17 @@ import io.deephaven.extensions.barrage.util.BarrageProtoUtil;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.vector.LongVector;
 import io.deephaven.vector.LongVectorDirect;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInput;
 import java.io.IOException;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
@@ -326,6 +328,16 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                 new LongVectorIdentityValidator());
     }
 
+    public void testLocalDateVectorSerialization() throws IOException {
+        testRoundTripSerialization(OPT_DEFAULT, LocalDate.class, BarrageColumnRoundTripTest::initLocalDateVectorChunk,
+                new LocalDateVectorIdentityValidator());
+    }
+
+    public void testLocalTimeVectorSerialization() throws IOException {
+        testRoundTripSerialization(OPT_DEFAULT, LocalTime.class, BarrageColumnRoundTripTest::initLocalTimeVectorChunk,
+                new LocalTimeVectorIdentityValidator());
+    }
+
     private static class Unique {
         final int value;
 
@@ -407,6 +419,34 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                     entry[k] = i * 10000L + k;
                 }
                 chunk.set(i, new LongVectorDirect(entry));
+            }
+        }
+    }
+
+    private static void initLocalDateVectorChunk(final WritableChunk<Values> untypedChunk) {
+        final Random random = new Random(0);
+        final WritableObjectChunk<LocalDate, Values> chunk = untypedChunk.asWritableObjectChunk();
+
+        for (int i = 0; i < chunk.size(); ++i) {
+            final int j = random.nextInt(20) - 1;
+            if (j < 0) {
+                chunk.set(i, null);
+            } else {
+                chunk.set(i, LocalDate.ofEpochDay((i * 17L) % 365));
+            }
+        }
+    }
+
+    private static void initLocalTimeVectorChunk(final WritableChunk<Values> untypedChunk) {
+        final Random random = new Random(0);
+        final WritableObjectChunk<LocalTime, Values> chunk = untypedChunk.asWritableObjectChunk();
+
+        for (int i = 0; i < chunk.size(); ++i) {
+            final int j = random.nextInt(20) - 1;
+            if (j < 0) {
+                chunk.set(i, null);
+            } else {
+                chunk.set(i, LocalTime.ofNanoOfDay(i * 1700000L));
             }
         }
     }
@@ -540,7 +580,54 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         }
     }
 
-    @SuppressWarnings("UnstableApiUsage")
+    private static final class LocalDateVectorIdentityValidator implements Validator {
+        @Override
+        public void assertExpected(
+                final WritableChunk<Values> untypedOriginal,
+                final WritableChunk<Values> unTypedComputed,
+                @Nullable RowSequence subset,
+                final int offset) {
+            final WritableObjectChunk<LocalDate, Values> original = untypedOriginal.asWritableObjectChunk();
+            final WritableObjectChunk<LocalDate, Values> computed = unTypedComputed.asWritableObjectChunk();
+            if (subset == null) {
+                subset = RowSetFactory.flat(original.size());
+            }
+            final MutableInt off = new MutableInt();
+            subset.forAllRowKeys(i -> {
+                final LocalDate ld = original.get((int) i);
+                if (ld == null) {
+                    Assert.eqNull(computed.get(offset + off.getAndIncrement()), "computed");
+                } else {
+                    Assert.equals(ld, "ld", computed.get(offset + off.getAndIncrement()), "computed");
+                }
+            });
+        }
+    }
+
+    private static final class LocalTimeVectorIdentityValidator implements Validator {
+        @Override
+        public void assertExpected(
+                final WritableChunk<Values> untypedOriginal,
+                final WritableChunk<Values> unTypedComputed,
+                @Nullable RowSequence subset,
+                final int offset) {
+            final WritableObjectChunk<LocalTime, Values> original = untypedOriginal.asWritableObjectChunk();
+            final WritableObjectChunk<LocalTime, Values> computed = unTypedComputed.asWritableObjectChunk();
+            if (subset == null) {
+                subset = RowSetFactory.flat(original.size());
+            }
+            final MutableInt off = new MutableInt();
+            subset.forAllRowKeys(i -> {
+                final LocalTime lt = original.get((int) i);
+                if (lt == null) {
+                    Assert.eqNull(computed.get(offset + off.getAndIncrement()), "computed");
+                } else {
+                    Assert.equals(lt, "lt", computed.get(offset + off.getAndIncrement()), "computed");
+                }
+            });
+        }
+    }
+
     private static <T> void testRoundTripSerialization(
             final BarrageSubscriptionOptions options, final Class<T> type,
             final Consumer<WritableChunk<Values>> initData, final Validator validator) throws IOException {

@@ -21,10 +21,10 @@ import org.gradle.internal.Actions
 class Classpaths {
 
     static final String ELEMENTAL_GROUP = 'com.google.elemental2'
-    static final String ELEMENTAL_VERSION = '1.1.0'
+    static final String ELEMENTAL_VERSION = '1.2.1'
 
-    static final String GWT_GROUP = 'com.google.gwt'
-    static final String GWT_VERSION = '2.9.0'
+    static final String GWT_GROUP = 'org.gwtproject'
+    static final String GWT_VERSION = '2.11.0'
 
     static final String JAVA_PARSER_GROUP = 'com.github.javaparser'
     static final String JAVA_PARSER_NAME = 'javaparser-core'
@@ -36,11 +36,10 @@ class Classpaths {
     static final String JAVAX_ANNOTATIONS_NAME = 'validation-api'
     static final String JAVAX_ANNOTATIONS_VERSION = '1.0.0.GA'
 
-    static final String JETTY_GROUP = 'org.eclipse.jetty'
-    static final String JETTY_VERSION = '9.4.20.v20190813'
+    static final String JETTY_VERSION = '9.4.44.v20210927'
 
     static final String JS_INTEROP_GROUP = 'com.google.jsinterop'
-    static final String JS_INTEROP_VERSION = '2.0.0'
+    static final String JS_INTEROP_VERSION = '2.0.2'
 
     static final String COMMONS_GROUP = 'org.apache.commons'
 
@@ -52,7 +51,7 @@ class Classpaths {
 
     static final String FLATBUFFER_GROUP = 'com.google.flatbuffers'
     static final String FLATBUFFER_NAME = 'flatbuffers-java'
-    static final String FLATBUFFER_VERSION = '2.0.3'
+    static final String FLATBUFFER_VERSION = '1.12.0'
 
     static final String DAGGER_GROUP = 'com.google.dagger'
     static final String DAGGER_NAME = 'dagger'
@@ -100,7 +99,7 @@ class Classpaths {
     // TODO(deephaven-core#1685): Create strategy around updating and maintaining protoc version
     static final String PROTOBUF_GROUP = 'com.google.protobuf'
     static final String PROTOBUF_NAME = 'protobuf-java'
-    static final String PROTOBUF_VERSION = '3.23.0'
+    static final String PROTOBUF_VERSION = '3.25.3'
 
     // See dependency matrix for particular gRPC versions at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty
     static final String BORINGSSL_GROUP = 'io.netty'
@@ -110,7 +109,7 @@ class Classpaths {
 
     static final String JACKSON_GROUP = 'com.fasterxml.jackson'
     static final String JACKSON_NAME = 'jackson-bom'
-    static final String JACKSON_VERSION = '2.14.1'
+    static final String JACKSON_VERSION = '2.17.0'
 
     static final String SSLCONTEXT_GROUP = 'io.github.hakky54'
     static final String SSLCONTEXT_VERSION = '8.1.1'
@@ -121,7 +120,19 @@ class Classpaths {
 
     static final String GUAVA_GROUP = 'com.google.guava'
     static final String GUAVA_NAME = 'guava'
-    static final String GUAVA_VERSION = '32.0.1-jre'
+    static final String GUAVA_VERSION = '33.2.0-jre'
+
+    static final String HADOOP_GROUP = 'org.apache.hadoop'
+    static final String HADOOP_VERSION = '3.4.0'
+
+    static final String ICEBERG_GROUP = 'org.apache.iceberg'
+    static final String ICEBERG_VERSION = '1.5.0'
+
+    static final String AWSSDK_GROUP = 'software.amazon.awssdk'
+    static final String AWSSDK_VERSION = '2.23.19'
+
+    static final String TESTCONTAINER_GROUP = 'org.testcontainers'
+    static final String TESTCONTAINER_VERSION = '1.19.4'
 
     static boolean addDependency(Configuration conf, String group, String name, String version, Action<? super DefaultExternalModuleDependency> configure = Actions.doNothing()) {
         if (!conf.dependencies.find { it.name == name && it.group == group}) {
@@ -146,9 +157,9 @@ class Classpaths {
         if (addDependency(config, GWT_GROUP, name, GWT_VERSION)) {
             // when we add gwt-dev, lets also force asm version, just to be safe.
             name == 'gwt-dev' && config.resolutionStrategy {
-                force 'org.ow2.asm:asm:5.0.3'
-                force 'org.ow2.asm:asm-util:5.0.3'
-                force 'org.ow2.asm:asm-commons:5.0.3'
+                force 'org.ow2.asm:asm:9.2'
+                force 'org.ow2.asm:asm-util:9.2'
+                force 'org.ow2.asm:asm-commons:9.2'
             }
         }
     }
@@ -168,7 +179,7 @@ class Classpaths {
         addDependency config, JS_INTEROP_GROUP, name,
                 // google is annoying, and have different versions released for the same groupId
                 // :base: is the only one that is different, so we'll use it in the ternary.
-                name == 'base'? '1.0.0' : JS_INTEROP_VERSION
+                name == 'base'? '1.0.1' : JS_INTEROP_VERSION
     }
 
     static void inheritElemental(Project p, String name, String configName) {
@@ -289,13 +300,13 @@ class Classpaths {
 
     static void inheritParquetHadoop(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
         Configuration config = p.configurations.getByName(configName)
-        addDependency(config, 'org.apache.parquet', 'parquet-hadoop', '1.13.0')
+        addDependency(config, 'org.apache.parquet', 'parquet-hadoop', '1.14.0')
     }
 
     /** configName controls only the Configuration's classpath, all transitive dependencies are runtimeOnly */
     static void inheritParquetHadoopConfiguration(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
         Configuration config = p.configurations.getByName(configName)
-        addDependency(config, 'org.apache.hadoop', 'hadoop-common', '3.3.3') {
+        addDependency(config, HADOOP_GROUP, 'hadoop-common', HADOOP_VERSION) {
             it.setTransitive(false)
             // Do not take any extra dependencies of this project transitively. We just want a few classes for
             // configuration and compression codecs. For any additional required dependencies, add them separately, as
@@ -304,14 +315,45 @@ class Classpaths {
         }
 
         Configuration runtimeOnly = p.configurations.getByName(JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME)
-        addDependency(runtimeOnly, 'com.fasterxml.woodstox', 'woodstox-core', '6.4.0') {
+        addDependency(runtimeOnly, 'com.fasterxml.woodstox', 'woodstox-core', '6.6.2') {
             it.because('hadoop-common required dependency for Configuration')
         }
-        addDependency(runtimeOnly, 'org.apache.hadoop.thirdparty', 'hadoop-shaded-guava', '1.1.1') {
+        addDependency(runtimeOnly, 'org.apache.hadoop.thirdparty', 'hadoop-shaded-guava', '1.2.0') {
             it.because('hadoop-common required dependency for Configuration')
         }
         addDependency(runtimeOnly, 'commons-collections', 'commons-collections', '3.2.2') {
             it.because('hadoop-common required dependency for Configuration')
         }
+    }
+
+    static void inheritIcebergHadoop(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, HADOOP_GROUP, 'hadoop-common', HADOOP_VERSION)
+        addDependency(config, HADOOP_GROUP, 'hadoop-hdfs-client', HADOOP_VERSION)
+    }
+
+
+    static void inheritIcebergCore(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, p.getDependencies().platform(ICEBERG_GROUP + ":iceberg-bom:" + ICEBERG_VERSION))
+
+        addDependency(config, ICEBERG_GROUP, 'iceberg-core', ICEBERG_VERSION)
+        addDependency(config, ICEBERG_GROUP, 'iceberg-bundled-guava', ICEBERG_VERSION)
+    }
+
+    static void inheritAWSSDK(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, p.getDependencies().platform(AWSSDK_GROUP + ":bom:" + AWSSDK_VERSION))
+
+        addDependency(config, AWSSDK_GROUP, 's3', AWSSDK_VERSION)
+        addDependency(config, AWSSDK_GROUP, 'aws-crt-client', AWSSDK_VERSION)
+    }
+
+    static void inheritTestContainers(Project p, String configName = JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, TESTCONTAINER_GROUP, 'testcontainers', TESTCONTAINER_VERSION)
+        addDependency(config, TESTCONTAINER_GROUP, 'junit-jupiter', TESTCONTAINER_VERSION)
+        addDependency(config, TESTCONTAINER_GROUP, 'localstack', TESTCONTAINER_VERSION)
+        addDependency(config, TESTCONTAINER_GROUP, 'minio', TESTCONTAINER_VERSION)
     }
 }

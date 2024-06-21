@@ -42,7 +42,7 @@ public class ConjunctiveFilter extends ComposedFilter {
             }
         }
 
-        return new ConjunctiveFilter(rawComponents.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
+        return new ConjunctiveFilter(rawComponents.toArray(WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY));
     }
 
     static WritableRowSet andImpl(RowSet selection, RowSet fullSet, Table table, boolean usePrev, boolean invert,

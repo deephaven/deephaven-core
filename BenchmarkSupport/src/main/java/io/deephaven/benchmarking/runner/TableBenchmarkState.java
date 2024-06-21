@@ -6,6 +6,7 @@ package io.deephaven.benchmarking.runner;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.util.TableBuilder;
@@ -48,7 +49,8 @@ public class TableBenchmarkState {
                 .resolve(BenchmarkTools.getDetailOutputPath(benchmarkName) + PARQUET_FILE_EXTENSION);
 
         final Table output = outputBuilder.build();
-        ParquetTools.writeTable(output, outputPath.toFile(), RESULT_DEF);
+        ParquetTools.writeTable(output, outputPath.toString(),
+                ParquetInstructions.EMPTY.withTableDefinition(RESULT_DEF));
     }
 
     public void reset() {
@@ -76,7 +78,7 @@ public class TableBenchmarkState {
     }
 
     public static Table readBin(File location) {
-        return ParquetTools.readTable(location);
+        return ParquetTools.readTable(location.getPath());
     }
 
     public String getResultHash() {

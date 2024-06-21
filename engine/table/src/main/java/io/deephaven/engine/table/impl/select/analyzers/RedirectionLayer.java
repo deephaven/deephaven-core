@@ -8,12 +8,11 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.util.*;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.Nullable;
 
@@ -145,10 +144,10 @@ public final class RedirectionLayer extends SelectAndViewAnalyzer {
             final RowSet.Iterator freeIt = freeValues.iterator();
             upstream.added().forAllRowKeys(outerKey -> {
                 final long innerKey = freeIt.hasNext() ? freeIt.nextLong() : ++maxInnerIndex;
-                lastAllocated.setValue(innerKey);
+                lastAllocated.set(innerKey);
                 rowRedirection.put(outerKey, innerKey);
             });
-            freeValues.removeRange(0, lastAllocated.longValue());
+            freeValues.removeRange(0, lastAllocated.get());
         }
 
         onCompletion.onLayerCompleted(REDIRECTION_LAYER_INDEX);
@@ -162,11 +161,6 @@ public final class RedirectionLayer extends SelectAndViewAnalyzer {
     @Override
     public SelectAndViewAnalyzer getInner() {
         return inner;
-    }
-
-    @Override
-    public void updateColumnDefinitionsFromTopLayer(Map<String, ColumnDefinition<?>> columnDefinitions) {
-        inner.updateColumnDefinitionsFromTopLayer(columnDefinitions);
     }
 
     @Override

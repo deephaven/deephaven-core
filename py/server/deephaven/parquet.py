@@ -13,13 +13,14 @@ import jpy
 from deephaven import DHError
 from deephaven.column import Column
 from deephaven.dtypes import DType
+from deephaven.jcompat import j_array_list
 from deephaven.table import Table, PartitionedTable
 from deephaven.experimental import s3
 
 _JParquetTools = jpy.get_type("io.deephaven.parquet.table.ParquetTools")
-_JFile = jpy.get_type("java.io.File")
 _JCompressionCodecName = jpy.get_type("org.apache.parquet.hadoop.metadata.CompressionCodecName")
 _JParquetInstructions = jpy.get_type("io.deephaven.parquet.table.ParquetInstructions")
+_JParquetFileLayout = jpy.get_type("io.deephaven.parquet.table.ParquetInstructions$ParquetFileLayout")
 _JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
 
 
@@ -31,6 +32,28 @@ class ColumnInstruction:
     codec_name: Optional[str] = None
     codec_args: Optional[str] = None
     use_dictionary: bool = False
+
+
+class ParquetFileLayout(Enum):
+    """ The parquet file layout. """
+
+    SINGLE_FILE = 1
+    """ A single parquet file. """
+
+    FLAT_PARTITIONED = 2
+    """ A single directory of parquet files. """
+
+    KV_PARTITIONED = 3
+    """ A hierarchically partitioned directory layout of parquet files. Directory names are of the format "key=value" 
+     with keys derived from the partitioning columns. """
+
+    METADATA_PARTITIONED = 4
+    """
+    Layout can be used to describe:
+        - A directory containing a METADATA_FILE_NAME parquet file and an optional COMMON_METADATA_FILE_NAME parquet file
+        - A single parquet METADATA_FILE_NAME file
+        - A single parquet COMMON_METADATA_FILE_NAME file
+    """
 
 
 def _build_parquet_instructions(
@@ -45,6 +68,9 @@ def _build_parquet_instructions(
     force_build: bool = False,
     generate_metadata_files: Optional[bool] = None,
     base_name: Optional[str] = None,
+    file_layout: Optional[ParquetFileLayout] = None,
+    table_definition: Optional[Union[Dict[str, DType], List[Column]]] = None,
+    index_columns: Optional[Sequence[Sequence[str]]] = None,
     special_instructions: Optional[s3.S3Instructions] = None,
 ):
     if not any(
@@ -59,6 +85,9 @@ def _build_parquet_instructions(
             is_refreshing,
             generate_metadata_files is not None,
             base_name is not None,
+            file_layout is not None,
+            table_definition is not None,
+            index_columns is not None,
             special_instructions is not None
         ]
     ):
@@ -102,10 +131,20 @@ def _build_parquet_instructions(
     if base_name:
         builder.setBaseNameForPartitionedParquetData(base_name)
 
+    if file_layout is not None:
+        builder.setFileLayout(_j_file_layout(file_layout))
+
+    if table_definition is not None:
+        builder.setTableDefinition(_j_table_definition(table_definition))
+
+    if index_columns:
+        builder.addAllIndexColumns(_j_list_of_list_of_string(index_columns))
+
     if special_instructions is not None:
         builder.setSpecialInstructions(special_instructions.j_object)
 
     return builder.build()
+
 
 def _j_table_definition(table_definition: Union[Dict[str, DType], List[Column], None]) -> Optional[jpy.JType]:
     if table_definition is None:
@@ -125,20 +164,18 @@ def _j_table_definition(table_definition: Union[Dict[str, DType], List[Column], 
         raise DHError(f"Unexpected table_definition type: {type(table_definition)}")
 
 
-class ParquetFileLayout(Enum):
-    """ The parquet file layout. """
-
-    SINGLE_FILE = 1
-    """ A single parquet file. """
-
-    FLAT_PARTITIONED = 2
-    """ A single directory of parquet files. """
-
-    KV_PARTITIONED = 3
-    """ A key-value directory partitioning of parquet files. """
-
-    METADATA_PARTITIONED = 4
-    """ A directory containing a _metadata parquet file and an optional _common_metadata parquet file. """
+def _j_file_layout(file_layout: Optional[ParquetFileLayout]) -> Optional[jpy.JType]:
+    if file_layout is None:
+        return None
+    if file_layout == ParquetFileLayout.SINGLE_FILE:
+        return _JParquetFileLayout.SINGLE_FILE
+    if file_layout == ParquetFileLayout.FLAT_PARTITIONED:
+        return _JParquetFileLayout.FLAT_PARTITIONED
+    if file_layout == ParquetFileLayout.KV_PARTITIONED:
+        return _JParquetFileLayout.KV_PARTITIONED
+    if file_layout == ParquetFileLayout.METADATA_PARTITIONED:
+        return _JParquetFileLayout.METADATA_PARTITIONED
+    raise DHError(f"Invalid parquet file_layout '{file_layout}'")
 
 
 def read(
@@ -163,8 +200,7 @@ def read(
         table_definition (Union[Dict[str, DType], List[Column], None]): the table definition, by default None. When None,
             the definition is inferred from the parquet file(s). Setting a definition guarantees the returned table will
             have that definition. This is useful for bootstrapping purposes when the initially partitioned directory is
-            empty and is_refreshing=True. It is also useful for specifying a subset of the parquet definition. When set,
-            file_layout must also be set.
+            empty and is_refreshing=True. It is also useful for specifying a subset of the parquet definition.
         special_instructions (Optional[s3.S3Instructions]): Special instructions for reading parquet files, useful when
             reading files from a non-local file system, like S3. By default, None.
 
@@ -183,45 +219,20 @@ def read(
             for_read=True,
             force_build=True,
             special_instructions=special_instructions,
+            file_layout=file_layout,
+            table_definition=table_definition,
         )
-        j_table_definition = _j_table_definition(table_definition)
-        if j_table_definition is not None:
-            if not file_layout:
-                raise DHError("Must provide file_layout when table_definition is set")
-            if file_layout == ParquetFileLayout.SINGLE_FILE:
-                j_table = _JParquetTools.readSingleFileTable(path, read_instructions, j_table_definition)
-            elif file_layout == ParquetFileLayout.FLAT_PARTITIONED:
-                j_table = _JParquetTools.readFlatPartitionedTable(_JFile(path), read_instructions, j_table_definition)
-            elif file_layout == ParquetFileLayout.KV_PARTITIONED:
-                j_table = _JParquetTools.readKeyValuePartitionedTable(_JFile(path), read_instructions, j_table_definition)
-            elif file_layout == ParquetFileLayout.METADATA_PARTITIONED:
-                raise DHError(f"file_layout={ParquetFileLayout.METADATA_PARTITIONED} with table_definition not currently supported")
-            else:
-                raise DHError(f"Invalid parquet file_layout '{file_layout}'")
-        else:
-            if not file_layout:
-                j_table = _JParquetTools.readTable(path, read_instructions)
-            elif file_layout == ParquetFileLayout.SINGLE_FILE:
-                j_table = _JParquetTools.readSingleFileTable(path, read_instructions)
-            elif file_layout == ParquetFileLayout.FLAT_PARTITIONED:
-                j_table = _JParquetTools.readFlatPartitionedTable(_JFile(path), read_instructions)
-            elif file_layout == ParquetFileLayout.KV_PARTITIONED:
-                j_table = _JParquetTools.readKeyValuePartitionedTable(_JFile(path), read_instructions)
-            elif file_layout == ParquetFileLayout.METADATA_PARTITIONED:
-                j_table = _JParquetTools.readPartitionedTableWithMetadata(_JFile(path), read_instructions)
-            else:
-                raise DHError(f"Invalid parquet file_layout '{file_layout}'")
-        return Table(j_table=j_table)
+        return Table(_JParquetTools.readTable(path, read_instructions))
     except Exception as e:
         raise DHError(e, "failed to read parquet data.") from e
 
 
-def _j_file_array(paths: List[str]):
-    return jpy.array("java.io.File", [_JFile(el) for el in paths])
+def _j_string_array(str_seq: Sequence[str]):
+    return jpy.array("java.lang.String", str_seq)
 
 
-def _j_array_of_array_of_string(index_columns: Sequence[Sequence[str]]):
-    return jpy.array("[Ljava.lang.String;", [jpy.array("java.lang.String", index_cols) for index_cols in index_columns])
+def _j_list_of_list_of_string(str_seq_seq: Sequence[Sequence[str]]):
+    return j_array_list([j_array_list(str_seq) for str_seq in str_seq_seq])
 
 
 def delete(path: str) -> None:
@@ -234,7 +245,7 @@ def delete(path: str) -> None:
         DHError
     """
     try:
-        _JParquetTools.deleteTable(_JFile(path))
+        _JParquetTools.deleteTable(path)
     except Exception as e:
         raise DHError(e, f"failed to delete a parquet table: {path} on disk.") from e
 
@@ -242,7 +253,7 @@ def delete(path: str) -> None:
 def write(
     table: Table,
     path: str,
-    col_definitions: Optional[List[Column]] = None,
+    table_definition: Optional[Union[Dict[str, DType], List[Column]]] = None,
     col_instructions: Optional[List[ColumnInstruction]] = None,
     compression_codec_name: Optional[str] = None,
     max_dictionary_keys: Optional[int] = None,
@@ -258,8 +269,10 @@ def write(
         path (str): the destination file path; the file name should end in a ".parquet" extension. If the path
             includes any non-existing directories, they are created. If there is an error, any intermediate directories
             previously created are removed; note this makes this method unsafe for concurrent use
-        col_definitions (Optional[List[Column]]): the column definitions to use for writing, instead of the definitions
-            implied by the table. Default is None, which means use the column definitions implied by the table
+        table_definition (Optional[Union[Dict[str, DType], List[Column]]): the table definition to use for writing,
+            instead of the definitions implied by the table. Default is None, which means use the column definitions
+            implied by the table. This definition can be used to skip some columns or add additional columns with
+            null values.
         col_instructions (Optional[List[ColumnInstruction]]): instructions for customizations while writing particular
             columns, default is None, which means no specialization for any column
         compression_codec_name (Optional[str]): the compression codec to use. Allowed values include "UNCOMPRESSED",
@@ -292,19 +305,10 @@ def write(
             target_page_size=target_page_size,
             for_read=False,
             generate_metadata_files=generate_metadata_files,
+            table_definition=table_definition,
+            index_columns=index_columns,
         )
-        if col_definitions is not None:
-            table_definition = _JTableDefinition.of([col.j_column_definition for col in col_definitions])
-        else:
-            table_definition = table._definition
-
-        if index_columns:
-            table_array = jpy.array("io.deephaven.engine.table.Table", [table.j_table])
-            index_columns_array = _j_array_of_array_of_string(index_columns)
-            _JParquetTools.writeParquetTables(table_array, table_definition, write_instructions,
-                                              _j_file_array([path]), index_columns_array)
-        else:
-            _JParquetTools.writeTable(table.j_table, path, table_definition, write_instructions)
+        _JParquetTools.writeTable(table.j_table, path, write_instructions)
     except Exception as e:
         raise DHError(e, "failed to write to parquet data.") from e
 
@@ -312,7 +316,7 @@ def write(
 def write_partitioned(
         table: Union[Table, PartitionedTable],
         destination_dir: str,
-        col_definitions: Optional[List[Column]] = None,
+        table_definition: Optional[Union[Dict[str, DType], List[Column]]] = None,
         col_instructions: Optional[List[ColumnInstruction]] = None,
         compression_codec_name: Optional[str] = None,
         max_dictionary_keys: Optional[int] = None,
@@ -332,8 +336,10 @@ def write_partitioned(
         table (Table): the source table or partitioned table
         destination_dir (str): The path to destination root directory in which the partitioned parquet data will be stored
             in a nested directory structure format. Non-existing directories in the provided path will be created.
-        col_definitions (Optional[List[Column]]): the column definitions to use for writing, instead of the definitions
-            implied by the table. Default is None, which means use the column definitions implied by the table
+        table_definition (Optional[Union[Dict[str, DType], List[Column]]): the table definition to use for writing,
+            instead of the definitions implied by the table. Default is None, which means use the column definitions
+            implied by the table. This definition can be used to skip some columns or add additional columns with
+            null values.
         col_instructions (Optional[List[ColumnInstruction]]): instructions for customizations while writing particular
             columns, default is None, which means no specialization for any column
         compression_codec_name (Optional[str]): the compression codec to use. Allowed values include "UNCOMPRESSED",
@@ -380,26 +386,10 @@ def write_partitioned(
             for_read=False,
             generate_metadata_files=generate_metadata_files,
             base_name=base_name,
+            table_definition=table_definition,
+            index_columns=index_columns,
         )
-
-        table_definition = None
-        if col_definitions is not None:
-            table_definition = _JTableDefinition.of([col.j_column_definition for col in col_definitions])
-
-        if index_columns:
-            index_columns_array = _j_array_of_array_of_string(index_columns)
-            if table_definition:
-                _JParquetTools.writeKeyValuePartitionedTable(table.j_object, table_definition, destination_dir,
-                                                             write_instructions, index_columns_array)
-            else:
-                _JParquetTools.writeKeyValuePartitionedTable(table.j_object, destination_dir, write_instructions,
-                                                             index_columns_array)
-        else:
-            if table_definition:
-                _JParquetTools.writeKeyValuePartitionedTable(table.j_object, table_definition, destination_dir,
-                                                             write_instructions)
-            else:
-                _JParquetTools.writeKeyValuePartitionedTable(table.j_object, destination_dir, write_instructions)
+        _JParquetTools.writeKeyValuePartitionedTable(table.j_object, destination_dir, write_instructions)
     except Exception as e:
         raise DHError(e, "failed to write to parquet data.") from e
 
@@ -407,7 +397,7 @@ def write_partitioned(
 def batch_write(
     tables: List[Table],
     paths: List[str],
-    col_definitions: List[Column],
+    table_definition: Optional[Union[Dict[str, DType], List[Column]]] = None,
     col_instructions: Optional[List[ColumnInstruction]] = None,
     compression_codec_name: Optional[str] = None,
     max_dictionary_keys: Optional[int] = None,
@@ -425,7 +415,10 @@ def batch_write(
         paths (List[str]): the destination paths. Any non-existing directories in the paths provided are
             created. If there is an error, any intermediate directories previously created are removed; note this makes
             this method unsafe for concurrent use
-        col_definitions (List[Column]): the column definitions to use for writing.
+        table_definition (Optional[Union[Dict[str, DType], List[Column]]]): the table definition to use for writing.
+            This definition can be used to skip some columns or add additional columns with null values. Default is
+            None, which means if all tables have the same definition, use the common table definition implied by the
+            tables. Otherwise, this parameter must be specified.
         col_instructions (Optional[List[ColumnInstruction]]): instructions for customizations while writing
         compression_codec_name (Optional[str]): the compression codec to use. Allowed values include "UNCOMPRESSED",
             "SNAPPY", "GZIP", "LZO", "LZ4", "LZ4_RAW", "ZSTD", etc. If not specified, defaults to "SNAPPY".
@@ -458,16 +451,9 @@ def batch_write(
             target_page_size=target_page_size,
             for_read=False,
             generate_metadata_files=generate_metadata_files,
+            table_definition=table_definition,
+            index_columns=index_columns,
         )
-
-        table_definition = _JTableDefinition.of([col.j_column_definition for col in col_definitions])
-
-        if index_columns:
-            index_columns_array = _j_array_of_array_of_string(index_columns)
-            _JParquetTools.writeParquetTables([t.j_table for t in tables], table_definition, write_instructions,
-                                              _j_file_array(paths), index_columns_array)
-        else:
-            _JParquetTools.writeTables([t.j_table for t in tables], table_definition,
-                                       _j_file_array(paths))
+        _JParquetTools.writeTables([t.j_table for t in tables], _j_string_array(paths), write_instructions)
     except Exception as e:
         raise DHError(e, "write multiple tables to parquet data failed.") from e

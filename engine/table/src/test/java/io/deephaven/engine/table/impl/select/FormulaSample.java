@@ -34,9 +34,9 @@ import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Context;
-import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import static io.deephaven.engine.table.impl.select.ConditionFilter.FilterKernel;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.type.ArrayTypeUtils;
@@ -73,6 +73,7 @@ import static io.deephaven.util.QueryConstants.*;
 public class FormulaSample extends io.deephaven.engine.table.impl.select.Formula {
     public static final io.deephaven.engine.table.impl.select.formula.FormulaFactory __FORMULA_FACTORY = FormulaSample::new;
 
+    private final String __columnName;
     private final io.deephaven.engine.table.ColumnSource<java.lang.Long> II;
     private final io.deephaven.engine.table.ColumnSource<java.lang.Integer> I;
     private final io.deephaven.vector.LongVector II_;
@@ -80,14 +81,16 @@ public class FormulaSample extends io.deephaven.engine.table.impl.select.Formula
     private final Map<Object, Object> __lazyResultCache;
 
 
-    public FormulaSample(final TrackingRowSet __rowSet,
+    public FormulaSample(final String __columnName,
+            final TrackingRowSet __rowSet,
             final boolean __lazy,
             final java.util.Map<String, ? extends io.deephaven.engine.table.ColumnSource> __columnsToData,
             final io.deephaven.engine.context.QueryScopeParam... __params) {
         super(__rowSet);
+        this.__columnName = __columnName;
         II = __columnsToData.get("II");
         I = __columnsToData.get("I");
-        II_ = new io.deephaven.engine.table.impl.vector.LongVectorColumnWrapper(__columnsToData.get("II"), __rowSet);
+        II_ = new io.deephaven.engine.table.vectors.LongVectorColumnWrapper(__columnsToData.get("II"), __rowSet);
         q = (java.lang.Integer) __params[0].getValue();
         __lazyResultCache = __lazy ? new ConcurrentHashMap<>() : null;
     }
@@ -190,7 +193,7 @@ public class FormulaSample extends io.deephaven.engine.table.impl.select.Formula
         try {
             return plus(plus(multiply(I, II), multiply(q.intValue(), ii)), II_.get(longCast(minus(i, 1))));
         } catch (java.lang.Exception __e) {
-            throw new io.deephaven.engine.table.impl.select.FormulaEvaluationException("In formula: Value = " + "plus(plus(multiply(I, II), multiply(q.intValue(), ii)), II_.get(longCast(minus(i, 1))))", __e);
+            throw new io.deephaven.engine.table.impl.select.FormulaEvaluationException("In formula: " + __columnName + " = " + "I * II + q * ii + II_[i - 1]", __e);
         }
     }
 

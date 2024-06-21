@@ -77,7 +77,7 @@ def buildCppClientImage = Docker.registerDockerTask(project, 'cppClient') {
 
     dockerfile {
         // See comment at the beginning of this file for why we use this base image.
-        from('deephaven/cpp-clients-multi-base:local-build')
+        from(Docker.localImageName('cpp-clients-multi-base'))
         //
         // Build and install client.
         //
@@ -107,7 +107,6 @@ def buildCppClientImage = Docker.registerDockerTask(project, 'cppClient') {
                         -DBUILD_SHARED_LIBS=ON \\
                         .. ; \\
                       VERBOSE=1 make "-j${NCPUS}" install 2>&1 | gzip > "${PREFIX}/log/make-install.log.gz"; \\
-                      cp -f "${PREFIX}/src/deephaven/build/tests/tests" "${PREFIX}/bin/dhcpp/tests"; \\
                       cd ..; \\
                       rm -fr "${PREFIX}/src/deephaven/build"
                    ''')
@@ -127,7 +126,7 @@ def testCppClient = Docker.registerDockerTask(project, 'testCppClient') {
         into layout.buildDirectory.dir('test-results')
     }
     dockerfile {
-        from('deephaven/cpp-client:local-build')
+        from(Docker.localImageName('cpp-client'))
         //
         // Setup for test run.
         //
@@ -153,7 +152,7 @@ def buildCppClientPyImage = Docker.registerDockerTask(project, 'cppClientPy') {
     }
 
     dockerfile {
-        from('deephaven/manylinux2014_x86_64:local-build')
+        from(Docker.localImageName('manylinux2014_x86_64'))
         runCommand("""mkdir -p \\
                         /out \\
                         ${prefix} \\

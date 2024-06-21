@@ -106,7 +106,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
             @NotNull final Table source,
             @NotNull final ColumnName column,
             final long size) {
-        final ColumnDefinition columnDefinition = source.getDefinition().getColumn(column.name());
+        final ColumnDefinition<?> columnDefinition = source.getDefinition().getColumn(column.name());
         final TableDefinition columnOnlyTableDefinition = TableDefinition.of(columnDefinition);
         // noinspection resource
         return new QueryTable(columnOnlyTableDefinition, RowSetFactory.flat(size).toTracking(),
@@ -154,13 +154,16 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         if (whereFilters.length == 0) {
             return noopResult();
         }
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
         final Map<Boolean, List<WhereFilter>> nodeSuitabilityToFilters = Stream.of(whereFilters)
-                .peek(wf -> wf.init(source.getDefinition()))
+                .peek(wf -> wf.init(source.getDefinition(), compilationProcessor))
                 .collect(Collectors.partitioningBy(wf -> {
                     // Node-level filters have only node-filter columns and use no column arrays
                     return wf.getColumns().stream().map(ColumnName::of).allMatch(nodeFilterColumns::contains)
                             && wf.getColumnArrays().isEmpty();
                 }));
+        compilationProcessor.compile();
+
         final List<WhereFilter> nodeFilters = nodeSuitabilityToFilters.get(true);
         final List<WhereFilter> sourceFilters = nodeSuitabilityToFilters.get(false);
 
@@ -172,7 +175,7 @@ public class TreeTableImpl extends HierarchicalTableImpl<TreeTable, TreeTableImp
         }
 
         final QueryTable filteredSource = (QueryTable) source.apply(
-                new TreeTableFilter.Operator(this, sourceFilters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY)));
+                new TreeTableFilter.Operator(this, sourceFilters.toArray(WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY)));
         final QueryTable filteredTree = computeTree(filteredSource, parentIdentifierColumn);
         return new TreeTableImpl(getAttributes(), filteredSource, filteredTree, sourceRowLookup, identifierColumn,
                 parentIdentifierColumn, nodeFilterColumns, accumulateOperations(nodeOperations, nodeFiltersRecorder),

@@ -92,8 +92,8 @@ public class DataIndexer implements TrackingRowSet.Indexer {
     @NotNull
     private static Collection<ColumnSource<?>> getColumnSources(
             @NotNull final Table table,
-            @NotNull final String... keyColumnNames) {
-        return Arrays.stream(keyColumnNames)
+            @NotNull final Collection<String> keyColumnNames) {
+        return keyColumnNames.stream()
                 .map(table::getColumnSource)
                 .collect(Collectors.toList());
     }
@@ -107,16 +107,29 @@ public class DataIndexer implements TrackingRowSet.Indexer {
      * @param keyColumnNames The key column names to check
      * @return Whether {@code table} has a DataIndexer with a {@link DataIndex} for the given key columns
      */
-    public static boolean hasDataIndex(@NotNull Table table, @NotNull final String... keyColumnNames) {
-        if (keyColumnNames.length == 0) {
+    public static boolean hasDataIndex(@NotNull final Table table, @NotNull final String... keyColumnNames) {
+        return hasDataIndex(table, Arrays.asList(keyColumnNames));
+    }
+
+    /**
+     * Test whether {@code table} has a DataIndexer with a usable {@link DataIndex} for the given key columns. Note that
+     * a result from this method is a snapshot of current state, and does not guarantee anything about future calls to
+     * {@link #hasDataIndex}, {@link #getDataIndex}, or {@link #getOrCreateDataIndex(Table, String...)}.
+     *
+     * @param table The {@link Table} to check
+     * @param keyColumnNames The key column names to check
+     * @return Whether {@code table} has a DataIndexer with a {@link DataIndex} for the given key columns
+     */
+    public static boolean hasDataIndex(@NotNull final Table table, @NotNull final Collection<String> keyColumnNames) {
+        if (keyColumnNames.isEmpty()) {
             return false;
         }
-        table = table.coalesce();
-        final DataIndexer indexer = DataIndexer.existingOf(table.getRowSet());
+        final Table tableToUse = table.coalesce();
+        final DataIndexer indexer = DataIndexer.existingOf(tableToUse.getRowSet());
         if (indexer == null) {
             return false;
         }
-        return indexer.hasDataIndex(getColumnSources(table, keyColumnNames));
+        return indexer.hasDataIndex(getColumnSources(tableToUse, keyColumnNames));
     }
 
     /**
@@ -152,19 +165,34 @@ public class DataIndexer implements TrackingRowSet.Indexer {
      * index is no longer live.
      *
      * @param table The {@link Table} to check
-     * @param keyColumnNames The key column for which to retrieve a DataIndex
+     * @param keyColumnNames The key columns for which to retrieve a DataIndex
      * @return The {@link DataIndex}, or {@code null} if one does not exist
      */
-    public static DataIndex getDataIndex(@NotNull Table table, final String... keyColumnNames) {
-        if (keyColumnNames.length == 0) {
+    @Nullable
+    public static DataIndex getDataIndex(@NotNull final Table table, final String... keyColumnNames) {
+        return getDataIndex(table, Arrays.asList(keyColumnNames));
+    }
+
+    /**
+     * If {@code table} has a DataIndexer, return a {@link DataIndex} for the given key columns, or {@code null} if no
+     * such index exists, if the cached index is invalid, or if the {@link DataIndex#isRefreshing() refreshing} cached
+     * index is no longer live.
+     *
+     * @param table The {@link Table} to check
+     * @param keyColumnNames The key columns for which to retrieve a DataIndex
+     * @return The {@link DataIndex}, or {@code null} if one does not exist
+     */
+    @Nullable
+    public static DataIndex getDataIndex(@NotNull final Table table, final Collection<String> keyColumnNames) {
+        if (keyColumnNames.isEmpty()) {
             return null;
         }
-        table = table.coalesce();
-        final DataIndexer indexer = DataIndexer.existingOf(table.getRowSet());
+        final Table tableToUse = table.coalesce();
+        final DataIndexer indexer = DataIndexer.existingOf(tableToUse.getRowSet());
         if (indexer == null) {
             return null;
         }
-        return indexer.getDataIndex(getColumnSources(table, keyColumnNames));
+        return indexer.getDataIndex(getColumnSources(tableToUse, keyColumnNames));
     }
 
     /**
@@ -224,7 +252,7 @@ public class DataIndexer implements TrackingRowSet.Indexer {
                 .filter(Objects::nonNull)
                 .max(Comparator.comparingLong(dataIndex -> dataIndex.table().size()))
                 .orElse(null),
-                table::isRefreshing, DataIndex::isRefreshing);
+                table::isRefreshing, (final DataIndex result) -> result != null && result.isRefreshing());
     }
 
     /**
@@ -239,13 +267,28 @@ public class DataIndexer implements TrackingRowSet.Indexer {
     public static DataIndex getOrCreateDataIndex(
             @NotNull final Table table,
             @NotNull final String... keyColumnNames) {
-        if (keyColumnNames.length == 0) {
+        return getOrCreateDataIndex(table, Arrays.asList(keyColumnNames));
+    }
+
+    /**
+     * Create a {@link DataIndex} for {@code table} indexing {@code keyColumns}, if no valid, live data index already
+     * exists for these inputs.
+     *
+     * @param table The {@link Table} to index
+     * @param keyColumnNames The key column names to include
+     * @return The existing or newly created {@link DataIndex}
+     * @apiNote This method causes the returned {@link DataIndex} to be managed by the enclosing liveness manager.
+     */
+    public static DataIndex getOrCreateDataIndex(
+            @NotNull final Table table,
+            @NotNull final Collection<String> keyColumnNames) {
+        if (keyColumnNames.isEmpty()) {
             throw new IllegalArgumentException("Cannot create a DataIndex without any key columns");
         }
         final QueryTable tableToUse = (QueryTable) table.coalesce();
         final DataIndexer dataIndexer = DataIndexer.of(tableToUse.getRowSet());
         return dataIndexer.rootCache.computeIfAbsent(dataIndexer.pathFor(getColumnSources(tableToUse, keyColumnNames)),
-                () -> new TableBackedDataIndex(tableToUse, keyColumnNames));
+                () -> new TableBackedDataIndex(tableToUse, keyColumnNames.toArray(String[]::new)));
     }
 
     /**

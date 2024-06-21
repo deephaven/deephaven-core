@@ -12,7 +12,7 @@ import io.deephaven.io.logger.Logger;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.Objects;
+import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 
@@ -75,5 +75,16 @@ public class PskAuthenticationHandler implements AuthenticationRequestHandler {
                 .endl();
         logger.warn().append("================================================================================").endl();
         logger.warn().nl().nl().nl().nl().endl();
+    }
+
+    /**
+     * Provide a list of URLs that the user can visit to authenticate. Adds the `psk` query parameter to the target URL.
+     * 
+     * @param targetUrl the base url of the hosted UI
+     * @return The targetUrl with the PSK query parameter appended
+     */
+    @Override
+    public List<String> urls(String targetUrl) {
+        return List.of(targetUrl + "/?psk=" + PSK);
     }
 }

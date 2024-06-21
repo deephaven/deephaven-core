@@ -5,6 +5,7 @@ package io.deephaven.parquet.table;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.ColumnToCodecMappings;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
@@ -14,11 +15,16 @@ import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * This class provides instructions intended for read and write parquet operations (which take it as an optional
@@ -81,7 +87,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
     /**
      * @return The default for {@link #getMaximumDictionarySize()}
      */
-    public static int getDefaltMaximumDictionarySize() {
+    public static int getDefaultMaximumDictionarySize() {
         return defaultMaximumDictionarySize;
     }
 
@@ -114,6 +120,34 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
      */
     public static int getDefaultTargetPageSize() {
         return defaultTargetPageSize;
+    }
+
+    public enum ParquetFileLayout {
+        /**
+         * A single parquet file.
+         */
+        SINGLE_FILE,
+
+        /**
+         * A single directory of parquet files.
+         */
+        FLAT_PARTITIONED,
+
+        /**
+         * A key-value directory partitioning of parquet files.
+         */
+        KV_PARTITIONED,
+
+        /**
+         * Layout can be used to describe:
+         * <ul>
+         * <li>A directory containing a {@value ParquetUtils#METADATA_FILE_NAME} parquet file and an optional
+         * {@value ParquetUtils#COMMON_METADATA_FILE_NAME} parquet file
+         * <li>A single parquet {@value ParquetUtils#METADATA_FILE_NAME} file
+         * <li>A single parquet {@value ParquetUtils#COMMON_METADATA_FILE_NAME} file
+         * </ul>
+         */
+        METADATA_PARTITIONED
     }
 
     private static final boolean DEFAULT_GENERATE_METADATA_FILES = false;
@@ -178,6 +212,37 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
      */
     public abstract boolean generateMetadataFiles();
 
+    public abstract Optional<ParquetFileLayout> getFileLayout();
+
+    public abstract Optional<TableDefinition> getTableDefinition();
+
+    public abstract Optional<Collection<List<String>>> getIndexColumns();
+
+    /**
+     * Creates a new {@link ParquetInstructions} object with the same properties as the current object but definition
+     * set as the provided {@link TableDefinition}.
+     */
+    public abstract ParquetInstructions withTableDefinition(final TableDefinition tableDefinition);
+
+    /**
+     * Creates a new {@link ParquetInstructions} object with the same properties as the current object but layout set as
+     * the provided {@link ParquetFileLayout}.
+     */
+    public abstract ParquetInstructions withLayout(final ParquetFileLayout fileLayout);
+
+    /**
+     * Creates a new {@link ParquetInstructions} object with the same properties as the current object but definition
+     * and layout set as the provided values.
+     */
+    public abstract ParquetInstructions withTableDefinitionAndLayout(final TableDefinition tableDefinition,
+            final ParquetFileLayout fileLayout);
+
+    /**
+     * Creates a new {@link ParquetInstructions} object with the same properties as the current object but index columns
+     * set as the provided values.
+     */
+    @VisibleForTesting
+    abstract ParquetInstructions withIndexColumns(final Collection<List<String>> indexColumns);
 
     /**
      * @return the base name for partitioned parquet data. Check
@@ -192,10 +257,10 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             if (i2 == EMPTY) {
                 return true;
             }
-            return ((ReadOnly) i2).columnNameToInstructions.size() == 0;
+            return ((ReadOnly) i2).columnNameToInstructions.isEmpty();
         }
         if (i2 == EMPTY) {
-            return ((ReadOnly) i1).columnNameToInstructions.size() == 0;
+            return ((ReadOnly) i1).columnNameToInstructions.isEmpty();
         }
         return ReadOnly.sameCodecMappings((ReadOnly) i1, (ReadOnly) i2);
     }
@@ -207,16 +272,19 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         @Override
+        @Nullable
         public String getColumnNameFromParquetColumnName(final String parquetColumnName) {
             return null;
         }
 
         @Override
+        @Nullable
         public String getCodecName(final String columnName) {
             return null;
         }
 
         @Override
+        @Nullable
         public String getCodecArgs(final String columnName) {
             return null;
         }
@@ -227,7 +295,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         @Override
-        public @Nullable String getSpecialInstructions() {
+        @Nullable
+        public Object getSpecialInstructions() {
             return null;
         }
 
@@ -269,6 +338,49 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         @Override
         public String baseNameForPartitionedParquetData() {
             return DEFAULT_BASE_NAME_FOR_PARTITIONED_PARQUET_DATA;
+        }
+
+        @Override
+        public Optional<ParquetFileLayout> getFileLayout() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<TableDefinition> getTableDefinition() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<Collection<List<String>>> getIndexColumns() {
+            return Optional.empty();
+        }
+
+        @Override
+        public ParquetInstructions withTableDefinition(@Nullable final TableDefinition useDefinition) {
+            return withTableDefinitionAndLayout(useDefinition, null);
+        }
+
+        @Override
+        public ParquetInstructions withLayout(@Nullable final ParquetFileLayout useLayout) {
+            return withTableDefinitionAndLayout(null, useLayout);
+        }
+
+        @Override
+        public ParquetInstructions withTableDefinitionAndLayout(
+                @Nullable final TableDefinition useDefinition,
+                @Nullable final ParquetFileLayout useLayout) {
+            return new ReadOnly(null, null, getCompressionCodecName(), getMaximumDictionaryKeys(),
+                    getMaximumDictionarySize(), isLegacyParquet(), getTargetPageSize(), isRefreshing(),
+                    getSpecialInstructions(), generateMetadataFiles(), baseNameForPartitionedParquetData(),
+                    useLayout, useDefinition, null);
+        }
+
+        @Override
+        ParquetInstructions withIndexColumns(final Collection<List<String>> indexColumns) {
+            return new ReadOnly(null, null, getCompressionCodecName(), getMaximumDictionaryKeys(),
+                    getMaximumDictionarySize(), isLegacyParquet(), getTargetPageSize(), isRefreshing(),
+                    getSpecialInstructions(), generateMetadataFiles(), baseNameForPartitionedParquetData(),
+                    null, null, indexColumns);
         }
     };
 
@@ -340,6 +452,9 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private final Object specialInstructions;
         private final boolean generateMetadataFiles;
         private final String baseNameForPartitionedParquetData;
+        private final ParquetFileLayout fileLayout;
+        private final TableDefinition tableDefinition;
+        private final Collection<List<String>> indexColumns;
 
         private ReadOnly(
                 final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructions,
@@ -352,7 +467,10 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                 final boolean isRefreshing,
                 final Object specialInstructions,
                 final boolean generateMetadataFiles,
-                final String baseNameForPartitionedParquetData) {
+                final String baseNameForPartitionedParquetData,
+                final ParquetFileLayout fileLayout,
+                final TableDefinition tableDefinition,
+                final Collection<List<String>> indexColumns) {
             this.columnNameToInstructions = columnNameToInstructions;
             this.parquetColumnNameToInstructions = parquetColumnNameToColumnName;
             this.compressionCodecName = compressionCodecName;
@@ -364,6 +482,12 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             this.specialInstructions = specialInstructions;
             this.generateMetadataFiles = generateMetadataFiles;
             this.baseNameForPartitionedParquetData = baseNameForPartitionedParquetData;
+            this.fileLayout = fileLayout;
+            this.tableDefinition = tableDefinition;
+            this.indexColumns = indexColumns == null ? null
+                    : indexColumns.stream()
+                            .map(List::copyOf)
+                            .collect(Collectors.toUnmodifiableList());
         }
 
         private String getOrDefault(final String columnName, final String defaultValue,
@@ -453,7 +577,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         @Override
-        public @Nullable Object getSpecialInstructions() {
+        @Nullable
+        public Object getSpecialInstructions() {
             return specialInstructions;
         }
 
@@ -465,6 +590,51 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         @Override
         public String baseNameForPartitionedParquetData() {
             return baseNameForPartitionedParquetData;
+        }
+
+        @Override
+        public Optional<ParquetFileLayout> getFileLayout() {
+            return Optional.ofNullable(fileLayout);
+        }
+
+        @Override
+        public Optional<TableDefinition> getTableDefinition() {
+            return Optional.ofNullable(tableDefinition);
+        }
+
+        @Override
+        public Optional<Collection<List<String>>> getIndexColumns() {
+            return Optional.ofNullable(indexColumns);
+        }
+
+        @Override
+        public ParquetInstructions withTableDefinition(@Nullable final TableDefinition useDefinition) {
+            return withTableDefinitionAndLayout(useDefinition, fileLayout);
+        }
+
+        @Override
+        public ParquetInstructions withLayout(@Nullable final ParquetFileLayout useLayout) {
+            return withTableDefinitionAndLayout(tableDefinition, useLayout);
+        }
+
+        @Override
+        public ParquetInstructions withTableDefinitionAndLayout(
+                @Nullable final TableDefinition useDefinition,
+                @Nullable final ParquetFileLayout useLayout) {
+            return new ReadOnly(columnNameToInstructions, parquetColumnNameToInstructions,
+                    getCompressionCodecName(), getMaximumDictionaryKeys(), getMaximumDictionarySize(),
+                    isLegacyParquet(), getTargetPageSize(), isRefreshing(), getSpecialInstructions(),
+                    generateMetadataFiles(), baseNameForPartitionedParquetData(), useLayout, useDefinition,
+                    indexColumns);
+        }
+
+        @Override
+        ParquetInstructions withIndexColumns(final Collection<List<String>> useIndexColumns) {
+            return new ReadOnly(columnNameToInstructions, parquetColumnNameToInstructions,
+                    getCompressionCodecName(), getMaximumDictionaryKeys(), getMaximumDictionarySize(),
+                    isLegacyParquet(), getTargetPageSize(), isRefreshing(), getSpecialInstructions(),
+                    generateMetadataFiles(), baseNameForPartitionedParquetData(), fileLayout,
+                    tableDefinition, useIndexColumns);
         }
 
         KeyedObjectHashMap<String, ColumnInstructions> copyColumnNameToInstructions() {
@@ -520,6 +690,14 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private Object specialInstructions;
         private boolean generateMetadataFiles = DEFAULT_GENERATE_METADATA_FILES;
         private String baseNameForPartitionedParquetData = DEFAULT_BASE_NAME_FOR_PARTITIONED_PARQUET_DATA;
+        private ParquetFileLayout fileLayout;
+        private TableDefinition tableDefinition;
+        private Collection<List<String>> indexColumns;
+
+        /**
+         * For each additional field added, make sure to update the copy constructor builder
+         * {@link #Builder(ParquetInstructions)}
+         */
 
         public Builder() {}
 
@@ -530,10 +708,22 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             final ReadOnly readOnlyParquetInstructions = (ReadOnly) parquetInstructions;
             columnNameToInstructions = readOnlyParquetInstructions.copyColumnNameToInstructions();
             parquetColumnNameToInstructions = readOnlyParquetInstructions.copyParquetColumnNameToInstructions();
+            compressionCodecName = readOnlyParquetInstructions.getCompressionCodecName();
+            maximumDictionaryKeys = readOnlyParquetInstructions.getMaximumDictionaryKeys();
+            maximumDictionarySize = readOnlyParquetInstructions.getMaximumDictionarySize();
+            isLegacyParquet = readOnlyParquetInstructions.isLegacyParquet();
+            targetPageSize = readOnlyParquetInstructions.getTargetPageSize();
+            isRefreshing = readOnlyParquetInstructions.isRefreshing();
+            specialInstructions = readOnlyParquetInstructions.getSpecialInstructions();
+            generateMetadataFiles = readOnlyParquetInstructions.generateMetadataFiles();
+            baseNameForPartitionedParquetData = readOnlyParquetInstructions.baseNameForPartitionedParquetData();
+            fileLayout = readOnlyParquetInstructions.getFileLayout().orElse(null);
+            tableDefinition = readOnlyParquetInstructions.getTableDefinition().orElse(null);
+            indexColumns = readOnlyParquetInstructions.getIndexColumns().orElse(null);
         }
 
         private void newColumnNameToInstructionsMap() {
-            columnNameToInstructions = new KeyedObjectHashMap<>(new KeyedObjectKey.Basic<String, ColumnInstructions>() {
+            columnNameToInstructions = new KeyedObjectHashMap<>(new KeyedObjectKey.Basic<>() {
                 @Override
                 public String getKey(@NotNull final ColumnInstructions value) {
                     return value.getColumnName();
@@ -543,7 +733,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
         private void newParquetColumnNameToInstructionsMap() {
             parquetColumnNameToInstructions =
-                    new KeyedObjectHashMap<>(new KeyedObjectKey.Basic<String, ColumnInstructions>() {
+                    new KeyedObjectHashMap<>(new KeyedObjectKey.Basic<>() {
                         @Override
                         public String getKey(@NotNull final ColumnInstructions value) {
                             return value.getParquetColumnName();
@@ -737,6 +927,66 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return this;
         }
 
+        /**
+         * Set the expected file layout when reading a parquet file or a directory. This info can be used to skip some
+         * computations to deduce the file layout from the source directory structure.
+         */
+        public Builder setFileLayout(final ParquetFileLayout fileLayout) {
+            this.fileLayout = fileLayout;
+            return this;
+        }
+
+        /**
+         * <ul>
+         * <li>When reading a parquet file, this corresponds to the table definition to use instead of the one implied
+         * by the parquet file being read. Providing a definition can help save additional computations to deduce the
+         * table definition from the parquet files as well as from the directory layouts when reading partitioned
+         * data.</li>
+         * <li>When writing a parquet file, this corresponds to the table definition to use instead of the one implied
+         * by the table being written</li>
+         * </ul>
+         * This definition can be used to skip some columns or add additional columns with {@code null} values.
+         */
+        public Builder setTableDefinition(final TableDefinition tableDefinition) {
+            this.tableDefinition = tableDefinition;
+            return this;
+        }
+
+        private void initIndexColumns() {
+            if (indexColumns == null) {
+                indexColumns = new ArrayList<>();
+            }
+        }
+
+        /**
+         * Add a list of columns to persist together as indexes. The write operation will store the index info as
+         * sidecar tables. This argument is used to narrow the set of indexes to write, or to be explicit about the
+         * expected set of indexes present on all sources. Indexes that are specified but missing will be computed on
+         * demand.
+         */
+        public Builder addIndexColumns(final String... indexColumns) {
+            initIndexColumns();
+            this.indexColumns.add(List.of(indexColumns));
+            return this;
+        }
+
+        /**
+         * Adds provided lists of columns to persist together as indexes. This method accepts an {@link Iterable} of
+         * lists, where each list represents a group of columns to be indexed together.
+         * <p>
+         * The write operation will store the index info as sidecar tables. This argument is used to narrow the set of
+         * indexes to write, or to be explicit about the expected set of indexes present on all sources. Indexes that
+         * are specified but missing will be computed on demand. To prevent the generation of index files, provide an
+         * empty iterable.
+         */
+        public Builder addAllIndexColumns(final Iterable<List<String>> indexColumns) {
+            initIndexColumns();
+            for (final List<String> indexColumnList : indexColumns) {
+                this.indexColumns.add(List.copyOf(indexColumnList));
+            }
+            return this;
+        }
+
         public ParquetInstructions build() {
             final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructionsOut = columnNameToInstructions;
             columnNameToInstructions = null;
@@ -745,7 +995,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             parquetColumnNameToInstructions = null;
             return new ReadOnly(columnNameToInstructionsOut, parquetColumnNameToColumnNameOut, compressionCodecName,
                     maximumDictionaryKeys, maximumDictionarySize, isLegacyParquet, targetPageSize, isRefreshing,
-                    specialInstructions, generateMetadataFiles, baseNameForPartitionedParquetData);
+                    specialInstructions, generateMetadataFiles, baseNameForPartitionedParquetData, fileLayout,
+                    tableDefinition, indexColumns);
         }
     }
 

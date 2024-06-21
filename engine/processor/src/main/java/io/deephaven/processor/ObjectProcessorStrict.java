@@ -27,6 +27,16 @@ final class ObjectProcessorStrict<T> implements ObjectProcessor<T> {
     ObjectProcessorStrict(ObjectProcessor<T> delegate) {
         this.delegate = Objects.requireNonNull(delegate);
         this.outputTypes = List.copyOf(delegate.outputTypes());
+        if (delegate.outputSize() != outputTypes.size()) {
+            throw new IllegalArgumentException(
+                    String.format("Inconsistent size. delegate.outputSize()=%d, delegate.outputTypes().size()=%d",
+                            delegate.outputSize(), outputTypes.size()));
+        }
+    }
+
+    @Override
+    public int outputSize() {
+        return delegate.outputSize();
     }
 
     @Override
@@ -40,12 +50,13 @@ final class ObjectProcessorStrict<T> implements ObjectProcessor<T> {
 
     @Override
     public void processAll(ObjectChunk<? extends T, ?> in, List<WritableChunk<?>> out) {
-        final int numColumns = delegate.outputTypes().size();
+        final int numColumns = delegate.outputSize();
         if (numColumns != out.size()) {
             throw new IllegalArgumentException(String.format(
-                    "Improper number of out chunks. Expected delegate.outputTypes().size() == out.size(). delegate.outputTypes().size()=%d, out.size()=%d",
+                    "Improper number of out chunks. Expected delegate.outputSize() == out.size(). delegate.outputSize()=%d, out.size()=%d",
                     numColumns, out.size()));
         }
+        final List<Type<?>> delegateOutputTypes = delegate.outputTypes();
         final int[] originalSizes = new int[numColumns];
         for (int chunkIx = 0; chunkIx < numColumns; ++chunkIx) {
             final WritableChunk<?> chunk = out.get(chunkIx);
@@ -54,7 +65,7 @@ final class ObjectProcessorStrict<T> implements ObjectProcessor<T> {
                         "out chunk does not have enough remaining capacity. chunkIx=%d, in.size()=%d, chunk.size()=%d, chunk.capacity()=%d",
                         chunkIx, in.size(), chunk.size(), chunk.capacity()));
             }
-            final Type<?> type = delegate.outputTypes().get(chunkIx);
+            final Type<?> type = delegateOutputTypes.get(chunkIx);
             final ChunkType expectedChunkType = ObjectProcessor.chunkType(type);
             final ChunkType actualChunkType = chunk.getChunkType();
             if (expectedChunkType != actualChunkType) {

@@ -19,7 +19,6 @@ import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationSubscriptionBuffer;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.apache.commons.lang3.mutable.Mutable;
@@ -165,6 +164,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
             return;
         }
         filterLocationKeys(locationKeys)
+                .parallelStream()
                 .forEach(lk -> columnSourceManager.addLocation(locationProvider.getTableLocation(lk)));
     }
 
@@ -304,31 +304,6 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         });
 
         return result.getValue();
-    }
-
-    protected static class QueryTableReference extends DeferredViewTable.TableReference {
-
-        protected final SourceTable<?> table;
-
-        QueryTableReference(SourceTable<?> table) {
-            super(table);
-            this.table = table;
-        }
-
-        @Override
-        public long getSize() {
-            return QueryConstants.NULL_LONG;
-        }
-
-        @Override
-        public TableDefinition getDefinition() {
-            return table.getDefinition();
-        }
-
-        @Override
-        public Table get() {
-            return table.coalesce();
-        }
     }
 
     @Override

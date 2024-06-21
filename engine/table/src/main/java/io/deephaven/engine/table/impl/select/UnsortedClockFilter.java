@@ -124,7 +124,7 @@ public class UnsortedClockFilter extends ClockFilter {
     @Override
     @Nullable
     protected WritableRowSet updateAndGetAddedIndex() {
-        if (rangesByNextTime.isEmpty()) {
+        if (rangesByNextTime == null || rangesByNextTime.isEmpty()) {
             return null;
         }
         final long nowNanos = clock.currentTimeNanos();

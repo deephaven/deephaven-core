@@ -4,6 +4,9 @@ plugins {
 }
 import io.deephaven.tools.docker.Architecture
 
+evaluationDependsOn Docker.registryProject('localstack')
+evaluationDependsOn Docker.registryProject('minio')
+
 description 'Parquet Table: Integrating Engine tables with Parquet'
 
 
@@ -30,6 +33,7 @@ dependencies {
     implementation project(':log-factory')
     implementation project(':Configuration')
     implementation depCommonsLang3
+    implementation project(':Util')
 
     Classpaths.inheritCommonsText(project, 'implementation')
 
@@ -43,8 +47,11 @@ dependencies {
 
     testImplementation project(':base-test-utils')
     testImplementation project(':engine-test-utils')
-    testImplementation TestTools.projectDependency(project, 'engine-context')
+
+    testImplementation TestTools.projectDependency(project, 'extensions-s3')
     Classpaths.inheritJUnitClassic(project, 'testImplementation')
+
+    Classpaths.inheritTestContainers(project)
 
     testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),
@@ -52,7 +59,6 @@ dependencies {
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 
     runtimeOnly project(':extensions-trackedfile')
-    testImplementation project(':extensions-s3')
 
     brotliTestImplementation project(':extensions-parquet-table')
     brotliTestImplementation('com.github.rdblue:brotli-codec:0.1.1')
@@ -70,3 +76,9 @@ if (Architecture.fromHost() == Architecture.AMD64) {
 }
 
 TestTools.addEngineOutOfBandTest(project)
+
+testOutOfBand.dependsOn Docker.registryTask(project, 'localstack')
+testOutOfBand.systemProperty 'testcontainers.localstack.image', Docker.localImageName('localstack')
+
+testOutOfBand.dependsOn Docker.registryTask(project, 'minio')
+testOutOfBand.systemProperty 'testcontainers.minio.image', Docker.localImageName('minio')

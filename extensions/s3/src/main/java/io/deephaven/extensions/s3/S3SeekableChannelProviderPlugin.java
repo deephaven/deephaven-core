@@ -17,7 +17,7 @@ import java.net.URI;
 @AutoService(SeekableChannelsProviderPlugin.class)
 public final class S3SeekableChannelProviderPlugin implements SeekableChannelsProviderPlugin {
 
-    private static final String S3_URI_SCHEME = "s3";
+    static final String S3_URI_SCHEME = "s3";
 
     @Override
     public boolean isCompatible(@NotNull final URI uri, @Nullable final Object config) {
@@ -27,12 +27,12 @@ public final class S3SeekableChannelProviderPlugin implements SeekableChannelsPr
     @Override
     public SeekableChannelsProvider createProvider(@NotNull final URI uri, @Nullable final Object config) {
         if (!isCompatible(uri, config)) {
-            if (!(config instanceof S3Instructions)) {
-                throw new IllegalArgumentException("Must provide S3Instructions to read files from S3");
-            }
             throw new IllegalArgumentException("Arguments not compatible, provided uri " + uri);
         }
-        final S3Instructions s3Instructions = (S3Instructions) config;
-        return new S3SeekableChannelProvider(s3Instructions);
+        if (config != null && !(config instanceof S3Instructions)) {
+            throw new IllegalArgumentException("Only S3Instructions are valid when reading files from S3, provided " +
+                    "config instance of class " + config.getClass().getName());
+        }
+        return new S3SeekableChannelProvider(config == null ? S3Instructions.DEFAULT : (S3Instructions) config);
     }
 }

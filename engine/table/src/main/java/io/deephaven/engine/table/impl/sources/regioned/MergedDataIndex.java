@@ -21,6 +21,7 @@ import io.deephaven.engine.table.impl.dataindex.AbstractDataIndex;
 import io.deephaven.engine.table.impl.locations.TableLocation;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.select.FunctionalColumn;
+import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.InternalUseOnly;
 import io.deephaven.vector.ObjectVector;
@@ -74,8 +75,9 @@ class MergedDataIndex extends AbstractDataIndex {
             @NotNull final String[] keyColumnNames,
             @NotNull final ColumnSource<?>[] keySources,
             @NotNull final RegionedColumnSourceManager columnSourceManager) {
-
         Require.eq(keyColumnNames.length, "keyColumnNames.length", keySources.length, "keySources.length");
+        Require.elementsNeqNull(keyColumnNames, "keyColumnNames");
+        Require.elementsNeqNull(keySources, "keySources");
 
         this.keyColumnNames = List.of(keyColumnNames);
         this.columnSourceManager = columnSourceManager;
@@ -138,11 +140,11 @@ class MergedDataIndex extends AbstractDataIndex {
         // pages during the accumulation phase.
         final String[] keyColumnNamesArray = keyColumnNames.toArray(String[]::new);
         final Table locationDataIndexes = locationTable
-                .update(List.of(new FunctionalColumn<>(
+                .update(List.of(SelectColumn.ofStateless(new FunctionalColumn<>(
                         columnSourceManager.locationColumnName(), TableLocation.class,
                         LOCATION_DATA_INDEX_TABLE_COLUMN_NAME, Table.class,
                         (final long locationRowKey, final TableLocation location) -> loadIndexTableAndShiftRowSets(
-                                locationRowKey, location, keyColumnNamesArray))))
+                                locationRowKey, location, keyColumnNamesArray)))))
                 .dropColumns(columnSourceManager.locationColumnName());
 
         // Merge all the location index tables into a single table
@@ -153,10 +155,10 @@ class MergedDataIndex extends AbstractDataIndex {
 
         // Combine the row sets from each group into a single row set
         final Table combined = groupedByKeyColumns
-                .update(List.of(new FunctionalColumn<>(
+                .update(List.of(SelectColumn.ofStateless(new FunctionalColumn<>(
                         ROW_SET_COLUMN_NAME, ObjectVector.class,
                         ROW_SET_COLUMN_NAME, RowSet.class,
-                        this::mergeRowSets)));
+                        this::mergeRowSets))));
         Assert.assertion(combined.isFlat(), "combined.isFlat()");
         Assert.eq(groupedByKeyColumns.size(), "groupedByKeyColumns.size()", combined.size(), "combined.size()");
 
@@ -180,11 +182,11 @@ class MergedDataIndex extends AbstractDataIndex {
                     String.join(", ", keyColumnNames), location));
         }
         final Table indexTable = dataIndex.table();
-        return indexTable.coalesce().update(List.of(new FunctionalColumn<>(
+        return indexTable.coalesce().update(List.of(SelectColumn.ofStateless(new FunctionalColumn<>(
                 dataIndex.rowSetColumnName(), RowSet.class,
                 ROW_SET_COLUMN_NAME, RowSet.class,
                 (final RowSet rowSet) -> rowSet
-                        .shift(RegionedColumnSource.getFirstRowKey(Math.toIntExact(locationRowKey))))));
+                        .shift(RegionedColumnSource.getFirstRowKey(Math.toIntExact(locationRowKey)))))));
     }
 
     private RowSet mergeRowSets(

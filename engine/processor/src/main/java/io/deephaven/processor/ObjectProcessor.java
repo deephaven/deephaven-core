@@ -19,8 +19,8 @@ import io.deephaven.qst.type.LongType;
 import io.deephaven.qst.type.ShortType;
 import io.deephaven.qst.type.Type;
 
-import java.time.Instant;
 import java.util.List;
+import java.util.Set;
 
 /**
  * An interface for processing data from one or more input objects into output chunks on a 1-to-1 input record to output
@@ -142,6 +142,15 @@ public interface ObjectProcessor<T> {
     }
 
     /**
+     * The number of outputs. Equivalent to {@code outputTypes().size()}.
+     *
+     * @return the number of outputs
+     */
+    default int outputSize() {
+        return outputTypes().size();
+    }
+
+    /**
      * The logical output types {@code this} instance processes. The size and types correspond to the expected size and
      * {@link io.deephaven.chunk.ChunkType chunk types} for {@link #processAll(ObjectChunk, List)} as specified by
      * {@link #chunkType(Type)}.
@@ -168,4 +177,44 @@ public interface ObjectProcessor<T> {
      *        at least {@code in.size()}
      */
     void processAll(ObjectChunk<? extends T, ?> in, List<WritableChunk<?>> out);
+
+    /**
+     * An abstraction over {@link ObjectProcessor} that provides the same logical object processor for different input
+     * types.
+     */
+    interface Provider {
+
+        /**
+         * The supported input types for {@link #processor(Type)}.
+         *
+         * @return the supported input types
+         */
+        Set<Type<?>> inputTypes();
+
+        /**
+         * The output types for the processors. Equivalent to the processors' {@link ObjectProcessor#outputTypes()}.
+         *
+         * @return the output types
+         */
+        List<Type<?>> outputTypes();
+
+        /**
+         * The number of output types for the processors. Equivalent to the processors'
+         * {@link ObjectProcessor#outputSize()}.
+         *
+         * @return the number of output types
+         */
+        int outputSize();
+
+        /**
+         * Creates an object processor that can process the {@code inputType}. This will successfully create a processor
+         * when {@code inputType} is one of, or extends from one of, {@link #inputTypes()}. Otherwise, an
+         * {@link IllegalArgumentException} will be thrown.
+         *
+         * @param inputType the input type
+         * @return the object processor
+         * @param <T> the input type
+         */
+        <T> ObjectProcessor<? super T> processor(Type<T> inputType);
+    }
 }

@@ -85,8 +85,6 @@ long = DType(j_name="long", qst_type=_JQstType.longType(), is_primitive=True, np
 """Signed 64bit integer type"""
 int64 = long
 """Signed 64bit integer type"""
-int_ = long
-"""Signed 64bit integer type"""
 float32 = DType(j_name="float", qst_type=_JQstType.floatType(), is_primitive=True, np_type=np.float32)
 """Single-precision floating-point number type"""
 single = float32
@@ -95,12 +93,12 @@ float64 = DType(j_name="double", qst_type=_JQstType.doubleType(), is_primitive=T
 """Double-precision floating-point number type"""
 double = float64
 """Double-precision floating-point number type"""
-float_ = float64
-"""Double-precision floating-point number type"""
 string = DType(j_name="java.lang.String", qst_type=_JQstType.stringType(), np_type=np.str_)
 """String type"""
 Character = DType(j_name="java.lang.Character")
 """Character type"""
+BigInteger = DType(j_name="java.math.BigInteger")
+"""Java BigInteger type"""
 BigDecimal = DType(j_name="java.math.BigDecimal")
 """Java BigDecimal type"""
 StringSet = DType(j_name="io.deephaven.stringset.StringSet")
@@ -143,8 +141,6 @@ long_array = DType(j_name='[J')
 """64bit integer array type"""
 int64_array = long_array
 """64bit integer array type"""
-int_array = long_array
-"""64bit integer array type"""
 single_array = DType(j_name='[F')
 """Single-precision floating-point array type"""
 float32_array = single_array
@@ -152,8 +148,6 @@ float32_array = single_array
 double_array = DType(j_name='[D')
 """Double-precision floating-point array type"""
 float64_array = double_array
-"""Double-precision floating-point array type"""
-float_array = double_array
 """Double-precision floating-point array type"""
 string_array = DType(j_name='[Ljava.lang.String;')
 """Java String array type"""
@@ -176,7 +170,7 @@ _PRIMITIVE_DTYPE_NULL_MAP = {
 }
 
 _BUILDABLE_ARRAY_DTYPE_MAP = {
-    bool_: bool_array,
+    bool_: boolean_array,
     byte: int8_array,
     char: char_array,
     int16: int16_array,
@@ -225,23 +219,37 @@ def null_remap(dtype: DType) -> Callable[[Any], Any]:
 def _instant_array(data: Sequence) -> jpy.JType:
     """Converts a sequence of either datetime64[ns], datetime.datetime, pandas.Timestamp, datetime strings,
     or integers in nanoseconds, to a Java array of Instant values. """
+
+    if len(data) == 0:
+        return jpy.array(Instant.j_type, [])
+
+    if isinstance(data, np.ndarray) and data.dtype.kind == 'U':
+        return _JPrimitiveArrayConversionUtility.translateArrayStringToInstant(data)
+
+    if all((d == None or isinstance(d, str)) for d in data):
+        jdata = jpy.array('java.lang.String', data)
+        return _JPrimitiveArrayConversionUtility.translateArrayStringToInstant(jdata)
+
     # try to convert to numpy array of datetime64 if not already, so that we can call translateArrayLongToInstant on
     # it to reduce the number of round trips to the JVM
     if not isinstance(data, np.ndarray):
         try:
-            data = np.array([pd.Timestamp(dt).to_numpy() for dt in data], dtype=np.datetime64)
+            # Pandas drops unrecognized time zones, so it may handle time zones incorrectly when parsing strings
+            if not any(isinstance(i, str) for i in data):
+                data = np.array([pd.Timestamp(dt).to_numpy() for dt in data], dtype=np.datetime64)
         except Exception as e:
             ...
 
-    if isinstance(data, np.ndarray) and data.dtype.kind in ('M', 'i', 'U'):
+    # Pandas drops unrecognized time zones, so it may handle time zones incorrectly, so do not handle 'U' dtype
+    if isinstance(data, np.ndarray) and data.dtype.kind in ('M', 'i'):
         if data.dtype.kind == 'M':
             longs = jpy.array('long', data.astype('datetime64[ns]').astype('int64'))
         elif data.dtype.kind == 'i':
             longs = jpy.array('long', data.astype('int64'))
-        else:  # data.dtype.kind == 'U'
-            longs = jpy.array('long', [pd.Timestamp(str(dt)).to_numpy().astype('int64') for dt in data])
-        data = _JPrimitiveArrayConversionUtility.translateArrayLongToInstant(longs)
-        return data
+        else:
+            raise Exception(f"Unexpected dtype: {data.dtype.kind}")
+
+        return _JPrimitiveArrayConversionUtility.translateArrayLongToInstant(longs)
 
     if not isinstance(data, instant_array.j_type):
         from deephaven.time import to_j_instant

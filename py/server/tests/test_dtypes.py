@@ -6,6 +6,7 @@ import functools
 import math
 import time
 import unittest
+import datetime
 
 import numpy as np
 import pandas as pd
@@ -13,7 +14,7 @@ import pandas as pd
 from deephaven import dtypes
 from deephaven.constants import *
 from deephaven.dtypes import Instant, LocalDate, LocalTime, Duration, Period, TimeZone, ZonedDateTime
-from deephaven.time import dh_now
+from deephaven.time import dh_now, to_j_instant
 from tests.testbase import BaseTestCase
 
 _JDateTimeUtils = jpy.get_type("io.deephaven.time.DateTimeUtils")
@@ -29,10 +30,10 @@ class DTypesTestCase(BaseTestCase):
     def test_type_alias(self):
         self.assertEqual(dtypes.byte, dtypes.int8)
         self.assertEqual(dtypes.short, dtypes.int16)
-        self.assertEqual(dtypes.int_, dtypes.int64)
+        self.assertEqual(dtypes.int64, dtypes.int64)
         self.assertEqual(dtypes.long, dtypes.int64)
-        self.assertEqual(dtypes.float_, dtypes.double)
-        self.assertEqual(dtypes.float_, dtypes.float64)
+        self.assertEqual(dtypes.float64, dtypes.double)
+        self.assertEqual(dtypes.float64, dtypes.float64)
         self.assertEqual(dtypes.double, dtypes.float64)
 
     def test_j_type(self):
@@ -40,11 +41,12 @@ class DTypesTestCase(BaseTestCase):
         self.assertEqual(dtypes.byte.j_type, jpy.get_type("byte"))
         self.assertEqual(dtypes.short.j_type, jpy.get_type("short"))
         self.assertEqual(dtypes.char.j_type, jpy.get_type("char"))
-        self.assertEqual(dtypes.int_.j_type, jpy.get_type("long"))
+        self.assertEqual(dtypes.int64.j_type, jpy.get_type("long"))
         self.assertEqual(dtypes.long.j_type, jpy.get_type("long"))
-        self.assertEqual(dtypes.float_.j_type, jpy.get_type("double"))
+        self.assertEqual(dtypes.float64.j_type, jpy.get_type("double"))
         self.assertEqual(dtypes.double.j_type, jpy.get_type("double"))
         self.assertEqual(dtypes.string.j_type, jpy.get_type("java.lang.String"))
+        self.assertEqual(dtypes.BigInteger.j_type, jpy.get_type("java.math.BigInteger"))
         self.assertEqual(dtypes.BigDecimal.j_type, jpy.get_type("java.math.BigDecimal"))
         self.assertEqual(dtypes.StringSet.j_type, jpy.get_type("io.deephaven.stringset.StringSet"))
         self.assertEqual(dtypes.Instant.j_type, jpy.get_type("java.time.Instant"))
@@ -64,11 +66,12 @@ class DTypesTestCase(BaseTestCase):
         self.assertEqual(dtypes.byte.np_type, np.int8)
         self.assertEqual(dtypes.short.np_type, np.int16)
         self.assertEqual(dtypes.char.np_type, np.dtype('uint16'))
-        self.assertEqual(dtypes.int_.np_type, np.int64)
+        self.assertEqual(dtypes.int64.np_type, np.int64)
         self.assertEqual(dtypes.long.np_type, np.int64)
-        self.assertEqual(dtypes.float_.np_type, np.float64)
+        self.assertEqual(dtypes.float64.np_type, np.float64)
         self.assertEqual(dtypes.double.np_type, np.float64)
         self.assertEqual(dtypes.string.np_type, np.str_)
+        self.assertEqual(dtypes.BigInteger.np_type, np.object_)
         self.assertEqual(dtypes.BigDecimal.np_type, np.object_)
         self.assertEqual(dtypes.StringSet.np_type, np.object_)
         self.assertEqual(dtypes.Instant.np_type, np.dtype("datetime64[ns]"))
@@ -94,7 +97,7 @@ class DTypesTestCase(BaseTestCase):
         self.assertEqual(j_string.toString(), "abc")
 
     def test_array(self):
-        j_array = dtypes.array(dtypes.int_, range(5))
+        j_array = dtypes.array(dtypes.int64, range(5))
         np_array = np.frombuffer(j_array, np.int64)
         expected = np.array([0, 1, 2, 3, 4], dtype=np.int64)
         self.assertTrue(np.array_equal(np_array, expected))
@@ -135,7 +138,7 @@ class DTypesTestCase(BaseTestCase):
 
     def test_floating_array(self):
 
-        nulls = {dtypes.float_: NULL_FLOAT, dtypes.double: NULL_DOUBLE}
+        nulls = {dtypes.float64: NULL_FLOAT, dtypes.double: NULL_DOUBLE}
 
         np_array = np.array([float('nan'), 1.7976931348623157e+300, NULL_DOUBLE, 1.1, float('inf')], dtype=np.float64)
         for dt, nv in nulls.items():
@@ -201,7 +204,49 @@ class DTypesTestCase(BaseTestCase):
         self.assertIn("[C", str(type(j_array)))
         self.assertEqual(expected, py_array)
 
-    def test_instant(self):
+    def test_instant_array(self):
+        # Test to_j_instant conversion
+        s = "2023-02-13T12:14:15.123456 ET"
+        i = _JDateTimeUtils.parseInstant(s)
+        n = _JDateTimeUtils.epochNanos(i)
+        dt = datetime.datetime.fromtimestamp(n / 1e9)
+        npdt = np.datetime64(dt)
+        pddt = pd.Timestamp(dt)
+        values = [None, s, i, dt, npdt, pddt]
+        j_array = dtypes.array(Instant, values)
+        self.assertTrue(all(x == to_j_instant(y) for x, y in zip(j_array, values)))
+
+        # Test numpy datetime array conversion
+        np_array = np.array([npdt, npdt, npdt], dtype=np.datetime64)
+        j_array = dtypes.array(Instant, np_array)
+        self.assertTrue(all(x == to_j_instant(y) for x, y in zip(j_array, np_array)))
+
+        # Test numpy int array conversion
+        np_array = np.array([n, n, n], dtype=np.int64)
+        j_array = dtypes.array(Instant, np_array)
+        self.assertTrue(all(x == to_j_instant(int(y)) for x, y in zip(j_array, np_array)))
+
+        # Test numpy str array conversion
+        np_array = np.array([s, s, s], dtype=np.str_)
+        j_array = dtypes.array(Instant, np_array)
+        self.assertTrue(all(x == to_j_instant(y) for x, y in zip(j_array, np_array)))
+
+        # Test list str array conversion
+        np_array = [s, s, s]
+        j_array = dtypes.array(Instant, np_array)
+        self.assertTrue(all(x == to_j_instant(y) for x, y in zip(j_array, np_array)))
+
+        # Test list int array conversion
+        np_array = [n, n, n]
+        j_array = dtypes.array(Instant, np_array)
+        self.assertTrue(all(x == to_j_instant(y) for x, y in zip(j_array, np_array)))
+
+        # Test an empty list
+        data = []
+        j_array = dtypes.array(Instant, data)
+        self.assertEqual(0, len(j_array))
+
+        # OLD TESTS
         dt1 = Instant.j_type.ofEpochSecond(0, round(time.time()))
         dt2 = dh_now()
         values = [dt1, dt2, None]

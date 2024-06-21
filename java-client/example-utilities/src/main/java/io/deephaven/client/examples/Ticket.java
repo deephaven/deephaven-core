@@ -16,6 +16,9 @@ public class Ticket implements HasTicketId {
     ApplicationField applicationField;
 
     @ArgGroup(exclusive = false)
+    SharedField sharedField;
+
+    @ArgGroup(exclusive = false)
     RawTicket rawTicket;
 
     @Override
@@ -25,6 +28,9 @@ public class Ticket implements HasTicketId {
         }
         if (applicationField != null) {
             return applicationField.ticketId();
+        }
+        if (sharedField != null) {
+            return sharedField.ticketId();
         }
         if (rawTicket != null) {
             return rawTicket.ticketId();
@@ -39,6 +45,9 @@ public class Ticket implements HasTicketId {
             }
             if (applicationField != null) {
                 return applicationField.pathId();
+            }
+            if (sharedField != null) {
+                return sharedField.pathId();
             }
             if (rawTicket != null) {
                 throw new IllegalArgumentException("Unable to get a path from a raw ticket");

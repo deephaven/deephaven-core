@@ -26,8 +26,7 @@ public class ToDoublePage<ATTR extends Any> implements ToPage<ATTR, double[]> {
         throw new IllegalArgumentException("The native type for a Double column is " + nativeType.getCanonicalName());
     }
 
-    @SuppressWarnings("WeakerAccess")
-    ToDoublePage() {}
+    private ToDoublePage() {}
 
     @Override
     @NotNull

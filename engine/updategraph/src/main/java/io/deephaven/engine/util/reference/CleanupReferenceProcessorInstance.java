@@ -4,7 +4,6 @@
 package io.deephaven.engine.util.reference;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.util.Utils;
 import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.reference.CleanupReferenceProcessor;
 import org.jetbrains.annotations.NotNull;
@@ -17,13 +16,6 @@ import java.lang.ref.ReferenceQueue;
 public enum CleanupReferenceProcessorInstance {
 
     // @formatter:off
-    DEFAULT(new CleanupReferenceProcessor("default", 1000,
-            (l, r, e) -> l.warn()
-                    .append(Thread.currentThread().getName())
-                    .append(": Exception thrown from cleanup of ").append(Utils.REFERENT_FORMATTER, r)
-                    .append(": ").append(e)
-                    .endl())
-    ),
     LIVENESS(new CleanupReferenceProcessor("liveness", 1000,
             (l, r, e) -> {
                 if (e instanceof RuntimeException) {
@@ -50,5 +42,6 @@ public enum CleanupReferenceProcessorInstance {
         final CleanupReferenceProcessorInstance instance : values()) {
             instance.cleanupReferenceProcessor.resetForUnitTests();
         }
+        CleanupReferenceProcessor.getDefault().resetForUnitTests();
     }
 }

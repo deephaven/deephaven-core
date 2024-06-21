@@ -38,7 +38,6 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.server.barrage.BarrageMessageProducer;
-import io.deephaven.extensions.barrage.BarrageStreamGeneratorImpl;
 import io.deephaven.server.hierarchicaltable.HierarchicalTableView;
 import io.deephaven.server.hierarchicaltable.HierarchicalTableViewSubscription;
 import io.deephaven.server.session.SessionService;
@@ -63,22 +62,55 @@ import static io.deephaven.extensions.barrage.util.BarrageUtil.DEFAULT_SNAPSHOT_
 public class ArrowFlightUtil {
     private static final Logger log = LoggerFactory.getLogger(ArrowFlightUtil.class);
 
+    private static class MessageViewAdapter implements StreamObserver<BarrageStreamGenerator.MessageView> {
+        private final StreamObserver<InputStream> delegate;
+
+        private MessageViewAdapter(StreamObserver<InputStream> delegate) {
+            this.delegate = delegate;
+        }
+
+        public void onNext(BarrageStreamGenerator.MessageView value) {
+            synchronized (delegate) {
+                try {
+                    value.forEachStream(delegate::onNext);
+                } catch (IOException e) {
+                    throw new UncheckedDeephavenException(e);
+                }
+            }
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            synchronized (delegate) {
+                delegate.onError(t);
+            }
+        }
+
+        @Override
+        public void onCompleted() {
+            synchronized (delegate) {
+                delegate.onCompleted();
+            }
+        }
+    }
+
     public static final int DEFAULT_MIN_UPDATE_INTERVAL_MS =
             Configuration.getInstance().getIntegerWithDefault("barrage.minUpdateInterval", 1000);
 
     public static void DoGetCustom(
-            final BarrageStreamGenerator.Factory<BarrageStreamGeneratorImpl.View> streamGeneratorFactory,
+            final BarrageStreamGenerator.Factory streamGeneratorFactory,
             final SessionState session,
             final TicketRouter ticketRouter,
             final Flight.Ticket request,
             final StreamObserver<InputStream> observer) {
 
-        final String description = "FlightService#DoGet(table=" + ticketRouter.getLogNameFor(request, "table") + ")";
+        final String ticketLogName = ticketRouter.getLogNameFor(request, "table");
+        final String description = "FlightService#DoGet(table=" + ticketLogName + ")";
         final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                 description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
         try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
-            final SessionState.ExportObject<BaseTable<?>> tableExport =
+            final SessionState.ExportObject<?> tableExport =
                     ticketRouter.resolve(session, request, "table");
 
             final BarragePerformanceLog.SnapshotMetricsHelper metrics =
@@ -91,13 +123,21 @@ public class ArrowFlightUtil {
                     .onError(observer)
                     .submit(() -> {
                         metrics.queueNanos = System.nanoTime() - queueStartTm;
-                        final BaseTable<?> table = tableExport.get();
+                        Object export = tableExport.get();
+                        if (export instanceof Table) {
+                            export = ((Table) export).coalesce();
+                        }
+                        if (!(export instanceof BaseTable)) {
+                            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Ticket ("
+                                    + ticketLogName + ") is not a subscribable table.");
+                        }
+                        final BaseTable<?> table = (BaseTable<?>) export;
                         metrics.tableId = Integer.toHexString(System.identityHashCode(table));
                         metrics.tableKey = BarragePerformanceLog.getKeyFor(table);
 
                         // create an adapter for the response observer
-                        final StreamObserver<BarrageStreamGeneratorImpl.View> listener =
-                                ArrowModule.provideListenerAdapter().adapt(observer);
+                        final StreamObserver<BarrageStreamGenerator.MessageView> listener =
+                                new MessageViewAdapter(observer);
 
                         // push the schema to the listener
                         listener.onNext(streamGeneratorFactory.getSchemaView(
@@ -260,12 +300,13 @@ public class ArrowFlightUtil {
             }
             localResultTable.dropReference();
 
-            // let's finally export the table to our listener
-            localExportBuilder.submit(() -> {
-                GrpcUtil.safelyComplete(observer);
-                session.removeOnCloseCallback(this);
-                return localResultTable;
-            });
+            // let's finally export the table to our destination export
+            localExportBuilder
+                    .onSuccess(() -> GrpcUtil.safelyComplete(observer))
+                    .submit(() -> {
+                        session.removeOnCloseCallback(this);
+                        return localResultTable;
+                    });
         }
 
         @Override
@@ -317,15 +358,15 @@ public class ArrowFlightUtil {
         private final String myPrefix;
         private final SessionState session;
 
-        private final StreamObserver<BarrageStreamGeneratorImpl.View> listener;
+        private final StreamObserver<BarrageStreamGenerator.MessageView> listener;
 
         private boolean isClosed = false;
 
         private boolean isFirstMsg = true;
 
         private final TicketRouter ticketRouter;
-        private final BarrageStreamGenerator.Factory<BarrageStreamGeneratorImpl.View> streamGeneratorFactory;
-        private final BarrageMessageProducer.Operation.Factory<BarrageStreamGeneratorImpl.View> bmpOperationFactory;
+        private final BarrageStreamGenerator.Factory streamGeneratorFactory;
+        private final BarrageMessageProducer.Operation.Factory bmpOperationFactory;
         private final HierarchicalTableViewSubscription.Factory htvsFactory;
         private final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> subscriptionOptAdapter;
         private final BarrageMessageProducer.Adapter<BarrageSnapshotRequest, BarrageSnapshotOptions> snapshotOptAdapter;
@@ -343,10 +384,9 @@ public class ArrowFlightUtil {
         @AssistedInject
         public DoExchangeMarshaller(
                 final TicketRouter ticketRouter,
-                final BarrageStreamGenerator.Factory<BarrageStreamGeneratorImpl.View> streamGeneratorFactory,
-                final BarrageMessageProducer.Operation.Factory<BarrageStreamGeneratorImpl.View> bmpOperationFactory,
+                final BarrageStreamGenerator.Factory streamGeneratorFactory,
+                final BarrageMessageProducer.Operation.Factory bmpOperationFactory,
                 final HierarchicalTableViewSubscription.Factory htvsFactory,
-                final BarrageMessageProducer.Adapter<StreamObserver<InputStream>, StreamObserver<BarrageStreamGeneratorImpl.View>> listenerAdapter,
                 final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> subscriptionOptAdapter,
                 final BarrageMessageProducer.Adapter<BarrageSnapshotRequest, BarrageSnapshotOptions> snapshotOptAdapter,
                 final SessionService.ErrorTransformer errorTransformer,
@@ -361,7 +401,7 @@ public class ArrowFlightUtil {
             this.subscriptionOptAdapter = subscriptionOptAdapter;
             this.snapshotOptAdapter = snapshotOptAdapter;
             this.session = session;
-            this.listener = listenerAdapter.adapt(responseObserver);
+            this.listener = new MessageViewAdapter(responseObserver);
             this.errorTransformer = errorTransformer;
 
             this.session.addOnCloseCallback(this);
@@ -487,13 +527,14 @@ public class ArrowFlightUtil {
                     final BarrageSnapshotRequest snapshotRequest = BarrageSnapshotRequest
                             .getRootAsBarrageSnapshotRequest(message.app_metadata.msgPayloadAsByteBuffer());
 
-                    final String description = "FlightService#DoExchange(snapshot, table="
-                            + ticketRouter.getLogNameFor(snapshotRequest.ticketAsByteBuffer(), "table") + ")";
+                    final String ticketLogName =
+                            ticketRouter.getLogNameFor(snapshotRequest.ticketAsByteBuffer(), "table");
+                    final String description = "FlightService#DoExchange(snapshot, table=" + ticketLogName + ")";
                     final QueryPerformanceRecorder queryPerformanceRecorder = QueryPerformanceRecorder.newQuery(
                             description, session.getSessionId(), QueryPerformanceNugget.DEFAULT_FACTORY);
 
                     try (final SafeCloseable ignored = queryPerformanceRecorder.startQuery()) {
-                        final SessionState.ExportObject<BaseTable<?>> tableExport =
+                        final SessionState.ExportObject<?> tableExport =
                                 ticketRouter.resolve(session, snapshotRequest.ticketAsByteBuffer(), "table");
 
                         final BarragePerformanceLog.SnapshotMetricsHelper metrics =
@@ -506,7 +547,15 @@ public class ArrowFlightUtil {
                                 .onError(listener)
                                 .submit(() -> {
                                     metrics.queueNanos = System.nanoTime() - queueStartTm;
-                                    final BaseTable<?> table = tableExport.get();
+                                    Object export = tableExport.get();
+                                    if (export instanceof Table) {
+                                        export = ((Table) export).coalesce();
+                                    }
+                                    if (!(export instanceof BaseTable)) {
+                                        throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION, "Ticket ("
+                                                + ticketLogName + ") is not a subscribable table.");
+                                    }
+                                    final BaseTable<?> table = (BaseTable<?>) export;
                                     metrics.tableId = Integer.toHexString(System.identityHashCode(table));
                                     metrics.tableKey = BarragePerformanceLog.getKeyFor(table);
 
@@ -593,7 +642,7 @@ public class ArrowFlightUtil {
         private class SubscriptionRequestHandler
                 implements Handler {
 
-            private BarrageMessageProducer<BarrageStreamGeneratorImpl.View> bmp;
+            private BarrageMessageProducer bmp;
             private HierarchicalTableViewSubscription htvs;
 
             private Queue<BarrageSubscriptionRequest> preExportSubscriptions;
@@ -682,9 +731,9 @@ public class ArrowFlightUtil {
                     minUpdateIntervalMs = options.minUpdateIntervalMs();
                 }
 
-                final Object export = parent.get();
-                if (export instanceof QueryTable) {
-                    final QueryTable table = (QueryTable) export;
+                Object export = parent.get();
+                if (export instanceof Table) {
+                    final QueryTable table = (QueryTable) ((Table) export).coalesce();
 
                     if (table.isFailed()) {
                         throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,

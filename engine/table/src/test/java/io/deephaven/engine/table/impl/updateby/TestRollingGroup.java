@@ -12,8 +12,8 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
@@ -63,6 +63,14 @@ public class TestRollingGroup extends BaseUpdateByTest {
     final int DYNAMIC_UPDATE_STEPS = 20;
 
     // region Static Zero Key Tests
+
+    @Test
+    public void testStaticZeroKeyAllNullVector() {
+        final int prevTicks = 1;
+        final int postTicks = 0;
+
+        doTestStaticZeroKey(prevTicks, postTicks);
+    }
 
     @Test
     public void testStaticZeroKeyRev() {
@@ -150,9 +158,8 @@ public class TestRollingGroup extends BaseUpdateByTest {
 
         final Table summed = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, columns));
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithRollingGroupTicks(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getType(), prevTicks, postTicks);
+            assertWithRollingGroupTicks(ColumnVectors.of(t, col).toArray(), ColumnVectors.of(summed, col).toArray(),
+                    summed.getDefinition().getColumn(col).getDataType(), prevTicks, postTicks);
         }
     }
 
@@ -166,16 +173,16 @@ public class TestRollingGroup extends BaseUpdateByTest {
                 t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, columns));
 
 
-        final Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(t, "ts").getDirect();
+        final Instant[] ts = ColumnVectors.ofObject(t, "ts", Instant.class).toArray();
         final long[] timestamps = new long[t.intSize()];
         for (int i = 0; i < t.intSize(); i++) {
             timestamps[i] = DateTimeUtils.epochNanos(ts[i]);
         }
 
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithRollingGroupTime(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getDirect(), timestamps,
-                    DataAccessHelpers.getColumn(summed, col).getType(), prevTime.toNanos(), postTime.toNanos());
+            assertWithRollingGroupTime(ColumnVectors.of(t, col).toArray(), ColumnVectors.of(summed, col).toArray(),
+                    timestamps, summed.getDefinition().getColumn(col).getDataType(),
+                    prevTime.toNanos(), postTime.toNanos());
         }
     }
 
@@ -286,9 +293,9 @@ public class TestRollingGroup extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOp, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                assertWithRollingGroupTicks(DataAccessHelpers.getColumn(source, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col).getType(), prevTicks, postTicks);
+                assertWithRollingGroupTicks(
+                        ColumnVectors.of(source, col).toArray(), ColumnVectors.of(actual, col).toArray(),
+                        actual.getDefinition().getColumn(col).getDataType(), prevTicks, postTicks);
             });
             return source;
         });
@@ -310,16 +317,16 @@ public class TestRollingGroup extends BaseUpdateByTest {
         String[] columns = t.getDefinition().getColumnStream().map(ColumnDefinition::getName).toArray(String[]::new);
 
         preOp.partitionedTransform(postOp, (source, actual) -> {
-            Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(source, "ts").getDirect();
+            Instant[] ts = ColumnVectors.ofObject(source, "ts", Instant.class).toArray();
             long[] timestamps = new long[source.intSize()];
             for (int i = 0; i < source.intSize(); i++) {
                 timestamps[i] = DateTimeUtils.epochNanos(ts[i]);
             }
             Arrays.stream(columns).forEach(col -> {
-                assertWithRollingGroupTime(DataAccessHelpers.getColumn(source, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col).getDirect(),
-                        timestamps,
-                        DataAccessHelpers.getColumn(actual, col).getType(), prevTime.toNanos(), postTime.toNanos());
+                assertWithRollingGroupTime(
+                        ColumnVectors.of(source, col).toArray(), ColumnVectors.of(actual, col).toArray(),
+                        timestamps, actual.getDefinition().getColumn(col).getDataType(),
+                        prevTime.toNanos(), postTime.toNanos());
             });
             return source;
         });
@@ -1041,39 +1048,39 @@ public class TestRollingGroup extends BaseUpdateByTest {
 
         // Test mod 2.
         Table filteredTable = ungrouped.where("mod2==0");
-        int[] filteredArray = (int[]) DataAccessHelpers.getColumn(filteredTable, "idx").getDirect();
+        int[] filteredArray = ColumnVectors.ofInt(filteredTable, "idx").toArray();
         for (int ii = 0; ii < filteredArray.length; ii++) {
             Assert.eq(0, "filteredArray[ii] % 2", filteredArray[ii] % 2);
         }
         filteredTable = ungrouped.where("mod2==1");
-        filteredArray = (int[]) DataAccessHelpers.getColumn(filteredTable, "idx").getDirect();
+        filteredArray = ColumnVectors.ofInt(filteredTable, "idx").toArray();
         for (int ii = 0; ii < filteredArray.length; ii++) {
             Assert.eq(1, "filteredArray[ii] % 2", filteredArray[ii] % 2);
         }
 
         // Test mod 5
         filteredTable = ungrouped.where("mod5==0");
-        filteredArray = (int[]) DataAccessHelpers.getColumn(filteredTable, "idx").getDirect();
+        filteredArray = ColumnVectors.ofInt(filteredTable, "idx").toArray();
         for (int ii = 0; ii < filteredArray.length; ii++) {
             Assert.eq(0, "filteredArray[ii] % 5", filteredArray[ii] % 5);
         }
         filteredTable = ungrouped.where("mod5==1");
-        filteredArray = (int[]) DataAccessHelpers.getColumn(filteredTable, "idx").getDirect();
+        filteredArray = ColumnVectors.ofInt(filteredTable, "idx").toArray();
         for (int ii = 0; ii < filteredArray.length; ii++) {
             Assert.eq(1, "filteredArray[ii] % 5", filteredArray[ii] % 5);
         }
         filteredTable = ungrouped.where("mod5==2");
-        filteredArray = (int[]) DataAccessHelpers.getColumn(filteredTable, "idx").getDirect();
+        filteredArray = ColumnVectors.ofInt(filteredTable, "idx").toArray();
         for (int ii = 0; ii < filteredArray.length; ii++) {
             Assert.eq(2, "filteredArray[ii] % 5", filteredArray[ii] % 5);
         }
         filteredTable = ungrouped.where("mod5==3");
-        filteredArray = (int[]) DataAccessHelpers.getColumn(filteredTable, "idx").getDirect();
+        filteredArray = ColumnVectors.ofInt(filteredTable, "idx").toArray();
         for (int ii = 0; ii < filteredArray.length; ii++) {
             Assert.eq(3, "filteredArray[ii] % 5", filteredArray[ii] % 5);
         }
         filteredTable = ungrouped.where("mod5==4");
-        filteredArray = (int[]) DataAccessHelpers.getColumn(filteredTable, "idx").getDirect();
+        filteredArray = ColumnVectors.ofInt(filteredTable, "idx").toArray();
         for (int ii = 0; ii < filteredArray.length; ii++) {
             Assert.eq(4, "filteredArray[ii] % 5", filteredArray[ii] % 5);
         }
@@ -1099,9 +1106,8 @@ public class TestRollingGroup extends BaseUpdateByTest {
         final Table summed = t.updateBy(ops);
 
         for (String col : t.getDefinition().getColumnNamesArray()) {
-            assertWithRollingGroupTicks(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getDirect(),
-                    DataAccessHelpers.getColumn(summed, col).getType(), prevTicks, postTicks);
+            assertWithRollingGroupTicks(ColumnVectors.of(t, col).toArray(), ColumnVectors.of(summed, col).toArray(),
+                    summed.getDefinition().getColumn(col).getDataType(), prevTicks, postTicks);
         }
     }
 

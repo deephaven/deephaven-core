@@ -4,262 +4,325 @@
 #include "deephaven/proto/config.pb.h"
 
 #include <algorithm>
-
-#include <google/protobuf/io/coded_stream.h>
-#include <google/protobuf/extension_set.h>
-#include <google/protobuf/wire_format_lite.h>
-#include <google/protobuf/descriptor.h>
-#include <google/protobuf/generated_message_reflection.h>
-#include <google/protobuf/reflection_ops.h>
-#include <google/protobuf/wire_format.h>
+#include "google/protobuf/io/coded_stream.h"
+#include "google/protobuf/extension_set.h"
+#include "google/protobuf/wire_format_lite.h"
+#include "google/protobuf/descriptor.h"
+#include "google/protobuf/generated_message_reflection.h"
+#include "google/protobuf/reflection_ops.h"
+#include "google/protobuf/wire_format.h"
+#include "google/protobuf/generated_message_tctable_impl.h"
 // @@protoc_insertion_point(includes)
-#include <google/protobuf/port_def.inc>
 
+// Must be included last.
+#include "google/protobuf/port_def.inc"
 PROTOBUF_PRAGMA_INIT_SEG
-
-namespace _pb = ::PROTOBUF_NAMESPACE_ID;
-namespace _pbi = _pb::internal;
-
+namespace _pb = ::google::protobuf;
+namespace _pbi = ::google::protobuf::internal;
+namespace _fl = ::google::protobuf::internal::field_layout;
 namespace io {
 namespace deephaven {
 namespace proto {
 namespace backplane {
 namespace grpc {
-PROTOBUF_CONSTEXPR AuthenticationConstantsRequest::AuthenticationConstantsRequest(
-    ::_pbi::ConstantInitialized) {}
-struct AuthenticationConstantsRequestDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR AuthenticationConstantsRequestDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
-  ~AuthenticationConstantsRequestDefaultTypeInternal() {}
-  union {
-    AuthenticationConstantsRequest _instance;
-  };
-};
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 AuthenticationConstantsRequestDefaultTypeInternal _AuthenticationConstantsRequest_default_instance_;
-PROTOBUF_CONSTEXPR ConfigurationConstantsRequest::ConfigurationConstantsRequest(
-    ::_pbi::ConstantInitialized) {}
+      template <typename>
+PROTOBUF_CONSTEXPR ConfigurationConstantsRequest::ConfigurationConstantsRequest(::_pbi::ConstantInitialized) {}
 struct ConfigurationConstantsRequestDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR ConfigurationConstantsRequestDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
+  PROTOBUF_CONSTEXPR ConfigurationConstantsRequestDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
   ~ConfigurationConstantsRequestDefaultTypeInternal() {}
   union {
     ConfigurationConstantsRequest _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ConfigurationConstantsRequestDefaultTypeInternal _ConfigurationConstantsRequest_default_instance_;
-PROTOBUF_CONSTEXPR AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUse::AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUse(
-    ::_pbi::ConstantInitialized) {}
-struct AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUseDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUseDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
-  ~AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUseDefaultTypeInternal() {}
-  union {
-    AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUse _instance;
-  };
-};
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUseDefaultTypeInternal _AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUse_default_instance_;
-PROTOBUF_CONSTEXPR AuthenticationConstantsResponse::AuthenticationConstantsResponse(
-    ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.config_values_)*/{::_pbi::ConstantInitialized()}
-  , /*decltype(_impl_._cached_size_)*/{}} {}
-struct AuthenticationConstantsResponseDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR AuthenticationConstantsResponseDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
-  ~AuthenticationConstantsResponseDefaultTypeInternal() {}
-  union {
-    AuthenticationConstantsResponse _instance;
-  };
-};
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 AuthenticationConstantsResponseDefaultTypeInternal _AuthenticationConstantsResponse_default_instance_;
-PROTOBUF_CONSTEXPR ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUse::ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUse(
-    ::_pbi::ConstantInitialized) {}
-struct ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUseDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUseDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
-  ~ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUseDefaultTypeInternal() {}
-  union {
-    ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUse _instance;
-  };
-};
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUseDefaultTypeInternal _ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUse_default_instance_;
-PROTOBUF_CONSTEXPR ConfigurationConstantsResponse::ConfigurationConstantsResponse(
-    ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.config_values_)*/{::_pbi::ConstantInitialized()}
-  , /*decltype(_impl_._cached_size_)*/{}} {}
-struct ConfigurationConstantsResponseDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR ConfigurationConstantsResponseDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
-  ~ConfigurationConstantsResponseDefaultTypeInternal() {}
-  union {
-    ConfigurationConstantsResponse _instance;
-  };
-};
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ConfigurationConstantsResponseDefaultTypeInternal _ConfigurationConstantsResponse_default_instance_;
-PROTOBUF_CONSTEXPR ConfigValue::ConfigValue(
-    ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.kind_)*/{}
-  , /*decltype(_impl_._cached_size_)*/{}
-  , /*decltype(_impl_._oneof_case_)*/{}} {}
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ConfigurationConstantsRequestDefaultTypeInternal _ConfigurationConstantsRequest_default_instance_;
+
+inline constexpr ConfigValue::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : kind_{},
+        _cached_size_{0},
+        _oneof_case_{} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR ConfigValue::ConfigValue(::_pbi::ConstantInitialized)
+    : _impl_(::_pbi::ConstantInitialized()) {}
 struct ConfigValueDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR ConfigValueDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
+  PROTOBUF_CONSTEXPR ConfigValueDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
   ~ConfigValueDefaultTypeInternal() {}
   union {
     ConfigValue _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ConfigValueDefaultTypeInternal _ConfigValue_default_instance_;
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ConfigValueDefaultTypeInternal _ConfigValue_default_instance_;
+      template <typename>
+PROTOBUF_CONSTEXPR AuthenticationConstantsRequest::AuthenticationConstantsRequest(::_pbi::ConstantInitialized) {}
+struct AuthenticationConstantsRequestDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR AuthenticationConstantsRequestDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~AuthenticationConstantsRequestDefaultTypeInternal() {}
+  union {
+    AuthenticationConstantsRequest _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 AuthenticationConstantsRequestDefaultTypeInternal _AuthenticationConstantsRequest_default_instance_;
+      template <typename>
+PROTOBUF_CONSTEXPR ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUse::ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUse(::_pbi::ConstantInitialized) {}
+struct ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUseDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUseDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUseDefaultTypeInternal() {}
+  union {
+    ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUse _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUseDefaultTypeInternal _ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUse_default_instance_;
+      template <typename>
+PROTOBUF_CONSTEXPR AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUse::AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUse(::_pbi::ConstantInitialized) {}
+struct AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUseDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUseDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUseDefaultTypeInternal() {}
+  union {
+    AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUse _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUseDefaultTypeInternal _AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUse_default_instance_;
+
+inline constexpr ConfigurationConstantsResponse::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : config_values_{},
+        _cached_size_{0} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR ConfigurationConstantsResponse::ConfigurationConstantsResponse(::_pbi::ConstantInitialized)
+    : _impl_(::_pbi::ConstantInitialized()) {}
+struct ConfigurationConstantsResponseDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR ConfigurationConstantsResponseDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~ConfigurationConstantsResponseDefaultTypeInternal() {}
+  union {
+    ConfigurationConstantsResponse _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ConfigurationConstantsResponseDefaultTypeInternal _ConfigurationConstantsResponse_default_instance_;
+
+inline constexpr AuthenticationConstantsResponse::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : config_values_{},
+        _cached_size_{0} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR AuthenticationConstantsResponse::AuthenticationConstantsResponse(::_pbi::ConstantInitialized)
+    : _impl_(::_pbi::ConstantInitialized()) {}
+struct AuthenticationConstantsResponseDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR AuthenticationConstantsResponseDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~AuthenticationConstantsResponseDefaultTypeInternal() {}
+  union {
+    AuthenticationConstantsResponse _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 AuthenticationConstantsResponseDefaultTypeInternal _AuthenticationConstantsResponse_default_instance_;
 }  // namespace grpc
 }  // namespace backplane
 }  // namespace proto
 }  // namespace deephaven
 }  // namespace io
 static ::_pb::Metadata file_level_metadata_deephaven_2fproto_2fconfig_2eproto[7];
-static constexpr ::_pb::EnumDescriptor const** file_level_enum_descriptors_deephaven_2fproto_2fconfig_2eproto = nullptr;
-static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_deephaven_2fproto_2fconfig_2eproto = nullptr;
-
-const uint32_t TableStruct_deephaven_2fproto_2fconfig_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::AuthenticationConstantsRequest, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ConfigurationConstantsRequest, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUse, _has_bits_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUse, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUse, key_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUse, value_),
-  0,
-  1,
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::AuthenticationConstantsResponse, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::AuthenticationConstantsResponse, _impl_.config_values_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUse, _has_bits_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUse, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUse, key_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUse, value_),
-  0,
-  1,
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ConfigurationConstantsResponse, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ConfigurationConstantsResponse, _impl_.config_values_),
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ConfigValue, _internal_metadata_),
-  ~0u,  // no _extensions_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ConfigValue, _impl_._oneof_case_[0]),
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  ::_pbi::kInvalidFieldOffsetTag,
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ConfigValue, _impl_.kind_),
+static constexpr const ::_pb::EnumDescriptor**
+    file_level_enum_descriptors_deephaven_2fproto_2fconfig_2eproto = nullptr;
+static constexpr const ::_pb::ServiceDescriptor**
+    file_level_service_descriptors_deephaven_2fproto_2fconfig_2eproto = nullptr;
+const ::uint32_t TableStruct_deephaven_2fproto_2fconfig_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(
+    protodesc_cold) = {
+    ~0u,  // no _has_bits_
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::AuthenticationConstantsRequest, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    ~0u,  // no _has_bits_
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ConfigurationConstantsRequest, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUse, _has_bits_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUse, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUse, key_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUse, value_),
+    0,
+    1,
+    ~0u,  // no _has_bits_
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::AuthenticationConstantsResponse, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::AuthenticationConstantsResponse, _impl_.config_values_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUse, _has_bits_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUse, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUse, key_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUse, value_),
+    0,
+    1,
+    ~0u,  // no _has_bits_
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ConfigurationConstantsResponse, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ConfigurationConstantsResponse, _impl_.config_values_),
+    ~0u,  // no _has_bits_
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ConfigValue, _internal_metadata_),
+    ~0u,  // no _extensions_
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ConfigValue, _impl_._oneof_case_[0]),
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    ::_pbi::kInvalidFieldOffsetTag,
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ConfigValue, _impl_.kind_),
 };
-static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
-  { 0, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AuthenticationConstantsRequest)},
-  { 6, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::ConfigurationConstantsRequest)},
-  { 12, 20, -1, sizeof(::io::deephaven::proto::backplane::grpc::AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUse)},
-  { 22, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AuthenticationConstantsResponse)},
-  { 29, 37, -1, sizeof(::io::deephaven::proto::backplane::grpc::ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUse)},
-  { 39, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::ConfigurationConstantsResponse)},
-  { 46, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::ConfigValue)},
+
+static const ::_pbi::MigrationSchema
+    schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
+        {0, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AuthenticationConstantsRequest)},
+        {8, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::ConfigurationConstantsRequest)},
+        {16, 26, -1, sizeof(::io::deephaven::proto::backplane::grpc::AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUse)},
+        {28, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::AuthenticationConstantsResponse)},
+        {37, 47, -1, sizeof(::io::deephaven::proto::backplane::grpc::ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUse)},
+        {49, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::ConfigurationConstantsResponse)},
+        {58, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::ConfigValue)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
-  &::io::deephaven::proto::backplane::grpc::_AuthenticationConstantsRequest_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_ConfigurationConstantsRequest_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUse_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_AuthenticationConstantsResponse_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUse_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_ConfigurationConstantsResponse_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_ConfigValue_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_AuthenticationConstantsRequest_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_ConfigurationConstantsRequest_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUse_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_AuthenticationConstantsResponse_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUse_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_ConfigurationConstantsResponse_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_ConfigValue_default_instance_._instance,
 };
-
-const char descriptor_table_protodef_deephaven_2fproto_2fconfig_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
-  "\n\034deephaven/proto/config.proto\022!io.deeph"
-  "aven.proto.backplane.grpc\" \n\036Authenticat"
-  "ionConstantsRequest\"\037\n\035ConfigurationCons"
-  "tantsRequest\"\363\001\n\037AuthenticationConstants"
-  "Response\022k\n\rconfig_values\030\001 \003(\0132T.io.dee"
-  "phaven.proto.backplane.grpc.Authenticati"
-  "onConstantsResponse.ConfigValuesEntry\032c\n"
-  "\021ConfigValuesEntry\022\013\n\003key\030\001 \001(\t\022=\n\005value"
-  "\030\002 \001(\0132..io.deephaven.proto.backplane.gr"
-  "pc.ConfigValue:\0028\001\"\361\001\n\036ConfigurationCons"
-  "tantsResponse\022j\n\rconfig_values\030\001 \003(\0132S.i"
-  "o.deephaven.proto.backplane.grpc.Configu"
-  "rationConstantsResponse.ConfigValuesEntr"
-  "y\032c\n\021ConfigValuesEntry\022\013\n\003key\030\001 \001(\t\022=\n\005v"
-  "alue\030\002 \001(\0132..io.deephaven.proto.backplan"
-  "e.grpc.ConfigValue:\0028\001\"-\n\013ConfigValue\022\026\n"
-  "\014string_value\030\003 \001(\tH\000B\006\n\004kind2\334\002\n\rConfig"
-  "Service\022\245\001\n\032GetAuthenticationConstants\022A"
-  ".io.deephaven.proto.backplane.grpc.Authe"
-  "nticationConstantsRequest\032B.io.deephaven"
-  ".proto.backplane.grpc.AuthenticationCons"
-  "tantsResponse\"\000\022\242\001\n\031GetConfigurationCons"
-  "tants\022@.io.deephaven.proto.backplane.grp"
-  "c.ConfigurationConstantsRequest\032A.io.dee"
-  "phaven.proto.backplane.grpc.Configuratio"
-  "nConstantsResponse\"\000BBH\001P\001Z<github.com/d"
-  "eephaven/deephaven-core/go/internal/prot"
-  "o/configb\006proto3"
-  ;
-static ::_pbi::once_flag descriptor_table_deephaven_2fproto_2fconfig_2eproto_once;
+const char descriptor_table_protodef_deephaven_2fproto_2fconfig_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
+    "\n\034deephaven/proto/config.proto\022!io.deeph"
+    "aven.proto.backplane.grpc\" \n\036Authenticat"
+    "ionConstantsRequest\"\037\n\035ConfigurationCons"
+    "tantsRequest\"\363\001\n\037AuthenticationConstants"
+    "Response\022k\n\rconfig_values\030\001 \003(\0132T.io.dee"
+    "phaven.proto.backplane.grpc.Authenticati"
+    "onConstantsResponse.ConfigValuesEntry\032c\n"
+    "\021ConfigValuesEntry\022\013\n\003key\030\001 \001(\t\022=\n\005value"
+    "\030\002 \001(\0132..io.deephaven.proto.backplane.gr"
+    "pc.ConfigValue:\0028\001\"\361\001\n\036ConfigurationCons"
+    "tantsResponse\022j\n\rconfig_values\030\001 \003(\0132S.i"
+    "o.deephaven.proto.backplane.grpc.Configu"
+    "rationConstantsResponse.ConfigValuesEntr"
+    "y\032c\n\021ConfigValuesEntry\022\013\n\003key\030\001 \001(\t\022=\n\005v"
+    "alue\030\002 \001(\0132..io.deephaven.proto.backplan"
+    "e.grpc.ConfigValue:\0028\001\"-\n\013ConfigValue\022\026\n"
+    "\014string_value\030\003 \001(\tH\000B\006\n\004kind2\334\002\n\rConfig"
+    "Service\022\245\001\n\032GetAuthenticationConstants\022A"
+    ".io.deephaven.proto.backplane.grpc.Authe"
+    "nticationConstantsRequest\032B.io.deephaven"
+    ".proto.backplane.grpc.AuthenticationCons"
+    "tantsResponse\"\000\022\242\001\n\031GetConfigurationCons"
+    "tants\022@.io.deephaven.proto.backplane.grp"
+    "c.ConfigurationConstantsRequest\032A.io.dee"
+    "phaven.proto.backplane.grpc.Configuratio"
+    "nConstantsResponse\"\000BBH\001P\001Z<github.com/d"
+    "eephaven/deephaven-core/go/internal/prot"
+    "o/configb\006proto3"
+};
+static ::absl::once_flag descriptor_table_deephaven_2fproto_2fconfig_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_deephaven_2fproto_2fconfig_2eproto = {
-    false, false, 1096, descriptor_table_protodef_deephaven_2fproto_2fconfig_2eproto,
+    false,
+    false,
+    1096,
+    descriptor_table_protodef_deephaven_2fproto_2fconfig_2eproto,
     "deephaven/proto/config.proto",
-    &descriptor_table_deephaven_2fproto_2fconfig_2eproto_once, nullptr, 0, 7,
-    schemas, file_default_instances, TableStruct_deephaven_2fproto_2fconfig_2eproto::offsets,
-    file_level_metadata_deephaven_2fproto_2fconfig_2eproto, file_level_enum_descriptors_deephaven_2fproto_2fconfig_2eproto,
+    &descriptor_table_deephaven_2fproto_2fconfig_2eproto_once,
+    nullptr,
+    0,
+    7,
+    schemas,
+    file_default_instances,
+    TableStruct_deephaven_2fproto_2fconfig_2eproto::offsets,
+    file_level_metadata_deephaven_2fproto_2fconfig_2eproto,
+    file_level_enum_descriptors_deephaven_2fproto_2fconfig_2eproto,
     file_level_service_descriptors_deephaven_2fproto_2fconfig_2eproto,
 };
+
+// This function exists to be marked as weak.
+// It can significantly speed up compilation by breaking up LLVM's SCC
+// in the .pb.cc translation units. Large translation units see a
+// reduction of more than 35% of walltime for optimized builds. Without
+// the weak attribute all the messages in the file, including all the
+// vtables and everything they use become part of the same SCC through
+// a cycle like:
+// GetMetadata -> descriptor table -> default instances ->
+//   vtables -> GetMetadata
+// By adding a weak function here we break the connection from the
+// individual vtables back into the descriptor table.
 PROTOBUF_ATTRIBUTE_WEAK const ::_pbi::DescriptorTable* descriptor_table_deephaven_2fproto_2fconfig_2eproto_getter() {
   return &descriptor_table_deephaven_2fproto_2fconfig_2eproto;
 }
-
 // Force running AddDescriptors() at dynamic initialization time.
-PROTOBUF_ATTRIBUTE_INIT_PRIORITY2 static ::_pbi::AddDescriptorsRunner dynamic_init_dummy_deephaven_2fproto_2fconfig_2eproto(&descriptor_table_deephaven_2fproto_2fconfig_2eproto);
+PROTOBUF_ATTRIBUTE_INIT_PRIORITY2
+static ::_pbi::AddDescriptorsRunner dynamic_init_dummy_deephaven_2fproto_2fconfig_2eproto(&descriptor_table_deephaven_2fproto_2fconfig_2eproto);
 namespace io {
 namespace deephaven {
 namespace proto {
 namespace backplane {
 namespace grpc {
-
 // ===================================================================
 
 class AuthenticationConstantsRequest::_Internal {
  public:
 };
 
-AuthenticationConstantsRequest::AuthenticationConstantsRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase(arena, is_message_owned) {
+AuthenticationConstantsRequest::AuthenticationConstantsRequest(::google::protobuf::Arena* arena)
+    : ::google::protobuf::internal::ZeroFieldsBase(arena) {
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.AuthenticationConstantsRequest)
 }
-AuthenticationConstantsRequest::AuthenticationConstantsRequest(const AuthenticationConstantsRequest& from)
-  : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase() {
-  AuthenticationConstantsRequest* const _this = this; (void)_this;
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+AuthenticationConstantsRequest::AuthenticationConstantsRequest(
+    ::google::protobuf::Arena* arena,
+    const AuthenticationConstantsRequest& from)
+    : ::google::protobuf::internal::ZeroFieldsBase(arena) {
+  AuthenticationConstantsRequest* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.AuthenticationConstantsRequest)
 }
 
@@ -267,39 +330,34 @@ AuthenticationConstantsRequest::AuthenticationConstantsRequest(const Authenticat
 
 
 
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData AuthenticationConstantsRequest::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::CopyImpl,
-    ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::MergeImpl,
-};
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*AuthenticationConstantsRequest::GetClassData() const { return &_class_data_; }
 
 
 
 
-
-
-
-::PROTOBUF_NAMESPACE_ID::Metadata AuthenticationConstantsRequest::GetMetadata() const {
+::google::protobuf::Metadata AuthenticationConstantsRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2fconfig_2eproto_getter, &descriptor_table_deephaven_2fproto_2fconfig_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fconfig_2eproto[0]);
 }
-
 // ===================================================================
 
 class ConfigurationConstantsRequest::_Internal {
  public:
 };
 
-ConfigurationConstantsRequest::ConfigurationConstantsRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase(arena, is_message_owned) {
+ConfigurationConstantsRequest::ConfigurationConstantsRequest(::google::protobuf::Arena* arena)
+    : ::google::protobuf::internal::ZeroFieldsBase(arena) {
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.ConfigurationConstantsRequest)
 }
-ConfigurationConstantsRequest::ConfigurationConstantsRequest(const ConfigurationConstantsRequest& from)
-  : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase() {
-  ConfigurationConstantsRequest* const _this = this; (void)_this;
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+ConfigurationConstantsRequest::ConfigurationConstantsRequest(
+    ::google::protobuf::Arena* arena,
+    const ConfigurationConstantsRequest& from)
+    : ::google::protobuf::internal::ZeroFieldsBase(arena) {
+  ConfigurationConstantsRequest* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.ConfigurationConstantsRequest)
 }
 
@@ -307,228 +365,205 @@ ConfigurationConstantsRequest::ConfigurationConstantsRequest(const Configuration
 
 
 
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData ConfigurationConstantsRequest::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::CopyImpl,
-    ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::MergeImpl,
-};
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*ConfigurationConstantsRequest::GetClassData() const { return &_class_data_; }
 
 
 
 
-
-
-
-::PROTOBUF_NAMESPACE_ID::Metadata ConfigurationConstantsRequest::GetMetadata() const {
+::google::protobuf::Metadata ConfigurationConstantsRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2fconfig_2eproto_getter, &descriptor_table_deephaven_2fproto_2fconfig_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fconfig_2eproto[1]);
 }
-
 // ===================================================================
 
 AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUse::AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUse() {}
-AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUse::AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUse(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUse::AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUse(::google::protobuf::Arena* arena)
     : SuperType(arena) {}
-void AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUse::MergeFrom(const AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUse& other) {
-  MergeFromInternal(other);
-}
-::PROTOBUF_NAMESPACE_ID::Metadata AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUse::GetMetadata() const {
+::google::protobuf::Metadata AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2fconfig_2eproto_getter, &descriptor_table_deephaven_2fproto_2fconfig_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fconfig_2eproto[2]);
 }
-
 // ===================================================================
 
 class AuthenticationConstantsResponse::_Internal {
  public:
 };
 
-AuthenticationConstantsResponse::AuthenticationConstantsResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor(arena, is_message_owned);
-  if (arena != nullptr && !is_message_owned) {
-    arena->OwnCustomDestructor(this, &AuthenticationConstantsResponse::ArenaDtor);
-  }
+AuthenticationConstantsResponse::AuthenticationConstantsResponse(::google::protobuf::Arena* arena)
+    : ::google::protobuf::Message(arena) {
+  SharedCtor(arena);
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.AuthenticationConstantsResponse)
 }
-AuthenticationConstantsResponse::AuthenticationConstantsResponse(const AuthenticationConstantsResponse& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message() {
-  AuthenticationConstantsResponse* const _this = this; (void)_this;
-  new (&_impl_) Impl_{
-      /*decltype(_impl_.config_values_)*/{}
-    , /*decltype(_impl_._cached_size_)*/{}};
+inline PROTOBUF_NDEBUG_INLINE AuthenticationConstantsResponse::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
+    const Impl_& from)
+      : config_values_{visibility, arena, from.config_values_},
+        _cached_size_{0} {}
 
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  _this->_impl_.config_values_.MergeFrom(from._impl_.config_values_);
+AuthenticationConstantsResponse::AuthenticationConstantsResponse(
+    ::google::protobuf::Arena* arena,
+    const AuthenticationConstantsResponse& from)
+    : ::google::protobuf::Message(arena) {
+  AuthenticationConstantsResponse* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_);
+
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.AuthenticationConstantsResponse)
 }
+inline PROTOBUF_NDEBUG_INLINE AuthenticationConstantsResponse::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* arena)
+      : config_values_{visibility, arena},
+        _cached_size_{0} {}
 
-inline void AuthenticationConstantsResponse::SharedCtor(
-    ::_pb::Arena* arena, bool is_message_owned) {
-  (void)arena;
-  (void)is_message_owned;
-  new (&_impl_) Impl_{
-      /*decltype(_impl_.config_values_)*/{::_pbi::ArenaInitialized(), arena}
-    , /*decltype(_impl_._cached_size_)*/{}
-  };
+inline void AuthenticationConstantsResponse::SharedCtor(::_pb::Arena* arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
 }
-
 AuthenticationConstantsResponse::~AuthenticationConstantsResponse() {
   // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.AuthenticationConstantsResponse)
-  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
-  (void)arena;
-    ArenaDtor(this);
-    return;
-  }
+  _internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
   SharedDtor();
 }
-
 inline void AuthenticationConstantsResponse::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  _impl_.config_values_.Destruct();
-  _impl_.config_values_.~MapField();
+  ABSL_DCHECK(GetArena() == nullptr);
+  _impl_.~Impl_();
 }
 
-void AuthenticationConstantsResponse::ArenaDtor(void* object) {
-  AuthenticationConstantsResponse* _this = reinterpret_cast< AuthenticationConstantsResponse* >(object);
-  _this->_impl_.config_values_.Destruct();
-}
-void AuthenticationConstantsResponse::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
-
-void AuthenticationConstantsResponse::Clear() {
+PROTOBUF_NOINLINE void AuthenticationConstantsResponse::Clear() {
 // @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.AuthenticationConstantsResponse)
-  uint32_t cached_has_bits = 0;
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
   _impl_.config_values_.Clear();
-  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
 }
 
-const char* AuthenticationConstantsResponse::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
-#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  while (!ctx->Done(&ptr)) {
-    uint32_t tag;
-    ptr = ::_pbi::ReadTag(ptr, &tag);
-    switch (tag >> 3) {
-      // map<string, .io.deephaven.proto.backplane.grpc.ConfigValue> config_values = 1;
-      case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
-          ptr -= 1;
-          do {
-            ptr += 1;
-            ptr = ctx->ParseMessage(&_impl_.config_values_, ptr);
-            CHK_(ptr);
-            if (!ctx->DataAvailable(ptr)) break;
-          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<10>(ptr));
-        } else
-          goto handle_unusual;
-        continue;
-      default:
-        goto handle_unusual;
-    }  // switch
-  handle_unusual:
-    if ((tag == 0) || ((tag & 7) == 4)) {
-      CHK_(ptr);
-      ctx->SetLastTag(tag);
-      goto message_done;
-    }
-    ptr = UnknownFieldParse(
-        tag,
-        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-        ptr, ctx);
-    CHK_(ptr != nullptr);
-  }  // while
-message_done:
+const char* AuthenticationConstantsResponse::_InternalParse(
+    const char* ptr, ::_pbi::ParseContext* ctx) {
+  ptr = ::_pbi::TcParser::ParseLoop(this, ptr, ctx, &_table_.header);
   return ptr;
-failure:
-  ptr = nullptr;
-  goto message_done;
-#undef CHK_
 }
 
-uint8_t* AuthenticationConstantsResponse::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<0, 1, 2, 87, 2> AuthenticationConstantsResponse::_table_ = {
+  {
+    0,  // no _has_bits_
+    0, // no _extensions_
+    1, 0,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967294,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    1,  // num_field_entries
+    2,  // num_aux_entries
+    offsetof(decltype(_table_), aux_entries),
+    &_AuthenticationConstantsResponse_default_instance_._instance,
+    ::_pbi::TcParser::GenericFallback,  // fallback
+  }, {{
+    {::_pbi::TcParser::MiniParse, {}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // map<string, .io.deephaven.proto.backplane.grpc.ConfigValue> config_values = 1;
+    {PROTOBUF_FIELD_OFFSET(AuthenticationConstantsResponse, _impl_.config_values_), 0, 0,
+    (0 | ::_fl::kFcRepeated | ::_fl::kMap)},
+  }}, {{
+    {::_pbi::TcParser::GetMapAuxInfo<
+        decltype(AuthenticationConstantsResponse()._impl_.config_values_)>(
+        1, 0, 0, 9,
+        11)},
+    {::_pbi::TcParser::CreateInArenaStorageCb<::io::deephaven::proto::backplane::grpc::ConfigValue>},
+  }}, {{
+    "\101\15\0\0\0\0\0\0"
+    "io.deephaven.proto.backplane.grpc.AuthenticationConstantsResponse"
+    "config_values"
+  }},
+};
+
+::uint8_t* AuthenticationConstantsResponse::_InternalSerialize(
+    ::uint8_t* target,
+    ::google::protobuf::io::EpsCopyOutputStream* stream) const {
   // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.AuthenticationConstantsResponse)
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  ::uint32_t cached_has_bits = 0;
+  (void)cached_has_bits;
 
   // map<string, .io.deephaven.proto.backplane.grpc.ConfigValue> config_values = 1;
-  if (!this->_internal_config_values().empty()) {
-    using MapType = ::_pb::Map<std::string, ::io::deephaven::proto::backplane::grpc::ConfigValue>;
-    using WireHelper = AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUse::Funcs;
-    const auto& map_field = this->_internal_config_values();
-    auto check_utf8 = [](const MapType::value_type& entry) {
-      (void)entry;
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-        entry.first.data(), static_cast<int>(entry.first.length()),
-        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-        "io.deephaven.proto.backplane.grpc.AuthenticationConstantsResponse.ConfigValuesEntry.key");
-    };
+  if (!_internal_config_values().empty()) {
+    using MapType = ::google::protobuf::Map<std::string, ::io::deephaven::proto::backplane::grpc::ConfigValue>;
+    using WireHelper = _pbi::MapEntryFuncs<std::string, ::io::deephaven::proto::backplane::grpc::ConfigValue,
+                                   _pbi::WireFormatLite::TYPE_STRING,
+                                   _pbi::WireFormatLite::TYPE_MESSAGE>;
+    const auto& field = _internal_config_values();
 
-    if (stream->IsSerializationDeterministic() && map_field.size() > 1) {
-      for (const auto& entry : ::_pbi::MapSorterPtr<MapType>(map_field)) {
-        target = WireHelper::InternalSerialize(1, entry.first, entry.second, target, stream);
-        check_utf8(entry);
+    if (stream->IsSerializationDeterministic() && field.size() > 1) {
+      for (const auto& entry : ::google::protobuf::internal::MapSorterPtr<MapType>(field)) {
+        target = WireHelper::InternalSerialize(
+            1, entry.first, entry.second, target, stream);
+        ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            entry.first.data(), static_cast<int>(entry.first.length()),
+ ::google::protobuf::internal::WireFormatLite::SERIALIZE, "io.deephaven.proto.backplane.grpc.AuthenticationConstantsResponse.config_values");
       }
     } else {
-      for (const auto& entry : map_field) {
-        target = WireHelper::InternalSerialize(1, entry.first, entry.second, target, stream);
-        check_utf8(entry);
+      for (const auto& entry : field) {
+        target = WireHelper::InternalSerialize(
+            1, entry.first, entry.second, target, stream);
+        ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            entry.first.data(), static_cast<int>(entry.first.length()),
+ ::google::protobuf::internal::WireFormatLite::SERIALIZE, "io.deephaven.proto.backplane.grpc.AuthenticationConstantsResponse.config_values");
       }
     }
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
   }
   // @@protoc_insertion_point(serialize_to_array_end:io.deephaven.proto.backplane.grpc.AuthenticationConstantsResponse)
   return target;
 }
 
-size_t AuthenticationConstantsResponse::ByteSizeLong() const {
+::size_t AuthenticationConstantsResponse::ByteSizeLong() const {
 // @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.AuthenticationConstantsResponse)
-  size_t total_size = 0;
+  ::size_t total_size = 0;
 
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
   // map<string, .io.deephaven.proto.backplane.grpc.ConfigValue> config_values = 1;
-  total_size += 1 *
-      ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(this->_internal_config_values_size());
-  for (::PROTOBUF_NAMESPACE_ID::Map< std::string, ::io::deephaven::proto::backplane::grpc::ConfigValue >::const_iterator
-      it = this->_internal_config_values().begin();
-      it != this->_internal_config_values().end(); ++it) {
-    total_size += AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUse::Funcs::ByteSizeLong(it->first, it->second);
+  total_size += 1 * ::google::protobuf::internal::FromIntSize(_internal_config_values_size());
+  for (const auto& entry : _internal_config_values()) {
+    total_size += _pbi::MapEntryFuncs<std::string, ::io::deephaven::proto::backplane::grpc::ConfigValue,
+                                   _pbi::WireFormatLite::TYPE_STRING,
+                                   _pbi::WireFormatLite::TYPE_MESSAGE>::ByteSizeLong(entry.first, entry.second);
   }
-
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData AuthenticationConstantsResponse::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
-    AuthenticationConstantsResponse::MergeImpl
+const ::google::protobuf::Message::ClassData AuthenticationConstantsResponse::_class_data_ = {
+    AuthenticationConstantsResponse::MergeImpl,
+    nullptr,  // OnDemandRegisterArenaDtor
 };
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*AuthenticationConstantsResponse::GetClassData() const { return &_class_data_; }
+const ::google::protobuf::Message::ClassData* AuthenticationConstantsResponse::GetClassData() const {
+  return &_class_data_;
+}
 
-
-void AuthenticationConstantsResponse::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+void AuthenticationConstantsResponse::MergeImpl(::google::protobuf::Message& to_msg, const ::google::protobuf::Message& from_msg) {
   auto* const _this = static_cast<AuthenticationConstantsResponse*>(&to_msg);
   auto& from = static_cast<const AuthenticationConstantsResponse&>(from_msg);
   // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.AuthenticationConstantsResponse)
-  GOOGLE_DCHECK_NE(&from, _this);
-  uint32_t cached_has_bits = 0;
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   _this->_impl_.config_values_.MergeFrom(from._impl_.config_values_);
-  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void AuthenticationConstantsResponse::CopyFrom(const AuthenticationConstantsResponse& from) {
@@ -538,226 +573,214 @@ void AuthenticationConstantsResponse::CopyFrom(const AuthenticationConstantsResp
   MergeFrom(from);
 }
 
-bool AuthenticationConstantsResponse::IsInitialized() const {
+PROTOBUF_NOINLINE bool AuthenticationConstantsResponse::IsInitialized() const {
   return true;
 }
 
-void AuthenticationConstantsResponse::InternalSwap(AuthenticationConstantsResponse* other) {
+::_pbi::CachedSize* AuthenticationConstantsResponse::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
+void AuthenticationConstantsResponse::InternalSwap(AuthenticationConstantsResponse* PROTOBUF_RESTRICT other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   _impl_.config_values_.InternalSwap(&other->_impl_.config_values_);
 }
 
-::PROTOBUF_NAMESPACE_ID::Metadata AuthenticationConstantsResponse::GetMetadata() const {
+::google::protobuf::Metadata AuthenticationConstantsResponse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2fconfig_2eproto_getter, &descriptor_table_deephaven_2fproto_2fconfig_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fconfig_2eproto[3]);
 }
-
 // ===================================================================
 
 ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUse::ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUse() {}
-ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUse::ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUse(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUse::ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUse(::google::protobuf::Arena* arena)
     : SuperType(arena) {}
-void ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUse::MergeFrom(const ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUse& other) {
-  MergeFromInternal(other);
-}
-::PROTOBUF_NAMESPACE_ID::Metadata ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUse::GetMetadata() const {
+::google::protobuf::Metadata ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2fconfig_2eproto_getter, &descriptor_table_deephaven_2fproto_2fconfig_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fconfig_2eproto[4]);
 }
-
 // ===================================================================
 
 class ConfigurationConstantsResponse::_Internal {
  public:
 };
 
-ConfigurationConstantsResponse::ConfigurationConstantsResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor(arena, is_message_owned);
-  if (arena != nullptr && !is_message_owned) {
-    arena->OwnCustomDestructor(this, &ConfigurationConstantsResponse::ArenaDtor);
-  }
+ConfigurationConstantsResponse::ConfigurationConstantsResponse(::google::protobuf::Arena* arena)
+    : ::google::protobuf::Message(arena) {
+  SharedCtor(arena);
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.ConfigurationConstantsResponse)
 }
-ConfigurationConstantsResponse::ConfigurationConstantsResponse(const ConfigurationConstantsResponse& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message() {
-  ConfigurationConstantsResponse* const _this = this; (void)_this;
-  new (&_impl_) Impl_{
-      /*decltype(_impl_.config_values_)*/{}
-    , /*decltype(_impl_._cached_size_)*/{}};
+inline PROTOBUF_NDEBUG_INLINE ConfigurationConstantsResponse::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
+    const Impl_& from)
+      : config_values_{visibility, arena, from.config_values_},
+        _cached_size_{0} {}
 
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  _this->_impl_.config_values_.MergeFrom(from._impl_.config_values_);
+ConfigurationConstantsResponse::ConfigurationConstantsResponse(
+    ::google::protobuf::Arena* arena,
+    const ConfigurationConstantsResponse& from)
+    : ::google::protobuf::Message(arena) {
+  ConfigurationConstantsResponse* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_);
+
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.ConfigurationConstantsResponse)
 }
+inline PROTOBUF_NDEBUG_INLINE ConfigurationConstantsResponse::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* arena)
+      : config_values_{visibility, arena},
+        _cached_size_{0} {}
 
-inline void ConfigurationConstantsResponse::SharedCtor(
-    ::_pb::Arena* arena, bool is_message_owned) {
-  (void)arena;
-  (void)is_message_owned;
-  new (&_impl_) Impl_{
-      /*decltype(_impl_.config_values_)*/{::_pbi::ArenaInitialized(), arena}
-    , /*decltype(_impl_._cached_size_)*/{}
-  };
+inline void ConfigurationConstantsResponse::SharedCtor(::_pb::Arena* arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
 }
-
 ConfigurationConstantsResponse::~ConfigurationConstantsResponse() {
   // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.ConfigurationConstantsResponse)
-  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
-  (void)arena;
-    ArenaDtor(this);
-    return;
-  }
+  _internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
   SharedDtor();
 }
-
 inline void ConfigurationConstantsResponse::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  _impl_.config_values_.Destruct();
-  _impl_.config_values_.~MapField();
+  ABSL_DCHECK(GetArena() == nullptr);
+  _impl_.~Impl_();
 }
 
-void ConfigurationConstantsResponse::ArenaDtor(void* object) {
-  ConfigurationConstantsResponse* _this = reinterpret_cast< ConfigurationConstantsResponse* >(object);
-  _this->_impl_.config_values_.Destruct();
-}
-void ConfigurationConstantsResponse::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
-
-void ConfigurationConstantsResponse::Clear() {
+PROTOBUF_NOINLINE void ConfigurationConstantsResponse::Clear() {
 // @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.ConfigurationConstantsResponse)
-  uint32_t cached_has_bits = 0;
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
   _impl_.config_values_.Clear();
-  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
 }
 
-const char* ConfigurationConstantsResponse::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
-#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  while (!ctx->Done(&ptr)) {
-    uint32_t tag;
-    ptr = ::_pbi::ReadTag(ptr, &tag);
-    switch (tag >> 3) {
-      // map<string, .io.deephaven.proto.backplane.grpc.ConfigValue> config_values = 1;
-      case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
-          ptr -= 1;
-          do {
-            ptr += 1;
-            ptr = ctx->ParseMessage(&_impl_.config_values_, ptr);
-            CHK_(ptr);
-            if (!ctx->DataAvailable(ptr)) break;
-          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<10>(ptr));
-        } else
-          goto handle_unusual;
-        continue;
-      default:
-        goto handle_unusual;
-    }  // switch
-  handle_unusual:
-    if ((tag == 0) || ((tag & 7) == 4)) {
-      CHK_(ptr);
-      ctx->SetLastTag(tag);
-      goto message_done;
-    }
-    ptr = UnknownFieldParse(
-        tag,
-        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-        ptr, ctx);
-    CHK_(ptr != nullptr);
-  }  // while
-message_done:
+const char* ConfigurationConstantsResponse::_InternalParse(
+    const char* ptr, ::_pbi::ParseContext* ctx) {
+  ptr = ::_pbi::TcParser::ParseLoop(this, ptr, ctx, &_table_.header);
   return ptr;
-failure:
-  ptr = nullptr;
-  goto message_done;
-#undef CHK_
 }
 
-uint8_t* ConfigurationConstantsResponse::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<0, 1, 2, 86, 2> ConfigurationConstantsResponse::_table_ = {
+  {
+    0,  // no _has_bits_
+    0, // no _extensions_
+    1, 0,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967294,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    1,  // num_field_entries
+    2,  // num_aux_entries
+    offsetof(decltype(_table_), aux_entries),
+    &_ConfigurationConstantsResponse_default_instance_._instance,
+    ::_pbi::TcParser::GenericFallback,  // fallback
+  }, {{
+    {::_pbi::TcParser::MiniParse, {}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // map<string, .io.deephaven.proto.backplane.grpc.ConfigValue> config_values = 1;
+    {PROTOBUF_FIELD_OFFSET(ConfigurationConstantsResponse, _impl_.config_values_), 0, 0,
+    (0 | ::_fl::kFcRepeated | ::_fl::kMap)},
+  }}, {{
+    {::_pbi::TcParser::GetMapAuxInfo<
+        decltype(ConfigurationConstantsResponse()._impl_.config_values_)>(
+        1, 0, 0, 9,
+        11)},
+    {::_pbi::TcParser::CreateInArenaStorageCb<::io::deephaven::proto::backplane::grpc::ConfigValue>},
+  }}, {{
+    "\100\15\0\0\0\0\0\0"
+    "io.deephaven.proto.backplane.grpc.ConfigurationConstantsResponse"
+    "config_values"
+  }},
+};
+
+::uint8_t* ConfigurationConstantsResponse::_InternalSerialize(
+    ::uint8_t* target,
+    ::google::protobuf::io::EpsCopyOutputStream* stream) const {
   // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.ConfigurationConstantsResponse)
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  ::uint32_t cached_has_bits = 0;
+  (void)cached_has_bits;
 
   // map<string, .io.deephaven.proto.backplane.grpc.ConfigValue> config_values = 1;
-  if (!this->_internal_config_values().empty()) {
-    using MapType = ::_pb::Map<std::string, ::io::deephaven::proto::backplane::grpc::ConfigValue>;
-    using WireHelper = ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUse::Funcs;
-    const auto& map_field = this->_internal_config_values();
-    auto check_utf8 = [](const MapType::value_type& entry) {
-      (void)entry;
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-        entry.first.data(), static_cast<int>(entry.first.length()),
-        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-        "io.deephaven.proto.backplane.grpc.ConfigurationConstantsResponse.ConfigValuesEntry.key");
-    };
+  if (!_internal_config_values().empty()) {
+    using MapType = ::google::protobuf::Map<std::string, ::io::deephaven::proto::backplane::grpc::ConfigValue>;
+    using WireHelper = _pbi::MapEntryFuncs<std::string, ::io::deephaven::proto::backplane::grpc::ConfigValue,
+                                   _pbi::WireFormatLite::TYPE_STRING,
+                                   _pbi::WireFormatLite::TYPE_MESSAGE>;
+    const auto& field = _internal_config_values();
 
-    if (stream->IsSerializationDeterministic() && map_field.size() > 1) {
-      for (const auto& entry : ::_pbi::MapSorterPtr<MapType>(map_field)) {
-        target = WireHelper::InternalSerialize(1, entry.first, entry.second, target, stream);
-        check_utf8(entry);
+    if (stream->IsSerializationDeterministic() && field.size() > 1) {
+      for (const auto& entry : ::google::protobuf::internal::MapSorterPtr<MapType>(field)) {
+        target = WireHelper::InternalSerialize(
+            1, entry.first, entry.second, target, stream);
+        ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            entry.first.data(), static_cast<int>(entry.first.length()),
+ ::google::protobuf::internal::WireFormatLite::SERIALIZE, "io.deephaven.proto.backplane.grpc.ConfigurationConstantsResponse.config_values");
       }
     } else {
-      for (const auto& entry : map_field) {
-        target = WireHelper::InternalSerialize(1, entry.first, entry.second, target, stream);
-        check_utf8(entry);
+      for (const auto& entry : field) {
+        target = WireHelper::InternalSerialize(
+            1, entry.first, entry.second, target, stream);
+        ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+            entry.first.data(), static_cast<int>(entry.first.length()),
+ ::google::protobuf::internal::WireFormatLite::SERIALIZE, "io.deephaven.proto.backplane.grpc.ConfigurationConstantsResponse.config_values");
       }
     }
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
   }
   // @@protoc_insertion_point(serialize_to_array_end:io.deephaven.proto.backplane.grpc.ConfigurationConstantsResponse)
   return target;
 }
 
-size_t ConfigurationConstantsResponse::ByteSizeLong() const {
+::size_t ConfigurationConstantsResponse::ByteSizeLong() const {
 // @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.ConfigurationConstantsResponse)
-  size_t total_size = 0;
+  ::size_t total_size = 0;
 
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
   // map<string, .io.deephaven.proto.backplane.grpc.ConfigValue> config_values = 1;
-  total_size += 1 *
-      ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(this->_internal_config_values_size());
-  for (::PROTOBUF_NAMESPACE_ID::Map< std::string, ::io::deephaven::proto::backplane::grpc::ConfigValue >::const_iterator
-      it = this->_internal_config_values().begin();
-      it != this->_internal_config_values().end(); ++it) {
-    total_size += ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUse::Funcs::ByteSizeLong(it->first, it->second);
+  total_size += 1 * ::google::protobuf::internal::FromIntSize(_internal_config_values_size());
+  for (const auto& entry : _internal_config_values()) {
+    total_size += _pbi::MapEntryFuncs<std::string, ::io::deephaven::proto::backplane::grpc::ConfigValue,
+                                   _pbi::WireFormatLite::TYPE_STRING,
+                                   _pbi::WireFormatLite::TYPE_MESSAGE>::ByteSizeLong(entry.first, entry.second);
   }
-
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData ConfigurationConstantsResponse::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
-    ConfigurationConstantsResponse::MergeImpl
+const ::google::protobuf::Message::ClassData ConfigurationConstantsResponse::_class_data_ = {
+    ConfigurationConstantsResponse::MergeImpl,
+    nullptr,  // OnDemandRegisterArenaDtor
 };
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*ConfigurationConstantsResponse::GetClassData() const { return &_class_data_; }
+const ::google::protobuf::Message::ClassData* ConfigurationConstantsResponse::GetClassData() const {
+  return &_class_data_;
+}
 
-
-void ConfigurationConstantsResponse::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+void ConfigurationConstantsResponse::MergeImpl(::google::protobuf::Message& to_msg, const ::google::protobuf::Message& from_msg) {
   auto* const _this = static_cast<ConfigurationConstantsResponse*>(&to_msg);
   auto& from = static_cast<const ConfigurationConstantsResponse&>(from_msg);
   // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.ConfigurationConstantsResponse)
-  GOOGLE_DCHECK_NE(&from, _this);
-  uint32_t cached_has_bits = 0;
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   _this->_impl_.config_values_.MergeFrom(from._impl_.config_values_);
-  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void ConfigurationConstantsResponse::CopyFrom(const ConfigurationConstantsResponse& from) {
@@ -767,90 +790,89 @@ void ConfigurationConstantsResponse::CopyFrom(const ConfigurationConstantsRespon
   MergeFrom(from);
 }
 
-bool ConfigurationConstantsResponse::IsInitialized() const {
+PROTOBUF_NOINLINE bool ConfigurationConstantsResponse::IsInitialized() const {
   return true;
 }
 
-void ConfigurationConstantsResponse::InternalSwap(ConfigurationConstantsResponse* other) {
+::_pbi::CachedSize* ConfigurationConstantsResponse::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
+void ConfigurationConstantsResponse::InternalSwap(ConfigurationConstantsResponse* PROTOBUF_RESTRICT other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   _impl_.config_values_.InternalSwap(&other->_impl_.config_values_);
 }
 
-::PROTOBUF_NAMESPACE_ID::Metadata ConfigurationConstantsResponse::GetMetadata() const {
+::google::protobuf::Metadata ConfigurationConstantsResponse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2fconfig_2eproto_getter, &descriptor_table_deephaven_2fproto_2fconfig_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fconfig_2eproto[5]);
 }
-
 // ===================================================================
 
 class ConfigValue::_Internal {
  public:
+  static constexpr ::int32_t kOneofCaseOffset =
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ConfigValue, _impl_._oneof_case_);
 };
 
-ConfigValue::ConfigValue(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor(arena, is_message_owned);
+ConfigValue::ConfigValue(::google::protobuf::Arena* arena)
+    : ::google::protobuf::Message(arena) {
+  SharedCtor(arena);
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.ConfigValue)
 }
-ConfigValue::ConfigValue(const ConfigValue& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message() {
-  ConfigValue* const _this = this; (void)_this;
-  new (&_impl_) Impl_{
-      decltype(_impl_.kind_){}
-    , /*decltype(_impl_._cached_size_)*/{}
-    , /*decltype(_impl_._oneof_case_)*/{}};
+inline PROTOBUF_NDEBUG_INLINE ConfigValue::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
+    const Impl_& from)
+      : kind_{},
+        _cached_size_{0},
+        _oneof_case_{from._oneof_case_[0]} {}
 
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  clear_has_kind();
-  switch (from.kind_case()) {
-    case kStringValue: {
-      _this->_internal_set_string_value(from._internal_string_value());
+ConfigValue::ConfigValue(
+    ::google::protobuf::Arena* arena,
+    const ConfigValue& from)
+    : ::google::protobuf::Message(arena) {
+  ConfigValue* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_);
+  switch (kind_case()) {
+    case KIND_NOT_SET:
       break;
-    }
-    case KIND_NOT_SET: {
-      break;
-    }
+      case kStringValue:
+        new (&_impl_.kind_.string_value_) decltype(_impl_.kind_.string_value_){arena, from._impl_.kind_.string_value_};
+        break;
   }
+
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.ConfigValue)
 }
+inline PROTOBUF_NDEBUG_INLINE ConfigValue::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* arena)
+      : kind_{},
+        _cached_size_{0},
+        _oneof_case_{} {}
 
-inline void ConfigValue::SharedCtor(
-    ::_pb::Arena* arena, bool is_message_owned) {
-  (void)arena;
-  (void)is_message_owned;
-  new (&_impl_) Impl_{
-      decltype(_impl_.kind_){}
-    , /*decltype(_impl_._cached_size_)*/{}
-    , /*decltype(_impl_._oneof_case_)*/{}
-  };
-  clear_has_kind();
+inline void ConfigValue::SharedCtor(::_pb::Arena* arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
 }
-
 ConfigValue::~ConfigValue() {
   // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.ConfigValue)
-  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
-  (void)arena;
-    return;
-  }
+  _internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
   SharedDtor();
 }
-
 inline void ConfigValue::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  ABSL_DCHECK(GetArena() == nullptr);
   if (has_kind()) {
     clear_kind();
   }
-}
-
-void ConfigValue::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
+  _impl_.~Impl_();
 }
 
 void ConfigValue::clear_kind() {
 // @@protoc_insertion_point(one_of_clear_start:io.deephaven.proto.backplane.grpc.ConfigValue)
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   switch (kind_case()) {
     case kStringValue: {
       _impl_.kind_.string_value_.Destroy();
@@ -864,93 +886,92 @@ void ConfigValue::clear_kind() {
 }
 
 
-void ConfigValue::Clear() {
+PROTOBUF_NOINLINE void ConfigValue::Clear() {
 // @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.ConfigValue)
-  uint32_t cached_has_bits = 0;
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
   clear_kind();
-  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
 }
 
-const char* ConfigValue::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
-#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  while (!ctx->Done(&ptr)) {
-    uint32_t tag;
-    ptr = ::_pbi::ReadTag(ptr, &tag);
-    switch (tag >> 3) {
-      // string string_value = 3;
-      case 3:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
-          auto str = _internal_mutable_string_value();
-          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
-          CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.ConfigValue.string_value"));
-        } else
-          goto handle_unusual;
-        continue;
-      default:
-        goto handle_unusual;
-    }  // switch
-  handle_unusual:
-    if ((tag == 0) || ((tag & 7) == 4)) {
-      CHK_(ptr);
-      ctx->SetLastTag(tag);
-      goto message_done;
-    }
-    ptr = UnknownFieldParse(
-        tag,
-        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-        ptr, ctx);
-    CHK_(ptr != nullptr);
-  }  // while
-message_done:
+const char* ConfigValue::_InternalParse(
+    const char* ptr, ::_pbi::ParseContext* ctx) {
+  ptr = ::_pbi::TcParser::ParseLoop(this, ptr, ctx, &_table_.header);
   return ptr;
-failure:
-  ptr = nullptr;
-  goto message_done;
-#undef CHK_
 }
 
-uint8_t* ConfigValue::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<0, 1, 0, 66, 2> ConfigValue::_table_ = {
+  {
+    0,  // no _has_bits_
+    0, // no _extensions_
+    3, 0,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967291,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    1,  // num_field_entries
+    0,  // num_aux_entries
+    offsetof(decltype(_table_), field_names),  // no aux_entries
+    &_ConfigValue_default_instance_._instance,
+    ::_pbi::TcParser::GenericFallback,  // fallback
+  }, {{
+    {::_pbi::TcParser::MiniParse, {}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // string string_value = 3;
+    {PROTOBUF_FIELD_OFFSET(ConfigValue, _impl_.kind_.string_value_), _Internal::kOneofCaseOffset + 0, 0,
+    (0 | ::_fl::kFcOneof | ::_fl::kUtf8String | ::_fl::kRepAString)},
+  }},
+  // no aux_entries
+  {{
+    "\55\14\0\0\0\0\0\0"
+    "io.deephaven.proto.backplane.grpc.ConfigValue"
+    "string_value"
+  }},
+};
+
+::uint8_t* ConfigValue::_InternalSerialize(
+    ::uint8_t* target,
+    ::google::protobuf::io::EpsCopyOutputStream* stream) const {
   // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.ConfigValue)
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  ::uint32_t cached_has_bits = 0;
+  (void)cached_has_bits;
 
   // string string_value = 3;
-  if (_internal_has_string_value()) {
-    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_string_value().data(), static_cast<int>(this->_internal_string_value().length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "io.deephaven.proto.backplane.grpc.ConfigValue.string_value");
-    target = stream->WriteStringMaybeAliased(
-        3, this->_internal_string_value(), target);
+  if (kind_case() == kStringValue) {
+    const std::string& _s = this->_internal_string_value();
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+        _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "io.deephaven.proto.backplane.grpc.ConfigValue.string_value");
+    target = stream->WriteStringMaybeAliased(3, _s, target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
   }
   // @@protoc_insertion_point(serialize_to_array_end:io.deephaven.proto.backplane.grpc.ConfigValue)
   return target;
 }
 
-size_t ConfigValue::ByteSizeLong() const {
+::size_t ConfigValue::ByteSizeLong() const {
 // @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.ConfigValue)
-  size_t total_size = 0;
+  ::size_t total_size = 0;
 
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
   switch (kind_case()) {
     // string string_value = 3;
     case kStringValue: {
-      total_size += 1 +
-        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-          this->_internal_string_value());
+      total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                      this->_internal_string_value());
       break;
     }
     case KIND_NOT_SET: {
@@ -960,19 +981,20 @@ size_t ConfigValue::ByteSizeLong() const {
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData ConfigValue::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
-    ConfigValue::MergeImpl
+const ::google::protobuf::Message::ClassData ConfigValue::_class_data_ = {
+    ConfigValue::MergeImpl,
+    nullptr,  // OnDemandRegisterArenaDtor
 };
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*ConfigValue::GetClassData() const { return &_class_data_; }
+const ::google::protobuf::Message::ClassData* ConfigValue::GetClassData() const {
+  return &_class_data_;
+}
 
-
-void ConfigValue::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+void ConfigValue::MergeImpl(::google::protobuf::Message& to_msg, const ::google::protobuf::Message& from_msg) {
   auto* const _this = static_cast<ConfigValue*>(&to_msg);
   auto& from = static_cast<const ConfigValue&>(from_msg);
   // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.ConfigValue)
-  GOOGLE_DCHECK_NE(&from, _this);
-  uint32_t cached_has_bits = 0;
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   switch (from.kind_case()) {
@@ -984,7 +1006,7 @@ void ConfigValue::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PR
       break;
     }
   }
-  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void ConfigValue::CopyFrom(const ConfigValue& from) {
@@ -994,59 +1016,34 @@ void ConfigValue::CopyFrom(const ConfigValue& from) {
   MergeFrom(from);
 }
 
-bool ConfigValue::IsInitialized() const {
+PROTOBUF_NOINLINE bool ConfigValue::IsInitialized() const {
   return true;
 }
 
-void ConfigValue::InternalSwap(ConfigValue* other) {
+::_pbi::CachedSize* ConfigValue::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
+void ConfigValue::InternalSwap(ConfigValue* PROTOBUF_RESTRICT other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   swap(_impl_.kind_, other->_impl_.kind_);
   swap(_impl_._oneof_case_[0], other->_impl_._oneof_case_[0]);
 }
 
-::PROTOBUF_NAMESPACE_ID::Metadata ConfigValue::GetMetadata() const {
+::google::protobuf::Metadata ConfigValue::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2fconfig_2eproto_getter, &descriptor_table_deephaven_2fproto_2fconfig_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fconfig_2eproto[6]);
 }
-
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace grpc
 }  // namespace backplane
 }  // namespace proto
 }  // namespace deephaven
 }  // namespace io
-PROTOBUF_NAMESPACE_OPEN
-template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::AuthenticationConstantsRequest*
-Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::AuthenticationConstantsRequest >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::AuthenticationConstantsRequest >(arena);
-}
-template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::ConfigurationConstantsRequest*
-Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::ConfigurationConstantsRequest >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::ConfigurationConstantsRequest >(arena);
-}
-template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUse*
-Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUse >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::AuthenticationConstantsResponse_ConfigValuesEntry_DoNotUse >(arena);
-}
-template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::AuthenticationConstantsResponse*
-Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::AuthenticationConstantsResponse >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::AuthenticationConstantsResponse >(arena);
-}
-template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUse*
-Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUse >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::ConfigurationConstantsResponse_ConfigValuesEntry_DoNotUse >(arena);
-}
-template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::ConfigurationConstantsResponse*
-Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::ConfigurationConstantsResponse >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::ConfigurationConstantsResponse >(arena);
-}
-template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::ConfigValue*
-Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::ConfigValue >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::ConfigValue >(arena);
-}
-PROTOBUF_NAMESPACE_CLOSE
-
+namespace google {
+namespace protobuf {
+}  // namespace protobuf
+}  // namespace google
 // @@protoc_insertion_point(global_scope)
-#include <google/protobuf/port_undef.inc>
+#include "google/protobuf/port_undef.inc"

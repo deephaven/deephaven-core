@@ -10,6 +10,8 @@ import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.hierarchical.RollupTable;
+import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.IntGenerator;
 import io.deephaven.engine.testutil.generator.SetGenerator;
@@ -23,8 +25,8 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.tuple.ArrayTuple;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.mutable.MutableLong;
 import junit.framework.TestCase;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.Assert;
 
@@ -78,11 +80,11 @@ public class TestPartitionBy extends QueryTableTestBase {
 
                 final Table whereTable;
                 if (groupByColumnSources.length == 1) {
-                    whereTable = originalTable.where(new MatchFilter(groupByColumns[0], key));
+                    whereTable = originalTable.where(new MatchFilter(MatchType.Regular, groupByColumns[0], key));
                 } else {
                     final MatchFilter[] filters = new MatchFilter[groupByColumnSources.length];
                     for (int ii = 0; ii < groupByColumns.length; ++ii) {
-                        filters[ii] = new MatchFilter(groupByColumns[ii], key[ii]);
+                        filters[ii] = new MatchFilter(MatchType.Regular, groupByColumns[ii], key[ii]);
                     }
                     whereTable = originalTable.where(Filter.and(filters));
                 }
@@ -437,9 +439,9 @@ public class TestPartitionBy extends QueryTableTestBase {
                     intCol("Int", 8),
                     intCol("I2", 5));
             rawTable.notifyListeners(i(8), i(), i());
-            start.setValue(System.currentTimeMillis());
+            start.set(System.currentTimeMillis());
         });
-        System.out.println("Completion took: " + (System.currentTimeMillis() - start.getValue()));
+        System.out.println("Completion took: " + (System.currentTimeMillis() - start.get()));
 
         final MutableObject<Future<?>> mutableFuture = new MutableObject<>();
 
@@ -460,9 +462,9 @@ public class TestPartitionBy extends QueryTableTestBase {
                 rollupManager.release();
             }));
 
-            start.setValue(System.currentTimeMillis());
+            start.set(System.currentTimeMillis());
         });
-        System.out.println("Completion took: " + (System.currentTimeMillis() - start.getValue()));
+        System.out.println("Completion took: " + (System.currentTimeMillis() - start.get()));
 
         try {
             mutableFuture.getValue().get();
@@ -488,7 +490,8 @@ public class TestPartitionBy extends QueryTableTestBase {
         }
         final PartitionedTable pt = table.partitionedAggBy(List.of(), true, testTable(col("USym", "SPY")), "USym");
         final String keyColumnName = pt.keyColumnNames().stream().findFirst().get();
-        final String[] keys = (String[]) DataAccessHelpers.getColumn(pt.table(), keyColumnName).getDirect();
+        Table table1 = pt.table();
+        final String[] keys = ColumnVectors.ofObject(table1, keyColumnName, String.class).toArray();
         System.out.println(Arrays.toString(keys));
         assertEquals(keys, new String[] {"SPY", "AAPL"});
         assertEquals(pt.table().isRefreshing(), refreshing);

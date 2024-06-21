@@ -9,10 +9,12 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.impl.RowSetUtils;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableLong;
 
 import java.util.Arrays;
 import java.util.stream.Collectors;
@@ -26,6 +28,8 @@ import java.util.stream.IntStream;
  * its own offset in those arrays.
  */
 public class BucketState {
+    private static final Logger log = LoggerFactory.getLogger(BucketState.class);
+
     private final WritableRowSet rowSet = RowSetFactory.empty();
 
     private RowSet cachedRowSet;
@@ -220,24 +224,24 @@ public class BucketState {
                 RowSetUtils.forAllInvertedLongRanges(rowSet, nullsForCol, (first, last) -> {
                     if (first > 0) {
                         // Advance to (first - 1)
-                        keysIterator.getNextRowSequenceWithLength(first - 1 - position.longValue());
+                        keysIterator.getNextRowSequenceWithLength(first - 1 - position.get());
                         build.addKey(keysIterator.peekNextKey());
                         // Advance to first
                         keysIterator.getNextRowSequenceWithLength(1);
                         build.addKey(keysIterator.peekNextKey());
 
-                        position.setValue(first);
+                        position.set(first);
                     }
 
                     if (last < indexSize - 1) {
                         // Advance to last
-                        keysIterator.getNextRowSequenceWithLength(last - position.longValue());
+                        keysIterator.getNextRowSequenceWithLength(last - position.get());
                         build.addKey(keysIterator.peekNextKey());
                         // Advance to (last + 1)
                         keysIterator.getNextRowSequenceWithLength(1);
                         build.addKey(keysIterator.peekNextKey());
 
-                        position.setValue(last + 1);
+                        position.set(last + 1);
                     }
                 });
             }
@@ -310,22 +314,16 @@ public class BucketState {
                         values[columnIndex].validate(offset, keyChunk.get(indexInChunk), valueChunks[columnIndex],
                                 indexInChunk, trackNulls ? nulls[columnIndex] : null);
                     } catch (final RuntimeException e) {
-                        System.out.println(rowSet);
                         final String msg =
                                 "Bad data! indexInChunk=" + indexInChunk + ", col=" + columnIndex + ", usePrev="
-                                        + usePrev + ", offset=" + offset + ", rowSet=" + keyChunk.get(indexInChunk);
+                                        + usePrev + ", offset=" + offset + ", indexInChunk="
+                                        + keyChunk.get(indexInChunk);
+                        log.error().append(msg).append(", rowSet=").append(rowSet).endl();
                         throw new IllegalStateException(msg, e);
                     }
                 }
             }
         }
         Assert.eqTrue(makeRowSet().subsetOf(rowSet), "makeRowSet().subsetOf(rowSet)");
-    }
-
-    public void close() {
-        if (cachedRowSet != null) {
-            cachedRowSet.close();
-        }
-        rowSet.close();
     }
 }

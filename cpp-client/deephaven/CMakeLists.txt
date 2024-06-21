@@ -13,8 +13,6 @@ set(CMAKE_CXX_STANDARD 17)
 # for CMAKE_INSTALL_{dir}
 include(GNUInstallDirs)
 
-add_compile_options(-Wall -Werror -Wno-deprecated-declarations)
-
 # To enable address sanitizer, add `-DSANITIZE_ADDRESS=ON` to
 # the list of options you pass for running cmake.
 option(SANITIZE_ADDRESS "Enable address sanitizer" "OFF")
@@ -41,7 +39,7 @@ if(NOT DHCORE_ONLY)
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
         )
 
-    install(TARGETS dhclient dhcore_static dhcore
+    install(TARGETS dhclient dhcore dhcore_static dhclient_tests
         EXPORT deephavenConfig
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}

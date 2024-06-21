@@ -64,12 +64,27 @@ public class PrimitiveArrayConversionUtility {
      * {@link DateTimeUtils#epochNanosToInstant(long)}. This is the (psuedo)inverse of `translateArrayLongToInstant`.
      *
      * @param array - the long array
-     * @return the corresponding DateTime array
+     * @return the corresponding Instant array
      */
     public static Instant[] translateArrayLongToInstant(final long[] array) {
         final Instant[] out = new Instant[array.length];
         for (int ai = 0; ai < array.length; ai++) {
             out[ai] = DateTimeUtils.epochNanosToInstant(array[ai]);
+        }
+        return out;
+    }
+
+    /**
+     * Translates a String array to an Instant array. The mapping will be performed according to
+     * {@link DateTimeUtils#parseInstant(String)}.
+     *
+     * @param array - the string array
+     * @return the corresponding Instant array
+     */
+    public static Instant[] translateArrayStringToInstant(final String[] array) {
+        final Instant[] out = new Instant[array.length];
+        for (int ai = 0; ai < array.length; ai++) {
+            out[ai] = array[ai] == null ? null : DateTimeUtils.parseInstant(array[ai]);
         }
         return out;
     }

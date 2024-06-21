@@ -40,7 +40,7 @@ import io.deephaven.protobuf.ProtobufFunctions;
 import io.deephaven.protobuf.ProtobufFunctions.Builder;
 import io.deephaven.qst.type.Type;
 import io.deephaven.util.annotations.VisibleForTesting;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.apache.kafka.common.serialization.Deserializer;
 
 import java.io.IOException;

@@ -16,11 +16,11 @@ import io.deephaven.engine.exceptions.TableInitializationException;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableDefaults;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.generator.CharGenerator;
@@ -49,7 +49,7 @@ import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simu
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.time.DateTimeUtils.*;
 import static io.deephaven.util.QueryConstants.*;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.Assert.assertThrows;
 
 @Category(OutOfBandTest.class)
 public class TestEma extends BaseUpdateByTest {
@@ -272,10 +272,11 @@ public class TestEma extends BaseUpdateByTest {
     }
 
     private void testThrowsInternal(TableDefaults table) {
-        assertThrows(TableDataException.class,
+        assertThrows(
+                "Encountered negative delta time during EMA processing",
+                TableDataException.class,
                 () -> table.updateBy(UpdateByOperation.Ema(
-                        OperationControl.builder().build(), "ts", 100)),
-                "Encountered negative delta time during EMA processing");
+                        OperationControl.builder().build(), "ts", 100)));
     }
 
     @Test
@@ -613,7 +614,7 @@ public class TestEma extends BaseUpdateByTest {
                 .onNullValue(BadDataBehavior.RESET)
                 .onNanValue(BadDataBehavior.RESET).build();
 
-        final Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(t, "ts").getDirect();
+        final Instant[] ts = ColumnVectors.ofObject(t, "ts", Instant.class).toArray();
         final long[] timestamps = new long[t.intSize()];
         for (int i = 0; i < t.intSize(); i++) {
             timestamps[i] = epochNanos(ts[i]);
