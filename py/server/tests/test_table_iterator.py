@@ -3,13 +3,18 @@
 #
 import time
 import unittest
+from dataclasses import dataclass
 
 import numpy as np
 
-from tests.testbase import BaseTestCase
-
-from deephaven import read_csv, time_table
+import deephaven.dtypes as dtypes
+from deephaven import read_csv, time_table, new_table
 from deephaven import update_graph as ug
+from deephaven.column import bool_col, byte_col, char_col, short_col, int_col, long_col, float_col, double_col, \
+    string_col, datetime_col, pyobj_col, jobj_col
+from deephaven.jcompat import j_array_list
+
+from tests.testbase import BaseTestCase
 
 
 class TableIteratorTestCase(BaseTestCase):
@@ -65,7 +70,7 @@ class TableIteratorTestCase(BaseTestCase):
                 self.assertEqual(len(d), len(test_table.columns))
                 for col in test_table.columns:
                     self.assertIn(col.name, d)
-                    self.assertEqual(d[col.name].dtype, col.data_type.np_type)
+                    self.assertTrue(np.can_cast(col.data_type.np_type, np.dtype(type(d[col.name]))))
                 total_read_size += 1
             self.assertEqual(total_read_size, test_table.size)
 
@@ -77,7 +82,9 @@ class TableIteratorTestCase(BaseTestCase):
                 self.assertEqual(len(d), len(test_table.columns))
                 for col in test_table.columns:
                     self.assertIn(col.name, d)
-                    self.assertEqual(d[col.name].dtype, col.data_type.np_type)
+                    v_type = type(d[col.name])
+                    self.assertTrue(np.can_cast(col.data_type.np_type, np.dtype(v_type)) or
+                                    self.assertEqual(v_type, col.data_type.j_type))
                 time.sleep(0.001)
                 total_read_size += 1
             self.assertEqual(total_read_size, test_table.size)
@@ -157,7 +164,7 @@ class TableIteratorTestCase(BaseTestCase):
                 self.assertEqual(len(d), len(test_table.columns))
                 for col in test_table.columns:
                     self.assertIn(col.name, d)
-                    self.assertEqual(d[col.name].dtype, col.data_type.np_type)
+                    self.assertTrue(np.can_cast(col.data_type.np_type, np.dtype(type(d[col.name]))))
 
             with self.assertRaises(StopIteration):
                 next(t_iter)
@@ -197,6 +204,55 @@ class TableIteratorTestCase(BaseTestCase):
             self.assertTrue(ug.has_shared_lock(test_table))
             t_iter = None
             self.assertFalse(ug.has_shared_lock(test_table))
+
+    def test_data_types(self):
+        @dataclass
+        class CustomClass:
+            f1: int
+            f2: str
+
+        j_array_list1 = j_array_list([1, -1])
+        j_array_list2 = j_array_list([2, -2])
+
+        input_cols = [
+            bool_col(name="Boolean", data=[True, False]),
+            byte_col(name="Byte", data=(1, -1)),
+            char_col(name="Char", data='-1'),
+            short_col(name="Short", data=[1, -1]),
+            int_col(name="Int", data=[1, -1]),
+            long_col(name="Long", data=[1, 2**63 -1 ]),
+            long_col(name="NPLong", data=np.array([1, -1], dtype=np.int8)),
+            float_col(name="Float", data=[1.01, -1.01]),
+            double_col(name="Double", data=[1.01, -1.01]),
+            string_col(name="String", data=["foo", "bar"]),
+            datetime_col(name="Datetime", data=[1, -1]),
+            pyobj_col(name="PyObj", data=[CustomClass(1, "1"), CustomClass(-1, "-1")]),
+            jobj_col(name="JObj", data=[j_array_list1, j_array_list2]),
+        ]
+        test_table = new_table(cols=input_cols)
+
+        with self.subTest("Chunks"):
+            for d in test_table.iter_rows(chunk_size=10):
+                self.assertEqual(len(d), len(test_table.columns))
+                for col in test_table.columns:
+                    self.assertIn(col.name, d)
+                    self.assertEqual(dtypes.from_np_dtype(d[col.name].dtype).np_type, col.data_type.np_type)
+                    self.assertEqual(isinstance(d[col.name], np.ndarray), True)
+
+        with self.subTest("Rows"):
+            for d in test_table.iter_rows():
+                self.assertEqual(len(d), len(test_table.columns))
+                for col in test_table.columns:
+                    self.assertIn(col.name, d)
+                    v_type = type(d[col.name])
+                    if np.dtype(v_type) == np.dtype(object):
+                        if col.data_type not in {dtypes.PyObject, dtypes.JObject}:
+                            self.assertEqual(v_type, col.data_type.j_type)
+                        else:
+                            import jpy
+                            self.assertTrue(v_type == CustomClass or v_type == jpy.get_type("java.util.ArrayList"))
+                    else:
+                        self.assertTrue(np.can_cast(col.data_type.np_type, np.dtype(v_type)))
 
 
 if __name__ == '__main__':

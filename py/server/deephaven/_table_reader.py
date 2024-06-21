@@ -38,7 +38,7 @@ def _table_reader_rows(table: Table, cols: Optional[Union[str, Sequence[str]]]) 
     """
     col_defs = _col_defs(table, cols)
 
-    for chunk_dict in  _table_reader_chunks(table, cols, table.j_table.getRowSet(), chunk_size=4096):
+    for chunk_dict in  _table_reader_chunks(table, cols, table.j_table.getRowSet(), chunk_size=4096, to_numpy=False):
         chunk_size = len(chunk_dict[col_defs[0].name])
         for i in range(chunk_size):
             col_dict = {}
@@ -47,7 +47,7 @@ def _table_reader_rows(table: Table, cols: Optional[Union[str, Sequence[str]]]) 
             yield col_dict
 
 def _table_reader_chunks(table: Table, cols: Optional[Union[str, Sequence[str]]], row_set: jpy.JType, chunk_size: Optional[int],
-                         prev: bool = False) -> Generator[Dict[str, np.ndarray], None, None]:
+                         prev: bool = False, to_numpy: bool = True) -> Generator[Dict[str, np.ndarray], None, None]:
     """ A generator that reads the chunks of rows over the given row set of a table into a dictionary. The dictionary is
     a map of column names to numpy arrays.
 
@@ -57,6 +57,7 @@ def _table_reader_chunks(table: Table, cols: Optional[Union[str, Sequence[str]]]
         row_set (jpy.JType): The row set to read.
         chunk_size (Optional[int]): The number of rows to read at a time. If None, all rows in the row set are read.
         prev (bool): If True, read the previous values. Default is False.
+        to_numpy (bool): If True, convert the column data to numpy arrays. Default is True.
 
     Returns:
         A generator that yields a dictionary of column names to numpy arrays.
@@ -75,8 +76,7 @@ def _table_reader_chunks(table: Table, cols: Optional[Union[str, Sequence[str]]]
 
                 col_dict = {}
                 for i, col_def in enumerate(col_defs):
-                    np_array = _column_to_numpy_array(col_def, j_array[i])
-                    col_dict[col_def.name] = np_array
+                    col_dict[col_def.name] = _column_to_numpy_array(col_def, j_array[i]) if to_numpy else j_array[i]
 
                 yield col_dict
         finally:
