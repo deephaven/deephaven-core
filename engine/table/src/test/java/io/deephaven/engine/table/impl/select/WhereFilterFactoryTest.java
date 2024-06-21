@@ -62,7 +62,6 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
         } catch (IllegalArgumentException e) {
             assertEquals(e.getMessage(),
                     "Failed to convert literal value <1> for column \"Maturity\" of type java.lang.String");
-
         }
     }
 
