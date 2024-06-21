@@ -368,6 +368,7 @@ final class S3Request extends SoftReference<ByteBuffer>
             final ByteBuffer resultBuffer = S3Request.this.get();
             if (resultBuffer == null) {
                 localProducer.complete(false);
+                subscription.cancel();
                 return;
             }
             final int numBytes = dataBuffer.remaining();
