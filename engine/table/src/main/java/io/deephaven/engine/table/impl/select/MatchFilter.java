@@ -56,7 +56,7 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
     private final CachingSupplier<WhereFilter> failoverFilter;
 
     @NotNull
-    private final String columnName;
+    private String columnName;
     private Object[] values;
     private final String[] strValues;
     private final boolean invertMatch;
@@ -187,8 +187,16 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
         try {
             ColumnDefinition<?> column = tableDefinition.getColumn(columnName);
             if (column == null) {
-                throw new RuntimeException("Column \"" + columnName
-                        + "\" doesn't exist in this table, available columns: " + tableDefinition.getColumnNames());
+                if (strValues != null && strValues.length == 1
+                        && (column = tableDefinition.getColumn(strValues[0])) != null) {
+                    // fix up for the case where column name and variable name were swapped
+                    String tmp = columnName;
+                    columnName = strValues[0];
+                    strValues[0] = tmp;
+                } else {
+                    throw new RuntimeException("Column \"" + columnName
+                            + "\" doesn't exist in this table, available columns: " + tableDefinition.getColumnNames());
+                }
             }
             if (strValues == null) {
                 initialized = true;

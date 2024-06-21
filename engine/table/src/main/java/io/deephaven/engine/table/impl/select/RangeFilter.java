@@ -37,9 +37,9 @@ import java.util.List;
  */
 public class RangeFilter extends WhereFilterImpl {
 
-    private final String columnName;
-    private final Condition condition;
-    private final String value;
+    private String columnName;
+    private String value;
+    private Condition condition;
 
     // The expression prior to being parsed
     private final String expression;
@@ -148,28 +148,39 @@ public class RangeFilter extends WhereFilterImpl {
             return;
         }
 
-        final ColumnDefinition<?> def = tableDefinition.getColumn(columnName);
+        RuntimeException conversionError = null;
+        ColumnDefinition<?> def = tableDefinition.getColumn(columnName);
         if (def == null) {
-            throw new RuntimeException("Column \"" + columnName + "\" doesn't exist in this table, available columns: "
-                    + tableDefinition.getColumnNames());
+            if ((def = tableDefinition.getColumn(value)) != null) {
+                // fix up for the case where column name and variable name were swapped
+                String tmp = columnName;
+                columnName = value;
+                value = tmp;
+                condition = condition.mirror();
+            } else{
+                conversionError = new RuntimeException("Column \"" + columnName
+                        + "\" doesn't exist in this table, available columns: " + tableDefinition.getColumnNames());
+            }
         }
 
-        final Class<?> colClass = def.getDataType();
-
-        final MatchFilter.ColumnTypeConvertor convertor =
-                MatchFilter.ColumnTypeConvertorFactory.getConvertor(def.getDataType());
-
-        RuntimeException conversionError = null;
+        final Class<?> colClass = def == null ? null : def.getDataType();
         final MutableObject<Object> realValue = new MutableObject<>();
-        try {
-            boolean wasAnArrayType = convertor.convertValue(
-                    def, value, compilationProcessor.getQueryScopeVariables(), realValue::setValue);
-            if (wasAnArrayType) {
-                throw new IllegalArgumentException("RangeFilter does not support array types for column "
-                        + columnName + " with value <" + value + ">");
+
+        if (def != null) {
+            final MatchFilter.ColumnTypeConvertor convertor =
+                    MatchFilter.ColumnTypeConvertorFactory.getConvertor(def.getDataType());
+
+            try {
+                boolean wasAnArrayType = convertor.convertValue(
+                        def, value, compilationProcessor.getQueryScopeVariables(), realValue::setValue);
+                if (wasAnArrayType) {
+                    conversionError =
+                            new IllegalArgumentException("RangeFilter does not support array types for column "
+                                    + columnName + " with value <" + value + ">");
+                }
+            } catch (final RuntimeException err) {
+                conversionError = err;
             }
-        } catch (final RuntimeException err) {
-            conversionError = err;
         }
 
         if (conversionError != null) {
