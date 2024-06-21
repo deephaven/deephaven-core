@@ -205,6 +205,6 @@ public class TestTimeRange extends BaseArrayTestCase {
 
         assertNotEquals(nInclusive, nExclusive);
         assertEquals(DateTimeUtils.MILLI, nExclusive);
-        assertEquals(DateTimeUtils.MILLI+1, nInclusive);
+        assertEquals(DateTimeUtils.MILLI + 1, nInclusive);
     }
 }
