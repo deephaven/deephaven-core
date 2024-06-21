@@ -68,6 +68,7 @@ public class SubscriptionTableData {
 
         long includedRowCount = snapshot.getIncludedRows().size();
         RangeSet destination = freeRows(includedRowCount);
+        boolean indexUpdated = false;
 
         for (int index = 0; index < dataColumns.length; index++) {
             ColumnData dataColumn = dataColumns[index];
@@ -89,10 +90,14 @@ public class SubscriptionTableData {
             while (indexIter.hasNext()) {
                 assert destIter.hasNext();
                 long dest = destIter.nextLong();
-                redirectedIndexes.put(indexIter.nextLong(), dest);
+                long nextIndex = indexIter.nextLong();
+                if (indexUpdated) {
+                    redirectedIndexes.put(nextIndex, dest);
+                }
                 arrayCopy.copyTo(localCopy, dest, dataColumn.getData(), j++);
             }
             assert !destIter.hasNext();
+            indexUpdated = true;
         }
 
         return notifyUpdates(index, RangeSet.empty(), RangeSet.empty());
