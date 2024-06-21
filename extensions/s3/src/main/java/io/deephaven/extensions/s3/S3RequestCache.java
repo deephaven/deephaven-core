@@ -52,14 +52,14 @@ final class S3RequestCache {
      *
      * @param uri the URI
      * @param fragmentIndex the fragment index
-     * @return the request
+     * @return the request if we could acquire it from the cache, or null
      */
     @Nullable
-    S3Request.AcquiredRequest getRequest(@NotNull final S3Uri uri, final long fragmentIndex) {
+    S3Request.Acquired getRequest(@NotNull final S3Uri uri, final long fragmentIndex) {
         final S3Request.ID key = new S3Request.ID(uri, fragmentIndex);
         final S3Request existingRequest = requests.get(key);
         if (existingRequest != null) {
-            final S3Request.AcquiredRequest acquired = existingRequest.tryAcquire();
+            final S3Request.Acquired acquired = existingRequest.tryAcquire();
             if (acquired != null) {
                 return acquired;
             }
@@ -78,30 +78,30 @@ final class S3RequestCache {
      * @return the request
      */
     @NotNull
-    S3Request.AcquiredRequest getOrCreateRequest(@NotNull final S3Uri uri, final long fragmentIndex,
+    S3Request.Acquired getOrCreateRequest(@NotNull final S3Uri uri, final long fragmentIndex,
             @NotNull final S3ChannelContext context) {
         final S3Request.ID key = new S3Request.ID(uri, fragmentIndex);
-        S3Request.AcquiredRequest newAcquiredRequest = null;
+        S3Request.Acquired newAcquired = null;
         S3Request existingRequest = requests.get(key);
         while (true) {
             if (existingRequest != null) {
-                final S3Request.AcquiredRequest acquired = existingRequest.tryAcquire();
+                final S3Request.Acquired acquired = existingRequest.tryAcquire();
                 if (acquired != null) {
                     return acquired;
                 } else {
                     remove(existingRequest);
                 }
             }
-            if (newAcquiredRequest == null) {
-                newAcquiredRequest = S3Request.createAndAcquire(fragmentIndex, context);
+            if (newAcquired == null) {
+                newAcquired = S3Request.createAndAcquire(fragmentIndex, context);
             }
-            if ((existingRequest = requests.putIfAbsent(key, newAcquiredRequest.getRequest())) == null) {
+            if ((existingRequest = requests.putIfAbsent(key, newAcquired.request())) == null) {
                 if (log.isDebugEnabled()) {
                     log.debug().append("Added new request to cache: ").append(String.format("ctx=%d ",
-                            System.identityHashCode(context))).append(newAcquiredRequest.getRequest().requestStr())
+                            System.identityHashCode(context))).append(newAcquired.request().requestStr())
                             .endl();
                 }
-                return newAcquiredRequest;
+                return newAcquired;
             }
             // TODO(deephaven-core#5486): Instead of remove + putIfAbsent pattern, we could have used replace + get
             // pattern, but KeyedObjectHashMap potentially has a bug in replace method.

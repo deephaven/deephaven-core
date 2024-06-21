@@ -36,8 +36,8 @@ import java.util.function.BiConsumer;
  *
  * @implNote This class extends from a {@link SoftReference < ByteBuffer >} and implements {@link CleanupReference} to
  *           allow for cancelling the request once all references to the buffer have been released. Users should not
- *           access the buffer directly, but instead use the {@link AcquiredRequest#fill} method. Also, users should
- *           hold instances of {@link AcquiredRequest} to keep the requests alive.
+ *           access the buffer directly, but instead use the {@link Acquired#fill} method. Also, users should hold
+ *           instances of {@link Acquired} to keep the requests alive.
  */
 final class S3Request extends SoftReference<ByteBuffer>
         implements AsyncResponseTransformer<GetObjectResponse, Boolean>, BiConsumer<Boolean, Throwable>,
@@ -94,13 +94,13 @@ final class S3Request extends SoftReference<ByteBuffer>
     /**
      * Create a new request for the given fragment index using the provided context object.
      *
-     * @return A new {@link AcquiredRequest} object containing newly created request and hard reference to the
-     *         underlying buffer. The request will stay alive as long as the buffer is held.
+     * @return A new {@link Acquired} object containing newly created request and hard reference to the underlying
+     *         buffer. The request will stay alive as long as the buffer is held.
      *
      * @implNote This method does not cache the context because contexts are short-lived while a request may be cached.
      */
     @NotNull
-    static AcquiredRequest createAndAcquire(final long fragmentIndex, @NotNull final S3ChannelContext context) {
+    static Acquired createAndAcquire(final long fragmentIndex, @NotNull final S3ChannelContext context) {
         final long from = fragmentIndex * context.instructions.fragmentSize();
         final long to = Math.min(from + context.instructions.fragmentSize(), context.size) - 1;
         final long requestLength = to - from + 1;
@@ -136,7 +136,7 @@ final class S3Request extends SoftReference<ByteBuffer>
      * released.
      */
     @Nullable
-    AcquiredRequest tryAcquire() {
+    Acquired tryAcquire() {
         final ByteBuffer acquiredBuffer = get();
         if (acquiredBuffer == null) {
             return null;
@@ -144,16 +144,16 @@ final class S3Request extends SoftReference<ByteBuffer>
         return acquire(acquiredBuffer);
     }
 
-    private AcquiredRequest acquire(final ByteBuffer buffer) {
-        return new AcquiredRequest(buffer);
+    private Acquired acquire(final ByteBuffer buffer) {
+        return new Acquired(buffer);
     }
 
     /**
      * Send the request to the S3 service. This method is idempotent and can be called multiple times. Note that the
      * request must be acquired before calling this method. Therefore, this method should only be called from inside the
-     * {@link AcquiredRequest#sendRequest()} method.
+     * {@link Acquired#send()} method.
      */
-    private void sendRequest() {
+    private void sendImpl() {
         if (consumerFuture == null) {
             synchronized (this) {
                 if (consumerFuture == null) {
@@ -168,14 +168,14 @@ final class S3Request extends SoftReference<ByteBuffer>
         }
     }
 
-    class AcquiredRequest {
+    class Acquired {
         /**
          * This instance keeps a hard reference to the buffer, which is needed to keep the request alive. When the
          * buffer is GC'd, the request is no longer usable and will be available for {@link #cleanup()}.
          */
-        final ByteBuffer acquiredBuffer;
+        private final ByteBuffer acquiredBuffer;
 
-        AcquiredRequest(final ByteBuffer buffer) {
+        private Acquired(final ByteBuffer buffer) {
             this.acquiredBuffer = buffer;
         }
 
@@ -189,11 +189,11 @@ final class S3Request extends SoftReference<ByteBuffer>
         /**
          * Send the request to the S3 service. This method is idempotent and can be called multiple times.
          */
-        void sendRequest() {
-            S3Request.this.sendRequest();
+        void send() {
+            sendImpl();
         }
 
-        final S3Request getRequest() {
+        final S3Request request() {
             return S3Request.this;
         }
 
@@ -204,22 +204,22 @@ final class S3Request extends SoftReference<ByteBuffer>
         int fill(long localPosition, ByteBuffer dest) throws IOException {
             final int resultOffset = (int) (localPosition - from);
             final int resultLength = Math.min((int) (to - localPosition + 1), dest.remaining());
-            final ByteBuffer fullFragment = getFullFragment();
-            // fullFragment has limit == capacity. This lets us have safety around math and the ability to simply
+            final ByteBuffer filledBuffer = getFilledBuffer();
+            // filledBuffer has limit == capacity. This lets us have safety around math and the ability to simply
             // clear to reset.
-            fullFragment.limit(resultOffset + resultLength);
-            fullFragment.position(resultOffset);
+            filledBuffer.limit(resultOffset + resultLength);
+            filledBuffer.position(resultOffset);
             try {
-                dest.put(fullFragment);
+                dest.put(filledBuffer);
             } finally {
-                fullFragment.clear();
+                filledBuffer.clear();
             }
             ++fillCount;
             fillBytes += resultLength;
             return resultLength;
         }
 
-        private ByteBuffer getFullFragment() throws IOException {
+        private ByteBuffer getFilledBuffer() throws IOException {
             // Giving our own get() a bit of overhead - the clients should already be constructed with appropriate
             // apiCallTimeout.
             final long readNanos = instructions.readTimeout().plusMillis(100).toNanos();
@@ -234,15 +234,15 @@ final class S3Request extends SoftReference<ByteBuffer>
                 throw new IllegalStateException(String.format("Failed to complete request %s, probably because the " +
                         "underlying buffer got freed while completing the request", requestStr()));
             }
-            final ByteBuffer fullFragment = acquiredBuffer.asReadOnlyBuffer();
-            if (fullFragment.position() != 0 || fullFragment.limit() != fullFragment.capacity()
-                    || fullFragment.limit() != requestLength()) {
+            final ByteBuffer filledBuffer = acquiredBuffer.asReadOnlyBuffer();
+            if (filledBuffer.position() != 0 || filledBuffer.limit() != filledBuffer.capacity()
+                    || filledBuffer.limit() != requestLength()) {
                 throw new IllegalStateException(String.format(
                         "Expected: pos=0, limit=%d, capacity=%d. Actual: pos=%d, limit=%d, capacity=%d",
-                        requestLength(), requestLength(), fullFragment.position(), fullFragment.limit(),
-                        fullFragment.capacity()));
+                        requestLength(), requestLength(), filledBuffer.position(), filledBuffer.limit(),
+                        filledBuffer.capacity()));
             }
-            return fullFragment;
+            return filledBuffer;
         }
     }
 
