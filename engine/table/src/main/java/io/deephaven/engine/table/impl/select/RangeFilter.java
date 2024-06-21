@@ -323,6 +323,10 @@ public class RangeFilter extends WhereFilterImpl {
 
     @Override
     public WhereFilter copy() {
+        if (filter != null) {
+            return filter.copy();
+        }
+
         return new RangeFilter(columnName, condition, value, expression, filter, parserConfiguration);
     }
 

@@ -24,4 +24,10 @@ public class QueryTableWhereSingleTest extends QueryTableWhereTest {
         QueryTable.FORCE_PARALLEL_WHERE = oldParallel;
         QueryTable.DISABLE_PARALLEL_WHERE = oldDisable;
     }
+
+    @Override
+    public void testRangeFilterFallback() {
+        super.testRangeFilterFallback();
+    }
 }
+

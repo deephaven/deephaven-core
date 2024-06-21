@@ -32,13 +32,16 @@ import io.deephaven.engine.testutil.QueryTableTestBase.TableComparator;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.gui.table.filters.Condition;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReflexiveUse;
+import io.deephaven.util.datastructures.CachingSupplier;
 import junit.framework.TestCase;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.Rule;
 import org.junit.Test;
@@ -1364,5 +1367,44 @@ public abstract class QueryTableWhereTest {
 
         // The where result should have failed, because the filter expression is invalid for the new data.
         Assert.eqTrue(whereResult.isFailed(), "whereResult.isFailed()");
+    }
+
+    @Test
+    public void testMatchFilterFallback() {
+        final Table table = emptyTable(10).update("X=i");
+        ExecutionContext.getContext().getQueryScope().putParam("var1", 10);
+        ExecutionContext.getContext().getQueryScope().putParam("var2", 20);
+
+        final MutableBoolean called = new MutableBoolean(false);
+        final MatchFilter filter = new MatchFilter(
+                new CachingSupplier<>(() -> {
+                    called.setValue(true);
+                    return ConditionFilter.createConditionFilter("var1 != var2");
+                }),
+                MatchFilter.CaseSensitivity.IgnoreCase, MatchFilter.MatchType.Inverted, "var1", "var2");
+
+        final Table result = table.where(filter);
+        assertTableEquals(table, result);
+
+        Assert.eqTrue(called.booleanValue(), "called.booleanValue()");
+
+        final WhereFilter copyFilter = filter.copy();
+        Assert.eqTrue(copyFilter instanceof ConditionFilter, "copyFilter instanceof ConditionFilter");
+    }
+
+    @Test
+    public void testRangeFilterFallback() {
+        final Table table = emptyTable(10).update("X=i");
+        ExecutionContext.getContext().getQueryScope().putParam("var1", 10);
+        ExecutionContext.getContext().getQueryScope().putParam("var2", 20);
+
+        final RangeFilter filter = new RangeFilter(
+                "0", Condition.LESS_THAN, "var2", "0 < var2", FormulaParserConfiguration.parser);
+
+        final Table result = table.where(filter);
+        assertTableEquals(table, result);
+
+        final WhereFilter copyFilter = filter.copy();
+        Assert.eqTrue(copyFilter instanceof ConditionFilter, "copyFilter instanceof ConditionFilter");
     }
 }
