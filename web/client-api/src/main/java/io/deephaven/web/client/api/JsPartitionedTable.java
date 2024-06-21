@@ -13,7 +13,7 @@ import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.GetTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.MergeRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.partitionedtable_pb.PartitionedTableDescriptor;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.DropColumnsRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectOrUpdateRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
@@ -57,6 +57,7 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
     private List<String> keyColumnTypes;
     private PartitionedTableDescriptor descriptor;
     private JsTable keys;
+    private JsTable baseTable;
     private TableSubscription subscription;
 
     private final Set<List<Object>> knownKeys = new HashSet<>();
@@ -81,15 +82,15 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
 
             return w.getExportedObjects()[0].fetch();
         }).then(result -> connection.newState((c, state, metadata) -> {
-            JsTable keyTable = (JsTable) result;
-            DropColumnsRequest drop = new DropColumnsRequest();
-            drop.setColumnNamesList(new String[] {descriptor.getConstituentColumnName()});
-            drop.setSourceId(keyTable.state().getHandle().makeTableReference());
-            drop.setResultId(state.getHandle().makeTicket());
-            connection.tableServiceClient().dropColumns(drop, metadata, (fail, success) -> {
-                keyTable.close();
-                c.apply(fail, success);
-            });
+                    baseTable = (JsTable) result;
+                    SelectOrUpdateRequest view = new SelectOrUpdateRequest();
+                    view.setSourceId(baseTable.state().getHandle().makeTableReference());
+                    view.setResultId(state.getHandle().makeTicket());
+                    view.setColumnSpecsList(descriptor.getKeyColumnNamesList());
+                    connection.tableServiceClient().view(view, metadata, (fail, success) -> {
+                        baseTable.close();
+                        c.apply(fail, success);
+                    });
         }, "drop constituent column")
                 .refetch(this, connection.metadata())
                 .then(state -> Promise.resolve(new JsTable(connection, state)))).then(result -> {
@@ -286,6 +287,16 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
     @JsMethod
     public Promise<JsTable> getKeyTable() {
         return keys.copy();
+    }
+
+    /**
+     * Fetch the underlying base table of the partitioned table.
+     *
+     * @return Promise of a Table
+     */
+    @JsMethod
+    public Promise<JsTable> getBaseTable() {
+        return baseTable.copy();
     }
 
     /** Close any subscriptions to underlying tables or key tables */
