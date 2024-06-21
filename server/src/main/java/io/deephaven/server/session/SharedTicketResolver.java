@@ -64,7 +64,7 @@ public class SharedTicketResolver extends TicketResolverBase {
 
         SessionState.ExportObject<?> export = sharedVariables.get(sharedId);
         if (export == null) {
-            throw newNotFoundSRE(logId, descriptor.toString());
+            throw newNotFoundSRE(logId, toHexString(sharedId));
         }
 
         return session.<Flight.FlightInfo>nonExport()
@@ -79,7 +79,7 @@ public class SharedTicketResolver extends TicketResolverBase {
                                 FlightExportTicketHelper.descriptorToFlightTicket(descriptor, logId));
                     }
 
-                    throw newNotFoundSRE(logId, descriptor.toString());
+                    throw newNotFoundSRE(logId, toHexString(sharedId));
                 });
     }
 
