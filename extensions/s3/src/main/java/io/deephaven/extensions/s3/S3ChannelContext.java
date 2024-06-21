@@ -8,7 +8,6 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.BaseSeekableChannelContext;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.S3Uri;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
