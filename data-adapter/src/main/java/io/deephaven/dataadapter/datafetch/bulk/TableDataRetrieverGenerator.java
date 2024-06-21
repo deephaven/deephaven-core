@@ -6,7 +6,8 @@ package io.deephaven.dataadapter.datafetch.bulk;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.QueryCompiler;
+import io.deephaven.engine.context.QueryCompilerImpl;
+import io.deephaven.engine.context.QueryCompilerRequest;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -54,8 +55,13 @@ class TableDataRetrieverGenerator {
         try (final QueryPerformanceNugget nugget = QueryPerformanceRecorder.getInstance()
                 .getNugget(TableDataRetrieverGenerator.class.getName() + "Compile: " + desc)) {
             // Compilation needs to take place with elevated privileges, but the created object should not have them.
-            return ExecutionContext.getContext().getQueryCompiler().compile(COMPILED_CLASS_NAME, classBody,
-                    QueryCompiler.FORMULA_PREFIX);
+            return ExecutionContext.getContext().getQueryCompiler().compile(
+                    QueryCompilerRequest.builder()
+                            .className(COMPILED_CLASS_NAME)
+                            .classBody(classBody)
+                            .packageNameRoot(QueryCompilerImpl.DYNAMIC_CLASS_PREFIX)
+                            .description(desc)
+                            .build());
         }
     }
 
