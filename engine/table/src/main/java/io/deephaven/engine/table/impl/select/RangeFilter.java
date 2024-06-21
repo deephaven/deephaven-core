@@ -157,7 +157,7 @@ public class RangeFilter extends WhereFilterImpl {
                 columnName = value;
                 value = tmp;
                 condition = condition.mirror();
-            } else{
+            } else {
                 conversionError = new RuntimeException("Column \"" + columnName
                         + "\" doesn't exist in this table, available columns: " + tableDefinition.getColumnNames());
             }
