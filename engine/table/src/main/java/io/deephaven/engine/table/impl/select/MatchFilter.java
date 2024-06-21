@@ -19,6 +19,7 @@ import io.deephaven.engine.table.impl.DependencyStreamProvider;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.datastructures.CachingSupplier;
 import io.deephaven.util.type.ArrayTypeUtils;
@@ -347,6 +348,9 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
+                        if ("null".equals(str) || "NULL_BYTE".equals(str)) {
+                            return QueryConstants.NULL_BYTE_BOXED;
+                        }
                         return Byte.parseByte(str);
                     }
                 };
@@ -355,6 +359,9 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
+                        if ("null".equals(str) || "NULL_SHORT".equals(str)) {
+                            return QueryConstants.NULL_SHORT_BOXED;
+                        }
                         return Short.parseShort(str);
                     }
                 };
@@ -363,6 +370,9 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
+                        if ("null".equals(str) || "NULL_INT".equals(str)) {
+                            return QueryConstants.NULL_INT_BOXED;
+                        }
                         return Integer.parseInt(str);
                     }
                 };
@@ -371,6 +381,9 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
+                        if ("null".equals(str) || "NULL_LONG".equals(str)) {
+                            return QueryConstants.NULL_LONG_BOXED;
+                        }
                         return Long.parseLong(str);
                     }
                 };
@@ -379,6 +392,9 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
+                        if ("null".equals(str) || "NULL_FLOAT".equals(str)) {
+                            return QueryConstants.NULL_FLOAT_BOXED;
+                        }
                         return Float.parseFloat(str);
                     }
                 };
@@ -387,6 +403,9 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
+                        if ("null".equals(str) || "NULL_DOUBLE".equals(str)) {
+                            return QueryConstants.NULL_DOUBLE_BOXED;
+                        }
                         return Double.parseDouble(str);
                     }
                 };
@@ -396,6 +415,9 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                     @Override
                     Object convertStringLiteral(String str) {
                         // NB: Boolean.parseBoolean(str) doesn't do what we want here - anything not true is false.
+                        if ("null".equals(str) || "NULL_BOOLEAN".equals(str)) {
+                            return QueryConstants.NULL_BOOLEAN;
+                        }
                         if (str.equalsIgnoreCase("true")) {
                             return Boolean.TRUE;
                         }
@@ -411,6 +433,9 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
+                        if ("null".equals(str) || "NULL_CHAR".equals(str)) {
+                            return QueryConstants.NULL_CHAR_BOXED;
+                        }
                         if (str.length() > 1) {
                             // TODO: #1517 Allow escaping of chars
                             if (str.length() == 3 && ((str.charAt(0) == '\'' && str.charAt(2) == '\'')
@@ -429,6 +454,9 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
+                        if ("null".equals(str)) {
+                            return null;
+                        }
                         return new BigDecimal(str);
                     }
                 };
@@ -437,6 +465,9 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
+                        if ("null".equals(str)) {
+                            return null;
+                        }
                         return new BigInteger(str);
                     }
                 };
@@ -508,6 +539,9 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
+                        if ("null".equals(str)) {
+                            return null;
+                        }
                         if (str.charAt(0) != '\'' || str.charAt(str.length() - 1) != '\'') {
                             throw new IllegalArgumentException(
                                     "Instant literal not enclosed in single-quotes (\"" + str + "\")");
@@ -520,6 +554,9 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
+                        if ("null".equals(str)) {
+                            return null;
+                        }
                         if (str.charAt(0) != '\'' || str.charAt(str.length() - 1) != '\'') {
                             throw new IllegalArgumentException(
                                     "LocalDate literal not enclosed in single-quotes (\"" + str + "\")");
@@ -532,6 +569,9 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
+                        if ("null".equals(str)) {
+                            return null;
+                        }
                         if (str.charAt(0) != '\'' || str.charAt(str.length() - 1) != '\'') {
                             throw new IllegalArgumentException(
                                     "LocalTime literal not enclosed in single-quotes (\"" + str + "\")");
@@ -544,6 +584,9 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
+                        if ("null".equals(str)) {
+                            return null;
+                        }
                         if (str.charAt(0) != '\'' || str.charAt(str.length() - 1) != '\'') {
                             throw new IllegalArgumentException(
                                     "LocalDateTime literal not enclosed in single-quotes (\"" + str + "\")");
@@ -556,6 +599,9 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
+                        if ("null".equals(str) || "NULL_BYTE".equals(str)) {
+                            return QueryConstants.NULL_BYTE;
+                        }
                         if (str.charAt(0) != '\'' || str.charAt(str.length() - 1) != '\'') {
                             throw new IllegalArgumentException(
                                     "ZoneDateTime literal not enclosed in single-quotes (\"" + str + "\")");
@@ -568,6 +614,9 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
+                        if ("null".equals(str)) {
+                            return null;
+                        }
                         if (str.startsWith("\"") || str.startsWith("`")) {
                             return str.substring(1, str.length() - 1);
                         } else if (str.contains(".")) {
@@ -594,6 +643,9 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
+                        if ("null".equals(str)) {
+                            return null;
+                        }
                         if (str.startsWith("\"") || str.startsWith("`")) {
                             return DisplayWrapper.make(str.substring(1, str.length() - 1));
                         } else {
@@ -605,6 +657,9 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
             return new ColumnTypeConvertor() {
                 @Override
                 Object convertStringLiteral(String str) {
+                    if ("null".equals(str)) {
+                        return null;
+                    }
                     throw new IllegalArgumentException(
                             "Can't create " + cls.getName() + " from String Literal for value auto-conversion");
                 }

@@ -174,24 +174,35 @@ public class RangeFilter extends WhereFilterImpl {
 
         if (conversionError != null) {
             if (expression != null) {
-                filter = ConditionFilter.createConditionFilter(expression, parserConfiguration);
+                try {
+                    filter = ConditionFilter.createConditionFilter(expression, parserConfiguration);
+                } catch (final RuntimeException ignored) {
+                    throw conversionError;
+                }
             } else {
                 throw conversionError;
             }
         } else if (colClass == double.class || colClass == Double.class) {
-            filter = DoubleRangeFilter.makeDoubleRangeFilter(columnName, condition, (double) realValue.getValue());
+            filter = DoubleRangeFilter.makeDoubleRangeFilter(columnName, condition,
+                    TypeUtils.unbox((Double) realValue.getValue()));
         } else if (colClass == float.class || colClass == Float.class) {
-            filter = FloatRangeFilter.makeFloatRangeFilter(columnName, condition, (float) realValue.getValue());
+            filter = FloatRangeFilter.makeFloatRangeFilter(columnName, condition,
+                    TypeUtils.unbox((Float) realValue.getValue()));
         } else if (colClass == char.class || colClass == Character.class) {
-            filter = CharRangeFilter.makeCharRangeFilter(columnName, condition, (char) realValue.getValue());
+            filter = CharRangeFilter.makeCharRangeFilter(columnName, condition,
+                    TypeUtils.unbox((Character) realValue.getValue()));
         } else if (colClass == byte.class || colClass == Byte.class) {
-            filter = ByteRangeFilter.makeByteRangeFilter(columnName, condition, (byte) realValue.getValue());
+            filter = ByteRangeFilter.makeByteRangeFilter(columnName, condition,
+                    TypeUtils.unbox((Byte) realValue.getValue()));
         } else if (colClass == short.class || colClass == Short.class) {
-            filter = ShortRangeFilter.makeShortRangeFilter(columnName, condition, (short) realValue.getValue());
+            filter = ShortRangeFilter.makeShortRangeFilter(columnName, condition,
+                    TypeUtils.unbox((Short) realValue.getValue()));
         } else if (colClass == int.class || colClass == Integer.class) {
-            filter = IntRangeFilter.makeIntRangeFilter(columnName, condition, (int) realValue.getValue());
+            filter = IntRangeFilter.makeIntRangeFilter(columnName, condition,
+                    TypeUtils.unbox((Integer) realValue.getValue()));
         } else if (colClass == long.class || colClass == Long.class) {
-            filter = LongRangeFilter.makeLongRangeFilter(columnName, condition, (long) realValue.getValue());
+            filter = LongRangeFilter.makeLongRangeFilter(columnName, condition,
+                    TypeUtils.unbox((Long) realValue.getValue()));
         } else if (colClass == Instant.class) {
             filter = makeInstantRangeFilter(columnName, condition,
                     DateTimeUtils.epochNanos((Instant) realValue.getValue()));
@@ -216,7 +227,12 @@ public class RangeFilter extends WhereFilterImpl {
             // The expression looks like a comparison of number, string, or boolean
             // but the type does not match (or the column type is misconfigured)
             if (expression != null) {
-                filter = ConditionFilter.createConditionFilter(expression, parserConfiguration);
+                try {
+                    filter = ConditionFilter.createConditionFilter(expression, parserConfiguration);
+                } catch (final RuntimeException ignored) {
+                    throw new IllegalArgumentException("RangeFilter does not support type "
+                            + colClass.getSimpleName() + " for column " + columnName);
+                }
             } else {
                 throw new IllegalArgumentException("RangeFilter does not support type "
                         + colClass.getSimpleName() + " for column " + columnName);
