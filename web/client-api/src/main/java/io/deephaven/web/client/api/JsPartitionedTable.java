@@ -82,15 +82,15 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
 
             return w.getExportedObjects()[0].fetch();
         }).then(result -> connection.newState((c, state, metadata) -> {
-                    baseTable = (JsTable) result;
-                    SelectOrUpdateRequest view = new SelectOrUpdateRequest();
-                    view.setSourceId(baseTable.state().getHandle().makeTableReference());
-                    view.setResultId(state.getHandle().makeTicket());
-                    view.setColumnSpecsList(descriptor.getKeyColumnNamesList());
-                    connection.tableServiceClient().view(view, metadata, (fail, success) -> {
-                        baseTable.close();
-                        c.apply(fail, success);
-                    });
+            baseTable = (JsTable) result;
+            SelectOrUpdateRequest view = new SelectOrUpdateRequest();
+            view.setSourceId(baseTable.state().getHandle().makeTableReference());
+            view.setResultId(state.getHandle().makeTicket());
+            view.setColumnSpecsList(descriptor.getKeyColumnNamesList());
+            connection.tableServiceClient().view(view, metadata, (fail, success) -> {
+                baseTable.close();
+                c.apply(fail, success);
+            });
         }, "drop constituent column")
                 .refetch(this, connection.metadata())
                 .then(state -> Promise.resolve(new JsTable(connection, state)))).then(result -> {
