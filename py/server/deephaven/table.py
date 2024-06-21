@@ -505,16 +505,16 @@ class Table(JObjectWrapper):
 
     def iter_rows(self, cols: Optional[Union[str, Sequence[str]]] = None, *, chunk_size: Optional[int] = 1) \
             -> Generator[Dict[str, Any], None, None]:
-        """ Returns a generator that reads one row or the chunks of rows from the table into a dictionary.
-        The dictionary is a map of column names to either numpy arrays or scalar values.
+        """ Returns a generator that reads one row or one chunk of rows at a time from the table into a dictionary.
+        The dictionary is a map of column names to either numpy arrays or scalar values of the column data type.
 
         If the table is refreshing and no update graph locks are currently being held, the generator will try to acquire
         the shared lock of the update graph before reading the table data. This provides a consistent view of the data.
         The side effect of this is that the table will not be able to refresh while the table is being iterated on.
         Additionally, the generator internally maintains a fill context. The auto acquired shared lock and the fill
-        context will be released after the table reader is destroyed. That can happen (1) implicitly when the generator
-        is used in a for-loop, (2) by setting it to None, (3) using the del statement, or (4) calling the close() method
-        on it.
+        context will be released after the generator is destroyed. That can happen implicitly when the generator
+        is used in a for-loop. When the generator is not used in a for-loop, to prevent resource leaks, it must be closed
+        after use by either (1) by setting it to None, (2) using the del statement, or (3) calling the close() method on it.
 
         Args:
             cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
@@ -523,9 +523,10 @@ class Table(JObjectWrapper):
                 When chunk_size is 1, the generator will yield a dictionary of column names to scalar values.
 
         Returns:
-            A generator that yields a dictionary of column names to numpy arrays.
+            A generator that yields a dictionary of column names to numpy arrays or scalar values.
         """
-        from deephaven._table_reader import _table_reader_chunks, _table_reader_rows
+        from deephaven._table_reader import _table_reader_chunks, _table_reader_rows # to prevent circular import
+
         if chunk_size == 1:
             return _table_reader_rows(self, cols)
         else:
