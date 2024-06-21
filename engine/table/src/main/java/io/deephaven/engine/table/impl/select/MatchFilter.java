@@ -607,8 +607,8 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                 return new ColumnTypeConvertor() {
                     @Override
                     Object convertStringLiteral(String str) {
-                        if ("null".equals(str) || "NULL_BYTE".equals(str)) {
-                            return QueryConstants.NULL_BYTE;
+                        if ("null".equals(str)) {
+                            return null;
                         }
                         if (str.charAt(0) != '\'' || str.charAt(str.length() - 1) != '\'') {
                             throw new IllegalArgumentException(
