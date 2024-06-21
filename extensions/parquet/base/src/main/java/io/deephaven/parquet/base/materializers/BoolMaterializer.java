@@ -23,10 +23,10 @@ public class BoolMaterializer implements PageMaterializer {
         }
     };
 
-    final ValuesReader dataReader;
+    private final ValuesReader dataReader;
 
-    final byte nullValue;
-    final byte[] data;
+    private final byte nullValue;
+    private final byte[] data;
 
     private BoolMaterializer(ValuesReader dataReader, int numValues) {
         this(dataReader, (byte) 0, numValues);

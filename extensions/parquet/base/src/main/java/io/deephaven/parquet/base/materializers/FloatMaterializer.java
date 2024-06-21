@@ -23,10 +23,10 @@ public class FloatMaterializer implements PageMaterializer {
         }
     };
 
-    final ValuesReader dataReader;
+    private final ValuesReader dataReader;
 
-    final float nullValue;
-    final float[] data;
+    private final float nullValue;
+    private final float[] data;
 
     private FloatMaterializer(ValuesReader dataReader, int numValues) {
         this(dataReader, 0, numValues);

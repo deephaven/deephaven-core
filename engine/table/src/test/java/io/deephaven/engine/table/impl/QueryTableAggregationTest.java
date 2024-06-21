@@ -1646,9 +1646,7 @@ public class QueryTableAggregationTest {
             return c + "=" + c + "_Count == 0 ? null : " + c + "_Sum.divide(java.math.BigDecimal.valueOf(" + c
                     + "_Count), java.math.BigDecimal.ROUND_HALF_UP)";
         }
-        // I would expect us to return a null for an average of nothing, but we instead return a NaN
-        // return c + "=" + c + "_Count == 0 ? null : ((double)" + c + "_Sum / (double)" + c + "_Count)";
-        return c + "=((double)(" + c + "_Count == 0 ? 0.0 : " + c + "_Sum) / (double)" + c + "_Count)";
+        return c + "=" + c + "_Count == 0 ? null : ((double)" + c + "_Sum / (double)" + c + "_Count)";
     }
 
     @Test
@@ -1886,9 +1884,9 @@ public class QueryTableAggregationTest {
         TableTools.show(result.meta());
         TestCase.assertEquals(1, result.size());
         double avg = result.getColumnSource("IntCol", double.class).getDouble(result.getRowSet().firstRowKey());
-        TestCase.assertEquals(Double.NaN, avg);
+        TestCase.assertEquals(NULL_DOUBLE, avg);
         double avgF = result.getColumnSource("FloatCol", double.class).getDouble(result.getRowSet().firstRowKey());
-        TestCase.assertEquals(Double.NaN, avgF);
+        TestCase.assertEquals(NULL_DOUBLE, avgF);
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {
@@ -1965,9 +1963,9 @@ public class QueryTableAggregationTest {
         TableTools.show(result.meta());
         TestCase.assertEquals(1, result.size());
         double var = result.getColumnSource("IntCol", double.class).getDouble(result.getRowSet().firstRowKey());
-        TestCase.assertEquals(Double.NaN, var);
+        TestCase.assertEquals(NULL_DOUBLE, var);
         double varF = result.getColumnSource("FloatCol", double.class).getDouble(result.getRowSet().firstRowKey());
-        TestCase.assertEquals(Double.NaN, varF);
+        TestCase.assertEquals(NULL_DOUBLE, varF);
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         updateGraph.runWithinUnitTestCycle(() -> {

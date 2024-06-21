@@ -26,7 +26,7 @@ public class InstantNanosFromMillisMaterializer extends LongMaterializerBase imp
         }
     };
 
-    final ValuesReader dataReader;
+    private final ValuesReader dataReader;
 
     private InstantNanosFromMillisMaterializer(ValuesReader dataReader, int numValues) {
         this(dataReader, 0, numValues);
