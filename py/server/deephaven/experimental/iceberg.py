@@ -92,7 +92,8 @@ class IcebergCatalogAdapter(JObjectWrapper):
 
     def namespaces(self, namespace: Optional[str] = None) -> Table:
         """
-        Returns the namespaces in the catalog as a Deephaven table.
+        Returns information on the namespaces in the catalog as a Deephaven table. If a namespace is specified, the
+        tables in that namespace are listed; otherwise the top-level namespaces are listed.
 
         Args:
             namespace (Optional[str]): the higher-level namespace from which to list namespaces; if omitted, the
@@ -108,7 +109,7 @@ class IcebergCatalogAdapter(JObjectWrapper):
 
     def tables(self, namespace: str) -> Table:
         """
-        Returns the list of tables in the provided namespace as a Deephaven table.
+        Returns information on the tables in the specified namespace as a Deephaven table.
 
         Args:
             namespace (str): the namespace from which to list tables.
@@ -123,7 +124,7 @@ class IcebergCatalogAdapter(JObjectWrapper):
 
     def snapshots(self, table_identifier: str) -> Table:
         """
-        Returns the list of snapshots of the provided table as a Deephaven table.
+        Returns information on the snapshots of the specified table as a Deephaven table.
 
         Args:
             table_identifier (str): the table from which to list snapshots.
