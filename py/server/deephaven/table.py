@@ -530,7 +530,8 @@ class Table(JObjectWrapper):
         if chunk_size == 1:
             return _table_reader_rows(self, cols)
         else:
-            return _table_reader_chunks(self, cols, self.j_table.getRowSet(), chunk_size, False)
+            return _table_reader_chunks(self, cols=cols, row_set=self.j_table.getRowSet(), chunk_size=chunk_size,
+                                        prev=False, to_numpy=True)
 
     def has_columns(self, cols: Union[str, Sequence[str]]):
         """Whether this table contains a column for each of the provided names, return False if any of the columns is
