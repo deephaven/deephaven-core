@@ -88,7 +88,6 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
             view.setResultId(state.getHandle().makeTicket());
             view.setColumnSpecsList(descriptor.getKeyColumnNamesList());
             connection.tableServiceClient().view(view, metadata, (fail, success) -> {
-                baseTable.close();
                 c.apply(fail, success);
             });
         }, "drop constituent column")
@@ -303,6 +302,9 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
     private void closeSubscriptions() {
         if (keys != null) {
             keys.close();
+        }
+        if (baseTable != null) {
+            baseTable.close();
         }
         if (subscription != null) {
             subscription.close();
