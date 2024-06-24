@@ -1,16 +1,20 @@
 [versions]
+elemental = "1.2.1"
 jackson-bom = "2.17.0"
 
 # test versions
 testcontainers = "1.19.4"
 
 [libraries]
+elemental-core = { module = "com.google.elemental2:elemental2-core", version.ref = "elemental" }
+elemental-dom = { module = "com.google.elemental2:elemental2-dom", version.ref = "elemental" }
+elemental-promise = { module = "com.google.elemental2:elemental2-promise", version.ref = "elemental" }
+jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations" }
 jackson-bom = { module = "com.fasterxml.jackson:jackson-bom", version.ref = "jackson-bom" }
 jackson-core = { module = "com.fasterxml.jackson.core:jackson-core" }
 jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind" }
 jackson-dataformat-yaml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml" }
 jackson-datatype-jdk8 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jdk8" }
-jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations" }
 
 # test libraries
 testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }

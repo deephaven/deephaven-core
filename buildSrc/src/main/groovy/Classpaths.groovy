@@ -20,9 +20,6 @@ import org.gradle.internal.Actions
 @CompileStatic
 class Classpaths {
 
-    static final String ELEMENTAL_GROUP = 'com.google.elemental2'
-    static final String ELEMENTAL_VERSION = '1.2.1'
-
     static final String GWT_GROUP = 'org.gwtproject'
     static final String GWT_VERSION = '2.11.0'
 
@@ -177,11 +174,6 @@ class Classpaths {
                 // google is annoying, and have different versions released for the same groupId
                 // :base: is the only one that is different, so we'll use it in the ternary.
                 name == 'base'? '1.0.1' : JS_INTEROP_VERSION
-    }
-
-    static void inheritElemental(Project p, String name, String configName) {
-        Configuration config = p.configurations.getByName(configName)
-        addDependency config, ELEMENTAL_GROUP, name, ELEMENTAL_VERSION
     }
 
     static void inheritCommonsText(Project p, String configName) {

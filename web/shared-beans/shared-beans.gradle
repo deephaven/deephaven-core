@@ -13,6 +13,8 @@ dependencies {
     api project(':open-api-shared-fu')
 
     Classpaths.inheritGuava(project, 'testImplementation')
+
+    implementation libs.elemental.core
 }
 
 // non-transitive dependency
@@ -21,4 +23,3 @@ Classpaths.inheritGwt project, 'gwt-user', 'compileOnly'
 // upgrade inherited dependencies to become transitive
 Classpaths.inheritJsInterop(project, 'jsinterop-annotations', 'compileOnly')
 Classpaths.inheritJavaxAnnotations(project, 'compileOnly')
-Classpaths.inheritElemental(project, 'elemental2-core', 'implementation')
