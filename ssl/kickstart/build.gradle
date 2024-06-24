@@ -8,7 +8,7 @@ description = 'The internal Deephaven ssl-kickstart integration'
 dependencies {
     api project(':ssl-config')
 
-    Classpaths.inheritSSLContext(project, 'sslcontext-kickstart', 'api')
+    api libs.sslcontext.kickstart
 
     implementation platform(libs.grpc.bom)
     compileOnly(libs.grpc.util) {

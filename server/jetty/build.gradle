@@ -41,7 +41,7 @@ dependencies {
     annotationProcessor libs.immutables
 
     implementation project(':ssl-kickstart')
-    Classpaths.inheritSSLContext(project, 'sslcontext-kickstart-for-jetty')
+    implementation libs.sslcontext.kickstart.jetty
 
     implementation project(':grpc-java:grpc-mtls')
 

@@ -19,7 +19,7 @@ dependencies {
 
   api project(':ssl-config')
   implementation project(':ssl-kickstart')
-  Classpaths.inheritSSLContext(project, 'sslcontext-kickstart-for-netty')
+  implementation libs.sslcontext.kickstart.netty
 
   compileOnly project(':util-immutables')
   annotationProcessor libs.immutables

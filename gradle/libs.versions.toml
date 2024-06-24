@@ -20,6 +20,7 @@ jsinterop-base = "1.0.1"
 logback = "1.4.14"
 protobuf = "3.25.3"
 slf4j = "2.0.11"
+sslcontext = "8.1.1"
 
 # test versions
 assertj = "3.19.0"
@@ -71,6 +72,9 @@ protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "p
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 slf4j-jul-to-slf4j = { module = "org.slf4j:jul-to-slf4j", version.ref = "slf4j" }
 slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
+sslcontext-kickstart = { module = "io.github.hakky54:sslcontext-kickstart", version.ref = "sslcontext" }
+sslcontext-kickstart-jetty = { module = "io.github.hakky54:sslcontext-kickstart-for-jetty", version.ref = "sslcontext" }
+sslcontext-kickstart-netty = { module = "io.github.hakky54:sslcontext-kickstart-for-netty", version.ref = "sslcontext" }
 
 # test libraries
 assertj = { module = "org.assertj:assertj-core", version.ref = "assertj" }

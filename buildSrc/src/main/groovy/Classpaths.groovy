@@ -30,9 +30,6 @@ class Classpaths {
 
     // TODO(deephaven-core#1685): Create strategy around updating and maintaining protoc version
 
-    static final String SSLCONTEXT_GROUP = 'io.github.hakky54'
-    static final String SSLCONTEXT_VERSION = '8.1.1'
-
     static final String JETTY11_GROUP = 'org.eclipse.jetty'
     static final String JETTY11_NAME = 'jetty-bom'
     static final String JETTY11_VERSION = '11.0.20'
@@ -82,11 +79,6 @@ class Classpaths {
                 force 'org.ow2.asm:asm-commons:9.2'
             }
         }
-    }
-
-    static void inheritSSLContext(Project p, String name, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
-        Configuration config = p.configurations.getByName(configName)
-        addDependency(config, SSLCONTEXT_GROUP, name, SSLCONTEXT_VERSION)
     }
 
     static void inheritJetty11Platform(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
