@@ -18,7 +18,7 @@ dependencies {
     runtimeOnly project(path: ':test-configs')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'runtimeOnly')
 
-    Classpaths.inheritArrow(project, 'arrow-vector', 'implementation')
+    implementation libs.arrow.vector
 }
 
 task replicateAll {

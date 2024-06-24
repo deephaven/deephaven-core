@@ -9,9 +9,9 @@ dependencies {
     api project(':java-client-session')
     implementation project(':proto:proto-backplane-grpc-flight')
 
-    Classpaths.inheritArrow(project, 'flight-core', 'api')
-    Classpaths.inheritArrow(project, 'flight-grpc', 'implementation')
-    Classpaths.inheritArrow(project, 'arrow-vector', 'api')
+    api libs.arrow.flight.core
+    implementation libs.arrow.flight.grpc
+    api libs.arrow.vector
     Classpaths.inheritAutoService(project)
 
     Classpaths.inheritImmutables(project)

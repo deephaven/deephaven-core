@@ -11,9 +11,9 @@ dependencies {
     implementation project(':Configuration')
     implementation depCommonsLang3
 
-    Classpaths.inheritArrow(project, 'arrow-format', 'implementation')
-    Classpaths.inheritArrow(project, 'arrow-vector', 'implementation')
-    Classpaths.inheritArrow(project, 'arrow-compression', 'implementation')
+    implementation libs.arrow.format
+    implementation libs.arrow.vector
+    implementation libs.arrow.compression
 
     testImplementation TestTools.projectDependency(project, 'engine-table')
 

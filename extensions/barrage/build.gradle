@@ -25,8 +25,8 @@ dependencies {
 
     Classpaths.inheritFlatbuffer(project, 'implementation')
 
-    Classpaths.inheritArrow(project, 'arrow-vector', 'implementation')
-    Classpaths.inheritArrow(project, 'arrow-format', 'implementation')
+    implementation libs.arrow.vector
+    implementation libs.arrow.format
 
     Classpaths.inheritImmutables(project)
 

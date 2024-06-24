@@ -21,7 +21,7 @@ dependencies {
 
     Classpaths.inheritImmutables(project)
 
-    Classpaths.inheritArrow(project, 'flight-core', 'implementation')
+    implementation libs.arrow.flight.core
 
     Classpaths.inheritDagger(project)
 

@@ -28,9 +28,6 @@ class Classpaths {
 
     static final String JETTY_VERSION = '9.4.44.v20210927'
 
-    static final String ARROW_GROUP = 'org.apache.arrow'
-    static final String ARROW_VERSION = '13.0.0'
-
     static final String SLF4J_GROUP = 'org.slf4j'
     static final String SLF4J_VERSION = '2.0.11'
 
@@ -144,11 +141,6 @@ class Classpaths {
                 force 'org.ow2.asm:asm-commons:9.2'
             }
         }
-    }
-
-    static void inheritArrow(Project p, String name, String configName) {
-        Configuration config = p.configurations.getByName(configName)
-        addDependency(config, ARROW_GROUP, name, ARROW_VERSION)
     }
 
     static void inheritFlatbuffer(Project p, String configName) {
