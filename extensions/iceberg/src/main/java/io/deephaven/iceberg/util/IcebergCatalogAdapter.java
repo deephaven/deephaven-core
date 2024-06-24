@@ -197,11 +197,11 @@ public class IcebergCatalogAdapter {
 
         // Create the column source(s)
         final String[] namespaceArr = new String[(int) size];
-        columnSourceMap.put("namespace",
+        columnSourceMap.put("Namespace",
                 InMemoryColumnSource.getImmutableMemoryColumnSource(namespaceArr, String.class, null));
 
         final Namespace[] namespaceObjectArr = new Namespace[(int) size];
-        columnSourceMap.put("namespace_object",
+        columnSourceMap.put("NamespaceObject",
                 InMemoryColumnSource.getImmutableMemoryColumnSource(namespaceObjectArr, Namespace.class, null));
 
         // Populate the column source arrays
@@ -251,15 +251,15 @@ public class IcebergCatalogAdapter {
 
         // Create the column source(s)
         final String[] namespaceArr = new String[(int) size];
-        columnSourceMap.put("namespace",
+        columnSourceMap.put("Namespace",
                 InMemoryColumnSource.getImmutableMemoryColumnSource(namespaceArr, String.class, null));
 
         final String[] tableNameArr = new String[(int) size];
-        columnSourceMap.put("table_name",
+        columnSourceMap.put("TableName",
                 InMemoryColumnSource.getImmutableMemoryColumnSource(tableNameArr, String.class, null));
 
         final TableIdentifier[] tableIdentifierArr = new TableIdentifier[(int) size];
-        columnSourceMap.put("table_identifier_object",
+        columnSourceMap.put("TableIdentifierObject",
                 InMemoryColumnSource.getImmutableMemoryColumnSource(tableIdentifierArr, TableIdentifier.class, null));
 
         // Populate the column source arrays
@@ -306,22 +306,22 @@ public class IcebergCatalogAdapter {
 
         // Create the column source(s)
         final long[] idArr = new long[(int) size];
-        columnSourceMap.put("id", InMemoryColumnSource.getImmutableMemoryColumnSource(idArr, long.class, null));
+        columnSourceMap.put("Id", InMemoryColumnSource.getImmutableMemoryColumnSource(idArr, long.class, null));
 
         final long[] timestampArr = new long[(int) size];
-        columnSourceMap.put("timestamp_ms",
+        columnSourceMap.put("TimestampMs",
                 InMemoryColumnSource.getImmutableMemoryColumnSource(timestampArr, long.class, null));
 
         final String[] operatorArr = new String[(int) size];
-        columnSourceMap.put("operation",
+        columnSourceMap.put("Operation",
                 InMemoryColumnSource.getImmutableMemoryColumnSource(operatorArr, String.class, null));
 
         final Map<String, String>[] summaryArr = new Map[(int) size];
-        columnSourceMap.put("summary",
+        columnSourceMap.put("Summary",
                 InMemoryColumnSource.getImmutableMemoryColumnSource(summaryArr, Map.class, null));
 
         final Snapshot[] snapshotArr = new Snapshot[(int) size];
-        columnSourceMap.put("snapshot_object",
+        columnSourceMap.put("SnapshotObject",
                 InMemoryColumnSource.getImmutableMemoryColumnSource(snapshotArr, Snapshot.class, null));
 
         // Populate the column source(s)
