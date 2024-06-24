@@ -52,7 +52,8 @@ dependencies {
     mockrunner 'com.mockrunner:mockrunner-jdbc:1.0.4'
 
     junit libs.junit4
-    Classpaths.inheritJMock(project, 'junit')
+    junit libs.jmock.junit4
+    junit libs.jmock.imposters
 
     // Now, all the various fish libs we depend on, with inherited dependencies matching
     // the actual dependencies used in fishlib... if we were strongly coupled, we could skip

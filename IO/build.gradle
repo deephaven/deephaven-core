@@ -8,7 +8,8 @@ dependencies {
     implementation depCommonsCompress
     testImplementation project(path: ':Base', configuration: 'tests')
     testImplementation libs.junit4
-    Classpaths.inheritJMock(project, 'testImplementation')
+    testImplementation libs.jmock.junit4
+    testImplementation libs.jmock.imposters
 }
 
 sourceSets {

@@ -28,11 +28,6 @@ class Classpaths {
 
     static final String JETTY_VERSION = '9.4.44.v20210927'
 
-    static final String JMOCK_GROUP = 'org.jmock'
-    static final String JMOCK_JUNIT_NAME = 'jmock-junit4'
-    static final String JMOCK_IMPORSTERS_NAME = 'jmock-imposters'
-    static final String JMOCK_VERSION = '2.12.0'
-
     static final String ASSERTJ_GROUP = 'org.assertj'
     static final String ASSERTJ_NAME = 'assertj-core'
     static final String ASSERTJ_VERSION = '3.19.0'
@@ -112,12 +107,6 @@ class Classpaths {
                 force 'org.ow2.asm:asm-commons:9.2'
             }
         }
-    }
-
-    static void inheritJMock(Project p, String configName) {
-        Configuration config = p.configurations.getByName(configName)
-        addDependency(config, JMOCK_GROUP, JMOCK_JUNIT_NAME, JMOCK_VERSION)
-        addDependency(config, JMOCK_GROUP, JMOCK_IMPORSTERS_NAME, JMOCK_VERSION)
     }
 
     static void inheritAssertJ(Project p, String configName = JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME) {

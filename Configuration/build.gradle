@@ -9,7 +9,8 @@ dependencies {
     implementation project(':log-factory')
     implementation depCommonsLang3
     testImplementation libs.junit4
-    Classpaths.inheritJMock(project, 'testImplementation')
+    testImplementation libs.jmock.junit4
+    testImplementation libs.jmock.imposters
 
     compileOnly libs.autoservice
     annotationProcessor libs.autoservice.compiler
