@@ -20,7 +20,9 @@ dependencies {
     Classpaths.inheritGrpcPlatform(project)
     implementation 'io.grpc:grpc-netty'
 
-    Classpaths.inheritImmutables(project)
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables
+
     implementation project(':ssl-kickstart')
     Classpaths.inheritSSLContext(project, 'sslcontext-kickstart-for-netty')
 

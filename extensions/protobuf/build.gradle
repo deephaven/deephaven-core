@@ -10,7 +10,8 @@ dependencies {
     api 'com.google.protobuf:protobuf-java:3.25.3'
     implementation project(':engine-query-constants')
 
-    Classpaths.inheritImmutables(project)
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables
 
     compileOnly depAnnotations
 

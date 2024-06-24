@@ -14,7 +14,8 @@ dependencies {
     implementation project(':engine-base')
     implementation depTrove3
 
-    Classpaths.inheritImmutables(project)
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables
 
     Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)

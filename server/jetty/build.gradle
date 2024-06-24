@@ -37,7 +37,9 @@ dependencies {
     implementation project(':grpc-java:grpc-servlet-websocket-jakarta')
     implementation 'org.eclipse.jetty.websocket:websocket-jakarta-server'
 
-    Classpaths.inheritImmutables(project)
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables
+
     implementation project(':ssl-kickstart')
     Classpaths.inheritSSLContext(project, 'sslcontext-kickstart-for-jetty')
 

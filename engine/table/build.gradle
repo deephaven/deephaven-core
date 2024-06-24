@@ -46,7 +46,8 @@ dependencies {
     compileOnly libs.autoservice
     annotationProcessor libs.autoservice.compiler
 
-    Classpaths.inheritImmutables(project)
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 

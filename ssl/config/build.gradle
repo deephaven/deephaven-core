@@ -6,7 +6,9 @@ plugins {
 description = 'The Deephaven SSL Configuration'
 
 dependencies {
-    Classpaths.inheritImmutables(project)
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables
+
     Classpaths.inheritGrpcPlatform(project)
     api platform(libs.jackson.bom)
     api libs.jackson.annotations

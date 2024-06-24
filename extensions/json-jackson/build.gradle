@@ -18,7 +18,10 @@ dependencies {
 
     implementation project(':engine-query-constants')
     implementation project(':engine-time')
-    Classpaths.inheritImmutables(project)
+
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables
+
     compileOnly libs.autoservice
     annotationProcessor libs.autoservice.compiler
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'

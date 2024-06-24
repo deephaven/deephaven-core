@@ -25,7 +25,9 @@ dependencies {
 
     compileOnly libs.autoservice
     annotationProcessor libs.autoservice.compiler
-    Classpaths.inheritImmutables(project)
+
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables
 
     Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)

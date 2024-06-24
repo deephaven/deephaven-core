@@ -35,7 +35,8 @@ dependencies {
     implementation depTrove3
     implementation depCommonsLang3
 
-    Classpaths.inheritImmutables(project)
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables
 
     testImplementation project(':engine-test-utils')
     Classpaths.inheritJUnitClassic(project, 'testImplementation')

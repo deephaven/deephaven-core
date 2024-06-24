@@ -28,7 +28,8 @@ dependencies {
     implementation libs.arrow.vector
     implementation libs.arrow.format
 
-    Classpaths.inheritImmutables(project)
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables
 
     testImplementation project(':engine-test-utils')
 

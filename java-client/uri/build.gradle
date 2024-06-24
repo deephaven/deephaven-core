@@ -6,7 +6,8 @@ plugins {
 description = 'The Deephaven URI library'
 
 dependencies {
-    Classpaths.inheritImmutables(project)
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables
 
     Classpaths.inheritJUnitPlatform(project)
     testImplementation 'org.junit.jupiter:junit-jupiter'

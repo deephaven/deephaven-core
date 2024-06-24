@@ -19,7 +19,8 @@ dependencies {
     Classpaths.inheritGrpcPlatform(project, 'api')
     api 'io.grpc:grpc-testing'
 
-    Classpaths.inheritImmutables(project)
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables
 
     implementation libs.arrow.flight.core
 

@@ -28,10 +28,6 @@ class Classpaths {
 
     static final String JETTY_VERSION = '9.4.44.v20210927'
 
-    static final String IMMUTABLES_GROUP = 'org.immutables'
-    static final String IMMUTABLES_NAME = 'value'
-    static final String IMMUTABLES_VERSION = '2.9.2'
-
     static final String JUNIT_GROUP = 'org.junit'
     static final String JUNIT_NAME = 'junit-bom'
     static final String JUNIT_VERSION = '5.7.2'
@@ -124,12 +120,6 @@ class Classpaths {
                 force 'org.ow2.asm:asm-commons:9.2'
             }
         }
-    }
-
-    static void inheritImmutables(Project p, boolean test = false) {
-        Configuration ap = p.configurations.getByName(test ? 'testAnnotationProcessor' : 'annotationProcessor')
-        addDependency(ap, IMMUTABLES_GROUP, IMMUTABLES_NAME, IMMUTABLES_VERSION)
-        p.getDependencies().add(test ? 'testCompileOnly' : 'compileOnly', p.project(':util-immutables'))
     }
 
     static void inheritJUnitClassic(Project p, String configName) {

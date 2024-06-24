@@ -41,7 +41,8 @@ dependencies {
     implementation libs.jackson.dataformat.yaml
     implementation libs.jackson.datatype.jdk8
 
-    Classpaths.inheritImmutables(project)
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 

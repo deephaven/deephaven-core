@@ -58,7 +58,8 @@ dependencies {
     testCompileOnly libs.autoservice
     testAnnotationProcessor libs.autoservice.compiler
 
-    Classpaths.inheritImmutables(project)
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables
 
     implementation project(':Plot')
 

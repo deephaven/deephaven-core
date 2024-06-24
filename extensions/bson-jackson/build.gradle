@@ -8,7 +8,9 @@ dependencies {
     api project(':engine-processor')
     api 'de.undercouch:bson4jackson:2.15.1'
 
-    Classpaths.inheritImmutables(project)
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables
+
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 
     testImplementation platform(libs.jackson.bom)

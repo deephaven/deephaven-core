@@ -4,7 +4,9 @@ plugins {
 }
 
 dependencies {
-    Classpaths.inheritImmutables(project)
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables
+
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 
     Classpaths.inheritJUnitPlatform(project)
