@@ -17,7 +17,7 @@ dependencies {
     testImplementation libs.junit.jupiter
     testRuntimeOnly libs.junit.platform.launcher
 
-    Classpaths.inheritLogbackClassic(project, 'implementation')
+    implementation libs.logback.classic
 }
 
 test {

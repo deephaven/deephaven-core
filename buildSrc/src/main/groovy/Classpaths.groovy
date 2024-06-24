@@ -28,10 +28,6 @@ class Classpaths {
 
     static final String JETTY_VERSION = '9.4.44.v20210927'
 
-    static final String LOGBACK_GROUP = 'ch.qos.logback'
-    static final String LOGBACK_NAME = 'logback-classic'
-    static final String LOGBACK_VERSION = '1.4.14'
-
     static final String GROOVY_GROUP = 'org.codehaus.groovy'
     static final String GROOVY_VERSION = '3.0.21'
 
@@ -103,11 +99,6 @@ class Classpaths {
                 force 'org.ow2.asm:asm-commons:9.2'
             }
         }
-    }
-
-    static void inheritLogbackClassic(Project p, String configName = JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME) {
-        Configuration config = p.configurations.getByName(configName)
-        addDependency(config, LOGBACK_GROUP, LOGBACK_NAME, LOGBACK_VERSION)
     }
 
     static void inheritGroovy(Project p, String name, String configName) {

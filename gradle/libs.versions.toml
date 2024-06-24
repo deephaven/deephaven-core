@@ -12,6 +12,7 @@ javax-validation = "1.0.0.GA"
 jsinterop = "2.0.2"
 # google is annoying, and have different versions released for the same groupId
 jsinterop-base = "1.0.1"
+logback = "1.4.14"
 slf4j = "2.0.11"
 
 # test versions
@@ -47,6 +48,7 @@ javaparser-core = { module = "com.github.javaparser:javaparser-core", version.re
 javax-validation-api = { module = "javax.validation:validation-api", version.ref = "javax-validation" }
 jsinterop-annotations = { module = "com.google.jsinterop:jsinterop-annotations", version.ref = "jsinterop" }
 jsinterop-base = { module = "com.google.jsinterop:base", version.ref = "jsinterop-base" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 slf4j-jul-to-slf4j = { module = "org.slf4j:jul-to-slf4j", version.ref = "slf4j" }
 slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }

@@ -27,7 +27,7 @@ dependencies {
     runtimeOnly project(':extensions-kafka')
 
     runtimeOnly project(':log-to-slf4j')
-    Classpaths.inheritLogbackClassic(project)
+    runtimeOnly libs.logback.classic
 
     testRuntimeOnly project(path: ':configs')
     testRuntimeOnly project(path: ':test-configs')

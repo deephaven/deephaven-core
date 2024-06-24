@@ -14,7 +14,7 @@ dependencies {
     testImplementation libs.junit.jupiter
 
     implementation libs.slf4j.api
-    Classpaths.inheritLogbackClassic(project)
+    runtimeOnly libs.logback.classic
 }
 
 test {
