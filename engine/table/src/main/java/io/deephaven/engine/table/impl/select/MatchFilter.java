@@ -224,7 +224,7 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
             final Map<String, Object> queryScopeVariables = compilationProcessor.getQueryScopeVariables();
             final ColumnTypeConvertor convertor = ColumnTypeConvertorFactory.getConvertor(column.getDataType());
             for (String strValue : strValues) {
-                convertor.convertValue(column, strValue, queryScopeVariables, valueList::add);
+                convertor.convertValue(column, tableDefinition, strValue, queryScopeVariables, valueList::add);
             }
             values = valueList.toArray();
         } catch (final RuntimeException err) {
@@ -337,9 +337,17 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
          */
         final boolean convertValue(
                 @NotNull final ColumnDefinition<?> column,
+                @NotNull final TableDefinition tableDefinition,
                 @NotNull final String strValue,
                 @NotNull final Map<String, Object> queryScopeVariables,
                 @NotNull final Consumer<Object> valueConsumer) {
+            if (tableDefinition.getColumn(strValue) != null) {
+                // this is also a column name which needs to take precedence, and we can't convert it
+                throw new IllegalArgumentException(String.format(
+                        "Failed to convert literal value <%s> for column \"%s\" of type %s; it is a column name",
+                        strValue, column.getName(), column.getDataType().getName()));
+            }
+
             if (queryScopeVariables.containsKey(strValue)) {
                 Object paramValue = queryScopeVariables.get(strValue);
                 if (paramValue != null && paramValue.getClass().isArray()) {
@@ -358,12 +366,15 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                 valueConsumer.accept(convertParamValue(paramValue));
                 return false;
             }
+
             try {
                 valueConsumer.accept(convertStringLiteral(strValue));
             } catch (Throwable t) {
-                throw new IllegalArgumentException("Failed to convert literal value <" + strValue +
-                        "> for column \"" + column.getName() + "\" of type " + column.getDataType().getName(), t);
+                throw new IllegalArgumentException(String.format(
+                        "Failed to convert literal value <%s> for column \"%s\" of type %s",
+                        strValue, column.getName(), column.getDataType().getName()), t);
             }
+
             return false;
         }
     }

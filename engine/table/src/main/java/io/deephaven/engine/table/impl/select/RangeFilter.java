@@ -183,7 +183,8 @@ public class RangeFilter extends WhereFilterImpl {
 
             try {
                 boolean wasAnArrayType = convertor.convertValue(
-                        def, value, compilationProcessor.getQueryScopeVariables(), realValue::setValue);
+                        def, tableDefinition, value, compilationProcessor.getQueryScopeVariables(),
+                        realValue::setValue);
                 if (wasAnArrayType) {
                     conversionError =
                             new IllegalArgumentException("RangeFilter does not support array types for column "
