@@ -9,7 +9,7 @@ import java.util.Arrays;
 
 abstract class LongMaterializerBase implements PageMaterializer {
 
-    final long nullValue;
+    private final long nullValue;
     final long[] data;
 
     LongMaterializerBase(long nullValue, int numValues) {

@@ -27,10 +27,10 @@ public class DoubleMaterializer implements PageMaterializer {
         }
     };
 
-    final ValuesReader dataReader;
+    private final ValuesReader dataReader;
 
-    final double nullValue;
-    final double[] data;
+    private final double nullValue;
+    private final double[] data;
 
     private DoubleMaterializer(ValuesReader dataReader, int numValues) {
         this(dataReader, 0, numValues);

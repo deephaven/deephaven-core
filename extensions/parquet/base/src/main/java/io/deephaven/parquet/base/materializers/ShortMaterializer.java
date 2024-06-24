@@ -27,10 +27,10 @@ public class ShortMaterializer implements PageMaterializer {
         }
     };
 
-    final ValuesReader dataReader;
+    private final ValuesReader dataReader;
 
-    final short nullValue;
-    final short[] data;
+    private final short nullValue;
+    private final short[] data;
 
     private ShortMaterializer(ValuesReader dataReader, int numValues) {
         this(dataReader, (short) 0, numValues);

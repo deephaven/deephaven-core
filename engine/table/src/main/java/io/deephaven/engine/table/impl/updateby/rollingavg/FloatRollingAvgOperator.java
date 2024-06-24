@@ -83,7 +83,7 @@ public class FloatRollingAvgOperator extends BaseDoubleUpdateByOperator {
             } else {
                 final int count = aggSum.size() - nullCount;
                 if (count == 0) {
-                    outputValues.set(outIdx, Double.NaN);
+                    outputValues.set(outIdx, NULL_DOUBLE);
                 } else {
                     outputValues.set(outIdx, aggSum.evaluate() / (double) count);
                 }

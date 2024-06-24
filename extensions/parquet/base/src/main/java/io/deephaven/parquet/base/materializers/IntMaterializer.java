@@ -27,10 +27,10 @@ public class IntMaterializer implements PageMaterializer {
         }
     };
 
-    final ValuesReader dataReader;
+    private final ValuesReader dataReader;
 
-    final int nullValue;
-    final int[] data;
+    private final int nullValue;
+    private final int[] data;
 
     private IntMaterializer(ValuesReader dataReader, int numValues) {
         this(dataReader, 0, numValues);
