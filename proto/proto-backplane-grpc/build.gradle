@@ -32,7 +32,7 @@ dependencies {
   api libs.grpc.api
   api libs.grpc.stub
 
-  Classpaths.inheritBoringSsl(project)
+  runtimeOnly libs.boringssl
 
   // This is excessive, and brings in every grpc jar, making it compile-only limits what it pulls in to
   // downstream classpaths

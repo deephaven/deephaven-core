@@ -30,12 +30,6 @@ class Classpaths {
 
     // TODO(deephaven-core#1685): Create strategy around updating and maintaining protoc version
 
-    // See dependency matrix for particular gRPC versions at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty
-    static final String BORINGSSL_GROUP = 'io.netty'
-    static final String BORINGSSL_NAME = 'netty-tcnative-boringssl-static'
-    // Only bump this in concert w/ GRPC_VERSION
-    static final String BORINGSSL_VERSION = '2.0.61.Final'
-
     static final String SSLCONTEXT_GROUP = 'io.github.hakky54'
     static final String SSLCONTEXT_VERSION = '8.1.1'
 
@@ -88,11 +82,6 @@ class Classpaths {
                 force 'org.ow2.asm:asm-commons:9.2'
             }
         }
-    }
-
-    static void inheritBoringSsl(Project p, String configName = JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME) {
-        Configuration config = p.configurations.getByName(configName)
-        addDependency(config, BORINGSSL_GROUP, BORINGSSL_NAME, BORINGSSL_VERSION)
     }
 
     static void inheritSSLContext(Project p, String name, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {

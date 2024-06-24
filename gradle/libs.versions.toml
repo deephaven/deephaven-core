@@ -1,6 +1,8 @@
 [versions]
 arrow = "13.0.0"
 autoservice = "1.0.1"
+# See dependency matrix for particular gRPC versions at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty
+boringssl = "2.0.61.Final"
 commons = "1.10.0"
 dagger = "2.44"
 elemental = "1.2.1"
@@ -34,6 +36,7 @@ arrow-flight-core = { module = "org.apache.arrow:flight-core", version.ref = "ar
 arrow-flight-grpc = { module = "org.apache.arrow:flight-grpc", version.ref = "arrow" }
 autoservice = { module = "com.google.auto.service:auto-service-annotations", version.ref = "autoservice" }
 autoservice-compiler = { module = "com.google.auto.service:auto-service", version.ref = "autoservice" }
+boringssl = { module = "io.netty:netty-tcnative-boringssl-static", version.ref = "boringssl" }
 commons-text = { module = "org.apache.commons:commons-text", version.ref = "commons" }
 dagger = { module = "com.google.dagger:dagger", version.ref = "dagger" }
 dagger-compiler = { module = "com.google.dagger:dagger-compiler", version.ref = "dagger" }
