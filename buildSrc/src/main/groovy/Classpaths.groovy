@@ -28,10 +28,6 @@ class Classpaths {
 
     static final String JETTY_VERSION = '9.4.44.v20210927'
 
-    static final String FLATBUFFER_GROUP = 'com.google.flatbuffers'
-    static final String FLATBUFFER_NAME = 'flatbuffers-java'
-    static final String FLATBUFFER_VERSION = '1.12.0'
-
     static final String DAGGER_GROUP = 'com.google.dagger'
     static final String DAGGER_NAME = 'dagger'
     static final String DAGGER_COMPILER = 'dagger-compiler'
@@ -138,11 +134,6 @@ class Classpaths {
                 force 'org.ow2.asm:asm-commons:9.2'
             }
         }
-    }
-
-    static void inheritFlatbuffer(Project p, String configName) {
-        Configuration config = p.configurations.getByName(configName)
-        addDependency(config, FLATBUFFER_GROUP, FLATBUFFER_NAME, FLATBUFFER_VERSION)
     }
 
     static void inheritDagger(Project p, boolean test = false) {

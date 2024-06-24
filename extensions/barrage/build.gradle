@@ -23,7 +23,7 @@ dependencies {
     api 'io.deephaven.barrage:barrage-format:0.6.0'
     implementation 'org.hdrhistogram:HdrHistogram:2.1.12'
 
-    Classpaths.inheritFlatbuffer(project, 'implementation')
+    implementation libs.flatbuffers.java
 
     implementation libs.arrow.vector
     implementation libs.arrow.format

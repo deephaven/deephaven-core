@@ -45,7 +45,7 @@ dependencies {
 
     api project(':ssl-config')
 
-    Classpaths.inheritFlatbuffer(project, 'implementation')
+    implementation libs.flatbuffers.java
 
     Classpaths.inheritDagger(project)
     Classpaths.inheritDagger(project, /* test */ true)
