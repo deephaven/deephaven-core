@@ -19,23 +19,23 @@ dependencies {
     testAnnotationProcessor libs.dagger.compiler
 
     implementation platform(libs.grpc.bom)
-    Classpaths.inheritJetty11Platform(project)
+    implementation platform(libs.jetty.bom)
 
     api 'jakarta.servlet:jakarta.servlet-api:5.0.0'
-    implementation 'org.eclipse.jetty:jetty-servlet'
-    implementation 'org.eclipse.jetty:jetty-servlets'
-    implementation 'org.eclipse.jetty:jetty-webapp'
-    implementation 'org.eclipse.jetty.http2:http2-server'
-    implementation 'org.eclipse.jetty:jetty-alpn-server'
+    implementation libs.jetty.servlet
+    implementation libs.jetty.servlets
+    implementation libs.jetty.webapp
+    implementation libs.jetty.http2.server
+    implementation libs.jetty.alpn.server
     // TODO(deephaven-core#2506): Support for alternative ALPN implementations
-    runtimeOnly 'org.eclipse.jetty:jetty-alpn-java-server'
+    runtimeOnly libs.jetty.alpn.java.server
 
 //    implementation 'io.grpc:grpc-servlet-jakarta'
     api(project(':grpc-java:grpc-servlet-jakarta')) {
         because 'downstream dagger compile'
     }
     implementation project(':grpc-java:grpc-servlet-websocket-jakarta')
-    implementation 'org.eclipse.jetty.websocket:websocket-jakarta-server'
+    implementation libs.jetty.websocket.jakarta.server
 
     compileOnly project(':util-immutables')
     annotationProcessor libs.immutables
