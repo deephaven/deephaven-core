@@ -42,7 +42,7 @@ dependencies {
 
     Classpaths.inheritGroovy(project, 'groovy', 'implementation')
     Classpaths.inheritGroovy(project, 'groovy-json', 'implementation')
-    Classpaths.inheritJavaParser(project, 'implementation')
+    implementation libs.javaparser.core
     Classpaths.inheritAutoService(project)
 
     Classpaths.inheritImmutables(project)

@@ -1,6 +1,7 @@
 [versions]
 elemental = "1.2.1"
 jackson-bom = "2.17.0"
+javaparser = "3.23.0"
 
 # test versions
 testcontainers = "1.19.4"
@@ -15,6 +16,7 @@ jackson-core = { module = "com.fasterxml.jackson.core:jackson-core" }
 jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind" }
 jackson-dataformat-yaml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml" }
 jackson-datatype-jdk8 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jdk8" }
+javaparser-core = { module = "com.github.javaparser:javaparser-core", version.ref = "javaparser" }
 
 # test libraries
 testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }

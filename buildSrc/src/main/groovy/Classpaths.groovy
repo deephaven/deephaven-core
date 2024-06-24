@@ -23,9 +23,6 @@ class Classpaths {
     static final String GWT_GROUP = 'org.gwtproject'
     static final String GWT_VERSION = '2.11.0'
 
-    static final String JAVA_PARSER_GROUP = 'com.github.javaparser'
-    static final String JAVA_PARSER_NAME = 'javaparser-core'
-    static final String JAVA_PARSER_VERSION = '3.23.0'
     // TODO (core#1163): take advantage of symbol-solver-core
 //    static final String JAVA_PARSER_NAME = 'javaparser-symbol-solver-core'
 
@@ -156,11 +153,6 @@ class Classpaths {
                 force 'org.ow2.asm:asm-commons:9.2'
             }
         }
-    }
-
-    static void inheritJavaParser(Project p, String configName) {
-        Configuration config = p.configurations.getByName(configName)
-        addDependency config, JAVA_PARSER_GROUP, JAVA_PARSER_NAME, JAVA_PARSER_VERSION
     }
 
     static void inheritJavaxAnnotations(Project p, String configName) {
