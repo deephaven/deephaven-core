@@ -9,5 +9,5 @@ dependencies {
     implementation project(':Plot')
     compileOnly libs.autoservice
     annotationProcessor libs.autoservice.compiler
-    Classpaths.inheritGroovy(project, 'groovy', 'implementation')
+    implementation libs.groovy
 }

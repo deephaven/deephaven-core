@@ -40,8 +40,8 @@ dependencies {
     implementation depCommonsLang3
     implementation libs.commons.text
 
-    Classpaths.inheritGroovy(project, 'groovy', 'implementation')
-    Classpaths.inheritGroovy(project, 'groovy-json', 'implementation')
+    implementation libs.groovy
+    implementation libs.groovy.json
     implementation libs.javaparser.core
     compileOnly libs.autoservice
     annotationProcessor libs.autoservice.compiler

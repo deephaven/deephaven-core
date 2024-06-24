@@ -18,8 +18,8 @@ dependencies {
     testImplementation platform(libs.junit.bom)
     testImplementation libs.junit.jupiter
 
-    Classpaths.inheritGroovy(project, 'groovy', 'testImplementation')
-    Classpaths.inheritGroovy(project, 'groovy-templates', 'testImplementation')
+    testImplementation libs.groovy
+    testImplementation libs.groovy.templates
 
     testImplementation project(':engine-test-utils')
     testRuntimeOnly project(':configs')

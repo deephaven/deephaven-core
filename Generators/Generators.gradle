@@ -19,8 +19,8 @@ dependencies {
     implementation project(':extensions-parquet-table')
     implementation depTrove3
 
-    Classpaths.inheritGroovy(project, 'groovy', 'implementation')
-    Classpaths.inheritGroovy(project, 'groovy-json', 'implementation')
+    implementation libs.groovy
+    implementation libs.groovy.json
 
     runtimeOnly project(path: ':configs')
     runtimeOnly project(path: ':test-configs')

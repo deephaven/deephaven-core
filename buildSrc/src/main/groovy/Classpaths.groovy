@@ -28,9 +28,6 @@ class Classpaths {
 
     static final String JETTY_VERSION = '9.4.44.v20210927'
 
-    static final String GROOVY_GROUP = 'org.codehaus.groovy'
-    static final String GROOVY_VERSION = '3.0.21'
-
     static final String GRPC_GROUP = 'io.grpc'
     static final String GRPC_NAME = 'grpc-bom'
     // Only bump this in concert w/ BORINGSSL_VERSION
@@ -99,11 +96,6 @@ class Classpaths {
                 force 'org.ow2.asm:asm-commons:9.2'
             }
         }
-    }
-
-    static void inheritGroovy(Project p, String name, String configName) {
-        Configuration config = p.configurations.getByName(configName)
-        addDependency(config, GROOVY_GROUP, name, GROOVY_VERSION)
     }
 
     static void inheritGrpcPlatform(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
