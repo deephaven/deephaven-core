@@ -16,7 +16,7 @@ dependencies {
     testImplementation platform(libs.jackson.bom)
     testImplementation libs.jackson.databind
 
-    Classpaths.inheritAssertJ(project)
+    testImplementation libs.assertj
     testImplementation platform(libs.junit.bom)
     testImplementation libs.junit.jupiter
 }

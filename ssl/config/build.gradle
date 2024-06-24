@@ -17,7 +17,7 @@ dependencies {
         because 'we need to parse optional types'
     }
 
-    Classpaths.inheritAssertJ(project)
+    testImplementation libs.assertj
     testImplementation platform(libs.junit.bom)
     testImplementation libs.junit.jupiter
     testRuntimeOnly libs.junit.jupiter.engine

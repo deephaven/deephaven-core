@@ -99,7 +99,7 @@ dependencies {
     testImplementation project(':server-test-utils')
 
     runtimeOnly project(':Numerics'), project(':extensions-kafka')
-    Classpaths.inheritAssertJ(project)
+    testImplementation libs.assertj
 
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly libs.slf4j.simple

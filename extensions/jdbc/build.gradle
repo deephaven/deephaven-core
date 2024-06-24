@@ -14,7 +14,7 @@ dependencies {
     Classpaths.inheritGuava(project)
 
     testImplementation platform(libs.junit.bom)
-    Classpaths.inheritAssertJ(project)
+    testImplementation libs.assertj
 
     testImplementation project(':engine-test-utils')
     testImplementation 'com.h2database:h2:2.1.212'

@@ -8,7 +8,7 @@ dependencies {
 
     compileOnly depAnnotations
 
-    Classpaths.inheritAssertJ(project)
+    testImplementation libs.assertj
     testImplementation platform(libs.junit.bom)
     testImplementation libs.junit.jupiter
     testRuntimeOnly libs.junit.jupiter.engine

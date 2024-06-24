@@ -22,5 +22,5 @@ dependencies {
 
     implementation libs.junit4
     implementation platform(libs.junit.bom)
-    Classpaths.inheritAssertJ(project, 'implementation')
+    implementation libs.assertj
 }

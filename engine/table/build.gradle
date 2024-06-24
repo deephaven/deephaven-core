@@ -74,7 +74,7 @@ dependencies {
     testImplementation libs.junit4
 
     testImplementation platform(libs.junit.bom)
-    Classpaths.inheritAssertJ(project)
+    testImplementation libs.assertj
 
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly project(':configs')

@@ -30,7 +30,7 @@ dependencies {
 
     testImplementation project(':server-test-utils')
     testImplementation libs.junit4
-    Classpaths.inheritAssertJ(project)
+    testImplementation libs.assertj
 
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly libs.slf4j.simple

@@ -28,7 +28,7 @@ dependencies {
     Classpaths.inheritIcebergHadoop(project)
     Classpaths.inheritAvro(project)
 
-    Classpaths.inheritAssertJ(project)
+    testImplementation libs.assertj
 
     testImplementation platform(libs.junit.bom)
     testImplementation libs.junit.jupiter

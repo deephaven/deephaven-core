@@ -46,5 +46,5 @@ dependencies {
     testRuntimeOnly project(':test-configs')
     testRuntimeOnly libs.slf4j.simple
 
-    Classpaths.inheritAssertJ(project)
+    testImplementation libs.assertj
 }

@@ -9,7 +9,7 @@ dependencies {
 
     implementation "io.deephaven.barrage:barrage-format:0.6.0"
 
-    Classpaths.inheritAssertJ(project)
+    testImplementation libs.assertj
     testImplementation platform(libs.junit.bom)
     testImplementation libs.junit.jupiter
 

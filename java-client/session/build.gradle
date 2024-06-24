@@ -37,7 +37,7 @@ dependencies {
   testImplementation libs.junit4
   testImplementation 'io.grpc:grpc-testing'
 
-  Classpaths.inheritAssertJ(project)
+  testImplementation libs.assertj
 
   implementation libs.slf4j.api
   testRuntimeOnly libs.slf4j.simple

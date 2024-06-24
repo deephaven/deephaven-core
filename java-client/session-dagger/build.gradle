@@ -26,7 +26,7 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
     */
 
-    Classpaths.inheritAssertJ(project)
+    testImplementation libs.assertj
 
     testImplementation project(':server')
     testImplementation project(':server-test-utils')

@@ -19,7 +19,7 @@ dependencies {
     testImplementation depCommonsLang3
 
     testImplementation libs.junit4
-    Classpaths.inheritAssertJ(project)
+    testImplementation libs.assertj
 
     testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),

@@ -14,7 +14,7 @@ dependencies {
     testRuntimeOnly libs.junit.jupiter.engine
     testRuntimeOnly libs.junit.platform.launcher
 
-    Classpaths.inheritAssertJ(project)
+    testImplementation libs.assertj
 }
 
 test {

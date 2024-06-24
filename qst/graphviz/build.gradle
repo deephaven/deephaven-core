@@ -12,7 +12,7 @@ dependencies {
 
     implementation 'info.picocli:picocli:4.6.1'
 
-    Classpaths.inheritAssertJ(project)
+    testImplementation libs.assertj
     testImplementation platform(libs.junit.bom)
     testImplementation libs.junit.jupiter
     testRuntimeOnly libs.junit.platform.launcher
