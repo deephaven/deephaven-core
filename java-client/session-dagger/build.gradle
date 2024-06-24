@@ -11,7 +11,8 @@ dependencies {
     Classpaths.inheritGrpcPlatform(project, 'api')
     api 'io.grpc:grpc-api'
 
-    Classpaths.inheritDagger(project)
+    implementation libs.dagger
+    annotationProcessor libs.dagger.compiler
 
     implementation libs.slf4j.api
     testRuntimeOnly libs.slf4j.simple

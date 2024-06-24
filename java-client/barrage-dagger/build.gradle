@@ -10,7 +10,8 @@ dependencies {
     api project(':java-client-flight-dagger')
     api project(':uri')
 
-    Classpaths.inheritDagger(project)
+    implementation libs.dagger
+    annotationProcessor libs.dagger.compiler
 
     Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)

@@ -10,7 +10,8 @@ configurations {
 dependencies {
     implementation project(':server-jetty')
 
-    Classpaths.inheritDagger(project)
+    implementation libs.dagger
+    annotationProcessor libs.dagger.compiler
 
     Classpaths.inheritGrpcPlatform(project)
 

@@ -12,8 +12,11 @@ dependencies {
     }
     runtimeOnly(project(':web'))
 
-    Classpaths.inheritDagger(project)
-    Classpaths.inheritDagger(project, /* test */ true)
+    implementation libs.dagger
+    annotationProcessor libs.dagger.compiler
+
+    testImplementation libs.dagger
+    testAnnotationProcessor libs.dagger.compiler
 
     Classpaths.inheritGrpcPlatform(project)
     Classpaths.inheritJetty11Platform(project)

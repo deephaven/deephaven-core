@@ -9,7 +9,8 @@ dependencies {
     api project(':java-client-flight')
     api project(':java-client-session-dagger')
 
-    Classpaths.inheritDagger(project)
+    implementation libs.dagger
+    annotationProcessor libs.dagger.compiler
 
     implementation libs.slf4j.api
     testRuntimeOnly libs.slf4j.simple

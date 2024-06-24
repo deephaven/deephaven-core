@@ -7,9 +7,13 @@ description = 'Dagger for Deephaven plugins'
 
 dependencies {
     api project(':plugin')
-    Classpaths.inheritDagger(project)
 
-    Classpaths.inheritDagger(project, true) // test
+    implementation libs.dagger
+    annotationProcessor libs.dagger.compiler
+
+    testImplementation libs.dagger
+    testAnnotationProcessor libs.dagger.compiler
+
     Classpaths.inheritAutoService(project, true) // test
     Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)

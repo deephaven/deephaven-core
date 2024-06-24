@@ -28,11 +28,6 @@ class Classpaths {
 
     static final String JETTY_VERSION = '9.4.44.v20210927'
 
-    static final String DAGGER_GROUP = 'com.google.dagger'
-    static final String DAGGER_NAME = 'dagger'
-    static final String DAGGER_COMPILER = 'dagger-compiler'
-    static final String DAGGER_VERSION = '2.44'
-
     static final String AUTOSERVICE_GROUP = 'com.google.auto.service'
     static final String AUTOSERVICE_NAME = 'auto-service-annotations'
     static final String AUTOSERVICE_COMPILER = 'auto-service'
@@ -134,13 +129,6 @@ class Classpaths {
                 force 'org.ow2.asm:asm-commons:9.2'
             }
         }
-    }
-
-    static void inheritDagger(Project p, boolean test = false) {
-        Configuration ic = p.configurations.getByName(test ? 'testImplementation' : 'implementation')
-        addDependency(ic, DAGGER_GROUP, DAGGER_NAME, DAGGER_VERSION)
-        Configuration ap = p.configurations.getByName(test ? 'testAnnotationProcessor' : 'annotationProcessor')
-        addDependency(ap, DAGGER_GROUP, DAGGER_COMPILER, DAGGER_VERSION)
     }
 
     /**

@@ -18,7 +18,8 @@ dependencies {
     implementation project(':Configuration')
     implementation project(':log-factory')
     implementation depJdom2
-    Classpaths.inheritDagger(project)
+    implementation libs.dagger
+    annotationProcessor libs.dagger.compiler
 
     testImplementation project(':base-test-utils')
 

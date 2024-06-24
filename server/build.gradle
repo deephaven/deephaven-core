@@ -47,8 +47,11 @@ dependencies {
 
     implementation libs.flatbuffers.java
 
-    Classpaths.inheritDagger(project)
-    Classpaths.inheritDagger(project, /* test */ true)
+    implementation libs.dagger
+    annotationProcessor libs.dagger.compiler
+
+    testImplementation libs.dagger
+    testAnnotationProcessor libs.dagger.compiler
 
     Classpaths.inheritAutoService(project)
     Classpaths.inheritAutoService(project, /* test */ true)

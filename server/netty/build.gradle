@@ -11,8 +11,11 @@ dependencies {
         because 'downstream dagger compile'
     }
 
-    Classpaths.inheritDagger(project)
-    Classpaths.inheritDagger(project, /* test */ true)
+    implementation libs.dagger
+    annotationProcessor libs.dagger.compiler
+
+    testImplementation libs.dagger
+    testAnnotationProcessor libs.dagger.compiler
 
     Classpaths.inheritGrpcPlatform(project)
     implementation 'io.grpc:grpc-netty'

@@ -23,7 +23,8 @@ dependencies {
 
     implementation libs.arrow.flight.core
 
-    Classpaths.inheritDagger(project)
+    implementation libs.dagger
+    annotationProcessor libs.dagger.compiler
 
     Classpaths.inheritJUnitClassic(project, 'api')
 }
