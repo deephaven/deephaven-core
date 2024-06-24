@@ -9,10 +9,10 @@ dependencies {
   api project(':qst')
   api project(':uri')
 
-  Classpaths.inheritGrpcPlatform(project, 'api')
-  api 'io.grpc:grpc-api'
-  implementation 'io.grpc:grpc-core'
-  implementation 'io.grpc:grpc-netty'
+  api platform(libs.grpc.bom)
+  api libs.grpc.api
+  implementation libs.grpc.core
+  implementation libs.grpc.netty
 
   // TODO(deephaven-core#1783): Make proto-backplane-grpc implementation dependency
   api project(':proto:proto-backplane-grpc')
@@ -35,7 +35,7 @@ dependencies {
   testRuntimeOnly libs.junit.platform.launcher
 
   testImplementation libs.junit4
-  testImplementation 'io.grpc:grpc-testing'
+  testImplementation libs.grpc.testing
 
   testImplementation libs.assertj
 

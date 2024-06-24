@@ -18,7 +18,7 @@ dependencies {
     testImplementation libs.dagger
     testAnnotationProcessor libs.dagger.compiler
 
-    Classpaths.inheritGrpcPlatform(project)
+    implementation platform(libs.grpc.bom)
     Classpaths.inheritJetty11Platform(project)
 
     api 'jakarta.servlet:jakarta.servlet-api:5.0.0'

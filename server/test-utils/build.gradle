@@ -16,8 +16,8 @@ dependencies {
     implementation depCommonsLang3
     api project(':engine-test-utils')
 
-    Classpaths.inheritGrpcPlatform(project, 'api')
-    api 'io.grpc:grpc-testing'
+    api platform(libs.grpc.bom)
+    api libs.grpc.testing
 
     compileOnly project(':util-immutables')
     annotationProcessor libs.immutables

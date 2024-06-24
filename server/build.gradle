@@ -86,9 +86,9 @@ dependencies {
     runtimeOnly project(':plugin-hierarchicaltable')
     implementation project(':plugin-gc-app')
 
-    Classpaths.inheritGrpcPlatform(project, 'api')
+    api platform(libs.grpc.bom)
 
-    api('io.grpc:grpc-services') {
+    api(libs.grpc.services) {
         because 'downstream dagger compile, see deephaven-core#1722'
     }
 

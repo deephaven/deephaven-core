@@ -8,8 +8,8 @@ description = 'The Deephaven client session dagger library'
 dependencies {
     api project(':java-client-session')
 
-    Classpaths.inheritGrpcPlatform(project, 'api')
-    api 'io.grpc:grpc-api'
+    api platform(libs.grpc.bom)
+    api libs.grpc.api
 
     implementation libs.dagger
     annotationProcessor libs.dagger.compiler

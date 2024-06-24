@@ -4,8 +4,8 @@ plugins {
 }
 
 dependencies {
-    Classpaths.inheritGrpcPlatform(project)
-    implementation 'io.grpc:grpc-core'
+    implementation platform(libs.grpc.bom)
+    implementation libs.grpc.core
 //    compileOnly 'javax.servlet:javax.servlet-api:4.0.1'
     implementation 'jakarta.servlet:jakarta.servlet-api:5.0.0'
 

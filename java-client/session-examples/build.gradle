@@ -7,8 +7,8 @@ dependencies {
     implementation project(':java-client-session')
     implementation project(':java-client-example-utilities')
 
-    Classpaths.inheritGrpcPlatform(project)
-    runtimeOnly 'io.grpc:grpc-netty'
+    implementation platform(libs.grpc.bom)
+    runtimeOnly libs.grpc.netty
 
     testImplementation libs.assertj
     testImplementation platform(libs.junit.bom)

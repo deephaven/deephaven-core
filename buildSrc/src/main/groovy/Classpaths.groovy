@@ -28,11 +28,6 @@ class Classpaths {
 
     static final String JETTY_VERSION = '9.4.44.v20210927'
 
-    static final String GRPC_GROUP = 'io.grpc'
-    static final String GRPC_NAME = 'grpc-bom'
-    // Only bump this in concert w/ BORINGSSL_VERSION
-    static final String GRPC_VERSION = '1.58.0'
-
     // TODO(deephaven-core#1685): Create strategy around updating and maintaining protoc version
     static final String PROTOBUF_GROUP = 'com.google.protobuf'
     static final String PROTOBUF_NAME = 'protobuf-java'
@@ -96,11 +91,6 @@ class Classpaths {
                 force 'org.ow2.asm:asm-commons:9.2'
             }
         }
-    }
-
-    static void inheritGrpcPlatform(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
-        Configuration config = p.configurations.getByName(configName)
-        addDependency(config, p.getDependencies().platform(GRPC_GROUP + ":" + GRPC_NAME + ":" + GRPC_VERSION))
     }
 
     static void inheritProtobuf(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {

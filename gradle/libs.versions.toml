@@ -6,6 +6,8 @@ dagger = "2.44"
 elemental = "1.2.1"
 flatbuffers = "1.12.0"
 groovy = "3.0.21"
+# Only bump this in concert with boringssl
+grpc = "1.58.0"
 immutables = "2.9.2"
 jackson-bom = "2.17.0"
 javaparser = "3.23.0"
@@ -39,6 +41,14 @@ flatbuffers-java = { module = "com.google.flatbuffers:flatbuffers-java", version
 groovy = { module = "org.codehaus.groovy:groovy", version.ref = "groovy" }
 groovy-json = { module = "org.codehaus.groovy:groovy-json", version.ref = "groovy" }
 groovy-templates = { module = "org.codehaus.groovy:groovy-templates", version.ref = "groovy" }
+grpc-api = { module = "io.grpc:grpc-api" }
+grpc-bom = { module = "io.grpc:grpc-bom", version.ref = "grpc"}
+grpc-core = { module = "io.grpc:grpc-core" }
+grpc-netty = { module = "io.grpc:grpc-netty" }
+grpc-protobuf = { module = "io.grpc:grpc-protobuf" }
+grpc-services = { module = "io.grpc:grpc-services" }
+grpc-stub = { module = "io.grpc:grpc-services" }
+grpc-util = { module = "io.grpc:grpc-util" }
 immutables = { module = "org.immutables:value", version.ref = "immutables" }
 elemental-dom = { module = "com.google.elemental2:elemental2-dom", version.ref = "elemental" }
 elemental-promise = { module = "com.google.elemental2:elemental2-promise", version.ref = "elemental" }
@@ -59,6 +69,7 @@ slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
 
 # test libraries
 assertj = { module = "org.assertj:assertj-core", version.ref = "assertj" }
+grpc-testing = { module = "io.grpc:grpc-testing" }
 jmock-imposters = { module = "org.jmock:jmock-imposters", version.ref = "jmock" }
 jmock-junit4 = { module = "org.jmock:jmock-junit4", version.ref = "jmock" }
 junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }

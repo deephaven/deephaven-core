@@ -17,8 +17,8 @@ dependencies {
     testImplementation libs.dagger
     testAnnotationProcessor libs.dagger.compiler
 
-    Classpaths.inheritGrpcPlatform(project)
-    implementation 'io.grpc:grpc-netty'
+    implementation platform(libs.grpc.bom)
+    implementation libs.grpc.netty
 
     compileOnly project(':util-immutables')
     annotationProcessor libs.immutables

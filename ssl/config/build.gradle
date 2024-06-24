@@ -9,7 +9,7 @@ dependencies {
     compileOnly project(':util-immutables')
     annotationProcessor libs.immutables
 
-    Classpaths.inheritGrpcPlatform(project)
+    implementation platform(libs.grpc.bom)
     api platform(libs.jackson.bom)
     api libs.jackson.annotations
     implementation libs.jackson.databind

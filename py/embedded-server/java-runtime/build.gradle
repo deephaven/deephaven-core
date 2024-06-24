@@ -13,7 +13,7 @@ dependencies {
     implementation libs.dagger
     annotationProcessor libs.dagger.compiler
 
-    Classpaths.inheritGrpcPlatform(project)
+    implementation platform(libs.grpc.bom)
 
     implementation project(':grpc-java:grpc-servlet-jakarta')
     implementation project(':grpc-java:grpc-servlet-websocket-jakarta')
