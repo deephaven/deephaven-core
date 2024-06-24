@@ -15,6 +15,7 @@ import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
+import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
 import io.deephaven.engine.table.impl.preview.DisplayWrapper;
 import io.deephaven.engine.table.impl.DependencyStreamProvider;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
@@ -24,6 +25,7 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.datastructures.CachingSupplier;
 import io.deephaven.util.type.ArrayTypeUtils;
+import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jpy.PyObject;
@@ -344,7 +346,14 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
             if (tableDefinition.getColumn(strValue) != null) {
                 // this is also a column name which needs to take precedence, and we can't convert it
                 throw new IllegalArgumentException(String.format(
-                        "Failed to convert literal value <%s> for column \"%s\" of type %s; it is a column name",
+                        "Failed to convert value <%s> for column \"%s\" of type %s; it is a column name",
+                        strValue, column.getName(), column.getDataType().getName()));
+            }
+            if (strValue.endsWith("_")
+                    && tableDefinition.getColumn(strValue.substring(0, strValue.length() - 1)) != null) {
+                // this also a column array name which needs to take precedence, and we can't convert it
+                throw new IllegalArgumentException(String.format(
+                        "Failed to convert value <%s> for column \"%s\" of type %s; it is a column array access name",
                         strValue, column.getName(), column.getDataType().getName()));
             }
 
@@ -390,6 +399,18 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                         }
                         return Byte.parseByte(str);
                     }
+
+                    @Override
+                    Object convertParamValue(Object paramValue) {
+                        paramValue = super.convertParamValue(paramValue);
+                        if (paramValue instanceof Byte) {
+                            return paramValue;
+                        }
+                        // noinspection unchecked
+                        final TypeUtils.TypeBoxer<Object> boxer =
+                                (TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(paramValue.getClass());
+                        return QueryLanguageFunctionUtils.byteCast(boxer.get(paramValue));
+                    }
                 };
             }
             if (cls == short.class) {
@@ -400,6 +421,18 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                             return QueryConstants.NULL_SHORT_BOXED;
                         }
                         return Short.parseShort(str);
+                    }
+
+                    @Override
+                    Object convertParamValue(Object paramValue) {
+                        paramValue = super.convertParamValue(paramValue);
+                        if (paramValue instanceof Short) {
+                            return paramValue;
+                        }
+                        // noinspection unchecked
+                        final TypeUtils.TypeBoxer<Object> boxer =
+                                (TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(paramValue.getClass());
+                        return QueryLanguageFunctionUtils.shortCast(boxer.get(paramValue));
                     }
                 };
             }
@@ -412,6 +445,18 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                         }
                         return Integer.parseInt(str);
                     }
+
+                    @Override
+                    Object convertParamValue(Object paramValue) {
+                        paramValue = super.convertParamValue(paramValue);
+                        if (paramValue instanceof Integer) {
+                            return paramValue;
+                        }
+                        // noinspection unchecked
+                        final TypeUtils.TypeBoxer<Object> boxer =
+                                (TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(paramValue.getClass());
+                        return QueryLanguageFunctionUtils.intCast(boxer.get(paramValue));
+                    }
                 };
             }
             if (cls == long.class) {
@@ -422,6 +467,18 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                             return QueryConstants.NULL_LONG_BOXED;
                         }
                         return Long.parseLong(str);
+                    }
+
+                    @Override
+                    Object convertParamValue(Object paramValue) {
+                        paramValue = super.convertParamValue(paramValue);
+                        if (paramValue instanceof Long) {
+                            return paramValue;
+                        }
+                        // noinspection unchecked
+                        final TypeUtils.TypeBoxer<Object> boxer =
+                                (TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(paramValue.getClass());
+                        return QueryLanguageFunctionUtils.longCast(boxer.get(paramValue));
                     }
                 };
             }
@@ -434,6 +491,18 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                         }
                         return Float.parseFloat(str);
                     }
+
+                    @Override
+                    Object convertParamValue(Object paramValue) {
+                        paramValue = super.convertParamValue(paramValue);
+                        if (paramValue instanceof Float) {
+                            return paramValue;
+                        }
+                        // noinspection unchecked
+                        final TypeUtils.TypeBoxer<Object> boxer =
+                                (TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(paramValue.getClass());
+                        return QueryLanguageFunctionUtils.floatCast(boxer.get(paramValue));
+                    }
                 };
             }
             if (cls == double.class) {
@@ -444,6 +513,18 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                             return QueryConstants.NULL_DOUBLE_BOXED;
                         }
                         return Double.parseDouble(str);
+                    }
+
+                    @Override
+                    Object convertParamValue(Object paramValue) {
+                        paramValue = super.convertParamValue(paramValue);
+                        if (paramValue instanceof Double) {
+                            return paramValue;
+                        }
+                        // noinspection unchecked
+                        final TypeUtils.TypeBoxer<Object> boxer =
+                                (TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(paramValue.getClass());
+                        return QueryLanguageFunctionUtils.doubleCast(boxer.get(paramValue));
                     }
                 };
             }
@@ -484,6 +565,18 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                             }
                         }
                         return str.charAt(0);
+                    }
+
+                    @Override
+                    Object convertParamValue(Object paramValue) {
+                        paramValue = super.convertParamValue(paramValue);
+                        if (paramValue instanceof Character) {
+                            return paramValue;
+                        }
+                        // noinspection unchecked
+                        final TypeUtils.TypeBoxer<Object> boxer =
+                                (TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(paramValue.getClass());
+                        return QueryLanguageFunctionUtils.charCast(boxer.get(paramValue));
                     }
                 };
             }

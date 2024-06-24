@@ -43,6 +43,7 @@ import io.deephaven.util.datastructures.CachingSupplier;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -1403,5 +1404,151 @@ public abstract class QueryTableWhereTest {
 
         final WhereFilter realFilter = filter.getRealFilter();
         Assert.eqTrue(realFilter instanceof ConditionFilter, "realFilter instanceof ConditionFilter");
+    }
+
+    @Test
+    public void testEnsureColumnsTakePrecedence() {
+        final Table table = emptyTable(10).update("X=i", "Y=i%2");
+        ExecutionContext.getContext().getQueryScope().putParam("Y", 5);
+
+        {
+            final Table r1 = table.where("X == Y");
+            final Table r2 = table.where("Y == X");
+            Assert.equals(r1.getRowSet(), "r1.getRowSet()", RowSetFactory.flat(2));
+            assertTableEquals(r1, r2);
+        }
+
+        {
+            final Table r1 = table.where("X >= Y");
+            final Table r2 = table.where("Y <= X");
+            Assert.equals(r1.getRowSet(), "r1.getRowSet()", RowSetFactory.flat(10));
+            assertTableEquals(r1, r2);
+        }
+
+        {
+            final Table r1 = table.where("X > Y");
+            final Table r2 = table.where("Y < X");
+            Assert.equals(r1.getRowSet(), "r1.getRowSet()", RowSetFactory.fromRange(2, 9));
+            assertTableEquals(r1, r2);
+        }
+
+        {
+            final Table r1 = table.where("X < Y");
+            final Table r2 = table.where("Y > X");
+            Assert.equals(r1.getRowSet(), "r1.getRowSet()", RowSetFactory.empty());
+            assertTableEquals(r1, r2);
+        }
+
+        {
+            final Table r1 = table.where("X <= Y");
+            final Table r2 = table.where("Y >= X");
+            Assert.equals(r1.getRowSet(), "r1.getRowSet()", RowSetFactory.flat(2));
+            assertTableEquals(r1, r2);
+        }
+    }
+
+    @Test
+    @Ignore
+    public void testEnsureColumnArraysTakePrecedence() {
+        // TODO: column arrays aren't well supported in match arrays and this example's where filter fails to compile
+        final Table table = emptyTable(10).update("X=i", "Y=new int[]{1, 5, 9}");
+        ExecutionContext.getContext().getQueryScope().putParam("Y_", new int[] {0, 4, 8});
+
+        final Table result = table.where("X == Y_[1]");
+        Assert.equals(result.getRowSet(), "result.getRowSet()", RowSetFactory.fromKeys(5));
+
+        // check that the mirror matches the expected result
+        final Table mResult = table.where("Y_[1] == X");
+        assertTableEquals(result, mResult);
+    }
+
+    @Test
+    public void testIntToByteCoercion() {
+        final Table table = emptyTable(11).update("X = ii % 2 == 0 ? (byte) ii : null");
+        final Class<Object> colType = table.getDefinition().getColumn("X").getDataType();
+        Assert.eq(colType, "colType", byte.class);
+
+        ExecutionContext.getContext().getQueryScope().putParam("val_null", QueryConstants.NULL_INT);
+        ExecutionContext.getContext().getQueryScope().putParam("val_5", 5);
+
+        final Table null_result = table.where("X == val_null");
+        final Table range_result = table.where("X >= val_5");
+        Assert.eq(null_result.size(), "null_result.size()", 5);
+        Assert.eq(range_result.size(), "range_result.size()", 3);
+    }
+
+    @Test
+    public void testIntToShortCoercion() {
+        final Table table = emptyTable(11).update("X= ii % 2 == 0 ? (short) ii : null");
+        final Class<Object> colType = table.getDefinition().getColumn("X").getDataType();
+        Assert.eq(colType, "colType", short.class);
+
+        ExecutionContext.getContext().getQueryScope().putParam("val_null", QueryConstants.NULL_INT);
+        ExecutionContext.getContext().getQueryScope().putParam("val_5", 5);
+
+        final Table null_result = table.where("X == val_null");
+        final Table range_result = table.where("X >= val_5");
+        Assert.eq(null_result.size(), "null_result.size()", 5);
+        Assert.eq(range_result.size(), "range_result.size()", 3);
+    }
+
+    @Test
+    public void testLongToIntCoercion() {
+        final Table table = emptyTable(11).update("X= ii % 2 == 0 ? (int) ii : null");
+        final Class<Object> colType = table.getDefinition().getColumn("X").getDataType();
+        Assert.eq(colType, "colType", int.class);
+
+        ExecutionContext.getContext().getQueryScope().putParam("val_null", QueryConstants.NULL_LONG);
+        ExecutionContext.getContext().getQueryScope().putParam("val_5", 5L);
+
+        final Table null_result = table.where("X == val_null");
+        final Table range_result = table.where("X >= val_5");
+        Assert.eq(null_result.size(), "null_result.size()", 5);
+        Assert.eq(range_result.size(), "range_result.size()", 3);
+    }
+
+    @Test
+    public void testIntToLongCoercion() {
+        final Table table = emptyTable(11).update("X= ii % 2 == 0 ? ii : null");
+        final Class<Object> colType = table.getDefinition().getColumn("X").getDataType();
+        Assert.eq(colType, "colType", long.class);
+
+        ExecutionContext.getContext().getQueryScope().putParam("val_null", QueryConstants.NULL_INT);
+        ExecutionContext.getContext().getQueryScope().putParam("val_5", 5);
+
+        final Table null_result = table.where("X == val_null");
+        final Table range_result = table.where("X >= val_5");
+        Assert.eq(null_result.size(), "null_result.size()", 5);
+        Assert.eq(range_result.size(), "range_result.size()", 3);
+    }
+
+    @Test
+    public void testIntToFloatCoercion() {
+        final Table table = emptyTable(11).update("X= ii % 2 == 0 ? (float) ii : null");
+        final Class<Object> colType = table.getDefinition().getColumn("X").getDataType();
+        Assert.eq(colType, "colType", float.class);
+
+        ExecutionContext.getContext().getQueryScope().putParam("val_null", QueryConstants.NULL_INT);
+        ExecutionContext.getContext().getQueryScope().putParam("val_5", 5);
+
+        final Table null_result = table.where("X == val_null");
+        final Table range_result = table.where("X >= val_5");
+        Assert.eq(null_result.size(), "null_result.size()", 5);
+        Assert.eq(range_result.size(), "range_result.size()", 3);
+    }
+
+    @Test
+    public void testIntToDoubleCoercion() {
+        final Table table = emptyTable(11).update("X= ii % 2 == 0 ? (double) ii : null");
+        final Class<Object> colType = table.getDefinition().getColumn("X").getDataType();
+        Assert.eq(colType, "colType", double.class);
+
+        ExecutionContext.getContext().getQueryScope().putParam("val_null", QueryConstants.NULL_INT);
+        ExecutionContext.getContext().getQueryScope().putParam("val_5", 5);
+
+        final Table null_result = table.where("X == val_null");
+        final Table range_result = table.where("X >= val_5");
+        Assert.eq(null_result.size(), "null_result.size()", 5);
+        Assert.eq(range_result.size(), "range_result.size()", 3);
     }
 }
