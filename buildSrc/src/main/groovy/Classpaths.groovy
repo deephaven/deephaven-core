@@ -107,10 +107,6 @@ class Classpaths {
     // Only bump this in concert w/ GRPC_VERSION
     static final String BORINGSSL_VERSION = '2.0.61.Final'
 
-    static final String JACKSON_GROUP = 'com.fasterxml.jackson'
-    static final String JACKSON_NAME = 'jackson-bom'
-    static final String JACKSON_VERSION = '2.17.0'
-
     static final String SSLCONTEXT_GROUP = 'io.github.hakky54'
     static final String SSLCONTEXT_VERSION = '8.1.1'
 
@@ -134,9 +130,6 @@ class Classpaths {
 
     static final String AWSSDK_GROUP = 'software.amazon.awssdk'
     static final String AWSSDK_VERSION = '2.24.5'
-
-    static final String TESTCONTAINER_GROUP = 'org.testcontainers'
-    static final String TESTCONTAINER_VERSION = '1.19.4'
 
     static boolean addDependency(Configuration conf, String group, String name, String version, Action<? super DefaultExternalModuleDependency> configure = Actions.doNothing()) {
         if (!conf.dependencies.find { it.name == name && it.group == group}) {
@@ -282,11 +275,6 @@ class Classpaths {
         addDependency(config, BORINGSSL_GROUP, BORINGSSL_NAME, BORINGSSL_VERSION)
     }
 
-    static void inheritJacksonPlatform(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
-        Configuration config = p.configurations.getByName(configName)
-        addDependency(config, p.getDependencies().platform("${JACKSON_GROUP}:${JACKSON_NAME}:${JACKSON_VERSION}"))
-    }
-
     static void inheritSSLContext(Project p, String name, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
         Configuration config = p.configurations.getByName(configName)
         addDependency(config, SSLCONTEXT_GROUP, name, SSLCONTEXT_VERSION)
@@ -357,13 +345,5 @@ class Classpaths {
 
         addDependency(config, AWSSDK_GROUP, 's3', AWSSDK_VERSION)
         addDependency(config, AWSSDK_GROUP, 'aws-crt-client', AWSSDK_VERSION)
-    }
-
-    static void inheritTestContainers(Project p, String configName = JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME) {
-        Configuration config = p.configurations.getByName(configName)
-        addDependency(config, TESTCONTAINER_GROUP, 'testcontainers', TESTCONTAINER_VERSION)
-        addDependency(config, TESTCONTAINER_GROUP, 'junit-jupiter', TESTCONTAINER_VERSION)
-        addDependency(config, TESTCONTAINER_GROUP, 'localstack', TESTCONTAINER_VERSION)
-        addDependency(config, TESTCONTAINER_GROUP, 'minio', TESTCONTAINER_VERSION)
     }
 }

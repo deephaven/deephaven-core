@@ -75,6 +75,6 @@ dependencies {
     // https://mvnrepository.com/artifact/com.univocity/univocity-parsers
     dhBenchmarkSupport 'com.univocity:univocity-parsers:2.6.0'
 
-    Classpaths.inheritJacksonPlatform(project, 'dhBenchmarkSupport')
-    dhBenchmarkSupport 'com.fasterxml.jackson.core:jackson-core'
+    dhBenchmarkSupport platform(libs.jackson.bom)
+    dhBenchmarkSupport libs.jackson.core
 }

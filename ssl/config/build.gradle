@@ -7,11 +7,11 @@ description = 'The Deephaven SSL Configuration'
 
 dependencies {
     Classpaths.inheritImmutables(project)
-    Classpaths.inheritJacksonPlatform(project, 'api')
     Classpaths.inheritGrpcPlatform(project)
-    api 'com.fasterxml.jackson.core:jackson-annotations'
-    implementation 'com.fasterxml.jackson.core:jackson-databind'
-    runtimeOnly('com.fasterxml.jackson.datatype:jackson-datatype-jdk8') {
+    api platform(libs.jackson.bom)
+    api libs.jackson.annotations
+    implementation libs.jackson.databind
+    runtimeOnly(libs.jackson.datatype.jdk8) {
         because 'we need to parse optional types'
     }
 

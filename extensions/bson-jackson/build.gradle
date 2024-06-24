@@ -11,11 +11,12 @@ dependencies {
     Classpaths.inheritImmutables(project)
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 
-    Classpaths.inheritJacksonPlatform(project, 'testImplementation')
+    testImplementation platform(libs.jackson.bom)
+    testImplementation libs.jackson.databind
+
     Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)
     testImplementation 'org.junit.jupiter:junit-jupiter'
-    testImplementation 'com.fasterxml.jackson.core:jackson-databind'
 }
 
 test {
