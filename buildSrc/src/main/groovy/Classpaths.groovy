@@ -26,10 +26,6 @@ class Classpaths {
     // TODO (core#1163): take advantage of symbol-solver-core
 //    static final String JAVA_PARSER_NAME = 'javaparser-symbol-solver-core'
 
-    static final String JAVAX_ANNOTATIONS_GROUP = 'javax.validation'
-    static final String JAVAX_ANNOTATIONS_NAME = 'validation-api'
-    static final String JAVAX_ANNOTATIONS_VERSION = '1.0.0.GA'
-
     static final String JETTY_VERSION = '9.4.44.v20210927'
 
     static final String JS_INTEROP_GROUP = 'com.google.jsinterop'
@@ -153,11 +149,6 @@ class Classpaths {
                 force 'org.ow2.asm:asm-commons:9.2'
             }
         }
-    }
-
-    static void inheritJavaxAnnotations(Project p, String configName) {
-        Configuration config = p.configurations.getByName(configName)
-        addDependency config, JAVAX_ANNOTATIONS_GROUP, JAVAX_ANNOTATIONS_NAME, JAVAX_ANNOTATIONS_VERSION
     }
 
     static void inheritJsInterop(Project p, String name, String configName) {
