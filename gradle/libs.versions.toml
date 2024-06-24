@@ -1,5 +1,6 @@
 [versions]
 arrow = "13.0.0"
+autoservice = "1.0.1"
 commons = "1.10.0"
 dagger = "2.44"
 elemental = "1.2.1"
@@ -21,6 +22,8 @@ arrow-format = { module = "org.apache.arrow:arrow-format", version.ref = "arrow"
 arrow-vector = { module = "org.apache.arrow:arrow-vector", version.ref = "arrow" }
 arrow-flight-core = { module = "org.apache.arrow:flight-core", version.ref = "arrow" }
 arrow-flight-grpc = { module = "org.apache.arrow:flight-grpc", version.ref = "arrow" }
+autoservice = { module = "com.google.auto.service:auto-service-annotations", version.ref = "autoservice" }
+autoservice-compiler = { module = "com.google.auto.service:auto-service", version.ref = "autoservice" }
 commons-text = { module = "org.apache.commons:commons-text", version.ref = "commons" }
 dagger = { module = "com.google.dagger:dagger", version.ref = "dagger" }
 dagger-compiler = { module = "com.google.dagger:dagger-compiler", version.ref = "dagger" }

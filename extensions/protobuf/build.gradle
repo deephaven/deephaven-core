@@ -26,7 +26,8 @@ dependencies {
     testRuntimeOnly project(':test-configs')
     testRuntimeOnly libs.slf4j.simple
 
-    Classpaths.inheritAutoService(project, true)
+    testCompileOnly libs.autoservice
+    testAnnotationProcessor libs.autoservice.compiler
 }
 
 test {

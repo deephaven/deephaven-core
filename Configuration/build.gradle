@@ -11,7 +11,8 @@ dependencies {
     Classpaths.inheritJUnitClassic(project, 'testImplementation')
     Classpaths.inheritJMock(project, 'testImplementation')
 
-    Classpaths.inheritAutoService(project)
+    compileOnly libs.autoservice
+    annotationProcessor libs.autoservice.compiler
 
     testImplementation project(path: ':Base', configuration: 'tests')
 

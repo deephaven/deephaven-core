@@ -28,11 +28,6 @@ class Classpaths {
 
     static final String JETTY_VERSION = '9.4.44.v20210927'
 
-    static final String AUTOSERVICE_GROUP = 'com.google.auto.service'
-    static final String AUTOSERVICE_NAME = 'auto-service-annotations'
-    static final String AUTOSERVICE_COMPILER = 'auto-service'
-    static final String AUTOSERVICE_VERSION = '1.0.1'
-
     static final String IMMUTABLES_GROUP = 'org.immutables'
     static final String IMMUTABLES_NAME = 'value'
     static final String IMMUTABLES_VERSION = '2.9.2'
@@ -129,18 +124,6 @@ class Classpaths {
                 force 'org.ow2.asm:asm-commons:9.2'
             }
         }
-    }
-
-    /**
-     * Auto service is an annotation processor that will generate META-INF/services/ files.
-     *
-     * @see <a href="https://github.com/google/auto/tree/master/service">google/auto/tree/master/service</a>
-     */
-    static void inheritAutoService(Project p, boolean test = false) {
-        Configuration ic = p.configurations.getByName(test ? 'testCompileOnly' : 'compileOnly')
-        addDependency(ic, AUTOSERVICE_GROUP, AUTOSERVICE_NAME, AUTOSERVICE_VERSION)
-        Configuration ap = p.configurations.getByName(test ? 'testAnnotationProcessor' : 'annotationProcessor')
-        addDependency(ap, AUTOSERVICE_GROUP, AUTOSERVICE_COMPILER, AUTOSERVICE_VERSION)
     }
 
     static void inheritImmutables(Project p, boolean test = false) {

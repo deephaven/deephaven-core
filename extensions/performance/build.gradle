@@ -7,6 +7,7 @@ dependencies {
     implementation project(':DHProcess')
     implementation project(':engine-table')
     implementation project(':Plot')
-    Classpaths.inheritAutoService(project)
+    compileOnly libs.autoservice
+    annotationProcessor libs.autoservice.compiler
     Classpaths.inheritGroovy(project, 'groovy', 'implementation')
 }

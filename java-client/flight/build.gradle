@@ -12,7 +12,8 @@ dependencies {
     api libs.arrow.flight.core
     implementation libs.arrow.flight.grpc
     api libs.arrow.vector
-    Classpaths.inheritAutoService(project)
+    compileOnly libs.autoservice
+    annotationProcessor libs.autoservice.compiler
 
     Classpaths.inheritImmutables(project)
 

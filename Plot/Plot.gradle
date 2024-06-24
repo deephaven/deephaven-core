@@ -19,7 +19,8 @@ dependencies {
 
     Classpaths.inheritGroovy(project, 'groovy', 'api')
     Classpaths.inheritGroovy(project, 'groovy-json', 'implementation')
-    Classpaths.inheritAutoService(project)
+    compileOnly libs.autoservice
+    annotationProcessor libs.autoservice.compiler
 
     compileOnly 'javax.inject:javax.inject:1'
 

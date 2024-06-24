@@ -13,7 +13,8 @@ dependencies {
     implementation project(':log-factory')
     implementation project(':Configuration')
 
-    Classpaths.inheritAutoService(project)
+    compileOnly libs.autoservice
+    annotationProcessor libs.autoservice.compiler
     Classpaths.inheritImmutables(project)
 
     Classpaths.inheritParquetHadoop(project)

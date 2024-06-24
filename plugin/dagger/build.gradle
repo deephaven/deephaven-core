@@ -14,7 +14,8 @@ dependencies {
     testImplementation libs.dagger
     testAnnotationProcessor libs.dagger.compiler
 
-    Classpaths.inheritAutoService(project, true) // test
+    testCompileOnly libs.autoservice
+    testAnnotationProcessor libs.autoservice.compiler
     Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)
     testImplementation 'org.junit.jupiter:junit-jupiter'

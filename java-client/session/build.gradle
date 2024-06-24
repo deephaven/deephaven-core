@@ -22,7 +22,8 @@ dependencies {
   Classpaths.inheritSSLContext(project, 'sslcontext-kickstart-for-netty')
 
   Classpaths.inheritImmutables(project)
-  Classpaths.inheritAutoService(project)
+  compileOnly libs.autoservice
+  annotationProcessor libs.autoservice.compiler
   compileOnly 'javax.inject:javax.inject:1'
 
   Classpaths.inheritJUnitPlatform(project)

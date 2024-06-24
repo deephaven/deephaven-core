@@ -53,8 +53,10 @@ dependencies {
     testImplementation libs.dagger
     testAnnotationProcessor libs.dagger.compiler
 
-    Classpaths.inheritAutoService(project)
-    Classpaths.inheritAutoService(project, /* test */ true)
+    compileOnly libs.autoservice
+    annotationProcessor libs.autoservice.compiler
+    testCompileOnly libs.autoservice
+    testAnnotationProcessor libs.autoservice.compiler
 
     Classpaths.inheritImmutables(project)
 

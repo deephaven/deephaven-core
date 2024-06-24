@@ -6,5 +6,6 @@ plugins {
 dependencies {
 	implementation project(':log-factory')
 	compileOnly libs.slf4j.api // users must provide their own api hooks
-	Classpaths.inheritAutoService(project)
+	compileOnly libs.autoservice
+	annotationProcessor libs.autoservice.compiler
 }

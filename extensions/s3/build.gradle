@@ -23,7 +23,8 @@ dependencies {
     // For OSUtil
     testImplementation project(':Stats')
 
-    Classpaths.inheritAutoService(project)
+    compileOnly libs.autoservice
+    annotationProcessor libs.autoservice.compiler
     Classpaths.inheritImmutables(project)
 
     Classpaths.inheritJUnitPlatform(project)
