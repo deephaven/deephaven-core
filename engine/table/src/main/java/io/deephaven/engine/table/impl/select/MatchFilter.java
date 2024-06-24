@@ -183,6 +183,13 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
 
     @Override
     public List<String> getColumnArrays() {
+        if (!initialized) {
+            throw new IllegalStateException("Filter must be initialized to invoke getColumnArrays");
+        }
+        final WhereFilter failover = getFailoverFilterIfCached();
+        if (failover != null) {
+            return failover.getColumnArrays();
+        }
         return Collections.emptyList();
     }
 
@@ -732,7 +739,8 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
         final MatchFilter copy;
         if (strValues != null) {
             copy = new MatchFilter(
-                    failoverFilter, caseInsensitive ? CaseSensitivity.IgnoreCase : CaseSensitivity.MatchCase,
+                    failoverFilter == null ? null : new CachingSupplier<>(() -> failoverFilter.get().copy()),
+                    caseInsensitive ? CaseSensitivity.IgnoreCase : CaseSensitivity.MatchCase,
                     getMatchType(), columnName, strValues, null);
         } else {
             // when we're constructed with values then there is no failover filter

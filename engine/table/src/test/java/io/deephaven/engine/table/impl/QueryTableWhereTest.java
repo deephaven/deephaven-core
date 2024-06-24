@@ -1401,7 +1401,7 @@ public abstract class QueryTableWhereTest {
         final Table result = table.where(filter);
         assertTableEquals(table, result);
 
-        final WhereFilter copyFilter = filter.copy();
-        Assert.eqTrue(copyFilter instanceof ConditionFilter, "copyFilter instanceof ConditionFilter");
+        final WhereFilter realFilter = filter.getRealFilter();
+        Assert.eqTrue(realFilter instanceof ConditionFilter, "realFilter instanceof ConditionFilter");
     }
 }

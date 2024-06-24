@@ -12,6 +12,7 @@ import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.gui.table.filters.Condition;
+import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -23,7 +24,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -127,12 +127,23 @@ public class RangeFilter extends WhereFilterImpl {
 
     @Override
     public List<String> getColumns() {
-        return Collections.singletonList(columnName);
+        if (filter == null) {
+            throw new IllegalStateException("Filter must be initialized to invoke getColumnName");
+        }
+        return filter.getColumns();
     }
 
     @Override
     public List<String> getColumnArrays() {
-        return Collections.emptyList();
+        if (filter == null) {
+            throw new IllegalStateException("Filter must be initialized to invoke getColumnArrays");
+        }
+        return filter.getColumnArrays();
+    }
+
+    @VisibleForTesting
+    public WhereFilter getRealFilter() {
+        return filter;
     }
 
     @Override

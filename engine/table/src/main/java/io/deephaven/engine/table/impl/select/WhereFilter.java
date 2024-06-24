@@ -96,6 +96,8 @@ public interface WhereFilter extends Filter {
 
     /**
      * Get the array columns required by this select filter.
+     * <p>
+     * This filter must already be initialized before calling this method.
      *
      * @return the columns used as array input by this select filter.
      */
