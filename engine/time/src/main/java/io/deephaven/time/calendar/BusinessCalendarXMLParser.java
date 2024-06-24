@@ -262,7 +262,7 @@ public final class BusinessCalendarXMLParser {
 
             final LocalTime open = DateTimeUtils.parseLocalTime(openTxt);
             final LocalTime close = DateTimeUtils.parseLocalTime(closeTxt);
-            rst[i] = new TimeRange<>(open, close, true);
+            rst[i] = new TimeRange<>(open, close, false);
         }
 
         return rst;
