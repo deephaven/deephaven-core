@@ -235,8 +235,7 @@ public class RangeFilter extends WhereFilterImpl {
         } else if (colClass == LocalDateTime.class) {
             filter = makeComparableRangeFilter(columnName, condition, (LocalDateTime) realValue.getValue());
         } else if (colClass == ZonedDateTime.class) {
-            filter = makeZonedDateTimeRangeFilter(columnName, condition,
-                    DateTimeUtils.epochNanos((ZonedDateTime) realValue.getValue()));
+            filter = makeComparableRangeFilter(columnName, condition, (ZonedDateTime) realValue.getValue());
         } else if (BigDecimal.class.isAssignableFrom(colClass)) {
             filter = makeComparableRangeFilter(columnName, condition, (BigDecimal) realValue.getValue());
         } else if (BigInteger.class.isAssignableFrom(colClass)) {
@@ -274,21 +273,6 @@ public class RangeFilter extends WhereFilterImpl {
                 return new InstantRangeFilter(columnName, value, Long.MAX_VALUE, false, true);
             case GREATER_THAN_OR_EQUAL:
                 return new InstantRangeFilter(columnName, value, Long.MAX_VALUE, true, true);
-            default:
-                throw new IllegalArgumentException("RangeFilter does not support condition " + condition);
-        }
-    }
-
-    private static LongRangeFilter makeZonedDateTimeRangeFilter(String columnName, Condition condition, long value) {
-        switch (condition) {
-            case LESS_THAN:
-                return new ZonedDateTimeRangeFilter(columnName, value, Long.MIN_VALUE, true, false);
-            case LESS_THAN_OR_EQUAL:
-                return new ZonedDateTimeRangeFilter(columnName, value, Long.MIN_VALUE, true, true);
-            case GREATER_THAN:
-                return new ZonedDateTimeRangeFilter(columnName, value, Long.MAX_VALUE, false, true);
-            case GREATER_THAN_OR_EQUAL:
-                return new ZonedDateTimeRangeFilter(columnName, value, Long.MAX_VALUE, true, true);
             default:
                 throw new IllegalArgumentException("RangeFilter does not support condition " + condition);
         }
