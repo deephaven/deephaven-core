@@ -483,3 +483,19 @@ def simple_spec(col_name: str, data_type: DType = None) -> KeyValueSpec:
         )
     except Exception as e:
         raise DHError(e, "failed to create a Kafka key/value spec") from e
+
+
+def object_processor_spec(provider: jpy.JType) -> KeyValueSpec:
+    """Creates a kafka key-value spec implementation from a named object processor provider. It must be capable of
+    supporting a byte array.
+
+    Args:
+         provider (jpy.JType): the named object processor provider
+
+    Returns:
+        a KeyValueSpec
+
+    Raises:
+        DHError
+    """
+    return KeyValueSpec(j_spec=_JKafkaTools_Consume.objectProcessorSpec(provider))

@@ -38,7 +38,6 @@ class S3Instructions(JObjectWrapper):
                  max_concurrent_requests: Optional[int] = None,
                  read_ahead_count: Optional[int] = None,
                  fragment_size: Optional[int] = None,
-                 max_cache_size: Optional[int] = None,
                  connection_timeout: Union[
                      Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta, None] = None,
                  read_timeout: Union[
@@ -61,8 +60,6 @@ class S3Instructions(JObjectWrapper):
                 fragment. Defaults to 32, which means fetch the next 32 fragments in advance when reading the current fragment.
             fragment_size (int): the maximum size of each fragment to read, defaults to 64 KiB. If there are fewer bytes
                 remaining in the file, the fetched fragment can be smaller.
-            max_cache_size (int): the maximum number of fragments to cache in memory while reading, defaults to 256. This
-                caching is done at the Deephaven layer for faster access to recently read fragments.
             connection_timeout (Union[Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta]):
                 the amount of time to wait when initially establishing a connection before giving up and timing out, can
                 be expressed as an integer in nanoseconds, a time interval string, e.g. "PT00:00:00.001" or "PT1s", or
@@ -102,9 +99,6 @@ class S3Instructions(JObjectWrapper):
 
             if fragment_size is not None:
                 builder.fragmentSize(fragment_size)
-
-            if max_cache_size is not None:
-                builder.maxCacheSize(max_cache_size)
 
             if connection_timeout is not None:
                 builder.connectionTimeout(time.to_j_duration(connection_timeout))

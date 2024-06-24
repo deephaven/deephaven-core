@@ -99,6 +99,7 @@ public class EmbeddedServer {
      *
      * @deprecated use {@link #EmbeddedServer(String, Integer)} instead. dict is not used.
      */
+    @Deprecated
     public EmbeddedServer(String host, Integer port, PyObject dict) throws IOException {
         this(host, port);
     }

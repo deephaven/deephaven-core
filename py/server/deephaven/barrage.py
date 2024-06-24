@@ -116,6 +116,7 @@ def barrage_session(host: str,
                     auth_token: str = "",
                     use_tls: bool = False,
                     tls_root_certs: bytes = None,
+                    extra_headers: Dict[str, str] = None
                     ) -> BarrageSession:
     """Returns a Deephaven gRPC session to a remote server if a cached session is available; otherwise, creates a new
     session.
@@ -135,6 +136,7 @@ def barrage_session(host: str,
         tls_root_certs (bytes): PEM encoded root certificates to use for TLS connection, or None to use system defaults.
              If not None implies use a TLS connection and the use_tls argument should have been passed
              as True. Defaults to None
+        extra_headers (Dict[str, str]): extra headers to set when configuring the gRPC channel. Defaults to None.
 
     Returns:
         a Deephaven Barrage session
@@ -152,7 +154,7 @@ def barrage_session(host: str,
         else:
             target_uri = f"dh+plain://{target_uri}"
 
-        j_client_config = _build_client_config(target_uri, tls_root_certs)
+        j_client_config = _build_client_config(target_uri, tls_root_certs, extra_headers)
         auth = f"{auth_type} {auth_token}"
 
         try:
@@ -209,9 +211,12 @@ def _get_barrage_session_direct(client_config: jpy.JType, auth: str) -> BarrageS
     return BarrageSession(j_barrage_session, j_channel)
 
 
-def _build_client_config(target_uri: str, tls_root_certs: bytes) -> jpy.JType:
+def _build_client_config(target_uri: str, tls_root_certs: bytes, extra_headers: Dict[str, str] = None) -> jpy.JType:
     j_client_config_builder = _JClientConfig.builder()
     j_client_config_builder.target(_JDeephavenTarget.of(_JURI(target_uri)))
+    if extra_headers:
+        for header, value in extra_headers.items():
+            j_client_config_builder.putExtraHeaders(header, value)
     if tls_root_certs:
         j_ssl_config = _JSSLConfig.builder().trust(
             _JTrustCustom.ofX509(tls_root_certs, 0, len(tls_root_certs))).build()

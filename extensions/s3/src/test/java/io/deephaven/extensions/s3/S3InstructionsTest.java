@@ -19,7 +19,6 @@ public class S3InstructionsTest {
         assertThat(instructions.maxConcurrentRequests()).isEqualTo(256);
         assertThat(instructions.readAheadCount()).isEqualTo(32);
         assertThat(instructions.fragmentSize()).isEqualTo(65536);
-        assertThat(instructions.maxCacheSize()).isEqualTo(256);
         assertThat(instructions.connectionTimeout()).isEqualTo(Duration.ofSeconds(2));
         assertThat(instructions.readTimeout()).isEqualTo(Duration.ofSeconds(2));
         assertThat(instructions.credentials()).isEqualTo(Credentials.defaultCredentials());
@@ -99,30 +98,6 @@ public class S3InstructionsTest {
                     .build();
         } catch (IllegalArgumentException e) {
             assertThat(e).hasMessageContaining("fragmentSize");
-        }
-    }
-
-    @Test
-    void minMaxCacheSize() {
-        assertThat(S3Instructions.builder()
-                .regionName("some-region")
-                .readAheadCount(99)
-                .maxCacheSize(100)
-                .build()
-                .maxCacheSize())
-                .isEqualTo(100);
-    }
-
-    @Test
-    void tooSmallCacheSize() {
-        try {
-            S3Instructions.builder()
-                    .regionName("some-region")
-                    .readAheadCount(99)
-                    .maxCacheSize(99)
-                    .build();
-        } catch (IllegalArgumentException e) {
-            assertThat(e).hasMessageContaining("maxCacheSize");
         }
     }
 

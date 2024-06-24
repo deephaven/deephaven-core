@@ -214,7 +214,7 @@ public class CachedChannelProviderTest {
         }
 
         @Override
-        public InputStream getInputStream(SeekableByteChannel channel) {
+        public InputStream getInputStream(SeekableByteChannel channel, int sizeHint) {
             // TestMockChannel is always empty, so no need to buffer
             return Channels.newInputStreamNoClose(channel);
         }

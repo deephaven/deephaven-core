@@ -10,7 +10,7 @@ on:
     # effect the labels because the merge requirements need checks to pass against the most recent
     # commit.
     types: [ opened, synchronize, reopened, labeled, unlabeled ]
-    branches: [ main ]
+    branches: [ 'main', 'rc/v*' ]
 
 jobs:
   doc-labels:

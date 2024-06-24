@@ -24,4 +24,43 @@ public class MathUtilTest extends TestCase {
         assertEquals(expect, MathUtil.gcd(-a, -b));
         assertEquals(expect, MathUtil.gcd(-b, -a));
     }
+
+    public void testRoundUpPowerOf2() {
+        pow2(0, 1);
+        pow2(1, 1);
+        pow2(2, 2);
+        for (int i = 2; i < 31; ++i) {
+            final int pow2 = 1 << i;
+            pow2(pow2, pow2);
+            pow2(pow2 - 1, pow2);
+            if (i < 30) {
+                pow2(pow2 + 1, pow2 * 2);
+            }
+        }
+    }
+
+    public void testRoundUpArraySize() {
+        arraySize(0, 1);
+        arraySize(1, 1);
+        arraySize(2, 2);
+        for (int i = 2; i < 31; ++i) {
+            final int pow2 = 1 << i;
+            arraySize(pow2, pow2);
+            arraySize(pow2 - 1, pow2);
+            if (i < 30) {
+                arraySize(pow2 + 1, pow2 * 2);
+            } else {
+                arraySize(pow2 + 1, ArrayUtil.MAX_ARRAY_SIZE);
+            }
+        }
+        arraySize(Integer.MAX_VALUE, ArrayUtil.MAX_ARRAY_SIZE);
+    }
+
+    public static void pow2(int newSize, int expectedSize) {
+        assertEquals(MathUtil.roundUpPowerOf2(newSize), expectedSize);
+    }
+
+    public static void arraySize(int newSize, int expectedSize) {
+        assertEquals(MathUtil.roundUpArraySize(newSize), expectedSize);
+    }
 }

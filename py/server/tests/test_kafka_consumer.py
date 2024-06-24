@@ -4,12 +4,13 @@
 
 import os
 import unittest
+from datetime import datetime
 
 from deephaven import kafka_consumer as ck
 from deephaven.stream.kafka.consumer import TableType, KeyValueSpec
 from tests.testbase import BaseTestCase
 from deephaven import dtypes
-
+from deephaven.json.jackson import provider as jackson_provider
 
 class KafkaConsumerTestCase(BaseTestCase):
 
@@ -80,7 +81,13 @@ class KafkaConsumerTestCase(BaseTestCase):
                 'jqty': 'Qty',
                 'jts': 'Tstamp'
             }
-        )]
+        ), ck.object_processor_spec(jackson_provider({
+            'Symbol': str,
+            'Side': str,
+            'Price': float,
+            'Qty': int,
+            'Tstamp': datetime
+        }))]
 
         for value_spec in value_specs:
             t = ck.consume(

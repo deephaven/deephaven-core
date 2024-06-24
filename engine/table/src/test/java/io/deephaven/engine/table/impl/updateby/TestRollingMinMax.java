@@ -474,6 +474,14 @@ public class TestRollingMinMax extends BaseUpdateByTest {
     // region Static Zero Key Tests
 
     @Test
+    public void testStaticZeroKeyAllNullVector() {
+        final int prevTicks = 1;
+        final int postTicks = 0;
+
+        doTestStaticZeroKey(prevTicks, postTicks);
+    }
+
+    @Test
     public void testStaticZeroKeyRev() {
         final int prevTicks = 100;
         final int postTicks = 0;

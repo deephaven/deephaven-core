@@ -9,7 +9,7 @@ package io.deephaven.base.ringbuffer;
 
 import java.util.Arrays;
 
-import io.deephaven.base.ArrayUtil;
+import io.deephaven.base.MathUtil;
 import io.deephaven.base.verify.Assert;
 
 import java.io.Serializable;
@@ -22,8 +22,6 @@ import java.util.NoSuchElementException;
  * determination of storage indices through a mask operation.
  */
 public class ObjectRingBuffer<T> implements Serializable {
-    /** Maximum capacity is the highest power of two that can be allocated (i.e. <= than ArrayUtil.MAX_ARRAY_SIZE). */
-    static final int RING_BUFFER_MAX_CAPACITY = Integer.highestOneBit(ArrayUtil.MAX_ARRAY_SIZE);
     static final long FIXUP_THRESHOLD = 1L << 62;
     final boolean growable;
     T[] storage;
@@ -47,21 +45,13 @@ public class ObjectRingBuffer<T> implements Serializable {
      * @param growable whether to allow growth when the buffer is full.
      */
     public ObjectRingBuffer(int capacity, boolean growable) {
-        Assert.leq(capacity, "ObjectRingBuffer capacity", RING_BUFFER_MAX_CAPACITY);
+        Assert.leq(capacity, "ObjectRingBuffer capacity", MathUtil.MAX_POWER_OF_2);
 
         this.growable = growable;
 
         // use next larger power of 2 for our storage
-        final int newCapacity;
-        if (capacity < 2) {
-            // sensibly handle the size=0 and size=1 cases
-            newCapacity = 1;
-        } else {
-            newCapacity = Integer.highestOneBit(capacity - 1) << 1;
-        }
-
         // reset the data structure members
-        storage = (T[]) new Object[newCapacity];
+        storage = (T[]) new Object[MathUtil.roundUpPowerOf2(capacity)];
         mask = storage.length - 1;
         tail = head = 0;
     }
@@ -75,9 +65,9 @@ public class ObjectRingBuffer<T> implements Serializable {
         final int size = size();
         final long newCapacity = (long) storage.length + increase;
         // assert that we are not asking for the impossible
-        Assert.leq(newCapacity, "ObjectRingBuffer capacity", RING_BUFFER_MAX_CAPACITY);
+        Assert.leq(newCapacity, "ObjectRingBuffer capacity", MathUtil.MAX_POWER_OF_2);
 
-        final T[] newStorage = (T[]) new Object[Integer.highestOneBit((int) newCapacity - 1) << 1];
+        final T[] newStorage = (T[]) new Object[MathUtil.roundUpPowerOf2((int) newCapacity)];
 
         // move the current data to the new buffer
         copyRingBufferToArray(newStorage);

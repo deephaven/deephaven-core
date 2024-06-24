@@ -16,6 +16,8 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import java.util.Collections;
 import java.util.Map;
 
+import static io.deephaven.util.QueryConstants.NULL_FLOAT;
+
 /**
  * Iterative average operator.
  */
@@ -123,12 +125,14 @@ class FloatChunkedReAvgOperator implements IterativeChunkedAggregationOperator {
 
     private boolean updateResult(long destination, long nncValue, long nanValue, long picValue, long nicValue,
             double sumSumValue) {
-        if (nanValue > 0 || (picValue > 0 && nicValue > 0) || nncValue == 0) {
+        if (nanValue > 0 || (picValue > 0 && nicValue > 0)) {
             return !Float.isNaN(resultColumn.getAndSetUnsafe(destination, Float.NaN));
         } else if (picValue > 0) {
             return resultColumn.getAndSetUnsafe(destination, Float.POSITIVE_INFINITY) != Float.POSITIVE_INFINITY;
         } else if (nicValue > 0) {
             return resultColumn.getAndSetUnsafe(destination, Float.NEGATIVE_INFINITY) != Float.NEGATIVE_INFINITY;
+        } else if (nncValue == 0) {
+            return resultColumn.getAndSetUnsafe(destination, NULL_FLOAT) != NULL_FLOAT;
         } else {
             final float newValue = (float) (sumSumValue / nncValue);
             return resultColumn.getAndSetUnsafe(destination, newValue) != newValue;
