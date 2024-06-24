@@ -14,7 +14,7 @@ dependencies {
     testImplementation project(path: ':Base', configuration: 'tests')
 
     testRuntimeOnly project(':log-to-slf4j')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly libs.slf4j.simple
     Classpaths.inheritJUnitClassic(project, 'testImplementation')
 }
 

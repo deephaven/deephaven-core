@@ -33,7 +33,7 @@ dependencies {
     api(project(':log-factory')) {
         because 'downstream dagger compile, see deephaven-core#1722'
     }
-    Classpaths.inheritSlf4j(project, 'jul-to-slf4j', 'implementation')
+    implementation libs.slf4j.jul.to.slf4j
     api(project(':application-mode')) {
         because 'downstream dagger compile, see deephaven-core#1722'
     }
@@ -96,7 +96,7 @@ dependencies {
     Classpaths.inheritAssertJ(project)
 
     testRuntimeOnly project(':log-to-slf4j')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly libs.slf4j.simple
 
     runtimeOnly project(':authentication:example-providers:psk')
 }

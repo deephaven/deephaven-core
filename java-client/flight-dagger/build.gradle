@@ -11,8 +11,8 @@ dependencies {
 
     Classpaths.inheritDagger(project)
 
-    Classpaths.inheritSlf4j(project, 'slf4j-api', 'implementation')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    implementation libs.slf4j.api
+    testRuntimeOnly libs.slf4j.simple
 
     // Unable to use newer junit here because of test-libs/junit-wall-4.11.jar
     /*

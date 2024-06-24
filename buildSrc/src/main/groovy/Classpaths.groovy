@@ -28,9 +28,6 @@ class Classpaths {
 
     static final String JETTY_VERSION = '9.4.44.v20210927'
 
-    static final String SLF4J_GROUP = 'org.slf4j'
-    static final String SLF4J_VERSION = '2.0.11'
-
     static final String FLATBUFFER_GROUP = 'com.google.flatbuffers'
     static final String FLATBUFFER_NAME = 'flatbuffers-java'
     static final String FLATBUFFER_VERSION = '1.12.0'
@@ -197,11 +194,6 @@ class Classpaths {
     static void inheritLogbackClassic(Project p, String configName = JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME) {
         Configuration config = p.configurations.getByName(configName)
         addDependency(config, LOGBACK_GROUP, LOGBACK_NAME, LOGBACK_VERSION)
-    }
-
-    static void inheritSlf4j(Project p, String name, String configName) {
-        Configuration config = p.configurations.getByName(configName)
-        addDependency(config, SLF4J_GROUP, name, SLF4J_VERSION)
     }
 
     static void inheritGroovy(Project p, String name, String configName) {

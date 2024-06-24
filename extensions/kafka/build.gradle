@@ -43,7 +43,7 @@ dependencies {
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly project(':configs')
     testRuntimeOnly project(':test-configs')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly libs.slf4j.simple
 
     Classpaths.inheritAssertJ(project)
 }

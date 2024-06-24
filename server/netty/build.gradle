@@ -28,7 +28,7 @@ dependencies {
     Classpaths.inheritAssertJ(project)
 
     testRuntimeOnly project(':log-to-slf4j')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly libs.slf4j.simple
 }
 
 test.systemProperty "PeriodicUpdateGraph.allowUnitTestMode", false

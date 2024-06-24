@@ -36,8 +36,8 @@ dependencies {
 
   Classpaths.inheritAssertJ(project)
 
-  Classpaths.inheritSlf4j(project, 'slf4j-api', 'implementation')
-  Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+  implementation libs.slf4j.api
+  testRuntimeOnly libs.slf4j.simple
 }
 
 test {

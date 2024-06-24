@@ -16,7 +16,7 @@ dependencies {
     runtimeOnly project(':log-to-slf4j')
     runtimeOnly project(path: ':configs')
     runtimeOnly project(path: ':test-configs')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'runtimeOnly')
+    runtimeOnly libs.slf4j.simple
 
     implementation libs.arrow.vector
 }

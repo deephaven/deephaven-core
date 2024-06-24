@@ -30,7 +30,7 @@ dependencies {
     testRuntimeOnly files('build/resources/main')
 
     testRuntimeOnly project(':log-to-slf4j')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly libs.slf4j.simple
 }
 
 test {
