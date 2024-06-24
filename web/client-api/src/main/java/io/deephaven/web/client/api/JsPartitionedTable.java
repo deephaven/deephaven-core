@@ -90,7 +90,7 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
             connection.tableServiceClient().view(view, metadata, (fail, success) -> {
                 c.apply(fail, success);
             });
-        }, "get underlying table")
+        }, "get keys table")
                 .refetch(this, connection.metadata())
                 .then(state -> Promise.resolve(new JsTable(connection, state)))).then(result -> {
                     keys = result;
