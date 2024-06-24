@@ -7,7 +7,7 @@ dependencies {
     implementation project(':SevenZip')
     implementation depCommonsCompress
     testImplementation project(path: ':Base', configuration: 'tests')
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    testImplementation libs.junit4
     Classpaths.inheritJMock(project, 'testImplementation')
 }
 

@@ -12,6 +12,6 @@ dependencies {
 
     api 'io.deephaven:hash:0.1.0'
 
-    Classpaths.inheritJUnitClassic(project, 'api')
+    api libs.junit4
     Classpaths.inheritJMock(project, 'api')
 }

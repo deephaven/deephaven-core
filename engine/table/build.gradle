@@ -71,7 +71,7 @@ dependencies {
     testImplementation project(':Numerics')
     testImplementation project(':extensions-suanshu')
 
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    testImplementation libs.junit4
 
     testImplementation platform(libs.junit.bom)
     Classpaths.inheritAssertJ(project)

@@ -28,10 +28,6 @@ class Classpaths {
 
     static final String JETTY_VERSION = '9.4.44.v20210927'
 
-    static final String JUNIT_CLASSIC_GROUP = 'junit'
-    static final String JUNIT_CLASSIC_NAME = 'junit'
-    static final String JUNIT_CLASSIC_VERSION = '4.13.2'
-
     static final String JMOCK_GROUP = 'org.jmock'
     static final String JMOCK_JUNIT_NAME = 'jmock-junit4'
     static final String JMOCK_IMPORSTERS_NAME = 'jmock-imposters'
@@ -116,11 +112,6 @@ class Classpaths {
                 force 'org.ow2.asm:asm-commons:9.2'
             }
         }
-    }
-
-    static void inheritJUnitClassic(Project p, String configName) {
-        Configuration config = p.configurations.getByName(configName)
-        addDependency(config, JUNIT_CLASSIC_GROUP, JUNIT_CLASSIC_NAME, JUNIT_CLASSIC_VERSION)
     }
 
     static void inheritJMock(Project p, String configName) {

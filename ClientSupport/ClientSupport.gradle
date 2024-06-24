@@ -14,7 +14,7 @@ dependencies {
     implementation depCommonsLang3
 
     testImplementation project(':engine-test-utils')
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    testImplementation libs.junit4
     testImplementation platform(libs.junit.bom)
     Classpaths.inheritAssertJ(project)
 

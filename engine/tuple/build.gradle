@@ -12,7 +12,7 @@ dependencies {
     implementation project(':DataStructures')
     implementation project(':log-factory')
 
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    testImplementation libs.junit4
 
     testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),

@@ -31,7 +31,7 @@ dependencies {
     testImplementation TestTools.projectDependency(project, 'engine-vector')
     testImplementation depCommonsLang3
 
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    testImplementation libs.junit4
 
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly project(':configs')

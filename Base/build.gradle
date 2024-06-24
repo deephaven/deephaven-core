@@ -13,7 +13,7 @@ dependencies {
 
     api 'io.deephaven:hash:0.1.0'
 
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    testImplementation libs.junit4
     Classpaths.inheritJMock(project, 'testImplementation')
     testImplementation project(":base-test-utils")
 }

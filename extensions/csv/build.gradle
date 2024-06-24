@@ -24,7 +24,7 @@ dependencies {
     testImplementation depCommonsIo
     testImplementation project(':engine-test-utils')
 
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    testImplementation libs.junit4
 
     testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),

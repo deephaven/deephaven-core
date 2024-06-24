@@ -8,7 +8,7 @@ dependencies {
     implementation project(':IO')
     implementation project(':log-factory')
     implementation depCommonsLang3
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    testImplementation libs.junit4
     Classpaths.inheritJMock(project, 'testImplementation')
 
     compileOnly libs.autoservice

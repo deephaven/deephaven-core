@@ -27,5 +27,5 @@ dependencies {
     implementation libs.dagger
     annotationProcessor libs.dagger.compiler
 
-    Classpaths.inheritJUnitClassic(project, 'api')
+    api libs.junit4
 }

@@ -34,7 +34,7 @@ dependencies {
   testRuntimeOnly libs.junit.vintage.engine
   testRuntimeOnly libs.junit.platform.launcher
 
-  Classpaths.inheritJUnitClassic(project, 'testImplementation')
+  testImplementation libs.junit4
   testImplementation 'io.grpc:grpc-testing'
 
   Classpaths.inheritAssertJ(project)

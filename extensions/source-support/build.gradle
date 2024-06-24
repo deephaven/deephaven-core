@@ -18,7 +18,7 @@ dependencies {
     testImplementation project(':engine-test-utils')
     testImplementation depCommonsLang3
 
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    testImplementation libs.junit4
     Classpaths.inheritAssertJ(project)
 
     testRuntimeOnly project(':log-to-slf4j'),

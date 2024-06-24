@@ -50,7 +50,7 @@ dependencies {
     testImplementation project(':engine-test-utils')
 
     testImplementation TestTools.projectDependency(project, 'extensions-s3')
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    testImplementation libs.junit4
 
     testImplementation libs.testcontainers
     testImplementation libs.testcontainers.junit.jupiter

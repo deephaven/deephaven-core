@@ -16,6 +16,7 @@ slf4j = "2.0.11"
 
 # test versions
 junit = "5.7.2"
+junit4 = "4.13.2"
 testcontainers = "1.19.4"
 
 [libraries]
@@ -54,6 +55,7 @@ junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
 junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 junit-vintage-engine = { module = "org.junit.vintage:junit-vintage-engine" }
+junit4 = { module = "junit:junit", version.ref = "junit4" }
 testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
 testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
 testcontainers-localstack = { module = "org.testcontainers:localstack", version.ref = "testcontainers" }

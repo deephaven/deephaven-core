@@ -51,7 +51,7 @@ dependencies {
     jama 'gov.nist.math.jama:gov.nist.math.jama:1.1.1'
     mockrunner 'com.mockrunner:mockrunner-jdbc:1.0.4'
 
-    Classpaths.inheritJUnitClassic(project, 'junit')
+    junit libs.junit4
     Classpaths.inheritJMock(project, 'junit')
 
     // Now, all the various fish libs we depend on, with inherited dependencies matching
