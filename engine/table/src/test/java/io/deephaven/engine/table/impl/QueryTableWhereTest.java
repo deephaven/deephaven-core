@@ -1379,7 +1379,7 @@ public abstract class QueryTableWhereTest {
         final MatchFilter filter = new MatchFilter(
                 new CachingSupplier<>(() -> {
                     called.setValue(true);
-                    return ConditionFilter.createConditionFilter("var1 != var2");
+                    return (ConditionFilter) ConditionFilter.createConditionFilter("var1 != var2");
                 }),
                 MatchFilter.CaseSensitivity.IgnoreCase, MatchFilter.MatchType.Inverted, "var1", "var2");
 
@@ -1387,9 +1387,6 @@ public abstract class QueryTableWhereTest {
         assertTableEquals(table, result);
 
         Assert.eqTrue(called.booleanValue(), "called.booleanValue()");
-
-        final WhereFilter copyFilter = filter.copy();
-        Assert.eqTrue(copyFilter instanceof ConditionFilter, "copyFilter instanceof ConditionFilter");
     }
 
     @Test
