@@ -25,7 +25,7 @@ configurations {
 
 dependencies {
   // This should be implementation, if listed at all, at least once we have own own version management
-  Classpaths.inheritProtobuf(project, 'api')
+  api libs.protobuf.java
 
   api platform(libs.grpc.bom)
   api libs.grpc.protobuf

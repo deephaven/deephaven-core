@@ -16,6 +16,7 @@ jsinterop = "2.0.2"
 # google is annoying, and have different versions released for the same groupId
 jsinterop-base = "1.0.1"
 logback = "1.4.14"
+protobuf = "3.25.3"
 slf4j = "2.0.11"
 
 # test versions
@@ -63,6 +64,7 @@ javax-validation-api = { module = "javax.validation:validation-api", version.ref
 jsinterop-annotations = { module = "com.google.jsinterop:jsinterop-annotations", version.ref = "jsinterop" }
 jsinterop-base = { module = "com.google.jsinterop:base", version.ref = "jsinterop-base" }
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 slf4j-jul-to-slf4j = { module = "org.slf4j:jul-to-slf4j", version.ref = "slf4j" }
 slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }

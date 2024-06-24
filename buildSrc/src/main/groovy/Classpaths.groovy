@@ -29,9 +29,6 @@ class Classpaths {
     static final String JETTY_VERSION = '9.4.44.v20210927'
 
     // TODO(deephaven-core#1685): Create strategy around updating and maintaining protoc version
-    static final String PROTOBUF_GROUP = 'com.google.protobuf'
-    static final String PROTOBUF_NAME = 'protobuf-java'
-    static final String PROTOBUF_VERSION = '3.25.3'
 
     // See dependency matrix for particular gRPC versions at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty
     static final String BORINGSSL_GROUP = 'io.netty'
@@ -91,11 +88,6 @@ class Classpaths {
                 force 'org.ow2.asm:asm-commons:9.2'
             }
         }
-    }
-
-    static void inheritProtobuf(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
-        Configuration config = p.configurations.getByName(configName)
-        addDependency(config, PROTOBUF_GROUP, PROTOBUF_NAME, PROTOBUF_VERSION)
     }
 
     static void inheritBoringSsl(Project p, String configName = JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME) {
