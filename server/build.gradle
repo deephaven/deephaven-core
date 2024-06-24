@@ -15,7 +15,7 @@ dependencies {
     implementation project(':Util');
     implementation project(':Integrations')
     implementation depCommonsLang3
-    Classpaths.inheritCommonsText(project, 'implementation')
+    implementation libs.commons.text
 
     implementation libs.javaparser.core
     implementation project(':open-api-lang-parser')

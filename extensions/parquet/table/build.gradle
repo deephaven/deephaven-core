@@ -35,7 +35,7 @@ dependencies {
     implementation depCommonsLang3
     implementation project(':Util')
 
-    Classpaths.inheritCommonsText(project, 'implementation')
+    implementation libs.commons.text
 
     implementation platform(libs.jackson.bom)
     implementation libs.jackson.dataformat.yaml

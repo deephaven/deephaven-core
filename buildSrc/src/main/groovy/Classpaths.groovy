@@ -28,8 +28,6 @@ class Classpaths {
 
     static final String JETTY_VERSION = '9.4.44.v20210927'
 
-    static final String COMMONS_GROUP = 'org.apache.commons'
-
     static final String ARROW_GROUP = 'org.apache.arrow'
     static final String ARROW_VERSION = '13.0.0'
 
@@ -146,11 +144,6 @@ class Classpaths {
                 force 'org.ow2.asm:asm-commons:9.2'
             }
         }
-    }
-
-    static void inheritCommonsText(Project p, String configName) {
-        Configuration config = p.configurations.getByName(configName)
-        addDependency config, COMMONS_GROUP, 'commons-text', "1.10.0"
     }
 
     static void inheritArrow(Project p, String name, String configName) {

@@ -4,8 +4,8 @@ plugins {
     id 'java-library'
 }
 
-Classpaths.inheritCommonsText(project, 'implementation')
 dependencies {
+    implementation libs.commons.text
 
     implementation project(':open-api-lang-parser')
     implementation project(':engine-table')
