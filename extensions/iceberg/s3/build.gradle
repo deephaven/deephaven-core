@@ -16,8 +16,10 @@ dependencies {
 
     implementation project(':extensions-s3')
     implementation "org.apache.iceberg:iceberg-aws"
-    runtimeOnly "org.apache.iceberg:iceberg-aws-bundle"
+
     Classpaths.inheritAWSSDK(project)
+    runtimeOnly "software.amazon.awssdk:sts"
+    runtimeOnly "software.amazon.awssdk:glue"
 
     Classpaths.inheritTestContainers(project)
 
