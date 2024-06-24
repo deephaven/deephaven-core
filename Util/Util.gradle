@@ -18,9 +18,9 @@ dependencies {
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly libs.slf4j.simple
 
-    Classpaths.inheritJUnitPlatform(project)
     testImplementation project(':base-test-utils')
-    testImplementation 'org.junit.jupiter:junit-jupiter'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly libs.junit.jupiter.engine
+    testRuntimeOnly libs.junit.platform.launcher
 }

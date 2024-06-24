@@ -15,6 +15,7 @@ jsinterop-base = "1.0.1"
 slf4j = "2.0.11"
 
 # test versions
+junit = "5.7.2"
 testcontainers = "1.19.4"
 
 [libraries]
@@ -48,6 +49,11 @@ slf4j-jul-to-slf4j = { module = "org.slf4j:jul-to-slf4j", version.ref = "slf4j" 
 slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
 
 # test libraries
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+junit-vintage-engine = { module = "org.junit.vintage:junit-vintage-engine" }
 testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
 testcontainers-junit-jupiter = { module = "org.testcontainers:junit-jupiter", version.ref = "testcontainers" }
 testcontainers-localstack = { module = "org.testcontainers:localstack", version.ref = "testcontainers" }

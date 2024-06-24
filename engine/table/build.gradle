@@ -73,7 +73,7 @@ dependencies {
 
     Classpaths.inheritJUnitClassic(project, 'testImplementation')
 
-    Classpaths.inheritJUnitPlatform(project)
+    testImplementation platform(libs.junit.bom)
     Classpaths.inheritAssertJ(project)
 
     testRuntimeOnly project(':log-to-slf4j')

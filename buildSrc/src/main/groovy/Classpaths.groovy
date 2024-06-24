@@ -28,10 +28,6 @@ class Classpaths {
 
     static final String JETTY_VERSION = '9.4.44.v20210927'
 
-    static final String JUNIT_GROUP = 'org.junit'
-    static final String JUNIT_NAME = 'junit-bom'
-    static final String JUNIT_VERSION = '5.7.2'
-
     static final String JUNIT_CLASSIC_GROUP = 'junit'
     static final String JUNIT_CLASSIC_NAME = 'junit'
     static final String JUNIT_CLASSIC_VERSION = '4.13.2'
@@ -131,11 +127,6 @@ class Classpaths {
         Configuration config = p.configurations.getByName(configName)
         addDependency(config, JMOCK_GROUP, JMOCK_JUNIT_NAME, JMOCK_VERSION)
         addDependency(config, JMOCK_GROUP, JMOCK_IMPORSTERS_NAME, JMOCK_VERSION)
-    }
-
-    static void inheritJUnitPlatform(Project p, String configName = JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME) {
-        Configuration config = p.configurations.getByName(configName)
-        addDependency(config, p.getDependencies().platform(JUNIT_GROUP + ":" + JUNIT_NAME + ":" + JUNIT_VERSION))
     }
 
     static void inheritAssertJ(Project p, String configName = JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME) {

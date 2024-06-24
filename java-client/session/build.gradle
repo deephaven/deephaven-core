@@ -28,12 +28,12 @@ dependencies {
   annotationProcessor libs.autoservice.compiler
   compileOnly 'javax.inject:javax.inject:1'
 
-  Classpaths.inheritJUnitPlatform(project)
+  testImplementation platform(libs.junit.bom)
+  testImplementation libs.junit.jupiter
+  testRuntimeOnly libs.junit.jupiter.engine
+  testRuntimeOnly libs.junit.vintage.engine
+  testRuntimeOnly libs.junit.platform.launcher
 
-  testImplementation 'org.junit.jupiter:junit-jupiter'
-  testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
-  testRuntimeOnly 'org.junit.vintage:junit-vintage-engine'
-  testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
   Classpaths.inheritJUnitClassic(project, 'testImplementation')
   testImplementation 'io.grpc:grpc-testing'
 

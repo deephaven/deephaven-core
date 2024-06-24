@@ -17,7 +17,7 @@ dependencies {
     compileOnly project(':util-immutables')
     annotationProcessor libs.immutables
 
-    Classpaths.inheritJUnitPlatform(project)
+    testImplementation platform(libs.junit.bom)
     Classpaths.inheritAssertJ(project)
 
     testImplementation depCommonsCompress

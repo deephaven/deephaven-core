@@ -13,7 +13,7 @@ dependencies {
 
     Classpaths.inheritGuava(project)
 
-    Classpaths.inheritJUnitPlatform(project)
+    testImplementation platform(libs.junit.bom)
     Classpaths.inheritAssertJ(project)
 
     testImplementation project(':engine-test-utils')

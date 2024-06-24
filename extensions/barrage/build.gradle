@@ -38,7 +38,7 @@ dependencies {
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly project(':test-configs')
 
-    Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)
-    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
 }

@@ -26,9 +26,9 @@ dependencies {
     annotationProcessor libs.autoservice.compiler
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 
-    Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)
-    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
 
     testImplementation platform(libs.jackson.bom)
     testImplementation libs.jackson.databind

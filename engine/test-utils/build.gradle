@@ -21,6 +21,6 @@ dependencies {
     implementation 'it.unimi.dsi:fastutil:8.5.13'
 
     Classpaths.inheritJUnitClassic(project, 'implementation')
-    Classpaths.inheritJUnitPlatform(project, 'implementation')
+    implementation platform(libs.junit.bom)
     Classpaths.inheritAssertJ(project, 'implementation')
 }
