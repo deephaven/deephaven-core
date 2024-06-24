@@ -25,4 +25,3 @@ public class QueryTableWhereSingleTest extends QueryTableWhereTest {
         QueryTable.DISABLE_PARALLEL_WHERE = oldDisable;
     }
 }
-
