@@ -2266,7 +2266,6 @@ public class QueryTableAggregationTest {
         });
         show(result);
         result_wsum = result.getColumnSource("Long1", long.class).getLong(result.getRowSet().firstRowKey());
-
         wsum = wsum + (7L * (long) Integer.MAX_VALUE);
         TestCase.assertEquals(wsum, result_wsum);
     }
