@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.api.literal.Literal;
 import io.deephaven.base.string.cache.CompressedString;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -53,7 +54,7 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
     }
 
     /** A fail-over WhereFilter supplier should the match filter initialization fail. */
-    private final CachingSupplier<WhereFilter> failoverFilter;
+    private final CachingSupplier<ConditionFilter> failoverFilter;
 
     @NotNull
     private String columnName;
@@ -111,7 +112,7 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
     }
 
     public MatchFilter(
-            @Nullable final CachingSupplier<WhereFilter> failoverFilter,
+            @Nullable final CachingSupplier<ConditionFilter> failoverFilter,
             @NotNull final CaseSensitivity sensitivity,
             @NotNull final MatchType matchType,
             @NotNull final String columnName,
@@ -120,7 +121,7 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
     }
 
     private MatchFilter(
-            @Nullable final CachingSupplier<WhereFilter> failoverFilter,
+            @Nullable final CachingSupplier<ConditionFilter> failoverFilter,
             @NotNull final CaseSensitivity sensitivity,
             @NotNull final MatchType matchType,
             @NotNull final String columnName,
@@ -134,18 +135,26 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
         this.values = values;
     }
 
-    public MatchFilter renameFilter(String newName) {
+    private ConditionFilter getFailoverFilterIfCached() {
+        return failoverFilter != null ? failoverFilter.getIfCached() : null;
+    }
+
+    public WhereFilter renameFilter(Map<String, String> renames) {
+        final ConditionFilter failover = getFailoverFilterIfCached();
+        if (failover != null) {
+            return failover.renameFilter(renames);
+        }
+
+        final String newName = renames.get(columnName);
+        Assert.neqNull(newName, "newName");
         if (strValues == null) {
+            // when we're constructed with values then there is no failover filter
             return new MatchFilter(getMatchType(), newName, values);
         } else {
             return new MatchFilter(
                     failoverFilter, caseInsensitive ? CaseSensitivity.IgnoreCase : CaseSensitivity.MatchCase,
                     getMatchType(), newName, strValues, null);
         }
-    }
-
-    public String getColumnName() {
-        return columnName;
     }
 
     public Object[] getValues() {
@@ -162,6 +171,13 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
 
     @Override
     public List<String> getColumns() {
+        if (!initialized) {
+            throw new IllegalStateException("Filter must be initialized to invoke getColumnName");
+        }
+        final WhereFilter failover = getFailoverFilterIfCached();
+        if (failover != null) {
+            return failover.getColumns();
+        }
         return Collections.singletonList(columnName);
     }
 
@@ -258,7 +274,7 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
     @Override
     public WritableRowSet filter(
             @NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table, boolean usePrev) {
-        final WhereFilter failover = failoverFilter != null ? failoverFilter.getIfCached() : null;
+        final WhereFilter failover = getFailoverFilterIfCached();
         if (failover != null) {
             return failover.filter(selection, fullSet, table, usePrev);
         }
@@ -271,7 +287,7 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
     @Override
     public WritableRowSet filterInverse(
             @NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table, boolean usePrev) {
-        final WhereFilter failover = failoverFilter != null ? failoverFilter.getIfCached() : null;
+        final WhereFilter failover = getFailoverFilterIfCached();
         if (failover != null) {
             return failover.filterInverse(selection, fullSet, table, usePrev);
         }
@@ -282,7 +298,7 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
 
     @Override
     public boolean isSimpleFilter() {
-        final WhereFilter failover = failoverFilter != null ? failoverFilter.getIfCached() : null;
+        final WhereFilter failover = getFailoverFilterIfCached();
         if (failover != null) {
             return failover.isSimpleFilter();
         }
@@ -719,6 +735,7 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                     failoverFilter, caseInsensitive ? CaseSensitivity.IgnoreCase : CaseSensitivity.MatchCase,
                     getMatchType(), columnName, strValues, null);
         } else {
+            // when we're constructed with values then there is no failover filter
             copy = new MatchFilter(getMatchType(), columnName, values);
         }
         if (initialized) {
