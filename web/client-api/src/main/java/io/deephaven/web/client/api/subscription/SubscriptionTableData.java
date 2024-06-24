@@ -91,7 +91,7 @@ public class SubscriptionTableData {
                 assert destIter.hasNext();
                 long dest = destIter.nextLong();
                 long nextIndex = indexIter.nextLong();
-                if (indexUpdated) {
+                if (!indexUpdated) {
                     redirectedIndexes.put(nextIndex, dest);
                 }
                 arrayCopy.copyTo(localCopy, dest, dataColumn.getData(), j++);
