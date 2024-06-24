@@ -24,6 +24,8 @@ import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.function.Numeric;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,7 +47,7 @@ import static io.deephaven.util.type.TypeUtils.box;
 
 /**
  * A TimeTable adds rows at a fixed interval with a single column named "Timestamp".
- *
+ * <p>
  * To create a TimeTable, you should use the {@link TableTools#timeTable} family of methods.
  *
  * @implNote The constructor publishes {@code this} to the {@link UpdateSourceRegistrar} and thus cannot be subclassed.
@@ -99,9 +101,12 @@ public final class TimeTable extends QueryTable implements Runnable {
         }
 
         public QueryTable build() {
-            return new TimeTable(registrar,
-                    Objects.requireNonNullElse(clock, currentClock()),
-                    startTime, period, blinkTable);
+            try (final SafeCloseable ignored =
+                    ExecutionContext.getContext().withUpdateGraph(registrar.getUpdateGraph()).open()) {
+                return new TimeTable(registrar,
+                        Objects.requireNonNullElse(clock, currentClock()),
+                        startTime, period, blinkTable);
+            }
         }
     }
 
@@ -143,7 +148,13 @@ public final class TimeTable extends QueryTable implements Runnable {
             refresh(false);
         }
         setRefreshing(true);
+        initializeLastNotificationStep(registrar.getUpdateGraph().clock());
         registrar.addSource(refresher);
+    }
+
+    @Override
+    public boolean satisfied(final long step) {
+        return registrar.satisfied(step);
     }
 
     private static Map<String, ColumnSource<?>> initColumn(Instant firstTime, long period) {
@@ -154,6 +165,7 @@ public final class TimeTable extends QueryTable implements Runnable {
     }
 
     @Override
+    @TestUseOnly
     public void run() {
         refresh(true);
     }

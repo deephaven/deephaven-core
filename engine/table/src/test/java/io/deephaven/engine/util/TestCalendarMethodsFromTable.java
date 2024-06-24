@@ -6,7 +6,7 @@ package io.deephaven.engine.util;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.DataAccessHelpers;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
@@ -63,8 +63,7 @@ public class TestCalendarMethodsFromTable {
 
     @SuppressWarnings("SameParameterValue")
     private Object getVal(final Table t, final String column) {
-        // noinspection deprecation
-        return DataAccessHelpers.getColumn(t, column).get(0);
+        return t.getColumnSource(column).get(t.getRowSet().firstRowKey());
     }
 
     @SuppressWarnings("StringConcatenationInLoop")

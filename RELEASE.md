@@ -133,6 +133,9 @@ $ git --no-pager log --oneline vX.Y.0..release/vX.Y.1
 # Compare output to expected PR list for missing or extraneous PRs
 ```
 
+It's also best practice to ensure that the cherry-picks compile, as there can sometimes be changes that cherry-pick cleanly, but don't compile.
+`./gradlew quick` is recommended as a quick validation that things look ok.
+
 ### 3. Push to upstream
 
 Triple-check things look correct, the release is a "GO", and then start the release process by pushing the release branch to upstream:
@@ -249,8 +252,12 @@ $ git push upstream go/vX.Y.Z
 
 ### 11. Deephaven.io release
 
-The (non-public) [deephaven.io](https://github.com/deephaven/deephaven.io) `next` branch needs to be merged into `main`.
-Ping Margaret.
+Verify that [Reference API Docs](https://deephaven.io/core/docs/#reference-guides) point to the latest version and that
+version X.Y.Z is present. _(In the case of a patch on an old release, this may not be the version just built.)_
+- ex. https://deephaven.io/core/release/vX.Y.Z/javadoc
+- ex. https://deephaven.io/core/javadoc
+
+The (non-public) [deephaven.io](https://github.com/deephaven/deephaven.io) `next` branch needs to be merged into `main`.  Ping Margaret.
 
 ### 12. Deephaven images
 

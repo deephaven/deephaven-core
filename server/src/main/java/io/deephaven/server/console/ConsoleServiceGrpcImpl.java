@@ -212,6 +212,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     public void getHeapInfo(
             @NotNull final GetHeapInfoRequest request,
             @NotNull final StreamObserver<GetHeapInfoResponse> responseObserver) {
+        sessionService.getCurrentSession();
         final RuntimeMemory runtimeMemory = RuntimeMemory.getInstance();
         final Sample sample = new Sample();
         runtimeMemory.read(sample);

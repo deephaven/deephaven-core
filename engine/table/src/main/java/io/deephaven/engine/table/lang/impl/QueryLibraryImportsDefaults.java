@@ -13,11 +13,11 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Context;
-import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
 import io.deephaven.engine.table.impl.select.ConditionFilter;
 import io.deephaven.engine.table.impl.verify.TableAssertions;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.util.ColorUtilImpl;
 import io.deephaven.function.*;
 import io.deephaven.gui.color.Color;
@@ -55,7 +55,6 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 Array.class,
                 TypeUtils.class,
                 Table.class,
-                DataColumn.class,
                 ArrayTypeUtils.class,
                 VectorConversions.class,
                 DateTimeUtils.class,
@@ -69,6 +68,7 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 Period.class,
                 QueryScopeParam.class,
                 ColumnSource.class,
+                ColumnVectors.class,
                 RowSet.class,
                 WritableRowSet.class,
                 TrackingRowSet.class,

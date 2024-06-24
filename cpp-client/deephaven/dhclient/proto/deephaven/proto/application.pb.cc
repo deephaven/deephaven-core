@@ -4,179 +4,239 @@
 #include "deephaven/proto/application.pb.h"
 
 #include <algorithm>
-
-#include <google/protobuf/io/coded_stream.h>
-#include <google/protobuf/extension_set.h>
-#include <google/protobuf/wire_format_lite.h>
-#include <google/protobuf/descriptor.h>
-#include <google/protobuf/generated_message_reflection.h>
-#include <google/protobuf/reflection_ops.h>
-#include <google/protobuf/wire_format.h>
+#include "google/protobuf/io/coded_stream.h"
+#include "google/protobuf/extension_set.h"
+#include "google/protobuf/wire_format_lite.h"
+#include "google/protobuf/descriptor.h"
+#include "google/protobuf/generated_message_reflection.h"
+#include "google/protobuf/reflection_ops.h"
+#include "google/protobuf/wire_format.h"
+#include "google/protobuf/generated_message_tctable_impl.h"
 // @@protoc_insertion_point(includes)
-#include <google/protobuf/port_def.inc>
 
+// Must be included last.
+#include "google/protobuf/port_def.inc"
 PROTOBUF_PRAGMA_INIT_SEG
-
-namespace _pb = ::PROTOBUF_NAMESPACE_ID;
-namespace _pbi = _pb::internal;
-
+namespace _pb = ::google::protobuf;
+namespace _pbi = ::google::protobuf::internal;
+namespace _fl = ::google::protobuf::internal::field_layout;
 namespace io {
 namespace deephaven {
 namespace proto {
 namespace backplane {
 namespace grpc {
-PROTOBUF_CONSTEXPR ListFieldsRequest::ListFieldsRequest(
-    ::_pbi::ConstantInitialized) {}
+      template <typename>
+PROTOBUF_CONSTEXPR ListFieldsRequest::ListFieldsRequest(::_pbi::ConstantInitialized) {}
 struct ListFieldsRequestDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR ListFieldsRequestDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
+  PROTOBUF_CONSTEXPR ListFieldsRequestDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
   ~ListFieldsRequestDefaultTypeInternal() {}
   union {
     ListFieldsRequest _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ListFieldsRequestDefaultTypeInternal _ListFieldsRequest_default_instance_;
-PROTOBUF_CONSTEXPR FieldsChangeUpdate::FieldsChangeUpdate(
-    ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.created_)*/{}
-  , /*decltype(_impl_.updated_)*/{}
-  , /*decltype(_impl_.removed_)*/{}
-  , /*decltype(_impl_._cached_size_)*/{}} {}
-struct FieldsChangeUpdateDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR FieldsChangeUpdateDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
-  ~FieldsChangeUpdateDefaultTypeInternal() {}
-  union {
-    FieldsChangeUpdate _instance;
-  };
-};
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 FieldsChangeUpdateDefaultTypeInternal _FieldsChangeUpdate_default_instance_;
-PROTOBUF_CONSTEXPR FieldInfo::FieldInfo(
-    ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.field_name_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
-  , /*decltype(_impl_.field_description_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
-  , /*decltype(_impl_.application_name_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
-  , /*decltype(_impl_.application_id_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
-  , /*decltype(_impl_.typed_ticket_)*/nullptr
-  , /*decltype(_impl_._cached_size_)*/{}} {}
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 ListFieldsRequestDefaultTypeInternal _ListFieldsRequest_default_instance_;
+
+inline constexpr FieldInfo::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : _cached_size_{0},
+        field_name_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        field_description_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        application_name_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        application_id_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        typed_ticket_{nullptr} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR FieldInfo::FieldInfo(::_pbi::ConstantInitialized)
+    : _impl_(::_pbi::ConstantInitialized()) {}
 struct FieldInfoDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR FieldInfoDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
+  PROTOBUF_CONSTEXPR FieldInfoDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
   ~FieldInfoDefaultTypeInternal() {}
   union {
     FieldInfo _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 FieldInfoDefaultTypeInternal _FieldInfo_default_instance_;
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 FieldInfoDefaultTypeInternal _FieldInfo_default_instance_;
+
+inline constexpr FieldsChangeUpdate::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : created_{},
+        updated_{},
+        removed_{},
+        _cached_size_{0} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR FieldsChangeUpdate::FieldsChangeUpdate(::_pbi::ConstantInitialized)
+    : _impl_(::_pbi::ConstantInitialized()) {}
+struct FieldsChangeUpdateDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR FieldsChangeUpdateDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~FieldsChangeUpdateDefaultTypeInternal() {}
+  union {
+    FieldsChangeUpdate _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 FieldsChangeUpdateDefaultTypeInternal _FieldsChangeUpdate_default_instance_;
 }  // namespace grpc
 }  // namespace backplane
 }  // namespace proto
 }  // namespace deephaven
 }  // namespace io
 static ::_pb::Metadata file_level_metadata_deephaven_2fproto_2fapplication_2eproto[3];
-static constexpr ::_pb::EnumDescriptor const** file_level_enum_descriptors_deephaven_2fproto_2fapplication_2eproto = nullptr;
-static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_deephaven_2fproto_2fapplication_2eproto = nullptr;
-
-const uint32_t TableStruct_deephaven_2fproto_2fapplication_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ListFieldsRequest, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate, _impl_.created_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate, _impl_.updated_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate, _impl_.removed_),
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FieldInfo, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FieldInfo, _impl_.typed_ticket_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FieldInfo, _impl_.field_name_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FieldInfo, _impl_.field_description_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FieldInfo, _impl_.application_name_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FieldInfo, _impl_.application_id_),
+static constexpr const ::_pb::EnumDescriptor**
+    file_level_enum_descriptors_deephaven_2fproto_2fapplication_2eproto = nullptr;
+static constexpr const ::_pb::ServiceDescriptor**
+    file_level_service_descriptors_deephaven_2fproto_2fapplication_2eproto = nullptr;
+const ::uint32_t TableStruct_deephaven_2fproto_2fapplication_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(
+    protodesc_cold) = {
+    ~0u,  // no _has_bits_
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::ListFieldsRequest, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    ~0u,  // no _has_bits_
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate, _impl_.created_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate, _impl_.updated_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate, _impl_.removed_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FieldInfo, _impl_._has_bits_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FieldInfo, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FieldInfo, _impl_.typed_ticket_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FieldInfo, _impl_.field_name_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FieldInfo, _impl_.field_description_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FieldInfo, _impl_.application_name_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::FieldInfo, _impl_.application_id_),
+    0,
+    ~0u,
+    ~0u,
+    ~0u,
+    ~0u,
 };
-static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
-  { 0, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::ListFieldsRequest)},
-  { 6, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate)},
-  { 15, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::FieldInfo)},
+
+static const ::_pbi::MigrationSchema
+    schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
+        {0, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::ListFieldsRequest)},
+        {8, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate)},
+        {19, 32, -1, sizeof(::io::deephaven::proto::backplane::grpc::FieldInfo)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
-  &::io::deephaven::proto::backplane::grpc::_ListFieldsRequest_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_FieldsChangeUpdate_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_FieldInfo_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_ListFieldsRequest_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_FieldsChangeUpdate_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_FieldInfo_default_instance_._instance,
 };
-
-const char descriptor_table_protodef_deephaven_2fproto_2fapplication_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
-  "\n!deephaven/proto/application.proto\022!io."
-  "deephaven.proto.backplane.grpc\032\034deephave"
-  "n/proto/ticket.proto\"\023\n\021ListFieldsReques"
-  "t\"\321\001\n\022FieldsChangeUpdate\022=\n\007created\030\001 \003("
-  "\0132,.io.deephaven.proto.backplane.grpc.Fi"
-  "eldInfo\022=\n\007updated\030\002 \003(\0132,.io.deephaven."
-  "proto.backplane.grpc.FieldInfo\022=\n\007remove"
-  "d\030\003 \003(\0132,.io.deephaven.proto.backplane.g"
-  "rpc.FieldInfo\"\262\001\n\tFieldInfo\022D\n\014typed_tic"
-  "ket\030\001 \001(\0132..io.deephaven.proto.backplane"
-  ".grpc.TypedTicket\022\022\n\nfield_name\030\002 \001(\t\022\031\n"
-  "\021field_description\030\003 \001(\t\022\030\n\020application_"
-  "name\030\004 \001(\t\022\026\n\016application_id\030\005 \001(\t2\223\001\n\022A"
-  "pplicationService\022}\n\nListFields\0224.io.dee"
-  "phaven.proto.backplane.grpc.ListFieldsRe"
-  "quest\0325.io.deephaven.proto.backplane.grp"
-  "c.FieldsChangeUpdate\"\0000\001BGH\001P\001ZAgithub.c"
-  "om/deephaven/deephaven-core/go/internal/"
-  "proto/applicationb\006proto3"
-  ;
-static const ::_pbi::DescriptorTable* const descriptor_table_deephaven_2fproto_2fapplication_2eproto_deps[1] = {
-  &::descriptor_table_deephaven_2fproto_2fticket_2eproto,
+const char descriptor_table_protodef_deephaven_2fproto_2fapplication_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
+    "\n!deephaven/proto/application.proto\022!io."
+    "deephaven.proto.backplane.grpc\032\034deephave"
+    "n/proto/ticket.proto\"\023\n\021ListFieldsReques"
+    "t\"\321\001\n\022FieldsChangeUpdate\022=\n\007created\030\001 \003("
+    "\0132,.io.deephaven.proto.backplane.grpc.Fi"
+    "eldInfo\022=\n\007updated\030\002 \003(\0132,.io.deephaven."
+    "proto.backplane.grpc.FieldInfo\022=\n\007remove"
+    "d\030\003 \003(\0132,.io.deephaven.proto.backplane.g"
+    "rpc.FieldInfo\"\262\001\n\tFieldInfo\022D\n\014typed_tic"
+    "ket\030\001 \001(\0132..io.deephaven.proto.backplane"
+    ".grpc.TypedTicket\022\022\n\nfield_name\030\002 \001(\t\022\031\n"
+    "\021field_description\030\003 \001(\t\022\030\n\020application_"
+    "name\030\004 \001(\t\022\026\n\016application_id\030\005 \001(\t2\223\001\n\022A"
+    "pplicationService\022}\n\nListFields\0224.io.dee"
+    "phaven.proto.backplane.grpc.ListFieldsRe"
+    "quest\0325.io.deephaven.proto.backplane.grp"
+    "c.FieldsChangeUpdate\"\0000\001BGH\001P\001ZAgithub.c"
+    "om/deephaven/deephaven-core/go/internal/"
+    "proto/applicationb\006proto3"
 };
-static ::_pbi::once_flag descriptor_table_deephaven_2fproto_2fapplication_2eproto_once;
+static const ::_pbi::DescriptorTable* const descriptor_table_deephaven_2fproto_2fapplication_2eproto_deps[1] =
+    {
+        &::descriptor_table_deephaven_2fproto_2fticket_2eproto,
+};
+static ::absl::once_flag descriptor_table_deephaven_2fproto_2fapplication_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_deephaven_2fproto_2fapplication_2eproto = {
-    false, false, 745, descriptor_table_protodef_deephaven_2fproto_2fapplication_2eproto,
+    false,
+    false,
+    745,
+    descriptor_table_protodef_deephaven_2fproto_2fapplication_2eproto,
     "deephaven/proto/application.proto",
-    &descriptor_table_deephaven_2fproto_2fapplication_2eproto_once, descriptor_table_deephaven_2fproto_2fapplication_2eproto_deps, 1, 3,
-    schemas, file_default_instances, TableStruct_deephaven_2fproto_2fapplication_2eproto::offsets,
-    file_level_metadata_deephaven_2fproto_2fapplication_2eproto, file_level_enum_descriptors_deephaven_2fproto_2fapplication_2eproto,
+    &descriptor_table_deephaven_2fproto_2fapplication_2eproto_once,
+    descriptor_table_deephaven_2fproto_2fapplication_2eproto_deps,
+    1,
+    3,
+    schemas,
+    file_default_instances,
+    TableStruct_deephaven_2fproto_2fapplication_2eproto::offsets,
+    file_level_metadata_deephaven_2fproto_2fapplication_2eproto,
+    file_level_enum_descriptors_deephaven_2fproto_2fapplication_2eproto,
     file_level_service_descriptors_deephaven_2fproto_2fapplication_2eproto,
 };
+
+// This function exists to be marked as weak.
+// It can significantly speed up compilation by breaking up LLVM's SCC
+// in the .pb.cc translation units. Large translation units see a
+// reduction of more than 35% of walltime for optimized builds. Without
+// the weak attribute all the messages in the file, including all the
+// vtables and everything they use become part of the same SCC through
+// a cycle like:
+// GetMetadata -> descriptor table -> default instances ->
+//   vtables -> GetMetadata
+// By adding a weak function here we break the connection from the
+// individual vtables back into the descriptor table.
 PROTOBUF_ATTRIBUTE_WEAK const ::_pbi::DescriptorTable* descriptor_table_deephaven_2fproto_2fapplication_2eproto_getter() {
   return &descriptor_table_deephaven_2fproto_2fapplication_2eproto;
 }
-
 // Force running AddDescriptors() at dynamic initialization time.
-PROTOBUF_ATTRIBUTE_INIT_PRIORITY2 static ::_pbi::AddDescriptorsRunner dynamic_init_dummy_deephaven_2fproto_2fapplication_2eproto(&descriptor_table_deephaven_2fproto_2fapplication_2eproto);
+PROTOBUF_ATTRIBUTE_INIT_PRIORITY2
+static ::_pbi::AddDescriptorsRunner dynamic_init_dummy_deephaven_2fproto_2fapplication_2eproto(&descriptor_table_deephaven_2fproto_2fapplication_2eproto);
 namespace io {
 namespace deephaven {
 namespace proto {
 namespace backplane {
 namespace grpc {
-
 // ===================================================================
 
 class ListFieldsRequest::_Internal {
  public:
 };
 
-ListFieldsRequest::ListFieldsRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase(arena, is_message_owned) {
+ListFieldsRequest::ListFieldsRequest(::google::protobuf::Arena* arena)
+    : ::google::protobuf::internal::ZeroFieldsBase(arena) {
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.ListFieldsRequest)
 }
-ListFieldsRequest::ListFieldsRequest(const ListFieldsRequest& from)
-  : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase() {
-  ListFieldsRequest* const _this = this; (void)_this;
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+ListFieldsRequest::ListFieldsRequest(
+    ::google::protobuf::Arena* arena,
+    const ListFieldsRequest& from)
+    : ::google::protobuf::internal::ZeroFieldsBase(arena) {
+  ListFieldsRequest* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.ListFieldsRequest)
 }
 
@@ -184,250 +244,224 @@ ListFieldsRequest::ListFieldsRequest(const ListFieldsRequest& from)
 
 
 
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData ListFieldsRequest::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::CopyImpl,
-    ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::MergeImpl,
-};
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*ListFieldsRequest::GetClassData() const { return &_class_data_; }
 
 
 
 
-
-
-
-::PROTOBUF_NAMESPACE_ID::Metadata ListFieldsRequest::GetMetadata() const {
+::google::protobuf::Metadata ListFieldsRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2fapplication_2eproto_getter, &descriptor_table_deephaven_2fproto_2fapplication_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fapplication_2eproto[0]);
 }
-
 // ===================================================================
 
 class FieldsChangeUpdate::_Internal {
  public:
 };
 
-FieldsChangeUpdate::FieldsChangeUpdate(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor(arena, is_message_owned);
+FieldsChangeUpdate::FieldsChangeUpdate(::google::protobuf::Arena* arena)
+    : ::google::protobuf::Message(arena) {
+  SharedCtor(arena);
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.FieldsChangeUpdate)
 }
-FieldsChangeUpdate::FieldsChangeUpdate(const FieldsChangeUpdate& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message() {
-  FieldsChangeUpdate* const _this = this; (void)_this;
-  new (&_impl_) Impl_{
-      decltype(_impl_.created_){from._impl_.created_}
-    , decltype(_impl_.updated_){from._impl_.updated_}
-    , decltype(_impl_.removed_){from._impl_.removed_}
-    , /*decltype(_impl_._cached_size_)*/{}};
+inline PROTOBUF_NDEBUG_INLINE FieldsChangeUpdate::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
+    const Impl_& from)
+      : created_{visibility, arena, from.created_},
+        updated_{visibility, arena, from.updated_},
+        removed_{visibility, arena, from.removed_},
+        _cached_size_{0} {}
 
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+FieldsChangeUpdate::FieldsChangeUpdate(
+    ::google::protobuf::Arena* arena,
+    const FieldsChangeUpdate& from)
+    : ::google::protobuf::Message(arena) {
+  FieldsChangeUpdate* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_);
+
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.FieldsChangeUpdate)
 }
+inline PROTOBUF_NDEBUG_INLINE FieldsChangeUpdate::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* arena)
+      : created_{visibility, arena},
+        updated_{visibility, arena},
+        removed_{visibility, arena},
+        _cached_size_{0} {}
 
-inline void FieldsChangeUpdate::SharedCtor(
-    ::_pb::Arena* arena, bool is_message_owned) {
-  (void)arena;
-  (void)is_message_owned;
-  new (&_impl_) Impl_{
-      decltype(_impl_.created_){arena}
-    , decltype(_impl_.updated_){arena}
-    , decltype(_impl_.removed_){arena}
-    , /*decltype(_impl_._cached_size_)*/{}
-  };
+inline void FieldsChangeUpdate::SharedCtor(::_pb::Arena* arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
 }
-
 FieldsChangeUpdate::~FieldsChangeUpdate() {
   // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.FieldsChangeUpdate)
-  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
-  (void)arena;
-    return;
-  }
+  _internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
   SharedDtor();
 }
-
 inline void FieldsChangeUpdate::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  _impl_.created_.~RepeatedPtrField();
-  _impl_.updated_.~RepeatedPtrField();
-  _impl_.removed_.~RepeatedPtrField();
+  ABSL_DCHECK(GetArena() == nullptr);
+  _impl_.~Impl_();
 }
 
-void FieldsChangeUpdate::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
-
-void FieldsChangeUpdate::Clear() {
+PROTOBUF_NOINLINE void FieldsChangeUpdate::Clear() {
 // @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.FieldsChangeUpdate)
-  uint32_t cached_has_bits = 0;
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
   _impl_.created_.Clear();
   _impl_.updated_.Clear();
   _impl_.removed_.Clear();
-  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
 }
 
-const char* FieldsChangeUpdate::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
-#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  while (!ctx->Done(&ptr)) {
-    uint32_t tag;
-    ptr = ::_pbi::ReadTag(ptr, &tag);
-    switch (tag >> 3) {
-      // repeated .io.deephaven.proto.backplane.grpc.FieldInfo created = 1;
-      case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
-          ptr -= 1;
-          do {
-            ptr += 1;
-            ptr = ctx->ParseMessage(_internal_add_created(), ptr);
-            CHK_(ptr);
-            if (!ctx->DataAvailable(ptr)) break;
-          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<10>(ptr));
-        } else
-          goto handle_unusual;
-        continue;
-      // repeated .io.deephaven.proto.backplane.grpc.FieldInfo updated = 2;
-      case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
-          ptr -= 1;
-          do {
-            ptr += 1;
-            ptr = ctx->ParseMessage(_internal_add_updated(), ptr);
-            CHK_(ptr);
-            if (!ctx->DataAvailable(ptr)) break;
-          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<18>(ptr));
-        } else
-          goto handle_unusual;
-        continue;
-      // repeated .io.deephaven.proto.backplane.grpc.FieldInfo removed = 3;
-      case 3:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
-          ptr -= 1;
-          do {
-            ptr += 1;
-            ptr = ctx->ParseMessage(_internal_add_removed(), ptr);
-            CHK_(ptr);
-            if (!ctx->DataAvailable(ptr)) break;
-          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<26>(ptr));
-        } else
-          goto handle_unusual;
-        continue;
-      default:
-        goto handle_unusual;
-    }  // switch
-  handle_unusual:
-    if ((tag == 0) || ((tag & 7) == 4)) {
-      CHK_(ptr);
-      ctx->SetLastTag(tag);
-      goto message_done;
-    }
-    ptr = UnknownFieldParse(
-        tag,
-        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-        ptr, ctx);
-    CHK_(ptr != nullptr);
-  }  // while
-message_done:
+const char* FieldsChangeUpdate::_InternalParse(
+    const char* ptr, ::_pbi::ParseContext* ctx) {
+  ptr = ::_pbi::TcParser::ParseLoop(this, ptr, ctx, &_table_.header);
   return ptr;
-failure:
-  ptr = nullptr;
-  goto message_done;
-#undef CHK_
 }
 
-uint8_t* FieldsChangeUpdate::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<2, 3, 3, 0, 2> FieldsChangeUpdate::_table_ = {
+  {
+    0,  // no _has_bits_
+    0, // no _extensions_
+    3, 24,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967288,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    3,  // num_field_entries
+    3,  // num_aux_entries
+    offsetof(decltype(_table_), aux_entries),
+    &_FieldsChangeUpdate_default_instance_._instance,
+    ::_pbi::TcParser::GenericFallback,  // fallback
+  }, {{
+    {::_pbi::TcParser::MiniParse, {}},
+    // repeated .io.deephaven.proto.backplane.grpc.FieldInfo created = 1;
+    {::_pbi::TcParser::FastMtR1,
+     {10, 63, 0, PROTOBUF_FIELD_OFFSET(FieldsChangeUpdate, _impl_.created_)}},
+    // repeated .io.deephaven.proto.backplane.grpc.FieldInfo updated = 2;
+    {::_pbi::TcParser::FastMtR1,
+     {18, 63, 1, PROTOBUF_FIELD_OFFSET(FieldsChangeUpdate, _impl_.updated_)}},
+    // repeated .io.deephaven.proto.backplane.grpc.FieldInfo removed = 3;
+    {::_pbi::TcParser::FastMtR1,
+     {26, 63, 2, PROTOBUF_FIELD_OFFSET(FieldsChangeUpdate, _impl_.removed_)}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // repeated .io.deephaven.proto.backplane.grpc.FieldInfo created = 1;
+    {PROTOBUF_FIELD_OFFSET(FieldsChangeUpdate, _impl_.created_), 0, 0,
+    (0 | ::_fl::kFcRepeated | ::_fl::kMessage | ::_fl::kTvTable)},
+    // repeated .io.deephaven.proto.backplane.grpc.FieldInfo updated = 2;
+    {PROTOBUF_FIELD_OFFSET(FieldsChangeUpdate, _impl_.updated_), 0, 1,
+    (0 | ::_fl::kFcRepeated | ::_fl::kMessage | ::_fl::kTvTable)},
+    // repeated .io.deephaven.proto.backplane.grpc.FieldInfo removed = 3;
+    {PROTOBUF_FIELD_OFFSET(FieldsChangeUpdate, _impl_.removed_), 0, 2,
+    (0 | ::_fl::kFcRepeated | ::_fl::kMessage | ::_fl::kTvTable)},
+  }}, {{
+    {::_pbi::TcParser::GetTable<::io::deephaven::proto::backplane::grpc::FieldInfo>()},
+    {::_pbi::TcParser::GetTable<::io::deephaven::proto::backplane::grpc::FieldInfo>()},
+    {::_pbi::TcParser::GetTable<::io::deephaven::proto::backplane::grpc::FieldInfo>()},
+  }}, {{
+  }},
+};
+
+::uint8_t* FieldsChangeUpdate::_InternalSerialize(
+    ::uint8_t* target,
+    ::google::protobuf::io::EpsCopyOutputStream* stream) const {
   // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.FieldsChangeUpdate)
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  ::uint32_t cached_has_bits = 0;
+  (void)cached_has_bits;
 
   // repeated .io.deephaven.proto.backplane.grpc.FieldInfo created = 1;
   for (unsigned i = 0,
       n = static_cast<unsigned>(this->_internal_created_size()); i < n; i++) {
-    const auto& repfield = this->_internal_created(i);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+    const auto& repfield = this->_internal_created().Get(i);
+    target = ::google::protobuf::internal::WireFormatLite::
         InternalWriteMessage(1, repfield, repfield.GetCachedSize(), target, stream);
   }
 
   // repeated .io.deephaven.proto.backplane.grpc.FieldInfo updated = 2;
   for (unsigned i = 0,
       n = static_cast<unsigned>(this->_internal_updated_size()); i < n; i++) {
-    const auto& repfield = this->_internal_updated(i);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+    const auto& repfield = this->_internal_updated().Get(i);
+    target = ::google::protobuf::internal::WireFormatLite::
         InternalWriteMessage(2, repfield, repfield.GetCachedSize(), target, stream);
   }
 
   // repeated .io.deephaven.proto.backplane.grpc.FieldInfo removed = 3;
   for (unsigned i = 0,
       n = static_cast<unsigned>(this->_internal_removed_size()); i < n; i++) {
-    const auto& repfield = this->_internal_removed(i);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+    const auto& repfield = this->_internal_removed().Get(i);
+    target = ::google::protobuf::internal::WireFormatLite::
         InternalWriteMessage(3, repfield, repfield.GetCachedSize(), target, stream);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
   }
   // @@protoc_insertion_point(serialize_to_array_end:io.deephaven.proto.backplane.grpc.FieldsChangeUpdate)
   return target;
 }
 
-size_t FieldsChangeUpdate::ByteSizeLong() const {
+::size_t FieldsChangeUpdate::ByteSizeLong() const {
 // @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.FieldsChangeUpdate)
-  size_t total_size = 0;
+  ::size_t total_size = 0;
 
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
   // repeated .io.deephaven.proto.backplane.grpc.FieldInfo created = 1;
   total_size += 1UL * this->_internal_created_size();
-  for (const auto& msg : this->_impl_.created_) {
+  for (const auto& msg : this->_internal_created()) {
     total_size +=
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
+      ::google::protobuf::internal::WireFormatLite::MessageSize(msg);
   }
-
   // repeated .io.deephaven.proto.backplane.grpc.FieldInfo updated = 2;
   total_size += 1UL * this->_internal_updated_size();
-  for (const auto& msg : this->_impl_.updated_) {
+  for (const auto& msg : this->_internal_updated()) {
     total_size +=
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
+      ::google::protobuf::internal::WireFormatLite::MessageSize(msg);
   }
-
   // repeated .io.deephaven.proto.backplane.grpc.FieldInfo removed = 3;
   total_size += 1UL * this->_internal_removed_size();
-  for (const auto& msg : this->_impl_.removed_) {
+  for (const auto& msg : this->_internal_removed()) {
     total_size +=
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
+      ::google::protobuf::internal::WireFormatLite::MessageSize(msg);
   }
-
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData FieldsChangeUpdate::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
-    FieldsChangeUpdate::MergeImpl
+const ::google::protobuf::Message::ClassData FieldsChangeUpdate::_class_data_ = {
+    FieldsChangeUpdate::MergeImpl,
+    nullptr,  // OnDemandRegisterArenaDtor
 };
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*FieldsChangeUpdate::GetClassData() const { return &_class_data_; }
+const ::google::protobuf::Message::ClassData* FieldsChangeUpdate::GetClassData() const {
+  return &_class_data_;
+}
 
-
-void FieldsChangeUpdate::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+void FieldsChangeUpdate::MergeImpl(::google::protobuf::Message& to_msg, const ::google::protobuf::Message& from_msg) {
   auto* const _this = static_cast<FieldsChangeUpdate*>(&to_msg);
   auto& from = static_cast<const FieldsChangeUpdate&>(from_msg);
   // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.FieldsChangeUpdate)
-  GOOGLE_DCHECK_NE(&from, _this);
-  uint32_t cached_has_bits = 0;
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  _this->_impl_.created_.MergeFrom(from._impl_.created_);
-  _this->_impl_.updated_.MergeFrom(from._impl_.updated_);
-  _this->_impl_.removed_.MergeFrom(from._impl_.removed_);
-  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_mutable_created()->MergeFrom(
+      from._internal_created());
+  _this->_internal_mutable_updated()->MergeFrom(
+      from._internal_updated());
+  _this->_internal_mutable_removed()->MergeFrom(
+      from._internal_removed());
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void FieldsChangeUpdate::CopyFrom(const FieldsChangeUpdate& from) {
@@ -437,11 +471,14 @@ void FieldsChangeUpdate::CopyFrom(const FieldsChangeUpdate& from) {
   MergeFrom(from);
 }
 
-bool FieldsChangeUpdate::IsInitialized() const {
+PROTOBUF_NOINLINE bool FieldsChangeUpdate::IsInitialized() const {
   return true;
 }
 
-void FieldsChangeUpdate::InternalSwap(FieldsChangeUpdate* other) {
+::_pbi::CachedSize* FieldsChangeUpdate::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
+void FieldsChangeUpdate::InternalSwap(FieldsChangeUpdate* PROTOBUF_RESTRICT other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   _impl_.created_.InternalSwap(&other->_impl_.created_);
@@ -449,140 +486,95 @@ void FieldsChangeUpdate::InternalSwap(FieldsChangeUpdate* other) {
   _impl_.removed_.InternalSwap(&other->_impl_.removed_);
 }
 
-::PROTOBUF_NAMESPACE_ID::Metadata FieldsChangeUpdate::GetMetadata() const {
+::google::protobuf::Metadata FieldsChangeUpdate::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2fapplication_2eproto_getter, &descriptor_table_deephaven_2fproto_2fapplication_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fapplication_2eproto[1]);
 }
-
 // ===================================================================
 
 class FieldInfo::_Internal {
  public:
+  using HasBits = decltype(std::declval<FieldInfo>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+    8 * PROTOBUF_FIELD_OFFSET(FieldInfo, _impl_._has_bits_);
   static const ::io::deephaven::proto::backplane::grpc::TypedTicket& typed_ticket(const FieldInfo* msg);
+  static void set_has_typed_ticket(HasBits* has_bits) {
+    (*has_bits)[0] |= 1u;
+  }
 };
 
-const ::io::deephaven::proto::backplane::grpc::TypedTicket&
-FieldInfo::_Internal::typed_ticket(const FieldInfo* msg) {
+const ::io::deephaven::proto::backplane::grpc::TypedTicket& FieldInfo::_Internal::typed_ticket(const FieldInfo* msg) {
   return *msg->_impl_.typed_ticket_;
 }
 void FieldInfo::clear_typed_ticket() {
-  if (GetArenaForAllocation() == nullptr && _impl_.typed_ticket_ != nullptr) {
-    delete _impl_.typed_ticket_;
-  }
-  _impl_.typed_ticket_ = nullptr;
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  if (_impl_.typed_ticket_ != nullptr) _impl_.typed_ticket_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000001u;
 }
-FieldInfo::FieldInfo(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor(arena, is_message_owned);
+FieldInfo::FieldInfo(::google::protobuf::Arena* arena)
+    : ::google::protobuf::Message(arena) {
+  SharedCtor(arena);
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.FieldInfo)
 }
-FieldInfo::FieldInfo(const FieldInfo& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message() {
-  FieldInfo* const _this = this; (void)_this;
-  new (&_impl_) Impl_{
-      decltype(_impl_.field_name_){}
-    , decltype(_impl_.field_description_){}
-    , decltype(_impl_.application_name_){}
-    , decltype(_impl_.application_id_){}
-    , decltype(_impl_.typed_ticket_){nullptr}
-    , /*decltype(_impl_._cached_size_)*/{}};
+inline PROTOBUF_NDEBUG_INLINE FieldInfo::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
+    const Impl_& from)
+      : _has_bits_{from._has_bits_},
+        _cached_size_{0},
+        field_name_(arena, from.field_name_),
+        field_description_(arena, from.field_description_),
+        application_name_(arena, from.application_name_),
+        application_id_(arena, from.application_id_) {}
 
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  _impl_.field_name_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.field_name_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_field_name().empty()) {
-    _this->_impl_.field_name_.Set(from._internal_field_name(), 
-      _this->GetArenaForAllocation());
-  }
-  _impl_.field_description_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.field_description_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_field_description().empty()) {
-    _this->_impl_.field_description_.Set(from._internal_field_description(), 
-      _this->GetArenaForAllocation());
-  }
-  _impl_.application_name_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.application_name_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_application_name().empty()) {
-    _this->_impl_.application_name_.Set(from._internal_application_name(), 
-      _this->GetArenaForAllocation());
-  }
-  _impl_.application_id_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.application_id_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_application_id().empty()) {
-    _this->_impl_.application_id_.Set(from._internal_application_id(), 
-      _this->GetArenaForAllocation());
-  }
-  if (from._internal_has_typed_ticket()) {
-    _this->_impl_.typed_ticket_ = new ::io::deephaven::proto::backplane::grpc::TypedTicket(*from._impl_.typed_ticket_);
-  }
+FieldInfo::FieldInfo(
+    ::google::protobuf::Arena* arena,
+    const FieldInfo& from)
+    : ::google::protobuf::Message(arena) {
+  FieldInfo* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_);
+  ::uint32_t cached_has_bits = _impl_._has_bits_[0];
+  _impl_.typed_ticket_ = (cached_has_bits & 0x00000001u)
+                ? CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::TypedTicket>(arena, *from._impl_.typed_ticket_)
+                : nullptr;
+
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.FieldInfo)
 }
+inline PROTOBUF_NDEBUG_INLINE FieldInfo::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* arena)
+      : _cached_size_{0},
+        field_name_(arena),
+        field_description_(arena),
+        application_name_(arena),
+        application_id_(arena) {}
 
-inline void FieldInfo::SharedCtor(
-    ::_pb::Arena* arena, bool is_message_owned) {
-  (void)arena;
-  (void)is_message_owned;
-  new (&_impl_) Impl_{
-      decltype(_impl_.field_name_){}
-    , decltype(_impl_.field_description_){}
-    , decltype(_impl_.application_name_){}
-    , decltype(_impl_.application_id_){}
-    , decltype(_impl_.typed_ticket_){nullptr}
-    , /*decltype(_impl_._cached_size_)*/{}
-  };
-  _impl_.field_name_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.field_name_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  _impl_.field_description_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.field_description_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  _impl_.application_name_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.application_name_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  _impl_.application_id_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.application_id_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+inline void FieldInfo::SharedCtor(::_pb::Arena* arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  _impl_.typed_ticket_ = {};
 }
-
 FieldInfo::~FieldInfo() {
   // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.FieldInfo)
-  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
-  (void)arena;
-    return;
-  }
+  _internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
   SharedDtor();
 }
-
 inline void FieldInfo::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  ABSL_DCHECK(GetArena() == nullptr);
   _impl_.field_name_.Destroy();
   _impl_.field_description_.Destroy();
   _impl_.application_name_.Destroy();
   _impl_.application_id_.Destroy();
-  if (this != internal_default_instance()) delete _impl_.typed_ticket_;
+  delete _impl_.typed_ticket_;
+  _impl_.~Impl_();
 }
 
-void FieldInfo::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
-
-void FieldInfo::Clear() {
+PROTOBUF_NOINLINE void FieldInfo::Clear() {
 // @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.FieldInfo)
-  uint32_t cached_has_bits = 0;
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
@@ -590,210 +582,197 @@ void FieldInfo::Clear() {
   _impl_.field_description_.ClearToEmpty();
   _impl_.application_name_.ClearToEmpty();
   _impl_.application_id_.ClearToEmpty();
-  if (GetArenaForAllocation() == nullptr && _impl_.typed_ticket_ != nullptr) {
-    delete _impl_.typed_ticket_;
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000001u) {
+    ABSL_DCHECK(_impl_.typed_ticket_ != nullptr);
+    _impl_.typed_ticket_->Clear();
   }
-  _impl_.typed_ticket_ = nullptr;
-  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
 }
 
-const char* FieldInfo::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
-#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  while (!ctx->Done(&ptr)) {
-    uint32_t tag;
-    ptr = ::_pbi::ReadTag(ptr, &tag);
-    switch (tag >> 3) {
-      // .io.deephaven.proto.backplane.grpc.TypedTicket typed_ticket = 1;
-      case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
-          ptr = ctx->ParseMessage(_internal_mutable_typed_ticket(), ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      // string field_name = 2;
-      case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
-          auto str = _internal_mutable_field_name();
-          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
-          CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.FieldInfo.field_name"));
-        } else
-          goto handle_unusual;
-        continue;
-      // string field_description = 3;
-      case 3:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
-          auto str = _internal_mutable_field_description();
-          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
-          CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.FieldInfo.field_description"));
-        } else
-          goto handle_unusual;
-        continue;
-      // string application_name = 4;
-      case 4:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 34)) {
-          auto str = _internal_mutable_application_name();
-          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
-          CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.FieldInfo.application_name"));
-        } else
-          goto handle_unusual;
-        continue;
-      // string application_id = 5;
-      case 5:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 42)) {
-          auto str = _internal_mutable_application_id();
-          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
-          CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.FieldInfo.application_id"));
-        } else
-          goto handle_unusual;
-        continue;
-      default:
-        goto handle_unusual;
-    }  // switch
-  handle_unusual:
-    if ((tag == 0) || ((tag & 7) == 4)) {
-      CHK_(ptr);
-      ctx->SetLastTag(tag);
-      goto message_done;
-    }
-    ptr = UnknownFieldParse(
-        tag,
-        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-        ptr, ctx);
-    CHK_(ptr != nullptr);
-  }  // while
-message_done:
+const char* FieldInfo::_InternalParse(
+    const char* ptr, ::_pbi::ParseContext* ctx) {
+  ptr = ::_pbi::TcParser::ParseLoop(this, ptr, ctx, &_table_.header);
   return ptr;
-failure:
-  ptr = nullptr;
-  goto message_done;
-#undef CHK_
 }
 
-uint8_t* FieldInfo::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.FieldInfo)
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
 
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<3, 5, 1, 109, 2> FieldInfo::_table_ = {
+  {
+    PROTOBUF_FIELD_OFFSET(FieldInfo, _impl_._has_bits_),
+    0, // no _extensions_
+    5, 56,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967264,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    5,  // num_field_entries
+    1,  // num_aux_entries
+    offsetof(decltype(_table_), aux_entries),
+    &_FieldInfo_default_instance_._instance,
+    ::_pbi::TcParser::GenericFallback,  // fallback
+  }, {{
+    {::_pbi::TcParser::MiniParse, {}},
+    // .io.deephaven.proto.backplane.grpc.TypedTicket typed_ticket = 1;
+    {::_pbi::TcParser::FastMtS1,
+     {10, 0, 0, PROTOBUF_FIELD_OFFSET(FieldInfo, _impl_.typed_ticket_)}},
+    // string field_name = 2;
+    {::_pbi::TcParser::FastUS1,
+     {18, 63, 0, PROTOBUF_FIELD_OFFSET(FieldInfo, _impl_.field_name_)}},
+    // string field_description = 3;
+    {::_pbi::TcParser::FastUS1,
+     {26, 63, 0, PROTOBUF_FIELD_OFFSET(FieldInfo, _impl_.field_description_)}},
+    // string application_name = 4;
+    {::_pbi::TcParser::FastUS1,
+     {34, 63, 0, PROTOBUF_FIELD_OFFSET(FieldInfo, _impl_.application_name_)}},
+    // string application_id = 5;
+    {::_pbi::TcParser::FastUS1,
+     {42, 63, 0, PROTOBUF_FIELD_OFFSET(FieldInfo, _impl_.application_id_)}},
+    {::_pbi::TcParser::MiniParse, {}},
+    {::_pbi::TcParser::MiniParse, {}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // .io.deephaven.proto.backplane.grpc.TypedTicket typed_ticket = 1;
+    {PROTOBUF_FIELD_OFFSET(FieldInfo, _impl_.typed_ticket_), _Internal::kHasBitsOffset + 0, 0,
+    (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
+    // string field_name = 2;
+    {PROTOBUF_FIELD_OFFSET(FieldInfo, _impl_.field_name_), -1, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // string field_description = 3;
+    {PROTOBUF_FIELD_OFFSET(FieldInfo, _impl_.field_description_), -1, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // string application_name = 4;
+    {PROTOBUF_FIELD_OFFSET(FieldInfo, _impl_.application_name_), -1, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // string application_id = 5;
+    {PROTOBUF_FIELD_OFFSET(FieldInfo, _impl_.application_id_), -1, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+  }}, {{
+    {::_pbi::TcParser::GetTable<::io::deephaven::proto::backplane::grpc::TypedTicket>()},
+  }}, {{
+    "\53\0\12\21\20\16\0\0"
+    "io.deephaven.proto.backplane.grpc.FieldInfo"
+    "field_name"
+    "field_description"
+    "application_name"
+    "application_id"
+  }},
+};
+
+::uint8_t* FieldInfo::_InternalSerialize(
+    ::uint8_t* target,
+    ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.FieldInfo)
+  ::uint32_t cached_has_bits = 0;
+  (void)cached_has_bits;
+
+  cached_has_bits = _impl_._has_bits_[0];
   // .io.deephaven.proto.backplane.grpc.TypedTicket typed_ticket = 1;
-  if (this->_internal_has_typed_ticket()) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(1, _Internal::typed_ticket(this),
+  if (cached_has_bits & 0x00000001u) {
+    target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+        1, _Internal::typed_ticket(this),
         _Internal::typed_ticket(this).GetCachedSize(), target, stream);
   }
 
   // string field_name = 2;
   if (!this->_internal_field_name().empty()) {
-    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_field_name().data(), static_cast<int>(this->_internal_field_name().length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "io.deephaven.proto.backplane.grpc.FieldInfo.field_name");
-    target = stream->WriteStringMaybeAliased(
-        2, this->_internal_field_name(), target);
+    const std::string& _s = this->_internal_field_name();
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+        _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "io.deephaven.proto.backplane.grpc.FieldInfo.field_name");
+    target = stream->WriteStringMaybeAliased(2, _s, target);
   }
 
   // string field_description = 3;
   if (!this->_internal_field_description().empty()) {
-    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_field_description().data(), static_cast<int>(this->_internal_field_description().length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "io.deephaven.proto.backplane.grpc.FieldInfo.field_description");
-    target = stream->WriteStringMaybeAliased(
-        3, this->_internal_field_description(), target);
+    const std::string& _s = this->_internal_field_description();
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+        _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "io.deephaven.proto.backplane.grpc.FieldInfo.field_description");
+    target = stream->WriteStringMaybeAliased(3, _s, target);
   }
 
   // string application_name = 4;
   if (!this->_internal_application_name().empty()) {
-    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_application_name().data(), static_cast<int>(this->_internal_application_name().length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "io.deephaven.proto.backplane.grpc.FieldInfo.application_name");
-    target = stream->WriteStringMaybeAliased(
-        4, this->_internal_application_name(), target);
+    const std::string& _s = this->_internal_application_name();
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+        _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "io.deephaven.proto.backplane.grpc.FieldInfo.application_name");
+    target = stream->WriteStringMaybeAliased(4, _s, target);
   }
 
   // string application_id = 5;
   if (!this->_internal_application_id().empty()) {
-    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_application_id().data(), static_cast<int>(this->_internal_application_id().length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "io.deephaven.proto.backplane.grpc.FieldInfo.application_id");
-    target = stream->WriteStringMaybeAliased(
-        5, this->_internal_application_id(), target);
+    const std::string& _s = this->_internal_application_id();
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+        _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "io.deephaven.proto.backplane.grpc.FieldInfo.application_id");
+    target = stream->WriteStringMaybeAliased(5, _s, target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
   }
   // @@protoc_insertion_point(serialize_to_array_end:io.deephaven.proto.backplane.grpc.FieldInfo)
   return target;
 }
 
-size_t FieldInfo::ByteSizeLong() const {
+::size_t FieldInfo::ByteSizeLong() const {
 // @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.FieldInfo)
-  size_t total_size = 0;
+  ::size_t total_size = 0;
 
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
   // string field_name = 2;
   if (!this->_internal_field_name().empty()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_field_name());
+    total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                    this->_internal_field_name());
   }
 
   // string field_description = 3;
   if (!this->_internal_field_description().empty()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_field_description());
+    total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                    this->_internal_field_description());
   }
 
   // string application_name = 4;
   if (!this->_internal_application_name().empty()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_application_name());
+    total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                    this->_internal_application_name());
   }
 
   // string application_id = 5;
   if (!this->_internal_application_id().empty()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_application_id());
+    total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                    this->_internal_application_id());
   }
 
   // .io.deephaven.proto.backplane.grpc.TypedTicket typed_ticket = 1;
-  if (this->_internal_has_typed_ticket()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *_impl_.typed_ticket_);
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000001u) {
+    total_size +=
+        1 + ::google::protobuf::internal::WireFormatLite::MessageSize(*_impl_.typed_ticket_);
   }
 
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData FieldInfo::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
-    FieldInfo::MergeImpl
+const ::google::protobuf::Message::ClassData FieldInfo::_class_data_ = {
+    FieldInfo::MergeImpl,
+    nullptr,  // OnDemandRegisterArenaDtor
 };
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*FieldInfo::GetClassData() const { return &_class_data_; }
+const ::google::protobuf::Message::ClassData* FieldInfo::GetClassData() const {
+  return &_class_data_;
+}
 
-
-void FieldInfo::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+void FieldInfo::MergeImpl(::google::protobuf::Message& to_msg, const ::google::protobuf::Message& from_msg) {
   auto* const _this = static_cast<FieldInfo*>(&to_msg);
   auto& from = static_cast<const FieldInfo&>(from_msg);
   // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.FieldInfo)
-  GOOGLE_DCHECK_NE(&from, _this);
-  uint32_t cached_has_bits = 0;
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   if (!from._internal_field_name().empty()) {
@@ -808,11 +787,11 @@ void FieldInfo::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROT
   if (!from._internal_application_id().empty()) {
     _this->_internal_set_application_id(from._internal_application_id());
   }
-  if (from._internal_has_typed_ticket()) {
+  if ((from._impl_._has_bits_[0] & 0x00000001u) != 0) {
     _this->_internal_mutable_typed_ticket()->::io::deephaven::proto::backplane::grpc::TypedTicket::MergeFrom(
         from._internal_typed_ticket());
   }
-  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void FieldInfo::CopyFrom(const FieldInfo& from) {
@@ -822,60 +801,40 @@ void FieldInfo::CopyFrom(const FieldInfo& from) {
   MergeFrom(from);
 }
 
-bool FieldInfo::IsInitialized() const {
+PROTOBUF_NOINLINE bool FieldInfo::IsInitialized() const {
   return true;
 }
 
-void FieldInfo::InternalSwap(FieldInfo* other) {
+::_pbi::CachedSize* FieldInfo::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
+void FieldInfo::InternalSwap(FieldInfo* PROTOBUF_RESTRICT other) {
   using std::swap;
-  auto* lhs_arena = GetArenaForAllocation();
-  auto* rhs_arena = other->GetArenaForAllocation();
+  auto* arena = GetArena();
+  ABSL_DCHECK_EQ(arena, other->GetArena());
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.field_name_, lhs_arena,
-      &other->_impl_.field_name_, rhs_arena
-  );
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.field_description_, lhs_arena,
-      &other->_impl_.field_description_, rhs_arena
-  );
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.application_name_, lhs_arena,
-      &other->_impl_.application_name_, rhs_arena
-  );
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.application_id_, lhs_arena,
-      &other->_impl_.application_id_, rhs_arena
-  );
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.field_name_, &other->_impl_.field_name_, arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.field_description_, &other->_impl_.field_description_, arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.application_name_, &other->_impl_.application_name_, arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.application_id_, &other->_impl_.application_id_, arena);
   swap(_impl_.typed_ticket_, other->_impl_.typed_ticket_);
 }
 
-::PROTOBUF_NAMESPACE_ID::Metadata FieldInfo::GetMetadata() const {
+::google::protobuf::Metadata FieldInfo::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2fapplication_2eproto_getter, &descriptor_table_deephaven_2fproto_2fapplication_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fapplication_2eproto[2]);
 }
-
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace grpc
 }  // namespace backplane
 }  // namespace proto
 }  // namespace deephaven
 }  // namespace io
-PROTOBUF_NAMESPACE_OPEN
-template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::ListFieldsRequest*
-Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::ListFieldsRequest >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::ListFieldsRequest >(arena);
-}
-template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate*
-Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::FieldsChangeUpdate >(arena);
-}
-template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::FieldInfo*
-Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::FieldInfo >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::FieldInfo >(arena);
-}
-PROTOBUF_NAMESPACE_CLOSE
-
+namespace google {
+namespace protobuf {
+}  // namespace protobuf
+}  // namespace google
 // @@protoc_insertion_point(global_scope)
-#include <google/protobuf/port_undef.inc>
+#include "google/protobuf/port_undef.inc"

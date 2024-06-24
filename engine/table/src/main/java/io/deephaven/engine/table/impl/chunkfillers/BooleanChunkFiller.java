@@ -17,7 +17,7 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableBooleanChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 
 public final class BooleanChunkFiller implements ChunkFiller {
     public static final BooleanChunkFiller INSTANCE = new BooleanChunkFiller();
@@ -29,11 +29,11 @@ public final class BooleanChunkFiller implements ChunkFiller {
         final MutableInt destPos = new MutableInt(0);
         keys.forAllRowKeyRanges((start, end) -> {
             for (long v = start; v <= end; ++v) {
-                typedDest.set(destPos.intValue(), src.getBoolean(v));
+                typedDest.set(destPos.get(), src.getBoolean(v));
                 destPos.increment();
             }
         });
-        typedDest.setSize(destPos.intValue());
+        typedDest.setSize(destPos.get());
     }
 
     @Override
@@ -42,10 +42,10 @@ public final class BooleanChunkFiller implements ChunkFiller {
         final WritableBooleanChunk<? super Values> typedDest = dest.asWritableBooleanChunk();
         final MutableInt destPos = new MutableInt(0);
         keys.forAllRowKeys(v -> {
-            typedDest.set(destPos.intValue(), src.getBoolean(v));
+            typedDest.set(destPos.get(), src.getBoolean(v));
             destPos.increment();
         });
-        typedDest.setSize(destPos.intValue());
+        typedDest.setSize(destPos.get());
     }
 
     @Override
@@ -68,11 +68,11 @@ public final class BooleanChunkFiller implements ChunkFiller {
         final MutableInt destPos = new MutableInt(0);
         keys.forAllRowKeyRanges((start, end) -> {
             for (long v = start; v <= end; ++v) {
-                typedDest.set(destPos.intValue(), src.getPrevBoolean(v));
+                typedDest.set(destPos.get(), src.getPrevBoolean(v));
                 destPos.increment();
             }
         });
-        typedDest.setSize(destPos.intValue());
+        typedDest.setSize(destPos.get());
     }
 
     @Override
@@ -81,10 +81,10 @@ public final class BooleanChunkFiller implements ChunkFiller {
         final WritableBooleanChunk<? super Values> typedDest = dest.asWritableBooleanChunk();
         final MutableInt destPos = new MutableInt(0);
         keys.forAllRowKeys(v -> {
-            typedDest.set(destPos.intValue(), src.getPrevBoolean(v));
+            typedDest.set(destPos.get(), src.getPrevBoolean(v));
             destPos.increment();
         });
-        typedDest.setSize(destPos.intValue());
+        typedDest.setSize(destPos.get());
     }
 
     @Override

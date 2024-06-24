@@ -263,7 +263,7 @@ public class ReplicateSourceAndChunkTests {
                         ? "                // the unit test framework will ask us to add things, we need to conveniently ignore it\n"
                         : "") +
                         (isImmutable ? "                if (!data.containsKey(v)) {\n" : "") +
-                        (isImmutable ? "    " : "") + "                data.put(v, vcs.get(ii.intValue()));",
+                        (isImmutable ? "    " : "") + "                data.put(v, vcs.get(ii.get()));",
                 (isImmutable ? "                }\n" : "") +
                         "                ii.increment();",
                 "            }",

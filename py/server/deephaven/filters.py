@@ -6,10 +6,9 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import List, Union
+from typing import List, Union, Sequence
 
 import jpy
-import functools
 
 from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper

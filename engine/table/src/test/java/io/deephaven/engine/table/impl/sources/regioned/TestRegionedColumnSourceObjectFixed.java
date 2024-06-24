@@ -6,8 +6,8 @@ package io.deephaven.engine.table.impl.sources.regioned;
 import io.deephaven.base.string.EncodingInfo;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.util.codec.ObjectCodec;
+import io.deephaven.util.mutable.MutableLong;
 import junit.framework.TestCase;
-import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -64,7 +64,7 @@ public class TestRegionedColumnSourceObjectFixed extends TstRegionedColumnSource
         REUSABLE_VALUES = Stream.of("1234", "0000", "abcd", "ABCD", "love", "hate", "nine", "nein", "wxyz", "WXYZ").map(
                 s -> {
                     length.add(s.length());
-                    return new Value<>(s, objectToBytes(s), length.longValue());
+                    return new Value<>(s, objectToBytes(s), length.get());
                 }).toArray(Value[]::new);
     }
 

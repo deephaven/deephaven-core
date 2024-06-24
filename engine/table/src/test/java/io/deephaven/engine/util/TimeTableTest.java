@@ -377,4 +377,16 @@ public class TimeTableTest extends RefreshingTableTestCase {
             }
         }
     }
+
+    @Test
+    public void testConcurrentConstruction() {
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.startCycleForUnitTests(false);
+        build(TimeTable.newBuilder().period(10));
+        clock.now = 1;
+        try (final SafeCloseable ignored = updateGraph::completeCycleForUnitTests) {
+            updateGraph.refreshUpdateSourceForUnitTests(updateSourceCombiner);
+            updateGraph.markSourcesRefreshedForUnitTests();
+        }
+    }
 }

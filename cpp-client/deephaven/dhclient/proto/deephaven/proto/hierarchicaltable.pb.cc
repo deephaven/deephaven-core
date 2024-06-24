@@ -4,727 +4,848 @@
 #include "deephaven/proto/hierarchicaltable.pb.h"
 
 #include <algorithm>
-
-#include <google/protobuf/io/coded_stream.h>
-#include <google/protobuf/extension_set.h>
-#include <google/protobuf/wire_format_lite.h>
-#include <google/protobuf/descriptor.h>
-#include <google/protobuf/generated_message_reflection.h>
-#include <google/protobuf/reflection_ops.h>
-#include <google/protobuf/wire_format.h>
+#include "google/protobuf/io/coded_stream.h"
+#include "google/protobuf/extension_set.h"
+#include "google/protobuf/wire_format_lite.h"
+#include "google/protobuf/descriptor.h"
+#include "google/protobuf/generated_message_reflection.h"
+#include "google/protobuf/reflection_ops.h"
+#include "google/protobuf/wire_format.h"
+#include "google/protobuf/generated_message_tctable_impl.h"
 // @@protoc_insertion_point(includes)
-#include <google/protobuf/port_def.inc>
 
+// Must be included last.
+#include "google/protobuf/port_def.inc"
 PROTOBUF_PRAGMA_INIT_SEG
-
-namespace _pb = ::PROTOBUF_NAMESPACE_ID;
-namespace _pbi = _pb::internal;
-
+namespace _pb = ::google::protobuf;
+namespace _pbi = ::google::protobuf::internal;
+namespace _fl = ::google::protobuf::internal::field_layout;
 namespace io {
 namespace deephaven {
 namespace proto {
 namespace backplane {
 namespace grpc {
-PROTOBUF_CONSTEXPR RollupRequest::RollupRequest(
-    ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.aggregations_)*/{}
-  , /*decltype(_impl_.group_by_columns_)*/{}
-  , /*decltype(_impl_.result_rollup_table_id_)*/nullptr
-  , /*decltype(_impl_.source_table_id_)*/nullptr
-  , /*decltype(_impl_.include_constituents_)*/false
-  , /*decltype(_impl_._cached_size_)*/{}} {}
-struct RollupRequestDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR RollupRequestDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
-  ~RollupRequestDefaultTypeInternal() {}
-  union {
-    RollupRequest _instance;
-  };
-};
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 RollupRequestDefaultTypeInternal _RollupRequest_default_instance_;
-PROTOBUF_CONSTEXPR RollupResponse::RollupResponse(
-    ::_pbi::ConstantInitialized) {}
-struct RollupResponseDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR RollupResponseDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
-  ~RollupResponseDefaultTypeInternal() {}
-  union {
-    RollupResponse _instance;
-  };
-};
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 RollupResponseDefaultTypeInternal _RollupResponse_default_instance_;
-PROTOBUF_CONSTEXPR TreeRequest::TreeRequest(
-    ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.identifier_column_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
-  , /*decltype(_impl_.parent_identifier_column_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
-  , /*decltype(_impl_.result_tree_table_id_)*/nullptr
-  , /*decltype(_impl_.source_table_id_)*/nullptr
-  , /*decltype(_impl_.promote_orphans_)*/false
-  , /*decltype(_impl_._cached_size_)*/{}} {}
-struct TreeRequestDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR TreeRequestDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
-  ~TreeRequestDefaultTypeInternal() {}
-  union {
-    TreeRequest _instance;
-  };
-};
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 TreeRequestDefaultTypeInternal _TreeRequest_default_instance_;
-PROTOBUF_CONSTEXPR TreeResponse::TreeResponse(
-    ::_pbi::ConstantInitialized) {}
+      template <typename>
+PROTOBUF_CONSTEXPR TreeResponse::TreeResponse(::_pbi::ConstantInitialized) {}
 struct TreeResponseDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR TreeResponseDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
+  PROTOBUF_CONSTEXPR TreeResponseDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
   ~TreeResponseDefaultTypeInternal() {}
   union {
     TreeResponse _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 TreeResponseDefaultTypeInternal _TreeResponse_default_instance_;
-PROTOBUF_CONSTEXPR HierarchicalTableApplyRequest::HierarchicalTableApplyRequest(
-    ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.filters_)*/{}
-  , /*decltype(_impl_.sorts_)*/{}
-  , /*decltype(_impl_.result_hierarchical_table_id_)*/nullptr
-  , /*decltype(_impl_.input_hierarchical_table_id_)*/nullptr
-  , /*decltype(_impl_._cached_size_)*/{}} {}
-struct HierarchicalTableApplyRequestDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR HierarchicalTableApplyRequestDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
-  ~HierarchicalTableApplyRequestDefaultTypeInternal() {}
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 TreeResponseDefaultTypeInternal _TreeResponse_default_instance_;
+      template <typename>
+PROTOBUF_CONSTEXPR RollupResponse::RollupResponse(::_pbi::ConstantInitialized) {}
+struct RollupResponseDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR RollupResponseDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~RollupResponseDefaultTypeInternal() {}
   union {
-    HierarchicalTableApplyRequest _instance;
+    RollupResponse _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 HierarchicalTableApplyRequestDefaultTypeInternal _HierarchicalTableApplyRequest_default_instance_;
-PROTOBUF_CONSTEXPR HierarchicalTableApplyResponse::HierarchicalTableApplyResponse(
-    ::_pbi::ConstantInitialized) {}
-struct HierarchicalTableApplyResponseDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR HierarchicalTableApplyResponseDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
-  ~HierarchicalTableApplyResponseDefaultTypeInternal() {}
-  union {
-    HierarchicalTableApplyResponse _instance;
-  };
-};
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 HierarchicalTableApplyResponseDefaultTypeInternal _HierarchicalTableApplyResponse_default_instance_;
-PROTOBUF_CONSTEXPR HierarchicalTableDescriptor::HierarchicalTableDescriptor(
-    ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.snapshot_schema_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
-  , /*decltype(_impl_.is_static_)*/false
-  , /*decltype(_impl_._cached_size_)*/{}} {}
-struct HierarchicalTableDescriptorDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR HierarchicalTableDescriptorDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
-  ~HierarchicalTableDescriptorDefaultTypeInternal() {}
-  union {
-    HierarchicalTableDescriptor _instance;
-  };
-};
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 HierarchicalTableDescriptorDefaultTypeInternal _HierarchicalTableDescriptor_default_instance_;
-PROTOBUF_CONSTEXPR HierarchicalTableViewRequest::HierarchicalTableViewRequest(
-    ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.result_view_id_)*/nullptr
-  , /*decltype(_impl_.expansions_)*/nullptr
-  , /*decltype(_impl_.target_)*/{}
-  , /*decltype(_impl_._cached_size_)*/{}
-  , /*decltype(_impl_._oneof_case_)*/{}} {}
-struct HierarchicalTableViewRequestDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR HierarchicalTableViewRequestDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
-  ~HierarchicalTableViewRequestDefaultTypeInternal() {}
-  union {
-    HierarchicalTableViewRequest _instance;
-  };
-};
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 HierarchicalTableViewRequestDefaultTypeInternal _HierarchicalTableViewRequest_default_instance_;
-PROTOBUF_CONSTEXPR HierarchicalTableViewKeyTableDescriptor::HierarchicalTableViewKeyTableDescriptor(
-    ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_._has_bits_)*/{}
-  , /*decltype(_impl_._cached_size_)*/{}
-  , /*decltype(_impl_.key_table_action_column_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
-  , /*decltype(_impl_.key_table_id_)*/nullptr} {}
-struct HierarchicalTableViewKeyTableDescriptorDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR HierarchicalTableViewKeyTableDescriptorDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
-  ~HierarchicalTableViewKeyTableDescriptorDefaultTypeInternal() {}
-  union {
-    HierarchicalTableViewKeyTableDescriptor _instance;
-  };
-};
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 HierarchicalTableViewKeyTableDescriptorDefaultTypeInternal _HierarchicalTableViewKeyTableDescriptor_default_instance_;
-PROTOBUF_CONSTEXPR HierarchicalTableViewResponse::HierarchicalTableViewResponse(
-    ::_pbi::ConstantInitialized) {}
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 RollupResponseDefaultTypeInternal _RollupResponse_default_instance_;
+      template <typename>
+PROTOBUF_CONSTEXPR HierarchicalTableViewResponse::HierarchicalTableViewResponse(::_pbi::ConstantInitialized) {}
 struct HierarchicalTableViewResponseDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR HierarchicalTableViewResponseDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
+  PROTOBUF_CONSTEXPR HierarchicalTableViewResponseDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
   ~HierarchicalTableViewResponseDefaultTypeInternal() {}
   union {
     HierarchicalTableViewResponse _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 HierarchicalTableViewResponseDefaultTypeInternal _HierarchicalTableViewResponse_default_instance_;
-PROTOBUF_CONSTEXPR HierarchicalTableSourceExportRequest::HierarchicalTableSourceExportRequest(
-    ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.result_table_id_)*/nullptr
-  , /*decltype(_impl_.hierarchical_table_id_)*/nullptr
-  , /*decltype(_impl_._cached_size_)*/{}} {}
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 HierarchicalTableViewResponseDefaultTypeInternal _HierarchicalTableViewResponse_default_instance_;
+
+inline constexpr HierarchicalTableDescriptor::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : snapshot_schema_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        is_static_{false},
+        _cached_size_{0} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR HierarchicalTableDescriptor::HierarchicalTableDescriptor(::_pbi::ConstantInitialized)
+    : _impl_(::_pbi::ConstantInitialized()) {}
+struct HierarchicalTableDescriptorDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR HierarchicalTableDescriptorDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~HierarchicalTableDescriptorDefaultTypeInternal() {}
+  union {
+    HierarchicalTableDescriptor _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 HierarchicalTableDescriptorDefaultTypeInternal _HierarchicalTableDescriptor_default_instance_;
+      template <typename>
+PROTOBUF_CONSTEXPR HierarchicalTableApplyResponse::HierarchicalTableApplyResponse(::_pbi::ConstantInitialized) {}
+struct HierarchicalTableApplyResponseDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR HierarchicalTableApplyResponseDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~HierarchicalTableApplyResponseDefaultTypeInternal() {}
+  union {
+    HierarchicalTableApplyResponse _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 HierarchicalTableApplyResponseDefaultTypeInternal _HierarchicalTableApplyResponse_default_instance_;
+
+inline constexpr TreeRequest::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : _cached_size_{0},
+        identifier_column_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        parent_identifier_column_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        result_tree_table_id_{nullptr},
+        source_table_id_{nullptr},
+        promote_orphans_{false} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR TreeRequest::TreeRequest(::_pbi::ConstantInitialized)
+    : _impl_(::_pbi::ConstantInitialized()) {}
+struct TreeRequestDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR TreeRequestDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~TreeRequestDefaultTypeInternal() {}
+  union {
+    TreeRequest _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 TreeRequestDefaultTypeInternal _TreeRequest_default_instance_;
+
+inline constexpr HierarchicalTableViewKeyTableDescriptor::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : _cached_size_{0},
+        key_table_action_column_(
+            &::google::protobuf::internal::fixed_address_empty_string,
+            ::_pbi::ConstantInitialized()),
+        key_table_id_{nullptr} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR HierarchicalTableViewKeyTableDescriptor::HierarchicalTableViewKeyTableDescriptor(::_pbi::ConstantInitialized)
+    : _impl_(::_pbi::ConstantInitialized()) {}
+struct HierarchicalTableViewKeyTableDescriptorDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR HierarchicalTableViewKeyTableDescriptorDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~HierarchicalTableViewKeyTableDescriptorDefaultTypeInternal() {}
+  union {
+    HierarchicalTableViewKeyTableDescriptor _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 HierarchicalTableViewKeyTableDescriptorDefaultTypeInternal _HierarchicalTableViewKeyTableDescriptor_default_instance_;
+
+inline constexpr HierarchicalTableSourceExportRequest::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : _cached_size_{0},
+        result_table_id_{nullptr},
+        hierarchical_table_id_{nullptr} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR HierarchicalTableSourceExportRequest::HierarchicalTableSourceExportRequest(::_pbi::ConstantInitialized)
+    : _impl_(::_pbi::ConstantInitialized()) {}
 struct HierarchicalTableSourceExportRequestDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR HierarchicalTableSourceExportRequestDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
+  PROTOBUF_CONSTEXPR HierarchicalTableSourceExportRequestDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
   ~HierarchicalTableSourceExportRequestDefaultTypeInternal() {}
   union {
     HierarchicalTableSourceExportRequest _instance;
   };
 };
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 HierarchicalTableSourceExportRequestDefaultTypeInternal _HierarchicalTableSourceExportRequest_default_instance_;
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 HierarchicalTableSourceExportRequestDefaultTypeInternal _HierarchicalTableSourceExportRequest_default_instance_;
+
+inline constexpr HierarchicalTableViewRequest::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : _cached_size_{0},
+        result_view_id_{nullptr},
+        expansions_{nullptr},
+        target_{},
+        _oneof_case_{} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR HierarchicalTableViewRequest::HierarchicalTableViewRequest(::_pbi::ConstantInitialized)
+    : _impl_(::_pbi::ConstantInitialized()) {}
+struct HierarchicalTableViewRequestDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR HierarchicalTableViewRequestDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~HierarchicalTableViewRequestDefaultTypeInternal() {}
+  union {
+    HierarchicalTableViewRequest _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 HierarchicalTableViewRequestDefaultTypeInternal _HierarchicalTableViewRequest_default_instance_;
+
+inline constexpr HierarchicalTableApplyRequest::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : _cached_size_{0},
+        filters_{},
+        sorts_{},
+        result_hierarchical_table_id_{nullptr},
+        input_hierarchical_table_id_{nullptr} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR HierarchicalTableApplyRequest::HierarchicalTableApplyRequest(::_pbi::ConstantInitialized)
+    : _impl_(::_pbi::ConstantInitialized()) {}
+struct HierarchicalTableApplyRequestDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR HierarchicalTableApplyRequestDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~HierarchicalTableApplyRequestDefaultTypeInternal() {}
+  union {
+    HierarchicalTableApplyRequest _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 HierarchicalTableApplyRequestDefaultTypeInternal _HierarchicalTableApplyRequest_default_instance_;
+
+inline constexpr RollupRequest::Impl_::Impl_(
+    ::_pbi::ConstantInitialized) noexcept
+      : _cached_size_{0},
+        aggregations_{},
+        group_by_columns_{},
+        result_rollup_table_id_{nullptr},
+        source_table_id_{nullptr},
+        include_constituents_{false} {}
+
+template <typename>
+PROTOBUF_CONSTEXPR RollupRequest::RollupRequest(::_pbi::ConstantInitialized)
+    : _impl_(::_pbi::ConstantInitialized()) {}
+struct RollupRequestDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR RollupRequestDefaultTypeInternal() : _instance(::_pbi::ConstantInitialized{}) {}
+  ~RollupRequestDefaultTypeInternal() {}
+  union {
+    RollupRequest _instance;
+  };
+};
+
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT
+    PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 RollupRequestDefaultTypeInternal _RollupRequest_default_instance_;
 }  // namespace grpc
 }  // namespace backplane
 }  // namespace proto
 }  // namespace deephaven
 }  // namespace io
 static ::_pb::Metadata file_level_metadata_deephaven_2fproto_2fhierarchicaltable_2eproto[11];
-static constexpr ::_pb::EnumDescriptor const** file_level_enum_descriptors_deephaven_2fproto_2fhierarchicaltable_2eproto = nullptr;
-static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_deephaven_2fproto_2fhierarchicaltable_2eproto = nullptr;
-
-const uint32_t TableStruct_deephaven_2fproto_2fhierarchicaltable_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RollupRequest, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RollupRequest, _impl_.result_rollup_table_id_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RollupRequest, _impl_.source_table_id_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RollupRequest, _impl_.aggregations_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RollupRequest, _impl_.include_constituents_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RollupRequest, _impl_.group_by_columns_),
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RollupResponse, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TreeRequest, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TreeRequest, _impl_.result_tree_table_id_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TreeRequest, _impl_.source_table_id_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TreeRequest, _impl_.identifier_column_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TreeRequest, _impl_.parent_identifier_column_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TreeRequest, _impl_.promote_orphans_),
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TreeResponse, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableApplyRequest, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableApplyRequest, _impl_.result_hierarchical_table_id_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableApplyRequest, _impl_.input_hierarchical_table_id_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableApplyRequest, _impl_.filters_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableApplyRequest, _impl_.sorts_),
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableApplyResponse, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableDescriptor, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableDescriptor, _impl_.snapshot_schema_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableDescriptor, _impl_.is_static_),
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableViewRequest, _internal_metadata_),
-  ~0u,  // no _extensions_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableViewRequest, _impl_._oneof_case_[0]),
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableViewRequest, _impl_.result_view_id_),
-  ::_pbi::kInvalidFieldOffsetTag,
-  ::_pbi::kInvalidFieldOffsetTag,
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableViewRequest, _impl_.expansions_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableViewRequest, _impl_.target_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableViewKeyTableDescriptor, _impl_._has_bits_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableViewKeyTableDescriptor, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableViewKeyTableDescriptor, _impl_.key_table_id_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableViewKeyTableDescriptor, _impl_.key_table_action_column_),
-  ~0u,
-  0,
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableViewResponse, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableSourceExportRequest, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableSourceExportRequest, _impl_.result_table_id_),
-  PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableSourceExportRequest, _impl_.hierarchical_table_id_),
+static constexpr const ::_pb::EnumDescriptor**
+    file_level_enum_descriptors_deephaven_2fproto_2fhierarchicaltable_2eproto = nullptr;
+static constexpr const ::_pb::ServiceDescriptor**
+    file_level_service_descriptors_deephaven_2fproto_2fhierarchicaltable_2eproto = nullptr;
+const ::uint32_t TableStruct_deephaven_2fproto_2fhierarchicaltable_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(
+    protodesc_cold) = {
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RollupRequest, _impl_._has_bits_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RollupRequest, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RollupRequest, _impl_.result_rollup_table_id_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RollupRequest, _impl_.source_table_id_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RollupRequest, _impl_.aggregations_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RollupRequest, _impl_.include_constituents_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RollupRequest, _impl_.group_by_columns_),
+    0,
+    1,
+    ~0u,
+    ~0u,
+    ~0u,
+    ~0u,  // no _has_bits_
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::RollupResponse, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TreeRequest, _impl_._has_bits_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TreeRequest, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TreeRequest, _impl_.result_tree_table_id_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TreeRequest, _impl_.source_table_id_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TreeRequest, _impl_.identifier_column_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TreeRequest, _impl_.parent_identifier_column_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TreeRequest, _impl_.promote_orphans_),
+    0,
+    1,
+    ~0u,
+    ~0u,
+    ~0u,
+    ~0u,  // no _has_bits_
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::TreeResponse, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableApplyRequest, _impl_._has_bits_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableApplyRequest, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableApplyRequest, _impl_.result_hierarchical_table_id_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableApplyRequest, _impl_.input_hierarchical_table_id_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableApplyRequest, _impl_.filters_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableApplyRequest, _impl_.sorts_),
+    0,
+    1,
+    ~0u,
+    ~0u,
+    ~0u,  // no _has_bits_
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableApplyResponse, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    ~0u,  // no _has_bits_
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableDescriptor, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableDescriptor, _impl_.snapshot_schema_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableDescriptor, _impl_.is_static_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableViewRequest, _impl_._has_bits_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableViewRequest, _internal_metadata_),
+    ~0u,  // no _extensions_
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableViewRequest, _impl_._oneof_case_[0]),
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableViewRequest, _impl_.result_view_id_),
+    ::_pbi::kInvalidFieldOffsetTag,
+    ::_pbi::kInvalidFieldOffsetTag,
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableViewRequest, _impl_.expansions_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableViewRequest, _impl_.target_),
+    0,
+    ~0u,
+    ~0u,
+    1,
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableViewKeyTableDescriptor, _impl_._has_bits_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableViewKeyTableDescriptor, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableViewKeyTableDescriptor, _impl_.key_table_id_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableViewKeyTableDescriptor, _impl_.key_table_action_column_),
+    1,
+    0,
+    ~0u,  // no _has_bits_
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableViewResponse, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableSourceExportRequest, _impl_._has_bits_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableSourceExportRequest, _internal_metadata_),
+    ~0u,  // no _extensions_
+    ~0u,  // no _oneof_case_
+    ~0u,  // no _weak_field_map_
+    ~0u,  // no _inlined_string_donated_
+    ~0u,  // no _split_
+    ~0u,  // no sizeof(Split)
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableSourceExportRequest, _impl_.result_table_id_),
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableSourceExportRequest, _impl_.hierarchical_table_id_),
+    0,
+    1,
 };
-static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
-  { 0, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::RollupRequest)},
-  { 11, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::RollupResponse)},
-  { 17, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::TreeRequest)},
-  { 28, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::TreeResponse)},
-  { 34, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::HierarchicalTableApplyRequest)},
-  { 44, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::HierarchicalTableApplyResponse)},
-  { 50, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::HierarchicalTableDescriptor)},
-  { 58, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::HierarchicalTableViewRequest)},
-  { 69, 77, -1, sizeof(::io::deephaven::proto::backplane::grpc::HierarchicalTableViewKeyTableDescriptor)},
-  { 79, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::HierarchicalTableViewResponse)},
-  { 85, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::HierarchicalTableSourceExportRequest)},
+
+static const ::_pbi::MigrationSchema
+    schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
+        {0, 13, -1, sizeof(::io::deephaven::proto::backplane::grpc::RollupRequest)},
+        {18, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::RollupResponse)},
+        {26, 39, -1, sizeof(::io::deephaven::proto::backplane::grpc::TreeRequest)},
+        {44, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::TreeResponse)},
+        {52, 64, -1, sizeof(::io::deephaven::proto::backplane::grpc::HierarchicalTableApplyRequest)},
+        {68, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::HierarchicalTableApplyResponse)},
+        {76, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::HierarchicalTableDescriptor)},
+        {86, 99, -1, sizeof(::io::deephaven::proto::backplane::grpc::HierarchicalTableViewRequest)},
+        {103, 113, -1, sizeof(::io::deephaven::proto::backplane::grpc::HierarchicalTableViewKeyTableDescriptor)},
+        {115, -1, -1, sizeof(::io::deephaven::proto::backplane::grpc::HierarchicalTableViewResponse)},
+        {123, 133, -1, sizeof(::io::deephaven::proto::backplane::grpc::HierarchicalTableSourceExportRequest)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
-  &::io::deephaven::proto::backplane::grpc::_RollupRequest_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_RollupResponse_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_TreeRequest_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_TreeResponse_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_HierarchicalTableApplyRequest_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_HierarchicalTableApplyResponse_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_HierarchicalTableDescriptor_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_HierarchicalTableViewRequest_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_HierarchicalTableViewKeyTableDescriptor_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_HierarchicalTableViewResponse_default_instance_._instance,
-  &::io::deephaven::proto::backplane::grpc::_HierarchicalTableSourceExportRequest_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_RollupRequest_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_RollupResponse_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_TreeRequest_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_TreeResponse_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_HierarchicalTableApplyRequest_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_HierarchicalTableApplyResponse_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_HierarchicalTableDescriptor_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_HierarchicalTableViewRequest_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_HierarchicalTableViewKeyTableDescriptor_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_HierarchicalTableViewResponse_default_instance_._instance,
+    &::io::deephaven::proto::backplane::grpc::_HierarchicalTableSourceExportRequest_default_instance_._instance,
 };
-
-const char descriptor_table_protodef_deephaven_2fproto_2fhierarchicaltable_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
-  "\n\'deephaven/proto/hierarchicaltable.prot"
-  "o\022!io.deephaven.proto.backplane.grpc\032\033de"
-  "ephaven/proto/table.proto\032\034deephaven/pro"
-  "to/ticket.proto\"\234\002\n\rRollupRequest\022I\n\026res"
-  "ult_rollup_table_id\030\001 \001(\0132).io.deephaven"
-  ".proto.backplane.grpc.Ticket\022B\n\017source_t"
-  "able_id\030\002 \001(\0132).io.deephaven.proto.backp"
-  "lane.grpc.Ticket\022D\n\014aggregations\030\003 \003(\0132."
-  ".io.deephaven.proto.backplane.grpc.Aggre"
-  "gation\022\034\n\024include_constituents\030\004 \001(\010\022\030\n\020"
-  "group_by_columns\030\005 \003(\t\"\020\n\016RollupResponse"
-  "\"\360\001\n\013TreeRequest\022G\n\024result_tree_table_id"
-  "\030\001 \001(\0132).io.deephaven.proto.backplane.gr"
-  "pc.Ticket\022B\n\017source_table_id\030\002 \001(\0132).io."
-  "deephaven.proto.backplane.grpc.Ticket\022\031\n"
-  "\021identifier_column\030\003 \001(\t\022 \n\030parent_ident"
-  "ifier_column\030\004 \001(\t\022\027\n\017promote_orphans\030\005 "
-  "\001(\010\"\016\n\014TreeResponse\"\301\002\n\035HierarchicalTabl"
-  "eApplyRequest\022O\n\034result_hierarchical_tab"
-  "le_id\030\001 \001(\0132).io.deephaven.proto.backpla"
-  "ne.grpc.Ticket\022N\n\033input_hierarchical_tab"
-  "le_id\030\002 \001(\0132).io.deephaven.proto.backpla"
-  "ne.grpc.Ticket\022=\n\007filters\030\003 \003(\0132,.io.dee"
-  "phaven.proto.backplane.grpc.Condition\022@\n"
-  "\005sorts\030\004 \003(\01321.io.deephaven.proto.backpl"
-  "ane.grpc.SortDescriptor\" \n\036HierarchicalT"
-  "ableApplyResponse\"I\n\033HierarchicalTableDe"
-  "scriptor\022\027\n\017snapshot_schema\030\001 \001(\014\022\021\n\tis_"
-  "static\030\002 \001(\010\"\336\002\n\034HierarchicalTableViewRe"
-  "quest\022A\n\016result_view_id\030\001 \001(\0132).io.deeph"
-  "aven.proto.backplane.grpc.Ticket\022J\n\025hier"
-  "archical_table_id\030\002 \001(\0132).io.deephaven.p"
-  "roto.backplane.grpc.TicketH\000\022E\n\020existing"
-  "_view_id\030\003 \001(\0132).io.deephaven.proto.back"
-  "plane.grpc.TicketH\000\022^\n\nexpansions\030\004 \001(\0132"
-  "J.io.deephaven.proto.backplane.grpc.Hier"
-  "archicalTableViewKeyTableDescriptorB\010\n\006t"
-  "arget\"\254\001\n\'HierarchicalTableViewKeyTableD"
-  "escriptor\022\?\n\014key_table_id\030\001 \001(\0132).io.dee"
-  "phaven.proto.backplane.grpc.Ticket\022$\n\027ke"
-  "y_table_action_column\030\002 \001(\tH\000\210\001\001B\032\n\030_key"
-  "_table_action_column\"\037\n\035HierarchicalTabl"
-  "eViewResponse\"\264\001\n$HierarchicalTableSourc"
-  "eExportRequest\022B\n\017result_table_id\030\001 \001(\0132"
-  ").io.deephaven.proto.backplane.grpc.Tick"
-  "et\022H\n\025hierarchical_table_id\030\002 \001(\0132).io.d"
-  "eephaven.proto.backplane.grpc.Ticket2\251\005\n"
-  "\030HierarchicalTableService\022m\n\006Rollup\0220.io"
-  ".deephaven.proto.backplane.grpc.RollupRe"
-  "quest\0321.io.deephaven.proto.backplane.grp"
-  "c.RollupResponse\022g\n\004Tree\022..io.deephaven."
-  "proto.backplane.grpc.TreeRequest\032/.io.de"
-  "ephaven.proto.backplane.grpc.TreeRespons"
-  "e\022\214\001\n\005Apply\022@.io.deephaven.proto.backpla"
-  "ne.grpc.HierarchicalTableApplyRequest\032A."
-  "io.deephaven.proto.backplane.grpc.Hierar"
-  "chicalTableApplyResponse\022\211\001\n\004View\022\?.io.d"
-  "eephaven.proto.backplane.grpc.Hierarchic"
-  "alTableViewRequest\032@.io.deephaven.proto."
-  "backplane.grpc.HierarchicalTableViewResp"
-  "onse\022\231\001\n\014ExportSource\022G.io.deephaven.pro"
-  "to.backplane.grpc.HierarchicalTableSourc"
-  "eExportRequest\032@.io.deephaven.proto.back"
-  "plane.grpc.ExportedTableCreationResponse"
-  "BMH\001P\001ZGgithub.com/deephaven/deephaven-c"
-  "ore/go/internal/proto/hierarchicaltableb"
-  "\006proto3"
-  ;
-static const ::_pbi::DescriptorTable* const descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto_deps[2] = {
-  &::descriptor_table_deephaven_2fproto_2ftable_2eproto,
-  &::descriptor_table_deephaven_2fproto_2fticket_2eproto,
+const char descriptor_table_protodef_deephaven_2fproto_2fhierarchicaltable_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
+    "\n\'deephaven/proto/hierarchicaltable.prot"
+    "o\022!io.deephaven.proto.backplane.grpc\032\033de"
+    "ephaven/proto/table.proto\032\034deephaven/pro"
+    "to/ticket.proto\"\234\002\n\rRollupRequest\022I\n\026res"
+    "ult_rollup_table_id\030\001 \001(\0132).io.deephaven"
+    ".proto.backplane.grpc.Ticket\022B\n\017source_t"
+    "able_id\030\002 \001(\0132).io.deephaven.proto.backp"
+    "lane.grpc.Ticket\022D\n\014aggregations\030\003 \003(\0132."
+    ".io.deephaven.proto.backplane.grpc.Aggre"
+    "gation\022\034\n\024include_constituents\030\004 \001(\010\022\030\n\020"
+    "group_by_columns\030\005 \003(\t\"\020\n\016RollupResponse"
+    "\"\360\001\n\013TreeRequest\022G\n\024result_tree_table_id"
+    "\030\001 \001(\0132).io.deephaven.proto.backplane.gr"
+    "pc.Ticket\022B\n\017source_table_id\030\002 \001(\0132).io."
+    "deephaven.proto.backplane.grpc.Ticket\022\031\n"
+    "\021identifier_column\030\003 \001(\t\022 \n\030parent_ident"
+    "ifier_column\030\004 \001(\t\022\027\n\017promote_orphans\030\005 "
+    "\001(\010\"\016\n\014TreeResponse\"\301\002\n\035HierarchicalTabl"
+    "eApplyRequest\022O\n\034result_hierarchical_tab"
+    "le_id\030\001 \001(\0132).io.deephaven.proto.backpla"
+    "ne.grpc.Ticket\022N\n\033input_hierarchical_tab"
+    "le_id\030\002 \001(\0132).io.deephaven.proto.backpla"
+    "ne.grpc.Ticket\022=\n\007filters\030\003 \003(\0132,.io.dee"
+    "phaven.proto.backplane.grpc.Condition\022@\n"
+    "\005sorts\030\004 \003(\01321.io.deephaven.proto.backpl"
+    "ane.grpc.SortDescriptor\" \n\036HierarchicalT"
+    "ableApplyResponse\"I\n\033HierarchicalTableDe"
+    "scriptor\022\027\n\017snapshot_schema\030\001 \001(\014\022\021\n\tis_"
+    "static\030\002 \001(\010\"\336\002\n\034HierarchicalTableViewRe"
+    "quest\022A\n\016result_view_id\030\001 \001(\0132).io.deeph"
+    "aven.proto.backplane.grpc.Ticket\022J\n\025hier"
+    "archical_table_id\030\002 \001(\0132).io.deephaven.p"
+    "roto.backplane.grpc.TicketH\000\022E\n\020existing"
+    "_view_id\030\003 \001(\0132).io.deephaven.proto.back"
+    "plane.grpc.TicketH\000\022^\n\nexpansions\030\004 \001(\0132"
+    "J.io.deephaven.proto.backplane.grpc.Hier"
+    "archicalTableViewKeyTableDescriptorB\010\n\006t"
+    "arget\"\254\001\n\'HierarchicalTableViewKeyTableD"
+    "escriptor\022\?\n\014key_table_id\030\001 \001(\0132).io.dee"
+    "phaven.proto.backplane.grpc.Ticket\022$\n\027ke"
+    "y_table_action_column\030\002 \001(\tH\000\210\001\001B\032\n\030_key"
+    "_table_action_column\"\037\n\035HierarchicalTabl"
+    "eViewResponse\"\264\001\n$HierarchicalTableSourc"
+    "eExportRequest\022B\n\017result_table_id\030\001 \001(\0132"
+    ").io.deephaven.proto.backplane.grpc.Tick"
+    "et\022H\n\025hierarchical_table_id\030\002 \001(\0132).io.d"
+    "eephaven.proto.backplane.grpc.Ticket2\251\005\n"
+    "\030HierarchicalTableService\022m\n\006Rollup\0220.io"
+    ".deephaven.proto.backplane.grpc.RollupRe"
+    "quest\0321.io.deephaven.proto.backplane.grp"
+    "c.RollupResponse\022g\n\004Tree\022..io.deephaven."
+    "proto.backplane.grpc.TreeRequest\032/.io.de"
+    "ephaven.proto.backplane.grpc.TreeRespons"
+    "e\022\214\001\n\005Apply\022@.io.deephaven.proto.backpla"
+    "ne.grpc.HierarchicalTableApplyRequest\032A."
+    "io.deephaven.proto.backplane.grpc.Hierar"
+    "chicalTableApplyResponse\022\211\001\n\004View\022\?.io.d"
+    "eephaven.proto.backplane.grpc.Hierarchic"
+    "alTableViewRequest\032@.io.deephaven.proto."
+    "backplane.grpc.HierarchicalTableViewResp"
+    "onse\022\231\001\n\014ExportSource\022G.io.deephaven.pro"
+    "to.backplane.grpc.HierarchicalTableSourc"
+    "eExportRequest\032@.io.deephaven.proto.back"
+    "plane.grpc.ExportedTableCreationResponse"
+    "BMH\001P\001ZGgithub.com/deephaven/deephaven-c"
+    "ore/go/internal/proto/hierarchicaltableb"
+    "\006proto3"
 };
-static ::_pbi::once_flag descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto_once;
+static const ::_pbi::DescriptorTable* const descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto_deps[2] =
+    {
+        &::descriptor_table_deephaven_2fproto_2ftable_2eproto,
+        &::descriptor_table_deephaven_2fproto_2fticket_2eproto,
+};
+static ::absl::once_flag descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto = {
-    false, false, 2647, descriptor_table_protodef_deephaven_2fproto_2fhierarchicaltable_2eproto,
+    false,
+    false,
+    2647,
+    descriptor_table_protodef_deephaven_2fproto_2fhierarchicaltable_2eproto,
     "deephaven/proto/hierarchicaltable.proto",
-    &descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto_once, descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto_deps, 2, 11,
-    schemas, file_default_instances, TableStruct_deephaven_2fproto_2fhierarchicaltable_2eproto::offsets,
-    file_level_metadata_deephaven_2fproto_2fhierarchicaltable_2eproto, file_level_enum_descriptors_deephaven_2fproto_2fhierarchicaltable_2eproto,
+    &descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto_once,
+    descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto_deps,
+    2,
+    11,
+    schemas,
+    file_default_instances,
+    TableStruct_deephaven_2fproto_2fhierarchicaltable_2eproto::offsets,
+    file_level_metadata_deephaven_2fproto_2fhierarchicaltable_2eproto,
+    file_level_enum_descriptors_deephaven_2fproto_2fhierarchicaltable_2eproto,
     file_level_service_descriptors_deephaven_2fproto_2fhierarchicaltable_2eproto,
 };
+
+// This function exists to be marked as weak.
+// It can significantly speed up compilation by breaking up LLVM's SCC
+// in the .pb.cc translation units. Large translation units see a
+// reduction of more than 35% of walltime for optimized builds. Without
+// the weak attribute all the messages in the file, including all the
+// vtables and everything they use become part of the same SCC through
+// a cycle like:
+// GetMetadata -> descriptor table -> default instances ->
+//   vtables -> GetMetadata
+// By adding a weak function here we break the connection from the
+// individual vtables back into the descriptor table.
 PROTOBUF_ATTRIBUTE_WEAK const ::_pbi::DescriptorTable* descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto_getter() {
   return &descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto;
 }
-
 // Force running AddDescriptors() at dynamic initialization time.
-PROTOBUF_ATTRIBUTE_INIT_PRIORITY2 static ::_pbi::AddDescriptorsRunner dynamic_init_dummy_deephaven_2fproto_2fhierarchicaltable_2eproto(&descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto);
+PROTOBUF_ATTRIBUTE_INIT_PRIORITY2
+static ::_pbi::AddDescriptorsRunner dynamic_init_dummy_deephaven_2fproto_2fhierarchicaltable_2eproto(&descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto);
 namespace io {
 namespace deephaven {
 namespace proto {
 namespace backplane {
 namespace grpc {
-
 // ===================================================================
 
 class RollupRequest::_Internal {
  public:
+  using HasBits = decltype(std::declval<RollupRequest>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+    8 * PROTOBUF_FIELD_OFFSET(RollupRequest, _impl_._has_bits_);
   static const ::io::deephaven::proto::backplane::grpc::Ticket& result_rollup_table_id(const RollupRequest* msg);
+  static void set_has_result_rollup_table_id(HasBits* has_bits) {
+    (*has_bits)[0] |= 1u;
+  }
   static const ::io::deephaven::proto::backplane::grpc::Ticket& source_table_id(const RollupRequest* msg);
+  static void set_has_source_table_id(HasBits* has_bits) {
+    (*has_bits)[0] |= 2u;
+  }
 };
 
-const ::io::deephaven::proto::backplane::grpc::Ticket&
-RollupRequest::_Internal::result_rollup_table_id(const RollupRequest* msg) {
+const ::io::deephaven::proto::backplane::grpc::Ticket& RollupRequest::_Internal::result_rollup_table_id(const RollupRequest* msg) {
   return *msg->_impl_.result_rollup_table_id_;
 }
-const ::io::deephaven::proto::backplane::grpc::Ticket&
-RollupRequest::_Internal::source_table_id(const RollupRequest* msg) {
+const ::io::deephaven::proto::backplane::grpc::Ticket& RollupRequest::_Internal::source_table_id(const RollupRequest* msg) {
   return *msg->_impl_.source_table_id_;
 }
 void RollupRequest::clear_result_rollup_table_id() {
-  if (GetArenaForAllocation() == nullptr && _impl_.result_rollup_table_id_ != nullptr) {
-    delete _impl_.result_rollup_table_id_;
-  }
-  _impl_.result_rollup_table_id_ = nullptr;
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  if (_impl_.result_rollup_table_id_ != nullptr) _impl_.result_rollup_table_id_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000001u;
 }
 void RollupRequest::clear_source_table_id() {
-  if (GetArenaForAllocation() == nullptr && _impl_.source_table_id_ != nullptr) {
-    delete _impl_.source_table_id_;
-  }
-  _impl_.source_table_id_ = nullptr;
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  if (_impl_.source_table_id_ != nullptr) _impl_.source_table_id_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000002u;
 }
 void RollupRequest::clear_aggregations() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   _impl_.aggregations_.Clear();
 }
-RollupRequest::RollupRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor(arena, is_message_owned);
+RollupRequest::RollupRequest(::google::protobuf::Arena* arena)
+    : ::google::protobuf::Message(arena) {
+  SharedCtor(arena);
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.RollupRequest)
 }
-RollupRequest::RollupRequest(const RollupRequest& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message() {
-  RollupRequest* const _this = this; (void)_this;
-  new (&_impl_) Impl_{
-      decltype(_impl_.aggregations_){from._impl_.aggregations_}
-    , decltype(_impl_.group_by_columns_){from._impl_.group_by_columns_}
-    , decltype(_impl_.result_rollup_table_id_){nullptr}
-    , decltype(_impl_.source_table_id_){nullptr}
-    , decltype(_impl_.include_constituents_){}
-    , /*decltype(_impl_._cached_size_)*/{}};
+inline PROTOBUF_NDEBUG_INLINE RollupRequest::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
+    const Impl_& from)
+      : _has_bits_{from._has_bits_},
+        _cached_size_{0},
+        aggregations_{visibility, arena, from.aggregations_},
+        group_by_columns_{visibility, arena, from.group_by_columns_} {}
 
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  if (from._internal_has_result_rollup_table_id()) {
-    _this->_impl_.result_rollup_table_id_ = new ::io::deephaven::proto::backplane::grpc::Ticket(*from._impl_.result_rollup_table_id_);
-  }
-  if (from._internal_has_source_table_id()) {
-    _this->_impl_.source_table_id_ = new ::io::deephaven::proto::backplane::grpc::Ticket(*from._impl_.source_table_id_);
-  }
-  _this->_impl_.include_constituents_ = from._impl_.include_constituents_;
+RollupRequest::RollupRequest(
+    ::google::protobuf::Arena* arena,
+    const RollupRequest& from)
+    : ::google::protobuf::Message(arena) {
+  RollupRequest* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_);
+  ::uint32_t cached_has_bits = _impl_._has_bits_[0];
+  _impl_.result_rollup_table_id_ = (cached_has_bits & 0x00000001u)
+                ? CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::Ticket>(arena, *from._impl_.result_rollup_table_id_)
+                : nullptr;
+  _impl_.source_table_id_ = (cached_has_bits & 0x00000002u)
+                ? CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::Ticket>(arena, *from._impl_.source_table_id_)
+                : nullptr;
+  _impl_.include_constituents_ = from._impl_.include_constituents_;
+
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.RollupRequest)
 }
+inline PROTOBUF_NDEBUG_INLINE RollupRequest::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* arena)
+      : _cached_size_{0},
+        aggregations_{visibility, arena},
+        group_by_columns_{visibility, arena} {}
 
-inline void RollupRequest::SharedCtor(
-    ::_pb::Arena* arena, bool is_message_owned) {
-  (void)arena;
-  (void)is_message_owned;
-  new (&_impl_) Impl_{
-      decltype(_impl_.aggregations_){arena}
-    , decltype(_impl_.group_by_columns_){arena}
-    , decltype(_impl_.result_rollup_table_id_){nullptr}
-    , decltype(_impl_.source_table_id_){nullptr}
-    , decltype(_impl_.include_constituents_){false}
-    , /*decltype(_impl_._cached_size_)*/{}
-  };
+inline void RollupRequest::SharedCtor(::_pb::Arena* arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  ::memset(reinterpret_cast<char *>(&_impl_) +
+               offsetof(Impl_, result_rollup_table_id_),
+           0,
+           offsetof(Impl_, include_constituents_) -
+               offsetof(Impl_, result_rollup_table_id_) +
+               sizeof(Impl_::include_constituents_));
 }
-
 RollupRequest::~RollupRequest() {
   // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.RollupRequest)
-  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
-  (void)arena;
-    return;
-  }
+  _internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
   SharedDtor();
 }
-
 inline void RollupRequest::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  _impl_.aggregations_.~RepeatedPtrField();
-  _impl_.group_by_columns_.~RepeatedPtrField();
-  if (this != internal_default_instance()) delete _impl_.result_rollup_table_id_;
-  if (this != internal_default_instance()) delete _impl_.source_table_id_;
+  ABSL_DCHECK(GetArena() == nullptr);
+  delete _impl_.result_rollup_table_id_;
+  delete _impl_.source_table_id_;
+  _impl_.~Impl_();
 }
 
-void RollupRequest::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
-
-void RollupRequest::Clear() {
+PROTOBUF_NOINLINE void RollupRequest::Clear() {
 // @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.RollupRequest)
-  uint32_t cached_has_bits = 0;
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
   _impl_.aggregations_.Clear();
   _impl_.group_by_columns_.Clear();
-  if (GetArenaForAllocation() == nullptr && _impl_.result_rollup_table_id_ != nullptr) {
-    delete _impl_.result_rollup_table_id_;
-  }
-  _impl_.result_rollup_table_id_ = nullptr;
-  if (GetArenaForAllocation() == nullptr && _impl_.source_table_id_ != nullptr) {
-    delete _impl_.source_table_id_;
-  }
-  _impl_.source_table_id_ = nullptr;
-  _impl_.include_constituents_ = false;
-  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
-}
-
-const char* RollupRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
-#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  while (!ctx->Done(&ptr)) {
-    uint32_t tag;
-    ptr = ::_pbi::ReadTag(ptr, &tag);
-    switch (tag >> 3) {
-      // .io.deephaven.proto.backplane.grpc.Ticket result_rollup_table_id = 1;
-      case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
-          ptr = ctx->ParseMessage(_internal_mutable_result_rollup_table_id(), ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      // .io.deephaven.proto.backplane.grpc.Ticket source_table_id = 2;
-      case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
-          ptr = ctx->ParseMessage(_internal_mutable_source_table_id(), ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      // repeated .io.deephaven.proto.backplane.grpc.Aggregation aggregations = 3;
-      case 3:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
-          ptr -= 1;
-          do {
-            ptr += 1;
-            ptr = ctx->ParseMessage(_internal_add_aggregations(), ptr);
-            CHK_(ptr);
-            if (!ctx->DataAvailable(ptr)) break;
-          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<26>(ptr));
-        } else
-          goto handle_unusual;
-        continue;
-      // bool include_constituents = 4;
-      case 4:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 32)) {
-          _impl_.include_constituents_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      // repeated string group_by_columns = 5;
-      case 5:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 42)) {
-          ptr -= 1;
-          do {
-            ptr += 1;
-            auto str = _internal_add_group_by_columns();
-            ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
-            CHK_(ptr);
-            CHK_(::_pbi::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.RollupRequest.group_by_columns"));
-            if (!ctx->DataAvailable(ptr)) break;
-          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<42>(ptr));
-        } else
-          goto handle_unusual;
-        continue;
-      default:
-        goto handle_unusual;
-    }  // switch
-  handle_unusual:
-    if ((tag == 0) || ((tag & 7) == 4)) {
-      CHK_(ptr);
-      ctx->SetLastTag(tag);
-      goto message_done;
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000003u) {
+    if (cached_has_bits & 0x00000001u) {
+      ABSL_DCHECK(_impl_.result_rollup_table_id_ != nullptr);
+      _impl_.result_rollup_table_id_->Clear();
     }
-    ptr = UnknownFieldParse(
-        tag,
-        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-        ptr, ctx);
-    CHK_(ptr != nullptr);
-  }  // while
-message_done:
-  return ptr;
-failure:
-  ptr = nullptr;
-  goto message_done;
-#undef CHK_
+    if (cached_has_bits & 0x00000002u) {
+      ABSL_DCHECK(_impl_.source_table_id_ != nullptr);
+      _impl_.source_table_id_->Clear();
+    }
+  }
+  _impl_.include_constituents_ = false;
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
 }
 
-uint8_t* RollupRequest::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.RollupRequest)
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+const char* RollupRequest::_InternalParse(
+    const char* ptr, ::_pbi::ParseContext* ctx) {
+  ptr = ::_pbi::TcParser::ParseLoop(this, ptr, ctx, &_table_.header);
+  return ptr;
+}
 
+
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<3, 5, 3, 72, 2> RollupRequest::_table_ = {
+  {
+    PROTOBUF_FIELD_OFFSET(RollupRequest, _impl_._has_bits_),
+    0, // no _extensions_
+    5, 56,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967264,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    5,  // num_field_entries
+    3,  // num_aux_entries
+    offsetof(decltype(_table_), aux_entries),
+    &_RollupRequest_default_instance_._instance,
+    ::_pbi::TcParser::GenericFallback,  // fallback
+  }, {{
+    {::_pbi::TcParser::MiniParse, {}},
+    // .io.deephaven.proto.backplane.grpc.Ticket result_rollup_table_id = 1;
+    {::_pbi::TcParser::FastMtS1,
+     {10, 0, 0, PROTOBUF_FIELD_OFFSET(RollupRequest, _impl_.result_rollup_table_id_)}},
+    // .io.deephaven.proto.backplane.grpc.Ticket source_table_id = 2;
+    {::_pbi::TcParser::FastMtS1,
+     {18, 1, 1, PROTOBUF_FIELD_OFFSET(RollupRequest, _impl_.source_table_id_)}},
+    // repeated .io.deephaven.proto.backplane.grpc.Aggregation aggregations = 3;
+    {::_pbi::TcParser::FastMtR1,
+     {26, 63, 2, PROTOBUF_FIELD_OFFSET(RollupRequest, _impl_.aggregations_)}},
+    // bool include_constituents = 4;
+    {::_pbi::TcParser::SingularVarintNoZag1<bool, offsetof(RollupRequest, _impl_.include_constituents_), 63>(),
+     {32, 63, 0, PROTOBUF_FIELD_OFFSET(RollupRequest, _impl_.include_constituents_)}},
+    // repeated string group_by_columns = 5;
+    {::_pbi::TcParser::FastUR1,
+     {42, 63, 0, PROTOBUF_FIELD_OFFSET(RollupRequest, _impl_.group_by_columns_)}},
+    {::_pbi::TcParser::MiniParse, {}},
+    {::_pbi::TcParser::MiniParse, {}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // .io.deephaven.proto.backplane.grpc.Ticket result_rollup_table_id = 1;
+    {PROTOBUF_FIELD_OFFSET(RollupRequest, _impl_.result_rollup_table_id_), _Internal::kHasBitsOffset + 0, 0,
+    (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
+    // .io.deephaven.proto.backplane.grpc.Ticket source_table_id = 2;
+    {PROTOBUF_FIELD_OFFSET(RollupRequest, _impl_.source_table_id_), _Internal::kHasBitsOffset + 1, 1,
+    (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
+    // repeated .io.deephaven.proto.backplane.grpc.Aggregation aggregations = 3;
+    {PROTOBUF_FIELD_OFFSET(RollupRequest, _impl_.aggregations_), -1, 2,
+    (0 | ::_fl::kFcRepeated | ::_fl::kMessage | ::_fl::kTvTable)},
+    // bool include_constituents = 4;
+    {PROTOBUF_FIELD_OFFSET(RollupRequest, _impl_.include_constituents_), -1, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kBool)},
+    // repeated string group_by_columns = 5;
+    {PROTOBUF_FIELD_OFFSET(RollupRequest, _impl_.group_by_columns_), -1, 0,
+    (0 | ::_fl::kFcRepeated | ::_fl::kUtf8String | ::_fl::kRepSString)},
+  }}, {{
+    {::_pbi::TcParser::GetTable<::io::deephaven::proto::backplane::grpc::Ticket>()},
+    {::_pbi::TcParser::GetTable<::io::deephaven::proto::backplane::grpc::Ticket>()},
+    {::_pbi::TcParser::GetTable<::io::deephaven::proto::backplane::grpc::Aggregation>()},
+  }}, {{
+    "\57\0\0\0\0\20\0\0"
+    "io.deephaven.proto.backplane.grpc.RollupRequest"
+    "group_by_columns"
+  }},
+};
+
+::uint8_t* RollupRequest::_InternalSerialize(
+    ::uint8_t* target,
+    ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.RollupRequest)
+  ::uint32_t cached_has_bits = 0;
+  (void)cached_has_bits;
+
+  cached_has_bits = _impl_._has_bits_[0];
   // .io.deephaven.proto.backplane.grpc.Ticket result_rollup_table_id = 1;
-  if (this->_internal_has_result_rollup_table_id()) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(1, _Internal::result_rollup_table_id(this),
+  if (cached_has_bits & 0x00000001u) {
+    target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+        1, _Internal::result_rollup_table_id(this),
         _Internal::result_rollup_table_id(this).GetCachedSize(), target, stream);
   }
 
   // .io.deephaven.proto.backplane.grpc.Ticket source_table_id = 2;
-  if (this->_internal_has_source_table_id()) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(2, _Internal::source_table_id(this),
+  if (cached_has_bits & 0x00000002u) {
+    target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+        2, _Internal::source_table_id(this),
         _Internal::source_table_id(this).GetCachedSize(), target, stream);
   }
 
   // repeated .io.deephaven.proto.backplane.grpc.Aggregation aggregations = 3;
   for (unsigned i = 0,
       n = static_cast<unsigned>(this->_internal_aggregations_size()); i < n; i++) {
-    const auto& repfield = this->_internal_aggregations(i);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+    const auto& repfield = this->_internal_aggregations().Get(i);
+    target = ::google::protobuf::internal::WireFormatLite::
         InternalWriteMessage(3, repfield, repfield.GetCachedSize(), target, stream);
   }
 
   // bool include_constituents = 4;
   if (this->_internal_include_constituents() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteBoolToArray(4, this->_internal_include_constituents(), target);
+    target = ::_pbi::WireFormatLite::WriteBoolToArray(
+        4, this->_internal_include_constituents(), target);
   }
 
   // repeated string group_by_columns = 5;
-  for (int i = 0, n = this->_internal_group_by_columns_size(); i < n; i++) {
-    const auto& s = this->_internal_group_by_columns(i);
-    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      s.data(), static_cast<int>(s.length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "io.deephaven.proto.backplane.grpc.RollupRequest.group_by_columns");
+  for (int i = 0, n = this->_internal_group_by_columns_size(); i < n; ++i) {
+    const auto& s = this->_internal_group_by_columns().Get(i);
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+        s.data(), static_cast<int>(s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "io.deephaven.proto.backplane.grpc.RollupRequest.group_by_columns");
     target = stream->WriteString(5, s, target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
   }
   // @@protoc_insertion_point(serialize_to_array_end:io.deephaven.proto.backplane.grpc.RollupRequest)
   return target;
 }
 
-size_t RollupRequest::ByteSizeLong() const {
+::size_t RollupRequest::ByteSizeLong() const {
 // @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.RollupRequest)
-  size_t total_size = 0;
+  ::size_t total_size = 0;
 
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
   // repeated .io.deephaven.proto.backplane.grpc.Aggregation aggregations = 3;
   total_size += 1UL * this->_internal_aggregations_size();
-  for (const auto& msg : this->_impl_.aggregations_) {
+  for (const auto& msg : this->_internal_aggregations()) {
     total_size +=
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
+      ::google::protobuf::internal::WireFormatLite::MessageSize(msg);
   }
-
   // repeated string group_by_columns = 5;
-  total_size += 1 *
-      ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(_impl_.group_by_columns_.size());
-  for (int i = 0, n = _impl_.group_by_columns_.size(); i < n; i++) {
-    total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-      _impl_.group_by_columns_.Get(i));
+  total_size += 1 * ::google::protobuf::internal::FromIntSize(_internal_group_by_columns().size());
+  for (int i = 0, n = _internal_group_by_columns().size(); i < n; ++i) {
+    total_size += ::google::protobuf::internal::WireFormatLite::StringSize(
+        _internal_group_by_columns().Get(i));
   }
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000003u) {
+    // .io.deephaven.proto.backplane.grpc.Ticket result_rollup_table_id = 1;
+    if (cached_has_bits & 0x00000001u) {
+      total_size +=
+          1 + ::google::protobuf::internal::WireFormatLite::MessageSize(*_impl_.result_rollup_table_id_);
+    }
 
-  // .io.deephaven.proto.backplane.grpc.Ticket result_rollup_table_id = 1;
-  if (this->_internal_has_result_rollup_table_id()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *_impl_.result_rollup_table_id_);
+    // .io.deephaven.proto.backplane.grpc.Ticket source_table_id = 2;
+    if (cached_has_bits & 0x00000002u) {
+      total_size +=
+          1 + ::google::protobuf::internal::WireFormatLite::MessageSize(*_impl_.source_table_id_);
+    }
+
   }
-
-  // .io.deephaven.proto.backplane.grpc.Ticket source_table_id = 2;
-  if (this->_internal_has_source_table_id()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *_impl_.source_table_id_);
-  }
-
   // bool include_constituents = 4;
   if (this->_internal_include_constituents() != 0) {
-    total_size += 1 + 1;
+    total_size += 2;
   }
 
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData RollupRequest::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
-    RollupRequest::MergeImpl
+const ::google::protobuf::Message::ClassData RollupRequest::_class_data_ = {
+    RollupRequest::MergeImpl,
+    nullptr,  // OnDemandRegisterArenaDtor
 };
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*RollupRequest::GetClassData() const { return &_class_data_; }
+const ::google::protobuf::Message::ClassData* RollupRequest::GetClassData() const {
+  return &_class_data_;
+}
 
-
-void RollupRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+void RollupRequest::MergeImpl(::google::protobuf::Message& to_msg, const ::google::protobuf::Message& from_msg) {
   auto* const _this = static_cast<RollupRequest*>(&to_msg);
   auto& from = static_cast<const RollupRequest&>(from_msg);
   // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.RollupRequest)
-  GOOGLE_DCHECK_NE(&from, _this);
-  uint32_t cached_has_bits = 0;
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  _this->_impl_.aggregations_.MergeFrom(from._impl_.aggregations_);
-  _this->_impl_.group_by_columns_.MergeFrom(from._impl_.group_by_columns_);
-  if (from._internal_has_result_rollup_table_id()) {
-    _this->_internal_mutable_result_rollup_table_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
-        from._internal_result_rollup_table_id());
-  }
-  if (from._internal_has_source_table_id()) {
-    _this->_internal_mutable_source_table_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
-        from._internal_source_table_id());
+  _this->_internal_mutable_aggregations()->MergeFrom(
+      from._internal_aggregations());
+  _this->_internal_mutable_group_by_columns()->MergeFrom(from._internal_group_by_columns());
+  cached_has_bits = from._impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000003u) {
+    if (cached_has_bits & 0x00000001u) {
+      _this->_internal_mutable_result_rollup_table_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
+          from._internal_result_rollup_table_id());
+    }
+    if (cached_has_bits & 0x00000002u) {
+      _this->_internal_mutable_source_table_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
+          from._internal_source_table_id());
+    }
   }
   if (from._internal_include_constituents() != 0) {
     _this->_internal_set_include_constituents(from._internal_include_constituents());
   }
-  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void RollupRequest::CopyFrom(const RollupRequest& from) {
@@ -734,16 +855,20 @@ void RollupRequest::CopyFrom(const RollupRequest& from) {
   MergeFrom(from);
 }
 
-bool RollupRequest::IsInitialized() const {
+PROTOBUF_NOINLINE bool RollupRequest::IsInitialized() const {
   return true;
 }
 
-void RollupRequest::InternalSwap(RollupRequest* other) {
+::_pbi::CachedSize* RollupRequest::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
+void RollupRequest::InternalSwap(RollupRequest* PROTOBUF_RESTRICT other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
   _impl_.aggregations_.InternalSwap(&other->_impl_.aggregations_);
   _impl_.group_by_columns_.InternalSwap(&other->_impl_.group_by_columns_);
-  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+  ::google::protobuf::internal::memswap<
       PROTOBUF_FIELD_OFFSET(RollupRequest, _impl_.include_constituents_)
       + sizeof(RollupRequest::_impl_.include_constituents_)
       - PROTOBUF_FIELD_OFFSET(RollupRequest, _impl_.result_rollup_table_id_)>(
@@ -751,27 +876,30 @@ void RollupRequest::InternalSwap(RollupRequest* other) {
           reinterpret_cast<char*>(&other->_impl_.result_rollup_table_id_));
 }
 
-::PROTOBUF_NAMESPACE_ID::Metadata RollupRequest::GetMetadata() const {
+::google::protobuf::Metadata RollupRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto_getter, &descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fhierarchicaltable_2eproto[0]);
 }
-
 // ===================================================================
 
 class RollupResponse::_Internal {
  public:
 };
 
-RollupResponse::RollupResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase(arena, is_message_owned) {
+RollupResponse::RollupResponse(::google::protobuf::Arena* arena)
+    : ::google::protobuf::internal::ZeroFieldsBase(arena) {
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.RollupResponse)
 }
-RollupResponse::RollupResponse(const RollupResponse& from)
-  : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase() {
-  RollupResponse* const _this = this; (void)_this;
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+RollupResponse::RollupResponse(
+    ::google::protobuf::Arena* arena,
+    const RollupResponse& from)
+    : ::google::protobuf::internal::ZeroFieldsBase(arena) {
+  RollupResponse* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.RollupResponse)
 }
 
@@ -779,343 +907,316 @@ RollupResponse::RollupResponse(const RollupResponse& from)
 
 
 
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData RollupResponse::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::CopyImpl,
-    ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::MergeImpl,
-};
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*RollupResponse::GetClassData() const { return &_class_data_; }
 
 
 
 
-
-
-
-::PROTOBUF_NAMESPACE_ID::Metadata RollupResponse::GetMetadata() const {
+::google::protobuf::Metadata RollupResponse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto_getter, &descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fhierarchicaltable_2eproto[1]);
 }
-
 // ===================================================================
 
 class TreeRequest::_Internal {
  public:
+  using HasBits = decltype(std::declval<TreeRequest>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+    8 * PROTOBUF_FIELD_OFFSET(TreeRequest, _impl_._has_bits_);
   static const ::io::deephaven::proto::backplane::grpc::Ticket& result_tree_table_id(const TreeRequest* msg);
+  static void set_has_result_tree_table_id(HasBits* has_bits) {
+    (*has_bits)[0] |= 1u;
+  }
   static const ::io::deephaven::proto::backplane::grpc::Ticket& source_table_id(const TreeRequest* msg);
+  static void set_has_source_table_id(HasBits* has_bits) {
+    (*has_bits)[0] |= 2u;
+  }
 };
 
-const ::io::deephaven::proto::backplane::grpc::Ticket&
-TreeRequest::_Internal::result_tree_table_id(const TreeRequest* msg) {
+const ::io::deephaven::proto::backplane::grpc::Ticket& TreeRequest::_Internal::result_tree_table_id(const TreeRequest* msg) {
   return *msg->_impl_.result_tree_table_id_;
 }
-const ::io::deephaven::proto::backplane::grpc::Ticket&
-TreeRequest::_Internal::source_table_id(const TreeRequest* msg) {
+const ::io::deephaven::proto::backplane::grpc::Ticket& TreeRequest::_Internal::source_table_id(const TreeRequest* msg) {
   return *msg->_impl_.source_table_id_;
 }
 void TreeRequest::clear_result_tree_table_id() {
-  if (GetArenaForAllocation() == nullptr && _impl_.result_tree_table_id_ != nullptr) {
-    delete _impl_.result_tree_table_id_;
-  }
-  _impl_.result_tree_table_id_ = nullptr;
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  if (_impl_.result_tree_table_id_ != nullptr) _impl_.result_tree_table_id_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000001u;
 }
 void TreeRequest::clear_source_table_id() {
-  if (GetArenaForAllocation() == nullptr && _impl_.source_table_id_ != nullptr) {
-    delete _impl_.source_table_id_;
-  }
-  _impl_.source_table_id_ = nullptr;
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  if (_impl_.source_table_id_ != nullptr) _impl_.source_table_id_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000002u;
 }
-TreeRequest::TreeRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor(arena, is_message_owned);
+TreeRequest::TreeRequest(::google::protobuf::Arena* arena)
+    : ::google::protobuf::Message(arena) {
+  SharedCtor(arena);
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.TreeRequest)
 }
-TreeRequest::TreeRequest(const TreeRequest& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message() {
-  TreeRequest* const _this = this; (void)_this;
-  new (&_impl_) Impl_{
-      decltype(_impl_.identifier_column_){}
-    , decltype(_impl_.parent_identifier_column_){}
-    , decltype(_impl_.result_tree_table_id_){nullptr}
-    , decltype(_impl_.source_table_id_){nullptr}
-    , decltype(_impl_.promote_orphans_){}
-    , /*decltype(_impl_._cached_size_)*/{}};
+inline PROTOBUF_NDEBUG_INLINE TreeRequest::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
+    const Impl_& from)
+      : _has_bits_{from._has_bits_},
+        _cached_size_{0},
+        identifier_column_(arena, from.identifier_column_),
+        parent_identifier_column_(arena, from.parent_identifier_column_) {}
 
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  _impl_.identifier_column_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.identifier_column_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_identifier_column().empty()) {
-    _this->_impl_.identifier_column_.Set(from._internal_identifier_column(), 
-      _this->GetArenaForAllocation());
-  }
-  _impl_.parent_identifier_column_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.parent_identifier_column_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_parent_identifier_column().empty()) {
-    _this->_impl_.parent_identifier_column_.Set(from._internal_parent_identifier_column(), 
-      _this->GetArenaForAllocation());
-  }
-  if (from._internal_has_result_tree_table_id()) {
-    _this->_impl_.result_tree_table_id_ = new ::io::deephaven::proto::backplane::grpc::Ticket(*from._impl_.result_tree_table_id_);
-  }
-  if (from._internal_has_source_table_id()) {
-    _this->_impl_.source_table_id_ = new ::io::deephaven::proto::backplane::grpc::Ticket(*from._impl_.source_table_id_);
-  }
-  _this->_impl_.promote_orphans_ = from._impl_.promote_orphans_;
+TreeRequest::TreeRequest(
+    ::google::protobuf::Arena* arena,
+    const TreeRequest& from)
+    : ::google::protobuf::Message(arena) {
+  TreeRequest* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_);
+  ::uint32_t cached_has_bits = _impl_._has_bits_[0];
+  _impl_.result_tree_table_id_ = (cached_has_bits & 0x00000001u)
+                ? CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::Ticket>(arena, *from._impl_.result_tree_table_id_)
+                : nullptr;
+  _impl_.source_table_id_ = (cached_has_bits & 0x00000002u)
+                ? CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::Ticket>(arena, *from._impl_.source_table_id_)
+                : nullptr;
+  _impl_.promote_orphans_ = from._impl_.promote_orphans_;
+
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.TreeRequest)
 }
+inline PROTOBUF_NDEBUG_INLINE TreeRequest::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* arena)
+      : _cached_size_{0},
+        identifier_column_(arena),
+        parent_identifier_column_(arena) {}
 
-inline void TreeRequest::SharedCtor(
-    ::_pb::Arena* arena, bool is_message_owned) {
-  (void)arena;
-  (void)is_message_owned;
-  new (&_impl_) Impl_{
-      decltype(_impl_.identifier_column_){}
-    , decltype(_impl_.parent_identifier_column_){}
-    , decltype(_impl_.result_tree_table_id_){nullptr}
-    , decltype(_impl_.source_table_id_){nullptr}
-    , decltype(_impl_.promote_orphans_){false}
-    , /*decltype(_impl_._cached_size_)*/{}
-  };
-  _impl_.identifier_column_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.identifier_column_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  _impl_.parent_identifier_column_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.parent_identifier_column_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+inline void TreeRequest::SharedCtor(::_pb::Arena* arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  ::memset(reinterpret_cast<char *>(&_impl_) +
+               offsetof(Impl_, result_tree_table_id_),
+           0,
+           offsetof(Impl_, promote_orphans_) -
+               offsetof(Impl_, result_tree_table_id_) +
+               sizeof(Impl_::promote_orphans_));
 }
-
 TreeRequest::~TreeRequest() {
   // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.TreeRequest)
-  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
-  (void)arena;
-    return;
-  }
+  _internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
   SharedDtor();
 }
-
 inline void TreeRequest::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  ABSL_DCHECK(GetArena() == nullptr);
   _impl_.identifier_column_.Destroy();
   _impl_.parent_identifier_column_.Destroy();
-  if (this != internal_default_instance()) delete _impl_.result_tree_table_id_;
-  if (this != internal_default_instance()) delete _impl_.source_table_id_;
+  delete _impl_.result_tree_table_id_;
+  delete _impl_.source_table_id_;
+  _impl_.~Impl_();
 }
 
-void TreeRequest::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
-
-void TreeRequest::Clear() {
+PROTOBUF_NOINLINE void TreeRequest::Clear() {
 // @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.TreeRequest)
-  uint32_t cached_has_bits = 0;
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
   _impl_.identifier_column_.ClearToEmpty();
   _impl_.parent_identifier_column_.ClearToEmpty();
-  if (GetArenaForAllocation() == nullptr && _impl_.result_tree_table_id_ != nullptr) {
-    delete _impl_.result_tree_table_id_;
-  }
-  _impl_.result_tree_table_id_ = nullptr;
-  if (GetArenaForAllocation() == nullptr && _impl_.source_table_id_ != nullptr) {
-    delete _impl_.source_table_id_;
-  }
-  _impl_.source_table_id_ = nullptr;
-  _impl_.promote_orphans_ = false;
-  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
-}
-
-const char* TreeRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
-#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  while (!ctx->Done(&ptr)) {
-    uint32_t tag;
-    ptr = ::_pbi::ReadTag(ptr, &tag);
-    switch (tag >> 3) {
-      // .io.deephaven.proto.backplane.grpc.Ticket result_tree_table_id = 1;
-      case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
-          ptr = ctx->ParseMessage(_internal_mutable_result_tree_table_id(), ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      // .io.deephaven.proto.backplane.grpc.Ticket source_table_id = 2;
-      case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
-          ptr = ctx->ParseMessage(_internal_mutable_source_table_id(), ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      // string identifier_column = 3;
-      case 3:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
-          auto str = _internal_mutable_identifier_column();
-          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
-          CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.TreeRequest.identifier_column"));
-        } else
-          goto handle_unusual;
-        continue;
-      // string parent_identifier_column = 4;
-      case 4:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 34)) {
-          auto str = _internal_mutable_parent_identifier_column();
-          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
-          CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.TreeRequest.parent_identifier_column"));
-        } else
-          goto handle_unusual;
-        continue;
-      // bool promote_orphans = 5;
-      case 5:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 40)) {
-          _impl_.promote_orphans_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      default:
-        goto handle_unusual;
-    }  // switch
-  handle_unusual:
-    if ((tag == 0) || ((tag & 7) == 4)) {
-      CHK_(ptr);
-      ctx->SetLastTag(tag);
-      goto message_done;
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000003u) {
+    if (cached_has_bits & 0x00000001u) {
+      ABSL_DCHECK(_impl_.result_tree_table_id_ != nullptr);
+      _impl_.result_tree_table_id_->Clear();
     }
-    ptr = UnknownFieldParse(
-        tag,
-        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-        ptr, ctx);
-    CHK_(ptr != nullptr);
-  }  // while
-message_done:
-  return ptr;
-failure:
-  ptr = nullptr;
-  goto message_done;
-#undef CHK_
+    if (cached_has_bits & 0x00000002u) {
+      ABSL_DCHECK(_impl_.source_table_id_ != nullptr);
+      _impl_.source_table_id_->Clear();
+    }
+  }
+  _impl_.promote_orphans_ = false;
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
 }
 
-uint8_t* TreeRequest::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.TreeRequest)
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+const char* TreeRequest::_InternalParse(
+    const char* ptr, ::_pbi::ParseContext* ctx) {
+  ptr = ::_pbi::TcParser::ParseLoop(this, ptr, ctx, &_table_.header);
+  return ptr;
+}
 
+
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<3, 5, 2, 95, 2> TreeRequest::_table_ = {
+  {
+    PROTOBUF_FIELD_OFFSET(TreeRequest, _impl_._has_bits_),
+    0, // no _extensions_
+    5, 56,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967264,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    5,  // num_field_entries
+    2,  // num_aux_entries
+    offsetof(decltype(_table_), aux_entries),
+    &_TreeRequest_default_instance_._instance,
+    ::_pbi::TcParser::GenericFallback,  // fallback
+  }, {{
+    {::_pbi::TcParser::MiniParse, {}},
+    // .io.deephaven.proto.backplane.grpc.Ticket result_tree_table_id = 1;
+    {::_pbi::TcParser::FastMtS1,
+     {10, 0, 0, PROTOBUF_FIELD_OFFSET(TreeRequest, _impl_.result_tree_table_id_)}},
+    // .io.deephaven.proto.backplane.grpc.Ticket source_table_id = 2;
+    {::_pbi::TcParser::FastMtS1,
+     {18, 1, 1, PROTOBUF_FIELD_OFFSET(TreeRequest, _impl_.source_table_id_)}},
+    // string identifier_column = 3;
+    {::_pbi::TcParser::FastUS1,
+     {26, 63, 0, PROTOBUF_FIELD_OFFSET(TreeRequest, _impl_.identifier_column_)}},
+    // string parent_identifier_column = 4;
+    {::_pbi::TcParser::FastUS1,
+     {34, 63, 0, PROTOBUF_FIELD_OFFSET(TreeRequest, _impl_.parent_identifier_column_)}},
+    // bool promote_orphans = 5;
+    {::_pbi::TcParser::SingularVarintNoZag1<bool, offsetof(TreeRequest, _impl_.promote_orphans_), 63>(),
+     {40, 63, 0, PROTOBUF_FIELD_OFFSET(TreeRequest, _impl_.promote_orphans_)}},
+    {::_pbi::TcParser::MiniParse, {}},
+    {::_pbi::TcParser::MiniParse, {}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // .io.deephaven.proto.backplane.grpc.Ticket result_tree_table_id = 1;
+    {PROTOBUF_FIELD_OFFSET(TreeRequest, _impl_.result_tree_table_id_), _Internal::kHasBitsOffset + 0, 0,
+    (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
+    // .io.deephaven.proto.backplane.grpc.Ticket source_table_id = 2;
+    {PROTOBUF_FIELD_OFFSET(TreeRequest, _impl_.source_table_id_), _Internal::kHasBitsOffset + 1, 1,
+    (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
+    // string identifier_column = 3;
+    {PROTOBUF_FIELD_OFFSET(TreeRequest, _impl_.identifier_column_), -1, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // string parent_identifier_column = 4;
+    {PROTOBUF_FIELD_OFFSET(TreeRequest, _impl_.parent_identifier_column_), -1, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kUtf8String | ::_fl::kRepAString)},
+    // bool promote_orphans = 5;
+    {PROTOBUF_FIELD_OFFSET(TreeRequest, _impl_.promote_orphans_), -1, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kBool)},
+  }}, {{
+    {::_pbi::TcParser::GetTable<::io::deephaven::proto::backplane::grpc::Ticket>()},
+    {::_pbi::TcParser::GetTable<::io::deephaven::proto::backplane::grpc::Ticket>()},
+  }}, {{
+    "\55\0\0\21\30\0\0\0"
+    "io.deephaven.proto.backplane.grpc.TreeRequest"
+    "identifier_column"
+    "parent_identifier_column"
+  }},
+};
+
+::uint8_t* TreeRequest::_InternalSerialize(
+    ::uint8_t* target,
+    ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.TreeRequest)
+  ::uint32_t cached_has_bits = 0;
+  (void)cached_has_bits;
+
+  cached_has_bits = _impl_._has_bits_[0];
   // .io.deephaven.proto.backplane.grpc.Ticket result_tree_table_id = 1;
-  if (this->_internal_has_result_tree_table_id()) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(1, _Internal::result_tree_table_id(this),
+  if (cached_has_bits & 0x00000001u) {
+    target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+        1, _Internal::result_tree_table_id(this),
         _Internal::result_tree_table_id(this).GetCachedSize(), target, stream);
   }
 
   // .io.deephaven.proto.backplane.grpc.Ticket source_table_id = 2;
-  if (this->_internal_has_source_table_id()) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(2, _Internal::source_table_id(this),
+  if (cached_has_bits & 0x00000002u) {
+    target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+        2, _Internal::source_table_id(this),
         _Internal::source_table_id(this).GetCachedSize(), target, stream);
   }
 
   // string identifier_column = 3;
   if (!this->_internal_identifier_column().empty()) {
-    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_identifier_column().data(), static_cast<int>(this->_internal_identifier_column().length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "io.deephaven.proto.backplane.grpc.TreeRequest.identifier_column");
-    target = stream->WriteStringMaybeAliased(
-        3, this->_internal_identifier_column(), target);
+    const std::string& _s = this->_internal_identifier_column();
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+        _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "io.deephaven.proto.backplane.grpc.TreeRequest.identifier_column");
+    target = stream->WriteStringMaybeAliased(3, _s, target);
   }
 
   // string parent_identifier_column = 4;
   if (!this->_internal_parent_identifier_column().empty()) {
-    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_parent_identifier_column().data(), static_cast<int>(this->_internal_parent_identifier_column().length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "io.deephaven.proto.backplane.grpc.TreeRequest.parent_identifier_column");
-    target = stream->WriteStringMaybeAliased(
-        4, this->_internal_parent_identifier_column(), target);
+    const std::string& _s = this->_internal_parent_identifier_column();
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+        _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "io.deephaven.proto.backplane.grpc.TreeRequest.parent_identifier_column");
+    target = stream->WriteStringMaybeAliased(4, _s, target);
   }
 
   // bool promote_orphans = 5;
   if (this->_internal_promote_orphans() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteBoolToArray(5, this->_internal_promote_orphans(), target);
+    target = ::_pbi::WireFormatLite::WriteBoolToArray(
+        5, this->_internal_promote_orphans(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
   }
   // @@protoc_insertion_point(serialize_to_array_end:io.deephaven.proto.backplane.grpc.TreeRequest)
   return target;
 }
 
-size_t TreeRequest::ByteSizeLong() const {
+::size_t TreeRequest::ByteSizeLong() const {
 // @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.TreeRequest)
-  size_t total_size = 0;
+  ::size_t total_size = 0;
 
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
   // string identifier_column = 3;
   if (!this->_internal_identifier_column().empty()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_identifier_column());
+    total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                    this->_internal_identifier_column());
   }
 
   // string parent_identifier_column = 4;
   if (!this->_internal_parent_identifier_column().empty()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_parent_identifier_column());
+    total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                    this->_internal_parent_identifier_column());
   }
 
-  // .io.deephaven.proto.backplane.grpc.Ticket result_tree_table_id = 1;
-  if (this->_internal_has_result_tree_table_id()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *_impl_.result_tree_table_id_);
-  }
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000003u) {
+    // .io.deephaven.proto.backplane.grpc.Ticket result_tree_table_id = 1;
+    if (cached_has_bits & 0x00000001u) {
+      total_size +=
+          1 + ::google::protobuf::internal::WireFormatLite::MessageSize(*_impl_.result_tree_table_id_);
+    }
 
-  // .io.deephaven.proto.backplane.grpc.Ticket source_table_id = 2;
-  if (this->_internal_has_source_table_id()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *_impl_.source_table_id_);
-  }
+    // .io.deephaven.proto.backplane.grpc.Ticket source_table_id = 2;
+    if (cached_has_bits & 0x00000002u) {
+      total_size +=
+          1 + ::google::protobuf::internal::WireFormatLite::MessageSize(*_impl_.source_table_id_);
+    }
 
+  }
   // bool promote_orphans = 5;
   if (this->_internal_promote_orphans() != 0) {
-    total_size += 1 + 1;
+    total_size += 2;
   }
 
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData TreeRequest::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
-    TreeRequest::MergeImpl
+const ::google::protobuf::Message::ClassData TreeRequest::_class_data_ = {
+    TreeRequest::MergeImpl,
+    nullptr,  // OnDemandRegisterArenaDtor
 };
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*TreeRequest::GetClassData() const { return &_class_data_; }
+const ::google::protobuf::Message::ClassData* TreeRequest::GetClassData() const {
+  return &_class_data_;
+}
 
-
-void TreeRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+void TreeRequest::MergeImpl(::google::protobuf::Message& to_msg, const ::google::protobuf::Message& from_msg) {
   auto* const _this = static_cast<TreeRequest*>(&to_msg);
   auto& from = static_cast<const TreeRequest&>(from_msg);
   // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.TreeRequest)
-  GOOGLE_DCHECK_NE(&from, _this);
-  uint32_t cached_has_bits = 0;
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   if (!from._internal_identifier_column().empty()) {
@@ -1124,18 +1225,21 @@ void TreeRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PR
   if (!from._internal_parent_identifier_column().empty()) {
     _this->_internal_set_parent_identifier_column(from._internal_parent_identifier_column());
   }
-  if (from._internal_has_result_tree_table_id()) {
-    _this->_internal_mutable_result_tree_table_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
-        from._internal_result_tree_table_id());
-  }
-  if (from._internal_has_source_table_id()) {
-    _this->_internal_mutable_source_table_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
-        from._internal_source_table_id());
+  cached_has_bits = from._impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000003u) {
+    if (cached_has_bits & 0x00000001u) {
+      _this->_internal_mutable_result_tree_table_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
+          from._internal_result_tree_table_id());
+    }
+    if (cached_has_bits & 0x00000002u) {
+      _this->_internal_mutable_source_table_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
+          from._internal_source_table_id());
+    }
   }
   if (from._internal_promote_orphans() != 0) {
     _this->_internal_set_promote_orphans(from._internal_promote_orphans());
   }
-  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void TreeRequest::CopyFrom(const TreeRequest& from) {
@@ -1145,24 +1249,22 @@ void TreeRequest::CopyFrom(const TreeRequest& from) {
   MergeFrom(from);
 }
 
-bool TreeRequest::IsInitialized() const {
+PROTOBUF_NOINLINE bool TreeRequest::IsInitialized() const {
   return true;
 }
 
-void TreeRequest::InternalSwap(TreeRequest* other) {
+::_pbi::CachedSize* TreeRequest::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
+void TreeRequest::InternalSwap(TreeRequest* PROTOBUF_RESTRICT other) {
   using std::swap;
-  auto* lhs_arena = GetArenaForAllocation();
-  auto* rhs_arena = other->GetArenaForAllocation();
+  auto* arena = GetArena();
+  ABSL_DCHECK_EQ(arena, other->GetArena());
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.identifier_column_, lhs_arena,
-      &other->_impl_.identifier_column_, rhs_arena
-  );
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.parent_identifier_column_, lhs_arena,
-      &other->_impl_.parent_identifier_column_, rhs_arena
-  );
-  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.identifier_column_, &other->_impl_.identifier_column_, arena);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.parent_identifier_column_, &other->_impl_.parent_identifier_column_, arena);
+  ::google::protobuf::internal::memswap<
       PROTOBUF_FIELD_OFFSET(TreeRequest, _impl_.promote_orphans_)
       + sizeof(TreeRequest::_impl_.promote_orphans_)
       - PROTOBUF_FIELD_OFFSET(TreeRequest, _impl_.result_tree_table_id_)>(
@@ -1170,27 +1272,30 @@ void TreeRequest::InternalSwap(TreeRequest* other) {
           reinterpret_cast<char*>(&other->_impl_.result_tree_table_id_));
 }
 
-::PROTOBUF_NAMESPACE_ID::Metadata TreeRequest::GetMetadata() const {
+::google::protobuf::Metadata TreeRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto_getter, &descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fhierarchicaltable_2eproto[2]);
 }
-
 // ===================================================================
 
 class TreeResponse::_Internal {
  public:
 };
 
-TreeResponse::TreeResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase(arena, is_message_owned) {
+TreeResponse::TreeResponse(::google::protobuf::Arena* arena)
+    : ::google::protobuf::internal::ZeroFieldsBase(arena) {
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.TreeResponse)
 }
-TreeResponse::TreeResponse(const TreeResponse& from)
-  : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase() {
-  TreeResponse* const _this = this; (void)_this;
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+TreeResponse::TreeResponse(
+    ::google::protobuf::Arena* arena,
+    const TreeResponse& from)
+    : ::google::protobuf::internal::ZeroFieldsBase(arena) {
+  TreeResponse* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.TreeResponse)
 }
 
@@ -1198,317 +1303,315 @@ TreeResponse::TreeResponse(const TreeResponse& from)
 
 
 
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData TreeResponse::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::CopyImpl,
-    ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::MergeImpl,
-};
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*TreeResponse::GetClassData() const { return &_class_data_; }
 
 
 
 
-
-
-
-::PROTOBUF_NAMESPACE_ID::Metadata TreeResponse::GetMetadata() const {
+::google::protobuf::Metadata TreeResponse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto_getter, &descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fhierarchicaltable_2eproto[3]);
 }
-
 // ===================================================================
 
 class HierarchicalTableApplyRequest::_Internal {
  public:
+  using HasBits = decltype(std::declval<HierarchicalTableApplyRequest>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+    8 * PROTOBUF_FIELD_OFFSET(HierarchicalTableApplyRequest, _impl_._has_bits_);
   static const ::io::deephaven::proto::backplane::grpc::Ticket& result_hierarchical_table_id(const HierarchicalTableApplyRequest* msg);
+  static void set_has_result_hierarchical_table_id(HasBits* has_bits) {
+    (*has_bits)[0] |= 1u;
+  }
   static const ::io::deephaven::proto::backplane::grpc::Ticket& input_hierarchical_table_id(const HierarchicalTableApplyRequest* msg);
+  static void set_has_input_hierarchical_table_id(HasBits* has_bits) {
+    (*has_bits)[0] |= 2u;
+  }
 };
 
-const ::io::deephaven::proto::backplane::grpc::Ticket&
-HierarchicalTableApplyRequest::_Internal::result_hierarchical_table_id(const HierarchicalTableApplyRequest* msg) {
+const ::io::deephaven::proto::backplane::grpc::Ticket& HierarchicalTableApplyRequest::_Internal::result_hierarchical_table_id(const HierarchicalTableApplyRequest* msg) {
   return *msg->_impl_.result_hierarchical_table_id_;
 }
-const ::io::deephaven::proto::backplane::grpc::Ticket&
-HierarchicalTableApplyRequest::_Internal::input_hierarchical_table_id(const HierarchicalTableApplyRequest* msg) {
+const ::io::deephaven::proto::backplane::grpc::Ticket& HierarchicalTableApplyRequest::_Internal::input_hierarchical_table_id(const HierarchicalTableApplyRequest* msg) {
   return *msg->_impl_.input_hierarchical_table_id_;
 }
 void HierarchicalTableApplyRequest::clear_result_hierarchical_table_id() {
-  if (GetArenaForAllocation() == nullptr && _impl_.result_hierarchical_table_id_ != nullptr) {
-    delete _impl_.result_hierarchical_table_id_;
-  }
-  _impl_.result_hierarchical_table_id_ = nullptr;
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  if (_impl_.result_hierarchical_table_id_ != nullptr) _impl_.result_hierarchical_table_id_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000001u;
 }
 void HierarchicalTableApplyRequest::clear_input_hierarchical_table_id() {
-  if (GetArenaForAllocation() == nullptr && _impl_.input_hierarchical_table_id_ != nullptr) {
-    delete _impl_.input_hierarchical_table_id_;
-  }
-  _impl_.input_hierarchical_table_id_ = nullptr;
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  if (_impl_.input_hierarchical_table_id_ != nullptr) _impl_.input_hierarchical_table_id_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000002u;
 }
 void HierarchicalTableApplyRequest::clear_filters() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   _impl_.filters_.Clear();
 }
 void HierarchicalTableApplyRequest::clear_sorts() {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   _impl_.sorts_.Clear();
 }
-HierarchicalTableApplyRequest::HierarchicalTableApplyRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor(arena, is_message_owned);
+HierarchicalTableApplyRequest::HierarchicalTableApplyRequest(::google::protobuf::Arena* arena)
+    : ::google::protobuf::Message(arena) {
+  SharedCtor(arena);
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.HierarchicalTableApplyRequest)
 }
-HierarchicalTableApplyRequest::HierarchicalTableApplyRequest(const HierarchicalTableApplyRequest& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message() {
-  HierarchicalTableApplyRequest* const _this = this; (void)_this;
-  new (&_impl_) Impl_{
-      decltype(_impl_.filters_){from._impl_.filters_}
-    , decltype(_impl_.sorts_){from._impl_.sorts_}
-    , decltype(_impl_.result_hierarchical_table_id_){nullptr}
-    , decltype(_impl_.input_hierarchical_table_id_){nullptr}
-    , /*decltype(_impl_._cached_size_)*/{}};
+inline PROTOBUF_NDEBUG_INLINE HierarchicalTableApplyRequest::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
+    const Impl_& from)
+      : _has_bits_{from._has_bits_},
+        _cached_size_{0},
+        filters_{visibility, arena, from.filters_},
+        sorts_{visibility, arena, from.sorts_} {}
 
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  if (from._internal_has_result_hierarchical_table_id()) {
-    _this->_impl_.result_hierarchical_table_id_ = new ::io::deephaven::proto::backplane::grpc::Ticket(*from._impl_.result_hierarchical_table_id_);
-  }
-  if (from._internal_has_input_hierarchical_table_id()) {
-    _this->_impl_.input_hierarchical_table_id_ = new ::io::deephaven::proto::backplane::grpc::Ticket(*from._impl_.input_hierarchical_table_id_);
-  }
+HierarchicalTableApplyRequest::HierarchicalTableApplyRequest(
+    ::google::protobuf::Arena* arena,
+    const HierarchicalTableApplyRequest& from)
+    : ::google::protobuf::Message(arena) {
+  HierarchicalTableApplyRequest* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_);
+  ::uint32_t cached_has_bits = _impl_._has_bits_[0];
+  _impl_.result_hierarchical_table_id_ = (cached_has_bits & 0x00000001u)
+                ? CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::Ticket>(arena, *from._impl_.result_hierarchical_table_id_)
+                : nullptr;
+  _impl_.input_hierarchical_table_id_ = (cached_has_bits & 0x00000002u)
+                ? CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::Ticket>(arena, *from._impl_.input_hierarchical_table_id_)
+                : nullptr;
+
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.HierarchicalTableApplyRequest)
 }
+inline PROTOBUF_NDEBUG_INLINE HierarchicalTableApplyRequest::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* arena)
+      : _cached_size_{0},
+        filters_{visibility, arena},
+        sorts_{visibility, arena} {}
 
-inline void HierarchicalTableApplyRequest::SharedCtor(
-    ::_pb::Arena* arena, bool is_message_owned) {
-  (void)arena;
-  (void)is_message_owned;
-  new (&_impl_) Impl_{
-      decltype(_impl_.filters_){arena}
-    , decltype(_impl_.sorts_){arena}
-    , decltype(_impl_.result_hierarchical_table_id_){nullptr}
-    , decltype(_impl_.input_hierarchical_table_id_){nullptr}
-    , /*decltype(_impl_._cached_size_)*/{}
-  };
+inline void HierarchicalTableApplyRequest::SharedCtor(::_pb::Arena* arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  ::memset(reinterpret_cast<char *>(&_impl_) +
+               offsetof(Impl_, result_hierarchical_table_id_),
+           0,
+           offsetof(Impl_, input_hierarchical_table_id_) -
+               offsetof(Impl_, result_hierarchical_table_id_) +
+               sizeof(Impl_::input_hierarchical_table_id_));
 }
-
 HierarchicalTableApplyRequest::~HierarchicalTableApplyRequest() {
   // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.HierarchicalTableApplyRequest)
-  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
-  (void)arena;
-    return;
-  }
+  _internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
   SharedDtor();
 }
-
 inline void HierarchicalTableApplyRequest::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  _impl_.filters_.~RepeatedPtrField();
-  _impl_.sorts_.~RepeatedPtrField();
-  if (this != internal_default_instance()) delete _impl_.result_hierarchical_table_id_;
-  if (this != internal_default_instance()) delete _impl_.input_hierarchical_table_id_;
+  ABSL_DCHECK(GetArena() == nullptr);
+  delete _impl_.result_hierarchical_table_id_;
+  delete _impl_.input_hierarchical_table_id_;
+  _impl_.~Impl_();
 }
 
-void HierarchicalTableApplyRequest::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
-
-void HierarchicalTableApplyRequest::Clear() {
+PROTOBUF_NOINLINE void HierarchicalTableApplyRequest::Clear() {
 // @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.HierarchicalTableApplyRequest)
-  uint32_t cached_has_bits = 0;
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
   _impl_.filters_.Clear();
   _impl_.sorts_.Clear();
-  if (GetArenaForAllocation() == nullptr && _impl_.result_hierarchical_table_id_ != nullptr) {
-    delete _impl_.result_hierarchical_table_id_;
-  }
-  _impl_.result_hierarchical_table_id_ = nullptr;
-  if (GetArenaForAllocation() == nullptr && _impl_.input_hierarchical_table_id_ != nullptr) {
-    delete _impl_.input_hierarchical_table_id_;
-  }
-  _impl_.input_hierarchical_table_id_ = nullptr;
-  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
-}
-
-const char* HierarchicalTableApplyRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
-#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  while (!ctx->Done(&ptr)) {
-    uint32_t tag;
-    ptr = ::_pbi::ReadTag(ptr, &tag);
-    switch (tag >> 3) {
-      // .io.deephaven.proto.backplane.grpc.Ticket result_hierarchical_table_id = 1;
-      case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
-          ptr = ctx->ParseMessage(_internal_mutable_result_hierarchical_table_id(), ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      // .io.deephaven.proto.backplane.grpc.Ticket input_hierarchical_table_id = 2;
-      case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
-          ptr = ctx->ParseMessage(_internal_mutable_input_hierarchical_table_id(), ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      // repeated .io.deephaven.proto.backplane.grpc.Condition filters = 3;
-      case 3:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
-          ptr -= 1;
-          do {
-            ptr += 1;
-            ptr = ctx->ParseMessage(_internal_add_filters(), ptr);
-            CHK_(ptr);
-            if (!ctx->DataAvailable(ptr)) break;
-          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<26>(ptr));
-        } else
-          goto handle_unusual;
-        continue;
-      // repeated .io.deephaven.proto.backplane.grpc.SortDescriptor sorts = 4;
-      case 4:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 34)) {
-          ptr -= 1;
-          do {
-            ptr += 1;
-            ptr = ctx->ParseMessage(_internal_add_sorts(), ptr);
-            CHK_(ptr);
-            if (!ctx->DataAvailable(ptr)) break;
-          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<34>(ptr));
-        } else
-          goto handle_unusual;
-        continue;
-      default:
-        goto handle_unusual;
-    }  // switch
-  handle_unusual:
-    if ((tag == 0) || ((tag & 7) == 4)) {
-      CHK_(ptr);
-      ctx->SetLastTag(tag);
-      goto message_done;
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000003u) {
+    if (cached_has_bits & 0x00000001u) {
+      ABSL_DCHECK(_impl_.result_hierarchical_table_id_ != nullptr);
+      _impl_.result_hierarchical_table_id_->Clear();
     }
-    ptr = UnknownFieldParse(
-        tag,
-        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-        ptr, ctx);
-    CHK_(ptr != nullptr);
-  }  // while
-message_done:
-  return ptr;
-failure:
-  ptr = nullptr;
-  goto message_done;
-#undef CHK_
+    if (cached_has_bits & 0x00000002u) {
+      ABSL_DCHECK(_impl_.input_hierarchical_table_id_ != nullptr);
+      _impl_.input_hierarchical_table_id_->Clear();
+    }
+  }
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
 }
 
-uint8_t* HierarchicalTableApplyRequest::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.HierarchicalTableApplyRequest)
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+const char* HierarchicalTableApplyRequest::_InternalParse(
+    const char* ptr, ::_pbi::ParseContext* ctx) {
+  ptr = ::_pbi::TcParser::ParseLoop(this, ptr, ctx, &_table_.header);
+  return ptr;
+}
 
+
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<2, 4, 4, 0, 2> HierarchicalTableApplyRequest::_table_ = {
+  {
+    PROTOBUF_FIELD_OFFSET(HierarchicalTableApplyRequest, _impl_._has_bits_),
+    0, // no _extensions_
+    4, 24,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967280,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    4,  // num_field_entries
+    4,  // num_aux_entries
+    offsetof(decltype(_table_), aux_entries),
+    &_HierarchicalTableApplyRequest_default_instance_._instance,
+    ::_pbi::TcParser::GenericFallback,  // fallback
+  }, {{
+    // repeated .io.deephaven.proto.backplane.grpc.SortDescriptor sorts = 4;
+    {::_pbi::TcParser::FastMtR1,
+     {34, 63, 3, PROTOBUF_FIELD_OFFSET(HierarchicalTableApplyRequest, _impl_.sorts_)}},
+    // .io.deephaven.proto.backplane.grpc.Ticket result_hierarchical_table_id = 1;
+    {::_pbi::TcParser::FastMtS1,
+     {10, 0, 0, PROTOBUF_FIELD_OFFSET(HierarchicalTableApplyRequest, _impl_.result_hierarchical_table_id_)}},
+    // .io.deephaven.proto.backplane.grpc.Ticket input_hierarchical_table_id = 2;
+    {::_pbi::TcParser::FastMtS1,
+     {18, 1, 1, PROTOBUF_FIELD_OFFSET(HierarchicalTableApplyRequest, _impl_.input_hierarchical_table_id_)}},
+    // repeated .io.deephaven.proto.backplane.grpc.Condition filters = 3;
+    {::_pbi::TcParser::FastMtR1,
+     {26, 63, 2, PROTOBUF_FIELD_OFFSET(HierarchicalTableApplyRequest, _impl_.filters_)}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // .io.deephaven.proto.backplane.grpc.Ticket result_hierarchical_table_id = 1;
+    {PROTOBUF_FIELD_OFFSET(HierarchicalTableApplyRequest, _impl_.result_hierarchical_table_id_), _Internal::kHasBitsOffset + 0, 0,
+    (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
+    // .io.deephaven.proto.backplane.grpc.Ticket input_hierarchical_table_id = 2;
+    {PROTOBUF_FIELD_OFFSET(HierarchicalTableApplyRequest, _impl_.input_hierarchical_table_id_), _Internal::kHasBitsOffset + 1, 1,
+    (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
+    // repeated .io.deephaven.proto.backplane.grpc.Condition filters = 3;
+    {PROTOBUF_FIELD_OFFSET(HierarchicalTableApplyRequest, _impl_.filters_), -1, 2,
+    (0 | ::_fl::kFcRepeated | ::_fl::kMessage | ::_fl::kTvTable)},
+    // repeated .io.deephaven.proto.backplane.grpc.SortDescriptor sorts = 4;
+    {PROTOBUF_FIELD_OFFSET(HierarchicalTableApplyRequest, _impl_.sorts_), -1, 3,
+    (0 | ::_fl::kFcRepeated | ::_fl::kMessage | ::_fl::kTvTable)},
+  }}, {{
+    {::_pbi::TcParser::GetTable<::io::deephaven::proto::backplane::grpc::Ticket>()},
+    {::_pbi::TcParser::GetTable<::io::deephaven::proto::backplane::grpc::Ticket>()},
+    {::_pbi::TcParser::GetTable<::io::deephaven::proto::backplane::grpc::Condition>()},
+    {::_pbi::TcParser::GetTable<::io::deephaven::proto::backplane::grpc::SortDescriptor>()},
+  }}, {{
+  }},
+};
+
+::uint8_t* HierarchicalTableApplyRequest::_InternalSerialize(
+    ::uint8_t* target,
+    ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.HierarchicalTableApplyRequest)
+  ::uint32_t cached_has_bits = 0;
+  (void)cached_has_bits;
+
+  cached_has_bits = _impl_._has_bits_[0];
   // .io.deephaven.proto.backplane.grpc.Ticket result_hierarchical_table_id = 1;
-  if (this->_internal_has_result_hierarchical_table_id()) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(1, _Internal::result_hierarchical_table_id(this),
+  if (cached_has_bits & 0x00000001u) {
+    target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+        1, _Internal::result_hierarchical_table_id(this),
         _Internal::result_hierarchical_table_id(this).GetCachedSize(), target, stream);
   }
 
   // .io.deephaven.proto.backplane.grpc.Ticket input_hierarchical_table_id = 2;
-  if (this->_internal_has_input_hierarchical_table_id()) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(2, _Internal::input_hierarchical_table_id(this),
+  if (cached_has_bits & 0x00000002u) {
+    target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+        2, _Internal::input_hierarchical_table_id(this),
         _Internal::input_hierarchical_table_id(this).GetCachedSize(), target, stream);
   }
 
   // repeated .io.deephaven.proto.backplane.grpc.Condition filters = 3;
   for (unsigned i = 0,
       n = static_cast<unsigned>(this->_internal_filters_size()); i < n; i++) {
-    const auto& repfield = this->_internal_filters(i);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+    const auto& repfield = this->_internal_filters().Get(i);
+    target = ::google::protobuf::internal::WireFormatLite::
         InternalWriteMessage(3, repfield, repfield.GetCachedSize(), target, stream);
   }
 
   // repeated .io.deephaven.proto.backplane.grpc.SortDescriptor sorts = 4;
   for (unsigned i = 0,
       n = static_cast<unsigned>(this->_internal_sorts_size()); i < n; i++) {
-    const auto& repfield = this->_internal_sorts(i);
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+    const auto& repfield = this->_internal_sorts().Get(i);
+    target = ::google::protobuf::internal::WireFormatLite::
         InternalWriteMessage(4, repfield, repfield.GetCachedSize(), target, stream);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
   }
   // @@protoc_insertion_point(serialize_to_array_end:io.deephaven.proto.backplane.grpc.HierarchicalTableApplyRequest)
   return target;
 }
 
-size_t HierarchicalTableApplyRequest::ByteSizeLong() const {
+::size_t HierarchicalTableApplyRequest::ByteSizeLong() const {
 // @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.HierarchicalTableApplyRequest)
-  size_t total_size = 0;
+  ::size_t total_size = 0;
 
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
   // repeated .io.deephaven.proto.backplane.grpc.Condition filters = 3;
   total_size += 1UL * this->_internal_filters_size();
-  for (const auto& msg : this->_impl_.filters_) {
+  for (const auto& msg : this->_internal_filters()) {
     total_size +=
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
+      ::google::protobuf::internal::WireFormatLite::MessageSize(msg);
   }
-
   // repeated .io.deephaven.proto.backplane.grpc.SortDescriptor sorts = 4;
   total_size += 1UL * this->_internal_sorts_size();
-  for (const auto& msg : this->_impl_.sorts_) {
+  for (const auto& msg : this->_internal_sorts()) {
     total_size +=
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
+      ::google::protobuf::internal::WireFormatLite::MessageSize(msg);
   }
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000003u) {
+    // .io.deephaven.proto.backplane.grpc.Ticket result_hierarchical_table_id = 1;
+    if (cached_has_bits & 0x00000001u) {
+      total_size +=
+          1 + ::google::protobuf::internal::WireFormatLite::MessageSize(*_impl_.result_hierarchical_table_id_);
+    }
 
-  // .io.deephaven.proto.backplane.grpc.Ticket result_hierarchical_table_id = 1;
-  if (this->_internal_has_result_hierarchical_table_id()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *_impl_.result_hierarchical_table_id_);
+    // .io.deephaven.proto.backplane.grpc.Ticket input_hierarchical_table_id = 2;
+    if (cached_has_bits & 0x00000002u) {
+      total_size +=
+          1 + ::google::protobuf::internal::WireFormatLite::MessageSize(*_impl_.input_hierarchical_table_id_);
+    }
+
   }
-
-  // .io.deephaven.proto.backplane.grpc.Ticket input_hierarchical_table_id = 2;
-  if (this->_internal_has_input_hierarchical_table_id()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *_impl_.input_hierarchical_table_id_);
-  }
-
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData HierarchicalTableApplyRequest::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
-    HierarchicalTableApplyRequest::MergeImpl
+const ::google::protobuf::Message::ClassData HierarchicalTableApplyRequest::_class_data_ = {
+    HierarchicalTableApplyRequest::MergeImpl,
+    nullptr,  // OnDemandRegisterArenaDtor
 };
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*HierarchicalTableApplyRequest::GetClassData() const { return &_class_data_; }
+const ::google::protobuf::Message::ClassData* HierarchicalTableApplyRequest::GetClassData() const {
+  return &_class_data_;
+}
 
-
-void HierarchicalTableApplyRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+void HierarchicalTableApplyRequest::MergeImpl(::google::protobuf::Message& to_msg, const ::google::protobuf::Message& from_msg) {
   auto* const _this = static_cast<HierarchicalTableApplyRequest*>(&to_msg);
   auto& from = static_cast<const HierarchicalTableApplyRequest&>(from_msg);
   // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.HierarchicalTableApplyRequest)
-  GOOGLE_DCHECK_NE(&from, _this);
-  uint32_t cached_has_bits = 0;
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  _this->_impl_.filters_.MergeFrom(from._impl_.filters_);
-  _this->_impl_.sorts_.MergeFrom(from._impl_.sorts_);
-  if (from._internal_has_result_hierarchical_table_id()) {
-    _this->_internal_mutable_result_hierarchical_table_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
-        from._internal_result_hierarchical_table_id());
+  _this->_internal_mutable_filters()->MergeFrom(
+      from._internal_filters());
+  _this->_internal_mutable_sorts()->MergeFrom(
+      from._internal_sorts());
+  cached_has_bits = from._impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000003u) {
+    if (cached_has_bits & 0x00000001u) {
+      _this->_internal_mutable_result_hierarchical_table_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
+          from._internal_result_hierarchical_table_id());
+    }
+    if (cached_has_bits & 0x00000002u) {
+      _this->_internal_mutable_input_hierarchical_table_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
+          from._internal_input_hierarchical_table_id());
+    }
   }
-  if (from._internal_has_input_hierarchical_table_id()) {
-    _this->_internal_mutable_input_hierarchical_table_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
-        from._internal_input_hierarchical_table_id());
-  }
-  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void HierarchicalTableApplyRequest::CopyFrom(const HierarchicalTableApplyRequest& from) {
@@ -1518,16 +1621,20 @@ void HierarchicalTableApplyRequest::CopyFrom(const HierarchicalTableApplyRequest
   MergeFrom(from);
 }
 
-bool HierarchicalTableApplyRequest::IsInitialized() const {
+PROTOBUF_NOINLINE bool HierarchicalTableApplyRequest::IsInitialized() const {
   return true;
 }
 
-void HierarchicalTableApplyRequest::InternalSwap(HierarchicalTableApplyRequest* other) {
+::_pbi::CachedSize* HierarchicalTableApplyRequest::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
+void HierarchicalTableApplyRequest::InternalSwap(HierarchicalTableApplyRequest* PROTOBUF_RESTRICT other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
   _impl_.filters_.InternalSwap(&other->_impl_.filters_);
   _impl_.sorts_.InternalSwap(&other->_impl_.sorts_);
-  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+  ::google::protobuf::internal::memswap<
       PROTOBUF_FIELD_OFFSET(HierarchicalTableApplyRequest, _impl_.input_hierarchical_table_id_)
       + sizeof(HierarchicalTableApplyRequest::_impl_.input_hierarchical_table_id_)
       - PROTOBUF_FIELD_OFFSET(HierarchicalTableApplyRequest, _impl_.result_hierarchical_table_id_)>(
@@ -1535,27 +1642,30 @@ void HierarchicalTableApplyRequest::InternalSwap(HierarchicalTableApplyRequest* 
           reinterpret_cast<char*>(&other->_impl_.result_hierarchical_table_id_));
 }
 
-::PROTOBUF_NAMESPACE_ID::Metadata HierarchicalTableApplyRequest::GetMetadata() const {
+::google::protobuf::Metadata HierarchicalTableApplyRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto_getter, &descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fhierarchicaltable_2eproto[4]);
 }
-
 // ===================================================================
 
 class HierarchicalTableApplyResponse::_Internal {
  public:
 };
 
-HierarchicalTableApplyResponse::HierarchicalTableApplyResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase(arena, is_message_owned) {
+HierarchicalTableApplyResponse::HierarchicalTableApplyResponse(::google::protobuf::Arena* arena)
+    : ::google::protobuf::internal::ZeroFieldsBase(arena) {
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.HierarchicalTableApplyResponse)
 }
-HierarchicalTableApplyResponse::HierarchicalTableApplyResponse(const HierarchicalTableApplyResponse& from)
-  : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase() {
-  HierarchicalTableApplyResponse* const _this = this; (void)_this;
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+HierarchicalTableApplyResponse::HierarchicalTableApplyResponse(
+    ::google::protobuf::Arena* arena,
+    const HierarchicalTableApplyResponse& from)
+    : ::google::protobuf::internal::ZeroFieldsBase(arena) {
+  HierarchicalTableApplyResponse* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.HierarchicalTableApplyResponse)
 }
 
@@ -1563,209 +1673,186 @@ HierarchicalTableApplyResponse::HierarchicalTableApplyResponse(const Hierarchica
 
 
 
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData HierarchicalTableApplyResponse::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::CopyImpl,
-    ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::MergeImpl,
-};
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*HierarchicalTableApplyResponse::GetClassData() const { return &_class_data_; }
 
 
 
 
-
-
-
-::PROTOBUF_NAMESPACE_ID::Metadata HierarchicalTableApplyResponse::GetMetadata() const {
+::google::protobuf::Metadata HierarchicalTableApplyResponse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto_getter, &descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fhierarchicaltable_2eproto[5]);
 }
-
 // ===================================================================
 
 class HierarchicalTableDescriptor::_Internal {
  public:
 };
 
-HierarchicalTableDescriptor::HierarchicalTableDescriptor(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor(arena, is_message_owned);
+HierarchicalTableDescriptor::HierarchicalTableDescriptor(::google::protobuf::Arena* arena)
+    : ::google::protobuf::Message(arena) {
+  SharedCtor(arena);
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.HierarchicalTableDescriptor)
 }
-HierarchicalTableDescriptor::HierarchicalTableDescriptor(const HierarchicalTableDescriptor& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message() {
-  HierarchicalTableDescriptor* const _this = this; (void)_this;
-  new (&_impl_) Impl_{
-      decltype(_impl_.snapshot_schema_){}
-    , decltype(_impl_.is_static_){}
-    , /*decltype(_impl_._cached_size_)*/{}};
+inline PROTOBUF_NDEBUG_INLINE HierarchicalTableDescriptor::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
+    const Impl_& from)
+      : snapshot_schema_(arena, from.snapshot_schema_),
+        _cached_size_{0} {}
 
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  _impl_.snapshot_schema_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.snapshot_schema_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_snapshot_schema().empty()) {
-    _this->_impl_.snapshot_schema_.Set(from._internal_snapshot_schema(), 
-      _this->GetArenaForAllocation());
-  }
-  _this->_impl_.is_static_ = from._impl_.is_static_;
+HierarchicalTableDescriptor::HierarchicalTableDescriptor(
+    ::google::protobuf::Arena* arena,
+    const HierarchicalTableDescriptor& from)
+    : ::google::protobuf::Message(arena) {
+  HierarchicalTableDescriptor* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_);
+  _impl_.is_static_ = from._impl_.is_static_;
+
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.HierarchicalTableDescriptor)
 }
+inline PROTOBUF_NDEBUG_INLINE HierarchicalTableDescriptor::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* arena)
+      : snapshot_schema_(arena),
+        _cached_size_{0} {}
 
-inline void HierarchicalTableDescriptor::SharedCtor(
-    ::_pb::Arena* arena, bool is_message_owned) {
-  (void)arena;
-  (void)is_message_owned;
-  new (&_impl_) Impl_{
-      decltype(_impl_.snapshot_schema_){}
-    , decltype(_impl_.is_static_){false}
-    , /*decltype(_impl_._cached_size_)*/{}
-  };
-  _impl_.snapshot_schema_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.snapshot_schema_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+inline void HierarchicalTableDescriptor::SharedCtor(::_pb::Arena* arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  _impl_.is_static_ = {};
 }
-
 HierarchicalTableDescriptor::~HierarchicalTableDescriptor() {
   // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.HierarchicalTableDescriptor)
-  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
-  (void)arena;
-    return;
-  }
+  _internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
   SharedDtor();
 }
-
 inline void HierarchicalTableDescriptor::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  ABSL_DCHECK(GetArena() == nullptr);
   _impl_.snapshot_schema_.Destroy();
+  _impl_.~Impl_();
 }
 
-void HierarchicalTableDescriptor::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
-
-void HierarchicalTableDescriptor::Clear() {
+PROTOBUF_NOINLINE void HierarchicalTableDescriptor::Clear() {
 // @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.HierarchicalTableDescriptor)
-  uint32_t cached_has_bits = 0;
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
   _impl_.snapshot_schema_.ClearToEmpty();
   _impl_.is_static_ = false;
-  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
 }
 
-const char* HierarchicalTableDescriptor::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
-#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  while (!ctx->Done(&ptr)) {
-    uint32_t tag;
-    ptr = ::_pbi::ReadTag(ptr, &tag);
-    switch (tag >> 3) {
-      // bytes snapshot_schema = 1;
-      case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
-          auto str = _internal_mutable_snapshot_schema();
-          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      // bool is_static = 2;
-      case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 16)) {
-          _impl_.is_static_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      default:
-        goto handle_unusual;
-    }  // switch
-  handle_unusual:
-    if ((tag == 0) || ((tag & 7) == 4)) {
-      CHK_(ptr);
-      ctx->SetLastTag(tag);
-      goto message_done;
-    }
-    ptr = UnknownFieldParse(
-        tag,
-        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-        ptr, ctx);
-    CHK_(ptr != nullptr);
-  }  // while
-message_done:
+const char* HierarchicalTableDescriptor::_InternalParse(
+    const char* ptr, ::_pbi::ParseContext* ctx) {
+  ptr = ::_pbi::TcParser::ParseLoop(this, ptr, ctx, &_table_.header);
   return ptr;
-failure:
-  ptr = nullptr;
-  goto message_done;
-#undef CHK_
 }
 
-uint8_t* HierarchicalTableDescriptor::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<1, 2, 0, 0, 2> HierarchicalTableDescriptor::_table_ = {
+  {
+    0,  // no _has_bits_
+    0, // no _extensions_
+    2, 8,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967292,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    2,  // num_field_entries
+    0,  // num_aux_entries
+    offsetof(decltype(_table_), field_names),  // no aux_entries
+    &_HierarchicalTableDescriptor_default_instance_._instance,
+    ::_pbi::TcParser::GenericFallback,  // fallback
+  }, {{
+    // bool is_static = 2;
+    {::_pbi::TcParser::SingularVarintNoZag1<bool, offsetof(HierarchicalTableDescriptor, _impl_.is_static_), 63>(),
+     {16, 63, 0, PROTOBUF_FIELD_OFFSET(HierarchicalTableDescriptor, _impl_.is_static_)}},
+    // bytes snapshot_schema = 1;
+    {::_pbi::TcParser::FastBS1,
+     {10, 63, 0, PROTOBUF_FIELD_OFFSET(HierarchicalTableDescriptor, _impl_.snapshot_schema_)}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // bytes snapshot_schema = 1;
+    {PROTOBUF_FIELD_OFFSET(HierarchicalTableDescriptor, _impl_.snapshot_schema_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kBytes | ::_fl::kRepAString)},
+    // bool is_static = 2;
+    {PROTOBUF_FIELD_OFFSET(HierarchicalTableDescriptor, _impl_.is_static_), 0, 0,
+    (0 | ::_fl::kFcSingular | ::_fl::kBool)},
+  }},
+  // no aux_entries
+  {{
+  }},
+};
+
+::uint8_t* HierarchicalTableDescriptor::_InternalSerialize(
+    ::uint8_t* target,
+    ::google::protobuf::io::EpsCopyOutputStream* stream) const {
   // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.HierarchicalTableDescriptor)
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+  ::uint32_t cached_has_bits = 0;
+  (void)cached_has_bits;
 
   // bytes snapshot_schema = 1;
   if (!this->_internal_snapshot_schema().empty()) {
-    target = stream->WriteBytesMaybeAliased(
-        1, this->_internal_snapshot_schema(), target);
+    const std::string& _s = this->_internal_snapshot_schema();
+    target = stream->WriteBytesMaybeAliased(1, _s, target);
   }
 
   // bool is_static = 2;
   if (this->_internal_is_static() != 0) {
     target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteBoolToArray(2, this->_internal_is_static(), target);
+    target = ::_pbi::WireFormatLite::WriteBoolToArray(
+        2, this->_internal_is_static(), target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
   }
   // @@protoc_insertion_point(serialize_to_array_end:io.deephaven.proto.backplane.grpc.HierarchicalTableDescriptor)
   return target;
 }
 
-size_t HierarchicalTableDescriptor::ByteSizeLong() const {
+::size_t HierarchicalTableDescriptor::ByteSizeLong() const {
 // @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.HierarchicalTableDescriptor)
-  size_t total_size = 0;
+  ::size_t total_size = 0;
 
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
   // bytes snapshot_schema = 1;
   if (!this->_internal_snapshot_schema().empty()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::BytesSize(
-        this->_internal_snapshot_schema());
+    total_size += 1 + ::google::protobuf::internal::WireFormatLite::BytesSize(
+                                    this->_internal_snapshot_schema());
   }
 
   // bool is_static = 2;
   if (this->_internal_is_static() != 0) {
-    total_size += 1 + 1;
+    total_size += 2;
   }
 
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData HierarchicalTableDescriptor::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
-    HierarchicalTableDescriptor::MergeImpl
+const ::google::protobuf::Message::ClassData HierarchicalTableDescriptor::_class_data_ = {
+    HierarchicalTableDescriptor::MergeImpl,
+    nullptr,  // OnDemandRegisterArenaDtor
 };
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*HierarchicalTableDescriptor::GetClassData() const { return &_class_data_; }
+const ::google::protobuf::Message::ClassData* HierarchicalTableDescriptor::GetClassData() const {
+  return &_class_data_;
+}
 
-
-void HierarchicalTableDescriptor::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+void HierarchicalTableDescriptor::MergeImpl(::google::protobuf::Message& to_msg, const ::google::protobuf::Message& from_msg) {
   auto* const _this = static_cast<HierarchicalTableDescriptor*>(&to_msg);
   auto& from = static_cast<const HierarchicalTableDescriptor&>(from_msg);
   // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.HierarchicalTableDescriptor)
-  GOOGLE_DCHECK_NE(&from, _this);
-  uint32_t cached_has_bits = 0;
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
   if (!from._internal_snapshot_schema().empty()) {
@@ -1774,7 +1861,7 @@ void HierarchicalTableDescriptor::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to
   if (from._internal_is_static() != 0) {
     _this->_internal_set_is_static(from._internal_is_static());
   }
-  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void HierarchicalTableDescriptor::CopyFrom(const HierarchicalTableDescriptor& from) {
@@ -1784,70 +1871,72 @@ void HierarchicalTableDescriptor::CopyFrom(const HierarchicalTableDescriptor& fr
   MergeFrom(from);
 }
 
-bool HierarchicalTableDescriptor::IsInitialized() const {
+PROTOBUF_NOINLINE bool HierarchicalTableDescriptor::IsInitialized() const {
   return true;
 }
 
-void HierarchicalTableDescriptor::InternalSwap(HierarchicalTableDescriptor* other) {
+::_pbi::CachedSize* HierarchicalTableDescriptor::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
+void HierarchicalTableDescriptor::InternalSwap(HierarchicalTableDescriptor* PROTOBUF_RESTRICT other) {
   using std::swap;
-  auto* lhs_arena = GetArenaForAllocation();
-  auto* rhs_arena = other->GetArenaForAllocation();
+  auto* arena = GetArena();
+  ABSL_DCHECK_EQ(arena, other->GetArena());
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.snapshot_schema_, lhs_arena,
-      &other->_impl_.snapshot_schema_, rhs_arena
-  );
-  swap(_impl_.is_static_, other->_impl_.is_static_);
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.snapshot_schema_, &other->_impl_.snapshot_schema_, arena);
+        swap(_impl_.is_static_, other->_impl_.is_static_);
 }
 
-::PROTOBUF_NAMESPACE_ID::Metadata HierarchicalTableDescriptor::GetMetadata() const {
+::google::protobuf::Metadata HierarchicalTableDescriptor::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto_getter, &descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fhierarchicaltable_2eproto[6]);
 }
-
 // ===================================================================
 
 class HierarchicalTableViewRequest::_Internal {
  public:
+  using HasBits = decltype(std::declval<HierarchicalTableViewRequest>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+    8 * PROTOBUF_FIELD_OFFSET(HierarchicalTableViewRequest, _impl_._has_bits_);
+  static constexpr ::int32_t kOneofCaseOffset =
+    PROTOBUF_FIELD_OFFSET(::io::deephaven::proto::backplane::grpc::HierarchicalTableViewRequest, _impl_._oneof_case_);
   static const ::io::deephaven::proto::backplane::grpc::Ticket& result_view_id(const HierarchicalTableViewRequest* msg);
+  static void set_has_result_view_id(HasBits* has_bits) {
+    (*has_bits)[0] |= 1u;
+  }
   static const ::io::deephaven::proto::backplane::grpc::Ticket& hierarchical_table_id(const HierarchicalTableViewRequest* msg);
   static const ::io::deephaven::proto::backplane::grpc::Ticket& existing_view_id(const HierarchicalTableViewRequest* msg);
   static const ::io::deephaven::proto::backplane::grpc::HierarchicalTableViewKeyTableDescriptor& expansions(const HierarchicalTableViewRequest* msg);
+  static void set_has_expansions(HasBits* has_bits) {
+    (*has_bits)[0] |= 2u;
+  }
 };
 
-const ::io::deephaven::proto::backplane::grpc::Ticket&
-HierarchicalTableViewRequest::_Internal::result_view_id(const HierarchicalTableViewRequest* msg) {
+const ::io::deephaven::proto::backplane::grpc::Ticket& HierarchicalTableViewRequest::_Internal::result_view_id(const HierarchicalTableViewRequest* msg) {
   return *msg->_impl_.result_view_id_;
 }
-const ::io::deephaven::proto::backplane::grpc::Ticket&
-HierarchicalTableViewRequest::_Internal::hierarchical_table_id(const HierarchicalTableViewRequest* msg) {
+const ::io::deephaven::proto::backplane::grpc::Ticket& HierarchicalTableViewRequest::_Internal::hierarchical_table_id(const HierarchicalTableViewRequest* msg) {
   return *msg->_impl_.target_.hierarchical_table_id_;
 }
-const ::io::deephaven::proto::backplane::grpc::Ticket&
-HierarchicalTableViewRequest::_Internal::existing_view_id(const HierarchicalTableViewRequest* msg) {
+const ::io::deephaven::proto::backplane::grpc::Ticket& HierarchicalTableViewRequest::_Internal::existing_view_id(const HierarchicalTableViewRequest* msg) {
   return *msg->_impl_.target_.existing_view_id_;
 }
-const ::io::deephaven::proto::backplane::grpc::HierarchicalTableViewKeyTableDescriptor&
-HierarchicalTableViewRequest::_Internal::expansions(const HierarchicalTableViewRequest* msg) {
+const ::io::deephaven::proto::backplane::grpc::HierarchicalTableViewKeyTableDescriptor& HierarchicalTableViewRequest::_Internal::expansions(const HierarchicalTableViewRequest* msg) {
   return *msg->_impl_.expansions_;
 }
 void HierarchicalTableViewRequest::clear_result_view_id() {
-  if (GetArenaForAllocation() == nullptr && _impl_.result_view_id_ != nullptr) {
-    delete _impl_.result_view_id_;
-  }
-  _impl_.result_view_id_ = nullptr;
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  if (_impl_.result_view_id_ != nullptr) _impl_.result_view_id_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000001u;
 }
 void HierarchicalTableViewRequest::set_allocated_hierarchical_table_id(::io::deephaven::proto::backplane::grpc::Ticket* hierarchical_table_id) {
-  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  ::google::protobuf::Arena* message_arena = GetArena();
   clear_target();
   if (hierarchical_table_id) {
-    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
-                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(hierarchical_table_id));
+    ::google::protobuf::Arena* submessage_arena = reinterpret_cast<::google::protobuf::MessageLite*>(hierarchical_table_id)->GetArena();
     if (message_arena != submessage_arena) {
-      hierarchical_table_id = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, hierarchical_table_id, submessage_arena);
+      hierarchical_table_id = ::google::protobuf::internal::GetOwnedMessage(message_arena, hierarchical_table_id, submessage_arena);
     }
     set_has_hierarchical_table_id();
     _impl_.target_.hierarchical_table_id_ = hierarchical_table_id;
@@ -1855,23 +1944,21 @@ void HierarchicalTableViewRequest::set_allocated_hierarchical_table_id(::io::dee
   // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.HierarchicalTableViewRequest.hierarchical_table_id)
 }
 void HierarchicalTableViewRequest::clear_hierarchical_table_id() {
-  if (_internal_has_hierarchical_table_id()) {
-    if (GetArenaForAllocation() == nullptr) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  if (target_case() == kHierarchicalTableId) {
+    if (GetArena() == nullptr) {
       delete _impl_.target_.hierarchical_table_id_;
     }
     clear_has_target();
   }
 }
 void HierarchicalTableViewRequest::set_allocated_existing_view_id(::io::deephaven::proto::backplane::grpc::Ticket* existing_view_id) {
-  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  ::google::protobuf::Arena* message_arena = GetArena();
   clear_target();
   if (existing_view_id) {
-    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-        ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(
-                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(existing_view_id));
+    ::google::protobuf::Arena* submessage_arena = reinterpret_cast<::google::protobuf::MessageLite*>(existing_view_id)->GetArena();
     if (message_arena != submessage_arena) {
-      existing_view_id = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, existing_view_id, submessage_arena);
+      existing_view_id = ::google::protobuf::internal::GetOwnedMessage(message_arena, existing_view_id, submessage_arena);
     }
     set_has_existing_view_id();
     _impl_.target_.existing_view_id_ = existing_view_id;
@@ -1879,102 +1966,99 @@ void HierarchicalTableViewRequest::set_allocated_existing_view_id(::io::deephave
   // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.HierarchicalTableViewRequest.existing_view_id)
 }
 void HierarchicalTableViewRequest::clear_existing_view_id() {
-  if (_internal_has_existing_view_id()) {
-    if (GetArenaForAllocation() == nullptr) {
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  if (target_case() == kExistingViewId) {
+    if (GetArena() == nullptr) {
       delete _impl_.target_.existing_view_id_;
     }
     clear_has_target();
   }
 }
-HierarchicalTableViewRequest::HierarchicalTableViewRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor(arena, is_message_owned);
+HierarchicalTableViewRequest::HierarchicalTableViewRequest(::google::protobuf::Arena* arena)
+    : ::google::protobuf::Message(arena) {
+  SharedCtor(arena);
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.HierarchicalTableViewRequest)
 }
-HierarchicalTableViewRequest::HierarchicalTableViewRequest(const HierarchicalTableViewRequest& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message() {
-  HierarchicalTableViewRequest* const _this = this; (void)_this;
-  new (&_impl_) Impl_{
-      decltype(_impl_.result_view_id_){nullptr}
-    , decltype(_impl_.expansions_){nullptr}
-    , decltype(_impl_.target_){}
-    , /*decltype(_impl_._cached_size_)*/{}
-    , /*decltype(_impl_._oneof_case_)*/{}};
+inline PROTOBUF_NDEBUG_INLINE HierarchicalTableViewRequest::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
+    const Impl_& from)
+      : _has_bits_{from._has_bits_},
+        _cached_size_{0},
+        target_{},
+        _oneof_case_{from._oneof_case_[0]} {}
 
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  if (from._internal_has_result_view_id()) {
-    _this->_impl_.result_view_id_ = new ::io::deephaven::proto::backplane::grpc::Ticket(*from._impl_.result_view_id_);
-  }
-  if (from._internal_has_expansions()) {
-    _this->_impl_.expansions_ = new ::io::deephaven::proto::backplane::grpc::HierarchicalTableViewKeyTableDescriptor(*from._impl_.expansions_);
-  }
-  clear_has_target();
-  switch (from.target_case()) {
-    case kHierarchicalTableId: {
-      _this->_internal_mutable_hierarchical_table_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
-          from._internal_hierarchical_table_id());
+HierarchicalTableViewRequest::HierarchicalTableViewRequest(
+    ::google::protobuf::Arena* arena,
+    const HierarchicalTableViewRequest& from)
+    : ::google::protobuf::Message(arena) {
+  HierarchicalTableViewRequest* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_);
+  ::uint32_t cached_has_bits = _impl_._has_bits_[0];
+  _impl_.result_view_id_ = (cached_has_bits & 0x00000001u)
+                ? CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::Ticket>(arena, *from._impl_.result_view_id_)
+                : nullptr;
+  _impl_.expansions_ = (cached_has_bits & 0x00000002u)
+                ? CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::HierarchicalTableViewKeyTableDescriptor>(arena, *from._impl_.expansions_)
+                : nullptr;
+  switch (target_case()) {
+    case TARGET_NOT_SET:
       break;
-    }
-    case kExistingViewId: {
-      _this->_internal_mutable_existing_view_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
-          from._internal_existing_view_id());
-      break;
-    }
-    case TARGET_NOT_SET: {
-      break;
-    }
+      case kHierarchicalTableId:
+        _impl_.target_.hierarchical_table_id_ = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::Ticket>(arena, *from._impl_.target_.hierarchical_table_id_);
+        break;
+      case kExistingViewId:
+        _impl_.target_.existing_view_id_ = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::Ticket>(arena, *from._impl_.target_.existing_view_id_);
+        break;
   }
+
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.HierarchicalTableViewRequest)
 }
+inline PROTOBUF_NDEBUG_INLINE HierarchicalTableViewRequest::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* arena)
+      : _cached_size_{0},
+        target_{},
+        _oneof_case_{} {}
 
-inline void HierarchicalTableViewRequest::SharedCtor(
-    ::_pb::Arena* arena, bool is_message_owned) {
-  (void)arena;
-  (void)is_message_owned;
-  new (&_impl_) Impl_{
-      decltype(_impl_.result_view_id_){nullptr}
-    , decltype(_impl_.expansions_){nullptr}
-    , decltype(_impl_.target_){}
-    , /*decltype(_impl_._cached_size_)*/{}
-    , /*decltype(_impl_._oneof_case_)*/{}
-  };
-  clear_has_target();
+inline void HierarchicalTableViewRequest::SharedCtor(::_pb::Arena* arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  ::memset(reinterpret_cast<char *>(&_impl_) +
+               offsetof(Impl_, result_view_id_),
+           0,
+           offsetof(Impl_, expansions_) -
+               offsetof(Impl_, result_view_id_) +
+               sizeof(Impl_::expansions_));
 }
-
 HierarchicalTableViewRequest::~HierarchicalTableViewRequest() {
   // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.HierarchicalTableViewRequest)
-  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
-  (void)arena;
-    return;
-  }
+  _internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
   SharedDtor();
 }
-
 inline void HierarchicalTableViewRequest::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  if (this != internal_default_instance()) delete _impl_.result_view_id_;
-  if (this != internal_default_instance()) delete _impl_.expansions_;
+  ABSL_DCHECK(GetArena() == nullptr);
+  delete _impl_.result_view_id_;
+  delete _impl_.expansions_;
   if (has_target()) {
     clear_target();
   }
-}
-
-void HierarchicalTableViewRequest::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
+  _impl_.~Impl_();
 }
 
 void HierarchicalTableViewRequest::clear_target() {
 // @@protoc_insertion_point(one_of_clear_start:io.deephaven.proto.backplane.grpc.HierarchicalTableViewRequest)
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
   switch (target_case()) {
     case kHierarchicalTableId: {
-      if (GetArenaForAllocation() == nullptr) {
+      if (GetArena() == nullptr) {
         delete _impl_.target_.hierarchical_table_id_;
       }
       break;
     }
     case kExistingViewId: {
-      if (GetArenaForAllocation() == nullptr) {
+      if (GetArena() == nullptr) {
         delete _impl_.target_.existing_view_id_;
       }
       break;
@@ -1987,162 +2071,162 @@ void HierarchicalTableViewRequest::clear_target() {
 }
 
 
-void HierarchicalTableViewRequest::Clear() {
+PROTOBUF_NOINLINE void HierarchicalTableViewRequest::Clear() {
 // @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.HierarchicalTableViewRequest)
-  uint32_t cached_has_bits = 0;
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  if (GetArenaForAllocation() == nullptr && _impl_.result_view_id_ != nullptr) {
-    delete _impl_.result_view_id_;
-  }
-  _impl_.result_view_id_ = nullptr;
-  if (GetArenaForAllocation() == nullptr && _impl_.expansions_ != nullptr) {
-    delete _impl_.expansions_;
-  }
-  _impl_.expansions_ = nullptr;
-  clear_target();
-  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
-}
-
-const char* HierarchicalTableViewRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
-#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  while (!ctx->Done(&ptr)) {
-    uint32_t tag;
-    ptr = ::_pbi::ReadTag(ptr, &tag);
-    switch (tag >> 3) {
-      // .io.deephaven.proto.backplane.grpc.Ticket result_view_id = 1;
-      case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
-          ptr = ctx->ParseMessage(_internal_mutable_result_view_id(), ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      // .io.deephaven.proto.backplane.grpc.Ticket hierarchical_table_id = 2;
-      case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
-          ptr = ctx->ParseMessage(_internal_mutable_hierarchical_table_id(), ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      // .io.deephaven.proto.backplane.grpc.Ticket existing_view_id = 3;
-      case 3:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
-          ptr = ctx->ParseMessage(_internal_mutable_existing_view_id(), ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      // .io.deephaven.proto.backplane.grpc.HierarchicalTableViewKeyTableDescriptor expansions = 4;
-      case 4:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 34)) {
-          ptr = ctx->ParseMessage(_internal_mutable_expansions(), ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      default:
-        goto handle_unusual;
-    }  // switch
-  handle_unusual:
-    if ((tag == 0) || ((tag & 7) == 4)) {
-      CHK_(ptr);
-      ctx->SetLastTag(tag);
-      goto message_done;
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000003u) {
+    if (cached_has_bits & 0x00000001u) {
+      ABSL_DCHECK(_impl_.result_view_id_ != nullptr);
+      _impl_.result_view_id_->Clear();
     }
-    ptr = UnknownFieldParse(
-        tag,
-        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-        ptr, ctx);
-    CHK_(ptr != nullptr);
-  }  // while
-message_done:
-  return ptr;
-failure:
-  ptr = nullptr;
-  goto message_done;
-#undef CHK_
+    if (cached_has_bits & 0x00000002u) {
+      ABSL_DCHECK(_impl_.expansions_ != nullptr);
+      _impl_.expansions_->Clear();
+    }
+  }
+  clear_target();
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
 }
 
-uint8_t* HierarchicalTableViewRequest::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.HierarchicalTableViewRequest)
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+const char* HierarchicalTableViewRequest::_InternalParse(
+    const char* ptr, ::_pbi::ParseContext* ctx) {
+  ptr = ::_pbi::TcParser::ParseLoop(this, ptr, ctx, &_table_.header);
+  return ptr;
+}
 
+
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<1, 4, 4, 0, 2> HierarchicalTableViewRequest::_table_ = {
+  {
+    PROTOBUF_FIELD_OFFSET(HierarchicalTableViewRequest, _impl_._has_bits_),
+    0, // no _extensions_
+    4, 8,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967280,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    4,  // num_field_entries
+    4,  // num_aux_entries
+    offsetof(decltype(_table_), aux_entries),
+    &_HierarchicalTableViewRequest_default_instance_._instance,
+    ::_pbi::TcParser::GenericFallback,  // fallback
+  }, {{
+    // .io.deephaven.proto.backplane.grpc.HierarchicalTableViewKeyTableDescriptor expansions = 4;
+    {::_pbi::TcParser::FastMtS1,
+     {34, 1, 3, PROTOBUF_FIELD_OFFSET(HierarchicalTableViewRequest, _impl_.expansions_)}},
+    // .io.deephaven.proto.backplane.grpc.Ticket result_view_id = 1;
+    {::_pbi::TcParser::FastMtS1,
+     {10, 0, 0, PROTOBUF_FIELD_OFFSET(HierarchicalTableViewRequest, _impl_.result_view_id_)}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // .io.deephaven.proto.backplane.grpc.Ticket result_view_id = 1;
+    {PROTOBUF_FIELD_OFFSET(HierarchicalTableViewRequest, _impl_.result_view_id_), _Internal::kHasBitsOffset + 0, 0,
+    (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
+    // .io.deephaven.proto.backplane.grpc.Ticket hierarchical_table_id = 2;
+    {PROTOBUF_FIELD_OFFSET(HierarchicalTableViewRequest, _impl_.target_.hierarchical_table_id_), _Internal::kOneofCaseOffset + 0, 1,
+    (0 | ::_fl::kFcOneof | ::_fl::kMessage | ::_fl::kTvTable)},
+    // .io.deephaven.proto.backplane.grpc.Ticket existing_view_id = 3;
+    {PROTOBUF_FIELD_OFFSET(HierarchicalTableViewRequest, _impl_.target_.existing_view_id_), _Internal::kOneofCaseOffset + 0, 2,
+    (0 | ::_fl::kFcOneof | ::_fl::kMessage | ::_fl::kTvTable)},
+    // .io.deephaven.proto.backplane.grpc.HierarchicalTableViewKeyTableDescriptor expansions = 4;
+    {PROTOBUF_FIELD_OFFSET(HierarchicalTableViewRequest, _impl_.expansions_), _Internal::kHasBitsOffset + 1, 3,
+    (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
+  }}, {{
+    {::_pbi::TcParser::GetTable<::io::deephaven::proto::backplane::grpc::Ticket>()},
+    {::_pbi::TcParser::GetTable<::io::deephaven::proto::backplane::grpc::Ticket>()},
+    {::_pbi::TcParser::GetTable<::io::deephaven::proto::backplane::grpc::Ticket>()},
+    {::_pbi::TcParser::GetTable<::io::deephaven::proto::backplane::grpc::HierarchicalTableViewKeyTableDescriptor>()},
+  }}, {{
+  }},
+};
+
+::uint8_t* HierarchicalTableViewRequest::_InternalSerialize(
+    ::uint8_t* target,
+    ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.HierarchicalTableViewRequest)
+  ::uint32_t cached_has_bits = 0;
+  (void)cached_has_bits;
+
+  cached_has_bits = _impl_._has_bits_[0];
   // .io.deephaven.proto.backplane.grpc.Ticket result_view_id = 1;
-  if (this->_internal_has_result_view_id()) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(1, _Internal::result_view_id(this),
+  if (cached_has_bits & 0x00000001u) {
+    target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+        1, _Internal::result_view_id(this),
         _Internal::result_view_id(this).GetCachedSize(), target, stream);
   }
 
-  // .io.deephaven.proto.backplane.grpc.Ticket hierarchical_table_id = 2;
-  if (_internal_has_hierarchical_table_id()) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(2, _Internal::hierarchical_table_id(this),
-        _Internal::hierarchical_table_id(this).GetCachedSize(), target, stream);
+  switch (target_case()) {
+    case kHierarchicalTableId: {
+      target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+          2, _Internal::hierarchical_table_id(this),
+          _Internal::hierarchical_table_id(this).GetCachedSize(), target, stream);
+      break;
+    }
+    case kExistingViewId: {
+      target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+          3, _Internal::existing_view_id(this),
+          _Internal::existing_view_id(this).GetCachedSize(), target, stream);
+      break;
+    }
+    default:
+      break;
   }
-
-  // .io.deephaven.proto.backplane.grpc.Ticket existing_view_id = 3;
-  if (_internal_has_existing_view_id()) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(3, _Internal::existing_view_id(this),
-        _Internal::existing_view_id(this).GetCachedSize(), target, stream);
-  }
-
   // .io.deephaven.proto.backplane.grpc.HierarchicalTableViewKeyTableDescriptor expansions = 4;
-  if (this->_internal_has_expansions()) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(4, _Internal::expansions(this),
+  if (cached_has_bits & 0x00000002u) {
+    target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+        4, _Internal::expansions(this),
         _Internal::expansions(this).GetCachedSize(), target, stream);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
   }
   // @@protoc_insertion_point(serialize_to_array_end:io.deephaven.proto.backplane.grpc.HierarchicalTableViewRequest)
   return target;
 }
 
-size_t HierarchicalTableViewRequest::ByteSizeLong() const {
+::size_t HierarchicalTableViewRequest::ByteSizeLong() const {
 // @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.HierarchicalTableViewRequest)
-  size_t total_size = 0;
+  ::size_t total_size = 0;
 
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // .io.deephaven.proto.backplane.grpc.Ticket result_view_id = 1;
-  if (this->_internal_has_result_view_id()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *_impl_.result_view_id_);
-  }
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000003u) {
+    // .io.deephaven.proto.backplane.grpc.Ticket result_view_id = 1;
+    if (cached_has_bits & 0x00000001u) {
+      total_size +=
+          1 + ::google::protobuf::internal::WireFormatLite::MessageSize(*_impl_.result_view_id_);
+    }
 
-  // .io.deephaven.proto.backplane.grpc.HierarchicalTableViewKeyTableDescriptor expansions = 4;
-  if (this->_internal_has_expansions()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *_impl_.expansions_);
-  }
+    // .io.deephaven.proto.backplane.grpc.HierarchicalTableViewKeyTableDescriptor expansions = 4;
+    if (cached_has_bits & 0x00000002u) {
+      total_size +=
+          1 + ::google::protobuf::internal::WireFormatLite::MessageSize(*_impl_.expansions_);
+    }
 
+  }
   switch (target_case()) {
     // .io.deephaven.proto.backplane.grpc.Ticket hierarchical_table_id = 2;
     case kHierarchicalTableId: {
-      total_size += 1 +
-        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-          *_impl_.target_.hierarchical_table_id_);
+      total_size +=
+          1 + ::google::protobuf::internal::WireFormatLite::MessageSize(*_impl_.target_.hierarchical_table_id_);
       break;
     }
     // .io.deephaven.proto.backplane.grpc.Ticket existing_view_id = 3;
     case kExistingViewId: {
-      total_size += 1 +
-        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-          *_impl_.target_.existing_view_id_);
+      total_size +=
+          1 + ::google::protobuf::internal::WireFormatLite::MessageSize(*_impl_.target_.existing_view_id_);
       break;
     }
     case TARGET_NOT_SET: {
@@ -2152,28 +2236,32 @@ size_t HierarchicalTableViewRequest::ByteSizeLong() const {
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData HierarchicalTableViewRequest::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
-    HierarchicalTableViewRequest::MergeImpl
+const ::google::protobuf::Message::ClassData HierarchicalTableViewRequest::_class_data_ = {
+    HierarchicalTableViewRequest::MergeImpl,
+    nullptr,  // OnDemandRegisterArenaDtor
 };
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*HierarchicalTableViewRequest::GetClassData() const { return &_class_data_; }
+const ::google::protobuf::Message::ClassData* HierarchicalTableViewRequest::GetClassData() const {
+  return &_class_data_;
+}
 
-
-void HierarchicalTableViewRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+void HierarchicalTableViewRequest::MergeImpl(::google::protobuf::Message& to_msg, const ::google::protobuf::Message& from_msg) {
   auto* const _this = static_cast<HierarchicalTableViewRequest*>(&to_msg);
   auto& from = static_cast<const HierarchicalTableViewRequest&>(from_msg);
   // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.HierarchicalTableViewRequest)
-  GOOGLE_DCHECK_NE(&from, _this);
-  uint32_t cached_has_bits = 0;
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (from._internal_has_result_view_id()) {
-    _this->_internal_mutable_result_view_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
-        from._internal_result_view_id());
-  }
-  if (from._internal_has_expansions()) {
-    _this->_internal_mutable_expansions()->::io::deephaven::proto::backplane::grpc::HierarchicalTableViewKeyTableDescriptor::MergeFrom(
-        from._internal_expansions());
+  cached_has_bits = from._impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000003u) {
+    if (cached_has_bits & 0x00000001u) {
+      _this->_internal_mutable_result_view_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
+          from._internal_result_view_id());
+    }
+    if (cached_has_bits & 0x00000002u) {
+      _this->_internal_mutable_expansions()->::io::deephaven::proto::backplane::grpc::HierarchicalTableViewKeyTableDescriptor::MergeFrom(
+          from._internal_expansions());
+    }
   }
   switch (from.target_case()) {
     case kHierarchicalTableId: {
@@ -2190,7 +2278,7 @@ void HierarchicalTableViewRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& t
       break;
     }
   }
-  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void HierarchicalTableViewRequest::CopyFrom(const HierarchicalTableViewRequest& from) {
@@ -2200,14 +2288,18 @@ void HierarchicalTableViewRequest::CopyFrom(const HierarchicalTableViewRequest& 
   MergeFrom(from);
 }
 
-bool HierarchicalTableViewRequest::IsInitialized() const {
+PROTOBUF_NOINLINE bool HierarchicalTableViewRequest::IsInitialized() const {
   return true;
 }
 
-void HierarchicalTableViewRequest::InternalSwap(HierarchicalTableViewRequest* other) {
+::_pbi::CachedSize* HierarchicalTableViewRequest::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
+void HierarchicalTableViewRequest::InternalSwap(HierarchicalTableViewRequest* PROTOBUF_RESTRICT other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  ::google::protobuf::internal::memswap<
       PROTOBUF_FIELD_OFFSET(HierarchicalTableViewRequest, _impl_.expansions_)
       + sizeof(HierarchicalTableViewRequest::_impl_.expansions_)
       - PROTOBUF_FIELD_OFFSET(HierarchicalTableViewRequest, _impl_.result_view_id_)>(
@@ -2217,245 +2309,237 @@ void HierarchicalTableViewRequest::InternalSwap(HierarchicalTableViewRequest* ot
   swap(_impl_._oneof_case_[0], other->_impl_._oneof_case_[0]);
 }
 
-::PROTOBUF_NAMESPACE_ID::Metadata HierarchicalTableViewRequest::GetMetadata() const {
+::google::protobuf::Metadata HierarchicalTableViewRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto_getter, &descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fhierarchicaltable_2eproto[7]);
 }
-
 // ===================================================================
 
 class HierarchicalTableViewKeyTableDescriptor::_Internal {
  public:
   using HasBits = decltype(std::declval<HierarchicalTableViewKeyTableDescriptor>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+    8 * PROTOBUF_FIELD_OFFSET(HierarchicalTableViewKeyTableDescriptor, _impl_._has_bits_);
   static const ::io::deephaven::proto::backplane::grpc::Ticket& key_table_id(const HierarchicalTableViewKeyTableDescriptor* msg);
+  static void set_has_key_table_id(HasBits* has_bits) {
+    (*has_bits)[0] |= 2u;
+  }
   static void set_has_key_table_action_column(HasBits* has_bits) {
     (*has_bits)[0] |= 1u;
   }
 };
 
-const ::io::deephaven::proto::backplane::grpc::Ticket&
-HierarchicalTableViewKeyTableDescriptor::_Internal::key_table_id(const HierarchicalTableViewKeyTableDescriptor* msg) {
+const ::io::deephaven::proto::backplane::grpc::Ticket& HierarchicalTableViewKeyTableDescriptor::_Internal::key_table_id(const HierarchicalTableViewKeyTableDescriptor* msg) {
   return *msg->_impl_.key_table_id_;
 }
 void HierarchicalTableViewKeyTableDescriptor::clear_key_table_id() {
-  if (GetArenaForAllocation() == nullptr && _impl_.key_table_id_ != nullptr) {
-    delete _impl_.key_table_id_;
-  }
-  _impl_.key_table_id_ = nullptr;
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  if (_impl_.key_table_id_ != nullptr) _impl_.key_table_id_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000002u;
 }
-HierarchicalTableViewKeyTableDescriptor::HierarchicalTableViewKeyTableDescriptor(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor(arena, is_message_owned);
+HierarchicalTableViewKeyTableDescriptor::HierarchicalTableViewKeyTableDescriptor(::google::protobuf::Arena* arena)
+    : ::google::protobuf::Message(arena) {
+  SharedCtor(arena);
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.HierarchicalTableViewKeyTableDescriptor)
 }
-HierarchicalTableViewKeyTableDescriptor::HierarchicalTableViewKeyTableDescriptor(const HierarchicalTableViewKeyTableDescriptor& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message() {
-  HierarchicalTableViewKeyTableDescriptor* const _this = this; (void)_this;
-  new (&_impl_) Impl_{
-      decltype(_impl_._has_bits_){from._impl_._has_bits_}
-    , /*decltype(_impl_._cached_size_)*/{}
-    , decltype(_impl_.key_table_action_column_){}
-    , decltype(_impl_.key_table_id_){nullptr}};
+inline PROTOBUF_NDEBUG_INLINE HierarchicalTableViewKeyTableDescriptor::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
+    const Impl_& from)
+      : _has_bits_{from._has_bits_},
+        _cached_size_{0},
+        key_table_action_column_(arena, from.key_table_action_column_) {}
 
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  _impl_.key_table_action_column_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.key_table_action_column_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (from._internal_has_key_table_action_column()) {
-    _this->_impl_.key_table_action_column_.Set(from._internal_key_table_action_column(), 
-      _this->GetArenaForAllocation());
-  }
-  if (from._internal_has_key_table_id()) {
-    _this->_impl_.key_table_id_ = new ::io::deephaven::proto::backplane::grpc::Ticket(*from._impl_.key_table_id_);
-  }
+HierarchicalTableViewKeyTableDescriptor::HierarchicalTableViewKeyTableDescriptor(
+    ::google::protobuf::Arena* arena,
+    const HierarchicalTableViewKeyTableDescriptor& from)
+    : ::google::protobuf::Message(arena) {
+  HierarchicalTableViewKeyTableDescriptor* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_);
+  ::uint32_t cached_has_bits = _impl_._has_bits_[0];
+  _impl_.key_table_id_ = (cached_has_bits & 0x00000002u)
+                ? CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::Ticket>(arena, *from._impl_.key_table_id_)
+                : nullptr;
+
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.HierarchicalTableViewKeyTableDescriptor)
 }
+inline PROTOBUF_NDEBUG_INLINE HierarchicalTableViewKeyTableDescriptor::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* arena)
+      : _cached_size_{0},
+        key_table_action_column_(arena) {}
 
-inline void HierarchicalTableViewKeyTableDescriptor::SharedCtor(
-    ::_pb::Arena* arena, bool is_message_owned) {
-  (void)arena;
-  (void)is_message_owned;
-  new (&_impl_) Impl_{
-      decltype(_impl_._has_bits_){}
-    , /*decltype(_impl_._cached_size_)*/{}
-    , decltype(_impl_.key_table_action_column_){}
-    , decltype(_impl_.key_table_id_){nullptr}
-  };
-  _impl_.key_table_action_column_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.key_table_action_column_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+inline void HierarchicalTableViewKeyTableDescriptor::SharedCtor(::_pb::Arena* arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  _impl_.key_table_id_ = {};
 }
-
 HierarchicalTableViewKeyTableDescriptor::~HierarchicalTableViewKeyTableDescriptor() {
   // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.HierarchicalTableViewKeyTableDescriptor)
-  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
-  (void)arena;
-    return;
-  }
+  _internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
   SharedDtor();
 }
-
 inline void HierarchicalTableViewKeyTableDescriptor::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  ABSL_DCHECK(GetArena() == nullptr);
   _impl_.key_table_action_column_.Destroy();
-  if (this != internal_default_instance()) delete _impl_.key_table_id_;
+  delete _impl_.key_table_id_;
+  _impl_.~Impl_();
 }
 
-void HierarchicalTableViewKeyTableDescriptor::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
-
-void HierarchicalTableViewKeyTableDescriptor::Clear() {
+PROTOBUF_NOINLINE void HierarchicalTableViewKeyTableDescriptor::Clear() {
 // @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.HierarchicalTableViewKeyTableDescriptor)
-  uint32_t cached_has_bits = 0;
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
   cached_has_bits = _impl_._has_bits_[0];
-  if (cached_has_bits & 0x00000001u) {
-    _impl_.key_table_action_column_.ClearNonDefaultToEmpty();
-  }
-  if (GetArenaForAllocation() == nullptr && _impl_.key_table_id_ != nullptr) {
-    delete _impl_.key_table_id_;
-  }
-  _impl_.key_table_id_ = nullptr;
-  _impl_._has_bits_.Clear();
-  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
-}
-
-const char* HierarchicalTableViewKeyTableDescriptor::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
-#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  _Internal::HasBits has_bits{};
-  while (!ctx->Done(&ptr)) {
-    uint32_t tag;
-    ptr = ::_pbi::ReadTag(ptr, &tag);
-    switch (tag >> 3) {
-      // .io.deephaven.proto.backplane.grpc.Ticket key_table_id = 1;
-      case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
-          ptr = ctx->ParseMessage(_internal_mutable_key_table_id(), ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      // optional string key_table_action_column = 2;
-      case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
-          auto str = _internal_mutable_key_table_action_column();
-          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
-          CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "io.deephaven.proto.backplane.grpc.HierarchicalTableViewKeyTableDescriptor.key_table_action_column"));
-        } else
-          goto handle_unusual;
-        continue;
-      default:
-        goto handle_unusual;
-    }  // switch
-  handle_unusual:
-    if ((tag == 0) || ((tag & 7) == 4)) {
-      CHK_(ptr);
-      ctx->SetLastTag(tag);
-      goto message_done;
+  if (cached_has_bits & 0x00000003u) {
+    if (cached_has_bits & 0x00000001u) {
+      _impl_.key_table_action_column_.ClearNonDefaultToEmpty();
     }
-    ptr = UnknownFieldParse(
-        tag,
-        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-        ptr, ctx);
-    CHK_(ptr != nullptr);
-  }  // while
-message_done:
-  _impl_._has_bits_.Or(has_bits);
-  return ptr;
-failure:
-  ptr = nullptr;
-  goto message_done;
-#undef CHK_
+    if (cached_has_bits & 0x00000002u) {
+      ABSL_DCHECK(_impl_.key_table_id_ != nullptr);
+      _impl_.key_table_id_->Clear();
+    }
+  }
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
 }
 
-uint8_t* HierarchicalTableViewKeyTableDescriptor::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.HierarchicalTableViewKeyTableDescriptor)
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+const char* HierarchicalTableViewKeyTableDescriptor::_InternalParse(
+    const char* ptr, ::_pbi::ParseContext* ctx) {
+  ptr = ::_pbi::TcParser::ParseLoop(this, ptr, ctx, &_table_.header);
+  return ptr;
+}
 
+
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<1, 2, 1, 105, 2> HierarchicalTableViewKeyTableDescriptor::_table_ = {
+  {
+    PROTOBUF_FIELD_OFFSET(HierarchicalTableViewKeyTableDescriptor, _impl_._has_bits_),
+    0, // no _extensions_
+    2, 8,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967292,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    2,  // num_field_entries
+    1,  // num_aux_entries
+    offsetof(decltype(_table_), aux_entries),
+    &_HierarchicalTableViewKeyTableDescriptor_default_instance_._instance,
+    ::_pbi::TcParser::GenericFallback,  // fallback
+  }, {{
+    // optional string key_table_action_column = 2;
+    {::_pbi::TcParser::FastUS1,
+     {18, 0, 0, PROTOBUF_FIELD_OFFSET(HierarchicalTableViewKeyTableDescriptor, _impl_.key_table_action_column_)}},
+    // .io.deephaven.proto.backplane.grpc.Ticket key_table_id = 1;
+    {::_pbi::TcParser::FastMtS1,
+     {10, 1, 0, PROTOBUF_FIELD_OFFSET(HierarchicalTableViewKeyTableDescriptor, _impl_.key_table_id_)}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // .io.deephaven.proto.backplane.grpc.Ticket key_table_id = 1;
+    {PROTOBUF_FIELD_OFFSET(HierarchicalTableViewKeyTableDescriptor, _impl_.key_table_id_), _Internal::kHasBitsOffset + 1, 0,
+    (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
+    // optional string key_table_action_column = 2;
+    {PROTOBUF_FIELD_OFFSET(HierarchicalTableViewKeyTableDescriptor, _impl_.key_table_action_column_), _Internal::kHasBitsOffset + 0, 0,
+    (0 | ::_fl::kFcOptional | ::_fl::kUtf8String | ::_fl::kRepAString)},
+  }}, {{
+    {::_pbi::TcParser::GetTable<::io::deephaven::proto::backplane::grpc::Ticket>()},
+  }}, {{
+    "\111\0\27\0\0\0\0\0"
+    "io.deephaven.proto.backplane.grpc.HierarchicalTableViewKeyTableDescriptor"
+    "key_table_action_column"
+  }},
+};
+
+::uint8_t* HierarchicalTableViewKeyTableDescriptor::_InternalSerialize(
+    ::uint8_t* target,
+    ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.HierarchicalTableViewKeyTableDescriptor)
+  ::uint32_t cached_has_bits = 0;
+  (void)cached_has_bits;
+
+  cached_has_bits = _impl_._has_bits_[0];
   // .io.deephaven.proto.backplane.grpc.Ticket key_table_id = 1;
-  if (this->_internal_has_key_table_id()) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(1, _Internal::key_table_id(this),
+  if (cached_has_bits & 0x00000002u) {
+    target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+        1, _Internal::key_table_id(this),
         _Internal::key_table_id(this).GetCachedSize(), target, stream);
   }
 
   // optional string key_table_action_column = 2;
-  if (_internal_has_key_table_action_column()) {
-    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_key_table_action_column().data(), static_cast<int>(this->_internal_key_table_action_column().length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "io.deephaven.proto.backplane.grpc.HierarchicalTableViewKeyTableDescriptor.key_table_action_column");
-    target = stream->WriteStringMaybeAliased(
-        2, this->_internal_key_table_action_column(), target);
+  if (cached_has_bits & 0x00000001u) {
+    const std::string& _s = this->_internal_key_table_action_column();
+    ::google::protobuf::internal::WireFormatLite::VerifyUtf8String(
+        _s.data(), static_cast<int>(_s.length()), ::google::protobuf::internal::WireFormatLite::SERIALIZE, "io.deephaven.proto.backplane.grpc.HierarchicalTableViewKeyTableDescriptor.key_table_action_column");
+    target = stream->WriteStringMaybeAliased(2, _s, target);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
   }
   // @@protoc_insertion_point(serialize_to_array_end:io.deephaven.proto.backplane.grpc.HierarchicalTableViewKeyTableDescriptor)
   return target;
 }
 
-size_t HierarchicalTableViewKeyTableDescriptor::ByteSizeLong() const {
+::size_t HierarchicalTableViewKeyTableDescriptor::ByteSizeLong() const {
 // @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.HierarchicalTableViewKeyTableDescriptor)
-  size_t total_size = 0;
+  ::size_t total_size = 0;
 
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // optional string key_table_action_column = 2;
   cached_has_bits = _impl_._has_bits_[0];
-  if (cached_has_bits & 0x00000001u) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_key_table_action_column());
-  }
+  if (cached_has_bits & 0x00000003u) {
+    // optional string key_table_action_column = 2;
+    if (cached_has_bits & 0x00000001u) {
+      total_size += 1 + ::google::protobuf::internal::WireFormatLite::StringSize(
+                                      this->_internal_key_table_action_column());
+    }
 
-  // .io.deephaven.proto.backplane.grpc.Ticket key_table_id = 1;
-  if (this->_internal_has_key_table_id()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *_impl_.key_table_id_);
-  }
+    // .io.deephaven.proto.backplane.grpc.Ticket key_table_id = 1;
+    if (cached_has_bits & 0x00000002u) {
+      total_size +=
+          1 + ::google::protobuf::internal::WireFormatLite::MessageSize(*_impl_.key_table_id_);
+    }
 
+  }
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData HierarchicalTableViewKeyTableDescriptor::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
-    HierarchicalTableViewKeyTableDescriptor::MergeImpl
+const ::google::protobuf::Message::ClassData HierarchicalTableViewKeyTableDescriptor::_class_data_ = {
+    HierarchicalTableViewKeyTableDescriptor::MergeImpl,
+    nullptr,  // OnDemandRegisterArenaDtor
 };
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*HierarchicalTableViewKeyTableDescriptor::GetClassData() const { return &_class_data_; }
+const ::google::protobuf::Message::ClassData* HierarchicalTableViewKeyTableDescriptor::GetClassData() const {
+  return &_class_data_;
+}
 
-
-void HierarchicalTableViewKeyTableDescriptor::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+void HierarchicalTableViewKeyTableDescriptor::MergeImpl(::google::protobuf::Message& to_msg, const ::google::protobuf::Message& from_msg) {
   auto* const _this = static_cast<HierarchicalTableViewKeyTableDescriptor*>(&to_msg);
   auto& from = static_cast<const HierarchicalTableViewKeyTableDescriptor&>(from_msg);
   // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.HierarchicalTableViewKeyTableDescriptor)
-  GOOGLE_DCHECK_NE(&from, _this);
-  uint32_t cached_has_bits = 0;
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (from._internal_has_key_table_action_column()) {
-    _this->_internal_set_key_table_action_column(from._internal_key_table_action_column());
+  cached_has_bits = from._impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000003u) {
+    if (cached_has_bits & 0x00000001u) {
+      _this->_internal_set_key_table_action_column(from._internal_key_table_action_column());
+    }
+    if (cached_has_bits & 0x00000002u) {
+      _this->_internal_mutable_key_table_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
+          from._internal_key_table_id());
+    }
   }
-  if (from._internal_has_key_table_id()) {
-    _this->_internal_mutable_key_table_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
-        from._internal_key_table_id());
-  }
-  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void HierarchicalTableViewKeyTableDescriptor::CopyFrom(const HierarchicalTableViewKeyTableDescriptor& from) {
@@ -2465,44 +2549,47 @@ void HierarchicalTableViewKeyTableDescriptor::CopyFrom(const HierarchicalTableVi
   MergeFrom(from);
 }
 
-bool HierarchicalTableViewKeyTableDescriptor::IsInitialized() const {
+PROTOBUF_NOINLINE bool HierarchicalTableViewKeyTableDescriptor::IsInitialized() const {
   return true;
 }
 
-void HierarchicalTableViewKeyTableDescriptor::InternalSwap(HierarchicalTableViewKeyTableDescriptor* other) {
+::_pbi::CachedSize* HierarchicalTableViewKeyTableDescriptor::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
+void HierarchicalTableViewKeyTableDescriptor::InternalSwap(HierarchicalTableViewKeyTableDescriptor* PROTOBUF_RESTRICT other) {
   using std::swap;
-  auto* lhs_arena = GetArenaForAllocation();
-  auto* rhs_arena = other->GetArenaForAllocation();
+  auto* arena = GetArena();
+  ABSL_DCHECK_EQ(arena, other->GetArena());
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.key_table_action_column_, lhs_arena,
-      &other->_impl_.key_table_action_column_, rhs_arena
-  );
+  ::_pbi::ArenaStringPtr::InternalSwap(&_impl_.key_table_action_column_, &other->_impl_.key_table_action_column_, arena);
   swap(_impl_.key_table_id_, other->_impl_.key_table_id_);
 }
 
-::PROTOBUF_NAMESPACE_ID::Metadata HierarchicalTableViewKeyTableDescriptor::GetMetadata() const {
+::google::protobuf::Metadata HierarchicalTableViewKeyTableDescriptor::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto_getter, &descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fhierarchicaltable_2eproto[8]);
 }
-
 // ===================================================================
 
 class HierarchicalTableViewResponse::_Internal {
  public:
 };
 
-HierarchicalTableViewResponse::HierarchicalTableViewResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase(arena, is_message_owned) {
+HierarchicalTableViewResponse::HierarchicalTableViewResponse(::google::protobuf::Arena* arena)
+    : ::google::protobuf::internal::ZeroFieldsBase(arena) {
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.HierarchicalTableViewResponse)
 }
-HierarchicalTableViewResponse::HierarchicalTableViewResponse(const HierarchicalTableViewResponse& from)
-  : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase() {
-  HierarchicalTableViewResponse* const _this = this; (void)_this;
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+HierarchicalTableViewResponse::HierarchicalTableViewResponse(
+    ::google::protobuf::Arena* arena,
+    const HierarchicalTableViewResponse& from)
+    : ::google::protobuf::internal::ZeroFieldsBase(arena) {
+  HierarchicalTableViewResponse* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.HierarchicalTableViewResponse)
 }
 
@@ -2510,245 +2597,255 @@ HierarchicalTableViewResponse::HierarchicalTableViewResponse(const HierarchicalT
 
 
 
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData HierarchicalTableViewResponse::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::CopyImpl,
-    ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::MergeImpl,
-};
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*HierarchicalTableViewResponse::GetClassData() const { return &_class_data_; }
 
 
 
 
-
-
-
-::PROTOBUF_NAMESPACE_ID::Metadata HierarchicalTableViewResponse::GetMetadata() const {
+::google::protobuf::Metadata HierarchicalTableViewResponse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto_getter, &descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fhierarchicaltable_2eproto[9]);
 }
-
 // ===================================================================
 
 class HierarchicalTableSourceExportRequest::_Internal {
  public:
+  using HasBits = decltype(std::declval<HierarchicalTableSourceExportRequest>()._impl_._has_bits_);
+  static constexpr ::int32_t kHasBitsOffset =
+    8 * PROTOBUF_FIELD_OFFSET(HierarchicalTableSourceExportRequest, _impl_._has_bits_);
   static const ::io::deephaven::proto::backplane::grpc::Ticket& result_table_id(const HierarchicalTableSourceExportRequest* msg);
+  static void set_has_result_table_id(HasBits* has_bits) {
+    (*has_bits)[0] |= 1u;
+  }
   static const ::io::deephaven::proto::backplane::grpc::Ticket& hierarchical_table_id(const HierarchicalTableSourceExportRequest* msg);
+  static void set_has_hierarchical_table_id(HasBits* has_bits) {
+    (*has_bits)[0] |= 2u;
+  }
 };
 
-const ::io::deephaven::proto::backplane::grpc::Ticket&
-HierarchicalTableSourceExportRequest::_Internal::result_table_id(const HierarchicalTableSourceExportRequest* msg) {
+const ::io::deephaven::proto::backplane::grpc::Ticket& HierarchicalTableSourceExportRequest::_Internal::result_table_id(const HierarchicalTableSourceExportRequest* msg) {
   return *msg->_impl_.result_table_id_;
 }
-const ::io::deephaven::proto::backplane::grpc::Ticket&
-HierarchicalTableSourceExportRequest::_Internal::hierarchical_table_id(const HierarchicalTableSourceExportRequest* msg) {
+const ::io::deephaven::proto::backplane::grpc::Ticket& HierarchicalTableSourceExportRequest::_Internal::hierarchical_table_id(const HierarchicalTableSourceExportRequest* msg) {
   return *msg->_impl_.hierarchical_table_id_;
 }
 void HierarchicalTableSourceExportRequest::clear_result_table_id() {
-  if (GetArenaForAllocation() == nullptr && _impl_.result_table_id_ != nullptr) {
-    delete _impl_.result_table_id_;
-  }
-  _impl_.result_table_id_ = nullptr;
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  if (_impl_.result_table_id_ != nullptr) _impl_.result_table_id_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000001u;
 }
 void HierarchicalTableSourceExportRequest::clear_hierarchical_table_id() {
-  if (GetArenaForAllocation() == nullptr && _impl_.hierarchical_table_id_ != nullptr) {
-    delete _impl_.hierarchical_table_id_;
-  }
-  _impl_.hierarchical_table_id_ = nullptr;
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  if (_impl_.hierarchical_table_id_ != nullptr) _impl_.hierarchical_table_id_->Clear();
+  _impl_._has_bits_[0] &= ~0x00000002u;
 }
-HierarchicalTableSourceExportRequest::HierarchicalTableSourceExportRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor(arena, is_message_owned);
+HierarchicalTableSourceExportRequest::HierarchicalTableSourceExportRequest(::google::protobuf::Arena* arena)
+    : ::google::protobuf::Message(arena) {
+  SharedCtor(arena);
   // @@protoc_insertion_point(arena_constructor:io.deephaven.proto.backplane.grpc.HierarchicalTableSourceExportRequest)
 }
-HierarchicalTableSourceExportRequest::HierarchicalTableSourceExportRequest(const HierarchicalTableSourceExportRequest& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message() {
-  HierarchicalTableSourceExportRequest* const _this = this; (void)_this;
-  new (&_impl_) Impl_{
-      decltype(_impl_.result_table_id_){nullptr}
-    , decltype(_impl_.hierarchical_table_id_){nullptr}
-    , /*decltype(_impl_._cached_size_)*/{}};
+inline PROTOBUF_NDEBUG_INLINE HierarchicalTableSourceExportRequest::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility, ::google::protobuf::Arena* arena,
+    const Impl_& from)
+      : _has_bits_{from._has_bits_},
+        _cached_size_{0} {}
 
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  if (from._internal_has_result_table_id()) {
-    _this->_impl_.result_table_id_ = new ::io::deephaven::proto::backplane::grpc::Ticket(*from._impl_.result_table_id_);
-  }
-  if (from._internal_has_hierarchical_table_id()) {
-    _this->_impl_.hierarchical_table_id_ = new ::io::deephaven::proto::backplane::grpc::Ticket(*from._impl_.hierarchical_table_id_);
-  }
+HierarchicalTableSourceExportRequest::HierarchicalTableSourceExportRequest(
+    ::google::protobuf::Arena* arena,
+    const HierarchicalTableSourceExportRequest& from)
+    : ::google::protobuf::Message(arena) {
+  HierarchicalTableSourceExportRequest* const _this = this;
+  (void)_this;
+  _internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(
+      from._internal_metadata_);
+  new (&_impl_) Impl_(internal_visibility(), arena, from._impl_);
+  ::uint32_t cached_has_bits = _impl_._has_bits_[0];
+  _impl_.result_table_id_ = (cached_has_bits & 0x00000001u)
+                ? CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::Ticket>(arena, *from._impl_.result_table_id_)
+                : nullptr;
+  _impl_.hierarchical_table_id_ = (cached_has_bits & 0x00000002u)
+                ? CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::Ticket>(arena, *from._impl_.hierarchical_table_id_)
+                : nullptr;
+
   // @@protoc_insertion_point(copy_constructor:io.deephaven.proto.backplane.grpc.HierarchicalTableSourceExportRequest)
 }
+inline PROTOBUF_NDEBUG_INLINE HierarchicalTableSourceExportRequest::Impl_::Impl_(
+    ::google::protobuf::internal::InternalVisibility visibility,
+    ::google::protobuf::Arena* arena)
+      : _cached_size_{0} {}
 
-inline void HierarchicalTableSourceExportRequest::SharedCtor(
-    ::_pb::Arena* arena, bool is_message_owned) {
-  (void)arena;
-  (void)is_message_owned;
-  new (&_impl_) Impl_{
-      decltype(_impl_.result_table_id_){nullptr}
-    , decltype(_impl_.hierarchical_table_id_){nullptr}
-    , /*decltype(_impl_._cached_size_)*/{}
-  };
+inline void HierarchicalTableSourceExportRequest::SharedCtor(::_pb::Arena* arena) {
+  new (&_impl_) Impl_(internal_visibility(), arena);
+  ::memset(reinterpret_cast<char *>(&_impl_) +
+               offsetof(Impl_, result_table_id_),
+           0,
+           offsetof(Impl_, hierarchical_table_id_) -
+               offsetof(Impl_, result_table_id_) +
+               sizeof(Impl_::hierarchical_table_id_));
 }
-
 HierarchicalTableSourceExportRequest::~HierarchicalTableSourceExportRequest() {
   // @@protoc_insertion_point(destructor:io.deephaven.proto.backplane.grpc.HierarchicalTableSourceExportRequest)
-  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
-  (void)arena;
-    return;
-  }
+  _internal_metadata_.Delete<::google::protobuf::UnknownFieldSet>();
   SharedDtor();
 }
-
 inline void HierarchicalTableSourceExportRequest::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  if (this != internal_default_instance()) delete _impl_.result_table_id_;
-  if (this != internal_default_instance()) delete _impl_.hierarchical_table_id_;
+  ABSL_DCHECK(GetArena() == nullptr);
+  delete _impl_.result_table_id_;
+  delete _impl_.hierarchical_table_id_;
+  _impl_.~Impl_();
 }
 
-void HierarchicalTableSourceExportRequest::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
-
-void HierarchicalTableSourceExportRequest::Clear() {
+PROTOBUF_NOINLINE void HierarchicalTableSourceExportRequest::Clear() {
 // @@protoc_insertion_point(message_clear_start:io.deephaven.proto.backplane.grpc.HierarchicalTableSourceExportRequest)
-  uint32_t cached_has_bits = 0;
+  PROTOBUF_TSAN_WRITE(&_impl_._tsan_detect_race);
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  if (GetArenaForAllocation() == nullptr && _impl_.result_table_id_ != nullptr) {
-    delete _impl_.result_table_id_;
-  }
-  _impl_.result_table_id_ = nullptr;
-  if (GetArenaForAllocation() == nullptr && _impl_.hierarchical_table_id_ != nullptr) {
-    delete _impl_.hierarchical_table_id_;
-  }
-  _impl_.hierarchical_table_id_ = nullptr;
-  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
-}
-
-const char* HierarchicalTableSourceExportRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
-#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  while (!ctx->Done(&ptr)) {
-    uint32_t tag;
-    ptr = ::_pbi::ReadTag(ptr, &tag);
-    switch (tag >> 3) {
-      // .io.deephaven.proto.backplane.grpc.Ticket result_table_id = 1;
-      case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 10)) {
-          ptr = ctx->ParseMessage(_internal_mutable_result_table_id(), ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      // .io.deephaven.proto.backplane.grpc.Ticket hierarchical_table_id = 2;
-      case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
-          ptr = ctx->ParseMessage(_internal_mutable_hierarchical_table_id(), ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      default:
-        goto handle_unusual;
-    }  // switch
-  handle_unusual:
-    if ((tag == 0) || ((tag & 7) == 4)) {
-      CHK_(ptr);
-      ctx->SetLastTag(tag);
-      goto message_done;
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000003u) {
+    if (cached_has_bits & 0x00000001u) {
+      ABSL_DCHECK(_impl_.result_table_id_ != nullptr);
+      _impl_.result_table_id_->Clear();
     }
-    ptr = UnknownFieldParse(
-        tag,
-        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-        ptr, ctx);
-    CHK_(ptr != nullptr);
-  }  // while
-message_done:
-  return ptr;
-failure:
-  ptr = nullptr;
-  goto message_done;
-#undef CHK_
+    if (cached_has_bits & 0x00000002u) {
+      ABSL_DCHECK(_impl_.hierarchical_table_id_ != nullptr);
+      _impl_.hierarchical_table_id_->Clear();
+    }
+  }
+  _impl_._has_bits_.Clear();
+  _internal_metadata_.Clear<::google::protobuf::UnknownFieldSet>();
 }
 
-uint8_t* HierarchicalTableSourceExportRequest::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.HierarchicalTableSourceExportRequest)
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
+const char* HierarchicalTableSourceExportRequest::_InternalParse(
+    const char* ptr, ::_pbi::ParseContext* ctx) {
+  ptr = ::_pbi::TcParser::ParseLoop(this, ptr, ctx, &_table_.header);
+  return ptr;
+}
 
+
+PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1
+const ::_pbi::TcParseTable<1, 2, 2, 0, 2> HierarchicalTableSourceExportRequest::_table_ = {
+  {
+    PROTOBUF_FIELD_OFFSET(HierarchicalTableSourceExportRequest, _impl_._has_bits_),
+    0, // no _extensions_
+    2, 8,  // max_field_number, fast_idx_mask
+    offsetof(decltype(_table_), field_lookup_table),
+    4294967292,  // skipmap
+    offsetof(decltype(_table_), field_entries),
+    2,  // num_field_entries
+    2,  // num_aux_entries
+    offsetof(decltype(_table_), aux_entries),
+    &_HierarchicalTableSourceExportRequest_default_instance_._instance,
+    ::_pbi::TcParser::GenericFallback,  // fallback
+  }, {{
+    // .io.deephaven.proto.backplane.grpc.Ticket hierarchical_table_id = 2;
+    {::_pbi::TcParser::FastMtS1,
+     {18, 1, 1, PROTOBUF_FIELD_OFFSET(HierarchicalTableSourceExportRequest, _impl_.hierarchical_table_id_)}},
+    // .io.deephaven.proto.backplane.grpc.Ticket result_table_id = 1;
+    {::_pbi::TcParser::FastMtS1,
+     {10, 0, 0, PROTOBUF_FIELD_OFFSET(HierarchicalTableSourceExportRequest, _impl_.result_table_id_)}},
+  }}, {{
+    65535, 65535
+  }}, {{
+    // .io.deephaven.proto.backplane.grpc.Ticket result_table_id = 1;
+    {PROTOBUF_FIELD_OFFSET(HierarchicalTableSourceExportRequest, _impl_.result_table_id_), _Internal::kHasBitsOffset + 0, 0,
+    (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
+    // .io.deephaven.proto.backplane.grpc.Ticket hierarchical_table_id = 2;
+    {PROTOBUF_FIELD_OFFSET(HierarchicalTableSourceExportRequest, _impl_.hierarchical_table_id_), _Internal::kHasBitsOffset + 1, 1,
+    (0 | ::_fl::kFcOptional | ::_fl::kMessage | ::_fl::kTvTable)},
+  }}, {{
+    {::_pbi::TcParser::GetTable<::io::deephaven::proto::backplane::grpc::Ticket>()},
+    {::_pbi::TcParser::GetTable<::io::deephaven::proto::backplane::grpc::Ticket>()},
+  }}, {{
+  }},
+};
+
+::uint8_t* HierarchicalTableSourceExportRequest::_InternalSerialize(
+    ::uint8_t* target,
+    ::google::protobuf::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:io.deephaven.proto.backplane.grpc.HierarchicalTableSourceExportRequest)
+  ::uint32_t cached_has_bits = 0;
+  (void)cached_has_bits;
+
+  cached_has_bits = _impl_._has_bits_[0];
   // .io.deephaven.proto.backplane.grpc.Ticket result_table_id = 1;
-  if (this->_internal_has_result_table_id()) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(1, _Internal::result_table_id(this),
+  if (cached_has_bits & 0x00000001u) {
+    target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+        1, _Internal::result_table_id(this),
         _Internal::result_table_id(this).GetCachedSize(), target, stream);
   }
 
   // .io.deephaven.proto.backplane.grpc.Ticket hierarchical_table_id = 2;
-  if (this->_internal_has_hierarchical_table_id()) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(2, _Internal::hierarchical_table_id(this),
+  if (cached_has_bits & 0x00000002u) {
+    target = ::google::protobuf::internal::WireFormatLite::InternalWriteMessage(
+        2, _Internal::hierarchical_table_id(this),
         _Internal::hierarchical_table_id(this).GetCachedSize(), target, stream);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+    target =
+        ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+            _internal_metadata_.unknown_fields<::google::protobuf::UnknownFieldSet>(::google::protobuf::UnknownFieldSet::default_instance), target, stream);
   }
   // @@protoc_insertion_point(serialize_to_array_end:io.deephaven.proto.backplane.grpc.HierarchicalTableSourceExportRequest)
   return target;
 }
 
-size_t HierarchicalTableSourceExportRequest::ByteSizeLong() const {
+::size_t HierarchicalTableSourceExportRequest::ByteSizeLong() const {
 // @@protoc_insertion_point(message_byte_size_start:io.deephaven.proto.backplane.grpc.HierarchicalTableSourceExportRequest)
-  size_t total_size = 0;
+  ::size_t total_size = 0;
 
-  uint32_t cached_has_bits = 0;
+  ::uint32_t cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // .io.deephaven.proto.backplane.grpc.Ticket result_table_id = 1;
-  if (this->_internal_has_result_table_id()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *_impl_.result_table_id_);
-  }
+  cached_has_bits = _impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000003u) {
+    // .io.deephaven.proto.backplane.grpc.Ticket result_table_id = 1;
+    if (cached_has_bits & 0x00000001u) {
+      total_size +=
+          1 + ::google::protobuf::internal::WireFormatLite::MessageSize(*_impl_.result_table_id_);
+    }
 
-  // .io.deephaven.proto.backplane.grpc.Ticket hierarchical_table_id = 2;
-  if (this->_internal_has_hierarchical_table_id()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-        *_impl_.hierarchical_table_id_);
-  }
+    // .io.deephaven.proto.backplane.grpc.Ticket hierarchical_table_id = 2;
+    if (cached_has_bits & 0x00000002u) {
+      total_size +=
+          1 + ::google::protobuf::internal::WireFormatLite::MessageSize(*_impl_.hierarchical_table_id_);
+    }
 
+  }
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData HierarchicalTableSourceExportRequest::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
-    HierarchicalTableSourceExportRequest::MergeImpl
+const ::google::protobuf::Message::ClassData HierarchicalTableSourceExportRequest::_class_data_ = {
+    HierarchicalTableSourceExportRequest::MergeImpl,
+    nullptr,  // OnDemandRegisterArenaDtor
 };
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*HierarchicalTableSourceExportRequest::GetClassData() const { return &_class_data_; }
+const ::google::protobuf::Message::ClassData* HierarchicalTableSourceExportRequest::GetClassData() const {
+  return &_class_data_;
+}
 
-
-void HierarchicalTableSourceExportRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+void HierarchicalTableSourceExportRequest::MergeImpl(::google::protobuf::Message& to_msg, const ::google::protobuf::Message& from_msg) {
   auto* const _this = static_cast<HierarchicalTableSourceExportRequest*>(&to_msg);
   auto& from = static_cast<const HierarchicalTableSourceExportRequest&>(from_msg);
   // @@protoc_insertion_point(class_specific_merge_from_start:io.deephaven.proto.backplane.grpc.HierarchicalTableSourceExportRequest)
-  GOOGLE_DCHECK_NE(&from, _this);
-  uint32_t cached_has_bits = 0;
+  ABSL_DCHECK_NE(&from, _this);
+  ::uint32_t cached_has_bits = 0;
   (void) cached_has_bits;
 
-  if (from._internal_has_result_table_id()) {
-    _this->_internal_mutable_result_table_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
-        from._internal_result_table_id());
+  cached_has_bits = from._impl_._has_bits_[0];
+  if (cached_has_bits & 0x00000003u) {
+    if (cached_has_bits & 0x00000001u) {
+      _this->_internal_mutable_result_table_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
+          from._internal_result_table_id());
+    }
+    if (cached_has_bits & 0x00000002u) {
+      _this->_internal_mutable_hierarchical_table_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
+          from._internal_hierarchical_table_id());
+    }
   }
-  if (from._internal_has_hierarchical_table_id()) {
-    _this->_internal_mutable_hierarchical_table_id()->::io::deephaven::proto::backplane::grpc::Ticket::MergeFrom(
-        from._internal_hierarchical_table_id());
-  }
-  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_internal_metadata_.MergeFrom<::google::protobuf::UnknownFieldSet>(from._internal_metadata_);
 }
 
 void HierarchicalTableSourceExportRequest::CopyFrom(const HierarchicalTableSourceExportRequest& from) {
@@ -2758,14 +2855,18 @@ void HierarchicalTableSourceExportRequest::CopyFrom(const HierarchicalTableSourc
   MergeFrom(from);
 }
 
-bool HierarchicalTableSourceExportRequest::IsInitialized() const {
+PROTOBUF_NOINLINE bool HierarchicalTableSourceExportRequest::IsInitialized() const {
   return true;
 }
 
-void HierarchicalTableSourceExportRequest::InternalSwap(HierarchicalTableSourceExportRequest* other) {
+::_pbi::CachedSize* HierarchicalTableSourceExportRequest::AccessCachedSize() const {
+  return &_impl_._cached_size_;
+}
+void HierarchicalTableSourceExportRequest::InternalSwap(HierarchicalTableSourceExportRequest* PROTOBUF_RESTRICT other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+  swap(_impl_._has_bits_[0], other->_impl_._has_bits_[0]);
+  ::google::protobuf::internal::memswap<
       PROTOBUF_FIELD_OFFSET(HierarchicalTableSourceExportRequest, _impl_.hierarchical_table_id_)
       + sizeof(HierarchicalTableSourceExportRequest::_impl_.hierarchical_table_id_)
       - PROTOBUF_FIELD_OFFSET(HierarchicalTableSourceExportRequest, _impl_.result_table_id_)>(
@@ -2773,64 +2874,20 @@ void HierarchicalTableSourceExportRequest::InternalSwap(HierarchicalTableSourceE
           reinterpret_cast<char*>(&other->_impl_.result_table_id_));
 }
 
-::PROTOBUF_NAMESPACE_ID::Metadata HierarchicalTableSourceExportRequest::GetMetadata() const {
+::google::protobuf::Metadata HierarchicalTableSourceExportRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto_getter, &descriptor_table_deephaven_2fproto_2fhierarchicaltable_2eproto_once,
       file_level_metadata_deephaven_2fproto_2fhierarchicaltable_2eproto[10]);
 }
-
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace grpc
 }  // namespace backplane
 }  // namespace proto
 }  // namespace deephaven
 }  // namespace io
-PROTOBUF_NAMESPACE_OPEN
-template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::RollupRequest*
-Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::RollupRequest >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::RollupRequest >(arena);
-}
-template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::RollupResponse*
-Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::RollupResponse >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::RollupResponse >(arena);
-}
-template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::TreeRequest*
-Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::TreeRequest >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::TreeRequest >(arena);
-}
-template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::TreeResponse*
-Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::TreeResponse >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::TreeResponse >(arena);
-}
-template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::HierarchicalTableApplyRequest*
-Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::HierarchicalTableApplyRequest >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::HierarchicalTableApplyRequest >(arena);
-}
-template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::HierarchicalTableApplyResponse*
-Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::HierarchicalTableApplyResponse >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::HierarchicalTableApplyResponse >(arena);
-}
-template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::HierarchicalTableDescriptor*
-Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::HierarchicalTableDescriptor >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::HierarchicalTableDescriptor >(arena);
-}
-template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::HierarchicalTableViewRequest*
-Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::HierarchicalTableViewRequest >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::HierarchicalTableViewRequest >(arena);
-}
-template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::HierarchicalTableViewKeyTableDescriptor*
-Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::HierarchicalTableViewKeyTableDescriptor >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::HierarchicalTableViewKeyTableDescriptor >(arena);
-}
-template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::HierarchicalTableViewResponse*
-Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::HierarchicalTableViewResponse >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::HierarchicalTableViewResponse >(arena);
-}
-template<> PROTOBUF_NOINLINE ::io::deephaven::proto::backplane::grpc::HierarchicalTableSourceExportRequest*
-Arena::CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::HierarchicalTableSourceExportRequest >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::io::deephaven::proto::backplane::grpc::HierarchicalTableSourceExportRequest >(arena);
-}
-PROTOBUF_NAMESPACE_CLOSE
-
+namespace google {
+namespace protobuf {
+}  // namespace protobuf
+}  // namespace google
 // @@protoc_insertion_point(global_scope)
-#include <google/protobuf/port_undef.inc>
+#include "google/protobuf/port_undef.inc"

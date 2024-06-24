@@ -245,6 +245,12 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
                 final ColumnSource<?>[] keySources = Arrays.stream(keyColumnNames)
                         .map(columnSources::get)
                         .toArray(ColumnSource[]::new);
+                if (Arrays.stream(keySources).anyMatch(Objects::isNull)) {
+                    // If any of the key sources are missing (e.g. because the user supplied a TableDefinition that
+                    // excludes them, or has used a RedefinableTable operation to drop them), we can't create the
+                    // DataIndex.
+                    continue;
+                }
                 final DataIndex mergedIndex = new MergedDataIndex(keyColumnNames, keySources, this);
                 retainedDataIndexes.add(mergedIndex);
                 // Not refreshing, so no need to manage mergedIndex

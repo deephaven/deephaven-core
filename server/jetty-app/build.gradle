@@ -54,6 +54,13 @@ if (!hasProperty('excludeSql')) {
 if (!hasProperty('excludeS3')) {
     dependencies {
         runtimeOnly project(':extensions-s3')
+        runtimeOnly project(':extensions-iceberg:s3')
+    }
+}
+
+if (!hasProperty('excludeJson')) {
+    dependencies {
+        runtimeOnly project(':extensions-json-jackson')
     }
 }
 

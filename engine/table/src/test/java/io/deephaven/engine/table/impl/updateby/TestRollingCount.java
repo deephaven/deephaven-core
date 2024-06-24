@@ -7,12 +7,10 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
@@ -23,6 +21,8 @@ import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.annotations.TestUseOnly;
+import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.vector.ObjectVector;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -74,8 +74,7 @@ public class TestRollingCount extends BaseUpdateByTest {
 
     private String[] getFormulas(String[] columns) {
         return Arrays.stream(columns)
-                // Force null instead of NaN when vector size == 0
-                .map(c -> String.format("%s=count(%s)", c, c, c))
+                .map(c -> String.format("%s=count(%s)", c, c))
                 .toArray(String[]::new);
     }
 
@@ -87,148 +86,161 @@ public class TestRollingCount extends BaseUpdateByTest {
 
     // region Object Helper functions
 
-    final Function<ObjectVector<? extends Any>, Long> countObject = objectVector -> {
+    @SuppressWarnings("unused") // Functions used via QueryLibrary
+    @VisibleForTesting
+    @TestUseOnly
+    public static class Helpers {
 
-        if (objectVector == null || objectVector.size() == 0) {
-            return 0L;
-        }
+        public static long countObject(ObjectVector<?> objectVector) {
 
-        final long n = objectVector.size();
-        long nullCount = 0;
-
-        for (long i = 0; i < n; i++) {
-            if (objectVector.get(i) == null) {
-                nullCount++;
+            if (objectVector == null || objectVector.isEmpty()) {
+                return 0L;
             }
+
+            final long n = objectVector.size();
+            long nullCount = 0;
+
+            for (long i = 0; i < n; i++) {
+                if (objectVector.get(i) == null) {
+                    nullCount++;
+                }
+            }
+            return n - nullCount;
         }
-        return n - nullCount;
-    };
+    }
 
     private void doTestStaticZeroKeyBigNumbers(final QueryTable t, final int prevTicks, final int postTicks) {
-        QueryScope.addParam("countObject", countObject);
+        ExecutionContext.getContext().getQueryLibrary().importStatic(Helpers.class);
 
         Table actual = t.updateBy(UpdateByOperation.RollingCount(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"));
         Table expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"))
-                .update("bigIntCol=countObject.apply(bigIntCol)", "bigDecimalCol=countObject.apply(bigDecimalCol)");
+                .update("bigIntCol=countObject(bigIntCol)", "bigDecimalCol=countObject(bigDecimalCol)");
 
-        long[] biActual = (long[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
-        Object[] biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
+        long[] biActual = ColumnVectors.ofLong(actual, "bigIntCol").toArray();
+        long[] biExpected = ColumnVectors.ofLong(expected, "bigIntCol").toArray();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
             final long actualVal = biActual[ii];
-            final long expectedVal = (long) biExpected[ii];
+            final long expectedVal = biExpected[ii];
             Assert.eq(actualVal, "values match", expectedVal);
         }
 
-        long[] bdActual = (long[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
-        Object[] bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
+        long[] bdActual = ColumnVectors.ofLong(actual, "bigDecimalCol").toArray();
+        long[] bdExpected = ColumnVectors.ofLong(expected, "bigDecimalCol").toArray();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
             final long actualVal = biActual[ii];
-            final long expectedVal = (long) biExpected[ii];
+            final long expectedVal = biExpected[ii];
             Assert.eq(actualVal, "values match", expectedVal);
         }
     }
 
     private void doTestStaticZeroKeyTimedBigNumbers(final QueryTable t, final Duration prevTime,
             final Duration postTime) {
-        QueryScope.addParam("countObject", countObject);
+        ExecutionContext.getContext().getQueryLibrary().importStatic(Helpers.class);
 
         Table actual =
                 t.updateBy(UpdateByOperation.RollingCount("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"));
         Table expected =
                 t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"))
-                        .update("bigIntCol=countObject.apply(bigIntCol)",
-                                "bigDecimalCol=countObject.apply(bigDecimalCol)");
+                        .update("bigIntCol=countObject(bigIntCol)",
+                                "bigDecimalCol=countObject(bigDecimalCol)");
 
-        long[] biActual = (long[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
-        Object[] biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
+        long[] biActual = ColumnVectors.ofLong(actual, "bigIntCol").toArray();
+        long[] biExpected = ColumnVectors.ofLong(expected, "bigIntCol").toArray();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
             final long actualVal = biActual[ii];
-            final long expectedVal = (long) biExpected[ii];
+            final long expectedVal = biExpected[ii];
             Assert.eq(actualVal, "values match", expectedVal);
         }
 
-        long[] bdActual = (long[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
-        Object[] bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
+        long[] bdActual = ColumnVectors.ofLong(actual, "bigDecimalCol").toArray();
+        long[] bdExpected = ColumnVectors.ofLong(expected, "bigDecimalCol").toArray();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
             final long actualVal = biActual[ii];
-            final long expectedVal = (long) biExpected[ii];
+            final long expectedVal = biExpected[ii];
             Assert.eq(actualVal, "values match", expectedVal);
         }
     }
 
     private void doTestStaticBucketedBigNumbers(final QueryTable t, final int prevTicks, final int postTicks) {
-        QueryScope.addParam("countObject", countObject);
+        ExecutionContext.getContext().getQueryLibrary().importStatic(Helpers.class);
 
         Table actual =
                 t.updateBy(UpdateByOperation.RollingCount(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"), "Sym");
         Table expected =
                 t.updateBy(UpdateByOperation.RollingGroup(prevTicks, postTicks, "bigIntCol", "bigDecimalCol"), "Sym")
-                        .update("bigIntCol=countObject.apply(bigIntCol)",
-                                "bigDecimalCol=countObject.apply(bigDecimalCol)");
+                        .update("bigIntCol=countObject(bigIntCol)",
+                                "bigDecimalCol=countObject(bigDecimalCol)");
 
-        long[] biActual = (long[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
-        Object[] biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
+        long[] biActual = ColumnVectors.ofLong(actual, "bigIntCol").toArray();
+        long[] biExpected = ColumnVectors.ofLong(expected, "bigIntCol").toArray();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
             final long actualVal = biActual[ii];
-            final long expectedVal = (long) biExpected[ii];
+            final long expectedVal = biExpected[ii];
             Assert.eq(actualVal, "values match", expectedVal);
         }
 
-        long[] bdActual = (long[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
-        Object[] bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
+        long[] bdActual = ColumnVectors.ofLong(actual, "bigDecimalCol").toArray();
+        long[] bdExpected = ColumnVectors.ofLong(expected, "bigDecimalCol").toArray();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
             final long actualVal = biActual[ii];
-            final long expectedVal = (long) biExpected[ii];
+            final long expectedVal = biExpected[ii];
             Assert.eq(actualVal, "values match", expectedVal);
         }
     }
 
     private void doTestStaticBucketedTimedBigNumbers(final QueryTable t, final Duration prevTime,
             final Duration postTime) {
-        QueryScope.addParam("countObject", countObject);
+        ExecutionContext.getContext().getQueryLibrary().importStatic(Helpers.class);
 
         Table actual =
                 t.updateBy(UpdateByOperation.RollingCount("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"),
                         "Sym");
         Table expected = t
                 .updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol"), "Sym")
-                .update("bigIntCol=countObject.apply(bigIntCol)", "bigDecimalCol=countObject.apply(bigDecimalCol)");
+                .update("bigIntCol=countObject(bigIntCol)", "bigDecimalCol=countObject(bigDecimalCol)");
 
-        long[] biActual = (long[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
-        Object[] biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
+        long[] biActual = ColumnVectors.ofLong(actual, "bigIntCol").toArray();
+        long[] biExpected = ColumnVectors.ofLong(expected, "bigIntCol").toArray();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
             final long actualVal = biActual[ii];
-            final long expectedVal = (long) biExpected[ii];
+            final long expectedVal = biExpected[ii];
             Assert.eq(actualVal, "values match", expectedVal);
         }
 
-        long[] bdActual = (long[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
-        Object[] bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
+        long[] bdActual = ColumnVectors.ofLong(actual, "bigDecimalCol").toArray();
+        long[] bdExpected = ColumnVectors.ofLong(expected, "bigDecimalCol").toArray();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
             final long actualVal = biActual[ii];
-            final long expectedVal = (long) biExpected[ii];
+            final long expectedVal = biExpected[ii];
             Assert.eq(actualVal, "values match", expectedVal);
         }
     }
     // endregion Object Helper functions
 
     // region Static Zero Key Tests
+    @Test
+    public void testStaticZeroKeyAllNullVector() {
+        final int prevTicks = 1;
+        final int postTicks = 0;
+
+        doTestStaticZeroKey(prevTicks, postTicks);
+    }
 
     @Test
     public void testStaticZeroKeyRev() {

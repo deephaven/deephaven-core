@@ -16,8 +16,8 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.*;
@@ -410,26 +410,26 @@ public class BitShiftingColumnSource<T> extends AbstractColumnSource<T> implemen
                 final MutableLong currentRunInnerIndexKey = new MutableLong(RowSequence.NULL_ROW_KEY);
 
                 rowSequence.forAllRowKeys((final long rowKey) -> {
-                    final long lastInnerIndexKey = currentRunInnerIndexKey.longValue();
+                    final long lastInnerIndexKey = currentRunInnerIndexKey.get();
                     final long innerIndexKey =
                             usePrev ? shiftState.getPrevShifted(rowKey) : shiftState.getShifted(rowKey);
                     if (innerIndexKey != lastInnerIndexKey) {
                         if (lastInnerIndexKey != RowSequence.NULL_ROW_KEY) {
-                            uniqueIndices.set(currentRunPosition.intValue(), lastInnerIndexKey);
-                            runLengths.set(currentRunPosition.intValue(), currentRunLength.intValue());
+                            uniqueIndices.set(currentRunPosition.get(), lastInnerIndexKey);
+                            runLengths.set(currentRunPosition.get(), currentRunLength.get());
                             currentRunPosition.increment();
                         }
-                        currentRunLength.setValue(1);
-                        currentRunInnerIndexKey.setValue(innerIndexKey);
+                        currentRunLength.set(1);
+                        currentRunInnerIndexKey.set(innerIndexKey);
                     } else {
                         currentRunLength.increment();
                     }
                 });
 
-                uniqueIndices.set(currentRunPosition.intValue(), currentRunInnerIndexKey.longValue());
-                runLengths.set(currentRunPosition.intValue(), currentRunLength.intValue());
-                uniqueIndices.setSize(currentRunPosition.intValue() + 1);
-                runLengths.setSize(currentRunPosition.intValue() + 1);
+                uniqueIndices.set(currentRunPosition.get(), currentRunInnerIndexKey.get());
+                runLengths.set(currentRunPosition.get(), currentRunLength.get());
+                uniqueIndices.setSize(currentRunPosition.get() + 1);
+                runLengths.setSize(currentRunPosition.get() + 1);
 
                 keysAndLengthsReusable = shared;
             }

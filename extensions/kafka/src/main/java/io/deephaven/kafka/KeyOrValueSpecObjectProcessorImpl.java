@@ -16,9 +16,10 @@ import io.deephaven.kafka.KafkaTools.KeyOrValueIngestData;
 import io.deephaven.kafka.ingest.KafkaStreamPublisher;
 import io.deephaven.kafka.ingest.KeyOrValueProcessor;
 import io.deephaven.kafka.ingest.MultiFieldChunkAdapter;
+import io.deephaven.processor.NamedObjectProcessor;
 import io.deephaven.processor.ObjectProcessor;
 import io.deephaven.qst.type.Type;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.apache.kafka.common.serialization.Deserializer;
 
 import java.util.ArrayList;
@@ -33,27 +34,19 @@ import java.util.function.Function;
 
 /**
  * This implementation is useful for presenting an easier onboarding ramp and better (and public) interface
- * {@link KafkaTools.Consume#objectProcessorSpec(Deserializer, ObjectProcessor, List)} for end-users. The
+ * {@link KafkaTools.Consume#objectProcessorSpec(Deserializer, NamedObjectProcessor)} for end-users. The
  * {@link ObjectProcessor} is a user-visible replacement for {@link KeyOrValueProcessor}. In the meantime though, we are
  * adapting into a {@link KeyOrValueProcessor} until such a time when {@link KafkaStreamPublisher} can be re-written to
  * take advantage of these better interfaces.
  */
 class KeyOrValueSpecObjectProcessorImpl<T> extends KeyOrValueSpec {
     private final Deserializer<? extends T> deserializer;
-    private final ObjectProcessor<? super T> processor;
-    private final List<String> columnNames;
+    private final NamedObjectProcessor<? super T> processor;
 
-    KeyOrValueSpecObjectProcessorImpl(
-            Deserializer<? extends T> deserializer, ObjectProcessor<? super T> processor, List<String> columnNames) {
-        if (columnNames.size() != processor.outputTypes().size()) {
-            throw new IllegalArgumentException("Expected columnNames and processor.outputTypes() to be the same size");
-        }
-        if (columnNames.stream().distinct().count() != columnNames.size()) {
-            throw new IllegalArgumentException("Expected columnNames to have distinct values");
-        }
+    KeyOrValueSpecObjectProcessorImpl(Deserializer<? extends T> deserializer,
+            NamedObjectProcessor<? super T> processor) {
         this.deserializer = Objects.requireNonNull(deserializer);
         this.processor = Objects.requireNonNull(processor);
-        this.columnNames = List.copyOf(columnNames);
     }
 
     @Override
@@ -73,10 +66,12 @@ class KeyOrValueSpecObjectProcessorImpl<T> extends KeyOrValueSpec {
             Map<String, ?> configs, MutableInt nextColumnIndexMut, List<ColumnDefinition<?>> columnDefinitionsOut) {
         final KeyOrValueIngestData data = new KeyOrValueIngestData();
         data.fieldPathToColumnName = new LinkedHashMap<>();
-        final int L = columnNames.size();
+        final List<String> names = processor.names();
+        final List<Type<?>> types = processor.processor().outputTypes();
+        final int L = names.size();
         for (int i = 0; i < L; ++i) {
-            final String columnName = columnNames.get(i);
-            final Type<?> type = processor.outputTypes().get(i);
+            final String columnName = names.get(i);
+            final Type<?> type = types.get(i);
             data.fieldPathToColumnName.put(columnName, columnName);
             columnDefinitionsOut.add(ColumnDefinition.of(columnName, type));
         }
@@ -101,7 +96,7 @@ class KeyOrValueSpecObjectProcessorImpl<T> extends KeyOrValueSpec {
             // noinspection unchecked
             final ObjectChunk<T, ?> in = (ObjectChunk<T, ?>) inputChunk;
             // we except isInOrder to be true, so apply should be an O(1) op no matter how many columns there are.
-            processor.processAll(in, offsetsAdapter.apply(publisherChunks));
+            processor.processor().processAll(in, offsetsAdapter.apply(publisherChunks));
         }
     }
 

@@ -7,6 +7,8 @@
 // @formatter:off
 package io.deephaven.extensions.barrage.chunk;
 
+import java.util.function.ToDoubleFunction;
+
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
@@ -17,7 +19,6 @@ import io.deephaven.engine.rowset.RowSet;
 import com.google.common.io.LittleEndianDataOutputStream;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
-import io.deephaven.function.ToDoubleFunction;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.DoubleChunk;
 import io.deephaven.chunk.WritableDoubleChunk;

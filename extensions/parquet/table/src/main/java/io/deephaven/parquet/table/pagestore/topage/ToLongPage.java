@@ -26,8 +26,7 @@ public class ToLongPage<ATTR extends Any> implements ToPage<ATTR, long[]> {
         throw new IllegalArgumentException("The native type for a Long column is " + nativeType.getCanonicalName());
     }
 
-    @SuppressWarnings("WeakerAccess")
-    ToLongPage() {}
+    private ToLongPage() {}
 
     @Override
     @NotNull

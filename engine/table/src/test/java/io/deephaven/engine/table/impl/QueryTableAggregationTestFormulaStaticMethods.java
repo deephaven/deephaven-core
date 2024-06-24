@@ -14,6 +14,8 @@ import io.deephaven.util.QueryConstants;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
+
 public class QueryTableAggregationTestFormulaStaticMethods {
     public static ByteVector abs(ByteVector values) {
         final byte[] result = new byte[values.intSize()];
@@ -357,6 +359,7 @@ public class QueryTableAggregationTestFormulaStaticMethods {
         double sum = 0;
         double sum2 = 0;
         int count = 0;
+        int nullCount = 0;
 
         for (int ii = 0; ii < values.size(); ++ii) {
             final char c = values.get(ii);
@@ -364,10 +367,24 @@ public class QueryTableAggregationTestFormulaStaticMethods {
                 sum += c;
                 sum2 += c * c;
                 count++;
+            } else {
+                nullCount++;
             }
+        }
+        if (nullCount == values.size()) {
+            return NULL_DOUBLE;
         }
 
         return (sum2 - sum * sum / count) / (count - 1);
+    }
+
+    public static double stdChar(CharVector values) {
+        if (values == null) {
+            return NULL_DOUBLE;
+        }
+
+        final double v = varChar(values);
+        return v == NULL_DOUBLE ? NULL_DOUBLE : Math.sqrt(v);
     }
 
     public static BigDecimal varBigInt(ObjectVector<BigInteger> values) {
@@ -614,11 +631,13 @@ public class QueryTableAggregationTestFormulaStaticMethods {
 
     static String stdFunction(String col) {
         switch (col) {
+            case "charCol":
+                return QueryTableAggregationTestFormulaStaticMethods.class.getCanonicalName() + ".stdChar(" + col + ")";
             case "bigI":
             case "bigD":
                 return "io.deephaven.util.BigDecimalUtils.sqrt(" + varFunction(col) + ", 10)";
             default:
-                return "Math.sqrt(" + varFunction(col) + ")";
+                return "std(" + col + ")";
         }
     }
 

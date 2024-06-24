@@ -6,6 +6,7 @@ package io.deephaven.extensions.s3;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
+import java.util.Optional;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
@@ -13,12 +14,11 @@ public class S3InstructionsTest {
 
     @Test
     void defaults() {
-        final S3Instructions instructions = S3Instructions.builder().regionName("some-region").build();
-        assertThat(instructions.regionName()).isEqualTo("some-region");
+        final S3Instructions instructions = S3Instructions.builder().build();
+        assertThat(instructions.regionName().isEmpty()).isTrue();
         assertThat(instructions.maxConcurrentRequests()).isEqualTo(256);
         assertThat(instructions.readAheadCount()).isEqualTo(32);
         assertThat(instructions.fragmentSize()).isEqualTo(65536);
-        assertThat(instructions.maxCacheSize()).isEqualTo(256);
         assertThat(instructions.connectionTimeout()).isEqualTo(Duration.ofSeconds(2));
         assertThat(instructions.readTimeout()).isEqualTo(Duration.ofSeconds(2));
         assertThat(instructions.credentials()).isEqualTo(Credentials.defaultCredentials());
@@ -26,12 +26,13 @@ public class S3InstructionsTest {
     }
 
     @Test
-    void missingRegion() {
-        try {
-            S3Instructions.builder().build();
-        } catch (IllegalStateException e) {
-            assertThat(e).hasMessageContaining("regionName");
-        }
+    void testSetRegion() {
+        final Optional<String> region = S3Instructions.builder()
+                .regionName("some-region")
+                .build()
+                .regionName();
+        assertThat(region.isPresent()).isTrue();
+        assertThat(region.get()).isEqualTo("some-region");
     }
 
     @Test
@@ -97,30 +98,6 @@ public class S3InstructionsTest {
                     .build();
         } catch (IllegalArgumentException e) {
             assertThat(e).hasMessageContaining("fragmentSize");
-        }
-    }
-
-    @Test
-    void minMaxCacheSize() {
-        assertThat(S3Instructions.builder()
-                .regionName("some-region")
-                .readAheadCount(99)
-                .maxCacheSize(100)
-                .build()
-                .maxCacheSize())
-                .isEqualTo(100);
-    }
-
-    @Test
-    void tooSmallCacheSize() {
-        try {
-            S3Instructions.builder()
-                    .regionName("some-region")
-                    .readAheadCount(99)
-                    .maxCacheSize(99)
-                    .build();
-        } catch (IllegalArgumentException e) {
-            assertThat(e).hasMessageContaining("maxCacheSize");
         }
     }
 
