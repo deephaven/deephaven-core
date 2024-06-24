@@ -334,7 +334,8 @@ public class RangeFilter extends WhereFilterImpl {
 
     @Override
     public WhereFilter copy() {
-        return new RangeFilter(columnName, condition, value, expression, filter, parserConfiguration);
+        final WhereFilter innerCopy = filter == null ? null : filter.copy();
+        return new RangeFilter(columnName, condition, value, expression, innerCopy, parserConfiguration);
     }
 
     @Override

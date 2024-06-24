@@ -140,11 +140,6 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
     }
 
     public WhereFilter renameFilter(Map<String, String> renames) {
-        final ConditionFilter failover = getFailoverFilterIfCached();
-        if (failover != null) {
-            return failover.renameFilter(renames);
-        }
-
         final String newName = renames.get(columnName);
         Assert.neqNull(newName, "newName");
         if (strValues == null) {
@@ -152,7 +147,9 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
             return new MatchFilter(getMatchType(), newName, values);
         } else {
             return new MatchFilter(
-                    failoverFilter, caseInsensitive ? CaseSensitivity.IgnoreCase : CaseSensitivity.MatchCase,
+                    failoverFilter != null ? new CachingSupplier<>(
+                            () -> failoverFilter.get().renameFilter(renames)) : null,
+                    caseInsensitive ? CaseSensitivity.IgnoreCase : CaseSensitivity.MatchCase,
                     getMatchType(), newName, strValues, null);
         }
     }
