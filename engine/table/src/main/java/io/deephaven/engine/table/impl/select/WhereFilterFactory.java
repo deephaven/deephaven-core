@@ -160,8 +160,8 @@ public class WhereFilterFactory {
                 log.debug().append("WhereFilterFactory creating MatchFilter for expression: ").append(expression)
                         .endl();
                 return new MatchFilter(
-                        new CachingSupplier<>(() -> (ConditionFilter)
-                                ConditionFilter.createConditionFilter(expression, parserConfiguration)),
+                        new CachingSupplier<>(() -> (ConditionFilter) ConditionFilter.createConditionFilter(expression,
+                                parserConfiguration)),
                         CaseSensitivity.MatchCase,
                         inverted ? MatchType.Inverted : MatchType.Regular,
                         columnName,
