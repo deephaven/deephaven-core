@@ -3,6 +3,9 @@ elemental = "1.2.1"
 jackson-bom = "2.17.0"
 javaparser = "3.23.0"
 javax-validation = "1.0.0.GA"
+jsinterop = "2.0.2"
+# google is annoying, and have different versions released for the same groupId
+jsinterop-base = "1.0.1"
 
 # test versions
 testcontainers = "1.19.4"
@@ -19,6 +22,8 @@ jackson-dataformat-yaml = { module = "com.fasterxml.jackson.dataformat:jackson-d
 jackson-datatype-jdk8 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jdk8" }
 javaparser-core = { module = "com.github.javaparser:javaparser-core", version.ref = "javaparser" }
 javax-validation-api = { module = "javax.validation:validation-api", version.ref = "javax-validation" }
+jsinterop-annotations = { module = "com.google.jsinterop:jsinterop-annotations", version.ref = "jsinterop" }
+jsinterop-base = { module = "com.google.jsinterop:base", version.ref = "jsinterop-base" }
 
 # test libraries
 testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }

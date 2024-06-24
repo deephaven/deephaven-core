@@ -16,10 +16,10 @@ dependencies {
 
     implementation libs.elemental.core
     compileOnly libs.javax.validation.api
+
+    // upgrade inherited dependencies to become transitive
+    compileOnly libs.jsinterop.annotations
 }
 
 // non-transitive dependency
 Classpaths.inheritGwt project, 'gwt-user', 'compileOnly'
-
-// upgrade inherited dependencies to become transitive
-Classpaths.inheritJsInterop(project, 'jsinterop-annotations', 'compileOnly')

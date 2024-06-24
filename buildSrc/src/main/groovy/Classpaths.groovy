@@ -28,9 +28,6 @@ class Classpaths {
 
     static final String JETTY_VERSION = '9.4.44.v20210927'
 
-    static final String JS_INTEROP_GROUP = 'com.google.jsinterop'
-    static final String JS_INTEROP_VERSION = '2.0.2'
-
     static final String COMMONS_GROUP = 'org.apache.commons'
 
     static final String ARROW_GROUP = 'org.apache.arrow'
@@ -149,14 +146,6 @@ class Classpaths {
                 force 'org.ow2.asm:asm-commons:9.2'
             }
         }
-    }
-
-    static void inheritJsInterop(Project p, String name, String configName) {
-        Configuration config = p.configurations.getByName(configName)
-        addDependency config, JS_INTEROP_GROUP, name,
-                // google is annoying, and have different versions released for the same groupId
-                // :base: is the only one that is different, so we'll use it in the ternary.
-                name == 'base'? '1.0.1' : JS_INTEROP_VERSION
     }
 
     static void inheritCommonsText(Project p, String configName) {
