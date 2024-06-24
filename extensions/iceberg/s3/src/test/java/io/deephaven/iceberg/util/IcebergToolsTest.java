@@ -118,8 +118,8 @@ public abstract class IcebergToolsTest {
 
         final Table table = adapter.listNamespacesAsTable();
         Assert.eq(table.size(), "table.size()", 2, "2 namespace in the catalog");
-        Assert.eqTrue(table.getColumnSource("namespace").getType().equals(String.class), "namespace column type");
-        Assert.eqTrue(table.getColumnSource("namespace_object").getType().equals(Namespace.class),
+        Assert.eqTrue(table.getColumnSource("Namespace").getType().equals(String.class), "namespace column type");
+        Assert.eqTrue(table.getColumnSource("NamespaceObject").getType().equals(Namespace.class),
                 "namespace_object column type");
     }
 
@@ -138,9 +138,9 @@ public abstract class IcebergToolsTest {
 
         Table table = adapter.listTablesAsTable(ns);
         Assert.eq(table.size(), "table.size()", 3, "3 tables in the namespace");
-        Assert.eqTrue(table.getColumnSource("namespace").getType().equals(String.class), "namespace column type");
-        Assert.eqTrue(table.getColumnSource("table_name").getType().equals(String.class), "table_name column type");
-        Assert.eqTrue(table.getColumnSource("table_identifier_object").getType().equals(TableIdentifier.class),
+        Assert.eqTrue(table.getColumnSource("Namespace").getType().equals(String.class), "namespace column type");
+        Assert.eqTrue(table.getColumnSource("TableName").getType().equals(String.class), "table_name column type");
+        Assert.eqTrue(table.getColumnSource("TableIdentifierObject").getType().equals(TableIdentifier.class),
                 "table_identifier_object column type");
 
         // Test the string versions of the methods
@@ -166,11 +166,11 @@ public abstract class IcebergToolsTest {
 
         Table table = adapter.listSnapshotsAsTable(tableIdentifier);
         Assert.eq(table.size(), "table.size()", 4, "4 snapshots for sales/sales_multi");
-        Assert.eqTrue(table.getColumnSource("id").getType().equals(long.class), "id column type");
-        Assert.eqTrue(table.getColumnSource("timestamp_ms").getType().equals(long.class), "timestamp_ms column type");
-        Assert.eqTrue(table.getColumnSource("operation").getType().equals(String.class), "operation column type");
-        Assert.eqTrue(table.getColumnSource("summary").getType().equals(Map.class), "summary column type");
-        Assert.eqTrue(table.getColumnSource("snapshot_object").getType().equals(Snapshot.class),
+        Assert.eqTrue(table.getColumnSource("Id").getType().equals(long.class), "id column type");
+        Assert.eqTrue(table.getColumnSource("TimestampMs").getType().equals(long.class), "timestamp_ms column type");
+        Assert.eqTrue(table.getColumnSource("Operation").getType().equals(String.class), "operation column type");
+        Assert.eqTrue(table.getColumnSource("Summary").getType().equals(Map.class), "summary column type");
+        Assert.eqTrue(table.getColumnSource("SnapshotObject").getType().equals(Snapshot.class),
                 "snapshot_object column type");
 
         // Test the string versions of the methods
