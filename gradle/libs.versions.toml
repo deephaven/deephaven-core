@@ -10,7 +10,7 @@ jackson-core = { module = "com.fasterxml.jackson.core:jackson-core" }
 jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind" }
 jackson-dataformat-yaml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml" }
 jackson-datatype-jdk8 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jdk8" }
-jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "jackson-bom" }
+jackson-annotations = { module = "com.fasterxml.jackson.core:jackson-annotations" }
 
 # test libraries
 testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
