@@ -5050,11 +5050,10 @@ public class DateTimeUtils {
      * Parses the string argument as a {@link LocalDateTime}.
      * <p>
      * Date time strings are formatted according to the ISO 8601 date time format
-     * {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS] TZ} and others.
+     * {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS]} and others.
      *
      * @param s date time string
      * @return a {@link LocalDateTime} represented by the input string, or {@code null} if the string can not be parsed
-     * @see DateTimeFormatter#ISO_INSTANT
      */
     @ScriptApi
     @Nullable

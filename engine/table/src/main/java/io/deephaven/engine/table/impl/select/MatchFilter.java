@@ -52,7 +52,7 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                 literals.stream().map(AsObject::of).toArray());
     }
 
-    /** A fail-over where filter supplier should the match filter initialization fail. */
+    /** A fail-over WhereFilter supplier should the match filter initialization fail. */
     private final CachingSupplier<WhereFilter> failoverFilter;
 
     @NotNull
@@ -83,8 +83,6 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
     public enum CaseSensitivity {
         MatchCase, IgnoreCase
     }
-
-    // TODO NATE NOCOMMIT: USE BUILDER TO CREATE MATCH FILTER??
 
     public MatchFilter(
             @NotNull final MatchType matchType,
@@ -717,11 +715,6 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
     public WhereFilter copy() {
         final MatchFilter copy;
         if (strValues != null) {
-            final WhereFilter failover = failoverFilter != null ? failoverFilter.getIfCached() : null;
-            if (failover != null) {
-                return failover.copy();
-            }
-
             copy = new MatchFilter(
                     failoverFilter, caseInsensitive ? CaseSensitivity.IgnoreCase : CaseSensitivity.MatchCase,
                     getMatchType(), columnName, strValues, null);
