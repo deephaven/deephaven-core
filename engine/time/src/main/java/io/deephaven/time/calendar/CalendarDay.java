@@ -65,7 +65,7 @@ public class CalendarDay<T extends Comparable<T> & Temporal> {
         }
 
         this.businessTimeRanges = ranges;
-        this.businessNanos = Arrays.stream(businessTimeRanges).map(TimeRange::nanos).reduce(0L, Long::sum);
+        this.businessNanos = Arrays.stream(businessTimeRanges).mapToLong(TimeRange::nanos).sum();
     }
 
     /**
@@ -82,7 +82,7 @@ public class CalendarDay<T extends Comparable<T> & Temporal> {
      * @return business time ranges for the day
      */
     public List<TimeRange<T>> businessTimeRanges() {
-        return List.of(businessTimeRanges);
+        return Arrays.asList(businessTimeRanges);
     }
 
     /**
