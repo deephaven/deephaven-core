@@ -16,6 +16,7 @@ import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
+import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.TableUpdateValidator;
@@ -40,6 +41,7 @@ import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.mutable.MutableInt;
+import io.deephaven.util.thread.ThreadInitializationFactory;
 import io.grpc.Drainable;
 import io.grpc.stub.StreamObserver;
 import junit.framework.TestCase;
@@ -62,6 +64,9 @@ import static io.deephaven.engine.util.TableTools.col;
 @Category(OutOfBandTest.class)
 public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
     private static final long UPDATE_INTERVAL = 1000; // arbitrary; we enforce coalescing on both sides
+
+    private static final OperationInitializationThreadPool OPERATION_INITIALIZATION =
+            new OperationInitializationThreadPool(ThreadInitializationFactory.NO_OP);
 
     private TestControlledScheduler scheduler;
     private Deque<Throwable> exceptions;
@@ -355,6 +360,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
             this.originalTable = (QueryTable) makeTable.get();
             this.barrageMessageProducer = originalTable.getResult(new BarrageMessageProducer.Operation(scheduler,
                     new SessionService.ObfuscatingErrorTransformer(), daggerRoot.getStreamGeneratorFactory(),
+                    OPERATION_INITIALIZATION,
                     originalTable, UPDATE_INTERVAL, this::onGetSnapshot));
 
             originalTUV = TableUpdateValidator.make(originalTable);

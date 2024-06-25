@@ -10,6 +10,10 @@ import java.util.concurrent.Future;
  * Provides guidance for initialization operations on how they can parallelize.
  */
 public interface OperationInitializer {
+
+    String DEFAULT_NAME = "OPERATION_INITIALIZER";
+    String EGRESS_NAME = "EGRESS_OPERATION_INITIALIZER";
+
     OperationInitializer NON_PARALLELIZABLE = new OperationInitializer() {
         @Override
         public boolean canParallelize() {
@@ -25,6 +29,11 @@ public interface OperationInitializer {
         @Override
         public int parallelismFactor() {
             return 1;
+        }
+
+        @Override
+        public void shutdownNow() {
+            // no-op
         }
     };
 
@@ -42,4 +51,9 @@ public interface OperationInitializer {
      * Number of threads that are potentially available.
      */
     int parallelismFactor();
+
+    /**
+     * Shutdown the thread pool.
+     */
+    void shutdownNow();
 }

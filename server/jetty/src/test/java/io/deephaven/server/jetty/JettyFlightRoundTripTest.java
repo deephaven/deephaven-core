@@ -6,12 +6,15 @@ package io.deephaven.server.jetty;
 import dagger.Component;
 import dagger.Module;
 import dagger.Provides;
+import io.deephaven.engine.table.impl.EgressInitializationThreadPool;
+import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.server.jetty.js.Example123Registration;
 import io.deephaven.server.jetty.js.Sentinel;
 import io.deephaven.server.plugin.js.JsPluginsManifestRegistration;
 import io.deephaven.server.plugin.js.JsPluginsNpmPackageRegistration;
 import io.deephaven.server.runner.ExecutionContextUnitTestModule;
 import io.deephaven.server.test.FlightMessageRoundTripTest;
+import io.deephaven.util.thread.ThreadInitializationFactory;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpFields;
@@ -19,6 +22,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.Test;
 
+import javax.inject.Named;
 import javax.inject.Singleton;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -38,6 +42,13 @@ public class JettyFlightRoundTripTest extends FlightMessageRoundTripTest {
                     .port(0)
                     .tokenExpire(Duration.of(5, ChronoUnit.MINUTES))
                     .build();
+        }
+
+        @Provides
+        @Singleton
+        @Named(OperationInitializer.EGRESS_NAME)
+        static OperationInitializer provideEgressOperationInitializer() {
+            return new EgressInitializationThreadPool(ThreadInitializationFactory.NO_OP);
         }
     }
 

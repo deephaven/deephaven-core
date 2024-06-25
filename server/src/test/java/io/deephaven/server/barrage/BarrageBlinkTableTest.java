@@ -17,6 +17,7 @@ import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
+import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.TableUpdateValidator;
@@ -39,6 +40,7 @@ import io.deephaven.server.util.Scheduler;
 import io.deephaven.server.util.TestControlledScheduler;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.annotations.ReferentialIntegrity;
+import io.deephaven.util.thread.ThreadInitializationFactory;
 import junit.framework.TestCase;
 import org.apache.arrow.flatbuf.Schema;
 import org.junit.experimental.categories.Category;
@@ -65,6 +67,9 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
     private BarrageMessageProducer barrageMessageProducer;
     private TableUpdateValidator originalTUV;
     private FailureListener originalTUVListener;
+
+    private static final OperationInitializationThreadPool OPERATION_INITIALIZATION =
+            new OperationInitializationThreadPool(ThreadInitializationFactory.NO_OP);
 
     @Singleton
     @Component(modules = {
@@ -102,6 +107,7 @@ public class BarrageBlinkTableTest extends RefreshingTableTestCase {
 
         barrageMessageProducer = blinkTable.getResult(new BarrageMessageProducer.Operation(
                 scheduler, new SessionService.ObfuscatingErrorTransformer(), daggerRoot.getStreamGeneratorFactory(),
+                OPERATION_INITIALIZATION,
                 blinkTable, UPDATE_INTERVAL, () -> {
                 }));
 

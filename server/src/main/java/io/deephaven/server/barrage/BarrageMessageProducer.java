@@ -16,6 +16,7 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.pools.ChunkPoolConstants;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.*;
@@ -51,6 +52,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.HdrHistogram.Histogram;
 
+import javax.inject.Named;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -117,6 +119,7 @@ public class BarrageMessageProducer extends LivenessArtifact
         private final Scheduler scheduler;
         private final SessionService.ErrorTransformer errorTransformer;
         private final BarrageStreamGenerator.Factory streamGeneratorFactory;
+        final OperationInitializer operationInitializer;
         private final BaseTable<?> parent;
         private final long updateIntervalMs;
         private final Runnable onGetSnapshot;
@@ -126,9 +129,11 @@ public class BarrageMessageProducer extends LivenessArtifact
                 final Scheduler scheduler,
                 final SessionService.ErrorTransformer errorTransformer,
                 final BarrageStreamGenerator.Factory streamGeneratorFactory,
+                @Named(OperationInitializer.EGRESS_NAME) final OperationInitializer operationInitializer,
                 @Assisted final BaseTable<?> parent,
                 @Assisted final long updateIntervalMs) {
-            this(scheduler, errorTransformer, streamGeneratorFactory, parent, updateIntervalMs, null);
+            this(scheduler, errorTransformer, streamGeneratorFactory, operationInitializer, parent, updateIntervalMs,
+                    null);
         }
 
         @VisibleForTesting
@@ -136,12 +141,14 @@ public class BarrageMessageProducer extends LivenessArtifact
                 final Scheduler scheduler,
                 final SessionService.ErrorTransformer errorTransformer,
                 final BarrageStreamGenerator.Factory streamGeneratorFactory,
+                final OperationInitializer operationInitializer,
                 final BaseTable<?> parent,
                 final long updateIntervalMs,
                 @Nullable final Runnable onGetSnapshot) {
             this.scheduler = scheduler;
             this.errorTransformer = errorTransformer;
             this.streamGeneratorFactory = streamGeneratorFactory;
+            this.operationInitializer = operationInitializer;
             this.parent = parent;
             this.updateIntervalMs = updateIntervalMs;
             this.onGetSnapshot = onGetSnapshot;
@@ -165,7 +172,7 @@ public class BarrageMessageProducer extends LivenessArtifact
         @Override
         public Result<BarrageMessageProducer> initialize(final boolean usePrev, final long beforeClock) {
             final BarrageMessageProducer result = new BarrageMessageProducer(scheduler, errorTransformer,
-                    streamGeneratorFactory, parent, updateIntervalMs, onGetSnapshot);
+                    streamGeneratorFactory, parent, updateIntervalMs, operationInitializer, onGetSnapshot);
             return new Result<>(result, result.constructListener());
         }
     }
@@ -276,7 +283,8 @@ public class BarrageMessageProducer extends LivenessArtifact
         }
     }
 
-    private final UpdatePropagationJob updatePropagationJob = new UpdatePropagationJob();
+    private final OperationInitializer operationInitializer;
+    private final UpdatePropagationJob updatePropagationJob;
 
     /**
      * Subscription updates accumulate in pendingSubscriptions until the next time our update propagation job runs. See
@@ -308,6 +316,7 @@ public class BarrageMessageProducer extends LivenessArtifact
             final BarrageStreamGenerator.Factory streamGeneratorFactory,
             final BaseTable<?> parent,
             final long updateIntervalMs,
+            final OperationInitializer operationInitializer,
             final Runnable onGetSnapshot) {
         this.logPrefix = "BarrageMessageProducer(" + Integer.toHexString(System.identityHashCode(this)) + "): ";
 
@@ -327,6 +336,8 @@ public class BarrageMessageProducer extends LivenessArtifact
 
         this.propagationRowSet = RowSetFactory.empty();
         this.updateIntervalMs = updateIntervalMs;
+        this.operationInitializer = operationInitializer;
+        this.updatePropagationJob = new UpdatePropagationJob();
         this.onGetSnapshot = onGetSnapshot;
 
         this.parentTableSize = parent.size();
@@ -996,6 +1007,14 @@ public class BarrageMessageProducer extends LivenessArtifact
     private class UpdatePropagationJob implements Runnable {
         private final ReentrantLock runLock = new ReentrantLock();
         private final AtomicBoolean needsRun = new AtomicBoolean();
+        private final ExecutionContext executionContext;
+
+        UpdatePropagationJob() {
+            this.executionContext = ExecutionContext.newBuilder()
+                    .setOperationInitializer(operationInitializer)
+                    .markSystemic()
+                    .build();
+        }
 
         @Override
         public void run() {
@@ -1006,7 +1025,7 @@ public class BarrageMessageProducer extends LivenessArtifact
                     return;
                 }
 
-                try {
+                try (final SafeCloseable ignored = executionContext.open()) {
                     if (needsRun.compareAndSet(true, false)) {
                         final long startTm = System.nanoTime();
                         updateSubscriptionsSnapshotAndPropagate();
