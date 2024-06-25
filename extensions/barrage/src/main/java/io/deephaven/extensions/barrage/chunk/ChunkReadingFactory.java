@@ -68,22 +68,17 @@ public interface ChunkReadingFactory {
      * @param factor
      * @param typeInfo
      * @return
-     * @throws IOException
      */
-    ChunkReader extractChunkFromInputStream(
-            final StreamReaderOptions options,
-            final int factor,
-            final ChunkTypeInfo typeInfo) throws IOException;
+    ChunkReader extractChunkFromInputStream(final StreamReaderOptions options, final int factor,
+            final ChunkTypeInfo typeInfo);
 
     /**
      *
      * @param options
      * @param typeInfo
      * @return
-     * @throws IOException
      */
-    default ChunkReader extractChunkFromInputStream(final StreamReaderOptions options, final ChunkTypeInfo typeInfo)
-            throws IOException {
+    default ChunkReader extractChunkFromInputStream(final StreamReaderOptions options, final ChunkTypeInfo typeInfo) {
         return extractChunkFromInputStream(options, 1, typeInfo);
     }
 
