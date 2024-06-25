@@ -197,7 +197,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
     }
 
     @Deprecated
-    static WritableChunk<Values> extractChunkFromInputStream(
+    private static WritableChunk<Values> extractChunkFromInputStream(
             final StreamReaderOptions options,
             final int factor,
             final ChunkType chunkType, final Class<?> type, final Class<?> componentType,
@@ -206,8 +206,8 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
             final DataInput is,
             final WritableChunk<Values> outChunk, final int outOffset, final int totalRows) throws IOException {
         return DefaultChunkReadingFactory.INSTANCE.extractChunkFromInputStream(options, factor,
-                new ChunkReadingFactory.ChunkTypeInfo(chunkType, type, componentType, null), fieldNodeIter,
-                bufferInfoIter, is, outChunk, outOffset, totalRows);
+                new ChunkReadingFactory.ChunkTypeInfo(chunkType, type, componentType, null))
+                .read(fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
     }
 
     /**
