@@ -177,7 +177,6 @@ public class DoubleChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
     }
 
     static WritableDoubleChunk<Values> extractChunkFromInputStream(
-            final int elementSize,
             final StreamReaderOptions options,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final PrimitiveIterator.OfLong bufferInfoIter,
@@ -186,12 +185,11 @@ public class DoubleChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
             final int outOffset,
             final int totalRows) throws IOException {
         return extractChunkFromInputStreamWithConversion(
-                elementSize, options, DoubleConversion.IDENTITY, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
+                options, DoubleConversion.IDENTITY, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
                 totalRows);
     }
 
     static <T> WritableObjectChunk<T, Values> extractChunkFromInputStreamWithTransform(
-            final int elementSize,
             final StreamReaderOptions options,
             final Function<Double, T> transform,
             final Iterator<FieldNodeInfo> fieldNodeIter,
@@ -202,7 +200,7 @@ public class DoubleChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
             final int totalRows) throws IOException {
 
         try (final WritableDoubleChunk<Values> inner = extractChunkFromInputStream(
-                elementSize, options, fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
+                options, fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
 
             final WritableObjectChunk<T, Values> chunk = castOrCreateChunk(
                     outChunk,
@@ -225,7 +223,6 @@ public class DoubleChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
     }
 
     static WritableDoubleChunk<Values> extractChunkFromInputStreamWithConversion(
-            final int elementSize,
             final StreamReaderOptions options,
             final DoubleConversion conversion,
             final Iterator<FieldNodeInfo> fieldNodeIter,
@@ -268,13 +265,13 @@ public class DoubleChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
             }
             // consumed entire validity buffer by here
 
-            final long payloadRead = (long) nodeInfo.numElements * elementSize;
+            final long payloadRead = (long) nodeInfo.numElements * Double.BYTES;
             Assert.geq(payloadBuffer, "payloadBuffer", payloadRead, "payloadRead");
 
             if (options.useDeephavenNulls()) {
                 useDeephavenNulls(conversion, is, nodeInfo, chunk, outOffset);
             } else {
-                useValidityBuffer(elementSize, conversion, is, nodeInfo, chunk, outOffset, isValid);
+                useValidityBuffer(conversion, is, nodeInfo, chunk, outOffset, isValid);
             }
 
             final long overhangPayload = payloadBuffer - payloadRead;
@@ -319,7 +316,6 @@ public class DoubleChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
     }
 
     private static void useValidityBuffer(
-            final int elementSize,
             final DoubleConversion conversion,
             final DataInput is,
             final FieldNodeInfo nodeInfo,
@@ -338,7 +334,7 @@ public class DoubleChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
             do {
                 if ((validityWord & 1) == 1) {
                     if (pendingSkips > 0) {
-                        is.skipBytes(pendingSkips * elementSize);
+                        is.skipBytes(pendingSkips * Double.BYTES);
                         chunk.fillWithNullValue(offset + ei, pendingSkips);
                         ei += pendingSkips;
                         pendingSkips = 0;
@@ -356,7 +352,7 @@ public class DoubleChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
         }
 
         if (pendingSkips > 0) {
-            is.skipBytes(pendingSkips * elementSize);
+            is.skipBytes(pendingSkips * Double.BYTES);
             chunk.fillWithNullValue(offset + ei, pendingSkips);
         }
     }

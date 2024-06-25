@@ -213,36 +213,34 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                 throw new UnsupportedOperationException("Booleans are reinterpreted as bytes");
             case Char:
                 return CharChunkInputStreamGenerator.extractChunkFromInputStream(
-                        Character.BYTES, options, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
+                        options, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
             case Byte:
                 if (type == Boolean.class || type == boolean.class) {
                     return BooleanChunkInputStreamGenerator.extractChunkFromInputStream(
                             options, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
                 }
                 return ByteChunkInputStreamGenerator.extractChunkFromInputStream(
-                        Byte.BYTES, options, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
+                        options, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
             case Short:
                 return ShortChunkInputStreamGenerator.extractChunkFromInputStream(
-                        Short.BYTES, options, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
+                        options, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
             case Int:
                 return IntChunkInputStreamGenerator.extractChunkFromInputStream(
-                        Integer.BYTES, options, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
+                        options, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
             case Long:
                 if (factor == 1) {
                     return LongChunkInputStreamGenerator.extractChunkFromInputStream(
-                            Long.BYTES, options,
-                            fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
+                            options, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
                 }
                 return LongChunkInputStreamGenerator.extractChunkFromInputStreamWithConversion(
-                        Long.BYTES, options,
-                        (long v) -> v == QueryConstants.NULL_LONG ? QueryConstants.NULL_LONG : (v * factor),
+                        options, (long v) -> v == QueryConstants.NULL_LONG ? QueryConstants.NULL_LONG : (v * factor),
                         fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
             case Float:
                 return FloatChunkInputStreamGenerator.extractChunkFromInputStream(
-                        Float.BYTES, options, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
+                        options, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
             case Double:
                 return DoubleChunkInputStreamGenerator.extractChunkFromInputStream(
-                        Double.BYTES, options, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
+                        options, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
             case Object:
                 if (type.isArray()) {
                     if (componentType == byte.class) {
@@ -347,7 +345,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                 }
                 if (type == LocalDate.class) {
                     return LongChunkInputStreamGenerator.extractChunkFromInputStreamWithTransform(
-                            Long.BYTES, options,
+                            options,
                             value -> value == QueryConstants.NULL_LONG
                                     ? null
                                     : LocalDate.ofEpochDay(value / MS_PER_DAY),
@@ -355,7 +353,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                 }
                 if (type == LocalTime.class) {
                     return LongChunkInputStreamGenerator.extractChunkFromInputStreamWithTransform(
-                            Long.BYTES, options,
+                            options,
                             value -> value == QueryConstants.NULL_LONG ? null : LocalTime.ofNanoOfDay(value),
                             fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
                 }
