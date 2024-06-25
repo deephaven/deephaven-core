@@ -235,25 +235,29 @@ public class VectorChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
 
     static WritableObjectChunk<Vector<?>, Values> extractChunkFromInputStream(
             final StreamReaderOptions options,
-            final Class<Vector<?>> type,
-            final Class<?> inComponentType,
+            final ChunkReadingFactory.ChunkTypeInfo typeInfo,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final PrimitiveIterator.OfLong bufferInfoIter,
             final DataInput is,
             final WritableChunk<Values> outChunk,
             final int outOffset,
-            final int totalRows) throws IOException {
+            final int totalRows,
+            ChunkReadingFactory chunkReadingFactory) throws IOException {
 
         final FieldNodeInfo nodeInfo = fieldNodeIter.next();
         final long validityBuffer = bufferInfoIter.nextLong();
         final long offsetsBuffer = bufferInfoIter.nextLong();
 
-        final Class<?> componentType = VectorExpansionKernel.getComponentType(type, inComponentType);
+        final Class<?> componentType =
+                VectorExpansionKernel.getComponentType(typeInfo.type(), typeInfo.componentType());
         final ChunkType chunkType = ChunkType.fromElementType(componentType);
 
         if (nodeInfo.numElements == 0) {
-            try (final WritableChunk<Values> ignored = ChunkInputStreamGenerator.extractChunkFromInputStream(
-                    options, chunkType, componentType, componentType.getComponentType(), fieldNodeIter, bufferInfoIter,
+            try (final WritableChunk<Values> ignored = chunkReadingFactory.extractChunkFromInputStream(
+                    options,
+                    new ChunkReadingFactory.ChunkTypeInfo(chunkType, componentType, componentType.getComponentType(),
+                            typeInfo.componentArrowField()),
+                    fieldNodeIter, bufferInfoIter,
                     is,
                     null, 0, 0)) {
                 if (outChunk != null) {
@@ -296,8 +300,11 @@ public class VectorChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
             }
 
             final VectorExpansionKernel kernel = VectorExpansionKernel.makeExpansionKernel(chunkType, componentType);
-            try (final WritableChunk<Values> inner = ChunkInputStreamGenerator.extractChunkFromInputStream(
-                    options, chunkType, componentType, componentType.getComponentType(), fieldNodeIter, bufferInfoIter,
+            try (final WritableChunk<Values> inner = chunkReadingFactory.extractChunkFromInputStream(
+                    options,
+                    new ChunkReadingFactory.ChunkTypeInfo(chunkType, componentType, componentType.getComponentType(),
+                            typeInfo.componentArrowField()),
+                    fieldNodeIter, bufferInfoIter,
                     is,
                     null, 0, 0)) {
                 chunk = kernel.contract(inner, offsets, outChunk, outOffset, totalRows);

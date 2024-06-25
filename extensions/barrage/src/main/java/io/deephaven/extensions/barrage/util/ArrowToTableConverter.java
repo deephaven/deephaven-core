@@ -13,6 +13,8 @@ import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
+import io.deephaven.extensions.barrage.chunk.ChunkReadingFactory;
+import io.deephaven.extensions.barrage.chunk.DefaultChunkReadingFactory;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.io.streams.ByteBufferInputStream;
 import io.deephaven.proto.util.Exceptions;
@@ -45,6 +47,7 @@ public class ArrowToTableConverter {
     private Class<?>[] columnTypes;
     private Class<?>[] componentTypes;
     protected BarrageSubscriptionOptions options = DEFAULT_SER_OPTIONS;
+    private Schema schema;
 
     private volatile boolean completed = false;
 
@@ -136,6 +139,7 @@ public class ArrowToTableConverter {
     }
 
     protected void parseSchema(final Schema header) {
+        this.schema = header;
         // The Schema instance (especially originated from Python) can't be assumed to be valid after the return
         // of this method. Until https://github.com/jpy-consortium/jpy/issues/126 is resolved, we need to make a copy of
         // the header to use after the return of this method.
@@ -194,8 +198,10 @@ public class ArrowToTableConverter {
             msg.addColumnData[ci].data = new ArrayList<>();
             final int factor = (columnConversionFactors == null) ? 1 : columnConversionFactors[ci];
             try {
-                acd.data.add(ChunkInputStreamGenerator.extractChunkFromInputStream(options, factor,
-                        columnChunkTypes[ci], columnTypes[ci], componentTypes[ci], fieldNodeIter,
+                acd.data.add(DefaultChunkReadingFactory.INSTANCE.extractChunkFromInputStream(options, factor,
+                        new ChunkReadingFactory.ChunkTypeInfo(columnChunkTypes[ci], columnTypes[ci], componentTypes[ci],
+                                schema.fields(ci)),
+                        fieldNodeIter,
                         bufferInfoIter, mi.inputStream, null, 0, 0));
             } catch (final IOException unexpected) {
                 throw new UncheckedDeephavenException(unexpected);

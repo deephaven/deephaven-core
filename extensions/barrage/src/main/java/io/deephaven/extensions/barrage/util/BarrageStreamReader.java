@@ -19,6 +19,8 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
+import io.deephaven.extensions.barrage.chunk.ChunkReadingFactory;
+import io.deephaven.extensions.barrage.chunk.DefaultChunkReadingFactory;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.internal.log.LoggerFactory;
@@ -26,6 +28,7 @@ import io.deephaven.io.logger.Logger;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.flatbuf.RecordBatch;
+import org.apache.arrow.flatbuf.Schema;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -51,7 +54,10 @@ public class BarrageStreamReader implements StreamReader {
     private long numModRowsRead = 0;
     private long numModRowsTotal = 0;
 
+    private Schema schema;
     private BarrageMessage msg = null;
+
+    private final ChunkReadingFactory chunkReadingFactory = DefaultChunkReadingFactory.INSTANCE;
 
     public BarrageStreamReader(final LongConsumer deserializeTmConsumer) {
         this.deserializeTmConsumer = deserializeTmConsumer;
@@ -239,8 +245,10 @@ public class BarrageStreamReader implements StreamReader {
 
                             // fill the chunk with data and assign back into the array
                             acd.data.set(lastChunkIndex,
-                                    ChunkInputStreamGenerator.extractChunkFromInputStream(options, columnChunkTypes[ci],
-                                            columnTypes[ci], componentTypes[ci], fieldNodeIter, bufferInfoIter, ois,
+                                    chunkReadingFactory.extractChunkFromInputStream(options,
+                                            new ChunkReadingFactory.ChunkTypeInfo(columnChunkTypes[ci],
+                                                    columnTypes[ci], componentTypes[ci], schema.fields(ci)),
+                                            fieldNodeIter, bufferInfoIter, ois,
                                             chunk, chunk.size(), (int) batch.length()));
                             chunk.setSize(chunk.size() + (int) batch.length());
                         }
@@ -270,8 +278,10 @@ public class BarrageStreamReader implements StreamReader {
 
                             // fill the chunk with data and assign back into the array
                             mcd.data.set(lastChunkIndex,
-                                    ChunkInputStreamGenerator.extractChunkFromInputStream(options, columnChunkTypes[ci],
-                                            columnTypes[ci], componentTypes[ci], fieldNodeIter, bufferInfoIter, ois,
+                                    chunkReadingFactory.extractChunkFromInputStream(options,
+                                            new ChunkReadingFactory.ChunkTypeInfo(columnChunkTypes[ci],
+                                                    columnTypes[ci], componentTypes[ci], null),
+                                            fieldNodeIter, bufferInfoIter, ois,
                                             chunk, chunk.size(), numRowsToRead));
                             chunk.setSize(chunk.size() + numRowsToRead);
                         }
@@ -282,6 +292,7 @@ public class BarrageStreamReader implements StreamReader {
 
             if (header != null && header.headerType() == MessageHeader.Schema) {
                 // there is no body and our clients do not want to see schema messages
+                this.schema = (Schema) header.header(new Schema());
                 return null;
             }
 
