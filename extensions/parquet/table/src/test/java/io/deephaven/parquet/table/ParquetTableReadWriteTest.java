@@ -2350,6 +2350,28 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
+    public void readParquetFilesWithCodec() {
+        final Table table = TableTools.emptyTable(10000)
+                .update("bdColumn = java.math.BigDecimal.valueOf(ii*1000).stripTrailingZeros()",
+                        "biColumn = java.math.BigInteger.valueOf(ii*512)");
+
+        // Set codecs for each column
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .addColumnCodec("bdColumn", "io.deephaven.util.codec.BigDecimalCodec", "20,1,allowrounding")
+                .addColumnCodec("biColumn", "io.deephaven.util.codec.BigIntegerCodec")
+                .build();
+
+        final File parentDir = new File(rootFile, "tempDir");
+        parentDir.mkdir();
+        final File dest = new File(parentDir, "dataWithCodecInfo.parquet");
+        ParquetTools.writeTable(table, dest.getPath(), instructions);
+
+        // Read the file back
+        final Table fromDisk = ParquetTools.readTable(dest.getPath());
+        assertTableEquals(table, fromDisk);
+    }
+
+    @Test
     public void partitionedParquetWithDuplicateDataTest() throws IOException {
         // Create an empty parent directory
         final File parentDir = new File(rootFile, "tempDir");

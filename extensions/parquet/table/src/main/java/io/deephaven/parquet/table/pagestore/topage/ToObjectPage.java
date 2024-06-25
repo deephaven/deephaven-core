@@ -5,6 +5,8 @@ package io.deephaven.parquet.table.pagestore.topage;
 
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.ChunkType;
+import io.deephaven.parquet.base.PageMaterializerFactory;
+import io.deephaven.parquet.base.materializers.BlobMaterializer;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.codec.ObjectCodec;
 import org.apache.parquet.column.Dictionary;
@@ -33,7 +35,8 @@ public class ToObjectPage<T, ATTR extends Any> implements ToPage<ATTR, T[]> {
                                         return codec.decode(bytes, 0, bytes.length);
                                     },
                                     dictionarySupplier),
-                            (final Object result) -> convertResult(nativeType, codec, result));
+                            (final Object result) -> convertResult(nativeType, codec, result),
+                            BlobMaterializer.Factory);
         }
 
         throw new IllegalArgumentException("The native type for a Object column is " + nativeType.getCanonicalName());
@@ -54,6 +57,12 @@ public class ToObjectPage<T, ATTR extends Any> implements ToPage<ATTR, T[]> {
     @NotNull
     public final ChunkType getChunkType() {
         return ChunkType.Object;
+    }
+
+    @Override
+    @NotNull
+    public final PageMaterializerFactory getPageMaterializerFactory() {
+        return BlobMaterializer.Factory;
     }
 
     @Override

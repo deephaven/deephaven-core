@@ -8,6 +8,9 @@ import io.deephaven.parquet.base.PageMaterializerFactory;
 import org.apache.parquet.column.values.ValuesReader;
 import org.apache.parquet.io.api.Binary;
 
+/**
+ * Materializer for binary data.
+ */
 public class BlobMaterializer extends ObjectMaterializerBase<Binary> implements PageMaterializer {
 
     public static final PageMaterializerFactory Factory = new PageMaterializerFactory() {

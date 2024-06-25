@@ -3,6 +3,8 @@
 //
 package io.deephaven.parquet.table.pagestore.topage;
 
+import io.deephaven.parquet.base.PageMaterializerFactory;
+import io.deephaven.parquet.base.materializers.IntMaterializer;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.stringset.LongBitmapStringSet;
 import io.deephaven.chunk.attributes.Any;
@@ -28,14 +30,17 @@ public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any>
     private final Class<DATA_TYPE> nativeType;
     private final ChunkDictionary<DATA_TYPE, ATTR> chunkDictionary;
     private final Function<Object, DATA_TYPE[]> convertResultFallbackFun;
+    private final PageMaterializerFactory pageMaterializerFactory;
 
     ToPageWithDictionary(
             @NotNull final Class<DATA_TYPE> nativeType,
             @NotNull final ChunkDictionary<DATA_TYPE, ATTR> chunkDictionary,
-            @NotNull final Function<Object, DATA_TYPE[]> convertResultFallbackFun) {
+            @NotNull final Function<Object, DATA_TYPE[]> convertResultFallbackFun,
+            @NotNull final PageMaterializerFactory pageMaterializerFactory) {
         this.nativeType = nativeType;
         this.chunkDictionary = chunkDictionary;
         this.convertResultFallbackFun = convertResultFallbackFun;
+        this.pageMaterializerFactory = pageMaterializerFactory;
     }
 
     @Override
@@ -48,6 +53,12 @@ public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any>
     @NotNull
     public final ChunkType getChunkType() {
         return ChunkType.Object;
+    }
+
+    @Override
+    @NotNull
+    public final PageMaterializerFactory getPageMaterializerFactory() {
+        return pageMaterializerFactory;
     }
 
     @Override
@@ -113,6 +124,13 @@ public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any>
             @Override
             public Object nullValue() {
                 return NULL_INT;
+            }
+
+            @Override
+            @NotNull
+            public PageMaterializerFactory getPageMaterializerFactory() {
+                // TODO Check if this is right
+                return IntMaterializer.Factory;
             }
 
             @Override

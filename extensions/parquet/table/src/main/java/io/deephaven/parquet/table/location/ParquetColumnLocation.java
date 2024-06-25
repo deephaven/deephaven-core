@@ -464,9 +464,12 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
         public Optional<ToPage<ATTR, ?>> visit(
                 final LogicalTypeAnnotation.TimestampLogicalTypeAnnotation timestampLogicalType) {
             if (timestampLogicalType.isAdjustedToUTC()) {
-                return Optional.of(ToInstantPage.create(pageType));
+                // The column will be stored as nanoseconds elapsed since epoch as long values
+                return Optional.of(ToInstantPage.create(pageType, timestampLogicalType.getUnit()));
             }
-            return Optional.of(ToLocalDateTimePage.create(pageType));
+            // The column will be stored as as LocalDateTime
+            // Ref:https://github.com/apache/parquet-format/blob/master/LogicalTypes.md#local-semantics-timestamps-not-normalized-to-utc
+            return Optional.of(ToLocalDateTimePage.create(pageType, timestampLogicalType.getUnit()));
         }
 
         @Override
@@ -488,7 +491,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                     case 16:
                         return Optional.of(ToCharPage.create(pageType));
                     case 32:
-                        return Optional.of(ToLongPage.create(pageType));
+                        return Optional.of(ToLongPage.createFromUnsignedInt(pageType));
                 }
             }
             return Optional.empty();
@@ -501,7 +504,8 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
 
         @Override
         public Optional<ToPage<ATTR, ?>> visit(final LogicalTypeAnnotation.TimeLogicalTypeAnnotation timeLogicalType) {
-            return Optional.of(ToLocalTimePage.create(pageType));
+            // isAdjustedToUTC parameter is ignored while reading LocalTime from Parquet files
+            return Optional.of(ToLocalTimePage.create(pageType, timeLogicalType.getUnit()));
         }
 
         @Override
@@ -509,28 +513,39 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                 final LogicalTypeAnnotation.DecimalLogicalTypeAnnotation decimalLogicalType) {
             final PrimitiveType type = columnChunkReader.getType();
             final PrimitiveType.PrimitiveTypeName typeName = type.getPrimitiveTypeName();
-            final int encodedSizeInBytes = typeName == BINARY ? -1 : type.getTypeLength();
-            if (BigDecimal.class.equals(pageType)) {
-                final int precision = decimalLogicalType.getPrecision();
-                final int scale = decimalLogicalType.getScale();
-                try {
-                    verifyPrecisionAndScale(precision, scale, typeName);
-                } catch (final IllegalArgumentException exception) {
-                    throw new TableDataException(
-                            "Invalid scale and precision for column " + name + ": " + exception.getMessage());
-                }
-                return Optional.of(ToBigDecimalPage.create(
-                        pageType,
-                        new BigDecimalParquetBytesCodec(precision, scale, encodedSizeInBytes),
-                        columnChunkReader.getDictionarySupplier()));
-            } else if (BigInteger.class.equals(pageType)) {
-                return Optional.of(ToBigIntegerPage.create(
-                        pageType,
-                        new BigIntegerParquetBytesCodec(encodedSizeInBytes),
-                        columnChunkReader.getDictionarySupplier()));
+            switch (typeName) {
+                case INT32:
+                    return Optional.of(ToBigDecimalFromIntPage.create(
+                            pageType, decimalLogicalType.getPrecision(), decimalLogicalType.getScale()));
+                case INT64:
+                    return Optional.of(ToBigDecimalFromLongPage.create(
+                            pageType, decimalLogicalType.getPrecision(), decimalLogicalType.getScale()));
+                case FIXED_LEN_BYTE_ARRAY: // fall through
+                case BINARY:
+                    final int encodedSizeInBytes = typeName == BINARY ? -1 : type.getTypeLength();
+                    if (BigDecimal.class.equals(pageType)) {
+                        final int precision = decimalLogicalType.getPrecision();
+                        final int scale = decimalLogicalType.getScale();
+                        try {
+                            verifyPrecisionAndScale(precision, scale, typeName);
+                        } catch (final IllegalArgumentException exception) {
+                            throw new TableDataException(
+                                    "Invalid scale and precision for column " + name + ": " + exception.getMessage());
+                        }
+                        return Optional.of(ToBigDecimalPage.create(
+                                pageType,
+                                new BigDecimalParquetBytesCodec(precision, scale, encodedSizeInBytes),
+                                columnChunkReader.getDictionarySupplier()));
+                    } else if (BigInteger.class.equals(pageType)) {
+                        return Optional.of(ToBigIntegerPage.create(
+                                pageType,
+                                new BigIntegerParquetBytesCodec(encodedSizeInBytes),
+                                columnChunkReader.getDictionarySupplier()));
+                    }
+                    // We won't blow up here, Maybe someone will provide us a codec instead.
+                default:
+                    return Optional.empty();
             }
-            // We won't blow up here, Maybe someone will provide us a codec instead.
-            return Optional.empty();
         }
     }
 }

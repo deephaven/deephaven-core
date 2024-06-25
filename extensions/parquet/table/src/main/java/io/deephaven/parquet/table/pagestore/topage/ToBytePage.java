@@ -9,12 +9,15 @@ package io.deephaven.parquet.table.pagestore.topage;
 
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Any;
+import io.deephaven.parquet.base.PageMaterializerFactory;
+import io.deephaven.parquet.base.materializers.ByteMaterializer;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_BYTE_BOXED;
 
 public class ToBytePage<ATTR extends Any> implements ToPage<ATTR, byte[]> {
 
+    @SuppressWarnings("rawtypes")
     private static final ToBytePage INSTANCE = new ToBytePage<>();
 
     public static <ATTR extends Any> ToBytePage<ATTR> create(Class<?> nativeType) {
@@ -44,5 +47,11 @@ public class ToBytePage<ATTR extends Any> implements ToPage<ATTR, byte[]> {
     @NotNull
     public final Object nullValue() {
         return NULL_BYTE_BOXED;
+    }
+
+    @Override
+    @NotNull
+    public final PageMaterializerFactory getPageMaterializerFactory() {
+        return ByteMaterializer.Factory;
     }
 }
