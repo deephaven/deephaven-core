@@ -1468,12 +1468,16 @@ public abstract class QueryTableWhereTest {
         final Class<Object> colType = table.getDefinition().getColumn("X").getDataType();
         Assert.eq(colType, "colType", byte.class);
 
+        ExecutionContext.getContext().getQueryScope().putParam("real_null", null);
         ExecutionContext.getContext().getQueryScope().putParam("val_null", QueryConstants.NULL_INT);
         ExecutionContext.getContext().getQueryScope().putParam("val_5", 5);
 
+        final Table real_null_result = table.where("X == real_null");
         final Table null_result = table.where("X == val_null");
-        final Table range_result = table.where("X >= val_5");
         Assert.eq(null_result.size(), "null_result.size()", 5);
+        assertTableEquals(real_null_result, null_result);
+
+        final Table range_result = table.where("X >= val_5");
         Assert.eq(range_result.size(), "range_result.size()", 3);
     }
 
@@ -1483,12 +1487,16 @@ public abstract class QueryTableWhereTest {
         final Class<Object> colType = table.getDefinition().getColumn("X").getDataType();
         Assert.eq(colType, "colType", short.class);
 
+        ExecutionContext.getContext().getQueryScope().putParam("real_null", null);
         ExecutionContext.getContext().getQueryScope().putParam("val_null", QueryConstants.NULL_INT);
         ExecutionContext.getContext().getQueryScope().putParam("val_5", 5);
 
+        final Table real_null_result = table.where("X == real_null");
         final Table null_result = table.where("X == val_null");
-        final Table range_result = table.where("X >= val_5");
         Assert.eq(null_result.size(), "null_result.size()", 5);
+        assertTableEquals(real_null_result, null_result);
+
+        final Table range_result = table.where("X >= val_5");
         Assert.eq(range_result.size(), "range_result.size()", 3);
     }
 
@@ -1498,12 +1506,16 @@ public abstract class QueryTableWhereTest {
         final Class<Object> colType = table.getDefinition().getColumn("X").getDataType();
         Assert.eq(colType, "colType", int.class);
 
+        ExecutionContext.getContext().getQueryScope().putParam("real_null", null);
         ExecutionContext.getContext().getQueryScope().putParam("val_null", QueryConstants.NULL_LONG);
         ExecutionContext.getContext().getQueryScope().putParam("val_5", 5L);
 
+        final Table real_null_result = table.where("X == real_null");
         final Table null_result = table.where("X == val_null");
-        final Table range_result = table.where("X >= val_5");
         Assert.eq(null_result.size(), "null_result.size()", 5);
+        assertTableEquals(real_null_result, null_result);
+
+        final Table range_result = table.where("X >= val_5");
         Assert.eq(range_result.size(), "range_result.size()", 3);
     }
 
@@ -1513,12 +1525,16 @@ public abstract class QueryTableWhereTest {
         final Class<Object> colType = table.getDefinition().getColumn("X").getDataType();
         Assert.eq(colType, "colType", long.class);
 
+        ExecutionContext.getContext().getQueryScope().putParam("real_null", null);
         ExecutionContext.getContext().getQueryScope().putParam("val_null", QueryConstants.NULL_INT);
         ExecutionContext.getContext().getQueryScope().putParam("val_5", 5);
 
+        final Table real_null_result = table.where("X == real_null");
         final Table null_result = table.where("X == val_null");
-        final Table range_result = table.where("X >= val_5");
         Assert.eq(null_result.size(), "null_result.size()", 5);
+        assertTableEquals(real_null_result, null_result);
+
+        final Table range_result = table.where("X >= val_5");
         Assert.eq(range_result.size(), "range_result.size()", 3);
     }
 
@@ -1528,12 +1544,16 @@ public abstract class QueryTableWhereTest {
         final Class<Object> colType = table.getDefinition().getColumn("X").getDataType();
         Assert.eq(colType, "colType", float.class);
 
+        ExecutionContext.getContext().getQueryScope().putParam("real_null", null);
         ExecutionContext.getContext().getQueryScope().putParam("val_null", QueryConstants.NULL_INT);
         ExecutionContext.getContext().getQueryScope().putParam("val_5", 5);
 
+        final Table real_null_result = table.where("X == real_null");
         final Table null_result = table.where("X == val_null");
-        final Table range_result = table.where("X >= val_5");
         Assert.eq(null_result.size(), "null_result.size()", 5);
+        assertTableEquals(real_null_result, null_result);
+
+        final Table range_result = table.where("X >= val_5");
         Assert.eq(range_result.size(), "range_result.size()", 3);
     }
 
@@ -1543,12 +1563,16 @@ public abstract class QueryTableWhereTest {
         final Class<Object> colType = table.getDefinition().getColumn("X").getDataType();
         Assert.eq(colType, "colType", double.class);
 
+        ExecutionContext.getContext().getQueryScope().putParam("real_null", null);
         ExecutionContext.getContext().getQueryScope().putParam("val_null", QueryConstants.NULL_INT);
         ExecutionContext.getContext().getQueryScope().putParam("val_5", 5);
 
+        final Table real_null_result = table.where("X == real_null");
         final Table null_result = table.where("X == val_null");
-        final Table range_result = table.where("X >= val_5");
         Assert.eq(null_result.size(), "null_result.size()", 5);
+        assertTableEquals(real_null_result, null_result);
+
+        final Table range_result = table.where("X >= val_5");
         Assert.eq(range_result.size(), "range_result.size()", 3);
     }
 }

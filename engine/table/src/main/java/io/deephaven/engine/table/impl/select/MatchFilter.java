@@ -403,7 +403,7 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                     @Override
                     Object convertParamValue(Object paramValue) {
                         paramValue = super.convertParamValue(paramValue);
-                        if (paramValue instanceof Byte) {
+                        if (paramValue instanceof Byte || paramValue == null) {
                             return paramValue;
                         }
                         // noinspection unchecked
@@ -426,7 +426,7 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                     @Override
                     Object convertParamValue(Object paramValue) {
                         paramValue = super.convertParamValue(paramValue);
-                        if (paramValue instanceof Short) {
+                        if (paramValue instanceof Short || paramValue == null) {
                             return paramValue;
                         }
                         // noinspection unchecked
@@ -449,7 +449,7 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                     @Override
                     Object convertParamValue(Object paramValue) {
                         paramValue = super.convertParamValue(paramValue);
-                        if (paramValue instanceof Integer) {
+                        if (paramValue instanceof Integer || paramValue == null) {
                             return paramValue;
                         }
                         // noinspection unchecked
@@ -472,7 +472,7 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                     @Override
                     Object convertParamValue(Object paramValue) {
                         paramValue = super.convertParamValue(paramValue);
-                        if (paramValue instanceof Long) {
+                        if (paramValue instanceof Long || paramValue == null) {
                             return paramValue;
                         }
                         // noinspection unchecked
@@ -495,7 +495,7 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                     @Override
                     Object convertParamValue(Object paramValue) {
                         paramValue = super.convertParamValue(paramValue);
-                        if (paramValue instanceof Float) {
+                        if (paramValue instanceof Float || paramValue == null) {
                             return paramValue;
                         }
                         // noinspection unchecked
@@ -518,7 +518,7 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                     @Override
                     Object convertParamValue(Object paramValue) {
                         paramValue = super.convertParamValue(paramValue);
-                        if (paramValue instanceof Double) {
+                        if (paramValue instanceof Double || paramValue == null) {
                             return paramValue;
                         }
                         // noinspection unchecked
@@ -570,7 +570,7 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                     @Override
                     Object convertParamValue(Object paramValue) {
                         paramValue = super.convertParamValue(paramValue);
-                        if (paramValue instanceof Character) {
+                        if (paramValue instanceof Character || paramValue == null) {
                             return paramValue;
                         }
                         // noinspection unchecked
