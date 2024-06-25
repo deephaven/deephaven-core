@@ -387,31 +387,31 @@ public abstract class QueryTableWhereTest {
         });
     }
 
-    // @Test
-    // public void testWhereDynamicInIncremental() {
-    // testWhereDynamicIncrementalInternal(false, false, true, true);
-    // testWhereDynamicIncrementalInternal(false, false, true, false);
-    // testWhereDynamicIncrementalInternal(false, false, false, true);
-    // testWhereDynamicIncrementalInternal(false, false, false, false);
-    // }
-    //
-    // @Test
-    // public void testWhereDynamicInIncrementalIndexed() {
-    // testWhereDynamicIncrementalInternal(true, false, true, true);
-    // testWhereDynamicIncrementalInternal(true, false, true, false);
-    // testWhereDynamicIncrementalInternal(true, false, false, true);
-    // testWhereDynamicIncrementalInternal(true, false, false, false);
-    //
-    // testWhereDynamicIncrementalInternal(false, true, true, true);
-    // testWhereDynamicIncrementalInternal(false, true, true, false);
-    // testWhereDynamicIncrementalInternal(false, true, false, true);
-    // testWhereDynamicIncrementalInternal(false, true, false, false);
-    //
-    // testWhereDynamicIncrementalInternal(true, true, true, true);
-    // testWhereDynamicIncrementalInternal(true, true, true, false);
-    // testWhereDynamicIncrementalInternal(true, true, false, true);
-    // testWhereDynamicIncrementalInternal(true, true, false, false);
-    // }
+    @Test
+    public void testWhereDynamicInIncremental() {
+        testWhereDynamicIncrementalInternal(false, false, true, true);
+        testWhereDynamicIncrementalInternal(false, false, true, false);
+        testWhereDynamicIncrementalInternal(false, false, false, true);
+        testWhereDynamicIncrementalInternal(false, false, false, false);
+    }
+
+    @Test
+    public void testWhereDynamicInIncrementalIndexed() {
+        testWhereDynamicIncrementalInternal(true, false, true, true);
+        testWhereDynamicIncrementalInternal(true, false, true, false);
+        testWhereDynamicIncrementalInternal(true, false, false, true);
+        testWhereDynamicIncrementalInternal(true, false, false, false);
+
+        testWhereDynamicIncrementalInternal(false, true, true, true);
+        testWhereDynamicIncrementalInternal(false, true, true, false);
+        testWhereDynamicIncrementalInternal(false, true, false, true);
+        testWhereDynamicIncrementalInternal(false, true, false, false);
+
+        testWhereDynamicIncrementalInternal(true, true, true, true);
+        testWhereDynamicIncrementalInternal(true, true, true, false);
+        testWhereDynamicIncrementalInternal(true, true, false, true);
+        testWhereDynamicIncrementalInternal(true, true, false, false);
+    }
 
     private static void testWhereDynamicIncrementalInternal(
             boolean filterIndexed,
