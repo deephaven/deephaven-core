@@ -68,6 +68,10 @@ class BarrageTestCase(BaseTestCase):
         with self.assertRaises(DHError):
             barrage_session(host="localhost", port=10000, auth_type="Basic", auth_token="user:password")
 
+    def test_barrage_session_with_extra_headers(self):
+        session = barrage_session(host="localhost", port=10000, auth_type="Anonymous", extra_headers={"envoy-prefix": "test"})
+        self.assertIsNotNone(session)
+
     def test_subscribe(self):
         session = barrage_session(host="localhost", port=10000, auth_type="Anonymous")
         t = session.subscribe(ticket=self.shared_ticket.bytes)

@@ -109,7 +109,7 @@ class Classpaths {
 
     static final String JACKSON_GROUP = 'com.fasterxml.jackson'
     static final String JACKSON_NAME = 'jackson-bom'
-    static final String JACKSON_VERSION = '2.14.1'
+    static final String JACKSON_VERSION = '2.17.0'
 
     static final String SSLCONTEXT_GROUP = 'io.github.hakky54'
     static final String SSLCONTEXT_VERSION = '8.1.1'
@@ -126,10 +126,10 @@ class Classpaths {
     static final String HADOOP_VERSION = '3.4.0'
 
     static final String ICEBERG_GROUP = 'org.apache.iceberg'
-    static final String ICEBERG_VERSION = '1.5.0'
+    static final String ICEBERG_VERSION = '1.5.2'
 
     static final String AWSSDK_GROUP = 'software.amazon.awssdk'
-    static final String AWSSDK_VERSION = '2.23.19'
+    static final String AWSSDK_VERSION = '2.24.5'
 
     static final String TESTCONTAINER_GROUP = 'org.testcontainers'
     static final String TESTCONTAINER_VERSION = '1.19.4'

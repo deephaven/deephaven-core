@@ -43,9 +43,9 @@ import java.util.BitSet;
 /**
  * Superclass of various subscription types, allowing specific implementations to customize behavior for their needs.
  * <p>
- * Instances are not ready to use right away, owing to the fact that we need to wait both for the provided state to resolve
- * (so that we have the table schema, know what kind of subscription we will make, and know what column types will
- * be resolves), and because until the subscription has finished being set up, we will not have received the size
+ * Instances are not ready to use right away, owing to the fact that we need to wait both for the provided state to
+ * resolve (so that we have the table schema, know what kind of subscription we will make, and know what column types
+ * will be resolves), and because until the subscription has finished being set up, we will not have received the size
  * of the table. When closed, it cannot be reused again.
  * <p>
  * This is also a base class for types exposed to JS.
@@ -80,7 +80,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
     protected WebBarrageSubscription barrageSubscription;
 
     protected Status status = Status.STARTING;
-    @Deprecated// remove this, use status instead
+    @Deprecated // remove this, use status instead
     private boolean subscriptionReady;
 
     public AbstractTableSubscription(ClientTableState state, WorkerConnection connection) {
@@ -103,7 +103,8 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
             WebBarrageSubscription.DataChangedHandler dataChangedHandler = this::onDataChanged;
 
             status = Status.ACTIVE;
-            this.barrageSubscription = WebBarrageSubscription.subscribe(state, viewportChangedHandler, dataChangedHandler);
+            this.barrageSubscription =
+                    WebBarrageSubscription.subscribe(state, viewportChangedHandler, dataChangedHandler);
 
             doExchange =
                     connection.<FlightData, FlightData>streamFactory().create(
@@ -129,8 +130,9 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         return status;
     }
 
-    protected static FlatBufferBuilder subscriptionRequest(byte[] tableTicket, BitSet columns, @Nullable RangeSet viewport,
-                                                        BarrageSubscriptionOptions options, boolean isReverseViewport) {
+    protected static FlatBufferBuilder subscriptionRequest(byte[] tableTicket, BitSet columns,
+            @Nullable RangeSet viewport,
+            BarrageSubscriptionOptions options, boolean isReverseViewport) {
         FlatBufferBuilder sub = new FlatBufferBuilder(1024);
         int colOffset = BarrageSubscriptionRequest.createColumnsVector(sub, columns.toByteArray());
         int viewportOffset = 0;

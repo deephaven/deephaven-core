@@ -12,6 +12,8 @@ import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
+import io.deephaven.extensions.barrage.chunk.ChunkReader;
+import io.deephaven.extensions.barrage.chunk.ChunkReadingFactory;
 import io.deephaven.extensions.barrage.util.FlatBufferIteratorAdapter;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.io.streams.ByteBufferInputStream;
@@ -19,9 +21,11 @@ import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.web.shared.data.RangeSet;
 import io.deephaven.web.shared.data.ShiftedRange;
+import org.apache.arrow.flatbuf.Field;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.flatbuf.RecordBatch;
+import org.apache.arrow.flatbuf.Schema;
 import org.gwtproject.nio.TypedArrayHelper;
 
 import java.io.IOException;
@@ -30,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.PrimitiveIterator;
 
 /**
@@ -47,6 +52,9 @@ public class WebBarrageStreamReader {
 
     // hold in-progress messages that aren't finished being built
     private WebBarrageMessage msg;
+
+    private final WebChunkReaderFactory chunkReaderFactory = new WebChunkReaderFactory();
+    private final List<ChunkReader> readers = new ArrayList<>();
 
     public WebBarrageMessage parseFrom(final StreamReaderOptions options, BitSet expectedColumns,
             ChunkType[] columnChunkTypes, Class<?>[] columnTypes, Class<?>[] componentTypes,
@@ -143,6 +151,15 @@ public class WebBarrageStreamReader {
         byte headerType = header.headerType();
         if (headerType == MessageHeader.Schema) {
             // there is no body and our clients do not want to see schema messages
+            Schema schema = new Schema();
+            header.header(schema);
+            for (int i = 0; i < schema.fieldsLength(); i++) {
+                Field field = schema.fields(i);
+                ChunkReader chunkReader = chunkReaderFactory.extractChunkFromInputStream(options,
+                        new ChunkReadingFactory.ChunkTypeInfo(columnChunkTypes[i], columnTypes[i],
+                                componentTypes[i], field));
+                readers.add(chunkReader);
+            }
             return null;
         }
         if (headerType != MessageHeader.RecordBatch) {
@@ -208,9 +225,8 @@ public class WebBarrageStreamReader {
 
                 // fill the chunk with data and assign back into the array
                 acd.data.set(lastChunkIndex,
-                        ChunkInputStreamGenerator.extractChunkFromInputStream(options, columnChunkTypes[ci],
-                                columnTypes[ci], componentTypes[ci], fieldNodeIter, bufferInfoIter, ois,
-                                chunk, chunk.size(), (int) batch.length()));
+                        readers.get(ci).read(fieldNodeIter, bufferInfoIter, ois, chunk, chunk.size(),
+                                (int) batch.length()));
                 chunk.setSize(chunk.size() + (int) batch.length());
             }
             numAddRowsRead += batch.length();
@@ -239,9 +255,7 @@ public class WebBarrageStreamReader {
 
                 // fill the chunk with data and assign back into the array
                 mcd.data.set(lastChunkIndex,
-                        ChunkInputStreamGenerator.extractChunkFromInputStream(options, columnChunkTypes[ci],
-                                columnTypes[ci], componentTypes[ci], fieldNodeIter, bufferInfoIter, ois,
-                                chunk, chunk.size(), numRowsToRead));
+                        readers.get(ci).read(fieldNodeIter, bufferInfoIter, ois, chunk, chunk.size(), numRowsToRead));
                 chunk.setSize(chunk.size() + numRowsToRead);
             }
             numModRowsRead += batch.length();

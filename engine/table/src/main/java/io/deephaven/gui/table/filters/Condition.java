@@ -20,16 +20,46 @@ public enum Condition {
     NOT_INCLUDES_MATCH_CASE("not includes (casesen)", false),
 
     // Numbers and Dates
-    LESS_THAN("less than", false),
-    GREATER_THAN("greater than", false),
-    LESS_THAN_OR_EQUAL("less than or equal to", false),
-    GREATER_THAN_OR_EQUAL("greater than or equal to", false),
+    LESS_THAN("less than", false) {
+        @Override
+        public Condition mirror() {
+            return Condition.GREATER_THAN;
+        }
+    },
+    GREATER_THAN("greater than", false) {
+        @Override
+        public Condition mirror() {
+            return Condition.LESS_THAN;
+        }
+    },
+    LESS_THAN_OR_EQUAL("less than or equal to", false) {
+        @Override
+        public Condition mirror() {
+            return Condition.GREATER_THAN_OR_EQUAL;
+        }
+    },
+    GREATER_THAN_OR_EQUAL("greater than or equal to", false) {
+        @Override
+        public Condition mirror() {
+            return Condition.LESS_THAN_OR_EQUAL;
+        }
+    },
 
     // Numbers
     EQUALS_ABS("equals (abs)", true),
     NOT_EQUALS_ABS("not equals (abs)", false),
-    LESS_THAN_ABS("less than (abs)", false),
-    GREATER_THAN_ABS("greater than (abs)", false),
+    LESS_THAN_ABS("less than (abs)", false) {
+        @Override
+        public Condition mirror() {
+            return Condition.GREATER_THAN_ABS;
+        }
+    },
+    GREATER_THAN_ABS("greater than (abs)", false) {
+        @Override
+        public Condition mirror() {
+            return Condition.LESS_THAN_ABS;
+        }
+    },
 
     // Lists
     INCLUDED_IN("included in list", true),
@@ -44,5 +74,9 @@ public enum Condition {
     Condition(String description, boolean defaultOr) {
         this.description = description;
         this.defaultOr = defaultOr;
+    }
+
+    public Condition mirror() {
+        return this;
     }
 }

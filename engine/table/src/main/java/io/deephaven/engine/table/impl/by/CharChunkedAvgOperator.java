@@ -20,6 +20,7 @@ import java.util.Map;
 import static io.deephaven.engine.table.impl.by.RollupConstants.*;
 import static io.deephaven.engine.util.NullSafeAddition.plusLong;
 import static io.deephaven.engine.util.NullSafeAddition.minusLong;
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 /**
  * Iterative average operator.
@@ -88,7 +89,7 @@ class CharChunkedAvgOperator implements IterativeChunkedAggregationOperator {
             runningSum.set(destination, newSum);
             resultColumn.set(destination, (double) newSum / newCount);
         } else if (nonNullCount.onlyNullsUnsafe(destination)) {
-            resultColumn.set(destination, Double.NaN);
+            resultColumn.set(destination, NULL_DOUBLE);
         } else {
             return false;
         }
@@ -106,8 +107,11 @@ class CharChunkedAvgOperator implements IterativeChunkedAggregationOperator {
         final long newCount = nonNullCount.addNonNullUnsafe(destination, -chunkNonNull.get());
         final long newSum = minusLong(runningSum.getUnsafe(destination), chunkSum);
         runningSum.set(destination, newSum);
-        resultColumn.set(destination, (double) newSum / newCount);
-
+        if (newCount == 0) {
+            resultColumn.set(destination, NULL_DOUBLE);
+        } else {
+            resultColumn.set(destination, (double) newSum / newCount);
+        }
         return true;
     }
 

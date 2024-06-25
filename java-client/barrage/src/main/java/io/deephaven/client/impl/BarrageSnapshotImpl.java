@@ -322,7 +322,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
                 .build();
     }
 
-    private class BarrageDataMarshaller implements MethodDescriptor.Marshaller<BarrageMessage> {
+    private static class BarrageDataMarshaller implements MethodDescriptor.Marshaller<BarrageMessage> {
         private final BarrageSnapshotOptions options;
         private final ChunkType[] columnChunkTypes;
         private final Class<?>[] columnTypes;
@@ -350,8 +350,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
         @Override
         public BarrageMessage parse(final InputStream stream) {
-            return streamReader.safelyParseFrom(options, columnChunkTypes, columnTypes, componentTypes,
-                    stream);
+            return streamReader.safelyParseFrom(options, columnChunkTypes, columnTypes, componentTypes, stream);
         }
     }
 
@@ -366,7 +365,6 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
             future.completeExceptionally(t);
         }
     }
-
 
     /**
      * The Completable Future is used to encapsulate the concept that the table is filled with requested data.

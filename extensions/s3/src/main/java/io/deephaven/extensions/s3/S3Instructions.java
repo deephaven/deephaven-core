@@ -28,18 +28,21 @@ public abstract class S3Instructions implements LogOutputAppendable {
     private final static int DEFAULT_READ_AHEAD_COUNT = 32;
     private final static int DEFAULT_FRAGMENT_SIZE = 1 << 16; // 64 KiB
     private final static int MIN_FRAGMENT_SIZE = 8 << 10; // 8 KiB
-    private final static int DEFAULT_MAX_CACHE_SIZE = 256;
     private final static Duration DEFAULT_CONNECTION_TIMEOUT = Duration.ofSeconds(2);
     private final static Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(2);
+
+    static final S3Instructions DEFAULT = builder().build();
 
     public static Builder builder() {
         return ImmutableS3Instructions.builder();
     }
 
     /**
-     * The region name to use when reading or writing to S3.
+     * The region name to use when reading or writing to S3. If not provided, the region name is picked by the AWS SDK
+     * from 'aws.region' system property, "AWS_REGION" environment variable, the {user.home}/.aws/credentials or
+     * {user.home}/.aws/config files, or from EC2 metadata service, if running in EC2.
      */
-    public abstract String regionName();
+    public abstract Optional<String> regionName();
 
     /**
      * The maximum number of concurrent requests to make to S3, defaults to {@value #DEFAULT_MAX_CONCURRENT_REQUESTS}.
@@ -67,17 +70,6 @@ public abstract class S3Instructions implements LogOutputAppendable {
     @Default
     public int fragmentSize() {
         return DEFAULT_FRAGMENT_SIZE;
-    }
-
-    /**
-     * The maximum number of fragments to cache in memory, defaults to
-     * {@code Math.max(1 + readAheadCount(), DEFAULT_MAX_CACHE_SIZE)}, which is at least
-     * {@value #DEFAULT_MAX_CACHE_SIZE}. This caching is done at the deephaven layer for faster access to recently read
-     * fragments. Must be greater than or equal to {@code 1 + readAheadCount()}.
-     */
-    @Default
-    public int maxCacheSize() {
-        return Math.max(1 + readAheadCount(), DEFAULT_MAX_CACHE_SIZE);
     }
 
     /**
@@ -129,8 +121,6 @@ public abstract class S3Instructions implements LogOutputAppendable {
 
         Builder fragmentSize(int fragmentSize);
 
-        Builder maxCacheSize(int maxCacheSize);
-
         Builder connectionTimeout(Duration connectionTimeout);
 
         Builder readTimeout(Duration connectionTimeout);
@@ -148,13 +138,10 @@ public abstract class S3Instructions implements LogOutputAppendable {
 
     abstract S3Instructions withReadAheadCount(int readAheadCount);
 
-    abstract S3Instructions withMaxCacheSize(int maxCacheSize);
-
     @Lazy
     S3Instructions singleUse() {
         final int readAheadCount = Math.min(DEFAULT_READ_AHEAD_COUNT, readAheadCount());
-        return withReadAheadCount(readAheadCount)
-                .withMaxCacheSize(readAheadCount + 1);
+        return withReadAheadCount(readAheadCount);
     }
 
     @Check
@@ -176,14 +163,6 @@ public abstract class S3Instructions implements LogOutputAppendable {
         if (fragmentSize() < MIN_FRAGMENT_SIZE) {
             throw new IllegalArgumentException("fragmentSize(=" + fragmentSize() + ") must be >= " + MIN_FRAGMENT_SIZE +
                     " bytes");
-        }
-    }
-
-    @Check
-    final void boundsCheckMaxCacheSize() {
-        if (maxCacheSize() < readAheadCount() + 1) {
-            throw new IllegalArgumentException("maxCacheSize(=" + maxCacheSize() + ") must be >= 1 + " +
-                    "readAheadCount(=" + readAheadCount() + ")");
         }
     }
 

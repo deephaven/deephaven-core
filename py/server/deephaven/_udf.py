@@ -200,6 +200,11 @@ class _ParsedSignature:
     def prepare_auto_arg_conv(self, encoded_arg_types: str) -> bool:
         """ Determine whether the auto argument conversion should be used and set the converter functions for the
         parameters."""
+        # numba and numpy ufuncs don't need auto argument conversion as they handle the conversion themselves and the
+        # arg types are already verified by the query engine
+        if isinstance(self.fn, (numba.np.ufunc.gufunc.GUFunc, numba.np.ufunc.dufunc.DUFunc)) or isinstance(self.fn, numpy.ufunc):
+            return False
+
         if not self.params or not encoded_arg_types:
             return False
 

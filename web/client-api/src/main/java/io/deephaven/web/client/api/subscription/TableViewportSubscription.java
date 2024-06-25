@@ -220,9 +220,9 @@ public class TableViewportSubscription extends AbstractTableSubscription {
      */
     @JsMethod
     public void close() {
-//        if (status == Status.DONE) {
-//            JsLog.warn("TableViewportSubscription.close called on subscription that's already done.");
-//        }
+        // if (status == Status.DONE) {
+        // JsLog.warn("TableViewportSubscription.close called on subscription that's already done.");
+        // }
         retained = false;
 
         // Instead of calling super.close(), we delegate to internalClose()
@@ -237,13 +237,13 @@ public class TableViewportSubscription extends AbstractTableSubscription {
         // indicate that the base table shouldn't get events anymore, even if it is still retained elsewhere
         originalActive = false;
 
-//        if (retained || status == Status.DONE) {
-//            // the JsTable has indicated it is no longer interested in this viewport, but other calling
-//            // code has retained it, keep it open for now.
-//            return;
-//        }
-//
-//        status = Status.DONE;
+        // if (retained || status == Status.DONE) {
+        // // the JsTable has indicated it is no longer interested in this viewport, but other calling
+        // // code has retained it, keep it open for now.
+        // return;
+        // }
+        //
+        // status = Status.DONE;
 
         super.close();
     }

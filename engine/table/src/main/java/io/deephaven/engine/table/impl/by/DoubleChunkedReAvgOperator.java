@@ -20,6 +20,8 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import java.util.Collections;
 import java.util.Map;
 
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
+
 /**
  * Iterative average operator.
  */
@@ -127,12 +129,14 @@ class DoubleChunkedReAvgOperator implements IterativeChunkedAggregationOperator 
 
     private boolean updateResult(long destination, long nncValue, long nanValue, long picValue, long nicValue,
             double sumSumValue) {
-        if (nanValue > 0 || (picValue > 0 && nicValue > 0) || nncValue == 0) {
+        if (nanValue > 0 || (picValue > 0 && nicValue > 0)) {
             return !Double.isNaN(resultColumn.getAndSetUnsafe(destination, Double.NaN));
         } else if (picValue > 0) {
             return resultColumn.getAndSetUnsafe(destination, Double.POSITIVE_INFINITY) != Double.POSITIVE_INFINITY;
         } else if (nicValue > 0) {
             return resultColumn.getAndSetUnsafe(destination, Double.NEGATIVE_INFINITY) != Double.NEGATIVE_INFINITY;
+        } else if (nncValue == 0) {
+            return resultColumn.getAndSetUnsafe(destination, NULL_DOUBLE) != NULL_DOUBLE;
         } else {
             final double newValue = (double) (sumSumValue / nncValue);
             return resultColumn.getAndSetUnsafe(destination, newValue) != newValue;

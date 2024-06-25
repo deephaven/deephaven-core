@@ -106,7 +106,7 @@ def testPyClient = Docker.registerDockerTask(project, 'testPyClient') {
     containerDependencies.finalizedBy = deephavenDocker.endTask
     network = deephavenDocker.networkName.get()
     dockerfile {
-        from('deephaven/python:local-build')
+        from(Docker.localImageName('python'))
         copyFile('project', '/project')
         workingDir('/project')
         runCommand '''set -eux; \\

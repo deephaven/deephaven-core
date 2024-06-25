@@ -16,6 +16,8 @@ import io.deephaven.engine.rowset.RowSequence;
 import java.util.Collections;
 import java.util.Map;
 
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
+
 /**
  * Iterative average operator.
  */
@@ -91,7 +93,7 @@ class FloatChunkedReVarOperator implements IterativeChunkedAggregationOperator {
                 nicSum.getChunk(reVarContext.nicContext, destinationOk).asLongChunk();
 
         final int size = reVarContext.keyIndices.size();
-        final boolean ordered = reVarContext.ordered;;
+        final boolean ordered = reVarContext.ordered;
         for (int ii = 0; ii < size; ++ii) {
             final boolean changed =
                     updateResult(reVarContext.keyIndices.get(ii), nncSumChunk.get(ii), nanSumChunk.get(ii),
@@ -131,8 +133,10 @@ class FloatChunkedReVarOperator implements IterativeChunkedAggregationOperator {
 
     private boolean updateResult(long destination, long nncValue, long nanValue, long picValue, long nicValue,
             double newSum, double newSum2) {
-        if (nanValue > 0 || picValue > 0 || nicValue > 0 || nncValue <= 1) {
+        if (nanValue > 0 || picValue > 0 || nicValue > 0 || nncValue == 1) {
             return !Double.isNaN(resultColumn.getAndSetUnsafe(destination, Double.NaN));
+        } else if (nncValue == 0) {
+            return resultColumn.getAndSetUnsafe(destination, NULL_DOUBLE) != NULL_DOUBLE;
         } else {
             final double variance = (newSum2 - newSum * newSum / nncValue) / (nncValue - 1);
 

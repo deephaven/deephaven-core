@@ -121,7 +121,7 @@ if (!hasProperty('selenium.port')) {
 
 def createSelenium = tasks.register('createSelenium', DockerCreateContainer) { t ->
     t.dependsOn(Docker.registryTask(project, 'selenium'), deephavenDocker.startTask)
-    t.targetImageId('deephaven/selenium:local-build')
+    t.targetImageId(Docker.localImageName('selenium'))
     t.containerName.set(seleniumContainerId)
     // Advised by the selenium documentation
     t.hostConfig.shmSize.set(2L * 1024 * 1024 * 1024)

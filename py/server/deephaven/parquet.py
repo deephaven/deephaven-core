@@ -13,7 +13,7 @@ import jpy
 from deephaven import DHError
 from deephaven.column import Column
 from deephaven.dtypes import DType
-from deephaven.jcompat import j_array_list
+from deephaven.jcompat import j_array_list, j_table_definition
 from deephaven.table import Table, PartitionedTable
 from deephaven.experimental import s3
 
@@ -135,7 +135,7 @@ def _build_parquet_instructions(
         builder.setFileLayout(_j_file_layout(file_layout))
 
     if table_definition is not None:
-        builder.setTableDefinition(_j_table_definition(table_definition))
+        builder.setTableDefinition(j_table_definition(table_definition))
 
     if index_columns:
         builder.addAllIndexColumns(_j_list_of_list_of_string(index_columns))
@@ -144,24 +144,6 @@ def _build_parquet_instructions(
         builder.setSpecialInstructions(special_instructions.j_object)
 
     return builder.build()
-
-
-def _j_table_definition(table_definition: Union[Dict[str, DType], List[Column], None]) -> Optional[jpy.JType]:
-    if table_definition is None:
-        return None
-    elif isinstance(table_definition, Dict):
-        return _JTableDefinition.of(
-            [
-                Column(name=name, data_type=dtype).j_column_definition
-                for name, dtype in table_definition.items()
-            ]
-        )
-    elif isinstance(table_definition, List):
-        return _JTableDefinition.of(
-            [col.j_column_definition for col in table_definition]
-        )
-    else:
-        raise DHError(f"Unexpected table_definition type: {type(table_definition)}")
 
 
 def _j_file_layout(file_layout: Optional[ParquetFileLayout]) -> Optional[jpy.JType]:
@@ -397,7 +379,7 @@ def write_partitioned(
 def batch_write(
     tables: List[Table],
     paths: List[str],
-    table_definition: Union[Dict[str, DType], List[Column]],
+    table_definition: Optional[Union[Dict[str, DType], List[Column]]] = None,
     col_instructions: Optional[List[ColumnInstruction]] = None,
     compression_codec_name: Optional[str] = None,
     max_dictionary_keys: Optional[int] = None,
@@ -415,9 +397,10 @@ def batch_write(
         paths (List[str]): the destination paths. Any non-existing directories in the paths provided are
             created. If there is an error, any intermediate directories previously created are removed; note this makes
             this method unsafe for concurrent use
-        table_definition (Union[Dict[str, DType], List[Column]]): the table definition to use for writing, instead of
-            the definitions implied by the tables. This definition can be used to skip some columns or add additional
-            columns with null values.
+        table_definition (Optional[Union[Dict[str, DType], List[Column]]]): the table definition to use for writing.
+            This definition can be used to skip some columns or add additional columns with null values. Default is
+            None, which means if all tables have the same definition, use the common table definition implied by the
+            tables. Otherwise, this parameter must be specified.
         col_instructions (Optional[List[ColumnInstruction]]): instructions for customizations while writing
         compression_codec_name (Optional[str]): the compression codec to use. Allowed values include "UNCOMPRESSED",
             "SNAPPY", "GZIP", "LZO", "LZ4", "LZ4_RAW", "ZSTD", etc. If not specified, defaults to "SNAPPY".

@@ -4,12 +4,13 @@
 
 import os
 import unittest
+from datetime import datetime
 
 from deephaven import kafka_consumer as ck
 from deephaven.stream.kafka.consumer import TableType, KeyValueSpec
 from tests.testbase import BaseTestCase
 from deephaven import dtypes
-
+from deephaven.json.jackson import provider as jackson_provider
 
 class KafkaConsumerTestCase(BaseTestCase):
 
@@ -56,7 +57,7 @@ class KafkaConsumerTestCase(BaseTestCase):
             col_defs=[('Symbol', dtypes.string),
                       ('Side', dtypes.string),
                       ('Price', dtypes.double),
-                      ('Qty', dtypes.int_),
+                      ('Qty', dtypes.int64),
                       ('Tstamp', dtypes.Instant)],
             mapping={
                 'jsymbol': 'Symbol',
@@ -70,7 +71,7 @@ class KafkaConsumerTestCase(BaseTestCase):
                 'Symbol': dtypes.string,
                 'Side': dtypes.string,
                 'Price': dtypes.double,
-                'Qty': dtypes.int_,
+                'Qty': dtypes.int64,
                 'Tstamp': dtypes.Instant
             },
             mapping={
@@ -80,7 +81,13 @@ class KafkaConsumerTestCase(BaseTestCase):
                 'jqty': 'Qty',
                 'jts': 'Tstamp'
             }
-        )]
+        ), ck.object_processor_spec(jackson_provider({
+            'Symbol': str,
+            'Side': str,
+            'Price': float,
+            'Qty': int,
+            'Tstamp': datetime
+        }))]
 
         for value_spec in value_specs:
             t = ck.consume(
@@ -102,7 +109,7 @@ class KafkaConsumerTestCase(BaseTestCase):
             self.assertEqual("Price", cols[5].name)
             self.assertEqual(dtypes.double, cols[5].data_type)
             self.assertEqual("Qty", cols[6].name)
-            self.assertEqual(dtypes.int_, cols[6].data_type)
+            self.assertEqual(dtypes.int64, cols[6].data_type)
             self.assertEqual("Tstamp", cols[7].name)
             self.assertEqual(dtypes.Instant, cols[7].data_type)
 
@@ -344,7 +351,7 @@ curl -X POST \
                 [('Symbol', dtypes.string),
                  ('Side', dtypes.string),
                  ('Price', dtypes.double),
-                 ('Qty', dtypes.int_),
+                 ('Qty', dtypes.int64),
                  ('Tstamp', dtypes.Instant)],
                 mapping={
                     'jsymbol': 'Symbol',
@@ -368,7 +375,7 @@ curl -X POST \
         self.assertEqual("Price", cols[5].name)
         self.assertEqual(dtypes.double, cols[5].data_type)
         self.assertEqual("Qty", cols[6].name)
-        self.assertEqual(dtypes.int_, cols[6].data_type)
+        self.assertEqual(dtypes.int64, cols[6].data_type)
         self.assertEqual("Tstamp", cols[7].name)
         self.assertEqual(dtypes.Instant, cols[7].data_type)
 

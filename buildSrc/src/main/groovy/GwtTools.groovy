@@ -84,9 +84,12 @@ class GwtTools {
         gwt.jettyVersion = Classpaths.JETTY_VERSION
         p.configurations.all { Configuration c ->
             c.resolutionStrategy.dependencySubstitution { sub ->
-                sub.substitute(sub.module("com.google.gwt:gwt-codeserver")).using(sub.module('org.gwtproject:gwt-codeserver:2.11.0'))
-                sub.substitute(sub.module("com.google.gwt:gwt-user")).using(sub.module('org.gwtproject:gwt-user:2.11.0'))
-                sub.substitute(sub.module("com.google.gwt:gwt-dev")).using(sub.module('org.gwtproject:gwt-dev:2.11.0'))
+                sub.substitute(sub.module("com.google.gwt:gwt-codeserver"))
+                        .using(sub.module("org.gwtproject:gwt-codeserver:${Classpaths.GWT_VERSION}"))
+                sub.substitute(sub.module("com.google.gwt:gwt-user"))
+                        .using(sub.module("org.gwtproject:gwt-user:${Classpaths.GWT_VERSION}"))
+                sub.substitute(sub.module("com.google.gwt:gwt-dev"))
+                        .using(sub.module("org.gwtproject:gwt-dev:${Classpaths.GWT_VERSION}"))
             }
         }
         if (compile) {

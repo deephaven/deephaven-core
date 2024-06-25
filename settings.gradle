@@ -270,8 +270,17 @@ project(':extensions-s3').projectDir = file('extensions/s3')
 include(':extensions-iceberg')
 project(':extensions-iceberg').projectDir = file('extensions/iceberg')
 
-include(':extensions-iceberg:s3')
-project(':extensions-iceberg:s3').projectDir = file('extensions/iceberg/s3')
+include(':extensions-iceberg-s3')
+project(':extensions-iceberg-s3').projectDir = file('extensions/iceberg/s3')
+
+include(':extensions-json')
+project(':extensions-json').projectDir = file('extensions/json')
+
+include(':extensions-json-jackson')
+project(':extensions-json-jackson').projectDir = file('extensions/json-jackson')
+
+include(':extensions-bson-jackson')
+project(':extensions-bson-jackson').projectDir = file('extensions/bson-jackson')
 
 include(':plugin')
 

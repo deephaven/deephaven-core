@@ -1,0 +1,34 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+dependencies {
+    api project(':engine-processor')
+
+    Classpaths.inheritJacksonPlatform(project, 'api')
+    Classpaths.inheritJacksonPlatform(project, 'testImplementation')
+
+    api 'com.fasterxml.jackson.core:jackson-core'
+    // https://github.com/FasterXML/jackson-core/issues/1229
+    implementation 'ch.randelshofer:fastdoubleparser:1.0.0'
+
+    api project(':extensions-json')
+
+    implementation project(':table-api') // only needs NameValidator, might be worth refactoring?
+
+    implementation project(':engine-query-constants')
+    implementation project(':engine-time')
+    Classpaths.inheritImmutables(project)
+    Classpaths.inheritAutoService(project)
+    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+
+    Classpaths.inheritJUnitPlatform(project)
+    Classpaths.inheritAssertJ(project)
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'com.fasterxml.jackson.core:jackson-databind'
+}
+
+test {
+    useJUnitPlatform()
+}
