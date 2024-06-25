@@ -291,7 +291,7 @@ public final class BusinessCalendarXMLParser {
                 final String closeTxt = openClose[1];
                 final LocalTime open = DateTimeUtils.parseLocalTime(openTxt);
                 final LocalTime close = DateTimeUtils.parseLocalTime(closeTxt);
-                rst[i] = new TimeRange<>(open, close, true);
+                rst[i] = new TimeRange<>(open, close, false);
             } else {
                 throw new IllegalArgumentException("Can not parse business periods; open/close = " + br.getText());
             }
