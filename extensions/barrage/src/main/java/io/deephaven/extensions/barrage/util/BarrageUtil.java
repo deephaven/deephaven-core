@@ -510,6 +510,10 @@ public class BarrageUtil {
             return tableDef.getColumnStream()
                     .map(ColumnDefinition::getComponentType).toArray(Class[]::new);
         }
+
+        // public Field[] fields() {
+        // return
+        // }
     }
 
     private static void setConversionFactor(

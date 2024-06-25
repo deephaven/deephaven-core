@@ -235,19 +235,20 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
 
     static <T> WritableObjectChunk<T, Values> extractChunkFromInputStream(
             final StreamReaderOptions options,
-            final Class<T> type,
+            final ChunkReadingFactory.ChunkTypeInfo typeInfo,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final PrimitiveIterator.OfLong bufferInfoIter,
             final DataInput is,
             final WritableChunk<Values> outChunk,
             final int outOffset,
-            final int totalRows) throws IOException {
+            final int totalRows,
+            ChunkReadingFactory chunkReadingFactory) throws IOException {
 
         final FieldNodeInfo nodeInfo = fieldNodeIter.next();
         final long validityBuffer = bufferInfoIter.nextLong();
         final long offsetsBuffer = bufferInfoIter.nextLong();
 
-        final Class<?> componentType = type.getComponentType();
+        final Class<?> componentType = typeInfo.type().getComponentType();
         final Class<?> innerComponentType = componentType != null ? componentType.getComponentType() : null;
 
         final ChunkType chunkType;
@@ -259,8 +260,11 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
         }
 
         if (nodeInfo.numElements == 0) {
-            try (final WritableChunk<Values> ignored = ChunkInputStreamGenerator.extractChunkFromInputStream(
-                    options, chunkType, componentType, innerComponentType, fieldNodeIter,
+            try (final WritableChunk<Values> ignored = chunkReadingFactory.extractChunkFromInputStream(
+                    options,
+                    new ChunkReadingFactory.ChunkTypeInfo(chunkType, componentType, innerComponentType,
+                            typeInfo.componentArrowField()),
+                    fieldNodeIter,
                     bufferInfoIter, is, null, 0, 0)) {
                 return WritableObjectChunk.makeWritableChunk(nodeInfo.numElements);
             }
@@ -299,8 +303,10 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
             }
 
             final ArrayExpansionKernel kernel = ArrayExpansionKernel.makeExpansionKernel(chunkType, componentType);
-            try (final WritableChunk<Values> inner = ChunkInputStreamGenerator.extractChunkFromInputStream(
-                    options, chunkType, componentType, innerComponentType,
+            try (final WritableChunk<Values> inner = chunkReadingFactory.extractChunkFromInputStream(
+                    options,
+                    new ChunkReadingFactory.ChunkTypeInfo(chunkType, componentType, innerComponentType,
+                            typeInfo.componentArrowField()),
                     fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
                 chunk = kernel.contract(inner, offsets, outChunk, outOffset, totalRows);
 
