@@ -82,6 +82,13 @@ public class DateTimeUtils {
             "(?<date>[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9])(?<t>[tT]?) (?<timezone>[a-zA-Z_/]+)");
 
     /**
+     * Matches dates without time zones.
+     */
+    private static final Pattern LOCAL_DATE_PATTERN = Pattern.compile(
+            "(?<date>[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9])(?<t>[tT]?)");
+
+
+    /**
      * Matches time durations.
      */
     private static final Pattern TIME_DURATION_PATTERN = Pattern.compile(
@@ -4805,6 +4812,65 @@ public class DateTimeUtils {
 
         try {
             return parseInstant(s);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * Parses the string argument as a {@link LocalDateTime}.
+     * <p>
+     * Date time strings are formatted according to the ISO 8601 date time format
+     * {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS]} and others.
+     *
+     * @param s date time string
+     * @return a {@link LocalDateTime} represented by the input string
+     * @throws DateTimeParseException if the string cannot be parsed
+     */
+    @ScriptApi
+    @NotNull
+    public static LocalDateTime parseLocalDateTime(@NotNull final String s) {
+        // noinspection ConstantConditions
+        if (s == null) {
+            throw new DateTimeParseException("Cannot parse local date time (null): " + s);
+        }
+
+        try {
+            return LocalDateTime.parse(s);
+        } catch (java.time.format.DateTimeParseException e) {
+            // ignore
+        }
+
+        try {
+            final Matcher dtMatcher = LOCAL_DATE_PATTERN.matcher(s);
+            if (dtMatcher.matches()) {
+                final String dateString = dtMatcher.group("date");
+                return LocalDate.parse(dateString, FORMATTER_ISO_LOCAL_DATE).atTime(LocalTime.of(0, 0));
+            }
+            return LocalDateTime.parse(s, FORMATTER_ISO_LOCAL_DATE_TIME);
+        } catch (Exception ex) {
+            throw new DateTimeParseException("Cannot parse local date time: " + s, ex);
+        }
+    }
+
+    /**
+     * Parses the string argument as a {@link LocalDateTime}.
+     * <p>
+     * Date time strings are formatted according to the ISO 8601 date time format
+     * {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS]} and others.
+     *
+     * @param s date time string
+     * @return a {@link LocalDateTime} represented by the input string, or {@code null} if the string can not be parsed
+     */
+    @ScriptApi
+    @Nullable
+    public static LocalDateTime parseLocalDateTimeQuiet(@Nullable final String s) {
+        if (s == null || s.length() <= 1) {
+            return null;
+        }
+
+        try {
+            return parseLocalDateTime(s);
         } catch (Exception e) {
             return null;
         }
