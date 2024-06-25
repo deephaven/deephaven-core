@@ -13,6 +13,7 @@ import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
+import io.deephaven.extensions.barrage.chunk.ChunkReader;
 import io.deephaven.extensions.barrage.chunk.ChunkReadingFactory;
 import io.deephaven.extensions.barrage.chunk.DefaultChunkReadingFactory;
 import io.deephaven.extensions.barrage.table.BarrageTable;
@@ -198,11 +199,10 @@ public class ArrowToTableConverter {
             msg.addColumnData[ci].data = new ArrayList<>();
             final int factor = (columnConversionFactors == null) ? 1 : columnConversionFactors[ci];
             try {
-                acd.data.add(DefaultChunkReadingFactory.INSTANCE.extractChunkFromInputStream(options, factor,
+                ChunkReader reader = DefaultChunkReadingFactory.INSTANCE.extractChunkFromInputStream(options, factor,
                         new ChunkReadingFactory.ChunkTypeInfo(columnChunkTypes[ci], columnTypes[ci], componentTypes[ci],
-                                schema.fields(ci)),
-                        fieldNodeIter,
-                        bufferInfoIter, mi.inputStream, null, 0, 0));
+                                schema.fields(ci)));
+                acd.data.add(reader.read(fieldNodeIter, bufferInfoIter, mi.inputStream, null, 0, 0));
             } catch (final IOException unexpected) {
                 throw new UncheckedDeephavenException(unexpected);
             }

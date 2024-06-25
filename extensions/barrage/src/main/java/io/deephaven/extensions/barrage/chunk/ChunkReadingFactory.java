@@ -67,50 +67,24 @@ public interface ChunkReadingFactory {
      * @param options
      * @param factor
      * @param typeInfo
-     * @param fieldNodeIter
-     * @param bufferInfoIter
-     * @param is
-     * @param outChunk
-     * @param outOffset
-     * @param totalRows
      * @return
      * @throws IOException
      */
-    WritableChunk<Values> extractChunkFromInputStream(
+    ChunkReader extractChunkFromInputStream(
             final StreamReaderOptions options,
             final int factor,
-            final ChunkTypeInfo typeInfo,
-            final Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter,
-            final PrimitiveIterator.OfLong bufferInfoIter,
-            final DataInput is,
-            final WritableChunk<Values> outChunk,
-            final int outOffset,
-            final int totalRows) throws IOException;
+            final ChunkTypeInfo typeInfo) throws IOException;
 
     /**
      *
      * @param options
      * @param typeInfo
-     * @param fieldNodeIter
-     * @param bufferInfoIter
-     * @param is
-     * @param outChunk
-     * @param offset
-     * @param totalRows
      * @return
      * @throws IOException
      */
-    default WritableChunk<Values> extractChunkFromInputStream(
-            final StreamReaderOptions options,
-            final ChunkTypeInfo typeInfo,
-            final Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter,
-            final PrimitiveIterator.OfLong bufferInfoIter,
-            final DataInput is,
-            final WritableChunk<Values> outChunk,
-            final int offset,
-            final int totalRows) throws IOException {
-        return extractChunkFromInputStream(options, 1, typeInfo, fieldNodeIter, bufferInfoIter, is, outChunk, offset,
-                totalRows);
+    default ChunkReader extractChunkFromInputStream(final StreamReaderOptions options, final ChunkTypeInfo typeInfo)
+            throws IOException {
+        return extractChunkFromInputStream(options, 1, typeInfo);
     }
 
 }
