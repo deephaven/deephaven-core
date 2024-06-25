@@ -4,8 +4,6 @@
 package io.deephaven.extensions.barrage.chunk;
 
 import com.google.common.base.Charsets;
-import io.deephaven.chunk.WritableChunk;
-import io.deephaven.chunk.attributes.Values;
 import io.deephaven.extensions.barrage.ColumnConversionMode;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.time.DateTimeUtils;
@@ -13,8 +11,6 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.Vector;
 
-import java.io.DataInput;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -22,8 +18,6 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
-import java.util.Iterator;
-import java.util.PrimitiveIterator;
 
 import static io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator.MS_PER_DAY;
 
@@ -37,7 +31,7 @@ public final class DefaultChunkReadingFactory implements ChunkReadingFactory {
 
     @Override
     public ChunkReader extractChunkFromInputStream(StreamReaderOptions options, int factor,
-            ChunkTypeInfo typeInfo) throws IOException {
+            ChunkTypeInfo typeInfo) {
         // TODO (deephaven-core#5453): pass in ArrowType to enable ser/deser of single java class in multiple formats
         switch (typeInfo.chunkType()) {
             case Boolean:
@@ -93,17 +87,11 @@ public final class DefaultChunkReadingFactory implements ChunkReadingFactory {
                                         (buf, off, len) -> Arrays.copyOfRange(buf, off, off + len),
                                         outChunk, outOffset, totalRows);
                     } else {
-                        return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
-                                totalRows) -> VarListChunkInputStreamGenerator.extractChunkFromInputStream(options,
-                                        typeInfo,
-                                        fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows, this);
+                        return new VarListChunkReader<>(options, typeInfo, this);
                     }
                 }
                 if (Vector.class.isAssignableFrom(typeInfo.type())) {
-                    return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
-                            totalRows) -> VectorChunkInputStreamGenerator.extractChunkFromInputStream(options,
-                                    typeInfo, fieldNodeIter, bufferInfoIter,
-                                    is, outChunk, outOffset, totalRows, this);
+                    return new VectorChunkReader(options, typeInfo, this);
                 }
                 if (typeInfo.type() == BigInteger.class) {
                     return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
