@@ -589,6 +589,28 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                         }
                         return new BigDecimal(str);
                     }
+
+                    @Override
+                    Object convertParamValue(Object paramValue) {
+                        paramValue = super.convertParamValue(paramValue);
+                        if (paramValue instanceof BigDecimal || paramValue == null) {
+                            return paramValue;
+                        }
+                        if (paramValue instanceof BigInteger) {
+                            return new BigDecimal((BigInteger) paramValue);
+                        }
+                        // noinspection unchecked
+                        final TypeUtils.TypeBoxer<Object> boxer =
+                                (TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(paramValue.getClass());
+                        final Object boxedValue = boxer.get(paramValue);
+                        if (boxedValue == null) {
+                            return null;
+                        }
+                        if (boxedValue instanceof Number) {
+                            return BigDecimal.valueOf(((Number) boxedValue).doubleValue());
+                        }
+                        return paramValue;
+                    }
                 };
             }
             if (cls == BigInteger.class) {
@@ -599,6 +621,28 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                             return null;
                         }
                         return new BigInteger(str);
+                    }
+
+                    @Override
+                    Object convertParamValue(Object paramValue) {
+                        paramValue = super.convertParamValue(paramValue);
+                        if (paramValue instanceof BigInteger || paramValue == null) {
+                            return paramValue;
+                        }
+                        if (paramValue instanceof BigDecimal) {
+                            return ((BigDecimal) paramValue).toBigInteger();
+                        }
+                        // noinspection unchecked
+                        final TypeUtils.TypeBoxer<Object> boxer =
+                                (TypeUtils.TypeBoxer<Object>) TypeUtils.getTypeBoxer(paramValue.getClass());
+                        final Object boxedValue = boxer.get(paramValue);
+                        if (boxedValue == null) {
+                            return null;
+                        }
+                        if (boxedValue instanceof Number) {
+                            return BigInteger.valueOf(((Number) boxedValue).longValue());
+                        }
+                        return paramValue;
                     }
                 };
             }
