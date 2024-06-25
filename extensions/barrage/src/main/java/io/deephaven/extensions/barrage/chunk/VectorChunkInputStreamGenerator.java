@@ -244,22 +244,22 @@ public class VectorChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
             final int totalRows,
             ChunkReadingFactory chunkReadingFactory) throws IOException {
 
+        final Class<?> componentType =
+                VectorExpansionKernel.getComponentType(typeInfo.type(), typeInfo.componentType());
+        final ChunkType chunkType = ChunkType.fromElementType(componentType);
+        ChunkReader componentReader = chunkReadingFactory.extractChunkFromInputStream(
+                options,
+                new ChunkReadingFactory.ChunkTypeInfo(chunkType, componentType, componentType.getComponentType(),
+                        typeInfo.componentArrowField()));
+
         final FieldNodeInfo nodeInfo = fieldNodeIter.next();
         final long validityBuffer = bufferInfoIter.nextLong();
         final long offsetsBuffer = bufferInfoIter.nextLong();
 
-        final Class<?> componentType =
-                VectorExpansionKernel.getComponentType(typeInfo.type(), typeInfo.componentType());
-        final ChunkType chunkType = ChunkType.fromElementType(componentType);
 
         if (nodeInfo.numElements == 0) {
-            try (final WritableChunk<Values> ignored = chunkReadingFactory.extractChunkFromInputStream(
-                    options,
-                    new ChunkReadingFactory.ChunkTypeInfo(chunkType, componentType, componentType.getComponentType(),
-                            typeInfo.componentArrowField()),
-                    fieldNodeIter, bufferInfoIter,
-                    is,
-                    null, 0, 0)) {
+            try (final WritableChunk<Values> ignored =
+                    componentReader.read(fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
                 if (outChunk != null) {
                     return outChunk.asWritableObjectChunk();
                 }
@@ -300,13 +300,8 @@ public class VectorChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
             }
 
             final VectorExpansionKernel kernel = VectorExpansionKernel.makeExpansionKernel(chunkType, componentType);
-            try (final WritableChunk<Values> inner = chunkReadingFactory.extractChunkFromInputStream(
-                    options,
-                    new ChunkReadingFactory.ChunkTypeInfo(chunkType, componentType, componentType.getComponentType(),
-                            typeInfo.componentArrowField()),
-                    fieldNodeIter, bufferInfoIter,
-                    is,
-                    null, 0, 0)) {
+            try (final WritableChunk<Values> inner =
+                    componentReader.read(fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
                 chunk = kernel.contract(inner, offsets, outChunk, outOffset, totalRows);
 
                 long nextValid = 0;
