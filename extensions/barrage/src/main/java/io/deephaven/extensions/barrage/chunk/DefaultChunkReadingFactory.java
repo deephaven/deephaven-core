@@ -37,45 +37,28 @@ public final class DefaultChunkReadingFactory implements ChunkReadingFactory {
             case Boolean:
                 throw new UnsupportedOperationException("Booleans are reinterpreted as bytes");
             case Char:
-                return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
-                        totalRows) -> CharChunkInputStreamGenerator.extractChunkFromInputStream(
-                                options, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
+                return new CharChunkReader(options);
             case Byte:
                 if (typeInfo.type() == Boolean.class || typeInfo.type() == boolean.class) {
                     return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
                             totalRows) -> BooleanChunkInputStreamGenerator.extractChunkFromInputStream(
                                     options, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
                 }
-                return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
-                        totalRows) -> ByteChunkInputStreamGenerator.extractChunkFromInputStream(
-                                options, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
+                return new ByteChunkReader(options);
             case Short:
-                return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
-                        totalRows) -> ShortChunkInputStreamGenerator.extractChunkFromInputStream(
-                                options, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
+                return new ShortChunkReader(options);
             case Int:
-                return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
-                        totalRows) -> IntChunkInputStreamGenerator.extractChunkFromInputStream(
-                                options, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
+                return new IntChunkReader(options);
             case Long:
                 if (factor == 1) {
-                    return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
-                            totalRows) -> LongChunkInputStreamGenerator.extractChunkFromInputStream(
-                                    options, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
+                    return new LongChunkReader(options);
                 }
-                return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
-                        totalRows) -> LongChunkInputStreamGenerator.extractChunkFromInputStreamWithConversion(
-                                options,
-                                (long v) -> v == QueryConstants.NULL_LONG ? QueryConstants.NULL_LONG : (v * factor),
-                                fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
+                return new LongChunkReader(options,
+                        (long v) -> v == QueryConstants.NULL_LONG ? QueryConstants.NULL_LONG : (v * factor));
             case Float:
-                return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
-                        totalRows) -> FloatChunkInputStreamGenerator.extractChunkFromInputStream(
-                                options, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
+                return new FloatChunkReader(options);
             case Double:
-                return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
-                        totalRows) -> DoubleChunkInputStreamGenerator.extractChunkFromInputStream(
-                                options, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
+                return new DoubleChunkReader(options);
             case Object:
                 if (typeInfo.type().isArray()) {
                     if (typeInfo.componentType() == byte.class) {
@@ -196,20 +179,12 @@ public final class DefaultChunkReadingFactory implements ChunkReadingFactory {
                                             fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
                 }
                 if (typeInfo.type() == LocalDate.class) {
-                    return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
-                            totalRows) -> LongChunkInputStreamGenerator.extractChunkFromInputStreamWithTransform(
-                                    options,
-                                    value -> value == QueryConstants.NULL_LONG
-                                            ? null
-                                            : LocalDate.ofEpochDay(value / MS_PER_DAY),
-                                    fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
+                    return new LongChunkReader(options).transform(value -> value == QueryConstants.NULL_LONG ? null
+                            : LocalDate.ofEpochDay(value / MS_PER_DAY));
                 }
                 if (typeInfo.type() == LocalTime.class) {
-                    return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
-                            totalRows) -> LongChunkInputStreamGenerator.extractChunkFromInputStreamWithTransform(
-                                    options,
-                                    value -> value == QueryConstants.NULL_LONG ? null : LocalTime.ofNanoOfDay(value),
-                                    fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
+                    return new LongChunkReader(options).transform(
+                            value -> value == QueryConstants.NULL_LONG ? null : LocalTime.ofNanoOfDay(value));
                 }
                 if (typeInfo.type() == String.class ||
                         options.columnConversionMode().equals(ColumnConversionMode.Stringify)) {
