@@ -40,9 +40,7 @@ public final class DefaultChunkReadingFactory implements ChunkReadingFactory {
                 return new CharChunkReader(options);
             case Byte:
                 if (typeInfo.type() == Boolean.class || typeInfo.type() == boolean.class) {
-                    return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
-                            totalRows) -> BooleanChunkInputStreamGenerator.extractChunkFromInputStream(
-                                    options, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
+                    return new BooleanChunkReader();
                 }
                 return new ByteChunkReader(options);
             case Short:
