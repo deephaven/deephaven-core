@@ -176,7 +176,6 @@ public class ShortChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
     }
 
     static WritableShortChunk<Values> extractChunkFromInputStream(
-            final int elementSize,
             final StreamReaderOptions options,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final PrimitiveIterator.OfLong bufferInfoIter,
@@ -185,12 +184,11 @@ public class ShortChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
             final int outOffset,
             final int totalRows) throws IOException {
         return extractChunkFromInputStreamWithConversion(
-                elementSize, options, ShortConversion.IDENTITY, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
+                options, ShortConversion.IDENTITY, fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
                 totalRows);
     }
 
     static <T> WritableObjectChunk<T, Values> extractChunkFromInputStreamWithTransform(
-            final int elementSize,
             final StreamReaderOptions options,
             final Function<Short, T> transform,
             final Iterator<FieldNodeInfo> fieldNodeIter,
@@ -201,7 +199,7 @@ public class ShortChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
             final int totalRows) throws IOException {
 
         try (final WritableShortChunk<Values> inner = extractChunkFromInputStream(
-                elementSize, options, fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
+                options, fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
 
             final WritableObjectChunk<T, Values> chunk = castOrCreateChunk(
                     outChunk,
@@ -224,7 +222,6 @@ public class ShortChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
     }
 
     static WritableShortChunk<Values> extractChunkFromInputStreamWithConversion(
-            final int elementSize,
             final StreamReaderOptions options,
             final ShortConversion conversion,
             final Iterator<FieldNodeInfo> fieldNodeIter,
@@ -267,13 +264,13 @@ public class ShortChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
             }
             // consumed entire validity buffer by here
 
-            final long payloadRead = (long) nodeInfo.numElements * elementSize;
+            final long payloadRead = (long) nodeInfo.numElements * Short.BYTES;
             Assert.geq(payloadBuffer, "payloadBuffer", payloadRead, "payloadRead");
 
             if (options.useDeephavenNulls()) {
                 useDeephavenNulls(conversion, is, nodeInfo, chunk, outOffset);
             } else {
-                useValidityBuffer(elementSize, conversion, is, nodeInfo, chunk, outOffset, isValid);
+                useValidityBuffer(conversion, is, nodeInfo, chunk, outOffset, isValid);
             }
 
             final long overhangPayload = payloadBuffer - payloadRead;
@@ -318,7 +315,6 @@ public class ShortChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
     }
 
     private static void useValidityBuffer(
-            final int elementSize,
             final ShortConversion conversion,
             final DataInput is,
             final FieldNodeInfo nodeInfo,
@@ -337,7 +333,7 @@ public class ShortChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
             do {
                 if ((validityWord & 1) == 1) {
                     if (pendingSkips > 0) {
-                        is.skipBytes(pendingSkips * elementSize);
+                        is.skipBytes(pendingSkips * Short.BYTES);
                         chunk.fillWithNullValue(offset + ei, pendingSkips);
                         ei += pendingSkips;
                         pendingSkips = 0;
@@ -355,7 +351,7 @@ public class ShortChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
         }
 
         if (pendingSkips > 0) {
-            is.skipBytes(pendingSkips * elementSize);
+            is.skipBytes(pendingSkips * Short.BYTES);
             chunk.fillWithNullValue(offset + ei, pendingSkips);
         }
     }
