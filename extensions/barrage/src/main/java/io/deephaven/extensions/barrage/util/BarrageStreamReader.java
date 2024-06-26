@@ -290,6 +290,8 @@ public class BarrageStreamReader implements StreamReader {
                 Schema schema = new Schema();
                 header.header(schema);
                 for (int i = 0; i < schema.fieldsLength(); i++) {
+                    // TODO as with ArrowToTableConverter, see about copying the bytebuffer so we control the payload
+                    // ourselves
                     Field field = schema.fields(i);
                     ChunkReader chunkReader = chunkReadingFactory.extractChunkFromInputStream(options,
                             new ChunkReadingFactory.ChunkTypeInfo(columnChunkTypes[i], columnTypes[i],

@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.PrimitiveIterator;
 
-class VectorChunkReader implements ChunkReader {
+public class VectorChunkReader implements ChunkReader {
     private static final String DEBUG_NAME = "VectorChunkReader";
     private final ChunkReader componentReader;
     private final VectorExpansionKernel kernel;

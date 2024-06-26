@@ -32,6 +32,7 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import java.util.PrimitiveIterator;
 
 import static io.deephaven.extensions.barrage.util.BarrageProtoUtil.DEFAULT_SER_OPTIONS;
@@ -43,12 +44,10 @@ import static io.deephaven.extensions.barrage.util.BarrageProtoUtil.DEFAULT_SER_
 public class ArrowToTableConverter {
     protected long totalRowsRead = 0;
     protected BarrageTable resultTable;
-    private ChunkType[] columnChunkTypes;
-    private int[] columnConversionFactors;
     private Class<?>[] columnTypes;
     private Class<?>[] componentTypes;
     protected BarrageSubscriptionOptions options = DEFAULT_SER_OPTIONS;
-    private Schema schema;
+    private final List<ChunkReader> readers = new ArrayList<>();
 
     private volatile boolean completed = false;
 
@@ -152,10 +151,18 @@ public class ArrowToTableConverter {
         resultTable = BarrageTable.make(null, result.tableDef, result.attributes, null);
         resultTable.setFlat();
 
-        columnConversionFactors = result.conversionFactors;
-        columnChunkTypes = result.computeWireChunkTypes();
+        ChunkType[] columnChunkTypes = result.computeWireChunkTypes();
         columnTypes = result.computeWireTypes();
         componentTypes = result.computeWireComponentTypes();
+        // TODO see the note above, this is not safe since the buffer originated in python - we need to copy the schema
+        // before doing this
+        for (int i = 0; i < header.fieldsLength(); i++) {
+            final int factor = (result.conversionFactors == null) ? 1 : result.conversionFactors[i];
+            ChunkReader reader = DefaultChunkReadingFactory.INSTANCE.extractChunkFromInputStream(options, factor,
+                    new ChunkReadingFactory.ChunkTypeInfo(columnChunkTypes[i], columnTypes[i], componentTypes[i],
+                            header.fields(i)));
+            readers.add(reader);
+        }
 
         // retain reference until the resultTable can be sealed
         resultTable.retainReference();
@@ -197,12 +204,8 @@ public class ArrowToTableConverter {
             final BarrageMessage.AddColumnData acd = new BarrageMessage.AddColumnData();
             msg.addColumnData[ci] = acd;
             msg.addColumnData[ci].data = new ArrayList<>();
-            final int factor = (columnConversionFactors == null) ? 1 : columnConversionFactors[ci];
             try {
-                ChunkReader reader = DefaultChunkReadingFactory.INSTANCE.extractChunkFromInputStream(options, factor,
-                        new ChunkReadingFactory.ChunkTypeInfo(columnChunkTypes[ci], columnTypes[ci], componentTypes[ci],
-                                schema.fields(ci)));
-                acd.data.add(reader.read(fieldNodeIter, bufferInfoIter, mi.inputStream, null, 0, 0));
+                acd.data.add(readers.get(ci).read(fieldNodeIter, bufferInfoIter, mi.inputStream, null, 0, 0));
             } catch (final IOException unexpected) {
                 throw new UncheckedDeephavenException(unexpected);
             }
