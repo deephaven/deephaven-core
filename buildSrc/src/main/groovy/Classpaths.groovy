@@ -348,7 +348,7 @@ class Classpaths {
 
         Configuration implConfig = p.configurations.getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME)
         addDependency(implConfig, ICEBERG_GROUP, 'iceberg-bundled-guava', ICEBERG_VERSION)
-        addDependency(apiConfig, ICEBERG_GROUP, 'iceberg-core', ICEBERG_VERSION)
+        addDependency(implConfig, ICEBERG_GROUP, 'iceberg-core', ICEBERG_VERSION)
     }
 
     static void inheritAWSSDK(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
