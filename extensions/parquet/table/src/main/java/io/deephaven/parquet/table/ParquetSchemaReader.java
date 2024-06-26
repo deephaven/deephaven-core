@@ -35,6 +35,7 @@ import org.apache.parquet.schema.PrimitiveType;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -407,7 +408,7 @@ public class ParquetSchemaReader {
                 if (decimalLogicalType.getPrecision() == 1 && decimalLogicalType.getScale() == 0) {
                     return Optional.of(BigInteger.class);
                 }
-                return Optional.of(java.math.BigDecimal.class);
+                return Optional.of(BigDecimal.class);
             }
 
             @Override

@@ -42,6 +42,6 @@ public class ToLocalDatePage<ATTR extends Any> implements ToPage<ATTR, LocalDate
     @Override
     @NotNull
     public final PageMaterializerFactory getPageMaterializerFactory() {
-        return LocalDateMaterializer.Factory;
+        return LocalDateMaterializer.FACTORY;
     }
 }

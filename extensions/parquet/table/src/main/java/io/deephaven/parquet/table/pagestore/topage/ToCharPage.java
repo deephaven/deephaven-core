@@ -52,6 +52,6 @@ public class ToCharPage<ATTR extends Any> implements ToPage<ATTR, char[]> {
     @Override
     @NotNull
     public final PageMaterializerFactory getPageMaterializerFactory() {
-        return CharMaterializer.Factory;
+        return CharMaterializer.FACTORY;
     }
 }

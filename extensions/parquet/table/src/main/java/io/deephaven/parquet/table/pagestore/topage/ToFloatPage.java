@@ -52,6 +52,6 @@ public class ToFloatPage<ATTR extends Any> implements ToPage<ATTR, float[]> {
     @Override
     @NotNull
     public final PageMaterializerFactory getPageMaterializerFactory() {
-        return FloatMaterializer.Factory;
+        return FloatMaterializer.FACTORY;
     }
 }

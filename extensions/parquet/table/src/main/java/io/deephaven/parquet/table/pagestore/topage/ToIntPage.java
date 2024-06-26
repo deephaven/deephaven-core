@@ -48,6 +48,6 @@ public class ToIntPage<ATTR extends Any> implements ToPage<ATTR, int[]> {
     @Override
     @NotNull
     public final PageMaterializerFactory getPageMaterializerFactory() {
-        return IntMaterializer.Factory;
+        return IntMaterializer.FACTORY;
     }
 }

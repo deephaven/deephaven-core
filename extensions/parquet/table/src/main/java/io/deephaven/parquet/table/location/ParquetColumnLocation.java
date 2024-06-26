@@ -379,7 +379,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                         toPage = ToLongPage.create(pageType);
                         break;
                     case INT96:
-                        toPage = ToInstantPage.create(pageType);
+                        toPage = ToInstantPage.createFromInt96(pageType);
                         break;
                     case DOUBLE:
                         toPage = ToDoublePage.create(pageType);
@@ -456,8 +456,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
         @Override
         public Optional<ToPage<ATTR, ?>> visit(
                 final LogicalTypeAnnotation.StringLogicalTypeAnnotation stringLogicalType) {
-            return Optional
-                    .of(ToStringPage.create(pageType, columnChunkReader.getDictionarySupplier()));
+            return Optional.of(ToStringPage.create(pageType, columnChunkReader.getDictionarySupplier()));
         }
 
         @Override
@@ -465,11 +464,29 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                 final LogicalTypeAnnotation.TimestampLogicalTypeAnnotation timestampLogicalType) {
             if (timestampLogicalType.isAdjustedToUTC()) {
                 // The column will be stored as nanoseconds elapsed since epoch as long values
-                return Optional.of(ToInstantPage.create(pageType, timestampLogicalType.getUnit()));
+                switch (timestampLogicalType.getUnit()) {
+                    case MILLIS:
+                        return Optional.of(ToInstantPage.createFromMillis(pageType));
+                    case MICROS:
+                        return Optional.of(ToInstantPage.createFromMicros(pageType));
+                    case NANOS:
+                        return Optional.of(ToInstantPage.createFromNanos(pageType));
+                    default:
+                        throw new IllegalArgumentException("Unsupported unit=" + timestampLogicalType.getUnit());
+                }
             }
             // The column will be stored as as LocalDateTime
             // Ref:https://github.com/apache/parquet-format/blob/master/LogicalTypes.md#local-semantics-timestamps-not-normalized-to-utc
-            return Optional.of(ToLocalDateTimePage.create(pageType, timestampLogicalType.getUnit()));
+            switch (timestampLogicalType.getUnit()) {
+                case MILLIS:
+                    return Optional.of(ToLocalDateTimePage.createFromMillis(pageType));
+                case MICROS:
+                    return Optional.of(ToLocalDateTimePage.createFromMicros(pageType));
+                case NANOS:
+                    return Optional.of(ToLocalDateTimePage.createFromNanos(pageType));
+                default:
+                    throw new IllegalArgumentException("Unsupported unit=" + timestampLogicalType.getUnit());
+            }
         }
 
         @Override
@@ -505,7 +522,16 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
         @Override
         public Optional<ToPage<ATTR, ?>> visit(final LogicalTypeAnnotation.TimeLogicalTypeAnnotation timeLogicalType) {
             // isAdjustedToUTC parameter is ignored while reading LocalTime from Parquet files
-            return Optional.of(ToLocalTimePage.create(pageType, timeLogicalType.getUnit()));
+            switch (timeLogicalType.getUnit()) {
+                case MILLIS:
+                    return Optional.of(ToLocalTimePage.createFromMillis(pageType));
+                case MICROS:
+                    return Optional.of(ToLocalTimePage.createFromMicros(pageType));
+                case NANOS:
+                    return Optional.of(ToLocalTimePage.createFromNanos(pageType));
+                default:
+                    throw new IllegalArgumentException("Unsupported unit=" + timeLogicalType.getUnit());
+            }
         }
 
         @Override

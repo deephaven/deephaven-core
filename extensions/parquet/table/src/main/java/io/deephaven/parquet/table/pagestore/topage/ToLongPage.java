@@ -27,9 +27,9 @@ public class ToLongPage<ATTR extends Any> implements ToPage<ATTR, long[]> {
     }
 
     @SuppressWarnings("rawtypes")
-    private static final ToLongPage FROM_LONG = new ToLongPage<>(LongMaterializer.Factory);
+    private static final ToLongPage FROM_LONG = new ToLongPage<>(LongMaterializer.FACTORY);
     @SuppressWarnings("rawtypes")
-    private static final ToLongPage FROM_UNSIGNED_INT = new ToLongPage<>(LongFromUnsignedIntMaterializer.Factory);
+    private static final ToLongPage FROM_UNSIGNED_INT = new ToLongPage<>(LongFromUnsignedIntMaterializer.FACTORY);
 
     private static void verifyNativeType(final Class<?> nativeType) {
         if (nativeType == null || long.class.equals(nativeType)) {

@@ -345,7 +345,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             final RunLengthBitPackingHybridBufferDecoder rlDecoder,
             final RunLengthBitPackingHybridBufferDecoder dlDecoder,
             final ValuesReader dataReader) throws IOException {
-        final Object result = materialize(IntMaterializer.Factory, dlDecoder, rlDecoder, dataReader, nullPlaceholder);
+        final Object result = materialize(IntMaterializer.FACTORY, dlDecoder, rlDecoder, dataReader, nullPlaceholder);
         if (result instanceof DataWithOffsets) {
             keyDest.put((int[]) ((DataWithOffsets) result).materializeResult);
             return ((DataWithOffsets) result).offsets;

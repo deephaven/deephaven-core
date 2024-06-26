@@ -52,6 +52,6 @@ public class ToShortPage<ATTR extends Any> implements ToPage<ATTR, short[]> {
     @Override
     @NotNull
     public final PageMaterializerFactory getPageMaterializerFactory() {
-        return ShortMaterializer.Factory;
+        return ShortMaterializer.FACTORY;
     }
 }

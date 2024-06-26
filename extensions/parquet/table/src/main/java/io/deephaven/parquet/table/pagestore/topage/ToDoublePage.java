@@ -52,6 +52,6 @@ public class ToDoublePage<ATTR extends Any> implements ToPage<ATTR, double[]> {
     @Override
     @NotNull
     public final PageMaterializerFactory getPageMaterializerFactory() {
-        return DoubleMaterializer.Factory;
+        return DoubleMaterializer.FACTORY;
     }
 }

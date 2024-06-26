@@ -13,40 +13,43 @@ import io.deephaven.parquet.base.PageMaterializerFactory;
 import io.deephaven.parquet.base.materializers.LocalTimeFromMillisMaterializer;
 import io.deephaven.parquet.base.materializers.LocalTimeFromMicrosMaterializer;
 import io.deephaven.parquet.base.materializers.LocalTimeFromNanosMaterializer;
-import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.jetbrains.annotations.NotNull;
 
-import java.time.Instant;
 import java.time.LocalTime;
 
 public class ToLocalTimePage<ATTR extends Any> implements ToPage<ATTR, LocalTime[]> {
 
-    @SuppressWarnings("unchecked")
-    public static <ATTR extends Any> ToPage<ATTR, Instant[]> create(
-            final Class<?> nativeType,
-            final LogicalTypeAnnotation.TimeUnit unit) {
-        if (nativeType == null || LocalTime.class.equals(nativeType)) {
-            switch (unit) {
-                case MILLIS:
-                    return FROM_MILLIS;
-                case MICROS:
-                    return FROM_MICROS;
-                case NANOS:
-                    return FROM_NANOS;
-                default:
-                    throw new IllegalArgumentException("Unsupported unit=" + unit);
-            }
-        }
-        throw new IllegalArgumentException(
-                "The native type for a LocalTime column is " + nativeType.getCanonicalName());
+    public static <ATTR extends Any> ToPage<ATTR, LocalTime[]> createFromMillis(final Class<?> nativeType) {
+        verifyNativeType(nativeType);
+        // noinspection unchecked
+        return FROM_MILLIS;
+    }
+
+    public static <ATTR extends Any> ToPage<ATTR, LocalTime[]> createFromMicros(final Class<?> nativeType) {
+        verifyNativeType(nativeType);
+        // noinspection unchecked
+        return FROM_MICROS;
+    }
+
+    public static <ATTR extends Any> ToPage<ATTR, LocalTime[]> createFromNanos(final Class<?> nativeType) {
+        verifyNativeType(nativeType);
+        // noinspection unchecked
+        return FROM_NANOS;
     }
 
     @SuppressWarnings("rawtypes")
-    private static final ToPage FROM_MILLIS = new ToLocalTimePage<>(LocalTimeFromMillisMaterializer.Factory);
+    private static final ToPage FROM_MILLIS = new ToLocalTimePage<>(LocalTimeFromMillisMaterializer.FACTORY);
     @SuppressWarnings("rawtypes")
-    private static final ToPage FROM_MICROS = new ToLocalTimePage<>(LocalTimeFromMicrosMaterializer.Factory);
+    private static final ToPage FROM_MICROS = new ToLocalTimePage<>(LocalTimeFromMicrosMaterializer.FACTORY);
     @SuppressWarnings("rawtypes")
-    private static final ToPage FROM_NANOS = new ToLocalTimePage<>(LocalTimeFromNanosMaterializer.Factory);
+    private static final ToPage FROM_NANOS = new ToLocalTimePage<>(LocalTimeFromNanosMaterializer.FACTORY);
+
+    private static void verifyNativeType(final Class<?> nativeType) {
+        if (nativeType != null && !LocalTime.class.equals(nativeType)) {
+            throw new IllegalArgumentException(
+                    "The native type for a LocalTime column is " + nativeType.getCanonicalName());
+        }
+    }
 
     private final PageMaterializerFactory pageMaterializerFactory;
 

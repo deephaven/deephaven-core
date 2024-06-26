@@ -6,14 +6,13 @@ package io.deephaven.parquet.table.pagestore.topage;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.parquet.base.PageMaterializerFactory;
-import io.deephaven.parquet.base.materializers.InstantFromInt96Materializer;
+import io.deephaven.parquet.base.materializers.InstantNanosFromInt96Materializer;
 import io.deephaven.parquet.base.materializers.InstantNanosFromMicrosMaterializer;
 import io.deephaven.parquet.base.materializers.InstantNanosFromMillisMaterializer;
 import io.deephaven.parquet.base.materializers.LongMaterializer;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ObjectVectorDirect;
-import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
@@ -22,43 +21,45 @@ import static io.deephaven.util.QueryConstants.NULL_LONG_BOXED;
 
 public class ToInstantPage<ATTR extends Any> implements ToPage<ATTR, long[]> {
 
-    @SuppressWarnings("unchecked")
-    public static <ATTR extends Any> ToPage<ATTR, Instant[]> create(
-            final Class<?> nativeType,
-            final LogicalTypeAnnotation.TimeUnit unit) {
-        if (nativeType == null || Instant.class.equals(nativeType)) {
-            switch (unit) {
-                case MILLIS:
-                    return FROM_MILLIS;
-                case MICROS:
-                    return FROM_MICROS;
-                case NANOS:
-                    return FROM_NANOS;
-                default:
-                    throw new IllegalArgumentException("Unsupported unit=" + unit);
-            }
-        }
-        throw new IllegalArgumentException(
-                "The native type for an Instant column is " + nativeType.getCanonicalName());
+    public static <ATTR extends Any> ToPage<ATTR, Instant[]> createFromMillis(final Class<?> nativeType) {
+        verifyNativeType(nativeType);
+        // noinspection unchecked
+        return FROM_MILLIS;
     }
 
-    @SuppressWarnings("unchecked")
-    public static <ATTR extends Any> ToPage<ATTR, Instant[]> create(final Class<?> nativeType) {
-        if (nativeType == null || Instant.class.equals(nativeType)) {
-            return FROM_INT96;
-        }
-        throw new IllegalArgumentException(
-                "The native type for an Instant column is " + nativeType.getCanonicalName());
+    public static <ATTR extends Any> ToPage<ATTR, Instant[]> createFromMicros(final Class<?> nativeType) {
+        verifyNativeType(nativeType);
+        // noinspection unchecked
+        return FROM_MICROS;
+    }
+
+    public static <ATTR extends Any> ToPage<ATTR, Instant[]> createFromNanos(final Class<?> nativeType) {
+        verifyNativeType(nativeType);
+        // noinspection unchecked
+        return FROM_NANOS;
+    }
+
+    public static <ATTR extends Any> ToPage<ATTR, Instant[]> createFromInt96(final Class<?> nativeType) {
+        verifyNativeType(nativeType);
+        // noinspection unchecked
+        return FROM_INT96;
     }
 
     @SuppressWarnings("rawtypes")
-    private static final ToPage FROM_MILLIS = new ToInstantPage<>(InstantNanosFromMillisMaterializer.Factory);
+    private static final ToPage FROM_MILLIS = new ToInstantPage<>(InstantNanosFromMillisMaterializer.FACTORY);
     @SuppressWarnings("rawtypes")
-    private static final ToPage FROM_MICROS = new ToInstantPage<>(InstantNanosFromMicrosMaterializer.Factory);
+    private static final ToPage FROM_MICROS = new ToInstantPage<>(InstantNanosFromMicrosMaterializer.FACTORY);
     @SuppressWarnings("rawtypes")
-    private static final ToPage FROM_NANOS = new ToInstantPage<>(LongMaterializer.Factory);
+    private static final ToPage FROM_NANOS = new ToInstantPage<>(LongMaterializer.FACTORY);
     @SuppressWarnings("rawtypes")
-    private static final ToPage FROM_INT96 = new ToInstantPage<>(InstantFromInt96Materializer.Factory);
+    private static final ToPage FROM_INT96 = new ToInstantPage<>(InstantNanosFromInt96Materializer.FACTORY);
+
+    private static void verifyNativeType(final Class<?> nativeType) {
+        if (nativeType != null && !Instant.class.equals(nativeType)) {
+            throw new IllegalArgumentException(
+                    "The native type for an Instant column is " + nativeType.getCanonicalName());
+        }
+    }
 
     private final PageMaterializerFactory pageMaterializerFactory;
 

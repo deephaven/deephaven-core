@@ -51,6 +51,6 @@ public class ToStringPage<ATTR extends Any> implements ToPage<ATTR, String[]> {
     @Override
     @NotNull
     public final PageMaterializerFactory getPageMaterializerFactory() {
-        return StringMaterializer.Factory;
+        return StringMaterializer.FACTORY;
     }
 }

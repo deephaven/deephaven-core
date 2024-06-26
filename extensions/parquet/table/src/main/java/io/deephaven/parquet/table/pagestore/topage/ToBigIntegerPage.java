@@ -33,10 +33,7 @@ public class ToBigIntegerPage<ATTR extends Any> implements ToPage<ATTR, BigInteg
             return new ToPageWithDictionary<>(
                     BigInteger.class,
                     new ChunkDictionary<>(
-                            (dictionary, key) -> {
-                                final byte[] bytes = dictionary.decodeToBinary(key).getBytes();
-                                return codec.decode(bytes, 0, bytes.length);
-                            },
+                            (dictionary, key) -> codec.decode(dictionary.decodeToBinary(key).toByteBuffer()),
                             dictionarySupplier),
                     (final Object result) -> (BigInteger[]) result,
                     new BigIntegerMaterializer.Factory(codec));

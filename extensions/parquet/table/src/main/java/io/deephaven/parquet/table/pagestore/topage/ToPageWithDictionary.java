@@ -129,8 +129,9 @@ public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any>
             @Override
             @NotNull
             public PageMaterializerFactory getPageMaterializerFactory() {
-                // TODO Check if this is right
-                return IntMaterializer.Factory;
+                // This factory should not be used for materializing any pages.
+                // The factory used for reading dictionary keys is provided inside ColumnPageReader#readKeyValues
+                return PageMaterializerFactory.NULL_FACTORY;
             }
 
             @Override

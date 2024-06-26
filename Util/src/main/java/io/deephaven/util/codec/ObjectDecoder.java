@@ -7,6 +7,8 @@ import io.deephaven.base.verify.Assert;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.ByteBuffer;
+
 /**
  * <p>
  * Codec superinterface for Object translation from byte arrays for serialization and deserialization.
@@ -30,11 +32,29 @@ public interface ObjectDecoder<TYPE> {
      *
      * @param input The input byte array containing bytes to decode
      * @param offset The offset into the byte array to start decoding from
-     * @param length The length of the byte array to decode from, starting at the offset
+     * @param length The number of bytes to decode, starting at the offset
      * @return The output object, possibly null
      */
     @Nullable
     TYPE decode(@NotNull byte[] input, int offset, int length);
+
+    /**
+     * Decode an object from a ByteBuffer.
+     *
+     * @param buffer The input ByteBuffer containing bytes to decode
+     * @return The output object, possibly null
+     */
+    @Nullable
+    default TYPE decode(@NotNull final ByteBuffer buffer) {
+        if (buffer.hasArray()) {
+            return decode(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
+        } else {
+            // Make a copy of the buffer's contents
+            final byte[] bytes = new byte[buffer.remaining()];
+            buffer.get(bytes);
+            return decode(bytes, 0, bytes.length);
+        }
+    }
 
     /**
      * What width byte array does this ObjectCodec expect to encode and decode?

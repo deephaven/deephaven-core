@@ -52,6 +52,6 @@ public class ToBytePage<ATTR extends Any> implements ToPage<ATTR, byte[]> {
     @Override
     @NotNull
     public final PageMaterializerFactory getPageMaterializerFactory() {
-        return ByteMaterializer.Factory;
+        return ByteMaterializer.FACTORY;
     }
 }

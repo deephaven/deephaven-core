@@ -37,10 +37,7 @@ public class ToBigDecimalPage<ATTR extends Any> implements ToPage<ATTR, BigDecim
             return new ToPageWithDictionary<>(
                     BigDecimal.class,
                     new ChunkDictionary<>(
-                            (dictionary, key) -> {
-                                final byte[] bytes = dictionary.decodeToBinary(key).getBytes();
-                                return codec.decode(bytes, 0, bytes.length);
-                            },
+                            (dictionary, key) -> codec.decode(dictionary.decodeToBinary(key).toByteBuffer()),
                             dictionarySupplier),
                     (final Object result) -> (BigDecimal[]) result,
                     new BigDecimalFromBytesMaterializer.Factory(codec));

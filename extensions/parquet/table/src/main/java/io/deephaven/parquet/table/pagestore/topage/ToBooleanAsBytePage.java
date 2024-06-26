@@ -56,7 +56,7 @@ public class ToBooleanAsBytePage<ATTR extends Any> implements ToPage<ATTR, byte[
 
     @Override
     public final PageMaterializerFactory getPageMaterializerFactory() {
-        return BoolMaterializer.Factory;
+        return BoolMaterializer.FACTORY;
     }
 
     @Override
