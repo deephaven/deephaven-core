@@ -40,16 +40,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static io.deephaven.web.client.api.subscription.QueryConstants.FALSE_BOOLEAN_AS_BYTE;
-import static io.deephaven.web.client.api.subscription.QueryConstants.NULL_BOOLEAN_AS_BYTE;
-import static io.deephaven.web.client.api.subscription.QueryConstants.NULL_BYTE;
-import static io.deephaven.web.client.api.subscription.QueryConstants.NULL_CHAR;
-import static io.deephaven.web.client.api.subscription.QueryConstants.NULL_DOUBLE;
-import static io.deephaven.web.client.api.subscription.QueryConstants.NULL_FLOAT;
-import static io.deephaven.web.client.api.subscription.QueryConstants.NULL_INT;
-import static io.deephaven.web.client.api.subscription.QueryConstants.NULL_LONG;
-import static io.deephaven.web.client.api.subscription.QueryConstants.NULL_SHORT;
-import static io.deephaven.web.client.api.subscription.QueryConstants.TRUE_BOOLEAN_AS_BYTE;
+import static io.deephaven.util.BooleanUtils.FALSE_BOOLEAN_AS_BYTE;
+import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;
+import static io.deephaven.util.BooleanUtils.TRUE_BOOLEAN_AS_BYTE;
+import static io.deephaven.util.QueryConstants.NULL_BYTE;
+import static io.deephaven.util.QueryConstants.NULL_CHAR;
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
+import static io.deephaven.util.QueryConstants.NULL_FLOAT;
+import static io.deephaven.util.QueryConstants.NULL_INT;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
+import static io.deephaven.util.QueryConstants.NULL_SHORT;
 
 /**
  * Given the expected type of a column, pick one of the enum entries and use that to read the data into arrow buffers.
