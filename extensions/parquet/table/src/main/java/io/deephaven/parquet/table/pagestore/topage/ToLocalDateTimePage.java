@@ -6,8 +6,8 @@ package io.deephaven.parquet.table.pagestore.topage;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.parquet.base.PageMaterializerFactory;
-import io.deephaven.parquet.base.materializers.LocalDateTimeFromMicrosMaterializer;
 import io.deephaven.parquet.base.materializers.LocalDateTimeFromMillisMaterializer;
+import io.deephaven.parquet.base.materializers.LocalDateTimeFromMicrosMaterializer;
 import io.deephaven.parquet.base.materializers.LocalDateTimeFromNanosMaterializer;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.jetbrains.annotations.NotNull;
@@ -15,14 +15,7 @@ import org.jetbrains.annotations.NotNull;
 import java.time.Instant;
 import java.time.LocalDateTime;
 
-public abstract class ToLocalDateTimePage<ATTR extends Any> implements ToPage<ATTR, LocalDateTime[]> {
-
-    @SuppressWarnings("rawtypes")
-    private static final ToPage FROM_MILLIS_INSTANCE = new FromMillis();
-    @SuppressWarnings("rawtypes")
-    private static final ToPage FROM_MICROS_INSTANCE = new FromMicros();
-    @SuppressWarnings("rawtypes")
-    private static final ToPage FROM_NANOS_INSTANCE = new FromNanos();
+public class ToLocalDateTimePage<ATTR extends Any> implements ToPage<ATTR, LocalDateTime[]> {
 
     @SuppressWarnings("unchecked")
     public static <ATTR extends Any> ToPage<ATTR, Instant[]> create(
@@ -31,11 +24,11 @@ public abstract class ToLocalDateTimePage<ATTR extends Any> implements ToPage<AT
         if (nativeType == null || LocalDateTime.class.equals(nativeType)) {
             switch (unit) {
                 case MILLIS:
-                    return FROM_MILLIS_INSTANCE;
+                    return FROM_MILLIS;
                 case MICROS:
-                    return FROM_MICROS_INSTANCE;
+                    return FROM_MICROS;
                 case NANOS:
-                    return FROM_NANOS_INSTANCE;
+                    return FROM_NANOS;
                 default:
                     throw new IllegalArgumentException("Unsupported unit=" + unit);
             }
@@ -44,28 +37,17 @@ public abstract class ToLocalDateTimePage<ATTR extends Any> implements ToPage<AT
                 "The native type for a LocalDateTime column is " + nativeType.getCanonicalName());
     }
 
-    private static final class FromMillis<ATTR extends Any> extends ToLocalDateTimePage<ATTR> {
-        @Override
-        @NotNull
-        public PageMaterializerFactory getPageMaterializerFactory() {
-            return LocalDateTimeFromMillisMaterializer.Factory;
-        }
-    }
+    @SuppressWarnings("rawtypes")
+    private static final ToPage FROM_MILLIS = new ToLocalDateTimePage<>(LocalDateTimeFromMillisMaterializer.Factory);
+    @SuppressWarnings("rawtypes")
+    private static final ToPage FROM_MICROS = new ToLocalDateTimePage<>(LocalDateTimeFromMicrosMaterializer.Factory);
+    @SuppressWarnings("rawtypes")
+    private static final ToPage FROM_NANOS = new ToLocalDateTimePage<>(LocalDateTimeFromNanosMaterializer.Factory);
 
-    private static final class FromMicros<ATTR extends Any> extends ToLocalDateTimePage<ATTR> {
-        @Override
-        @NotNull
-        public PageMaterializerFactory getPageMaterializerFactory() {
-            return LocalDateTimeFromMicrosMaterializer.Factory;
-        }
-    }
+    private final PageMaterializerFactory pageMaterializerFactory;
 
-    private static final class FromNanos<ATTR extends Any> extends ToLocalDateTimePage<ATTR> {
-        @Override
-        @NotNull
-        public PageMaterializerFactory getPageMaterializerFactory() {
-            return LocalDateTimeFromNanosMaterializer.Factory;
-        }
+    private ToLocalDateTimePage(@NotNull final PageMaterializerFactory pageMaterializerFactory) {
+        this.pageMaterializerFactory = pageMaterializerFactory;
     }
 
     @Override
@@ -78,5 +60,11 @@ public abstract class ToLocalDateTimePage<ATTR extends Any> implements ToPage<AT
     @NotNull
     public final ChunkType getChunkType() {
         return ChunkType.Object;
+    }
+
+    @Override
+    @NotNull
+    public final PageMaterializerFactory getPageMaterializerFactory() {
+        return pageMaterializerFactory;
     }
 }

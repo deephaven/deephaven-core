@@ -21,7 +21,6 @@ public class ReplicateToPage {
     private static final String TO_INT_PAGE_PATH = TO_PAGE_DIR + "ToIntPage.java";
     private static final String TO_LOCAL_DATE_TIME_PAGE_PATH = TO_PAGE_DIR + "ToLocalDateTimePage.java";
     private static final String TO_BIG_INTEGER_PAGE_PATH = TO_PAGE_DIR + "ToBigIntegerPage.java";
-    private static final String TO_BIG_DECIMAL_FROM_LONG_PAGE_PATH = TO_PAGE_DIR + "ToBigDecimalFromLongPage.java";
 
     public static void main(String... args) throws IOException {
         intToAllButBooleanAndLong(TASK, TO_INT_PAGE_PATH, "interface");
@@ -38,12 +37,5 @@ public class ReplicateToPage {
                 {"BigInteger", "BigDecimal"}
         };
         replaceAll(TASK, TO_BIG_INTEGER_PAGE_PATH, null, NO_EXCEPTIONS, pairs);
-
-        // BigDecimalFromLong -> BigDecimalFromInt
-        pairs = new String[][] {
-                {"Long", "Int"},
-                {"LONG", "INT"}
-        };
-        replaceAll(TASK, TO_BIG_DECIMAL_FROM_LONG_PAGE_PATH, null, NO_EXCEPTIONS, pairs);
     }
 }

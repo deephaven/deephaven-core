@@ -515,11 +515,11 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             final PrimitiveType.PrimitiveTypeName typeName = type.getPrimitiveTypeName();
             switch (typeName) {
                 case INT32:
-                    return Optional.of(ToBigDecimalFromIntPage.create(
-                            pageType, decimalLogicalType.getPrecision(), decimalLogicalType.getScale()));
+                    return Optional.of(ToBigDecimalFromNumeric.createFromInt(
+                            pageType, decimalLogicalType.getScale()));
                 case INT64:
-                    return Optional.of(ToBigDecimalFromLongPage.create(
-                            pageType, decimalLogicalType.getPrecision(), decimalLogicalType.getScale()));
+                    return Optional.of(ToBigDecimalFromNumeric.createFromLong(
+                            pageType, decimalLogicalType.getScale()));
                 case FIXED_LEN_BYTE_ARRAY: // fall through
                 case BINARY:
                     final int encodedSizeInBytes = typeName == BINARY ? -1 : type.getTypeLength();

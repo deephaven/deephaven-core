@@ -20,16 +20,7 @@ import java.time.Instant;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG_BOXED;
 
-public abstract class ToInstantPage<ATTR extends Any> implements ToPage<ATTR, long[]> {
-
-    @SuppressWarnings("rawtypes")
-    private static final ToPage FROM_MILLIS_INSTANCE = new FromMillis();
-    @SuppressWarnings("rawtypes")
-    private static final ToPage FROM_MICROS_INSTANCE = new FromMicros();
-    @SuppressWarnings("rawtypes")
-    private static final ToPage FROM_NANOS_INSTANCE = new FromNanos();
-    @SuppressWarnings("rawtypes")
-    private static final ToPage FROM_INT96_INSTANCE = new FromInt96();
+public class ToInstantPage<ATTR extends Any> implements ToPage<ATTR, long[]> {
 
     @SuppressWarnings("unchecked")
     public static <ATTR extends Any> ToPage<ATTR, Instant[]> create(
@@ -38,11 +29,11 @@ public abstract class ToInstantPage<ATTR extends Any> implements ToPage<ATTR, lo
         if (nativeType == null || Instant.class.equals(nativeType)) {
             switch (unit) {
                 case MILLIS:
-                    return FROM_MILLIS_INSTANCE;
+                    return FROM_MILLIS;
                 case MICROS:
-                    return FROM_MICROS_INSTANCE;
+                    return FROM_MICROS;
                 case NANOS:
-                    return FROM_NANOS_INSTANCE;
+                    return FROM_NANOS;
                 default:
                     throw new IllegalArgumentException("Unsupported unit=" + unit);
             }
@@ -54,42 +45,25 @@ public abstract class ToInstantPage<ATTR extends Any> implements ToPage<ATTR, lo
     @SuppressWarnings("unchecked")
     public static <ATTR extends Any> ToPage<ATTR, Instant[]> create(final Class<?> nativeType) {
         if (nativeType == null || Instant.class.equals(nativeType)) {
-            return FROM_INT96_INSTANCE;
+            return FROM_INT96;
         }
         throw new IllegalArgumentException(
                 "The native type for an Instant column is " + nativeType.getCanonicalName());
     }
 
-    private static final class FromMillis<ATTR extends Any> extends ToInstantPage<ATTR> {
-        @Override
-        @NotNull
-        public PageMaterializerFactory getPageMaterializerFactory() {
-            return InstantNanosFromMillisMaterializer.Factory;
-        }
-    }
+    @SuppressWarnings("rawtypes")
+    private static final ToPage FROM_MILLIS = new ToInstantPage<>(InstantNanosFromMillisMaterializer.Factory);
+    @SuppressWarnings("rawtypes")
+    private static final ToPage FROM_MICROS = new ToInstantPage<>(InstantNanosFromMicrosMaterializer.Factory);
+    @SuppressWarnings("rawtypes")
+    private static final ToPage FROM_NANOS = new ToInstantPage<>(LongMaterializer.Factory);
+    @SuppressWarnings("rawtypes")
+    private static final ToPage FROM_INT96 = new ToInstantPage<>(InstantFromInt96Materializer.Factory);
 
-    private static final class FromMicros<ATTR extends Any> extends ToInstantPage<ATTR> {
-        @Override
-        @NotNull
-        public PageMaterializerFactory getPageMaterializerFactory() {
-            return InstantNanosFromMicrosMaterializer.Factory;
-        }
-    }
+    private final PageMaterializerFactory pageMaterializerFactory;
 
-    private static final class FromNanos<ATTR extends Any> extends ToInstantPage<ATTR> {
-        @Override
-        @NotNull
-        public PageMaterializerFactory getPageMaterializerFactory() {
-            return LongMaterializer.Factory;
-        }
-    }
-
-    private static final class FromInt96<ATTR extends Any> extends ToInstantPage<ATTR> {
-        @Override
-        @NotNull
-        public PageMaterializerFactory getPageMaterializerFactory() {
-            return InstantFromInt96Materializer.Factory;
-        }
+    private ToInstantPage(@NotNull final PageMaterializerFactory pageMaterializerFactory) {
+        this.pageMaterializerFactory = pageMaterializerFactory;
     }
 
     @Override
@@ -114,6 +88,12 @@ public abstract class ToInstantPage<ATTR extends Any> implements ToPage<ATTR, lo
     @NotNull
     public final Object nullValue() {
         return NULL_LONG_BOXED;
+    }
+
+    @Override
+    @NotNull
+    public final PageMaterializerFactory getPageMaterializerFactory() {
+        return pageMaterializerFactory;
     }
 
     @Override

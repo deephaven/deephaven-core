@@ -12,25 +12,24 @@ import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG_BOXED;
 
-public abstract class ToLongPage<ATTR extends Any> implements ToPage<ATTR, long[]> {
-
-    @SuppressWarnings("rawtypes")
-    private static final ToLongPage FROM_LONG_INSTANCE = new FromLong<>();
-
-    @SuppressWarnings("rawtypes")
-    private static final ToLongPage FROM_UNSIGNED_INT_INSTANCE = new FromUnsignedInt();
+public class ToLongPage<ATTR extends Any> implements ToPage<ATTR, long[]> {
 
     public static <ATTR extends Any> ToLongPage<ATTR> create(final Class<?> nativeType) {
         verifyNativeType(nativeType);
         // noinspection unchecked
-        return FROM_LONG_INSTANCE;
+        return FROM_LONG;
     }
 
     public static <ATTR extends Any> ToLongPage<ATTR> createFromUnsignedInt(final Class<?> nativeType) {
         verifyNativeType(nativeType);
         // noinspection unchecked
-        return FROM_UNSIGNED_INT_INSTANCE;
+        return FROM_UNSIGNED_INT;
     }
+
+    @SuppressWarnings("rawtypes")
+    private static final ToLongPage FROM_LONG = new ToLongPage<>(LongMaterializer.Factory);
+    @SuppressWarnings("rawtypes")
+    private static final ToLongPage FROM_UNSIGNED_INT = new ToLongPage<>(LongFromUnsignedIntMaterializer.Factory);
 
     private static void verifyNativeType(final Class<?> nativeType) {
         if (nativeType == null || long.class.equals(nativeType)) {
@@ -39,20 +38,10 @@ public abstract class ToLongPage<ATTR extends Any> implements ToPage<ATTR, long[
         throw new IllegalArgumentException("The native type for a Long column is " + nativeType.getCanonicalName());
     }
 
-    private static final class FromLong<ATTR extends Any> extends ToLongPage<ATTR> {
-        @Override
-        @NotNull
-        public PageMaterializerFactory getPageMaterializerFactory() {
-            return LongMaterializer.Factory;
-        }
-    }
+    private final PageMaterializerFactory pageMaterializerFactory;
 
-    private static final class FromUnsignedInt<ATTR extends Any> extends ToLongPage<ATTR> {
-        @Override
-        @NotNull
-        public PageMaterializerFactory getPageMaterializerFactory() {
-            return LongFromUnsignedIntMaterializer.Factory;
-        }
+    private ToLongPage(@NotNull final PageMaterializerFactory pageMaterializerFactory) {
+        this.pageMaterializerFactory = pageMaterializerFactory;
     }
 
     @Override
@@ -71,5 +60,11 @@ public abstract class ToLongPage<ATTR extends Any> implements ToPage<ATTR, long[
     @NotNull
     public Object nullValue() {
         return NULL_LONG_BOXED;
+    }
+
+    @Override
+    @NotNull
+    public final PageMaterializerFactory getPageMaterializerFactory() {
+        return pageMaterializerFactory;
     }
 }
