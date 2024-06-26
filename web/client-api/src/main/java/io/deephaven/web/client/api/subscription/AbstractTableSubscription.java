@@ -167,6 +167,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
                 .columnConversionMode(ColumnConversionMode.Stringify)
                 .minUpdateIntervalMs(updateIntervalMs == null ? 0 : (int) (double) updateIntervalMs)
                 .columnsAsList(false)// TODO flip this to true
+                .useDeephavenNulls(true)
                 .build();
         FlatBufferBuilder request = subscriptionRequest(
                 Js.uncheckedCast(state.getHandle().getTicket()),
