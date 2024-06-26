@@ -94,9 +94,6 @@ public:
       std::vector<std::string> column_specs);
   [[nodiscard]]
   std::shared_ptr<TableHandleImpl>
-  PercentileBy(double percentile, std::vector<std::string> column_specs);
-  [[nodiscard]]
-  std::shared_ptr<TableHandleImpl>
   CountBy(std::string count_by_column, std::vector<std::string> column_specs);
   [[nodiscard]]
   std::shared_ptr<TableHandleImpl>
