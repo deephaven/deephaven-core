@@ -92,7 +92,7 @@ public final class LittleEndianDataInputStream extends FilterInputStream impleme
         byte b2 = readAndCheckByte();
 
         int result = b2;
-        result = (result << 8) | b1;
+        result = (result << 8) | (b1 & 0xFF);
 
         return result;
     }
@@ -105,9 +105,9 @@ public final class LittleEndianDataInputStream extends FilterInputStream impleme
         byte b4 = readAndCheckByte();
 
         int result = b4;
-        result = (result << 8) | b3;
-        result = (result << 8) | b2;
-        result = (result << 8) | b1;
+        result = (result << 8) | (b3 & 0xFF);
+        result = (result << 8) | (b2 & 0xFF);
+        result = (result << 8) | (b1 & 0xFF);
 
         return result;
     }
@@ -123,14 +123,14 @@ public final class LittleEndianDataInputStream extends FilterInputStream impleme
         byte b7 = readAndCheckByte();
         byte b8 = readAndCheckByte();
 
-        int result = b8;
-        result = (result << 8) | b7;
-        result = (result << 8) | b6;
-        result = (result << 8) | b5;
-        result = (result << 8) | b4;
-        result = (result << 8) | b3;
-        result = (result << 8) | b2;
-        result = (result << 8) | b1;
+        long result = b8;
+        result = (result << 8) | (b7 & 0xFF);
+        result = (result << 8) | (b6 & 0xFF);
+        result = (result << 8) | (b5 & 0xFF);
+        result = (result << 8) | (b4 & 0xFF);
+        result = (result << 8) | (b3 & 0xFF);
+        result = (result << 8) | (b2 & 0xFF);
+        result = (result << 8) | (b1 & 0xFF);
 
         return result;
     }
