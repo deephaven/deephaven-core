@@ -12,7 +12,7 @@ configurations {
 dependencies {
     api project(':open-api-shared-fu')
 
-    Classpaths.inheritGuava(project, 'testImplementation')
+    testImplementation libs.guava
 
     implementation libs.elemental.core
     compileOnly libs.javax.validation.api

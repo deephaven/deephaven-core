@@ -13,7 +13,7 @@ dependencies {
 
     implementation depCommonsIo
 
-    Classpaths.inheritGuava(project)
+    implementation libs.guava
 
     compileOnly depAnnotations
 

@@ -10,7 +10,7 @@ dependencies {
     implementation project(':Util')
 
     // For CountingInputStream
-    Classpaths.inheritGuava(project)
+    implementation libs.guava
 
     compileOnly depAnnotations
 

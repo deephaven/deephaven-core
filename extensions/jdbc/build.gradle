@@ -11,7 +11,7 @@ dependencies {
     implementation project(':engine-table'),
             project(':engine-base')
 
-    Classpaths.inheritGuava(project)
+    implementation libs.guava
 
     testImplementation platform(libs.junit.bom)
     testImplementation libs.assertj

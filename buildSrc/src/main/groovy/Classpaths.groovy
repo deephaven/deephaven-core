@@ -30,10 +30,6 @@ class Classpaths {
 
     // TODO(deephaven-core#1685): Create strategy around updating and maintaining protoc version
 
-    static final String GUAVA_GROUP = 'com.google.guava'
-    static final String GUAVA_NAME = 'guava'
-    static final String GUAVA_VERSION = '33.2.0-jre'
-
     static final String AVRO_GROUP = 'org.apache.avro'
     static final String AVRO_NAME = 'avro'
     static final String AVRO_VERSION = '1.11.3'
@@ -75,11 +71,6 @@ class Classpaths {
                 force 'org.ow2.asm:asm-commons:9.2'
             }
         }
-    }
-
-    static void inheritGuava(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
-        Configuration config = p.configurations.getByName(configName)
-        addDependency(config, GUAVA_GROUP, GUAVA_NAME, GUAVA_VERSION)
     }
 
     static void inheritAvro(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
