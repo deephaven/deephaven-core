@@ -4,7 +4,6 @@
 package io.deephaven.parquet.table.pagestore.topage;
 
 import io.deephaven.parquet.base.PageMaterializerFactory;
-import io.deephaven.parquet.base.materializers.IntMaterializer;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.stringset.LongBitmapStringSet;
 import io.deephaven.chunk.attributes.Any;
