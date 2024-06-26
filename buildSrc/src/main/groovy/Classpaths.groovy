@@ -66,11 +66,6 @@ class Classpaths {
         }
     }
 
-    static void inheritParquetHadoop(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
-        Configuration config = p.configurations.getByName(configName)
-        addDependency(config, 'org.apache.parquet', 'parquet-hadoop', '1.14.0')
-    }
-
     /** configName controls only the Configuration's classpath, all transitive dependencies are runtimeOnly */
     static void inheritParquetHadoopConfiguration(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
         Configuration config = p.configurations.getByName(configName)

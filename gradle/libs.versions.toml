@@ -22,6 +22,7 @@ jsinterop = "2.0.2"
 # google is annoying, and have different versions released for the same groupId
 jsinterop-base = "1.0.1"
 logback = "1.4.14"
+parquet = "1.14.0"
 protobuf = "3.25.3"
 slf4j = "2.0.11"
 sslcontext = "8.1.1"
@@ -87,6 +88,7 @@ jetty-websocket-jakarta-server = { module = "org.eclipse.jetty.websocket:websock
 jsinterop-annotations = { module = "com.google.jsinterop:jsinterop-annotations", version.ref = "jsinterop" }
 jsinterop-base = { module = "com.google.jsinterop:base", version.ref = "jsinterop-base" }
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
+parquet-hadoop = { module = "org.apache.parquet:parquet-hadoop", version.ref = "parquet" }
 protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 slf4j-jul-to-slf4j = { module = "org.slf4j:jul-to-slf4j", version.ref = "slf4j" }

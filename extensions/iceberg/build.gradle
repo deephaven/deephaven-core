@@ -19,7 +19,7 @@ dependencies {
     compileOnly project(':util-immutables')
     annotationProcessor libs.immutables
 
-    Classpaths.inheritParquetHadoop(project)
+    implementation libs.parquet.hadoop
 
     implementation project(':extensions-parquet-base')
     implementation project(':extensions-parquet-table')

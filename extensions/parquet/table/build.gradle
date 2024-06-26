@@ -26,7 +26,7 @@ dependencies {
     api project(':engine-table')
 
     implementation project(':extensions-parquet-base')
-    Classpaths.inheritParquetHadoop(project)
+    implementation libs.parquet.hadoop
 
     implementation project(':engine-base')
     implementation project(':extensions-csv')

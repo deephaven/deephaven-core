@@ -6,7 +6,7 @@ plugins {
 dependencies {
     api project(':Util')
 
-    Classpaths.inheritParquetHadoop(project)
+    implementation libs.parquet.hadoop
     Classpaths.inheritParquetHadoopConfiguration(project)
 
     implementation project(':Configuration')
