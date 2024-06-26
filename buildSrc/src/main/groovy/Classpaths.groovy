@@ -30,10 +30,6 @@ class Classpaths {
 
     // TODO(deephaven-core#1685): Create strategy around updating and maintaining protoc version
 
-    static final String AVRO_GROUP = 'org.apache.avro'
-    static final String AVRO_NAME = 'avro'
-    static final String AVRO_VERSION = '1.11.3'
-
     static final String HADOOP_GROUP = 'org.apache.hadoop'
     static final String HADOOP_VERSION = '3.4.0'
 
@@ -71,11 +67,6 @@ class Classpaths {
                 force 'org.ow2.asm:asm-commons:9.2'
             }
         }
-    }
-
-    static void inheritAvro(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
-        Configuration config = p.configurations.getByName(configName)
-        addDependency(config, AVRO_GROUP, AVRO_NAME, AVRO_VERSION)
     }
 
     static void inheritParquetHadoop(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {

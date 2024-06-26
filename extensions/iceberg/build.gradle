@@ -26,7 +26,7 @@ dependencies {
 
     Classpaths.inheritIcebergCore(project)
     Classpaths.inheritIcebergHadoop(project)
-    Classpaths.inheritAvro(project)
+    implementation libs.avro
 
     testImplementation libs.assertj
 
