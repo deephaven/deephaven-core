@@ -6,7 +6,7 @@
 from abc import ABC, abstractmethod
 from functools import wraps
 from inspect import signature
-from typing import Callable, Union, List, Generator, Dict, Literal, Sequence
+from typing import Callable, Union, List, Generator, Dict, Literal, Sequence, Optional
 
 import jpy
 import numpy
@@ -16,11 +16,14 @@ from deephaven import update_graph
 from deephaven._wrapper import JObjectWrapper
 from deephaven.jcompat import to_sequence
 from deephaven.table import Table
-from deephaven._table_reader import _table_reader_chunk_dict, _table_reader_all_dict
+from deephaven._table_reader import _table_reader_all_dict, _table_reader_chunk_dict
 from deephaven.update_graph import UpdateGraph
 
 _JPythonReplayListenerAdapter = jpy.get_type("io.deephaven.integrations.python.PythonReplayListenerAdapter")
 _JTableUpdate = jpy.get_type("io.deephaven.engine.table.TableUpdate")
+_JTableUpdateDataReader = jpy.get_type("io.deephaven.integrations.python.PythonListenerTableUpdateDataReader")
+_JListenerRecorder = jpy.get_type("io.deephaven.engine.table.impl.ListenerRecorder")
+_JPythonMergedListenerAdapter = jpy.get_type("io.deephaven.integrations.python.PythonMergedListenerAdapter")
 
 class TableUpdate(JObjectWrapper):
     """A TableUpdate object represents a table update event.  It contains the added, removed, and modified rows in the
@@ -30,6 +33,8 @@ class TableUpdate(JObjectWrapper):
     def __init__(self, table: Table, j_table_update: jpy.JType):
         self.table = table
         self.j_table_update = j_table_update
+        # make sure we always use the _JTableUpdate interface and not the implementations
+        self.j_table_update = jpy.cast(j_table_update, _JTableUpdate)
 
     @property
     def j_object(self) -> jpy.JType:
@@ -45,7 +50,7 @@ class TableUpdate(JObjectWrapper):
         Returns:
             a dict
         """
-        if not self.j_table_update.added:
+        if not self.j_table_update.added():
             return {}
 
         return _table_reader_all_dict(table=self.table, cols=cols, row_set= self.j_table_update.added.asRowSet(),
@@ -63,7 +68,7 @@ class TableUpdate(JObjectWrapper):
         Returns:
             a generator
         """
-        if not self.j_table_update.added:
+        if not self.j_table_update.added():
             return (_ for _ in ())
 
         return _table_reader_chunk_dict(table=self.table, cols=cols, row_set=self.j_table_update.added.asRowSet(),
@@ -79,7 +84,7 @@ class TableUpdate(JObjectWrapper):
         Returns:
             a dict
         """
-        if not self.j_table_update.removed:
+        if not self.j_table_update.removed():
             return {}
 
         return _table_reader_all_dict(table=self.table, cols=cols, row_set=self.j_table_update.removed.asRowSet(),
@@ -97,7 +102,7 @@ class TableUpdate(JObjectWrapper):
         Returns:
             a generator
         """
-        if not self.j_table_update.removed:
+        if not self.j_table_update.removed():
             return (_ for _ in ())
 
         return _table_reader_chunk_dict(table=self.table, cols=cols, row_set=self.j_table_update.removed.asRowSet(),
@@ -113,7 +118,7 @@ class TableUpdate(JObjectWrapper):
         Returns:
             a dict
         """
-        if not self.j_table_update.modified:
+        if not self.j_table_update.modified():
             return {}
 
         return _table_reader_all_dict(table=self.table, cols=cols, row_set=self.j_table_update.modified.asRowSet(),
@@ -131,7 +136,7 @@ class TableUpdate(JObjectWrapper):
         Returns:
             a generator
         """
-        if not self.j_table_update.modified:
+        if not self.j_table_update.modified():
             return (_ for _ in ())
 
         return _table_reader_chunk_dict(self.table, cols=cols, row_set=self.j_table_update.modified.asRowSet(),
@@ -147,7 +152,7 @@ class TableUpdate(JObjectWrapper):
         Returns:
             a dict
         """
-        if not self.j_table_update.modified:
+        if not self.j_table_update.modified():
             return {}
 
         return _table_reader_all_dict(table=self.table, cols=cols, row_set=self.j_table_update.modified.asRowSet(),
@@ -165,7 +170,7 @@ class TableUpdate(JObjectWrapper):
         Returns:
             a generator
         """
-        if not self.j_table_update.modified:
+        if not self.j_table_update.modified():
             return (_ for _ in ())
 
         return _table_reader_chunk_dict(self.table, cols=cols, row_set=self.j_table_update.modified.asRowSet(),
@@ -178,7 +183,7 @@ class TableUpdate(JObjectWrapper):
     @property
     def modified_columns(self) -> List[str]:
         """The list of modified columns in this update."""
-        cols = self.j_table_update.modifiedColumnSet.dirtyColumnNames()
+        cols = self.j_table_update.modifiedColumnSet().dirtyColumnNames()
 
         return list(cols) if cols else []
 
@@ -228,7 +233,7 @@ def _listener_wrapper(table: Table):
         table (Table): the table to listen for updates.
     """
 
-    def decorator(listener: Callable):
+    def decorator(listener: Callable[[TableUpdate, bool], None]):
         @wraps(listener)
         def wrapper(update, *args):
             t_update = TableUpdate(table=table, j_table_update=update)
@@ -239,7 +244,7 @@ def _listener_wrapper(table: Table):
     return decorator
 
 
-def _wrap_listener_func(t: Table, listener: Callable):
+def _wrap_listener_func(t: Table, listener: Callable[[TableUpdate, bool], None]):
     n_params = len(signature(listener).parameters)
     if n_params != 2:
         raise ValueError("listener function must have 2 (update, is_replay) parameters.")
@@ -258,7 +263,7 @@ class TableListenerHandle(JObjectWrapper):
     """A handle to manage a table listener's lifecycle."""
     j_object_type = _JPythonReplayListenerAdapter
 
-    def __init__(self, t: Table, listener: Union[Callable, TableListener], description: str = None,
+    def __init__(self, t: Table, listener: Union[Callable[[TableUpdate, bool], None], TableListener], description: str = None,
                  dependencies: Union[Table, Sequence[Table]] = None):
         """Creates a new table listener handle with dependencies.
 
@@ -276,7 +281,7 @@ class TableListenerHandle(JObjectWrapper):
 
         Args:
             t (Table): table to listen to
-            listener (Union[Callable, TableListener]): listener for table changes
+            listener (Union[Callable[[TableUpdate, bool], None], TableListener]): listener for table changes
             description (str, optional): description for the UpdatePerformanceTracker to append to the listener's entry
                 description, default is None
             dependencies (Union[Table, Sequence[Table]]): tables that must be satisfied before the listener's execution.
@@ -298,10 +303,10 @@ class TableListenerHandle(JObjectWrapper):
         self.description = description
         self.dependencies = to_sequence(dependencies)
 
-        if callable(listener):
-            self.listener_wrapped = _wrap_listener_func(t, listener)
-        elif isinstance(listener, TableListener):
+        if isinstance(listener, TableListener):
             self.listener_wrapped = _wrap_listener_obj(t, listener)
+        elif callable(listener):
+            self.listener_wrapped = _wrap_listener_func(t, listener)
         else:
             raise DHError(message="listener is neither callable nor TableListener object")
 
@@ -353,7 +358,7 @@ class TableListenerHandle(JObjectWrapper):
         self.started = False
 
 
-def listen(t: Table, listener: Union[Callable, TableListener], description: str = None, do_replay: bool = False,
+def listen(t: Table, listener: Union[Callable[[TableUpdate, bool], None], TableListener], description: str = None, do_replay: bool = False,
            replay_lock: Literal["shared", "exclusive"] = "shared", dependencies: Union[Table, Sequence[Table]] = None)\
         -> TableListenerHandle:
     """This is a convenience function that creates a TableListenerHandle object and immediately starts it to listen
@@ -366,7 +371,7 @@ def listen(t: Table, listener: Union[Callable, TableListener], description: str 
 
     Args:
         t (Table): table to listen to
-        listener (Union[Callable, TableListener]): listener for table changes
+        listener (Union[Callable[[TableUpdate, bool], None], TableListener]): listener for table changes
         description (str, optional): description for the UpdatePerformanceTracker to append to the listener's entry
             description, default is None
         do_replay (bool): whether to replay the initial snapshot of the table, default is False
@@ -393,3 +398,159 @@ def listen(t: Table, listener: Union[Callable, TableListener], description: str 
                                                                     description=description)
     table_listener_handle.start(do_replay=do_replay, replay_lock=replay_lock)
     return table_listener_handle
+
+
+class _ListenerRecorder (JObjectWrapper):
+    """A ListenerRecorder object records the table updates and notifies the associated MergedListener that a change
+    has occurred."""
+
+    j_object_type = _JListenerRecorder
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_listener_recorder
+
+    def __init__(self, table: Table):
+        if not table.is_refreshing:
+            raise DHError(message="table must be a refreshing table.")
+
+        self.j_listener_recorder = _JListenerRecorder("Python Wrapped Listener recorder", table.j_table, None)
+        self.table = table
+
+    def table_update(self) -> Optional[TableUpdate]:
+        """Gets the table update from the listener recorder. If there is no update in the current update graph cycle,
+        returns None.
+
+        Returns:
+            a TableUpdate or None
+        """
+        j_table_update = self.j_listener_recorder.getUpdate()
+        return TableUpdate(self.table, j_table_update) if j_table_update else None
+
+
+class MergedListener(ABC):
+    """A MergedListener has a collection of ListenerRecorder. Each one must complete before the merged listener
+    executes only once for the current update graph cycle. """
+
+    @abstractmethod
+    def on_update(self, updates: Dict[Table, TableUpdate]) -> None:
+        """The required method on a user defined subclass of MergedListener that processes the table updates from the
+        tables that are listened to.
+        """
+        ...
+
+
+class MergedListenerHandle:
+    """A handle to manage a merged listener's lifecycle."""
+
+    def __init__(self, tables: Sequence[Table], listener: Union[Callable[[Dict[Table, TableUpdate]], None], MergedListener],
+                 description: str = None, dependencies: Union[Table, Sequence[Table]] = None):
+        """Creates a new MergedListenerHandle with the provided listener recorders and dependencies.
+
+        Table change events are processed by 'listener', which can be either
+        (1) a callable (e.g. function) or
+        (2) an instance of MergedTableListener type which provides an "on_update" method.
+        The callable or the on_update method must take 1 parameter of type Dict[Table, TableUpdate].
+
+        Note: Don't do table operations in the listener. Do them beforehand, and add the results as dependencies.
+
+        Args:
+            tables (Sequence[Table]): tables to listen to
+            listener (Union[Callable[[Dict[Table, TableUpdate]], None], MergedListener]): listener to process table updates
+                from the tables.
+            description (str, optional): description for the UpdatePerformanceTracker to append to the listener's entry
+            dependencies (Union[Table, Sequence[Table]]): tables that must be satisfied before the listener's execution.
+                A refreshing table is considered to be satisfied if all possible updates to the table have been processed
+                in the current update graph cycle. A static table is always considered to be satisfied. If a specified
+                table is refreshing, it must belong to the same update graph as the table being listened to. Default is
+                None.
+
+                Dependencies ensure that the listener can safely access the dependent tables during its execution. This
+                mainly includes reading the data from the tables. While performing operations on the dependent tables in
+                the listener is safe, it is not recommended because reading or operating on the result tables of those
+                operations may not be safe. It is best to perform the operations on the dependent tables beforehand,
+                and then add the result tables as dependencies to the listener so that they can be safely read in it.
+
+        Raises:
+            DHError
+        """
+        if len(tables) < 2:
+            raise DHError(message="A merged listener must listen to at least 2 refreshing tables.")
+
+        self.tables = tables
+        self.listener_recorders = [_ListenerRecorder(t) for t in tables]
+
+        self.dependencies = dependencies
+
+        if isinstance(listener, MergedListener):
+            self.listener = listener.on_update
+        else:
+            self.listener = listener
+
+        try:
+            self.merged_listener_adapter = _JPythonMergedListenerAdapter.create(
+                        to_sequence(self.listener_recorders),
+                        to_sequence(self.dependencies),
+                        description,
+                        self)
+            self.started = False
+        except Exception as e:
+            raise DHError(e, "failed to create a merged listener adapter.") from e
+
+    def process(self) -> None:
+        """Process the table updates from the listener recorders."""
+        self.listener({lr.table: lr.table_update() for lr in self.listener_recorders})
+
+    def start(self) -> None:
+        """Start the listener."""
+        if self.started:
+            raise RuntimeError("Attempting to start an already started merged listener..")
+
+        with update_graph.auto_locking_ctx(self.listener_recorders[0].table.update_graph):
+            for lr in self.listener_recorders:
+                lr.table.j_table.addUpdateListener(lr.j_listener_recorder)
+            self.started = True
+
+    def stop(self) -> None:
+        """Stop the listener."""
+        if not self.started:
+            return
+
+        with update_graph.auto_locking_ctx(self.listener_recorders[0].table.update_graph):
+            for lr in self.listener_recorders:
+                lr.table.j_table.removeUpdateListener(lr.j_listener_recorder)
+            self.started = False
+
+
+def merged_listen(tables: Sequence[Table], listener: Union[Callable[[Dict[Table, TableUpdate]], None], MergedListener],
+                  description: str = None, dependencies: Union[Table, Sequence[Table]] = None) -> MergedListenerHandle:
+    """This is a convenience function that creates a MergedTableListenerHandle object and immediately starts it to
+    listen for table updates.
+
+    The function returns the created MergedListenerHandle object whose 'stop' method can be called to stop
+    listening. If it goes out of scope and is garbage collected, the listener will stop receiving any table updates.
+
+    Note: Don't do table operations in the listener. Do them beforehand, and add the results as dependencies.
+
+    Args:
+        tables (Sequence[Table]): tables to listen to.
+        listener (Union[Callable[[Dict[Table, TableUpdate]], None], MergedListener]): listener to process table updates
+            from the tables.
+        description (str, optional): description for the UpdatePerformanceTracker to append to the listener's entry
+            description, default is None
+        dependencies (Union[Table, Sequence[Table]]): tables that must be satisfied before the listener's execution.
+            A refreshing table is considered to be satisfied if all possible updates to the table have been processed
+            in the current update graph cycle. A static table is always considered to be satisfied. If a specified
+            table is refreshing, it must belong to the same update graph as the table being listened to. Default is
+            None.
+
+            Dependencies ensure that the listener can safely access the dependent tables during its execution. This
+            mainly includes reading the data from the tables. While performing operations on the dependent tables in
+            the listener is safe, it is not recommended because reading or operating on the result tables of those
+            operations may not be safe. It is best to perform the operations on the dependent tables beforehand,
+            and then add the result tables as dependencies to the listener so that they can be safely read in it.
+    """
+    merged_listener_handle = MergedListenerHandle(tables=tables, listener=listener,
+                                                  description=description, dependencies=dependencies)
+    merged_listener_handle.start()
+    return merged_listener_handle
