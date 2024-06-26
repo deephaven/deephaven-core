@@ -184,8 +184,7 @@ public class FilterFactory implements FilterVisitor<WhereFilter> {
             Literal literal = d.getLiteral();
             // all other literals get created from a toString except DateTime
             if (literal.getValueCase() == Literal.ValueCase.NANO_TIME_VALUE) {
-                values[i] = "'" + DateTimeUtils.formatDateTime(
-                        DateTimeUtils.epochNanosToInstant(literal.getNanoTimeValue()), DateTimeUtils.timeZone()) + "'";
+                values[i] = String.format("'%d'", literal.getNanoTimeValue());
             } else {
                 values[i] = FilterPrinter.printNoEscape(literal);
             }
