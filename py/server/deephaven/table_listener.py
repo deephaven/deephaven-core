@@ -576,7 +576,7 @@ class MergedListenerHandle:
             self.started = False
 
 
-def merged_listen(listener_recorders: Sequence[ListenerRecorder], listener: Union[Callable, TableListener],
+def merged_listen(listener_recorders: Sequence[ListenerRecorder], listener: Union[Callable, MergedListener],
                   description: str = None, dependencies: Union[Table, Sequence[Table]] = None) -> MergedListenerHandle:
     """This is a convenience function that creates a MergedTableListenerHandle object and immediately starts it to
     listen

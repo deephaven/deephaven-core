@@ -15,7 +15,7 @@ from deephaven.experimental import time_window
 from deephaven.jcompat import to_sequence
 from deephaven.table import Table
 from deephaven.table_listener import listen, TableListener, TableListenerHandle, MergedListener, TableUpdate, \
-    ListenerRecorder, MergedListenerHandle
+    ListenerRecorder, MergedListenerHandle, merged_listen
 from deephaven.execution_context import get_exec_ctx
 from deephaven.update_graph import exclusive_lock
 from tests.testbase import BaseTestCase
@@ -329,7 +329,6 @@ class TableListenerTestCase(BaseTestCase):
             table_listener_handle = TableListenerHandle(self.test_table, listener_func, dependencies=dep_table)
 
     def test_merged_listener_obj(self):
-        tur = TableUpdateRecorder()
         t1 = time_table("PT1s").update(["X=i % 11"])
         t2 = time_table("PT2s").update(["Y=i % 8"])
         t3 = time_table("PT3s").update(["Z=i % 5"])
@@ -341,17 +340,29 @@ class TableListenerTestCase(BaseTestCase):
                         tur.record(self.listener_recorders[i].table_update())
 
         tml = TestMergedListener()
-        mlh = MergedListenerHandle([ListenerRecorder(t) for t in [t1, t2, t3]], tml)
-        mlh.start()
-        ensure_ugp_cycles(tur, cycles=3)
-        mlh.stop()
-        mlh.start()
-        ensure_ugp_cycles(tur, cycles=8)
-        mlh.stop()
-        self.assertGreaterEqual(len(tur.replays), 8)
+        with self.subTest("Direct Handle"):
+            tur = TableUpdateRecorder()
+            mlh = MergedListenerHandle([ListenerRecorder(t) for t in [t1, t2, t3]], tml)
+            mlh.start()
+            ensure_ugp_cycles(tur, cycles=3)
+            mlh.stop()
+            mlh.start()
+            ensure_ugp_cycles(tur, cycles=6)
+            mlh.stop()
+            self.assertGreaterEqual(len(tur.replays), 6)
+
+        with self.subTest("Convenience function"):
+            tur = TableUpdateRecorder()
+            mlh = merged_listen([ListenerRecorder(t) for t in [t1, t2, t3]], tml)
+            ensure_ugp_cycles(tur, cycles=3)
+            mlh.stop()
+            mlh.start()
+            ensure_ugp_cycles(tur, cycles=6)
+            mlh.stop()
+            self.assertGreaterEqual(len(tur.replays), 6)
+
 
     def test_merged_listener_func(self):
-        tur = TableUpdateRecorder()
         t1 = time_table("PT1s").update(["X=i % 11"])
         t2 = time_table("PT2s").update(["Y=i % 8"])
         t3 = time_table("PT3s").update(["Z=i % 5"])
@@ -362,16 +373,31 @@ class TableListenerTestCase(BaseTestCase):
                 if listener_recorders[i].table_update():
                     tur.record(listener_recorders[i].table_update())
 
-        mlh = MergedListenerHandle(listener_recorders, test_ml_func)
-        mlh.start()
-        ensure_ugp_cycles(tur, cycles=3)
-        mlh.stop()
-        mlh.start()
-        ensure_ugp_cycles(tur, cycles=8)
-        mlh.stop()
-        self.assertGreaterEqual(len(tur.replays), 8)
+        with self.subTest("Direct Handle"):
+            tur = TableUpdateRecorder()
+            mlh = MergedListenerHandle(listener_recorders, test_ml_func)
+            mlh.start()
+            ensure_ugp_cycles(tur, cycles=3)
+            mlh.stop()
+            mlh.start()
+            ensure_ugp_cycles(tur, cycles=6)
+            mlh.stop()
+            self.assertGreaterEqual(len(tur.replays), 6)
+
+        with self.subTest("Convenience function"):
+            tur = TableUpdateRecorder()
+            mlh = merged_listen(listener_recorders, test_ml_func)
+            ensure_ugp_cycles(tur, cycles=3)
+            mlh.stop()
+            mlh.start()
+            ensure_ugp_cycles(tur, cycles=6)
+            mlh.stop()
+            self.assertGreaterEqual(len(tur.replays), 6)
 
     def test_merged_listener_with_deps(self):
+        ...
+
+    def test_merged_listener_with_deps_error(self):
         ...
 
 
