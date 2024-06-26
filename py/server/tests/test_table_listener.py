@@ -4,7 +4,7 @@
 
 import time
 import unittest
-from typing import List, Union
+from typing import List, Union, Optional
 
 import numpy
 import jpy
@@ -14,7 +14,8 @@ from deephaven.column import bool_col, string_col
 from deephaven.experimental import time_window
 from deephaven.jcompat import to_sequence
 from deephaven.table import Table
-from deephaven.table_listener import listen, TableListener, TableListenerHandle
+from deephaven.table_listener import listen, TableListener, TableListenerHandle, MergedListener, TableUpdate, \
+    ListenerRecorder, MergedListenerHandle
 from deephaven.execution_context import get_exec_ctx
 from deephaven.update_graph import exclusive_lock
 from tests.testbase import BaseTestCase
@@ -22,7 +23,7 @@ from tests.testbase import BaseTestCase
 _JColumnVectors = jpy.get_type("io.deephaven.engine.table.vectors.ColumnVectors")
 
 class TableUpdateRecorder:
-    def __init__(self, table: Table, chunk_size: int = None, cols: Union[str, List[str]] = None):
+    def __init__(self, table: Optional[Table] = None, chunk_size: int = None, cols: Union[str, List[str]] = None):
         self.table = table
         self.chunk_size = chunk_size
         self.cols = cols
@@ -34,7 +35,7 @@ class TableUpdateRecorder:
         self.replays = []
         self.modified_columns_list = []
 
-    def record(self, update, is_replay):
+    def record(self, update: TableUpdate, is_replay: bool=False):
         if self.chunk_size is None:
             self.added.append(update.added())
             self.removed.append(update.removed())
@@ -326,6 +327,52 @@ class TableListenerTestCase(BaseTestCase):
 
         with self.assertRaises(DHError):
             table_listener_handle = TableListenerHandle(self.test_table, listener_func, dependencies=dep_table)
+
+    def test_merged_listener_obj(self):
+        tur = TableUpdateRecorder()
+        t1 = time_table("PT1s").update(["X=i % 11"])
+        t2 = time_table("PT2s").update(["Y=i % 8"])
+        t3 = time_table("PT3s").update(["Z=i % 5"])
+
+        class TestMergedListener(MergedListener):
+            def process(self) -> None:
+                for i, listener in enumerate(self.listener_recorders):
+                    if self.listener_recorders[i].table_update():
+                        tur.record(self.listener_recorders[i].table_update())
+
+        tml = TestMergedListener()
+        mlh = MergedListenerHandle([ListenerRecorder(t) for t in [t1, t2, t3]], tml)
+        mlh.start()
+        ensure_ugp_cycles(tur, cycles=3)
+        mlh.stop()
+        mlh.start()
+        ensure_ugp_cycles(tur, cycles=8)
+        mlh.stop()
+        self.assertGreaterEqual(len(tur.replays), 8)
+
+    def test_merged_listener_func(self):
+        tur = TableUpdateRecorder()
+        t1 = time_table("PT1s").update(["X=i % 11"])
+        t2 = time_table("PT2s").update(["Y=i % 8"])
+        t3 = time_table("PT3s").update(["Z=i % 5"])
+        listener_recorders = [ListenerRecorder(t) for t in [t1, t2, t3]]
+
+        def test_ml_func() -> None:
+            for i, listener in enumerate(listener_recorders):
+                if listener_recorders[i].table_update():
+                    tur.record(listener_recorders[i].table_update())
+
+        mlh = MergedListenerHandle(listener_recorders, test_ml_func)
+        mlh.start()
+        ensure_ugp_cycles(tur, cycles=3)
+        mlh.stop()
+        mlh.start()
+        ensure_ugp_cycles(tur, cycles=8)
+        mlh.stop()
+        self.assertGreaterEqual(len(tur.replays), 8)
+
+    def test_merged_listener_with_deps(self):
+        ...
 
 
 if __name__ == "__main__":
