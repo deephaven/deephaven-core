@@ -124,7 +124,7 @@ class Classpaths {
 
     static final String AVRO_GROUP = 'org.apache.avro'
     static final String AVRO_NAME = 'avro'
-    static final String AVRO_VERSION = '1.8.1'
+    static final String AVRO_VERSION = '1.11.3'
 
     static final String HADOOP_GROUP = 'org.apache.hadoop'
     static final String HADOOP_VERSION = '3.4.0'
