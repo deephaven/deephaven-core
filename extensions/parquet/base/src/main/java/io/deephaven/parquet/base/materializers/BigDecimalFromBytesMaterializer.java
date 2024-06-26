@@ -49,8 +49,7 @@ public class BigDecimalFromBytesMaterializer extends ObjectMaterializerBase<BigD
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            final byte[] bytes = dataReader.readBytes().getBytes();
-            data[ii] = codec.decode(bytes, 0, bytes.length);
+            data[ii] = codec.decode(dataReader.readBytes().toByteBuffer());
         }
     }
 }
