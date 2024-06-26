@@ -302,7 +302,7 @@ class Classpaths {
         addDependency(config, GUAVA_GROUP, GUAVA_NAME, GUAVA_VERSION)
     }
 
-    static void inheritAvro(Project p, String configName) {
+    static void inheritAvro(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
         Configuration config = p.configurations.getByName(configName)
         addDependency(config, AVRO_GROUP, AVRO_NAME, AVRO_VERSION)
     }
@@ -341,12 +341,14 @@ class Classpaths {
         addDependency(config, HADOOP_GROUP, 'hadoop-hdfs-client', HADOOP_VERSION)
     }
 
-    static void inheritIcebergCore(Project p, String configName = JavaPlugin.API_CONFIGURATION_NAME) {
-        Configuration config = p.configurations.getByName(configName)
-        addDependency(config, p.getDependencies().platform(ICEBERG_GROUP + ":iceberg-bom:" + ICEBERG_VERSION))
+    static void inheritIcebergCore(Project p) {
+        Configuration apiConfig = p.configurations.getByName(JavaPlugin.API_CONFIGURATION_NAME)
+        addDependency(apiConfig, p.getDependencies().platform(ICEBERG_GROUP + ":iceberg-bom:" + ICEBERG_VERSION))
+        addDependency(apiConfig, ICEBERG_GROUP, 'iceberg-api', ICEBERG_VERSION)
 
-        addDependency(config, ICEBERG_GROUP, 'iceberg-core', ICEBERG_VERSION)
-        addDependency(config, ICEBERG_GROUP, 'iceberg-bundled-guava', ICEBERG_VERSION)
+        Configuration implConfig = p.configurations.getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME)
+        addDependency(implConfig, ICEBERG_GROUP, 'iceberg-bundled-guava', ICEBERG_VERSION)
+        addDependency(apiConfig, ICEBERG_GROUP, 'iceberg-core', ICEBERG_VERSION)
     }
 
     static void inheritAWSSDK(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {

@@ -10,6 +10,7 @@ dependencies {
 
     api project(':engine-processor')
 
+    // Expose Avro to the users of this extension.
     Classpaths.inheritAvro(project, JavaPlugin.API_CONFIGURATION_NAME)
 
     // Using io.confluent dependencies requires code in the toplevel build.gradle to add their maven repository.
