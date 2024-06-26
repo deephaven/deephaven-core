@@ -139,7 +139,7 @@ public class FilterFactory implements FilterVisitor<WhereFilter> {
                 valueString = Long.toString(value.getLongValue());
                 break;
             case NANO_TIME_VALUE:
-                valueString = Long.toString(value.getNanoTimeValue());
+                valueString = String.format("'%d'", value.getNanoTimeValue());
                 break;
             case VALUE_NOT_SET:
             default:
