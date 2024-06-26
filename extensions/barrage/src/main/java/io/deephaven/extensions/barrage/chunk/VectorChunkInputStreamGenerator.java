@@ -9,8 +9,6 @@ import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
-import io.deephaven.chunk.WritableLongChunk;
-import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.pools.PoolableChunk;
@@ -24,11 +22,8 @@ import io.deephaven.vector.Vector;
 import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.DataInput;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Iterator;
-import java.util.PrimitiveIterator;
 
 public class VectorChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<ObjectChunk<Vector<?>, Values>> {
     private static final String DEBUG_NAME = "VarListChunkInputStreamGenerator";
@@ -38,12 +33,15 @@ public class VectorChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
     private WritableIntChunk<ChunkPositions> offsets;
     private ChunkInputStreamGenerator innerGenerator;
 
+    private final ChunkInputStreamGeneratorFactory factory;
+
     VectorChunkInputStreamGenerator(
             final Class<Vector<?>> type,
             final Class<?> componentType,
             final ObjectChunk<Vector<?>, Values> chunk,
-            final long rowOffset) {
+            final long rowOffset, ChunkInputStreamGeneratorFactory factory) {
         super(chunk, 0, rowOffset);
+        this.factory = factory;
         this.componentType = VectorExpansionKernel.getComponentType(type, componentType);
     }
 
@@ -58,8 +56,7 @@ public class VectorChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
         offsets = WritableIntChunk.makeWritableChunk(chunk.size() + 1);
 
         final WritableChunk<Values> innerChunk = kernel.expand(chunk, offsets);
-        innerGenerator = ChunkInputStreamGenerator.makeInputStreamGenerator(
-                chunkType, componentType, innerComponentType, innerChunk, 0);
+        innerGenerator = factory.makeInputStreamGenerator(chunkType, componentType, innerComponentType, innerChunk, 0);
     }
 
     @Override
