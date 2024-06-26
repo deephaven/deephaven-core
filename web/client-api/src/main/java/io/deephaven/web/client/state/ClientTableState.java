@@ -25,9 +25,7 @@ import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.shared.data.*;
 import io.deephaven.web.shared.fu.*;
 import jsinterop.base.Js;
-import org.apache.arrow.flatbuf.Schema;
 
-import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -66,10 +64,10 @@ public final class ClientTableState extends TableConfig {
             if (dataType == Boolean.class || dataType == boolean.class) {
                 return ChunkType.Byte;
             }
-            // if (dataType == Instant.class) {
-            // // Note that storing ZonedDateTime as a primitive is lossy on the time zone.
-            // return ChunkType.Long;
-            // }
+            if (dataType == DateWrapper.class) {
+                // Note that storing ZonedDateTime as a primitive is lossy on the time zone.
+                return ChunkType.Long;
+            }
             return ChunkType.fromElementType(dataType);
         }).toArray(ChunkType[]::new);
     }
@@ -100,6 +98,8 @@ public final class ClientTableState extends TableConfig {
                         case "java.lang.Double":
                         case "double":
                             return double.class;
+                        case "java.time.Instant":
+                            return DateWrapper.class;
                         default:
                             return Object.class;
                     }
