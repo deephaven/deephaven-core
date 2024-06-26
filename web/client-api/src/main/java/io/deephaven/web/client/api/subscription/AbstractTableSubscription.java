@@ -412,8 +412,9 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
                 || (serverColumns != null && serverColumns.equals(this.columnBitSet));
     }
 
+    private final WebBarrageStreamReader reader = new WebBarrageStreamReader();
+
     private void onFlightData(FlightData data) {
-        WebBarrageStreamReader reader = new WebBarrageStreamReader();
         WebBarrageMessage message;
         try {
             message = reader.parseFrom(options, null, state.chunkTypes(), state.columnTypes(), state.componentTypes(),
