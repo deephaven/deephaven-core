@@ -46,7 +46,7 @@ public class InstantFromInt96Materializer extends LongMaterializerBase implement
         setReferenceTimeZone(referenceTimeZone);
     }
 
-    final ValuesReader dataReader;
+    private final ValuesReader dataReader;
 
     private InstantFromInt96Materializer(ValuesReader dataReader, int numValues) {
         this(dataReader, 0, numValues);

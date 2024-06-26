@@ -212,9 +212,7 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
             } else if (filter instanceof MatchFilter) {
                 final MatchFilter matchFilter = (MatchFilter) filter;
                 Assert.assertion(myRenames.size() == 1, "Match Filters should only use one column!");
-                String newName = myRenames.get(matchFilter.getColumnName());
-                Assert.neqNull(newName, "newName");
-                final MatchFilter newFilter = matchFilter.renameFilter(newName);
+                final WhereFilter newFilter = matchFilter.renameFilter(myRenames);
                 newFilter.init(tableReference.getDefinition(), compilationProcessor);
                 preViewFilters.add(newFilter);
             } else if (filter instanceof ConditionFilter) {

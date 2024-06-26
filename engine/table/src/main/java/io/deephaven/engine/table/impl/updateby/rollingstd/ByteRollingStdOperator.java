@@ -110,9 +110,14 @@ public class ByteRollingStdOperator extends BaseDoubleUpdateByOperator {
 
         @Override
         public void writeToOutputChunk(int outIdx) {
-            if (valueBuffer.size() == 0) {
+            if (valueBuffer.isEmpty()) {
                 outputValues.set(outIdx, NULL_DOUBLE);
             } else {
+                if (nullCount == valueBuffer.size()) {
+                    outputValues.set(outIdx, NULL_DOUBLE);
+                    return;
+                }
+
                 final int count = valueBuffer.size() - nullCount;
 
                 if (count <= 1) {

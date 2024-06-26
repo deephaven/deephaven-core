@@ -658,7 +658,7 @@ class ParquetTestCase(BaseTestCase):
             self.assertTrue(len(table.columns))
             self.assertTrue(table.columns[0].name == "X")
             self.assertTrue(table.columns[0].column_type == ColumnType.PARTITIONING)
-            self.assert_table_equals(table.select().sort("X", "Y"), source.sort("X", "Y"))
+            self.assert_table_equals(table.select().sort(["X", "Y"]), source.sort(["X", "Y"]))
 
         def verify_file_names():
             partition_dir_path = os.path.join(root_dir, 'X=Aa')

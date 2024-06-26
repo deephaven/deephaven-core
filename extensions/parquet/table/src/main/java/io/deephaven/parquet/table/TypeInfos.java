@@ -8,6 +8,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.CodecLookup;
 import io.deephaven.engine.table.impl.dataindex.RowSetCodec;
+import io.deephaven.parquet.base.PageMaterializer;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.util.codec.ExternalizableCodec;
 import io.deephaven.util.codec.SerializableCodec;
@@ -411,6 +412,8 @@ public class TypeInfos {
      * We will encode BigIntegers as Decimal types. Parquet has no special type for BigIntegers, but we can maintain
      * external compatibility by encoding them as fixed length decimals of scale 1. Internally, we'll record that we
      * wrote this as a decimal, so we can properly decode it back to BigInteger.
+     *
+     * @see PageMaterializer#resolveDecimalLogicalType
      */
     private enum BigIntegerType implements TypeInfo {
         INSTANCE;

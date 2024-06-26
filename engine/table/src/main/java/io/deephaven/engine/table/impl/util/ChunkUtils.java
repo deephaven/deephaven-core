@@ -471,7 +471,7 @@ public class ChunkUtils {
     }
 
     public static <T extends Values> void fillWithNullValue(ChunkSink<T> dest, RowSequence allKeys) {
-        final int minSize = Math.min(allKeys.intSize(), COPY_DATA_CHUNK_SIZE);
+        final int minSize = (int) Math.min(allKeys.size(), COPY_DATA_CHUNK_SIZE);
         if (minSize == 0) {
             return;
         }
@@ -480,9 +480,8 @@ public class ChunkUtils {
                 final RowSequence.Iterator iter = allKeys.getRowSequenceIterator()) {
             chunk.fillWithNullValue(0, minSize);
             while (iter.hasMore()) {
-                try (final RowSequence nextKeys = iter.getNextRowSequenceWithLength(COPY_DATA_CHUNK_SIZE)) {
-                    dest.fillFromChunk(destContext, chunk, nextKeys);
-                }
+                final RowSequence nextKeys = iter.getNextRowSequenceWithLength(COPY_DATA_CHUNK_SIZE);
+                dest.fillFromChunk(destContext, chunk, nextKeys);
             }
         }
     }

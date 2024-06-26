@@ -1,7 +1,7 @@
 //
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.parquet.table;
+package io.deephaven.parquet.base;
 
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.util.codec.ObjectCodec;
@@ -32,6 +32,10 @@ public class BigIntegerParquetBytesCodec implements ObjectCodec<BigInteger> {
         } else {
             nullBytes = CollectionUtil.ZERO_LENGTH_BYTE_ARRAY;
         }
+    }
+
+    public BigIntegerParquetBytesCodec() {
+        this(-1);
     }
 
     // Given how parquet encoding works for nulls, the actual value provided for a null is irrelevant.

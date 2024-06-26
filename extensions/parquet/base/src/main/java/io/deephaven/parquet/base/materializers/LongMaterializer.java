@@ -21,7 +21,7 @@ public class LongMaterializer extends LongMaterializerBase implements PageMateri
         }
     };
 
-    final ValuesReader dataReader;
+    private final ValuesReader dataReader;
 
     private LongMaterializer(ValuesReader dataReader, int numValues) {
         this(dataReader, 0, numValues);
