@@ -432,7 +432,6 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         // TODO handle stream end/error
     }
 
-
     /**
      * The columns that were subscribed to when this subscription was created
      *

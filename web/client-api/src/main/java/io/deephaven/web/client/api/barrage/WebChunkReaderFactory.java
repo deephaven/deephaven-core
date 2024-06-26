@@ -65,40 +65,43 @@ public class WebChunkReaderFactory implements ChunkReadingFactory {
                         return new DoubleChunkReader(options);
                     }
                     default:
-                        throw new IllegalArgumentException("Unsupported FloatingPoint precision " + Precision.name(t.precision()));
+                        throw new IllegalArgumentException(
+                                "Unsupported FloatingPoint precision " + Precision.name(t.precision()));
                 }
             }
             case Type.Binary: {
                 if (typeInfo.type() == BigInteger.class) {
                     return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
                             totalRows) -> VarBinaryChunkInputStreamGenerator.extractChunkFromInputStream(
-                            is,
-                            fieldNodeIter,
-                            bufferInfoIter,
-                            BigInteger::new,
-                            outChunk, outOffset, totalRows);
+                                    is,
+                                    fieldNodeIter,
+                                    bufferInfoIter,
+                                    BigInteger::new,
+                                    outChunk, outOffset, totalRows);
                 }
                 if (typeInfo.type() == BigDecimal.class) {
                     return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
                             totalRows) -> VarBinaryChunkInputStreamGenerator.extractChunkFromInputStream(
-                            is,
-                            fieldNodeIter,
-                            bufferInfoIter,
-                            (final byte[] buf, final int offset, final int length) -> {
-                                // read the int scale value as little endian, arrow's endianness.
-                                final byte b1 = buf[offset];
-                                final byte b2 = buf[offset + 1];
-                                final byte b3 = buf[offset + 2];
-                                final byte b4 = buf[offset + 3];
-                                final int scale = b4 << 24 | (b3 & 0xFF) << 16 | (b2 & 0xFF) << 8 | (b1 & 0xFF);
-                                return new BigDecimal(new BigInteger(buf, offset + 4, length - 4), scale);
-                            },
-                            outChunk, outOffset, totalRows);
+                                    is,
+                                    fieldNodeIter,
+                                    bufferInfoIter,
+                                    (final byte[] buf, final int offset, final int length) -> {
+                                        // read the int scale value as little endian, arrow's endianness.
+                                        final byte b1 = buf[offset];
+                                        final byte b2 = buf[offset + 1];
+                                        final byte b3 = buf[offset + 2];
+                                        final byte b4 = buf[offset + 3];
+                                        final int scale = b4 << 24 | (b3 & 0xFF) << 16 | (b2 & 0xFF) << 8 | (b1 & 0xFF);
+                                        return new BigDecimal(new BigInteger(buf, offset + 4, length - 4), scale);
+                                    },
+                                    outChunk, outOffset, totalRows);
                 }
             }
             case Type.Utf8: {
-                return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows) ->
-                        VarBinaryChunkInputStreamGenerator.extractChunkFromInputStream(is, fieldNodeIter, bufferInfoIter, (buf, off, len) -> new String(buf, off, len, StandardCharsets.UTF_8), outChunk, outOffset, totalRows);
+                return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
+                        totalRows) -> VarBinaryChunkInputStreamGenerator.extractChunkFromInputStream(is, fieldNodeIter,
+                                bufferInfoIter, (buf, off, len) -> new String(buf, off, len, StandardCharsets.UTF_8),
+                                outChunk, outOffset, totalRows);
             }
             case Type.Bool: {
                 return new BooleanChunkReader();
@@ -108,7 +111,7 @@ public class WebChunkReaderFactory implements ChunkReadingFactory {
                 typeInfo.arrowField().type(t);
                 switch (t.unit()) {
                     case DateUnit.MILLISECOND:
-                        return new LongChunkReader(options);//TODO transform
+                        return new LongChunkReader(options);// TODO transform
                     default:
                         throw new IllegalArgumentException("Unsupported Date unit: " + DateUnit.name(t.unit()));
                 }
@@ -118,7 +121,7 @@ public class WebChunkReaderFactory implements ChunkReadingFactory {
                 typeInfo.arrowField().type(t);
                 switch (t.bitWidth()) {
                     case TimeUnit.NANOSECOND: {
-                        return new LongChunkReader(options);//TODO transform
+                        return new LongChunkReader(options);// TODO transform
                     }
                     default:
                         throw new IllegalArgumentException("Unsupported Time unit: " + TimeUnit.name(t.unit()));
@@ -132,7 +135,7 @@ public class WebChunkReaderFactory implements ChunkReadingFactory {
                         if (!t.timezone().equals("UTC")) {
                             throw new IllegalArgumentException("Unsupported tz " + t.timezone());
                         }
-                        return new LongChunkReader(options);//TODO transform
+                        return new LongChunkReader(options);// TODO transform
                     }
                     default:
                         throw new IllegalArgumentException("Unsupported Timestamp unit: " + TimeUnit.name(t.unit()));
@@ -141,12 +144,12 @@ public class WebChunkReaderFactory implements ChunkReadingFactory {
             case Type.List: {
                 if (typeInfo.componentType() == byte.class) {
                     return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
-                           totalRows) -> VarBinaryChunkInputStreamGenerator.extractChunkFromInputStream(
-                            is,
-                            fieldNodeIter,
-                            bufferInfoIter,
-                            (buf, off, len) -> Arrays.copyOfRange(buf, off, off + len),
-                            outChunk, outOffset, totalRows);
+                            totalRows) -> VarBinaryChunkInputStreamGenerator.extractChunkFromInputStream(
+                                    is,
+                                    fieldNodeIter,
+                                    bufferInfoIter,
+                                    (buf, off, len) -> Arrays.copyOfRange(buf, off, off + len),
+                                    outChunk, outOffset, totalRows);
                 }
                 return new VarListChunkReader<>(options, typeInfo, this);
             }
