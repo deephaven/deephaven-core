@@ -15,6 +15,8 @@ import io.deephaven.extensions.barrage.chunk.LongChunkReader;
 import io.deephaven.extensions.barrage.chunk.VarBinaryChunkInputStreamGenerator;
 import io.deephaven.extensions.barrage.chunk.VarListChunkReader;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
+import io.deephaven.web.client.api.DateWrapper;
+import io.deephaven.web.client.api.LongWrapper;
 import org.apache.arrow.flatbuf.Date;
 import org.apache.arrow.flatbuf.DateUnit;
 import org.apache.arrow.flatbuf.FloatingPoint;
@@ -48,7 +50,7 @@ public class WebChunkReaderFactory implements ChunkReadingFactory {
                         return new IntChunkReader(options);
                     }
                     case 64: {
-                        return new LongChunkReader(options);
+                        return new LongChunkReader(options).transform(LongWrapper::of);
                     }
                     default:
                         throw new IllegalArgumentException("Unsupported Int bitwidth: " + t.bitWidth());
@@ -111,7 +113,7 @@ public class WebChunkReaderFactory implements ChunkReadingFactory {
                 typeInfo.arrowField().type(t);
                 switch (t.unit()) {
                     case DateUnit.MILLISECOND:
-                        return new LongChunkReader(options);// TODO transform
+                        return new LongChunkReader(options).transform(millis -> DateWrapper.of(millis * 1000 * 1000));
                     default:
                         throw new IllegalArgumentException("Unsupported Date unit: " + DateUnit.name(t.unit()));
                 }
@@ -121,7 +123,7 @@ public class WebChunkReaderFactory implements ChunkReadingFactory {
                 typeInfo.arrowField().type(t);
                 switch (t.bitWidth()) {
                     case TimeUnit.NANOSECOND: {
-                        return new LongChunkReader(options);// TODO transform
+                        return new LongChunkReader(options).transform(DateWrapper::of);
                     }
                     default:
                         throw new IllegalArgumentException("Unsupported Time unit: " + TimeUnit.name(t.unit()));
@@ -135,7 +137,7 @@ public class WebChunkReaderFactory implements ChunkReadingFactory {
                         if (!t.timezone().equals("UTC")) {
                             throw new IllegalArgumentException("Unsupported tz " + t.timezone());
                         }
-                        return new LongChunkReader(options);// TODO transform
+                        return new LongChunkReader(options).transform(DateWrapper::of);
                     }
                     default:
                         throw new IllegalArgumentException("Unsupported Timestamp unit: " + TimeUnit.name(t.unit()));
