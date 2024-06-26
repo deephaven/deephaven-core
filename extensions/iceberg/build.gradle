@@ -24,7 +24,11 @@ dependencies {
     implementation project(':extensions-parquet-base')
     implementation project(':extensions-parquet-table')
 
-    Classpaths.inheritIcebergCore(project)
+    api platform(libs.iceberg.bom)
+    api libs.iceberg.api
+    implementation libs.iceberg.core
+    implementation libs.iceberg.bundled.guava
+
     Classpaths.inheritIcebergHadoop(project)
     implementation libs.avro
 

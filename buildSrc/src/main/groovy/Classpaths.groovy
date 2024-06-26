@@ -33,9 +33,6 @@ class Classpaths {
     static final String HADOOP_GROUP = 'org.apache.hadoop'
     static final String HADOOP_VERSION = '3.4.0'
 
-    static final String ICEBERG_GROUP = 'org.apache.iceberg'
-    static final String ICEBERG_VERSION = '1.5.2'
-
     static final String AWSSDK_GROUP = 'software.amazon.awssdk'
     static final String AWSSDK_VERSION = '2.24.5'
 
@@ -101,16 +98,6 @@ class Classpaths {
         Configuration config = p.configurations.getByName(configName)
         inheritParquetHadoopConfiguration(p, configName)
         addDependency(config, HADOOP_GROUP, 'hadoop-hdfs-client', HADOOP_VERSION)
-    }
-
-    static void inheritIcebergCore(Project p) {
-        Configuration apiConfig = p.configurations.getByName(JavaPlugin.API_CONFIGURATION_NAME)
-        addDependency(apiConfig, p.getDependencies().platform(ICEBERG_GROUP + ":iceberg-bom:" + ICEBERG_VERSION))
-        addDependency(apiConfig, ICEBERG_GROUP, 'iceberg-api', ICEBERG_VERSION)
-
-        Configuration implConfig = p.configurations.getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME)
-        addDependency(implConfig, ICEBERG_GROUP, 'iceberg-bundled-guava', ICEBERG_VERSION)
-        addDependency(implConfig, ICEBERG_GROUP, 'iceberg-core', ICEBERG_VERSION)
     }
 
     static void inheritAWSSDK(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {

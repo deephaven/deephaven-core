@@ -12,6 +12,7 @@ groovy = "3.0.21"
 # Only bump this in concert with boringssl
 grpc = "1.58.0"
 guava = "33.2.0-jre"
+iceberg = "1.5.2"
 immutables = "2.9.2"
 jackson-bom = "2.17.0"
 javaparser = "3.23.0"
@@ -59,6 +60,11 @@ grpc-services = { module = "io.grpc:grpc-services" }
 grpc-stub = { module = "io.grpc:grpc-services" }
 grpc-util = { module = "io.grpc:grpc-util" }
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
+iceberg-api = { module = "org.apache.iceberg:iceberg-api" }
+iceberg-aws = { module = "org.apache.iceberg:iceberg-aws" }
+iceberg-bom = { module = "org.apache.iceberg:iceberg-bom", version.ref = "iceberg" }
+iceberg-bundled-guava = { module = "org.apache.iceberg:iceberg-bundled-guava" }
+iceberg-core = { module = "org.apache.iceberg:iceberg-core" }
 immutables = { module = "org.immutables:value", version.ref = "immutables" }
 elemental-dom = { module = "com.google.elemental2:elemental2-dom", version.ref = "elemental" }
 elemental-promise = { module = "com.google.elemental2:elemental2-promise", version.ref = "elemental" }

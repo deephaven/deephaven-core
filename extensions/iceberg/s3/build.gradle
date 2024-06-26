@@ -12,10 +12,13 @@ dependencies {
     implementation project(':extensions-iceberg')
 
     // Bring in the AWS / S3 extensions
-    Classpaths.inheritIcebergCore(project)
+    api platform(libs.iceberg.bom)
+    api libs.iceberg.api
+    implementation libs.iceberg.core
+    implementation libs.iceberg.bundled.guava
 
     implementation project(':extensions-s3')
-    implementation "org.apache.iceberg:iceberg-aws"
+    implementation libs.iceberg.aws
 
     Classpaths.inheritAWSSDK(project)
     runtimeOnly "software.amazon.awssdk:sts"
