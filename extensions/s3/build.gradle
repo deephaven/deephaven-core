@@ -16,7 +16,9 @@ dependencies {
     implementation project(':Configuration')
     implementation project(':log-factory')
 
-    Classpaths.inheritAWSSDK(project)
+    implementation platform(libs.awssdk.bom)
+    implementation libs.awssdk.s3
+    implementation libs.awssdk.crt.client
 
     compileOnly depAnnotations
 
@@ -35,7 +37,7 @@ dependencies {
     testRuntimeOnly libs.junit.jupiter.engine
     testRuntimeOnly libs.junit.platform.launcher
 
-    testImplementation 'software.amazon.awssdk:s3-transfer-manager'
+    testImplementation libs.awssdk.s3.transfer.manager
     testImplementation libs.testcontainers
     testImplementation libs.testcontainers.junit.jupiter
     testImplementation libs.testcontainers.localstack

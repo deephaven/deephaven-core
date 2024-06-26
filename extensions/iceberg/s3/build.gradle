@@ -20,9 +20,11 @@ dependencies {
     implementation project(':extensions-s3')
     implementation libs.iceberg.aws
 
-    Classpaths.inheritAWSSDK(project)
-    runtimeOnly "software.amazon.awssdk:sts"
-    runtimeOnly "software.amazon.awssdk:glue"
+    implementation platform(libs.awssdk.bom)
+    implementation libs.awssdk.s3
+    implementation libs.awssdk.crt.client
+    runtimeOnly libs.awssdk.sts
+    runtimeOnly libs.awssdk.glue
 
     testImplementation libs.testcontainers
     testImplementation libs.testcontainers.junit.jupiter
