@@ -58,7 +58,7 @@ public class ToLongPage<ATTR extends Any> implements ToPage<ATTR, long[]> {
 
     @Override
     @NotNull
-    public Object nullValue() {
+    public final Object nullValue() {
         return NULL_LONG_BOXED;
     }
 

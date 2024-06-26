@@ -17,25 +17,13 @@ public class ToBigDecimalFromNumeric<ATTR extends Any> implements ToPage<ATTR, B
     public static <ATTR extends Any> ToPage<ATTR, BigDecimal[]> createFromInt(
             @NotNull final Class<?> nativeType,
             final int scale) {
-        return new FromInt<>(nativeType, scale);
+        return new ToBigDecimalFromNumeric<>(nativeType, new BigDecimalFromIntMaterializer.Factory(scale));
     }
 
     public static <ATTR extends Any> ToPage<ATTR, BigDecimal[]> createFromLong(
             @NotNull final Class<?> nativeType,
             final int scale) {
-        return new FromLong<>(nativeType, scale);
-    }
-
-    private static final class FromInt<ATTR extends Any> extends ToBigDecimalFromNumeric<ATTR> {
-        private FromInt(@NotNull final Class<?> nativeType, final int scale) {
-            super(nativeType, new BigDecimalFromIntMaterializer.Factory(scale));
-        }
-    }
-
-    private static final class FromLong<ATTR extends Any> extends ToBigDecimalFromNumeric<ATTR> {
-        private FromLong(@NotNull final Class<?> nativeType, final int scale) {
-            super(nativeType, new BigDecimalFromLongMaterializer.Factory(scale));
-        }
+        return new ToBigDecimalFromNumeric<>(nativeType, new BigDecimalFromLongMaterializer.Factory(scale));
     }
 
     private final PageMaterializerFactory pageMaterializerFactory;
