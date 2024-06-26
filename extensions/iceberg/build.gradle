@@ -23,7 +23,7 @@ dependencies {
 
     Classpaths.inheritIcebergCore(project)
     Classpaths.inheritIcebergHadoop(project)
-    Classpaths.inheritAvro(project, JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME)
+    Classpaths.inheritAvro(project, JavaPlugin.API_CONFIGURATION_NAME)
 
     Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)

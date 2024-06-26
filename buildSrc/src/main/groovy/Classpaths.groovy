@@ -341,7 +341,7 @@ class Classpaths {
         addDependency(config, HADOOP_GROUP, 'hadoop-hdfs-client', HADOOP_VERSION)
     }
 
-    static void inheritIcebergCore(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
+    static void inheritIcebergCore(Project p, String configName = JavaPlugin.API_CONFIGURATION_NAME) {
         Configuration config = p.configurations.getByName(configName)
         addDependency(config, p.getDependencies().platform(ICEBERG_GROUP + ":iceberg-bom:" + ICEBERG_VERSION))
 
