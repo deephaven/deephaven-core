@@ -479,14 +479,12 @@ public class ReplicatePrimitiveCode {
     }
 
     public static List<String> intToAllButBooleanAndLong(String gradleTask, String sourceClassJavaPath,
-            String... exemptions)
-            throws IOException {
+            String... exemptions) throws IOException {
         return intToAllButBooleanAndLong(gradleTask, sourceClassJavaPath, null, exemptions);
     }
 
     public static List<String> intToAllButBooleanAndLong(String gradleTask, String sourceClassJavaPath,
-            Map<String, Long> serialVersionUIDs,
-            String... exemptions) throws IOException {
+            Map<String, Long> serialVersionUIDs, String... exemptions) throws IOException {
         final List<String> results = new ArrayList<>();
         results.add(intToChar(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions));
         results.add(intToByte(gradleTask, sourceClassJavaPath, serialVersionUIDs, exemptions));
