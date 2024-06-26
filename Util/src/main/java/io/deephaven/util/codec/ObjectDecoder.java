@@ -39,7 +39,7 @@ public interface ObjectDecoder<TYPE> {
     TYPE decode(@NotNull byte[] input, int offset, int length);
 
     /**
-     * Decode an object from a ByteBuffer.
+     * Decode an object from a ByteBuffer. The position of the input buffer may or may not be modified by this method.
      *
      * @param buffer The input ByteBuffer containing bytes to decode
      * @return The output object, possibly null
