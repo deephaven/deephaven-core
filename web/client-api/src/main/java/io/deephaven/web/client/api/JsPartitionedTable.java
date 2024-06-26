@@ -90,7 +90,7 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
                 keyTable.close();
                 c.apply(fail, success);
             });
-        }, "get keys table")
+        }, "view only keys columns")
                 .refetch(this, connection.metadata())
                 .then(state -> Promise.resolve(new JsTable(connection, state)))).then(result -> {
                     keys = result;
