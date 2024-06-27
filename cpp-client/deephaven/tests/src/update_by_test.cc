@@ -154,7 +154,6 @@ TEST_CASE("UpdateBy: Multiple Ops", "[update_by]") {
 
 namespace {
 std::vector<TableHandle> MakeTables(const Client &client) {
-  std::vector<TableHandle> result;
   auto tm = client.GetManager();
   auto static_table = MakeRandomTable(client).Update("Timestamp=now()");
   auto ticking_table = tm.TimeTable(std::chrono::seconds(1))
