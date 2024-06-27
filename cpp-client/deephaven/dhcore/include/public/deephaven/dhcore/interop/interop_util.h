@@ -21,7 +21,7 @@ namespace deephaven::dhcore::interop {
  *
  * The purpose of all of this is to enable a little more type checking on the C# side.
  * Rather than just dealing with IntPtr on the C# side (which is effectively equivalent to
- * void* and has just as little typechecking, we use NativePtr<Foo> struct instead.
+ * (void*) and has just as little typechecking, we use NativePtr<Foo> struct instead.
  * This prevents us from making mistakes like passing a NativePtr<Foo> when we meant
  * NativePtr<Bar>. Our protocol is that .NET passes us a NativePtr<Foo> by value, so
  * in our C API, we receive a NativePtr<Foo> by value.
