@@ -14,7 +14,7 @@ import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
 import io.deephaven.extensions.barrage.chunk.ChunkReader;
-import io.deephaven.extensions.barrage.chunk.ChunkReadingFactory;
+import io.deephaven.extensions.barrage.chunk.ChunkReaderFactory;
 import io.deephaven.extensions.barrage.chunk.DefaultChunkReadingFactory;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.io.streams.ByteBufferInputStream;
@@ -35,6 +35,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.PrimitiveIterator;
 
+import static io.deephaven.extensions.barrage.chunk.ChunkReaderFactory.typeInfo;
 import static io.deephaven.extensions.barrage.util.BarrageProtoUtil.DEFAULT_SER_OPTIONS;
 
 /**
@@ -157,9 +158,8 @@ public class ArrowToTableConverter {
         // before doing this
         for (int i = 0; i < header.fieldsLength(); i++) {
             final int factor = (result.conversionFactors == null) ? 1 : result.conversionFactors[i];
-            ChunkReader reader = DefaultChunkReadingFactory.INSTANCE.extractChunkFromInputStream(options, factor,
-                    new ChunkReadingFactory.ChunkTypeInfo(columnChunkTypes[i], columnTypes[i], componentTypes[i],
-                            header.fields(i)));
+            ChunkReader reader = DefaultChunkReadingFactory.INSTANCE.getReader(options, factor,
+                    typeInfo(columnChunkTypes[i], columnTypes[i], componentTypes[i], header.fields(i)));
             readers.add(reader);
         }
 
@@ -204,7 +204,7 @@ public class ArrowToTableConverter {
             msg.addColumnData[ci] = acd;
             msg.addColumnData[ci].data = new ArrayList<>();
             try {
-                acd.data.add(readers.get(ci).read(fieldNodeIter, bufferInfoIter, mi.inputStream, null, 0, 0));
+                acd.data.add(readers.get(ci).readChunk(fieldNodeIter, bufferInfoIter, mi.inputStream, null, 0, 0));
             } catch (final IOException unexpected) {
                 throw new UncheckedDeephavenException(unexpected);
             }

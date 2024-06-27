@@ -20,26 +20,28 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.PrimitiveIterator;
 
+import static io.deephaven.extensions.barrage.chunk.ChunkReaderFactory.typeInfo;
+
 public class VectorChunkReader implements ChunkReader {
     private static final String DEBUG_NAME = "VectorChunkReader";
     private final ChunkReader componentReader;
     private final VectorExpansionKernel kernel;
 
-    public VectorChunkReader(final StreamReaderOptions options, final ChunkReadingFactory.ChunkTypeInfo typeInfo,
-            ChunkReadingFactory chunkReadingFactory) {
+    public VectorChunkReader(final StreamReaderOptions options, final ChunkReaderFactory.TypeInfo typeInfo,
+            ChunkReaderFactory chunkReaderFactory) {
 
         final Class<?> componentType =
                 VectorExpansionKernel.getComponentType(typeInfo.type(), typeInfo.componentType());
         final ChunkType chunkType = ChunkType.fromElementType(componentType);
-        componentReader = chunkReadingFactory.extractChunkFromInputStream(
-                options,
-                new ChunkReadingFactory.ChunkTypeInfo(chunkType, componentType, componentType.getComponentType(),
+        componentReader = chunkReaderFactory.getReader(
+                options, typeInfo(chunkType, componentType, componentType.getComponentType(),
                         typeInfo.componentArrowField()));
         kernel = VectorExpansionKernel.makeExpansionKernel(chunkType, componentType);
     }
 
     @Override
-    public WritableObjectChunk<Vector<?>, Values> read(Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter,
+    public WritableObjectChunk<Vector<?>, Values> readChunk(
+            Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter,
             PrimitiveIterator.OfLong bufferInfoIter, DataInput is, WritableChunk<Values> outChunk, int outOffset,
             int totalRows) throws IOException {
         final ChunkInputStreamGenerator.FieldNodeInfo nodeInfo = fieldNodeIter.next();
@@ -48,7 +50,7 @@ public class VectorChunkReader implements ChunkReader {
 
         if (nodeInfo.numElements == 0) {
             try (final WritableChunk<Values> ignored =
-                    componentReader.read(fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
+                    componentReader.readChunk(fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
                 if (outChunk != null) {
                     return outChunk.asWritableObjectChunk();
                 }
@@ -89,7 +91,7 @@ public class VectorChunkReader implements ChunkReader {
             }
 
             try (final WritableChunk<Values> inner =
-                    componentReader.read(fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
+                    componentReader.readChunk(fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
                 chunk = kernel.contract(inner, offsets, outChunk, outOffset, totalRows);
 
                 long nextValid = 0;

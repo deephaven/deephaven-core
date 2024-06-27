@@ -32,6 +32,8 @@ import java.time.ZonedDateTime;
 import java.util.Iterator;
 import java.util.PrimitiveIterator;
 
+import static io.deephaven.extensions.barrage.chunk.ChunkReaderFactory.typeInfo;
+
 public interface ChunkInputStreamGenerator extends SafeCloseable {
     long MS_PER_DAY = 24 * 60 * 60 * 1000L;
     long MIN_LOCAL_DATE_VALUE = QueryConstants.MIN_LONG / MS_PER_DAY;
@@ -205,9 +207,9 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
             final PrimitiveIterator.OfLong bufferInfoIter,
             final DataInput is,
             final WritableChunk<Values> outChunk, final int outOffset, final int totalRows) throws IOException {
-        return DefaultChunkReadingFactory.INSTANCE.extractChunkFromInputStream(options, factor,
-                new ChunkReadingFactory.ChunkTypeInfo(chunkType, type, componentType, null))
-                .read(fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
+        return DefaultChunkReadingFactory.INSTANCE
+                .getReader(options, factor, typeInfo(chunkType, type, componentType, null))
+                .readChunk(fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
     }
 
     /**

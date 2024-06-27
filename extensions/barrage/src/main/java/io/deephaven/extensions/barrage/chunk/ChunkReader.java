@@ -16,16 +16,18 @@ import java.util.PrimitiveIterator;
  */
 public interface ChunkReader {
     /**
-     *
-     * @param fieldNodeIter
-     * @param bufferInfoIter
-     * @param is
-     * @param outChunk
-     * @param outOffset
-     * @param totalRows
-     * @return
+     * Reads the given DataInput to extract the next Arrow buffer as a Deephaven Chunk.
+     * 
+     * @param fieldNodeIter iterator to read fields from the stream
+     * @param bufferInfoIter iterator to read buffers from the stream
+     * @param is input stream containing buffers to be read
+     * @param outChunk chunk to write to
+     * @param outOffset offset within the outChunk to begin writing
+     * @param totalRows total rows to write to the outChunk
+     * @return a Chunk containing the data from the stream
+     * @throws IOException if an error occurred while reading the stream
      */
-    WritableChunk<Values> read(final Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter,
+    WritableChunk<Values> readChunk(final Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter,
             final PrimitiveIterator.OfLong bufferInfoIter,
             final DataInput is,
             final WritableChunk<Values> outChunk,
