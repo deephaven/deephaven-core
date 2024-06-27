@@ -26,9 +26,9 @@ namespace deephaven::dhcore::interop {
  * NativePtr<Bar>. Our protocol is that .NET passes us a NativePtr<Foo> by value, so
  * in our C API, we receive a NativePtr<Foo> by value.
  *
- * There is a little cheat I use because the pointers aren't fully typechecked.
+ * There is a little cheat we use because the pointers aren't fully typechecked.
  *
- * On the C++ side, I will have a NativePtr<Client> which points to a deephaven::client::Client
+ * On the C++ side, we will have a NativePtr<Client> which points to a deephaven::client::Client
  * object. The C# side doesn't have access to the *actual* deephaven::client::Client, nor would
  * we want it to. Instead, on the .NET side we have a static "proxy" class called "NativeClient" which
  * has no instance or data members. It happens to be where we keep our (static) interop method
