@@ -217,7 +217,7 @@ public class ArrowFlightUtil {
             }
 
             if (mi.header.headerType() == MessageHeader.Schema) {
-                parseSchema((Schema) mi.header.header(new Schema()));
+                parseSchema(mi.header);
                 return;
             }
 

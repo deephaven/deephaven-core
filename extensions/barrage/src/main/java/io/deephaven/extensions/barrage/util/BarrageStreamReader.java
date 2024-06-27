@@ -290,12 +290,14 @@ public class BarrageStreamReader implements StreamReader {
             }
 
             if (header != null && header.headerType() == MessageHeader.Schema) {
-                // there is no body and our clients do not want to see schema messages
+                // there is no body and our clients do not want to see schema messages, consume the schema so that we
+                // can read the following messages and return null.
+                ByteBuffer original = header.getByteBuffer();
+                ByteBuffer copy = ByteBuffer.allocate(original.remaining()).put(original);
                 Schema schema = new Schema();
+                Message.getRootAsMessage(copy).header(schema);
                 header.header(schema);
                 for (int i = 0; i < schema.fieldsLength(); i++) {
-                    // TODO as with ArrowToTableConverter, see about copying the bytebuffer so we control the payload
-                    // ourselves
                     Field field = schema.fields(i);
                     ChunkReader chunkReader = chunkReaderFactory.getReader(options,
                             typeInfo(columnChunkTypes[i], columnTypes[i], componentTypes[i], field));
