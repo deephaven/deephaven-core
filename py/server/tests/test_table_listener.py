@@ -9,7 +9,7 @@ from typing import List, Union, Optional
 import numpy
 import jpy
 
-from deephaven import time_table, new_table, input_table, DHError
+from deephaven import time_table, new_table, input_table, DHError, empty_table
 from deephaven.column import bool_col, string_col
 from deephaven.experimental import time_window
 from deephaven.jcompat import to_sequence
@@ -361,6 +361,10 @@ class TableListenerTestCase(BaseTestCase):
             mlh.stop()
             self.assertGreaterEqual(len(tur.replays), 6)
 
+        with self.subTest("Error input"):
+            et = empty_table(1)
+            with self.assertRaises(DHError):
+                mlh = MergedListenerHandle([ListenerRecorder(t) for t in [t1, t2, t3, et]], tml)
 
     def test_merged_listener_func(self):
         t1 = time_table("PT1s").update(["X=i % 11"])
@@ -394,11 +398,41 @@ class TableListenerTestCase(BaseTestCase):
             mlh.stop()
             self.assertGreaterEqual(len(tur.replays), 6)
 
-    def test_merged_listener_with_deps(self):
-        ...
+        with self.subTest("Error input"):
+            et = empty_table(1)
+            with self.assertRaises(DHError):
+                mlh = merged_listen([ListenerRecorder(t) for t in [t1, t2, t3, et]], test_ml_func)
 
-    def test_merged_listener_with_deps_error(self):
-        ...
+    def test_merged_listener_with_deps(self):
+        t1 = time_table("PT1s").update(["X=i % 11"])
+        t2 = time_table("PT2s").update(["Y=i % 8"])
+        t3 = time_table("PT3s").update(["Z=i % 5"])
+
+        dep_table = time_table("PT00:00:05").update("X = i % 11")
+        ec = get_exec_ctx()
+
+        tur = TableUpdateRecorder()
+        j_arrays = []
+        class TestMergedListener(MergedListener):
+            def process(self) -> None:
+                for i, listener in enumerate(self.listener_recorders):
+                    if self.listener_recorders[i].table_update():
+                        tur.record(self.listener_recorders[i].table_update())
+
+                with ec:
+                    t = dep_table.view(["Y = i % 8"])
+                    j_arrays.append(_JColumnVectors.of(t.j_table, "Y").copyToArray())
+
+        tml = TestMergedListener()
+        mlh = MergedListenerHandle(listener_recorders=[ListenerRecorder(t) for t in [t1, t2, t3]], listener=tml, dependencies=dep_table)
+        mlh.start()
+        ensure_ugp_cycles(tur, cycles=3)
+        mlh.stop()
+        mlh.start()
+        ensure_ugp_cycles(tur, cycles=6)
+        mlh.stop()
+        self.assertGreaterEqual(len(tur.replays), 6)
+        self.assertTrue(len(j_arrays) > 0 and all([len(ja) > 0 for ja in j_arrays]))
 
 
 if __name__ == "__main__":

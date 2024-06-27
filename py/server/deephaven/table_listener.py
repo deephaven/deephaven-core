@@ -536,6 +536,9 @@ class MergedListenerHandle:
                 the listener is safe, it is not recommended because reading or operating on the result tables of those
                 operations may not be safe. It is best to perform the operations on the dependent tables beforehand,
                 and then add the result tables as dependencies to the listener so that they can be safely read in it.
+
+        Raises:
+            DHError
         """
         if len(listener_recorders) < 2:
             raise DHError(message="MergedListener must have at least two listener recorders.")
@@ -545,20 +548,23 @@ class MergedListenerHandle:
 
         if isinstance(listener, MergedListener):
             listener.listener_recorders = listener_recorders
-        self.merged_listener_adapter = _JPythonMergedListenerAdapter.create(
-                    to_sequence(self.listener_recorders),
-                    to_sequence(self.dependencies),
-                    description,
-                    listener)
-        self.started = False
+
+        try:
+            self.merged_listener_adapter = _JPythonMergedListenerAdapter.create(
+                        to_sequence(self.listener_recorders),
+                        to_sequence(self.dependencies),
+                        description,
+                        listener)
+            self.started = False
+        except Exception as e:
+            raise DHError(e, "failed to create a merged listener adapter.") from e
 
 
     def start(self) -> None:
         """Start the listener."""
         if self.started:
-            raise RuntimeError("Attempting to start an already started listener..")
+            raise RuntimeError("Attempting to start an already started merged listener..")
 
-        # TODO - move to the Java side?
         with update_graph.shared_lock(self.listener_recorders[0].table.update_graph):
             for lr in self.listener_recorders:
                 lr.table.j_table.addUpdateListener(lr.j_listener_recorder)
@@ -569,7 +575,6 @@ class MergedListenerHandle:
         if not self.started:
             return
 
-        # TODO - move to the Java side?
         with update_graph.shared_lock(self.listener_recorders[0].table.update_graph):
             for lr in self.listener_recorders:
                 lr.table.j_table.removeUpdateListener(lr.j_listener_recorder)

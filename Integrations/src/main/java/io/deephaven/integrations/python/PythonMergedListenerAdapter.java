@@ -14,6 +14,8 @@ import org.jetbrains.annotations.Nullable;
 import org.jpy.PyObject;
 
 import java.util.Arrays;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 /**
  * A Deephaven merged listener which fires when any of its bound listener recorders has updates and all of its
@@ -49,15 +51,25 @@ public class PythonMergedListenerAdapter extends MergedListener {
             @Nullable NotificationQueue.Dependency[] dependencies,
             @Nullable String listenerDescription,
             @NotNull PyObject pyObjectIn) {
-        final UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
-
-        if (!Arrays.stream(recorders).allMatch(t -> t.getParent().getUpdateGraph() == updateGraph)) {
-            throw new IllegalArgumentException("All recorders must be from the same update graph");
+        if (recorders.length < 2) {
+            throw new IllegalArgumentException("At least two recorders must be provided");
         }
+        // TODO: Uncomment this check if confirmed that the alternative way of checking is better
+        // final UpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph();
+        // if (!Arrays.stream(recorders).allMatch(t -> t.getParent().getUpdateGraph() == updateGraph)) {
+        // throw new IllegalArgumentException("All recorders must be from the same update graph");
+        // }
+        //
+        // if (!Arrays.stream(dependencies).allMatch(t -> t.getUpdateGraph() == updateGraph)) {
+        // throw new IllegalArgumentException("All dependencies must be from the same update graph");
+        // }
 
-        if (!Arrays.stream(dependencies).allMatch(t -> t.getUpdateGraph() == updateGraph)) {
-            throw new IllegalArgumentException("All dependencies must be from the same update graph");
-        }
+        final NotificationQueue.Dependency[] allItems =
+                Stream.concat(Arrays.stream(recorders), Arrays.stream(dependencies))
+                        .filter(Objects::nonNull)
+                        .toArray(NotificationQueue.Dependency[]::new);
+
+        final UpdateGraph updateGraph = allItems[0].getUpdateGraph(allItems);
 
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             return new PythonMergedListenerAdapter(recorders, dependencies, listenerDescription, pyObjectIn);
