@@ -23,12 +23,7 @@ class Classpaths {
     static final String GWT_GROUP = 'org.gwtproject'
     static final String GWT_VERSION = '2.11.0'
 
-    // TODO (core#1163): take advantage of symbol-solver-core
-//    static final String JAVA_PARSER_NAME = 'javaparser-symbol-solver-core'
-
     static final String JETTY_VERSION = '9.4.44.v20210927'
-
-    // TODO(deephaven-core#1685): Create strategy around updating and maintaining protoc version
 
     static final String HADOOP_GROUP = 'org.apache.hadoop'
     static final String HADOOP_VERSION = '3.4.0'
