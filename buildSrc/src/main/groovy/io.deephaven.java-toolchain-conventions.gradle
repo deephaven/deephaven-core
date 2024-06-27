@@ -4,31 +4,33 @@ plugins {
   id 'java'
 }
 
-def compilerVersion = Integer.parseInt((String)project.findProperty('compilerVersion') ?: '11')
-def compilerVendor = project.hasProperty('compilerVendor') ?  JvmVendorSpec.matching((String)project.property('compilerVendor')): null
+// Update GRADLE.md if these details change
 
-def languageLevel = Integer.parseInt((String)project.findProperty('languageLevel') ?: '11')
-def runtimeVersion = Integer.parseInt((String)project.findProperty('runtimeVersion') ?: '11')
-def runtimeVendor = project.hasProperty('runtimeVendor') ?  JvmVendorSpec.matching((String)project.property('runtimeVendor')): null
+def compilerVersion = Integer.parseInt((String)project.findProperty('deephaven.compilerVersion') ?: '11')
+def compilerVendor = project.hasProperty('deephaven.compilerVendor') ?  JvmVendorSpec.matching((String)project.property('deephaven.compilerVendor')): null
 
-def testLanguageLevel = Integer.parseInt((String)project.findProperty('testLanguageLevel') ?: '11')
-def testRuntimeVersion = Integer.parseInt((String)project.findProperty('testRuntimeVersion') ?: '11')
-def testRuntimeVendor = project.hasProperty('testRuntimeVendor') ?  JvmVendorSpec.matching((String)project.property('testRuntimeVendor')): null
+def languageLevel = Integer.parseInt((String)project.findProperty('deephaven.languageLevel') ?: '11')
+def runtimeVersion = Integer.parseInt((String)project.findProperty('deephaven.runtimeVersion') ?: '11')
+def runtimeVendor = project.hasProperty('deephaven.runtimeVendor') ?  JvmVendorSpec.matching((String)project.property('deephaven.runtimeVendor')): null
+
+def testLanguageLevel = Integer.parseInt((String)project.findProperty('deephaven.testLanguageLevel') ?: '11')
+def testRuntimeVersion = Integer.parseInt((String)project.findProperty('deephaven.testRuntimeVersion') ?: '11')
+def testRuntimeVendor = project.hasProperty('deephaven.testRuntimeVendor') ?  JvmVendorSpec.matching((String)project.property('deephaven.testRuntimeVendor')): null
 
 if (languageLevel > compilerVersion) {
-  throw new IllegalArgumentException("languageLevel must be less than or equal to compileVersion")
+  throw new IllegalArgumentException("deephaven.languageLevel must be less than or equal to deephaven.compileVersion")
 }
 if (languageLevel < 8) {
-  throw new IllegalArgumentException("languageLevel must be greater than or equal to 8")
+  throw new IllegalArgumentException("deephaven.languageLevel must be greater than or equal to 8")
 }
 if (testLanguageLevel < 8) {
-  throw new IllegalArgumentException("testLanguageLevel must be greater than or equal to 8")
+  throw new IllegalArgumentException("deephaven.testLanguageLevel must be greater than or equal to 8")
 }
 if (runtimeVersion < languageLevel) {
-  throw new IllegalArgumentException("runtimeVersion must be greater than or equal to languageLevel")
+  throw new IllegalArgumentException("deephaven.runtimeVersion must be greater than or equal to deephaven.languageLevel")
 }
 if (testRuntimeVersion < testLanguageLevel) {
-  throw new IllegalArgumentException("testRuntimeVersion must be greater than or equal to testLanguageLevel")
+  throw new IllegalArgumentException("deephaven.testRuntimeVersion must be greater than or equal to deephaven.testLanguageLevel")
 }
 
 java {

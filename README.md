@@ -151,7 +151,7 @@ docker run hello-world
 ```
 
 > **_NOTE:_** Internally, the Java build process will use [Gradle Auto Provisioning](https://docs.gradle.org/current/userguide/toolchains.html#sec:provisioning)
-to download and use the appropriate Java version for building and testing.
+to download and use the appropriate Java version for building and testing. See [GRADLE.md](GRADLE.md) for more information on Deephaven's Gradle setup.
 
 > **_NOTE:_** On Windows, all commands must be run inside a WSL 2 terminal.
 

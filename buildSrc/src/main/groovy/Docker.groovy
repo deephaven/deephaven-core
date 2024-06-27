@@ -683,7 +683,7 @@ class Docker {
 
                 if (repoDigest != imageId) {
                     new File(project.projectDir, 'gradle.properties').text =
-                            "io.deephaven.project.ProjectType=DOCKER_REGISTRY\n" +
+                            "deephaven.project.ProjectType=DOCKER_REGISTRY\n" +
                                     "deephaven.registry.imageName=${imageName}\n" +
                                     "deephaven.registry.imageId=${repoDigest}\n"
                     inspect.logger.quiet("Updated imageId for '${imageName}' to '${repoDigest}' from '${imageId}'.")
