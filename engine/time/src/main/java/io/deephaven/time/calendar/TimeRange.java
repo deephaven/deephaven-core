@@ -81,7 +81,7 @@ public class TimeRange<T extends Comparable<T> & Temporal> {
      * @return length of the range in nanoseconds
      */
     public long nanos() {
-        return start.until(end, ChronoUnit.NANOS) - (inclusiveEnd ? 0 : 1);
+        return start.until(end, ChronoUnit.NANOS) + (inclusiveEnd ? 1 : 0);
     }
 
     /**
