@@ -81,11 +81,8 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
             descriptor = PartitionedTableDescriptor.deserializeBinary(w.getDataAsU8());
 
             return w.getExportedObjects()[0].fetch();
-        }).then(result -> connection.newState((c, state, metadata) -> {
-            baseTable = (JsTable) result;
-        }, "get base table")
-                .refetch(this, connection.metadata())
-                .then(state -> Promise.resolve(new JsTable(connection, state)))).then(result -> {
+        }).then(result -> {
+                    baseTable = (JsTable) result;
                     keyColumnTypes = new ArrayList<>();
                     InitialTableDefinition tableDefinition = WebBarrageUtils.readTableDefinition(
                             WebBarrageUtils.readSchemaMessage(descriptor.getConstituentDefinitionSchema_asU8()));
