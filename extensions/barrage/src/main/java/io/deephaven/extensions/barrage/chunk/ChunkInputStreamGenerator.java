@@ -5,7 +5,6 @@ package io.deephaven.extensions.barrage.chunk;
 
 import com.google.common.base.Charsets;
 import io.deephaven.chunk.ObjectChunk;
-import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.pools.PoolableChunk;
@@ -21,7 +20,6 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.vector.Vector;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.DataInput;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -29,10 +27,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZonedDateTime;
-import java.util.Iterator;
-import java.util.PrimitiveIterator;
-
-import static io.deephaven.extensions.barrage.chunk.ChunkReaderFactory.typeInfo;
 
 public interface ChunkInputStreamGenerator extends SafeCloseable {
     long MS_PER_DAY = 24 * 60 * 60 * 1000L;
@@ -184,32 +178,6 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
             default:
                 throw new UnsupportedOperationException();
         }
-    }
-
-    @Deprecated
-    static WritableChunk<Values> extractChunkFromInputStream(
-            final StreamReaderOptions options,
-            final ChunkType chunkType, final Class<?> type, final Class<?> componentType,
-            final Iterator<FieldNodeInfo> fieldNodeIter,
-            final PrimitiveIterator.OfLong bufferInfoIter,
-            final DataInput is,
-            final WritableChunk<Values> outChunk, final int offset, final int totalRows) throws IOException {
-        return extractChunkFromInputStream(options, 1, chunkType, type, componentType, fieldNodeIter, bufferInfoIter,
-                is, outChunk, offset, totalRows);
-    }
-
-    @Deprecated
-    private static WritableChunk<Values> extractChunkFromInputStream(
-            final StreamReaderOptions options,
-            final int factor,
-            final ChunkType chunkType, final Class<?> type, final Class<?> componentType,
-            final Iterator<FieldNodeInfo> fieldNodeIter,
-            final PrimitiveIterator.OfLong bufferInfoIter,
-            final DataInput is,
-            final WritableChunk<Values> outChunk, final int outOffset, final int totalRows) throws IOException {
-        return DefaultChunkReadingFactory.INSTANCE
-                .getReader(options, factor, typeInfo(chunkType, type, componentType, null))
-                .readChunk(fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows);
     }
 
     /**
