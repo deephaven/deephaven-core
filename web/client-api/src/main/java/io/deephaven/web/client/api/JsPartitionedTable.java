@@ -82,47 +82,47 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
 
             return w.getExportedObjects()[0].fetch();
         }).then(result -> {
-                    baseTable = (JsTable) result;
-                    keyColumnTypes = new ArrayList<>();
-                    InitialTableDefinition tableDefinition = WebBarrageUtils.readTableDefinition(
-                            WebBarrageUtils.readSchemaMessage(descriptor.getConstituentDefinitionSchema_asU8()));
-                    ColumnDefinition[] columnDefinitions = tableDefinition.getColumns();
-                    Column[] columns = new Column[0];
-                    for (int i = 0; i < columnDefinitions.length; i++) {
-                        ColumnDefinition columnDefinition = columnDefinitions[i];
-                        Column column =
-                                columnDefinition.makeJsColumn(columns.length, tableDefinition.getColumnsByName());
-                        columns[columns.length] = column;
-                    }
-                    Column[] keyColumns = new Column[0];
-                    JsArray<String> keyColumnNames = descriptor.getKeyColumnNamesList();
-                    for (int i = 0; i < keyColumnNames.length; i++) {
-                        String name = keyColumnNames.getAt(i);
-                        Column keyColumn = baseTable.findColumn(name);
-                        keyColumnTypes.add(keyColumn.getType());
-                        keyColumns[keyColumns.length] = keyColumn;
-                    }
-                    this.columns = JsObject.freeze(columns);
-                    this.keyColumns = JsObject.freeze(keyColumns);
+            baseTable = (JsTable) result;
+            keyColumnTypes = new ArrayList<>();
+            InitialTableDefinition tableDefinition = WebBarrageUtils.readTableDefinition(
+                    WebBarrageUtils.readSchemaMessage(descriptor.getConstituentDefinitionSchema_asU8()));
+            ColumnDefinition[] columnDefinitions = tableDefinition.getColumns();
+            Column[] columns = new Column[0];
+            for (int i = 0; i < columnDefinitions.length; i++) {
+                ColumnDefinition columnDefinition = columnDefinitions[i];
+                Column column =
+                        columnDefinition.makeJsColumn(columns.length, tableDefinition.getColumnsByName());
+                columns[columns.length] = column;
+            }
+            Column[] keyColumns = new Column[0];
+            JsArray<String> keyColumnNames = descriptor.getKeyColumnNamesList();
+            for (int i = 0; i < keyColumnNames.length; i++) {
+                String name = keyColumnNames.getAt(i);
+                Column keyColumn = baseTable.findColumn(name);
+                keyColumnTypes.add(keyColumn.getType());
+                keyColumns[keyColumns.length] = keyColumn;
+            }
+            this.columns = JsObject.freeze(columns);
+            this.keyColumns = JsObject.freeze(keyColumns);
 
-                    // TODO(deephaven-core#3604) in case of a new session, we should do a full refetch
-                    baseTable.addEventListener(JsTable.EVENT_DISCONNECT, event -> fireEvent(EVENT_DISCONNECT));
-                    baseTable.addEventListener(JsTable.EVENT_RECONNECT, event -> {
-                        subscribeToBaseTable().then(ignore -> {
-                            unsuppressEvents();
-                            fireEvent(EVENT_RECONNECT);
-                            return null;
-                        }, failure -> {
-                            CustomEventInit<Object> init = CustomEventInit.create();
-                            init.setDetail(failure);
-                            unsuppressEvents();
-                            fireEvent(EVENT_RECONNECTFAILED, init);
-                            suppressEvents();
-                            return null;
-                        });
-                    });
-                    return subscribeToBaseTable();
+            // TODO(deephaven-core#3604) in case of a new session, we should do a full refetch
+            baseTable.addEventListener(JsTable.EVENT_DISCONNECT, event -> fireEvent(EVENT_DISCONNECT));
+            baseTable.addEventListener(JsTable.EVENT_RECONNECT, event -> {
+                subscribeToBaseTable().then(ignore -> {
+                    unsuppressEvents();
+                    fireEvent(EVENT_RECONNECT);
+                    return null;
+                }, failure -> {
+                    CustomEventInit<Object> init = CustomEventInit.create();
+                    init.setDetail(failure);
+                    unsuppressEvents();
+                    fireEvent(EVENT_RECONNECTFAILED, init);
+                    suppressEvents();
+                    return null;
                 });
+            });
+            return subscribeToBaseTable();
+        });
     }
 
     @Override
