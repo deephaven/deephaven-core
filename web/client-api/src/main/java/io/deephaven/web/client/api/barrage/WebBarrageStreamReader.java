@@ -13,7 +13,7 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
 import io.deephaven.extensions.barrage.chunk.ChunkReader;
-import io.deephaven.extensions.barrage.chunk.ChunkReadingFactory;
+import io.deephaven.extensions.barrage.chunk.ChunkReaderFactory;
 import io.deephaven.extensions.barrage.util.FlatBufferIteratorAdapter;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.io.streams.ByteBufferInputStream;
@@ -155,8 +155,8 @@ public class WebBarrageStreamReader {
             header.header(schema);
             for (int i = 0; i < schema.fieldsLength(); i++) {
                 Field field = schema.fields(i);
-                ChunkReader chunkReader = chunkReaderFactory.extractChunkFromInputStream(options,
-                        new ChunkReadingFactory.ChunkTypeInfo(columnChunkTypes[i], columnTypes[i],
+                ChunkReader chunkReader = chunkReaderFactory.getReader(options,
+                        ChunkReaderFactory.typeInfo(columnChunkTypes[i], columnTypes[i],
                                 componentTypes[i], field));
                 readers.add(chunkReader);
             }
@@ -225,7 +225,7 @@ public class WebBarrageStreamReader {
 
                 // fill the chunk with data and assign back into the array
                 acd.data.set(lastChunkIndex,
-                        readers.get(ci).read(fieldNodeIter, bufferInfoIter, ois, chunk, chunk.size(),
+                        readers.get(ci).readChunk(fieldNodeIter, bufferInfoIter, ois, chunk, chunk.size(),
                                 (int) batch.length()));
                 chunk.setSize(chunk.size() + (int) batch.length());
             }
@@ -255,7 +255,7 @@ public class WebBarrageStreamReader {
 
                 // fill the chunk with data and assign back into the array
                 mcd.data.set(lastChunkIndex,
-                        readers.get(ci).read(fieldNodeIter, bufferInfoIter, ois, chunk, chunk.size(), numRowsToRead));
+                        readers.get(ci).readChunk(fieldNodeIter, bufferInfoIter, ois, chunk, chunk.size(), numRowsToRead));
                 chunk.setSize(chunk.size() + numRowsToRead);
             }
             numModRowsRead += batch.length();

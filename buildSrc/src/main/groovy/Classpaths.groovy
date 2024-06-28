@@ -122,6 +122,10 @@ class Classpaths {
     static final String GUAVA_NAME = 'guava'
     static final String GUAVA_VERSION = '33.2.0-jre'
 
+    static final String AVRO_GROUP = 'org.apache.avro'
+    static final String AVRO_NAME = 'avro'
+    static final String AVRO_VERSION = '1.11.3'
+
     static final String HADOOP_GROUP = 'org.apache.hadoop'
     static final String HADOOP_VERSION = '3.4.0'
 
@@ -298,6 +302,11 @@ class Classpaths {
         addDependency(config, GUAVA_GROUP, GUAVA_NAME, GUAVA_VERSION)
     }
 
+    static void inheritAvro(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, AVRO_GROUP, AVRO_NAME, AVRO_VERSION)
+    }
+
     static void inheritParquetHadoop(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
         Configuration config = p.configurations.getByName(configName)
         addDependency(config, 'org.apache.parquet', 'parquet-hadoop', '1.14.0')
@@ -328,17 +337,18 @@ class Classpaths {
 
     static void inheritIcebergHadoop(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
         Configuration config = p.configurations.getByName(configName)
-        addDependency(config, HADOOP_GROUP, 'hadoop-common', HADOOP_VERSION)
+        inheritParquetHadoopConfiguration(p, configName)
         addDependency(config, HADOOP_GROUP, 'hadoop-hdfs-client', HADOOP_VERSION)
     }
 
+    static void inheritIcebergCore(Project p) {
+        Configuration apiConfig = p.configurations.getByName(JavaPlugin.API_CONFIGURATION_NAME)
+        addDependency(apiConfig, p.getDependencies().platform(ICEBERG_GROUP + ":iceberg-bom:" + ICEBERG_VERSION))
+        addDependency(apiConfig, ICEBERG_GROUP, 'iceberg-api', ICEBERG_VERSION)
 
-    static void inheritIcebergCore(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
-        Configuration config = p.configurations.getByName(configName)
-        addDependency(config, p.getDependencies().platform(ICEBERG_GROUP + ":iceberg-bom:" + ICEBERG_VERSION))
-
-        addDependency(config, ICEBERG_GROUP, 'iceberg-core', ICEBERG_VERSION)
-        addDependency(config, ICEBERG_GROUP, 'iceberg-bundled-guava', ICEBERG_VERSION)
+        Configuration implConfig = p.configurations.getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME)
+        addDependency(implConfig, ICEBERG_GROUP, 'iceberg-bundled-guava', ICEBERG_VERSION)
+        addDependency(implConfig, ICEBERG_GROUP, 'iceberg-core', ICEBERG_VERSION)
     }
 
     static void inheritAWSSDK(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {

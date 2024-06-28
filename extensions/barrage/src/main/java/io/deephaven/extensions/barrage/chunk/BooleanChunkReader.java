@@ -38,7 +38,7 @@ public class BooleanChunkReader implements ChunkReader {
     }
 
     @Override
-    public WritableChunk<Values> read(Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter,
+    public WritableChunk<Values> readChunk(Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter,
             PrimitiveIterator.OfLong bufferInfoIter, DataInput is, WritableChunk<Values> outChunk, int outOffset,
             int totalRows) throws IOException {
         final ChunkInputStreamGenerator.FieldNodeInfo nodeInfo = fieldNodeIter.next();

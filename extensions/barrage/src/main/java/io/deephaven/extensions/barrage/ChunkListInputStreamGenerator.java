@@ -8,7 +8,6 @@ import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
-import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGeneratorFactory;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.util.SafeCloseable;
 
@@ -21,18 +20,18 @@ public class ChunkListInputStreamGenerator implements SafeCloseable {
     private final ChunkInputStreamGenerator emptyGenerator;
 
     public ChunkListInputStreamGenerator(Class<?> type, Class<?> componentType, List<Chunk<Values>> data,
-            ChunkType chunkType, ChunkInputStreamGeneratorFactory factory) {
+            ChunkType chunkType) {
         // create an input stream generator for each chunk
         ChunkInputStreamGenerator[] generators = new ChunkInputStreamGenerator[data.size()];
 
         long rowOffset = 0;
         for (int i = 0; i < data.size(); ++i) {
             final Chunk<Values> valuesChunk = data.get(i);
-            generators[i] = factory.makeInputStreamGenerator(chunkType, type, componentType, valuesChunk, rowOffset);
+            generators[i] = ChunkInputStreamGenerator.makeInputStreamGenerator(chunkType, type, componentType, valuesChunk, rowOffset);
             rowOffset += valuesChunk.size();
         }
         this.generators = Arrays.asList(generators);
-        emptyGenerator = factory.makeInputStreamGenerator(chunkType, type, componentType, chunkType.getEmptyChunk(), 0);
+        emptyGenerator = ChunkInputStreamGenerator.makeInputStreamGenerator(chunkType, type, componentType, chunkType.getEmptyChunk(), 0);
     }
 
     public List<ChunkInputStreamGenerator> generators() {

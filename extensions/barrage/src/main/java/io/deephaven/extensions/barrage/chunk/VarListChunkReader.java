@@ -19,14 +19,16 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.PrimitiveIterator;
 
+import static io.deephaven.extensions.barrage.chunk.ChunkReaderFactory.typeInfo;
+
 public class VarListChunkReader<T> implements ChunkReader {
     private static final String DEBUG_NAME = "VarListChunkReader";
 
     private final ArrayExpansionKernel kernel;
     private final ChunkReader componentReader;
 
-    public VarListChunkReader(final StreamReaderOptions options, final ChunkReadingFactory.ChunkTypeInfo typeInfo,
-            ChunkReadingFactory chunkReadingFactory) {
+    public VarListChunkReader(final StreamReaderOptions options, final ChunkReaderFactory.TypeInfo typeInfo,
+            ChunkReaderFactory chunkReaderFactory) {
         final Class<?> componentType = typeInfo.type().getComponentType();
         final Class<?> innerComponentType = componentType != null ? componentType.getComponentType() : null;
 
@@ -39,14 +41,12 @@ public class VarListChunkReader<T> implements ChunkReader {
         }
         kernel = ArrayExpansionKernel.makeExpansionKernel(chunkType, componentType);
 
-        componentReader = chunkReadingFactory.extractChunkFromInputStream(
-                options,
-                new ChunkReadingFactory.ChunkTypeInfo(chunkType, componentType, innerComponentType,
-                        typeInfo.componentArrowField()));
+        componentReader = chunkReaderFactory.getReader(options,
+                typeInfo(chunkType, componentType, innerComponentType, typeInfo.componentArrowField()));
     }
 
     @Override
-    public WritableObjectChunk<T, Values> read(Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter,
+    public WritableObjectChunk<T, Values> readChunk(Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter,
             PrimitiveIterator.OfLong bufferInfoIter, DataInput is, WritableChunk<Values> outChunk, int outOffset,
             int totalRows) throws IOException {
         final ChunkInputStreamGenerator.FieldNodeInfo nodeInfo = fieldNodeIter.next();
@@ -55,7 +55,7 @@ public class VarListChunkReader<T> implements ChunkReader {
 
         if (nodeInfo.numElements == 0) {
             try (final WritableChunk<Values> ignored =
-                    componentReader.read(fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
+                    componentReader.readChunk(fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
                 return WritableObjectChunk.makeWritableChunk(nodeInfo.numElements);
             }
         }
@@ -93,7 +93,7 @@ public class VarListChunkReader<T> implements ChunkReader {
             }
 
             try (final WritableChunk<Values> inner =
-                    componentReader.read(fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
+                    componentReader.readChunk(fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
                 chunk = kernel.contract(inner, offsets, outChunk, outOffset, totalRows);
 
                 long nextValid = 0;

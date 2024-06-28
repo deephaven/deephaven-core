@@ -25,7 +25,6 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.impl.ExternalizableRowSetUtils;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
-import io.deephaven.extensions.barrage.chunk.DefaultChunkInputStreamGeneratorFactory;
 import io.deephaven.extensions.barrage.chunk.SingleElementListHeaderInputStreamGenerator;
 import io.deephaven.extensions.barrage.util.ExposedByteArrayOutputStream;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
@@ -125,8 +124,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
 
         ModColumnGenerator(final BarrageMessage.ModColumnData col) throws IOException {
             rowsModified = new RowSetGenerator(col.rowsModified);
-            data = new ChunkListInputStreamGenerator(col.type, col.componentType, col.data, col.chunkType,
-                    DefaultChunkInputStreamGeneratorFactory.INSTANCE);
+            data = new ChunkListInputStreamGenerator(col.type, col.componentType, col.data, col.chunkType);
         }
 
         @Override
@@ -176,7 +174,7 @@ public class BarrageStreamGeneratorImpl implements BarrageStreamGenerator {
             for (int i = 0; i < message.addColumnData.length; ++i) {
                 BarrageMessage.AddColumnData columnData = message.addColumnData[i];
                 addColumnData[i] = new ChunkListInputStreamGenerator(columnData.type, columnData.componentType,
-                        columnData.data, columnData.chunkType, DefaultChunkInputStreamGeneratorFactory.INSTANCE);
+                        columnData.data, columnData.chunkType);
             }
 
             modColumnData = new ModColumnGenerator[message.modColumnData.length];

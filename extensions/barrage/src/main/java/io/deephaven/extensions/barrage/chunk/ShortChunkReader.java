@@ -48,7 +48,7 @@ public class ShortChunkReader implements ChunkReader {
 
     public <T> ChunkReader transform(Function<Short, T> transform) {
         return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows) -> {
-            try (final WritableShortChunk<Values> inner = ShortChunkReader.this.read(
+            try (final WritableShortChunk<Values> inner = ShortChunkReader.this.readChunk(
                     fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
 
                 final WritableObjectChunk<T, Values> chunk = castOrCreateChunk(
@@ -73,7 +73,7 @@ public class ShortChunkReader implements ChunkReader {
     }
 
     @Override
-    public WritableShortChunk<Values> read(Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter,
+    public WritableShortChunk<Values> readChunk(Iterator<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodeIter,
             PrimitiveIterator.OfLong bufferInfoIter, DataInput is, WritableChunk<Values> outChunk, int outOffset,
             int totalRows) throws IOException {
 

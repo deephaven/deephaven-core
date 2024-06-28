@@ -7,7 +7,7 @@ import io.deephaven.extensions.barrage.chunk.BooleanChunkReader;
 import io.deephaven.extensions.barrage.chunk.ByteChunkReader;
 import io.deephaven.extensions.barrage.chunk.CharChunkReader;
 import io.deephaven.extensions.barrage.chunk.ChunkReader;
-import io.deephaven.extensions.barrage.chunk.ChunkReadingFactory;
+import io.deephaven.extensions.barrage.chunk.ChunkReaderFactory;
 import io.deephaven.extensions.barrage.chunk.DoubleChunkReader;
 import io.deephaven.extensions.barrage.chunk.FloatChunkReader;
 import io.deephaven.extensions.barrage.chunk.IntChunkReader;
@@ -32,9 +32,9 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-public class WebChunkReaderFactory implements ChunkReadingFactory {
+public class WebChunkReaderFactory implements ChunkReaderFactory {
     @Override
-    public ChunkReader extractChunkFromInputStream(StreamReaderOptions options, int factor, ChunkTypeInfo typeInfo) {
+    public ChunkReader getReader(StreamReaderOptions options, int factor, TypeInfo typeInfo) {
         switch (typeInfo.arrowField().typeType()) {
             case Type.Int: {
                 Int t = new Int();

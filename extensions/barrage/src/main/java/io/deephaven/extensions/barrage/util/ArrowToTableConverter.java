@@ -14,7 +14,6 @@ import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
 import io.deephaven.extensions.barrage.chunk.ChunkReader;
-import io.deephaven.extensions.barrage.chunk.ChunkReadingFactory;
 import io.deephaven.extensions.barrage.chunk.DefaultChunkReadingFactory;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.io.streams.ByteBufferInputStream;
@@ -35,6 +34,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.PrimitiveIterator;
 
+import static io.deephaven.extensions.barrage.chunk.ChunkReaderFactory.typeInfo;
 import static io.deephaven.extensions.barrage.util.BarrageProtoUtil.DEFAULT_SER_OPTIONS;
 
 /**
@@ -83,7 +83,7 @@ public class ArrowToTableConverter {
         if (mi.header.headerType() != MessageHeader.Schema) {
             throw new IllegalArgumentException("The input is not a valid Arrow Schema IPC message");
         }
-        parseSchema((Schema) mi.header.header(new Schema()));
+        parseSchema(mi.header);
     }
 
     @ScriptApi
@@ -138,29 +138,29 @@ public class ArrowToTableConverter {
         completed = true;
     }
 
-    protected void parseSchema(final Schema header) {
-        this.schema = header;
+    protected void parseSchema(final Message message) {
         // The Schema instance (especially originated from Python) can't be assumed to be valid after the return
         // of this method. Until https://github.com/jpy-consortium/jpy/issues/126 is resolved, we need to make a copy of
         // the header to use after the return of this method.
+        ByteBuffer original = message.getByteBuffer();
+        ByteBuffer copy = ByteBuffer.allocate(original.remaining()).put(original);
+        Schema schema = new Schema();
+        Message.getRootAsMessage(copy).header(schema);
         if (resultTable != null) {
             throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, "Schema evolution not supported");
         }
 
-        final BarrageUtil.ConvertedArrowSchema result = BarrageUtil.convertArrowSchema(header);
+        final BarrageUtil.ConvertedArrowSchema result = BarrageUtil.convertArrowSchema(schema);
         resultTable = BarrageTable.make(null, result.tableDef, result.attributes, null);
         resultTable.setFlat();
 
         ChunkType[] columnChunkTypes = result.computeWireChunkTypes();
         columnTypes = result.computeWireTypes();
         componentTypes = result.computeWireComponentTypes();
-        // TODO see the note above, this is not safe since the buffer originated in python - we need to copy the schema
-        // before doing this
-        for (int i = 0; i < header.fieldsLength(); i++) {
+        for (int i = 0; i < schema.fieldsLength(); i++) {
             final int factor = (result.conversionFactors == null) ? 1 : result.conversionFactors[i];
-            ChunkReader reader = DefaultChunkReadingFactory.INSTANCE.extractChunkFromInputStream(options, factor,
-                    new ChunkReadingFactory.ChunkTypeInfo(columnChunkTypes[i], columnTypes[i], componentTypes[i],
-                            header.fields(i)));
+            ChunkReader reader = DefaultChunkReadingFactory.INSTANCE.getReader(options, factor,
+                    typeInfo(columnChunkTypes[i], columnTypes[i], componentTypes[i], schema.fields(i)));
             readers.add(reader);
         }
 
@@ -205,7 +205,7 @@ public class ArrowToTableConverter {
             msg.addColumnData[ci] = acd;
             msg.addColumnData[ci].data = new ArrayList<>();
             try {
-                acd.data.add(readers.get(ci).read(fieldNodeIter, bufferInfoIter, mi.inputStream, null, 0, 0));
+                acd.data.add(readers.get(ci).readChunk(fieldNodeIter, bufferInfoIter, mi.inputStream, null, 0, 0));
             } catch (final IOException unexpected) {
                 throw new UncheckedDeephavenException(unexpected);
             }
