@@ -22,7 +22,6 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
-import io.deephaven.engine.table.impl.remote.InitialSnapshotTable;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.select.MatchFilter.CaseSensitivity;
 import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
@@ -3081,11 +3080,6 @@ public class QueryTableTest extends QueryTableTestBase {
 
         assertNull(ungrouped.getColumnSource("CCol").getPrev(firstKey));
         assertEquals('b', ungrouped.getColumnSource("CCol").getPrev(secondKey));
-
-        // This tests the NPE condition in the ungrouped column sources
-        final Table snappy = InitialSnapshotTable.setupInitialSnapshotTable(ungrouped,
-                ConstructSnapshot.constructInitialSnapshot(this, (QueryTable) ungrouped));
-        assertTableEquals(expected, snappy);
     }
 
     private void testMemoize(QueryTable source, UnaryOperator<Table> op) {

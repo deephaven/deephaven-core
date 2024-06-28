@@ -18,11 +18,8 @@ import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.updategraph.NotificationQueue.Dependency;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.io.log.LogEntry;
-import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -36,9 +33,6 @@ import io.deephaven.internal.log.LoggerFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.reflect.Array;
-import java.time.Instant;
-import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -510,108 +504,6 @@ public class ConstructSnapshot {
     }
 
     /**
-     * Create a {@link InitialSnapshot snapshot} of the entire table specified. Note that this method is
-     * notification-oblivious, i.e. it makes no attempt to ensure that notifications are not missed.
-     *
-     * @param logIdentityObject An object used to prepend to log rows.
-     * @param table the table to snapshot.
-     * @return a snapshot of the entire base table.
-     */
-    public static InitialSnapshot constructInitialSnapshot(
-            @NotNull final Object logIdentityObject,
-            @NotNull final BaseTable<?> table) {
-        return constructInitialSnapshot(logIdentityObject, table, null, null);
-    }
-
-    /**
-     * Create a {@link InitialSnapshot snapshot} of the specified table using a set of requested columns and keys. Note
-     * that this method uses a RowSet that is in key space, and that it is notification-oblivious, i.e. it makes no
-     * attempt to ensure that notifications are not missed.
-     *
-     * @param logIdentityObject An object used to prepend to log rows.
-     * @param table the table to snapshot.
-     * @param columnsToSerialize A {@link BitSet} of columns to include, null for all
-     * @param keysToSnapshot An RowSet of keys within the table to include, null for all
-     * @return a snapshot of the entire base table.
-     */
-    public static InitialSnapshot constructInitialSnapshot(
-            @NotNull final Object logIdentityObject,
-            @NotNull final BaseTable<?> table,
-            @Nullable final BitSet columnsToSerialize,
-            @Nullable final RowSet keysToSnapshot) {
-        return constructInitialSnapshot(logIdentityObject, table, columnsToSerialize, keysToSnapshot,
-                makeSnapshotControl(false, table.isRefreshing(), table));
-    }
-
-    static InitialSnapshot constructInitialSnapshot(
-            @NotNull final Object logIdentityObject,
-            @NotNull final BaseTable<?> table,
-            @Nullable final BitSet columnsToSerialize,
-            @Nullable final RowSet keysToSnapshot,
-            @NotNull final SnapshotControl control) {
-        final UpdateGraph updateGraph = table.getUpdateGraph();
-        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            final InitialSnapshot snapshot = new InitialSnapshot();
-
-            final SnapshotFunction doSnapshot = (usePrev, beforeClockValue) -> serializeAllTable(
-                    usePrev, snapshot, table, logIdentityObject, columnsToSerialize, keysToSnapshot);
-
-            snapshot.step = callDataSnapshotFunction(System.identityHashCode(logIdentityObject), control, doSnapshot);
-
-            return snapshot;
-        }
-    }
-
-    /**
-     * Create a {@link InitialSnapshot snapshot} of the specified table using a set of requested columns and positions.
-     * Note that this method uses a RowSet that is in position space, and that it is notification-oblivious, i.e. it
-     * makes no attempt to ensure that notifications are not missed.
-     *
-     * @param logIdentityObject An object used to prepend to log rows.
-     * @param table the table to snapshot.
-     * @param columnsToSerialize A {@link BitSet} of columns to include, null for all
-     * @param positionsToSnapshot An RowSet of positions within the table to include, null for all
-     * @return a snapshot of the entire base table.
-     */
-    public static InitialSnapshot constructInitialSnapshotInPositionSpace(
-            @NotNull final Object logIdentityObject,
-            @NotNull final BaseTable<?> table,
-            @Nullable final BitSet columnsToSerialize,
-            @Nullable final RowSet positionsToSnapshot) {
-        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(
-                table.getUpdateGraph()).open()) {
-            return constructInitialSnapshotInPositionSpace(logIdentityObject, table, columnsToSerialize,
-                    positionsToSnapshot, makeSnapshotControl(false, table.isRefreshing(), table));
-        }
-    }
-
-    static InitialSnapshot constructInitialSnapshotInPositionSpace(
-            @NotNull final Object logIdentityObject,
-            @NotNull final BaseTable<?> table,
-            @Nullable final BitSet columnsToSerialize,
-            @Nullable final RowSet positionsToSnapshot,
-            @NotNull final SnapshotControl control) {
-        final InitialSnapshot snapshot = new InitialSnapshot();
-
-        final SnapshotFunction doSnapshot = (usePrev, beforeClockValue) -> {
-            final RowSet keysToSnapshot;
-            if (positionsToSnapshot == null) {
-                keysToSnapshot = null;
-            } else {
-                keysToSnapshot = (usePrev ? table.getRowSet().prev() : table.getRowSet())
-                        .subSetForPositions(positionsToSnapshot);
-            }
-            return serializeAllTable(usePrev, snapshot, table, logIdentityObject, columnsToSerialize, keysToSnapshot);
-        };
-
-        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(
-                table.getUpdateGraph()).open()) {
-            snapshot.step = callDataSnapshotFunction(System.identityHashCode(logIdentityObject), control, doSnapshot);
-        }
-        return snapshot;
-    }
-
-    /**
      * Create a {@link BarrageMessage snapshot} of the specified table including all columns and rows. Note that this
      * method is notification-oblivious, i.e. it makes no attempt to ensure that notifications are not missed.
      *
@@ -703,37 +595,6 @@ public class ConstructSnapshot {
             snapshot.firstSeq = snapshot.lastSeq = snapshot.step;
 
             return snapshot;
-        }
-    }
-
-    /**
-     * Constructs {@link InitialSnapshot}s for the entirety of the tables. Note that this method is
-     * notification-oblivious, i.e. it makes no attempt to ensure that notifications are not missed.
-     *
-     * @param logIdentityObject identifier prefixing the log message
-     * @param tables tables to snapshot
-     * @return list of the resulting {@link InitialSnapshot}s
-     */
-    public static List<InitialSnapshot> constructInitialSnapshots(
-            @NotNull final Object logIdentityObject,
-            @NotNull final BaseTable<?>... tables) {
-        if (tables.length == 0) {
-            return Collections.emptyList();
-        }
-        final UpdateGraph updateGraph = NotificationQueue.Dependency.getUpdateGraph(null, tables);
-        try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            final List<InitialSnapshot> snapshots = new ArrayList<>();
-
-            final SnapshotControl snapshotControl = tables.length == 1
-                    ? makeSnapshotControl(false, tables[0].isRefreshing(), tables[0])
-                    : makeSnapshotControl(false, Arrays.stream(tables).anyMatch(BaseTable::isRefreshing), tables);
-
-            final SnapshotFunction doSnapshot =
-                    (usePrev, beforeClockValue) -> serializeAllTables(usePrev, snapshots, tables, logIdentityObject);
-
-            callDataSnapshotFunction(System.identityHashCode(logIdentityObject), snapshotControl, doSnapshot);
-
-            return snapshots;
         }
     }
 
@@ -1401,77 +1262,6 @@ public class ConstructSnapshot {
 
     /**
      * <p>
-     * Populate an {@link InitialSnapshot} with the specified keys and columns to snapshot.
-     * <p>
-     * Note that care must be taken while using this method to ensure the underlying table is locked or does not change,
-     * otherwise the resulting snapshot may be inconsistent. In general users should instead use
-     * {@link #constructInitialSnapshot} for simple use cases or {@link #callDataSnapshotFunction} for more advanced
-     * uses.
-     *
-     * @param usePrev Whether to use previous values
-     * @param snapshot The snapshot to populate
-     * @param logIdentityObject An object for use with log() messages
-     * @param columnsToSerialize A {@link BitSet} of columns to include, null for all
-     * @param keysToSnapshot A RowSet of keys within the table to include, null for all
-     *
-     * @return Whether the snapshot succeeded
-     */
-    private static boolean serializeAllTable(
-            final boolean usePrev,
-            @NotNull final InitialSnapshot snapshot,
-            @NotNull final BaseTable<?> table,
-            @NotNull final Object logIdentityObject,
-            @Nullable final BitSet columnsToSerialize,
-            @Nullable final RowSet keysToSnapshot) {
-        snapshot.rowSet = (usePrev ? table.getRowSet().prev() : table.getRowSet()).copy();
-
-        if (keysToSnapshot != null) {
-            snapshot.rowsIncluded = snapshot.rowSet.intersect(keysToSnapshot);
-        } else {
-            snapshot.rowsIncluded = snapshot.rowSet;
-        }
-
-        LongSizedDataStructure.intSize("construct snapshot", snapshot.rowsIncluded.size());
-        final String[] columnSources = table.getDefinition().getColumnNamesArray();
-
-        snapshot.dataColumns = new Object[columnSources.length];
-        try (final SharedContext sharedContext =
-                (columnSources.length > 1) ? SharedContext.makeSharedContext() : null) {
-            for (int ii = 0; ii < columnSources.length; ii++) {
-                if (columnsToSerialize != null && !columnsToSerialize.get(ii)) {
-                    continue;
-                }
-
-                if (concurrentAttemptInconsistent()) {
-                    if (log.isDebugEnabled()) {
-                        final LogEntry logEntry = log.debug().append(System.identityHashCode(logIdentityObject))
-                                .append(" Bad snapshot before column ").append(ii);
-                        appendConcurrentAttemptClockInfo(logEntry);
-                        logEntry.endl();
-                    }
-                    return false;
-                }
-
-                final ColumnSource<?> columnSource = table.getColumnSource(columnSources[ii]);
-                snapshot.dataColumns[ii] = getSnapshotData(columnSource, sharedContext, snapshot.rowsIncluded, usePrev);
-            }
-        }
-
-        if (log.isDebugEnabled()) {
-            log.debug().append(System.identityHashCode(logIdentityObject))
-                    .append(": Snapshot candidate step=")
-                    .append((usePrev ? -1 : 0) + LogicalClock.getStep(getConcurrentAttemptClockValue()))
-                    .append(", rows=").append(snapshot.rowsIncluded).append("/").append(keysToSnapshot)
-                    .append(", cols=").append(FormatBitSet.arrayToLog(snapshot.dataColumns)).append("/")
-                    .append((columnsToSerialize != null) ? FormatBitSet.formatBitSet(columnsToSerialize)
-                            : FormatBitSet.arrayToLog(snapshot.dataColumns))
-                    .append(", usePrev=").append(usePrev).endl();
-        }
-        return true;
-    }
-
-    /**
-     * <p>
      * Populate a BarrageMessage with the specified positions to snapshot and columns.
      * <p>
      * Note that care must be taken while using this method to ensure the underlying table is locked or does not change,
@@ -1563,56 +1353,6 @@ public class ConstructSnapshot {
         return true;
     }
 
-    private static boolean serializeAllTables(
-            final boolean usePrev,
-            @NotNull final List<InitialSnapshot> snapshots,
-            @NotNull final BaseTable<?>[] tables,
-            @NotNull final Object logIdentityObject) {
-        snapshots.clear();
-
-        for (final BaseTable<?> table : tables) {
-            final InitialSnapshot snapshot = new InitialSnapshot();
-            snapshots.add(snapshot);
-            if (!serializeAllTable(usePrev, snapshot, table, logIdentityObject, null, null)) {
-                snapshots.clear();
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private static <T> Object getSnapshotData(
-            @NotNull final ColumnSource<T> columnSource,
-            @Nullable final SharedContext sharedContext,
-            @NotNull final RowSet rowSet,
-            final boolean usePrev) {
-        final ColumnSource<?> sourceToUse = ReinterpretUtils.maybeConvertToPrimitive(columnSource);
-        final Class<?> type = sourceToUse.getType();
-        final int size = rowSet.intSize();
-        try (final ColumnSource.FillContext context = sourceToUse.makeFillContext(size, sharedContext)) {
-            final ChunkType chunkType = sourceToUse.getChunkType();
-            final Object resultArray = chunkType.makeArray(size);
-            final WritableChunk<Values> result = chunkType.writableChunkWrap(resultArray, 0, size);
-            if (usePrev) {
-                sourceToUse.fillPrevChunk(context, result, rowSet);
-            } else {
-                sourceToUse.fillChunk(context, result, rowSet);
-            }
-            if (chunkType == ChunkType.Object) {
-                // noinspection unchecked
-                final T[] values = (T[]) Array.newInstance(type, size);
-                for (int ii = 0; ii < values.length; ++ii) {
-                    // noinspection unchecked
-                    values[ii] = (T) result.asObjectChunk().get(ii);
-                }
-                return values;
-
-            }
-            return resultArray;
-        }
-    }
-
     private static <T> ArrayList<Chunk<Values>> getSnapshotDataAsChunkList(
             @NotNull final ColumnSource<T> columnSource,
             @Nullable final SharedContext sharedContext,
@@ -1664,88 +1404,5 @@ public class ConstructSnapshot {
             }
         }
         return result;
-    }
-
-    /**
-     * Estimate the size of a complete table snapshot in bytes.
-     *
-     * @param table the table to estimate
-     * @return the estimated snapshot size in bytes.
-     */
-    public static long estimateSnapshotSize(@NotNull final Table table) {
-        final BitSet columns = new BitSet(table.numColumns());
-        columns.set(0, table.numColumns());
-        return estimateSnapshotSize(table.getDefinition(), columns, table.size());
-    }
-
-    /**
-     * Make a rough guess at the size of a snapshot, using the column types and common column names. The use case is
-     * when a user requests something from the GUI; we'd like to know if it is ridiculous before actually doing it.
-     *
-     * @param tableDefinition the table definition
-     * @param columns a bitset indicating which columns are included
-     * @param rowCount how many rows of this data we'll be snapshotting
-     * @return the estimated size of the snapshot
-     */
-    public static long estimateSnapshotSize(
-            @NotNull final TableDefinition tableDefinition,
-            @NotNull final BitSet columns,
-            final long rowCount) {
-        long sizePerRow = 0;
-        long totalSize = 0;
-
-        final int numColumns = tableDefinition.numColumns();
-        final List<ColumnDefinition<?>> columnDefinitions = tableDefinition.getColumns();
-        for (int ii = 0; ii < numColumns; ++ii) {
-            if (!columns.get(ii)) {
-                continue;
-            }
-
-            totalSize += 44; // for an array
-
-            final ColumnDefinition<?> definition = columnDefinitions.get(ii);
-            if (definition.getDataType() == byte.class || definition.getDataType() == char.class
-                    || definition.getDataType() == Boolean.class) {
-                sizePerRow += 1;
-            } else if (definition.getDataType() == short.class) {
-                sizePerRow += 2;
-            } else if (definition.getDataType() == int.class || definition.getDataType() == float.class) {
-                sizePerRow += 4;
-            } else if (definition.getDataType() == long.class || definition.getDataType() == double.class
-                    || definition.getDataType() == Instant.class || definition.getDataType() == ZonedDateTime.class) {
-                sizePerRow += 8;
-            } else {
-                switch (definition.getName()) {
-                    case "Date":
-                        sizePerRow += 5;
-                        totalSize += 10;
-                        break;
-                    case "USym":
-                        sizePerRow += 5;
-                        totalSize += Math.min(rowCount, 10000) * 10;
-                        break;
-                    case "Sym":
-                        sizePerRow += 5;
-                        totalSize += Math.min(rowCount, 1000000) * 30;
-                        break;
-                    case "Parity":
-                        sizePerRow += 5;
-                        totalSize += 30;
-                        break;
-                    case "SecurityType":
-                        sizePerRow += 5;
-                        totalSize += 100;
-                        break;
-                    case "Exchange":
-                        sizePerRow += 5;
-                        totalSize += 130;
-                        break;
-                    default:
-                        sizePerRow += (42 + 8); // how big a dummy object was on a test + a pointer
-                }
-            }
-        }
-
-        return totalSize + (sizePerRow * rowCount);
     }
 }
