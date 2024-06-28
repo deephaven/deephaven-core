@@ -293,7 +293,7 @@ public class BarrageStreamReader implements StreamReader {
                 // there is no body and our clients do not want to see schema messages, consume the schema so that we
                 // can read the following messages and return null.
                 ByteBuffer original = header.getByteBuffer();
-                ByteBuffer copy = ByteBuffer.allocate(original.remaining()).put(original);
+                ByteBuffer copy = ByteBuffer.allocate(original.remaining()).put(original).rewind();
                 Schema schema = new Schema();
                 Message.getRootAsMessage(copy).header(schema);
                 header.header(schema);

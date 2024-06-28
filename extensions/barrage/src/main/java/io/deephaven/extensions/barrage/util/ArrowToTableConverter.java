@@ -143,7 +143,7 @@ public class ArrowToTableConverter {
         // of this method. Until https://github.com/jpy-consortium/jpy/issues/126 is resolved, we need to make a copy of
         // the header to use after the return of this method.
         ByteBuffer original = message.getByteBuffer();
-        ByteBuffer copy = ByteBuffer.allocate(original.remaining()).put(original);
+        ByteBuffer copy = ByteBuffer.allocate(original.remaining()).put(original).rewind();
         Schema schema = new Schema();
         Message.getRootAsMessage(copy).header(schema);
         if (resultTable != null) {
