@@ -79,6 +79,7 @@ public class StaticCalendarMethodsGenerator extends AbstractBasicJavaGenerator {
         excludes.add("description");
         excludes.add("firstValidDate");
         excludes.add("lastValidDate");
+        excludes.add("clearCache");
 
         StaticCalendarMethodsGenerator gen =
                 new StaticCalendarMethodsGenerator(gradleTask, packageName, className, imports,
