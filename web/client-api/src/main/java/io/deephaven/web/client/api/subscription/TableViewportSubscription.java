@@ -3,6 +3,7 @@
 //
 package io.deephaven.web.client.api.subscription;
 
+import com.google.flatbuffers.FlatBufferBuilder;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.dom.CustomEvent;
@@ -10,10 +11,21 @@ import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
+import io.deephaven.barrage.flatbuf.BarrageMessageType;
+import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
+import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
+import io.deephaven.extensions.barrage.ColumnConversionMode;
+import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
+import io.deephaven.util.mutable.MutableLong;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.JsRangeSet;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.TableData;
+import io.deephaven.web.client.api.barrage.WebBarrageMessage;
+import io.deephaven.web.client.api.barrage.WebBarrageStreamReader;
+import io.deephaven.web.client.api.barrage.WebBarrageUtils;
+import io.deephaven.web.client.api.barrage.data.WebBarrageSubscription;
+import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.shared.data.RangeSet;
 import io.deephaven.web.shared.data.ShiftedRange;
@@ -21,6 +33,11 @@ import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
 import jsinterop.base.Js;
+
+import java.io.IOException;
+import java.util.Collections;
+
+import static io.deephaven.web.client.api.barrage.WebBarrageUtils.serializeRanges;
 
 /**
  * Encapsulates event handling around table subscriptions by "cheating" and wrapping up a JsTable instance to do the
@@ -118,7 +135,8 @@ public class TableViewportSubscription extends AbstractTableSubscription {
         // }
 
         // TODO Rewrite shifts as adds/removed/modifies? in the past we ignored them...
-        UpdateEventData detail = new UpdateEventData(rowsAdded, rowsRemoved, totalMods, shifted);
+        UpdateEventData detail = new UpdateEventData(barrageSubscription, rowStyleColumn, getColumns(), rowsAdded,
+                rowsRemoved, totalMods, shifted);
         detail.offset = this.serverViewport.getFirstRow();
         this.viewportData = detail;
         CustomEventInit<UpdateEventData> event = CustomEventInit.create();
@@ -237,6 +255,9 @@ public class TableViewportSubscription extends AbstractTableSubscription {
         // indicate that the base table shouldn't get events anymore, even if it is still retained elsewhere
         originalActive = false;
 
+        if (retained) {
+            return;
+        }
         // if (retained || status == Status.DONE) {
         // // the JsTable has indicated it is no longer interested in this viewport, but other calling
         // // code has retained it, keep it open for now.
@@ -294,9 +315,99 @@ public class TableViewportSubscription extends AbstractTableSubscription {
     public Promise<TableData> snapshot(JsRangeSet rows, Column[] columns) {
         retainForExternalUse();
         // TODO #1039 slice rows and drop columns
+        BarrageSnapshotOptions options = BarrageSnapshotOptions.builder()
+                .batchSize(WebBarrageSubscription.BATCH_SIZE)
+                .maxMessageSize(WebBarrageSubscription.MAX_MESSAGE_SIZE)
+                .columnConversionMode(ColumnConversionMode.Stringify)
+                .useDeephavenNulls(true)
+                .build();
+
+        WebBarrageSubscription snapshot =
+                WebBarrageSubscription.subscribe(state(), (serverViewport1, serverColumns, serverReverseViewport) -> {
+                }, (rowsAdded, rowsRemoved, totalMods, shifted, modifiedColumnSet) -> {
+                });
+
+        WebBarrageStreamReader reader = new WebBarrageStreamReader();
+        return new Promise<>((resolve, reject) -> {
+
+            BiDiStream<FlightData, FlightData> doExchange = connection().<FlightData, FlightData>streamFactory().create(
+                    headers -> connection().flightServiceClient().doExchange(headers),
+                    (first, headers) -> connection().browserFlightServiceClient().openDoExchange(first, headers),
+                    (next, headers, c) -> connection().browserFlightServiceClient().nextDoExchange(next, headers,
+                            c::apply),
+                    new FlightData());
+            MutableLong rowsReceived = new MutableLong(0);
+            doExchange.onData(data -> {
+                WebBarrageMessage message;
+                try {
+                    message = reader.parseFrom(options, null, state().chunkTypes(), state().columnTypes(),
+                            state().componentTypes(), data);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                if (message != null) {
+                    // Replace rowsets with flat versions
+                    long resultSize = message.rowsIncluded.size();
+                    message.rowsAdded = RangeSet.ofRange(rowsReceived.get(), rowsReceived.get() + resultSize - 1);
+                    message.rowsIncluded = message.rowsAdded;
+                    rowsReceived.add(resultSize);
+
+                    // Update our table data with the complete message
+                    snapshot.applyUpdates(message);
+                }
+            });
+            FlightData payload = new FlightData();
+            final FlatBufferBuilder metadata = new FlatBufferBuilder();
+
+            int colOffset = 0;
+            if (columns != null) {
+                colOffset =
+                        BarrageSnapshotRequest.createColumnsVector(metadata, state().makeBitset(columns).toByteArray());
+            }
+            int vpOffset = BarrageSnapshotRequest.createViewportVector(metadata,
+                    serializeRanges(Collections.singleton(rows.getRange())));
+            int optOffset = 0;
+            if (options != null) {
+                optOffset = options.appendTo(metadata);
+            }
+
+            final int ticOffset = BarrageSnapshotRequest.createTicketVector(metadata,
+                    Js.<byte[]>uncheckedCast(state().getHandle().getTicket()));
+            BarrageSnapshotRequest.startBarrageSnapshotRequest(metadata);
+            BarrageSnapshotRequest.addColumns(metadata, colOffset);
+            BarrageSnapshotRequest.addViewport(metadata, vpOffset);
+            BarrageSnapshotRequest.addSnapshotOptions(metadata, optOffset);
+            BarrageSnapshotRequest.addTicket(metadata, ticOffset);
+            BarrageSnapshotRequest.addReverseViewport(metadata, false);
+            metadata.finish(BarrageSnapshotRequest.endBarrageSnapshotRequest(metadata));
+
+            // final FlatBufferBuilder wrapper = new FlatBufferBuilder();
+            // final int innerOffset = wrapper.createByteVector(metadata.dataBuffer());
+            // wrapper.finish(BarrageMessageWrapper.createBarrageMessageWrapper(
+            // wrapper,
+            // BarrageUtil.FLATBUFFER_MAGIC,
+            // BarrageMessageType.BarrageSnapshotRequest,
+            // innerOffset));
 
 
-        return null;
+            payload.setAppMetadata(WebBarrageUtils.wrapMessage(metadata, BarrageMessageType.BarrageSnapshotRequest));
+            doExchange.onEnd(status -> {
+                if (status.isOk()) {
+                    // notify the caller that the snapshot is finished
+                    resolve.onInvoke(new UpdateEventData(snapshot, rowStyleColumn, Js.uncheckedCast(columns),
+                            RangeSet.ofRange(0, rowsReceived.get() - 1),
+                            RangeSet.empty(),
+                            RangeSet.empty(),
+                            null));
+                } else {
+                    reject.onInvoke(status);
+                }
+            });
+
+            doExchange.send(payload);
+            doExchange.end();
+
+        });
     }
 
     /**

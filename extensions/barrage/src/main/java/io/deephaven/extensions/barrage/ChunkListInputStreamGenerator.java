@@ -27,11 +27,13 @@ public class ChunkListInputStreamGenerator implements SafeCloseable {
         long rowOffset = 0;
         for (int i = 0; i < data.size(); ++i) {
             final Chunk<Values> valuesChunk = data.get(i);
-            generators[i] = ChunkInputStreamGenerator.makeInputStreamGenerator(chunkType, type, componentType, valuesChunk, rowOffset);
+            generators[i] = ChunkInputStreamGenerator.makeInputStreamGenerator(chunkType, type, componentType,
+                    valuesChunk, rowOffset);
             rowOffset += valuesChunk.size();
         }
         this.generators = Arrays.asList(generators);
-        emptyGenerator = ChunkInputStreamGenerator.makeInputStreamGenerator(chunkType, type, componentType, chunkType.getEmptyChunk(), 0);
+        emptyGenerator = ChunkInputStreamGenerator.makeInputStreamGenerator(chunkType, type, componentType,
+                chunkType.getEmptyChunk(), 0);
     }
 
     public List<ChunkInputStreamGenerator> generators() {

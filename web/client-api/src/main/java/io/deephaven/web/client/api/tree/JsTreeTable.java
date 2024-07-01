@@ -27,6 +27,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Tic
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.*;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
+import io.deephaven.web.client.api.barrage.data.WebBarrageSubscription;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
@@ -382,8 +383,9 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
             // private final JsArray<Column> columns;
             private final int constituentDepth;
 
-            private TreeViewportData(RangeSet added, RangeSet removed, RangeSet modified, ShiftedRange[] shifted) {
-                super(added, removed, modified, shifted);
+            private TreeViewportData(WebBarrageSubscription subscription, int rowStyleColumn, JsArray<Column> columns,
+                    RangeSet added, RangeSet removed, RangeSet modified, ShiftedRange[] shifted) {
+                super(subscription, rowStyleColumn, columns, added, removed, modified, shifted);
 
 
                 // this.offset = offset;
@@ -506,7 +508,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
 
             @Override
             protected SubscriptionRow makeRow(long index) {
-                return new TreeRow(index);
+                return new TreeRow(subscription, index);
             }
 
             public double getTreeSize() {
@@ -522,8 +524,8 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         @TsName(namespace = "dh")
         public class TreeRow extends SubscriptionRow {
 
-            public TreeRow(long index) {
-                super(index);
+            public TreeRow(WebBarrageSubscription subscription, long index) {
+                super(subscription, rowStyleColumn, index);
             }
 
             /**
@@ -609,7 +611,8 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         protected void notifyUpdate(RangeSet rowsAdded, RangeSet rowsRemoved, RangeSet totalMods,
                 ShiftedRange[] shifted) {
             // TODO Rewrite shifts as adds/removed/modifies? in the past we ignored them...
-            TreeViewportData detail = new TreeViewportData(rowsAdded, rowsRemoved, totalMods, shifted);
+            TreeViewportData detail = new TreeViewportData(barrageSubscription, rowStyleColumn, getColumns(), rowsAdded,
+                    rowsRemoved, totalMods, shifted);
             detail.offset = this.serverViewport.getFirstRow();
             CustomEventInit<UpdateEventData> event = CustomEventInit.create();
             event.setDetail(detail);

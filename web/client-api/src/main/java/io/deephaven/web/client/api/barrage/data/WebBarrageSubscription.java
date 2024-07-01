@@ -4,7 +4,6 @@
 package io.deephaven.web.client.api.barrage.data;
 
 import elemental2.core.JsArray;
-import elemental2.dom.DomGlobal;
 import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.DoubleChunk;
@@ -227,6 +226,10 @@ public abstract class WebBarrageSubscription {
         return serverViewport;
     }
 
+    public boolean isReversed() {
+        return serverReverseViewport;
+    }
+
     /**
      * Reads a value from the table subscription.
      *
@@ -411,7 +414,6 @@ public abstract class WebBarrageSubscription {
                 }
 
                 RangeSet destinationRowSet = getFreeRows(message.rowsIncluded.size());
-                DomGlobal.console.log("freeRows", destinationRowSet.toString());
                 // RangeSet destinationRowSet = new RangeSet();
                 // message.rowsIncluded.indexIterator().forEachRemaining((long row) -> {
                 // destinationRowSet.addRange(new Range(row, row));

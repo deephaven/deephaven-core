@@ -65,10 +65,10 @@ public final class ClientTableState extends TableConfig {
                 return ChunkType.Byte;
             }
             // JS client holds date objects as objects, not as longs
-//            if (dataType == DateWrapper.class) {
-//                // Note that storing ZonedDateTime as a primitive is lossy on the time zone.
-//                return ChunkType.Long;
-//            }
+            // if (dataType == DateWrapper.class) {
+            // // Note that storing ZonedDateTime as a primitive is lossy on the time zone.
+            // return ChunkType.Long;
+            // }
             if (dataType == Long.class || dataType == long.class) {
                 // JS client holds longs as LongWrappers
                 return ChunkType.Object;

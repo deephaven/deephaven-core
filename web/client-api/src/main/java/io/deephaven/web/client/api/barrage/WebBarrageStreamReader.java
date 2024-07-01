@@ -255,7 +255,8 @@ public class WebBarrageStreamReader {
 
                 // fill the chunk with data and assign back into the array
                 mcd.data.set(lastChunkIndex,
-                        readers.get(ci).readChunk(fieldNodeIter, bufferInfoIter, ois, chunk, chunk.size(), numRowsToRead));
+                        readers.get(ci).readChunk(fieldNodeIter, bufferInfoIter, ois, chunk, chunk.size(),
+                                numRowsToRead));
                 chunk.setSize(chunk.size() + numRowsToRead);
             }
             numModRowsRead += batch.length();

@@ -53,7 +53,8 @@ public class VectorChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
         offsets = WritableIntChunk.makeWritableChunk(chunk.size() + 1);
 
         final WritableChunk<Values> innerChunk = kernel.expand(chunk, offsets);
-        innerGenerator = ChunkInputStreamGenerator.makeInputStreamGenerator(chunkType, componentType, innerComponentType, innerChunk, 0);
+        innerGenerator = ChunkInputStreamGenerator.makeInputStreamGenerator(chunkType, componentType,
+                innerComponentType, innerChunk, 0);
     }
 
     @Override

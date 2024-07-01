@@ -71,7 +71,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
 
     private final ClientTableState state;
     private final WorkerConnection connection;
-    private final int rowStyleColumn;
+    protected final int rowStyleColumn;
     private JsArray<Column> columns;
     private BitSet columnBitSet;
     private BarrageSubscriptionOptions options;
@@ -217,9 +217,15 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
 
     protected void notifyUpdate(RangeSet rowsAdded, RangeSet rowsRemoved, RangeSet totalMods, ShiftedRange[] shifted) {
         UpdateEventData detail = new UpdateEventData(
-                transformRowsetForConsumer(rowsAdded),
-                transformRowsetForConsumer(rowsRemoved),
-                transformRowsetForConsumer(totalMods),
+                barrageSubscription,
+                rowStyleColumn,
+                columns,
+                transformRowsetForConsumer(rowsAdded, barrageSubscription.getServerViewport(),
+                        barrageSubscription.isReversed()),
+                transformRowsetForConsumer(rowsRemoved, barrageSubscription.getServerViewport(),
+                        barrageSubscription.isReversed()),
+                transformRowsetForConsumer(totalMods, barrageSubscription.getServerViewport(),
+                        barrageSubscription.isReversed()),
                 barrageSubscription.getServerViewport() != null ? null : shifted);
         CustomEventInit<UpdateEventData> event = CustomEventInit.create();
         event.setDetail(detail);
@@ -228,11 +234,15 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
 
     @TsInterface
     @TsName(namespace = "dh")
-    public class SubscriptionRow implements TableData.Row {
+    public static class SubscriptionRow implements TableData.Row {
+        private final WebBarrageSubscription subscription;
+        private final int rowStyleColumn;
         protected final long index;
         public LongWrapper indexCached;
 
-        public SubscriptionRow(long index) {
+        public SubscriptionRow(WebBarrageSubscription subscription, int rowStyleColumn, long index) {
+            this.subscription = subscription;
+            this.rowStyleColumn = rowStyleColumn;
             this.index = index;
         }
 
@@ -246,7 +256,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
 
         @Override
         public Any get(Column column) {
-            return barrageSubscription.getData(index, column.getIndex());
+            return subscription.getData(index, column.getIndex());
         }
 
         @Override
@@ -256,23 +266,26 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
             String numberFormat = null;
             String formatString = null;
             if (column.getStyleColumnIndex() != null) {
-                cellColors = barrageSubscription.getData(index, column.getStyleColumnIndex());
+                cellColors = subscription.getData(index, column.getStyleColumnIndex());
             }
             if (rowStyleColumn != TableData.NO_ROW_FORMAT_COLUMN) {
-                rowColors = barrageSubscription.getData(index, rowStyleColumn);
+                rowColors = subscription.getData(index, rowStyleColumn);
             }
             if (column.getFormatStringColumnIndex() != null) {
-                numberFormat = barrageSubscription.getData(index, column.getFormatStringColumnIndex());
+                numberFormat = subscription.getData(index, column.getFormatStringColumnIndex());
             }
             if (column.getFormatStringColumnIndex() != null) {
-                formatString = barrageSubscription.getData(index, column.getFormatStringColumnIndex());
+                formatString = subscription.getData(index, column.getFormatStringColumnIndex());
             }
             return new Format(cellColors, rowColors, numberFormat, formatString);
         }
     }
 
 
-    public class UpdateEventData implements SubscriptionTableData, ViewportData {
+    public static class UpdateEventData implements SubscriptionTableData, ViewportData {
+        protected final WebBarrageSubscription subscription;
+        private final int rowStyleColumn;
+        private final JsArray<Column> columns;
         private final JsRangeSet added;
         private final JsRangeSet removed;
         private final JsRangeSet modified;
@@ -283,7 +296,11 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         // TODO expose this property only if this is a viewport
         public double offset;
 
-        public UpdateEventData(RangeSet added, RangeSet removed, RangeSet modified, ShiftedRange[] shifted) {
+        public UpdateEventData(WebBarrageSubscription subscription, int rowStyleColumn, JsArray<Column> columns,
+                RangeSet added, RangeSet removed, RangeSet modified, ShiftedRange[] shifted) {
+            this.subscription = subscription;
+            this.rowStyleColumn = rowStyleColumn;
+            this.columns = columns;
             this.added = new JsRangeSet(added);
             this.removed = new JsRangeSet(removed);
             this.modified = new JsRangeSet(modified);
@@ -303,8 +320,9 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         public JsArray<@TsTypeRef(SubscriptionRow.class) ? extends SubscriptionRow> getRows() {
             if (allRows == null) {
                 allRows = new JsArray<>();
-                RangeSet rowSet = barrageSubscription.getCurrentRowSet();
-                RangeSet positions = transformRowsetForConsumer(rowSet);
+                RangeSet rowSet = subscription.getCurrentRowSet();
+                RangeSet positions =
+                        transformRowsetForConsumer(rowSet, subscription.getServerViewport(), subscription.isReversed());
                 positions.indexIterator().forEachRemaining((long index) -> {
                     allRows.push(makeRow(index));
                 });
@@ -316,7 +334,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         }
 
         protected SubscriptionRow makeRow(long index) {
-            return new SubscriptionRow(index);
+            return new SubscriptionRow(subscription, rowStyleColumn, index);
         }
 
         @Override
@@ -336,7 +354,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
 
         @Override
         public Any getData(long key, Column column) {
-            return barrageSubscription.getData(key, column.getIndex());
+            return subscription.getData(key, column.getIndex());
         }
 
         @Override
@@ -351,16 +369,16 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
             String numberFormat = null;
             String formatString = null;
             if (column.getStyleColumnIndex() != null) {
-                cellColors = barrageSubscription.getData(index, column.getStyleColumnIndex());
+                cellColors = subscription.getData(index, column.getStyleColumnIndex());
             }
             if (rowStyleColumn != NO_ROW_FORMAT_COLUMN) {
-                rowColors = barrageSubscription.getData(index, rowStyleColumn);
+                rowColors = subscription.getData(index, rowStyleColumn);
             }
             if (column.getFormatStringColumnIndex() != null) {
-                numberFormat = barrageSubscription.getData(index, column.getFormatStringColumnIndex());
+                numberFormat = subscription.getData(index, column.getFormatStringColumnIndex());
             }
             if (column.getFormatStringColumnIndex() != null) {
-                formatString = barrageSubscription.getData(index, column.getFormatStringColumnIndex());
+                formatString = subscription.getData(index, column.getFormatStringColumnIndex());
             }
             return new Format(cellColors, rowColors, numberFormat, formatString);
         }
@@ -387,7 +405,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
 
         @Override
         public JsRangeSet getFullIndex() {
-            return new JsRangeSet(barrageSubscription.getCurrentRowSet());
+            return new JsRangeSet(subscription.getCurrentRowSet());
         }
     }
 
@@ -397,9 +415,9 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
      * @param rowSet the rowset to possibly transform
      * @return a transformed rowset
      */
-    private RangeSet transformRowsetForConsumer(RangeSet rowSet) {
-        if (barrageSubscription.getServerViewport() != null) {
-            return rowSet.subsetForPositions(barrageSubscription.getServerViewport(), false);// TODO reverse
+    private static RangeSet transformRowsetForConsumer(RangeSet rowSet, @Nullable RangeSet viewport, boolean reversed) {
+        if (viewport != null) {
+            return rowSet.subsetForPositions(viewport, reversed);
         }
         return rowSet;
     }
