@@ -19,7 +19,7 @@ dependencies {
 
     // upgrade inherited dependencies to become transitive
     compileOnly libs.jsinterop.annotations
-}
 
-// non-transitive dependency
-Classpaths.inheritGwt project, 'gwt-user', 'compileOnly'
+    // non-transitive dependency
+    compileOnly libs.gwt.user
+}

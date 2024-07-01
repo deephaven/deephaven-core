@@ -33,8 +33,9 @@ dependencies {
     implementation libs.elemental.core
     implementation libs.elemental.promise
     implementation libs.elemental.dom
+
+    testImplementation libs.gwt.user
 }
-Classpaths.inheritGwt(project, 'gwt-user', 'testImplementation')
 
 GwtTools.gwtCompile project, 'io.deephaven.web.DeephavenApi', 'Create a jar of client JS API'
 

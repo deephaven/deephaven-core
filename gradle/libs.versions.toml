@@ -13,6 +13,9 @@ groovy = "3.0.21"
 # Only bump this in concert with boringssl
 grpc = "1.58.0"
 guava = "33.2.0-jre"
+gwt = "2.11.0"
+# used by GwtTools
+gwtJetty = "9.4.44.v20210927"
 hadoop = "3.4.0"
 iceberg = "1.5.2"
 immutables = "2.9.2"
@@ -81,6 +84,8 @@ grpc-testing = { module = "io.grpc:grpc-testing" }
 grpc-util = { module = "io.grpc:grpc-util" }
 
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
+
+gwt-user = { module = "org.gwtproject:gwt-user", version.ref = "gwt" }
 
 hadoop-common = { module = "org.apache.hadoop:hadoop-common", version.ref = "hadoop" }
 hadoop-hdfs-client = { module = "org.apache.hadoop:hadoop-hdfs-client", version.ref = "hadoop" }
