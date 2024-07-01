@@ -1448,18 +1448,38 @@ public abstract class QueryTableWhereTest {
     }
 
     @Test
-    @Ignore
     public void testEnsureColumnArraysTakePrecedence() {
-        // TODO: column arrays aren't well supported in match arrays and this example's where filter fails to compile
-        final Table table = emptyTable(10).update("X=i", "Y=new int[]{1, 5, 9}");
-        ExecutionContext.getContext().getQueryScope().putParam("Y_", new int[] {0, 4, 8});
+        final Table table = emptyTable(10).update("X = i", "Y = ii == 1 ? 5 : -1");
+        ExecutionContext.getContext().getQueryScope().putParam("Y_", new int[] {0, 4, 0});
 
-        final Table result = table.where("X == Y_[1]");
-        Assert.equals(result.getRowSet(), "result.getRowSet()", RowSetFactory.fromKeys(5));
+        {
+            final Table result = table.where("X == Y_[1]");
+            Assert.equals(result.getRowSet(), "result.getRowSet()", RowSetFactory.fromKeys(5));
 
-        // check that the mirror matches the expected result
-        final Table mResult = table.where("Y_[1] == X");
-        assertTableEquals(result, mResult);
+            // check that the mirror matches the expected result
+            final Table mResult = table.where("Y_[1] == X");
+            assertTableEquals(result, mResult);
+        }
+
+        {
+            final Table result = table.where("X < Y_[1]");
+            Assert.equals(result.getRowSet(), "result.getRowSet()", RowSetFactory.flat(5));
+
+            // check that the mirror matches the expected result
+            final Table mResult = table.where("Y_[1] > X");
+            assertTableEquals(result, mResult);
+        }
+
+        // note that array access doesn't match the RangeFilter/MatchFilter regex, so let's try to override the
+        // array access with a type that would otherwise work.
+        ExecutionContext.getContext().getQueryScope().putParam("Y_", 4);
+        try {
+            table.where("X == Y_");
+            // noinspection ThrowableNotThrown
+            Assert.statementNeverExecuted();
+        } catch (IllegalArgumentException expected) {
+
+        }
     }
 
     @Test
