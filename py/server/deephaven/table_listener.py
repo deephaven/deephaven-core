@@ -49,9 +49,10 @@ class TableUpdate(JObjectWrapper):
             return {}
 
         try:
+            j_row_set = self.j_table_update.added.asRowSet()
             return next(
-                _table_reader_chunks(table=self.table, cols=cols, row_set=self.j_table_update.added.asRowSet(),
-                                     prev=False, chunk_size=None, to_numpy=True))
+                _table_reader_chunks(table=self.table, cols=cols, row_set= j_row_set,
+                                     prev=False, chunk_size=j_row_set.size(), to_numpy=True))
         except StopIteration:
             return {}
 
@@ -87,9 +88,10 @@ class TableUpdate(JObjectWrapper):
             return {}
 
         try:
+            j_row_set = self.j_table_update.removed.asRowSet()
             return next(
-                _table_reader_chunks(table=self.table, cols=cols, row_set=self.j_table_update.removed.asRowSet(),
-                                     chunk_size=None, prev=True, to_numpy=True))
+                _table_reader_chunks(table=self.table, cols=cols, row_set=j_row_set,
+                                     chunk_size=j_row_set.size(), prev=True, to_numpy=True))
         except StopIteration:
             return {}
 
@@ -125,9 +127,10 @@ class TableUpdate(JObjectWrapper):
             return {}
 
         try:
+            j_row_set = self.j_table_update.modified.asRowSet()
             return next(
-                _table_reader_chunks(self.table, cols=cols, row_set=self.j_table_update.modified.asRowSet(),
-                                     chunk_size=None, prev=False, to_numpy=True))
+                _table_reader_chunks(self.table, cols=cols, row_set=j_row_set,
+                                     chunk_size=j_row_set.size(), prev=False, to_numpy=True))
         except StopIteration:
             return {}
 
@@ -163,9 +166,10 @@ class TableUpdate(JObjectWrapper):
             return {}
 
         try:
+            j_row_set = self.j_table_update.modified.asRowSet()
             return next(
-                _table_reader_chunks(self.table, cols=cols, row_set=self.j_table_update.modified.asRowSet(),
-                                     chunk_size=None, prev=True, to_numpy=True))
+                _table_reader_chunks(self.table, cols=cols, row_set=j_row_set,
+                                     chunk_size=j_row_set.size(), prev=True, to_numpy=True))
         except StopIteration:
             return {}
 

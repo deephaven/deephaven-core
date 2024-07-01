@@ -9,12 +9,14 @@ from __future__ import annotations
 
 import contextlib
 import inspect
+from collections import namedtuple
 from enum import Enum
 from enum import auto
-from typing import Any, Optional, Callable, Dict, Generator
+from typing import Any, Optional, Callable, Dict, Generator, Tuple
 from typing import Sequence, List, Union, Protocol
 
 import jpy
+import numpy as np
 
 from deephaven import DHError
 from deephaven import dtypes
@@ -503,10 +505,9 @@ class Table(JObjectWrapper):
     def j_object(self) -> jpy.JType:
         return self.j_table
 
-    def iter_rows(self, cols: Optional[Union[str, Sequence[str]]] = None, *, chunk_size: Optional[int] = 1) \
-            -> Generator[Dict[str, Any], None, None]:
-        """ Returns a generator that reads one row or one chunk of rows at a time from the table into a dictionary.
-        The dictionary is a map of column names to either numpy arrays or scalar values of the column data type.
+    def iter_dict(self, cols: Optional[Union[str, Sequence[str]]] = None) -> Generator[Dict[str, Any], None, None]:
+        """ Returns a generator that reads one row at a time from the table into a dictionary. The dictionary is a map
+        of column names to scalar values of the column data type.
 
         If the table is refreshing and no update graph locks are currently being held, the generator will try to acquire
         the shared lock of the update graph before reading the table data. This provides a consistent view of the data.
@@ -518,20 +519,97 @@ class Table(JObjectWrapper):
 
         Args:
             cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
-            chunk_size (Optional[int]): The number of rows to read at a time. Default is 1, meaning one row at a time.
-                When chunk_size is greater than 1, the generator will yield a dictionary of column names to numpy arrays.
-                When chunk_size is 1, the generator will yield a dictionary of column names to scalar values.
 
         Returns:
-            A generator that yields a dictionary of column names to numpy arrays or scalar values.
+            A generator that yields a dictionary of column names to scalar values.
         """
-        from deephaven._table_reader import _table_reader_chunks, _table_reader_rows # to prevent circular import
+        from deephaven._table_reader import _table_reader_rows # to prevent circular import
 
-        if chunk_size == 1:
-            return _table_reader_rows(self, cols)
-        else:
-            return _table_reader_chunks(self, cols=cols, row_set=self.j_table.getRowSet(), chunk_size=chunk_size,
+        return _table_reader_rows(self, cols)
+
+    def iter_tuple(self, cols: Optional[Union[str, Sequence[str]]] = None, name: str = 'Deephaven') -> Generator[Tuple[str, Any], None, None]:
+        """ Returns a generator that reads one row at a time from the table into a named tuple. The named tuple is made
+        up of fields with their names being the column names and their values being of the column data types.
+
+        If the table is refreshing and no update graph locks are currently being held, the generator will try to acquire
+        the shared lock of the update graph before reading the table data. This provides a consistent view of the data.
+        The side effect of this is that the table will not be able to refresh while the table is being iterated on.
+        Additionally, the generator internally maintains a fill context. The auto acquired shared lock and the fill
+        context will be released after the generator is destroyed. That can happen implicitly when the generator
+        is used in a for-loop. When the generator is not used in a for-loop, to prevent resource leaks, it must be closed
+        after use by either (1) by setting it to None, (2) using the del statement, or (3) calling the close() method on it.
+
+        Args:
+            cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read. Default is None.
+            name (str): The name of the named tuple. Default is 'Deephaven'.
+
+        Returns:
+            A generator that yields a named tuple or regular tuple for each row in the table
+        """
+        from deephaven._table_reader import _table_reader_rows # to prevent circular import
+        named_tuple_class = namedtuple(name, cols or [col.name for col in self.columns], rename=False)
+
+        for row in _table_reader_rows(self, cols):
+            yield named_tuple_class(**row)
+
+    def iter_chunk_dict(self, cols: Optional[Union[str, Sequence[str]]] = None, *, chunk_size: Optional[int] = 4096)-> Generator[Dict[str, np.ndarray], None, None]:
+        """ Returns a generator that reads one chunk of rows at a time from the table into a dictionary. The dictionary
+        is a map of column names to numpy arrays of the column data type.
+
+        If the table is refreshing and no update graph locks are currently being held, the generator will try to acquire
+        the shared lock of the update graph before reading the table data. This provides a consistent view of the data.
+        The side effect of this is that the table will not be able to refresh while the table is being iterated on.
+        Additionally, the generator internally maintains a fill context. The auto acquired shared lock and the fill
+        context will be released after the generator is destroyed. That can happen implicitly when the generator
+        is used in a for-loop. When the generator is not used in a for-loop, to prevent resource leaks, it must be closed
+        after use by either (1) by setting it to None, (2) using the del statement, or (3) calling the close() method on it.
+
+        Args:
+            cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
+            chunk_size (int, Optional): The number of rows to read at a time. Default is 4096.
+
+        Returns:
+            A generator that yields a dictionary of column names to numpy arrays.
+
+        Raises
+            ValueError
+        """
+        from deephaven._table_reader import _table_reader_chunks  # to prevent circular import
+
+        return _table_reader_chunks(self, cols=cols, row_set=self.j_table.getRowSet(), chunk_size=chunk_size,
                                         prev=False, to_numpy=True)
+
+    def iter_chunk_tuple(self, cols: Optional[Union[str, Sequence[str]]] = None, *, chunk_size: Optional[int] = 4096,
+                         name: str = 'Deephaven')-> Generator[Tuple[str, np.ndarray], None, None]:
+        """ Returns a generator that reads one chunk of rows at a time from the table into a named tuple. The named
+        tuple is made up of fields with their names being the column names and their values being numpy arrays of the
+        column data types.
+
+        If the table is refreshing and no update graph locks are currently being held, the generator will try to acquire
+        the shared lock of the update graph before reading the table data. This provides a consistent view of the data.
+        The side effect of this is that the table will not be able to refresh while the table is being iterated on.
+        Additionally, the generator internally maintains a fill context. The auto acquired shared lock and the fill
+        context will be released after the generator is destroyed. That can happen implicitly when the generator
+        is used in a for-loop. When the generator is not used in a for-loop, to prevent resource leaks, it must be closed
+        after use by either (1) by setting it to None, (2) using the del statement, or (3) calling the close() method on it.
+
+        Args:
+            cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
+            chunk_size (int, Optional): The number of rows to read at a time. Default is 4096.
+            name (str): The name of the named tuple. Default is 'Deephaven'.
+
+        Returns:
+            A generator that yields a dictionary of column names to numpy arrays.
+
+        Raises:
+            ValueError
+        """
+        from deephaven._table_reader import _table_reader_chunks  # to prevent circular import
+        named_tuple_class = namedtuple(name, cols or [col.name for col in self.columns], rename=False)
+
+        for chunk in _table_reader_chunks(self, cols=cols, row_set=self.j_table.getRowSet(), chunk_size=chunk_size,
+                                        prev=False, to_numpy=True):
+            yield named_tuple_class(**chunk)
 
     def has_columns(self, cols: Union[str, Sequence[str]]):
         """Whether this table contains a column for each of the provided names, return False if any of the columns is

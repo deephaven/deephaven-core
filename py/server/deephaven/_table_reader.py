@@ -47,7 +47,7 @@ def _table_reader_rows(table: Table, cols: Optional[Union[str, Sequence[str]]]) 
                 col_dict[col_def.name] = chunk_dict[col_def.name][i]
             yield col_dict
 
-def _table_reader_chunks(table: Table, *, cols: Optional[Union[str, Sequence[str]]], row_set: jpy.JType, chunk_size: Optional[int],
+def _table_reader_chunks(table: Table, *, cols: Optional[Union[str, Sequence[str]]], row_set: jpy.JType, chunk_size: Optional[int] = 4096,
                          prev: bool = False, to_numpy: bool = True) -> Generator[Dict[str, np.ndarray], None, None]:
     """ A generator that reads the chunks of rows over the given row set of a table into a dictionary. The dictionary is
     a map of column names to numpy arrays.
@@ -56,7 +56,7 @@ def _table_reader_chunks(table: Table, *, cols: Optional[Union[str, Sequence[str
         table (Table):  The table to read.
         cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
         row_set (jpy.JType): The row set to read.
-        chunk_size (Optional[int]): The number of rows to read at a time. If None, all rows in the row set are read.
+        chunk_size (Optional[int]): The number of rows to read at a time. Default is 4096.
         prev (bool): If True, read the previous values. Default is False.
         to_numpy (bool): If True, convert the column data to numpy arrays. Default is True.
 
