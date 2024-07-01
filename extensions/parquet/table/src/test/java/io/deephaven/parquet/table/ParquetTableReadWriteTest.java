@@ -164,7 +164,7 @@ public final class ParquetTableReadWriteTest {
                         "someCharColumn = (char)i",
                         "someTime = DateTimeUtils.now() + i",
                         "someKey = `` + (int)(i /100)",
-                        "someBiColumn = java.math.BigInteger.valueOf(ii)",
+                        "someBiColumn = i % 10 == 0 ? null : java.math.BigInteger.valueOf(ii)",
                         "someDateColumn = i % 10 == 0 ? null : java.time.LocalDate.ofEpochDay(i)",
                         "someTimeColumn = i % 10 == 0 ? null : java.time.LocalTime.of(i%24, i%60, (i+10)%60)",
                         "someDateTimeColumn = i % 10 == 0 ? null : java.time.LocalDateTime.of(2000+i%10, i%12+1, i%30+1, (i+4)%24, (i+5)%60, (i+6)%60, i)",
@@ -183,10 +183,10 @@ public final class ParquetTableReadWriteTest {
                         "nullDateColumn = (java.time.LocalDate)null",
                         "nullTimeColumn = (java.time.LocalTime)null"));
         if (includeBigDecimal) {
-            columns.add("bdColumn = java.math.BigDecimal.valueOf(ii).stripTrailingZeros()");
+            columns.add("bdColumn = i % 10 == 0 ? null : java.math.BigDecimal.valueOf(ii).stripTrailingZeros()");
         }
         if (includeSerializable) {
-            columns.add("someSerializable = new SomeSillyTest(i)");
+            columns.add("someSerializable = i % 10 == 0 ? null : new SomeSillyTest(i)");
         }
         return TableTools.emptyTable(size).select(
                 Selectable.from(columns));
@@ -1369,8 +1369,8 @@ public final class ParquetTableReadWriteTest {
     @Test
     public void decimalLogicalTypeTest() {
         final Table expected = TableTools.emptyTable(100_000).update(
-                "DecimalIntCol = java.math.BigDecimal.valueOf(ii*12, 5)",
-                "DecimalLongCol = java.math.BigDecimal.valueOf(ii*212, 8)");
+                "DecimalIntCol = ii % 10 == 0 ? null : java.math.BigDecimal.valueOf(ii*12, 5)",
+                "DecimalLongCol = ii % 10 == 0 ? null : java.math.BigDecimal.valueOf(ii*212, 8)");
 
         {
             // This reference file has Decimal logical type columns stored as INT32 and INT64 physical types
@@ -2347,6 +2347,26 @@ public final class ParquetTableReadWriteTest {
         writeTable(anotherTable, pqDotFile.getPath());
         fromDisk = readTable(parentURI.toString());
         assertTableEquals(fromDisk, partitionedTable);
+    }
+
+    @Test
+    public void readParquetFilesWithCodec() {
+        final Table table = TableTools.emptyTable(10000)
+                .update("bdColumn = java.math.BigDecimal.valueOf(ii).stripTrailingZeros()",
+                        "biColumn = i % 10 == 0 ? null : java.math.BigInteger.valueOf(ii*512)")
+                .select();
+
+        // Set codecs for each column
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .addColumnCodec("bdColumn", "io.deephaven.util.codec.BigDecimalCodec", "20,1,allowrounding")
+                .addColumnCodec("biColumn", "io.deephaven.util.codec.BigIntegerCodec")
+                .build();
+
+        final File parentDir = new File(rootFile, "tempDir");
+        parentDir.mkdir();
+        final File dest = new File(parentDir, "dataWithCodecInfo.parquet");
+        ParquetTools.writeTable(table, dest.getPath(), instructions);
+        checkSingleTable(table, dest);
     }
 
     @Test

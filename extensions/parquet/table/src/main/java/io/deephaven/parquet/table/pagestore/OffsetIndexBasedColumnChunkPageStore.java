@@ -80,7 +80,8 @@ final class OffsetIndexBasedColumnChunkPageStore<ATTR extends Any> extends Colum
             numPages = offsetIndex.getPageCount();
             Assert.gtZero(numPages, "numPages");
             pageStates = new AtomicReferenceArray<>(numPages);
-            columnPageDirectAccessor = columnChunkReader.getPageAccessor(offsetIndex);
+            columnPageDirectAccessor =
+                    columnChunkReader.getPageAccessor(offsetIndex, toPage.getPageMaterializerFactory());
 
             if (numPages == 1) {
                 fixedPageSize = numRows();

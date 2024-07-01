@@ -28,6 +28,6 @@ TEST_CASE("TableHandle Created By DoPut", "[attributes]") {
   CHECK(table.IsStatic());
   // The columns all have the same size, so look at the source data for any one of them and get its size
   auto expected_size = static_cast<int64_t>(tm.ColumnData().ImportDate().size());
-  CHECK(table.NumRows() == expected_size);
+  CHECK(expected_size == table.NumRows());
 }
 }  // namespace deephaven::client::tests

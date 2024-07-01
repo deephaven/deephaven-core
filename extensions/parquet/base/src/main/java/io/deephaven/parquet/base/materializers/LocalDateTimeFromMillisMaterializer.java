@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 public class LocalDateTimeFromMillisMaterializer extends ObjectMaterializerBase<LocalDateTime>
         implements PageMaterializer {
 
-    public static final PageMaterializerFactory Factory = new PageMaterializerFactory() {
+    public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
             return new LocalDateTimeFromMillisMaterializer(dataReader, (LocalDateTime) nullValue, numValues);

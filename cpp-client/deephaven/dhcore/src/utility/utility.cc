@@ -104,7 +104,7 @@ void TrueOrThrowHelper(const DebugInfo &debug_info) {
 
 std::string FormatDebugString(const char *func, const char *file, size_t line,
     const std::string &message) {
-  return fmt::format("{}@{}:{}: {}", func, file, line, message);
+  return fmt::format("{}: {}@{}:{}", message, func, file, line);
 }
 
 std::string GetWhat(std::exception_ptr eptr) {

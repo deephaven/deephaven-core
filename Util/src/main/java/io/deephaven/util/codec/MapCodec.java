@@ -115,11 +115,10 @@ public abstract class MapCodec<K, V> implements ObjectCodec<Map<K, V>> {
 
     @Nullable
     @Override
-    public Map<K, V> decode(@NotNull final byte[] input, final int offset, final int length) {
-        if (input.length == 0) {
+    public Map<K, V> decode(@NotNull final ByteBuffer byteBuffer) {
+        if (byteBuffer.remaining() == 0) {
             return null;
         }
-        final ByteBuffer byteBuffer = ByteBuffer.wrap(input);
         final int size = byteBuffer.getInt();
         if (size == 0) {
             return Collections.emptyMap();
@@ -129,11 +128,20 @@ public abstract class MapCodec<K, V> implements ObjectCodec<Map<K, V>> {
             final V value = decodeValue(byteBuffer);
             return Collections.singletonMap(key, value);
         }
-        final LinkedHashMap<K, V> result = new LinkedHashMap<>(size);
+        final Map<K, V> result = new LinkedHashMap<>(size);
         for (int ii = 0; ii < size; ++ii) {
             result.put(decodeKey(byteBuffer), decodeValue(byteBuffer));
         }
         return Collections.unmodifiableMap(result);
+    }
+
+    @Nullable
+    @Override
+    public Map<K, V> decode(@NotNull final byte[] input, final int offset, final int length) {
+        if (input.length == 0) {
+            return null;
+        }
+        return decode(ByteBuffer.wrap(input, offset, length));
     }
 
     /**
