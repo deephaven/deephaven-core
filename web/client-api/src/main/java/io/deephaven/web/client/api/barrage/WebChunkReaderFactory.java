@@ -3,6 +3,10 @@
 //
 package io.deephaven.web.client.api.barrage;
 
+import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.WritableByteChunk;
+import io.deephaven.chunk.WritableObjectChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.extensions.barrage.chunk.BooleanChunkReader;
 import io.deephaven.extensions.barrage.chunk.ByteChunkReader;
 import io.deephaven.extensions.barrage.chunk.CharChunkReader;
@@ -15,6 +19,7 @@ import io.deephaven.extensions.barrage.chunk.LongChunkReader;
 import io.deephaven.extensions.barrage.chunk.VarBinaryChunkInputStreamGenerator;
 import io.deephaven.extensions.barrage.chunk.VarListChunkReader;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
+import io.deephaven.util.BooleanUtils;
 import io.deephaven.web.client.api.DateWrapper;
 import io.deephaven.web.client.api.LongWrapper;
 import org.apache.arrow.flatbuf.Date;
@@ -106,7 +111,34 @@ public class WebChunkReaderFactory implements ChunkReaderFactory {
                                 outChunk, outOffset, totalRows);
             }
             case Type.Bool: {
-                return new BooleanChunkReader();
+                BooleanChunkReader subReader = new BooleanChunkReader();
+                return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset, totalRows) -> {
+                    try (final WritableByteChunk<Values> inner = (WritableByteChunk<Values>) subReader.readChunk(
+                            fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
+
+                        final WritableObjectChunk<Boolean, Values> chunk;
+                        if (outChunk != null) {
+                            chunk = outChunk.asWritableObjectChunk();
+                        } else {
+                            int numRows = Math.max(totalRows, inner.size());
+                            chunk = WritableObjectChunk.makeWritableChunk(numRows);
+                            chunk.setSize(numRows);
+                        }
+
+                        if (outChunk == null) {
+                            // if we're not given an output chunk then we better be writing at the front of the new one
+                            Assert.eqZero(outOffset, "outOffset");
+                        }
+
+                        for (int ii = 0; ii < inner.size(); ++ii) {
+                            byte value = inner.get(ii);
+                            chunk.set(outOffset + ii, BooleanUtils.byteAsBoolean(value));
+                        }
+
+                        return chunk;
+                    }
+
+                };
             }
             case Type.Date: {
                 Date t = new Date();

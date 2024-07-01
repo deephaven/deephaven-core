@@ -441,7 +441,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                     // no constituent column, call super
                     return super.getData(index, column);
                 }
-                if (barrageSubscription.<Integer>getData(index, rowDepthCol.getIndex()) != constituentDepth) {
+                if (barrageSubscription.<Integer>getData(index, rowDepthCol.getIndex()).asInt() != constituentDepth) {
                     // not at constituent depth, call super
                     return super.getData(index, column);
                 }
@@ -456,7 +456,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                     // no constituent column, call super
                     return super.getData(index, column);
                 }
-                if (barrageSubscription.<Integer>getData(index, rowDepthCol.getIndex()) != constituentDepth) {
+                if (barrageSubscription.<Integer>getData(index, rowDepthCol.getIndex()).asInt() != constituentDepth) {
                     // not at constituent depth, call super
                     return super.getData(index, column);
                 }
@@ -471,7 +471,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                     // no constituent column, call super
                     return super.getFormat(index, column);
                 }
-                if (barrageSubscription.<Integer>getData(index, rowDepthCol.getIndex()) != constituentDepth) {
+                if (barrageSubscription.<Integer>getData(index, rowDepthCol.getIndex()).asInt() != constituentDepth) {
                     // not at constituent depth, call super
                     return super.getFormat(index, column);
                 }
@@ -486,7 +486,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                     // no constituent column, call super
                     return super.getFormat(index, column);
                 }
-                if (barrageSubscription.<Integer>getData(index, rowDepthCol.getIndex()) != constituentDepth) {
+                if (barrageSubscription.<Integer>getData(index, rowDepthCol.getIndex()).asInt() != constituentDepth) {
                     // not at constituent depth, call super
                     return super.getFormat(index, column);
                 }
@@ -536,7 +536,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
              */
             @JsProperty(name = "isExpanded")
             public boolean isExpanded() {
-                return barrageSubscription.getData(index, rowExpandedCol.getIndex()) == Boolean.TRUE;
+                return barrageSubscription.getData(index, rowExpandedCol.getIndex()).uncheckedCast() == Boolean.TRUE;
             }
 
             /**
@@ -547,7 +547,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
              */
             @JsProperty(name = "hasChildren")
             public boolean hasChildren() {
-                return barrageSubscription.getData(index, rowExpandedCol.getIndex()) != null;
+                return barrageSubscription.getData(index, rowExpandedCol.getIndex()).uncheckedCast() != null;
             }
 
             /**

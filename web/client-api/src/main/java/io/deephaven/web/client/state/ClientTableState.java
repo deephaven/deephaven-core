@@ -62,7 +62,7 @@ public final class ClientTableState extends TableConfig {
         // be rewritten to skip the trip through Class
         return Arrays.stream(columnTypes()).map(dataType -> {
             if (dataType == Boolean.class || dataType == boolean.class) {
-                return ChunkType.Byte;
+                return ChunkType.Object;
             }
             // JS client holds date objects as objects, not as longs
             // if (dataType == DateWrapper.class) {

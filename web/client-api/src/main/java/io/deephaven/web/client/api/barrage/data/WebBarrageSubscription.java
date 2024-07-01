@@ -44,118 +44,35 @@ public abstract class WebBarrageSubscription {
     public static WebBarrageSubscription subscribe(ClientTableState cts, ViewportChangedHandler viewportChangedHandler,
             DataChangedHandler dataChangedHandler) {
 
-        WebDataSink[] dataSinks = new WebDataSink[cts.columnTypes().length];
+        WebColumnData[] dataSinks = new WebColumnData[cts.columnTypes().length];
         for (int i = 0; i < dataSinks.length; i++) {
             JsArray<Any> arr = JsData.newArray(cts.columnTypes()[i].getCanonicalName());
             switch (cts.chunkTypes()[i]) {
                 case Boolean:
-                    break;
+                    throw new IllegalStateException("Boolean unsupported here");
                 case Char:
+                    dataSinks[i] = new WebCharColumnData();
                     break;
                 case Byte:
-                    dataSinks[i] = new WebDataSink() {
-                        @Override
-                        public void fillChunk(Chunk<?> data, PrimitiveIterator.OfLong destIterator) {
-                            ByteChunk<?> byteChunk = data.asByteChunk();
-                            int i = 0;
-                            while (destIterator.hasNext()) {
-                                arr.setAt((int) destIterator.nextLong(), Js.asAny(byteChunk.get(i++)));
-                            }
-                        }
-
-                        @Override
-                        public <T> T get(long position) {
-                            return (T) arr.getAt((int) position);
-                        }
-                    };
+                    dataSinks[i] = new WebByteColumnData();
                     break;
                 case Short:
-                    dataSinks[i] = new WebDataSink() {
-                        @Override
-                        public void fillChunk(Chunk<?> data, PrimitiveIterator.OfLong destIterator) {
-                            ShortChunk<?> shortChunk = data.asShortChunk();
-                            int i = 0;
-                            while (destIterator.hasNext()) {
-                                arr.setAt((int) destIterator.nextLong(), Js.asAny(shortChunk.get(i++)));
-                            }
-                        }
-
-                        @Override
-                        public <T> T get(long position) {
-                            return (T) arr.getAt((int) position);
-                        }
-                    };
-
+                    dataSinks[i] = new WebShortColumnData();
                     break;
                 case Int:
-                    dataSinks[i] = new WebDataSink() {
-                        @Override
-                        public void fillChunk(Chunk<?> data, PrimitiveIterator.OfLong destIterator) {
-                            IntChunk<?> intChunk = data.asIntChunk();
-                            int i = 0;
-                            while (destIterator.hasNext()) {
-                                arr.setAt((int) destIterator.nextLong(), Js.asAny(intChunk.get(i++)));
-                            }
-                        }
-
-                        @Override
-                        public <T> T get(long position) {
-                            return (T) arr.getAt((int) position);
-                        }
-                    };
+                    dataSinks[i] = new WebIntColumnData();
                     break;
                 case Long:
-                    dataSinks[i] = new WebDataSink() {
-                        @Override
-                        public void fillChunk(Chunk<?> data, PrimitiveIterator.OfLong destIterator) {
-                            LongChunk<?> longChunk = data.asLongChunk();
-                            int i = 0;
-                            while (destIterator.hasNext()) {
-                                arr.setAt((int) destIterator.nextLong(), Js.asAny(longChunk.get(i++)));
-                            }
-                        }
-
-                        @Override
-                        public <T> T get(long position) {
-                            return (T) arr.getAt((int) position);
-                        }
-                    };
+                    dataSinks[i] = new WebLongColumnData();
                     break;
                 case Float:
+                    dataSinks[i] = new WebFloatColumnData();
                     break;
                 case Double:
-                    dataSinks[i] = new WebDataSink() {
-                        @Override
-                        public void fillChunk(Chunk<?> data, PrimitiveIterator.OfLong destIterator) {
-                            DoubleChunk<?> doubleChunk = data.asDoubleChunk();
-                            int i = 0;
-                            while (destIterator.hasNext()) {
-                                arr.setAt((int) destIterator.nextLong(), Js.asAny(doubleChunk.get(i++)));
-                            }
-                        }
-
-                        @Override
-                        public <T> T get(long position) {
-                            return (T) arr.getAt((int) position);
-                        }
-                    };
+                    dataSinks[i] = new WebDoubleColumnData();
                     break;
                 case Object:
-                    dataSinks[i] = new WebDataSink() {
-                        @Override
-                        public void fillChunk(Chunk<?> data, PrimitiveIterator.OfLong destIterator) {
-                            ObjectChunk<?, ?> objectChunk = data.asObjectChunk();
-                            int i = 0;
-                            while (destIterator.hasNext()) {
-                                arr.setAt((int) destIterator.nextLong(), Js.asAny(objectChunk.get(i++)));
-                            }
-                        }
-
-                        @Override
-                        public <T> T get(long position) {
-                            return (T) arr.getAt((int) position);
-                        }
-                    };
+                    dataSinks[i] = new WebObjectColumnData();
                     break;
             }
         }
@@ -174,28 +91,20 @@ public abstract class WebBarrageSubscription {
                 BitSet modifiedColumnSet);
     }
 
-    public interface WebDataSink {
-        void fillChunk(Chunk<?> data, PrimitiveIterator.OfLong destIterator);
-
-        default void ensureCapacity(long size) {}
-
-        <T> T get(long position);
-    }
-
     protected final ClientTableState state;
     protected final ViewportChangedHandler viewportChangedHandler;
     protected final DataChangedHandler dataChangedHandler;
     protected final RangeSet currentRowSet = RangeSet.empty();
 
     protected long capacity = 0;
-    protected WebDataSink[] destSources;
+    protected WebColumnData[] destSources;
 
     protected RangeSet serverViewport;
     protected BitSet serverColumns;
     protected boolean serverReverseViewport;
 
     protected WebBarrageSubscription(ClientTableState state, ViewportChangedHandler viewportChangedHandler,
-            DataChangedHandler dataChangedHandler, WebDataSink[] dataSinks) {
+            DataChangedHandler dataChangedHandler, WebColumnData[] dataSinks) {
         this.state = state;
         destSources = dataSinks;
         this.viewportChangedHandler = viewportChangedHandler;
@@ -238,7 +147,7 @@ public abstract class WebBarrageSubscription {
      * @return the value read from the table
      * @param <T> the expected type of the column to read
      */
-    public abstract <T> T getData(long key, int col);
+    public abstract Any getData(long key, int col);
 
     protected boolean isSubscribedColumn(int ii) {
         return serverColumns == null || serverColumns.get(ii);
@@ -252,7 +161,7 @@ public abstract class WebBarrageSubscription {
         private final Mode mode;
 
         public BlinkImpl(ClientTableState state, ViewportChangedHandler viewportChangedHandler,
-                DataChangedHandler dataChangedHandler, WebDataSink[] dataSinks) {
+                DataChangedHandler dataChangedHandler, WebColumnData[] dataSinks) {
             super(state, viewportChangedHandler, dataChangedHandler, dataSinks);
             mode = Mode.BLINK;
         }
@@ -303,7 +212,7 @@ public abstract class WebBarrageSubscription {
         }
 
         @Override
-        public <T> T getData(long key, int col) {
+        public Any getData(long key, int col) {
             return destSources[col].get(key);
         }
     }
@@ -313,7 +222,7 @@ public abstract class WebBarrageSubscription {
         private final TreeMap<Long, Long> redirectedIndexes = new TreeMap<>();
 
         public RedirectedImpl(ClientTableState state, ViewportChangedHandler viewportChangedHandler,
-                DataChangedHandler dataChangedHandler, WebDataSink[] dataSinks) {
+                DataChangedHandler dataChangedHandler, WebColumnData[] dataSinks) {
             super(state, viewportChangedHandler, dataChangedHandler, dataSinks);
         }
 
@@ -473,7 +382,7 @@ public abstract class WebBarrageSubscription {
         }
 
         @Override
-        public <T> T getData(long key, int col) {
+        public Any getData(long key, int col) {
             return this.destSources[col].get(redirectedIndexes.get(key));
         }
 
