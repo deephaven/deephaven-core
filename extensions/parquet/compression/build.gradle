@@ -1,13 +1,14 @@
 plugins {
     id 'java-library'
     id 'io.deephaven.project.register'
+    id 'io.deephaven.hadoop-common-dependencies'
 }
 
 dependencies {
     api project(':Util')
 
     implementation libs.parquet.hadoop
-    Classpaths.inheritParquetHadoopConfiguration(project)
+    // Also inherits hadoop-common, see io.deephaven.hadoop-common-dependencies
 
     implementation project(':Configuration')
 

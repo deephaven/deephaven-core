@@ -13,6 +13,7 @@ groovy = "3.0.21"
 # Only bump this in concert with boringssl
 grpc = "1.58.0"
 guava = "33.2.0-jre"
+hadoop = "3.4.0"
 iceberg = "1.5.2"
 immutables = "2.9.2"
 jackson = "2.17.0"
@@ -80,6 +81,13 @@ grpc-testing = { module = "io.grpc:grpc-testing" }
 grpc-util = { module = "io.grpc:grpc-util" }
 
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
+
+hadoop-common = { module = "org.apache.hadoop:hadoop-common", version.ref = "hadoop" }
+hadoop-hdfs-client = { module = "org.apache.hadoop:hadoop-hdfs-client", version.ref = "hadoop" }
+# These are transitive, inlined versions; see io.deephaven.hadoop-common-dependencies
+woodstox-core = { module = "com.fasterxml.woodstox:woodstox-core", version = "6.6.2" }
+hadoop-shaded-guava = { module = "org.apache.hadoop.thirdparty:hadoop-shaded-guava", version = "1.2.0" }
+commons-collections = { module = "commons-collections:commons-collections", version = "3.2.2" }
 
 iceberg-api = { module = "org.apache.iceberg:iceberg-api" }
 iceberg-aws = { module = "org.apache.iceberg:iceberg-aws" }

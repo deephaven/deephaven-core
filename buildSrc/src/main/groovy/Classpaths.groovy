@@ -25,9 +25,6 @@ class Classpaths {
 
     static final String JETTY_VERSION = '9.4.44.v20210927'
 
-    static final String HADOOP_GROUP = 'org.apache.hadoop'
-    static final String HADOOP_VERSION = '3.4.0'
-
     static boolean addDependency(Configuration conf, String group, String name, String version, Action<? super DefaultExternalModuleDependency> configure = Actions.doNothing()) {
         if (!conf.dependencies.find { it.name == name && it.group == group}) {
             DefaultExternalModuleDependency dep = dependency group, name, version
@@ -56,34 +53,5 @@ class Classpaths {
                 force 'org.ow2.asm:asm-commons:9.2'
             }
         }
-    }
-
-    /** configName controls only the Configuration's classpath, all transitive dependencies are runtimeOnly */
-    static void inheritParquetHadoopConfiguration(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
-        Configuration config = p.configurations.getByName(configName)
-        addDependency(config, HADOOP_GROUP, 'hadoop-common', HADOOP_VERSION) {
-            it.setTransitive(false)
-            // Do not take any extra dependencies of this project transitively. We just want a few classes for
-            // configuration and compression codecs. For any additional required dependencies, add them separately, as
-            // done for woodstox, shaded-guava, etc. below. Or we can replace setTransitive(false) here with more
-            // exclusions (we want to avoid pulling in netty, loggers, jetty-util, guice and asm).
-        }
-
-        Configuration runtimeOnly = p.configurations.getByName(JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME)
-        addDependency(runtimeOnly, 'com.fasterxml.woodstox', 'woodstox-core', '6.6.2') {
-            it.because('hadoop-common required dependency for Configuration')
-        }
-        addDependency(runtimeOnly, 'org.apache.hadoop.thirdparty', 'hadoop-shaded-guava', '1.2.0') {
-            it.because('hadoop-common required dependency for Configuration')
-        }
-        addDependency(runtimeOnly, 'commons-collections', 'commons-collections', '3.2.2') {
-            it.because('hadoop-common required dependency for Configuration')
-        }
-    }
-
-    static void inheritIcebergHadoop(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
-        Configuration config = p.configurations.getByName(configName)
-        inheritParquetHadoopConfiguration(p, configName)
-        addDependency(config, HADOOP_GROUP, 'hadoop-hdfs-client', HADOOP_VERSION)
     }
 }

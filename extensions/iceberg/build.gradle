@@ -1,6 +1,7 @@
 plugins {
     id 'java-library'
     id 'io.deephaven.project.register'
+    id 'io.deephaven.hadoop-common-dependencies'
 }
 
 description 'Iceberg: Support to read iceberg catalogs.'
@@ -29,7 +30,9 @@ dependencies {
     implementation libs.iceberg.core
     implementation libs.iceberg.bundled.guava
 
-    Classpaths.inheritIcebergHadoop(project)
+    implementation libs.hadoop.hdfs.client
+    // Also inherits hadoop-common, see io.deephaven.hadoop-common-dependencies
+
     implementation libs.avro
 
     testImplementation libs.assertj
