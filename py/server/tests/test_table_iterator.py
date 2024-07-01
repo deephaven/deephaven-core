@@ -22,7 +22,7 @@ class TableIteratorTestCase(BaseTestCase):
         with self.subTest("Read chunks of rows in a static table"):
             test_table = read_csv("tests/data/test_table.csv")
             total_read_size = 0
-            for d in test_table.iter_rows(chunk_size=10):
+            for d in test_table.iter_chunk_dict(chunk_size=10):
                 self.assertEqual(len(d), len(test_table.columns))
                 for col in test_table.columns:
                     self.assertIn(col.name, d)
@@ -36,7 +36,7 @@ class TableIteratorTestCase(BaseTestCase):
             test_table = time_table("PT00:00:00.001").update(["X=i%11"]).sort("X")
             test_table.await_update()
             total_read_size = 0
-            for d in test_table.iter_rows(chunk_size=100):
+            for d in test_table.iter_chunk_dict(chunk_size=100):
                 self.assertEqual(len(d), len(test_table.columns))
                 for col in test_table.columns:
                     self.assertIn(col.name, d)
@@ -53,7 +53,7 @@ class TableIteratorTestCase(BaseTestCase):
             with ug.shared_lock(test_table):
                 total_read_size = 0
                 cols = ["X", "Z"]
-                for d in test_table.iter_rows(cols=cols, chunk_size=100):
+                for d in test_table.iter_chunk_dict(cols=cols, chunk_size=100):
                     self.assertEqual(len(d), len(cols))
                     for col in cols:
                         self.assertIn(col, d)
@@ -66,7 +66,7 @@ class TableIteratorTestCase(BaseTestCase):
         with self.subTest("Read in rows of a static table"):
             test_table = read_csv("tests/data/test_table.csv")
             total_read_size = 0
-            for d in test_table.iter_rows():
+            for d in test_table.iter_dict():
                 self.assertEqual(len(d), len(test_table.columns))
                 for col in test_table.columns:
                     self.assertIn(col.name, d)
@@ -78,7 +78,7 @@ class TableIteratorTestCase(BaseTestCase):
             test_table = time_table("PT00:00:00.001").update(["X=i%11"]).sort("X")
             test_table.await_update()
             total_read_size = 0
-            for d in test_table.iter_rows():
+            for d in test_table.iter_dict():
                 self.assertEqual(len(d), len(test_table.columns))
                 for col in test_table.columns:
                     self.assertIn(col.name, d)
@@ -96,7 +96,7 @@ class TableIteratorTestCase(BaseTestCase):
             with ug.shared_lock(test_table):
                 total_read_size = 0
                 cols = ["X", "Z"]
-                for d in test_table.iter_rows(cols=cols):
+                for d in test_table.iter_dict(cols=cols):
                     self.assertEqual(len(d), len(cols))
                     for col in cols:
                         self.assertIn(col, d)
@@ -109,7 +109,7 @@ class TableIteratorTestCase(BaseTestCase):
     def test_direct_call_chunks(self):
         with self.subTest("direct call rows in a static table"):
             test_table = read_csv("tests/data/test_table.csv")
-            t_iter = test_table.iter_rows(chunk_size=10)
+            t_iter = test_table.iter_chunk_dict(chunk_size=10)
             for d in t_iter:
                 self.assertEqual(len(d), len(test_table.columns))
                 for col in test_table.columns:
@@ -124,7 +124,7 @@ class TableIteratorTestCase(BaseTestCase):
             test_table.await_update()
             total_read_size = 0
             cols = ["X", "Z"]
-            t_iter = test_table.iter_rows(cols=cols, chunk_size=100)
+            t_iter = test_table.iter_chunk_dict(cols=cols, chunk_size=100)
             while True:
                 try:
                     d = next(t_iter)
@@ -143,7 +143,7 @@ class TableIteratorTestCase(BaseTestCase):
             test_table = time_table("PT00:00:00.001").update(["X=i", "Y=(double)i*10", "Z= i%2 == 0? true : false"]).sort("X")
             test_table.await_update()
             cols = ["X", "Z"]
-            t_iter = test_table.iter_rows(cols=cols, chunk_size=100)
+            t_iter = test_table.iter_chunk_dict(cols=cols, chunk_size=100)
             while True:
                 d = next(t_iter)
                 self.assertEqual(len(d), len(cols))
@@ -159,7 +159,7 @@ class TableIteratorTestCase(BaseTestCase):
     def test_direct_call_rows(self):
         with self.subTest("direct call rows in a static table"):
             test_table = read_csv("tests/data/test_table.csv")
-            t_iter = test_table.iter_rows()
+            t_iter = test_table.iter_dict()
             for d in t_iter:
                 self.assertEqual(len(d), len(test_table.columns))
                 for col in test_table.columns:
@@ -174,7 +174,7 @@ class TableIteratorTestCase(BaseTestCase):
             test_table.await_update()
             total_read_size = 0
             cols = ["X", "Z"]
-            t_iter = test_table.iter_rows(cols=cols)
+            t_iter = test_table.iter_dict(cols=cols)
             while True:
                 try:
                     d = next(t_iter)
@@ -193,7 +193,7 @@ class TableIteratorTestCase(BaseTestCase):
             test_table = time_table("PT00:00:00.001").update(["X=i", "Y=(double)i*10", "Z= i%2 == 0? true : false"]).sort("X")
             test_table.await_update()
             cols = ["X", "Z"]
-            t_iter = test_table.iter_rows(cols=cols)
+            t_iter = test_table.iter_chunk_dict(cols=cols)
             while True:
                 d = next(t_iter)
                 self.assertEqual(len(d), len(cols))
@@ -232,7 +232,7 @@ class TableIteratorTestCase(BaseTestCase):
         test_table = new_table(cols=input_cols)
 
         with self.subTest("Chunks"):
-            for d in test_table.iter_rows(chunk_size=10):
+            for d in test_table.iter_chunk_dict(chunk_size=10):
                 self.assertEqual(len(d), len(test_table.columns))
                 for col in test_table.columns:
                     self.assertIn(col.name, d)
@@ -240,7 +240,7 @@ class TableIteratorTestCase(BaseTestCase):
                     self.assertEqual(isinstance(d[col.name], np.ndarray), True)
 
         with self.subTest("Rows"):
-            for d in test_table.iter_rows():
+            for d in test_table.iter_dict():
                 self.assertEqual(len(d), len(test_table.columns))
                 for col in test_table.columns:
                     self.assertIn(col.name, d)
