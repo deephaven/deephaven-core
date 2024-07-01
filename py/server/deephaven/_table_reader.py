@@ -67,7 +67,6 @@ def _table_reader_chunks(table: Table, *, cols: Optional[Union[str, Sequence[str
 
     row_sequence_iterator = row_set.getRowSequenceIterator()
     col_sources = [table.j_table.getColumnSource(col_def.name) for col_def in col_defs]
-    chunk_size = row_set.size() if not chunk_size else chunk_size
     j_reader_context = _JTableUpdateDataReader.makeContext(chunk_size, *col_sources)
     with update_graph.auto_locking_ctx(table):
         try:
