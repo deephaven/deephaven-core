@@ -48,7 +48,8 @@ class TableIteratorTestCase(BaseTestCase):
             self.assertFalse(ug.has_shared_lock(test_table))
 
         with self.subTest("Read chunks of rows on selected columns in a ticking table under shared lock"):
-            test_table = time_table("PT00:00:00.001").update(["X=i", "Y=(double)i*10", "Z= i%2 == 0? true : false"]).sort("X")
+            test_table = time_table("PT00:00:00.001").update(
+                ["X=i", "Y=(double)i*10", "Z= i%2 == 0? true : false"]).sort("X")
             test_table.await_update()
             with ug.shared_lock(test_table):
                 total_read_size = 0
@@ -91,7 +92,8 @@ class TableIteratorTestCase(BaseTestCase):
             self.assertFalse(ug.has_shared_lock(test_table))
 
         with self.subTest("Read in rows on selected columns of a ticking table under shared lock"):
-            test_table = time_table("PT00:00:00.001").update(["X=i", "Y=(double)i*10", "Z= i%2 == 0? true : false"]).sort("X")
+            test_table = time_table("PT00:00:00.001").update(
+                ["X=i", "Y=(double)i*10", "Z= i%2 == 0? true : false"]).sort("X")
             test_table.await_update()
             with ug.shared_lock(test_table):
                 total_read_size = 0
@@ -120,7 +122,8 @@ class TableIteratorTestCase(BaseTestCase):
                 next(t_iter)
 
         with self.subTest("direct call all rows in a ticking table"):
-            test_table = time_table("PT00:00:00.001").update(["X=i", "Y=(double)i*10", "Z= i%2 == 0? true : false"]).sort("X")
+            test_table = time_table("PT00:00:00.001").update(
+                ["X=i", "Y=(double)i*10", "Z= i%2 == 0? true : false"]).sort("X")
             test_table.await_update()
             total_read_size = 0
             cols = ["X", "Z"]
@@ -140,7 +143,8 @@ class TableIteratorTestCase(BaseTestCase):
             self.assertFalse(ug.has_shared_lock(test_table))
 
         with self.subTest("direct call not all rows in a ticking table"):
-            test_table = time_table("PT00:00:00.001").update(["X=i", "Y=(double)i*10", "Z= i%2 == 0? true : false"]).sort("X")
+            test_table = time_table("PT00:00:00.001").update(
+                ["X=i", "Y=(double)i*10", "Z= i%2 == 0? true : false"]).sort("X")
             test_table.await_update()
             cols = ["X", "Z"]
             t_iter = test_table.iter_chunk_dict(cols=cols, chunk_size=100)
@@ -170,7 +174,8 @@ class TableIteratorTestCase(BaseTestCase):
                 next(t_iter)
 
         with self.subTest("direct call all rows in a ticking table"):
-            test_table = time_table("PT00:00:00.001").update(["X=i", "Y=(double)i*10", "Z= i%2 == 0? true : false"]).sort("X")
+            test_table = time_table("PT00:00:00.001").update(
+                ["X=i", "Y=(double)i*10", "Z= i%2 == 0? true : false"]).sort("X")
             test_table.await_update()
             total_read_size = 0
             cols = ["X", "Z"]
@@ -190,7 +195,8 @@ class TableIteratorTestCase(BaseTestCase):
             self.assertFalse(ug.has_shared_lock(test_table))
 
         with self.subTest("direct call not all rows in a ticking table"):
-            test_table = time_table("PT00:00:00.001").update(["X=i", "Y=(double)i*10", "Z= i%2 == 0? true : false"]).sort("X")
+            test_table = time_table("PT00:00:00.001").update(
+                ["X=i", "Y=(double)i*10", "Z= i%2 == 0? true : false"]).sort("X")
             test_table.await_update()
             cols = ["X", "Z"]
             t_iter = test_table.iter_chunk_dict(cols=cols)
@@ -220,7 +226,7 @@ class TableIteratorTestCase(BaseTestCase):
             char_col(name="Char", data='-1'),
             short_col(name="Short", data=[1, -1]),
             int_col(name="Int", data=[1, -1]),
-            long_col(name="Long", data=[1, 2**63 -1 ]),
+            long_col(name="Long", data=[1, 2 ** 63 - 1]),
             long_col(name="NPLong", data=np.array([1, -1], dtype=np.int8)),
             float_col(name="Float", data=[1.01, -1.01]),
             double_col(name="Double", data=[1.01, -1.01]),
@@ -253,6 +259,122 @@ class TableIteratorTestCase(BaseTestCase):
                             self.assertTrue(v_type == CustomClass or v_type == jpy.get_type("java.util.ArrayList"))
                     else:
                         self.assertTrue(np.can_cast(col.data_type.np_type, np.dtype(v_type)))
+
+    def test_iteration_in_chunks_tuple(self):
+        with self.subTest("Read chunks of rows in a static table - tuple"):
+            test_table = read_csv("tests/data/test_table.csv")
+            total_read_size = 0
+            for d in test_table.iter_chunk_tuple(chunk_size=10):
+                self.assertEqual(len(d), len(test_table.columns))
+                for i, col in enumerate(test_table.columns):
+                    self.assertEqual(col.name, d._fields[i])
+                    self.assertEqual(d[i].dtype, col.data_type.np_type)
+                    self.assertLessEqual(len(d[i]), 10)
+                    self.assertEqual(isinstance(d[i], np.ndarray), True)
+                total_read_size += len(d[i])
+            self.assertEqual(total_read_size, test_table.size)
+
+        with self.subTest("Read chunks of rows in a ticking table - tuple"):
+            test_table = time_table("PT00:00:00.001").update(["X=i%11"]).sort("X")
+            test_table.await_update()
+            total_read_size = 0
+            for d in test_table.iter_chunk_tuple(chunk_size=100):
+                self.assertEqual(len(d), len(test_table.columns))
+                for i, col in enumerate(test_table.columns):
+                    self.assertEqual(col.name, d._fields[i])
+                    self.assertEqual(d[i].dtype, col.data_type.np_type)
+                    self.assertLessEqual(len(d[i]), 100)
+                time.sleep(0.1)
+                total_read_size += len(d[i])
+            self.assertEqual(total_read_size, test_table.size)
+            self.assertFalse(ug.has_shared_lock(test_table))
+
+        with self.subTest("Read chunks of rows on selected columns in a ticking table under shared lock - tuple"):
+            test_table = time_table("PT00:00:00.001").update(
+                ["X=i", "Y=(double)i*10", "Z= i%2 == 0? true : false"]).sort("X")
+            test_table.await_update()
+            with ug.shared_lock(test_table):
+                total_read_size = 0
+                cols = ["X", "Z"]
+                for d in test_table.iter_chunk_tuple(cols=cols, chunk_size=100):
+                    self.assertEqual(len(d), len(cols))
+                    for i, col in enumerate(cols):
+                        self.assertEqual(col, d._fields[i])
+                        self.assertLessEqual(len(d[i]), 100)
+                    time.sleep(0.1)
+                    total_read_size += len(d[i])
+                self.assertEqual(total_read_size, test_table.size)
+
+    def test_iteration_in_rows_tuple(self):
+        with self.subTest("Read in rows of a static table - tuple"):
+            test_table = read_csv("tests/data/test_table.csv")
+            total_read_size = 0
+            for d in test_table.iter_tuple():
+                self.assertEqual(len(d), len(test_table.columns))
+                for i, col in enumerate(test_table.columns):
+                    self.assertEqual(col.name, d._fields[i])
+                    self.assertTrue(np.can_cast(col.data_type.np_type, np.dtype(type(d[i]))))
+                total_read_size += 1
+            self.assertEqual(total_read_size, test_table.size)
+
+        with self.subTest("Read in rows of a ticking table - tuple"):
+            test_table = time_table("PT00:00:00.001").update(["X=i%11"]).sort("X")
+            test_table.await_update()
+            total_read_size = 0
+            for d in test_table.iter_tuple():
+                self.assertEqual(len(d), len(test_table.columns))
+                for i, col in enumerate(test_table.columns):
+                    self.assertEqual(col.name, d._fields[i])
+                    v_type = type(d[i])
+                    self.assertTrue(np.can_cast(col.data_type.np_type, np.dtype(v_type)) or
+                                    self.assertEqual(v_type, col.data_type.j_type))
+                time.sleep(0.001)
+                total_read_size += 1
+            self.assertEqual(total_read_size, test_table.size)
+            self.assertFalse(ug.has_shared_lock(test_table))
+
+        with self.subTest("Read in rows on selected columns of a ticking table under shared lock - tuple"):
+            test_table = time_table("PT00:00:00.001").update(
+                ["X=i", "Y=(double)i*10", "Z= i%2 == 0? true : false"]).sort("X")
+            test_table.await_update()
+            with ug.shared_lock(test_table):
+                total_read_size = 0
+                cols = ["X", "Z"]
+                for d in test_table.iter_tuple(cols=cols):
+                    self.assertEqual(len(d), len(cols))
+                    for i, col in enumerate(cols):
+                        self.assertEqual(col, d._fields[i])
+                    time.sleep(0.1)
+                    total_read_size += 1
+                self.assertEqual(total_read_size, test_table.size)
+                self.assertTrue(ug.has_shared_lock(test_table))
+            self.assertFalse(ug.has_shared_lock(test_table))
+
+    def test_iteration_tuple_unpack(self):
+        test_table = read_csv("tests/data/test_table.csv")
+        total_read_size = 0
+        for a, b, c, *_ in test_table.iter_tuple():
+            total_read_size += 1
+        self.assertEqual(total_read_size, test_table.size)
+
+        with self.subTest("Too few receiving variables"):
+            with self.assertRaises(ValueError):
+                test_table = read_csv("tests/data/test_table.csv")
+                for a, b, c, d in test_table.iter_tuple():
+                    ...
+
+        with self.subTest("Too many receiving variables"):
+            with self.assertRaises(ValueError):
+                test_table = read_csv("tests/data/test_table.csv")
+                for a, b, c, d, e, f in test_table.iter_tuple():
+                    ...
+
+    def test_iteration_tuple_name_error(self):
+        test_table = time_table("PT00:00:00.001").update(["from = i%11"])
+        with self.assertRaises(ValueError) as cm:
+            for t in test_table.iter_tuple():
+                pass
+        self.assertIn("'from'", str(cm.exception))
 
 
 if __name__ == '__main__':
