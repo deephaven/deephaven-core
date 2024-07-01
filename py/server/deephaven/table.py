@@ -527,7 +527,7 @@ class Table(JObjectWrapper):
 
         return _table_reader_rows(self, cols)
 
-    def iter_tuple(self, cols: Optional[Union[str, Sequence[str]]] = None, name: str = 'Deephaven') -> Generator[Tuple[str, Any], None, None]:
+    def iter_tuple(self, cols: Optional[Union[str, Sequence[str]]] = None, name: str = 'Deephaven') -> Generator[Tuple[Any], None, None]:
         """ Returns a generator that reads one row at a time from the table into a named tuple. The named tuple is made
         up of fields with their names being the column names and their values being of the column data types.
 
@@ -580,7 +580,7 @@ class Table(JObjectWrapper):
                                         prev=False, to_numpy=True)
 
     def iter_chunk_tuple(self, cols: Optional[Union[str, Sequence[str]]] = None, *, chunk_size: Optional[int] = 4096,
-                         name: str = 'Deephaven')-> Generator[Tuple[str, np.ndarray], None, None]:
+                         name: str = 'Deephaven')-> Generator[Tuple[np.ndarray], None, None]:
         """ Returns a generator that reads one chunk of rows at a time from the table into a named tuple. The named
         tuple is made up of fields with their names being the column names and their values being numpy arrays of the
         column data types.
