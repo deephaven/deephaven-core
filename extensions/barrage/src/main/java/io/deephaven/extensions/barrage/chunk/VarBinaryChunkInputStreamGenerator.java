@@ -396,7 +396,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
         }
     }
 
-    static <T> WritableObjectChunk<T, Values> extractChunkFromInputStream(
+    public static <T> WritableObjectChunk<T, Values> extractChunkFromInputStream(
             final DataInput is,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final PrimitiveIterator.OfLong bufferInfoIter,

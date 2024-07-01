@@ -40,7 +40,7 @@ public class FixedWidthChunkInputStreamGenerator {
      * @param <T> the result type
      * @return the resulting chunk of the buffer that is read
      */
-    static <T> WritableObjectChunk<T, Values> extractChunkFromInputStreamWithTypeConversion(
+    public static <T> WritableObjectChunk<T, Values> extractChunkFromInputStreamWithTypeConversion(
             final int elementSize,
             final StreamReaderOptions options,
             final TypeConversion<T> conversion,
