@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import contextlib
 import inspect
-from collections import namedtuple
 from enum import Enum
 from enum import auto
 from typing import Any, Optional, Callable, Dict, Generator, Tuple
@@ -522,12 +521,14 @@ class Table(JObjectWrapper):
 
         Returns:
             A generator that yields a dictionary of column names to scalar values.
+
+        Raises:
+            ValueError
         """
-        from deephaven._table_reader import _table_reader_rows # to prevent circular import
+        from deephaven._table_reader import _table_reader_dict # to prevent circular import
+        return _table_reader_dict(self, cols)
 
-        return _table_reader_rows(self, cols)
-
-    def iter_tuple(self, cols: Optional[Union[str, Sequence[str]]] = None, name: str = 'Deephaven') -> Generator[Tuple[Any], None, None]:
+    def iter_tuple(self, cols: Optional[Union[str, Sequence[str]]] = None, tuple_name: str = 'Deephaven') -> Generator[Tuple[Any, ...], None, None]:
         """ Returns a generator that reads one row at a time from the table into a named tuple. The named tuple is made
         up of fields with their names being the column names and their values being of the column data types.
 
@@ -541,18 +542,18 @@ class Table(JObjectWrapper):
 
         Args:
             cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read. Default is None.
-            name (str): The name of the named tuple. Default is 'Deephaven'.
+            tuple_name (str): The name of the named tuple. Default is 'Deephaven'.
 
         Returns:
-            A generator that yields a named tuple or regular tuple for each row in the table
+            A generator that yields a named tuple for each row in the table
+
+        Raises:
+            ValueError
         """
-        from deephaven._table_reader import _table_reader_rows # to prevent circular import
-        named_tuple_class = namedtuple(name, cols or [col.name for col in self.columns], rename=False)
+        from deephaven._table_reader import _table_reader_tuple # to prevent circular import
+        return _table_reader_tuple(self, cols, tuple_name = tuple_name)
 
-        for row in _table_reader_rows(self, cols):
-            yield named_tuple_class(**row)
-
-    def iter_chunk_dict(self, cols: Optional[Union[str, Sequence[str]]] = None, *, chunk_size: Optional[int] = 4096)-> Generator[Dict[str, np.ndarray], None, None]:
+    def iter_chunk_dict(self, cols: Optional[Union[str, Sequence[str]]] = None, *, chunk_size: int = 4096)-> Generator[Dict[str, np.ndarray], None, None]:
         """ Returns a generator that reads one chunk of rows at a time from the table into a dictionary. The dictionary
         is a map of column names to numpy arrays of the column data type.
 
@@ -566,7 +567,7 @@ class Table(JObjectWrapper):
 
         Args:
             cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
-            chunk_size (int, Optional): The number of rows to read at a time. Default is 4096.
+            chunk_size (int): The number of rows to read at a time. Default is 4096.
 
         Returns:
             A generator that yields a dictionary of column names to numpy arrays.
@@ -574,13 +575,13 @@ class Table(JObjectWrapper):
         Raises
             ValueError
         """
-        from deephaven._table_reader import _table_reader_chunks  # to prevent circular import
+        from deephaven._table_reader import _table_reader_chunk_dict  # to prevent circular import
 
-        return _table_reader_chunks(self, cols=cols, row_set=self.j_table.getRowSet(), chunk_size=chunk_size,
+        return _table_reader_chunk_dict(self, cols=cols, row_set=self.j_table.getRowSet(), chunk_size=chunk_size,
                                         prev=False, to_numpy=True)
 
-    def iter_chunk_tuple(self, cols: Optional[Union[str, Sequence[str]]] = None, *, chunk_size: Optional[int] = 4096,
-                         name: str = 'Deephaven')-> Generator[Tuple[np.ndarray], None, None]:
+    def iter_chunk_tuple(self, cols: Optional[Union[str, Sequence[str]]] = None, *, chunk_size: int = 4096,
+                         tuple_name: str = 'Deephaven')-> Generator[Tuple[np.ndarray, ...], None, None]:
         """ Returns a generator that reads one chunk of rows at a time from the table into a named tuple. The named
         tuple is made up of fields with their names being the column names and their values being numpy arrays of the
         column data types.
@@ -595,21 +596,17 @@ class Table(JObjectWrapper):
 
         Args:
             cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
-            chunk_size (int, Optional): The number of rows to read at a time. Default is 4096.
-            name (str): The name of the named tuple. Default is 'Deephaven'.
+            chunk_size (int): The number of rows to read at a time. Default is 4096.
+            tuple_name (str): The name of the named tuple. Default is 'Deephaven'.
 
         Returns:
-            A generator that yields a dictionary of column names to numpy arrays.
+            A generator that yields a named tuple for each row in the table.
 
         Raises:
             ValueError
         """
-        from deephaven._table_reader import _table_reader_chunks  # to prevent circular import
-        named_tuple_class = namedtuple(name, cols or [col.name for col in self.columns], rename=False)
-
-        for chunk in _table_reader_chunks(self, cols=cols, row_set=self.j_table.getRowSet(), chunk_size=chunk_size,
-                                        prev=False, to_numpy=True):
-            yield named_tuple_class(**chunk)
+        from deephaven._table_reader import _table_reader_chunk_tuple  # to prevent circular import
+        return _table_reader_chunk_tuple(self, cols=cols, chunk_size=chunk_size)
 
     def has_columns(self, cols: Union[str, Sequence[str]]):
         """Whether this table contains a column for each of the provided names, return False if any of the columns is
