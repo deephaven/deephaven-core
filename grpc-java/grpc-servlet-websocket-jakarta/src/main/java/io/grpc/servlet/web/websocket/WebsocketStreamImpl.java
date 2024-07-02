@@ -49,7 +49,7 @@ public class WebsocketStreamImpl extends AbstractWebsocketStreamImpl {
     private final class Sink implements AbstractServerStream.Sink {
 
         @Override
-        public void writeHeaders(Metadata headers) {
+        public void writeHeaders(Metadata headers, boolean flush) {
             // headers/trailers are always sent as asci, colon-delimited pairs, with \r\n separating them. The
             // trailer response must be prefixed with 0x80 (0r 0x81 if compressed), followed by the length of the
             // message
@@ -67,8 +67,11 @@ public class WebsocketStreamImpl extends AbstractWebsocketStreamImpl {
             message.flip();
             try {
                 // send in two separate payloads
-                websocketSession.getBasicRemote().sendBinary(prefix);
+                websocketSession.getBasicRemote().sendBinary(prefix, false);
                 websocketSession.getBasicRemote().sendBinary(message);
+                if (flush && websocketSession.getBasicRemote().getBatchingAllowed()) {
+                    websocketSession.getBasicRemote().flushBatch();
+                }
             } catch (IOException e) {
                 throw Status.fromThrowable(e).asRuntimeException();
             }
@@ -133,9 +136,8 @@ public class WebsocketStreamImpl extends AbstractWebsocketStreamImpl {
             message.flip();
             try {
                 // send in two separate messages
-                websocketSession.getBasicRemote().sendBinary(prefix);
+                websocketSession.getBasicRemote().sendBinary(prefix, false);
                 websocketSession.getBasicRemote().sendBinary(message);
-
                 websocketSession.close();
             } catch (IOException e) {
                 throw Status.fromThrowable(e).asRuntimeException();

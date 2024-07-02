@@ -223,7 +223,7 @@ final class ServletServerStream extends AbstractServerStream {
         final TrailerSupplier trailerSupplier = new TrailerSupplier();
 
         @Override
-        public void writeHeaders(Metadata headers) {
+        public void writeHeaders(Metadata headers, boolean flush) {
             writeHeadersToServletResponse(headers);
             try {
                 resp.setTrailerFields(trailerSupplier);
@@ -231,11 +231,13 @@ final class ServletServerStream extends AbstractServerStream {
                 logger.log(WARNING, String.format("[{%s}] Exception writing trailers", logId), e);
                 cancel(Status.fromThrowable(e));
             }
-            try {
-                writer.flush();
-            } catch (IllegalStateException | IOException e) {
-                logger.log(WARNING, String.format("[{%s}] Exception when flushBuffer", logId), e);
-                cancel(Status.fromThrowable(e));
+            if (flush) {
+                try {
+                    writer.flush();
+                } catch (IllegalStateException | IOException e) {
+                    logger.log(WARNING, String.format("[{%s}] Exception when flushBuffer", logId), e);
+                    cancel(Status.fromThrowable(e));
+                }
             }
         }
 
