@@ -3,21 +3,25 @@
 //
 package io.deephaven.iceberg.util;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.PartitionAwareSourceTable;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.engine.table.impl.locations.TableKey;
 import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocationProvider;
+import io.deephaven.engine.table.impl.locations.impl.KnownLocationKeyFinder;
 import io.deephaven.engine.table.impl.locations.impl.PollingTableLocationProvider;
 import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
-import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
+import io.deephaven.iceberg.layout.IcebergBaseLayout;
 import io.deephaven.iceberg.layout.IcebergFlatLayout;
 import io.deephaven.iceberg.layout.IcebergKeyValuePartitionedLayout;
+import io.deephaven.iceberg.layout.IcebergRefreshingTableLocationProvider;
 import io.deephaven.iceberg.location.IcebergTableLocationFactory;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import org.apache.iceberg.PartitionField;
@@ -55,7 +59,7 @@ public class IcebergCatalogAdapter {
 
     /**
      * Create a single {@link TableDefinition} from a given Schema, PartitionSpec, and TableDefinition. Takes into
-     * account {@link Map<String,String> column rename instructions}
+     * account {@link Map<> column rename instructions}
      *
      * @param schema The schema of the table.
      * @param partitionSpec The partition specification of the table.
@@ -324,6 +328,13 @@ public class IcebergCatalogAdapter {
         return new QueryTable(RowSetFactory.flat(size).toTracking(), columnSourceMap);
     }
 
+    Snapshot getSnapshot(@NotNull final TableIdentifier tableIdentifier, final long snapshotId) {
+        return listSnapshots(tableIdentifier).stream()
+                .filter(snapshot -> snapshot.snapshotId() == snapshotId)
+                .findFirst()
+                .orElse(null);
+    }
+
     /**
      * Read the latest static snapshot of an Iceberg table from the Iceberg catalog.
      *
@@ -353,10 +364,10 @@ public class IcebergCatalogAdapter {
             @NotNull final IcebergInstructions instructions) {
 
         // Find the snapshot with the given snapshot id
-        final Snapshot tableSnapshot = listSnapshots(tableIdentifier).stream()
-                .filter(snapshot -> snapshot.snapshotId() == tableSnapshotId)
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Snapshot with id " + tableSnapshotId + " not found"));
+        final Snapshot tableSnapshot = getSnapshot(tableIdentifier, tableSnapshotId);
+        if (tableSnapshot == null) {
+            throw new IllegalArgumentException("Snapshot with id " + tableSnapshotId + " not found");
+        }
 
         return readTableInternal(tableIdentifier, tableSnapshot, instructions);
     }
@@ -381,7 +392,6 @@ public class IcebergCatalogAdapter {
             @NotNull final TableIdentifier tableIdentifier,
             @Nullable final Snapshot tableSnapshot,
             @NotNull final IcebergInstructions instructions) {
-
         // Load the table from the catalog
         final org.apache.iceberg.Table table = catalog.loadTable(tableIdentifier);
 
@@ -427,7 +437,7 @@ public class IcebergCatalogAdapter {
         }
 
         final String description;
-        final TableLocationKeyFinder<IcebergTableLocationKey> keyFinder;
+        final IcebergBaseLayout keyFinder;
         final TableDataRefreshService refreshService;
         final UpdateSourceRegistrar updateSourceRegistrar;
 
@@ -440,23 +450,46 @@ public class IcebergCatalogAdapter {
                     instructions);
         }
 
-        refreshService = null;
-        updateSourceRegistrar = null;
-        description = "Read static iceberg table with " + keyFinder;
+        if (instructions.isRefreshing()) {
+            description = "Read refreshing iceberg table with " + keyFinder;
+            updateSourceRegistrar = ExecutionContext.getContext().getUpdateGraph();
 
-        final AbstractTableLocationProvider locationProvider = new PollingTableLocationProvider<>(
-                StandaloneTableKey.getInstance(),
-                keyFinder,
-                new IcebergTableLocationFactory(),
-                refreshService);
+            final IcebergRefreshingTableLocationProvider<TableKey, IcebergTableLocationKey> locationProvider =
+                    new IcebergRefreshingTableLocationProvider<>(
+                            StandaloneTableKey.getInstance(),
+                            keyFinder,
+                            new IcebergTableLocationFactory(),
+                            TableDataRefreshService.getSharedRefreshService());
 
-        final PartitionAwareSourceTable result = new PartitionAwareSourceTable(
-                tableDef,
-                description,
-                RegionedTableComponentFactoryImpl.INSTANCE,
-                locationProvider,
-                updateSourceRegistrar);
+            return new IcebergTable(
+                    tableIdentifier,
+                    this,
+                    tableDef,
+                    description,
+                    RegionedTableComponentFactoryImpl.INSTANCE,
+                    locationProvider,
+                    updateSourceRegistrar);
+        } else {
+            description = "Read static iceberg table with " + keyFinder;
+            updateSourceRegistrar = null;
 
-        return result;
+            final AbstractTableLocationProvider locationProvider = new PollingTableLocationProvider<>(
+                    StandaloneTableKey.getInstance(),
+                    keyFinder,
+                    new IcebergTableLocationFactory(),
+                    null);
+
+            return new PartitionAwareSourceTable(
+                    tableDef,
+                    description,
+                    RegionedTableComponentFactoryImpl.INSTANCE,
+                    locationProvider,
+                    updateSourceRegistrar);
+        }
+    }
+
+    private static KnownLocationKeyFinder<IcebergTableLocationKey> toKnownKeys(
+            final IcebergBaseLayout keyFinder) {
+        return KnownLocationKeyFinder.copyFrom(keyFinder, Comparator.naturalOrder());
     }
 }

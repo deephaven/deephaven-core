@@ -34,11 +34,6 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
     final Table table;
 
     /**
-     * The {@link Snapshot} to discover locations for.
-     */
-    final Snapshot snapshot;
-
-    /**
      * The {@link FileIO} to use for passing to the catalog reading manifest data files.
      */
     final FileIO fileIO;
@@ -52,6 +47,11 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
      * A cache of {@link IcebergTableLocationKey IcebergTableLocationKeys} keyed by the URI of the file they represent.
      */
     final Map<URI, IcebergTableLocationKey> cache;
+
+    /**
+     * The {@link Snapshot} from which to discover data files.
+     */
+    Snapshot snapshot;
 
     /**
      * The {@link ParquetInstructions} object that will be used to read any Parquet data files in this table. Only

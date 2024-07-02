@@ -84,7 +84,9 @@ public abstract class AbstractTableLocationProvider
 
     @Override
     protected final void deliverInitialSnapshot(@NotNull final TableLocationProvider.Listener listener) {
-        unmodifiableTableLocationKeys.forEach(listener::handleTableLocationKey);
+        listener.beginTransaction();
+        unmodifiableTableLocationKeys.forEach(listener::handleTableLocationKeyAdded);
+        listener.endTransaction();
     }
 
     /**
@@ -110,10 +112,23 @@ public abstract class AbstractTableLocationProvider
             visitLocationKey(locationKey);
             if (locationCreatedRecorder) {
                 verifyPartitionKeys(locationKey);
-                if (subscriptions.deliverNotification(Listener::handleTableLocationKey, toKeyImmutable(result), true)) {
+                if (subscriptions.deliverNotification(Listener::handleTableLocationKeyAdded, toKeyImmutable(result),
+                        true)) {
                     onEmpty();
                 }
             }
+        }
+    }
+
+    protected final void beginTransaction() {
+        if (subscriptions != null) {
+            subscriptions.deliverNotification(Listener::beginTransaction, true);
+        }
+    }
+
+    protected final void endTransaction() {
+        if (subscriptions != null) {
+            subscriptions.deliverNotification(Listener::endTransaction, true);
         }
     }
 
@@ -180,6 +195,13 @@ public abstract class AbstractTableLocationProvider
     @Override
     @NotNull
     public final Collection<ImmutableTableLocationKey> getTableLocationKeys() {
+        // We need to prevent reading the map (and maybe mutating it?) during a transaction.
+        // We could transition between two maps, a stable copy and a shadow copy that is being mutated.
+        // Or we could hold a bigger lock while mutating the map, and hold the same lock here. Sounds like a job for a
+        // read-write lock (e.g. ReentrantReadWriteLock), maybe. If you want `FunctionalLock`, the pattern (but mostly
+        // not the code) from io.deephaven.engine.updategraph.UpdateGraphLock could help.
+        // I think we need the read-write lock for correctness, and I think we need to make it explicit. That is, the
+        // user needs to be able to get a read lock and hold it while it's operating on the returned collection.
         return unmodifiableTableLocationKeys;
     }
 

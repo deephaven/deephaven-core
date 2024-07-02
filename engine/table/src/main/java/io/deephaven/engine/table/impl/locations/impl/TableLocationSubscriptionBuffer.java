@@ -26,9 +26,14 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
     private boolean subscribed = false;
 
     private final Object updateLock = new Object();
-    private Set<ImmutableTableLocationKey> pendingLocationKeys = EMPTY_TABLE_LOCATION_KEYS;
 
+    // These sets represent a completed transaction of adds and removes.
+    private Set<ImmutableTableLocationKey> pendingLocationsAdded = EMPTY_TABLE_LOCATION_KEYS;
     private Set<ImmutableTableLocationKey> pendingLocationsRemoved = EMPTY_TABLE_LOCATION_KEYS;
+
+    private Set<ImmutableTableLocationKey> accumulatedLocationsAdded = EMPTY_TABLE_LOCATION_KEYS;
+    private Set<ImmutableTableLocationKey> accumulatedLocationsRemoved = EMPTY_TABLE_LOCATION_KEYS;
+
     private TableDataException pendingException = null;
 
     public TableLocationSubscriptionBuffer(@NotNull final TableLocationProvider tableLocationProvider) {
@@ -71,7 +76,7 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
                 // NB: Providers that don't support subscriptions don't tick - this single call to run is
                 // sufficient.
                 tableLocationProvider.refresh();
-                tableLocationProvider.getTableLocationKeys().forEach(this::handleTableLocationKey);
+                tableLocationProvider.getTableLocationKeys().forEach(this::handleTableLocationKeyAdded);
             }
             subscribed = true;
         }
@@ -79,8 +84,8 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
         final Collection<ImmutableTableLocationKey> resultLocationsRemoved;
         final TableDataException resultException;
         synchronized (updateLock) {
-            resultLocationKeys = pendingLocationKeys;
-            pendingLocationKeys = EMPTY_TABLE_LOCATION_KEYS;
+            resultLocationKeys = pendingLocationsAdded;
+            pendingLocationsAdded = EMPTY_TABLE_LOCATION_KEYS;
             resultLocationsRemoved = pendingLocationsRemoved;
             pendingLocationsRemoved = EMPTY_TABLE_LOCATION_KEYS;
             resultException = pendingException;
@@ -105,7 +110,7 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
             subscribed = false;
         }
         synchronized (updateLock) {
-            pendingLocationKeys = EMPTY_TABLE_LOCATION_KEYS;
+            pendingLocationsAdded = EMPTY_TABLE_LOCATION_KEYS;
             pendingLocationsRemoved = EMPTY_TABLE_LOCATION_KEYS;
             pendingException = null;
         }
@@ -116,27 +121,65 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
     // ------------------------------------------------------------------------------------------------------------------
 
     @Override
-    public void handleTableLocationKey(@NotNull final ImmutableTableLocationKey tableLocationKey) {
+    public void beginTransaction() {
         synchronized (updateLock) {
-            if (pendingLocationKeys == EMPTY_TABLE_LOCATION_KEYS) {
-                pendingLocationKeys = new HashSet<>();
+            // Assert that we can start a new transaction.
+            Require.eq(EMPTY_TABLE_LOCATION_KEYS, "accumulatedLocationsAdded", accumulatedLocationsAdded);
+            Require.eq(EMPTY_TABLE_LOCATION_KEYS, "accumulatedLocationsRemoved", accumulatedLocationsRemoved);
+        }
+    }
+
+    @Override
+    public void endTransaction() {
+        synchronized (updateLock) {
+            // If we already have a completed transaction, merge the accumulated sets into it.
+            if (pendingLocationsAdded != EMPTY_TABLE_LOCATION_KEYS) {
+                pendingLocationsAdded.addAll(accumulatedLocationsAdded);
+            } else {
+                pendingLocationsAdded = accumulatedLocationsAdded;
             }
-            pendingLocationKeys.add(tableLocationKey);
+
+            if (pendingLocationsRemoved != EMPTY_TABLE_LOCATION_KEYS) {
+                // Remove any locations that were added and then removed by this transaction.
+                for (final ImmutableTableLocationKey tableLocationKey : accumulatedLocationsRemoved) {
+                    if (pendingLocationsAdded.remove(tableLocationKey)) {
+                        continue;
+                    }
+                    pendingLocationsRemoved.add(tableLocationKey);
+                }
+            } else {
+                pendingLocationsRemoved = accumulatedLocationsRemoved;
+            }
+
+            // Reset the accumulated sets to empty.
+            accumulatedLocationsAdded = EMPTY_TABLE_LOCATION_KEYS;
+            accumulatedLocationsRemoved = EMPTY_TABLE_LOCATION_KEYS;
+        }
+    }
+
+    @Override
+    public void handleTableLocationKeyAdded(@NotNull final ImmutableTableLocationKey tableLocationKey) {
+        synchronized (updateLock) {
+            if (accumulatedLocationsAdded == EMPTY_TABLE_LOCATION_KEYS) {
+                accumulatedLocationsAdded = new HashSet<>();
+            }
+            accumulatedLocationsAdded.add(tableLocationKey);
         }
     }
 
     @Override
     public void handleTableLocationKeyRemoved(@NotNull final ImmutableTableLocationKey tableLocationKey) {
         synchronized (updateLock) {
+            // TODO: is it possible that we add and remove a location within a single transaction? Paranoid?
             // If we remove something that was pending to be added, just discard both.
-            if (pendingLocationKeys.remove(tableLocationKey)) {
+            if (accumulatedLocationsRemoved.remove(tableLocationKey)) {
                 return;
             }
 
-            if (pendingLocationsRemoved == EMPTY_TABLE_LOCATION_KEYS) {
-                pendingLocationsRemoved = new HashSet<>();
+            if (accumulatedLocationsRemoved == EMPTY_TABLE_LOCATION_KEYS) {
+                accumulatedLocationsRemoved = new HashSet<>();
             }
-            pendingLocationsRemoved.add(tableLocationKey);
+            accumulatedLocationsRemoved.add(tableLocationKey);
         }
     }
 
