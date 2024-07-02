@@ -14,12 +14,12 @@ dependencies {
     implementation depCommonsLang3
 
     testImplementation project(':engine-test-utils')
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
-    Classpaths.inheritJUnitPlatform(project)
-    Classpaths.inheritAssertJ(project)
+    testImplementation libs.junit4
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.assertj
 
     testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),
             project(path: ':test-configs')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly libs.slf4j.simple
 }

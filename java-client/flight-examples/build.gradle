@@ -9,12 +9,12 @@ dependencies {
 
     implementation "io.deephaven.barrage:barrage-format:0.6.0"
 
-    Classpaths.inheritJUnitPlatform(project)
-    Classpaths.inheritAssertJ(project)
-    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation libs.assertj
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
 
-    Classpaths.inheritSlf4j(project, 'slf4j-api', 'implementation')
-    Classpaths.inheritLogbackClassic(project)
+    implementation libs.slf4j.api
+    runtimeOnly libs.logback.classic
 }
 
 test {

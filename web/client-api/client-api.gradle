@@ -29,11 +29,13 @@ dependencies {
     js project(path: ':proto:raw-js-openapi', configuration: 'js')
 
     testImplementation 'org.seleniumhq.selenium:selenium-remote-driver:4.16.1'
+
+    implementation libs.elemental.core
+    implementation libs.elemental.promise
+    implementation libs.elemental.dom
+
+    testImplementation libs.gwt.user
 }
-Classpaths.inheritElemental(project, 'elemental2-core', 'implementation')
-Classpaths.inheritElemental(project, 'elemental2-promise', 'implementation')
-Classpaths.inheritElemental(project, 'elemental2-dom', 'implementation')
-Classpaths.inheritGwt(project, 'gwt-user', 'testImplementation')
 
 GwtTools.gwtCompile project, 'io.deephaven.web.DeephavenApi', 'Create a jar of client JS API'
 

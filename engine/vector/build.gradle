@@ -14,5 +14,5 @@ dependencies {
 
     compileOnly depAnnotations
 
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    testImplementation libs.junit4
 }

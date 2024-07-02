@@ -14,21 +14,22 @@ dependencies {
     implementation project(':engine-base')
     implementation depTrove3
 
-    Classpaths.inheritImmutables(project)
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables
 
-    Classpaths.inheritJUnitPlatform(project)
-    Classpaths.inheritAssertJ(project)
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.assertj
 
     testImplementation depCommonsCompress
     testImplementation depCommonsIo
     testImplementation project(':engine-test-utils')
 
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    testImplementation libs.junit4
 
     testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),
             project(path: ':test-configs')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly libs.slf4j.simple
 }
 
 TestTools.addEngineOutOfBandTest(project)

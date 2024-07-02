@@ -18,12 +18,13 @@ dependencies {
     implementation project(':Configuration')
     implementation project(':log-factory')
     implementation depJdom2
-    Classpaths.inheritDagger(project)
+    implementation libs.dagger
+    annotationProcessor libs.dagger.compiler
 
     testImplementation project(':base-test-utils')
 
     testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),
             project(path: ':test-configs')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly libs.slf4j.simple
 }

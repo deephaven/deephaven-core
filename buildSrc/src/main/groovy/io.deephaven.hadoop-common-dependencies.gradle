@@ -1,0 +1,22 @@
+plugins {
+    id 'java'
+}
+
+dependencies {
+    implementation(libs.hadoop.common) {
+        transitive = false
+        // Do not take any extra dependencies of this project transitively. We just want a few classes for
+        // configuration and compression codecs. For any additional required dependencies, add them separately, as
+        // done for woodstox, shaded-guava, etc. below. Or we can replace setTransitive(false) here with more
+        // exclusions (we want to avoid pulling in netty, loggers, jetty-util, guice and asm).
+    }
+    runtimeOnly(libs.woodstox.core) {
+        because "hadoop-common required dependency for Configuration"
+    }
+    runtimeOnly(libs.hadoop.shaded.guava) {
+        because "hadoop-common required dependency for Configuration"
+    }
+    runtimeOnly(libs.commons.collections) {
+        because "hadoop-common required dependency for Configuration"
+    }
+}

@@ -7,7 +7,7 @@ dependencies {
 	implementation project(':log-example-base')
 
 	runtimeOnly project(':log-to-slf4j')
-	Classpaths.inheritSlf4j(project, 'slf4j-simple', 'runtimeOnly')
+	runtimeOnly libs.slf4j.simple
 }
 
 application {

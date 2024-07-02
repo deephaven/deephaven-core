@@ -38,20 +38,22 @@ dependencies {
 
     implementation project(':plugin')
     implementation depCommonsLang3
-    Classpaths.inheritCommonsText(project, 'implementation')
+    implementation libs.commons.text
 
-    Classpaths.inheritGroovy(project, 'groovy', 'implementation')
-    Classpaths.inheritGroovy(project, 'groovy-json', 'implementation')
-    Classpaths.inheritJavaParser(project, 'implementation')
-    Classpaths.inheritAutoService(project)
+    implementation libs.groovy
+    implementation libs.groovy.json
+    implementation libs.javaparser.core
+    compileOnly libs.autoservice
+    annotationProcessor libs.autoservice.compiler
 
-    Classpaths.inheritImmutables(project)
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 
     runtimeOnly project(':engine-tuplesource')
 
-    Classpaths.inheritGuava(project)
+    implementation libs.guava
 
     testImplementation TestTools.projectDependency(project, 'engine-chunk')
     testImplementation TestTools.projectDependency(project, 'engine-vector')
@@ -69,15 +71,15 @@ dependencies {
     testImplementation project(':Numerics')
     testImplementation project(':extensions-suanshu')
 
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    testImplementation libs.junit4
 
-    Classpaths.inheritJUnitPlatform(project)
-    Classpaths.inheritAssertJ(project)
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.assertj
 
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly project(':configs')
     testRuntimeOnly project(':test-configs')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly libs.slf4j.simple
 }
 
 spotless {

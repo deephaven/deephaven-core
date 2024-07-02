@@ -5,5 +5,5 @@ plugins {
 
 dependencies {
 	implementation project(':log-factory')
-	Classpaths.inheritSlf4j(project, 'slf4j-api', 'implementation')
+	implementation libs.slf4j.api
 }

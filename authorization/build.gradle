@@ -9,9 +9,9 @@ dependencies {
     api project(':engine-api')
     api project(':proto:proto-backplane-grpc')
 
-    Classpaths.inheritGrpcPlatform(project, 'api')
-    api 'io.grpc:grpc-services'
-    Classpaths.inheritArrow(project, 'flight-core', 'api')
+    api platform(libs.grpc.bom)
+    api libs.grpc.services
+    api libs.arrow.flight.core
 
     implementation project(':log-factory')
 }

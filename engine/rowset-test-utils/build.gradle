@@ -11,5 +11,5 @@ dependencies {
     implementation depCommonsLang3
     implementation depTrove3
 
-    Classpaths.inheritJUnitClassic(project, 'implementation')
+    implementation libs.junit4
 }

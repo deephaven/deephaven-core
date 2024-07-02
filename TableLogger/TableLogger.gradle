@@ -11,5 +11,5 @@ dependencies {
     runtimeOnly project(path: ':configs')
 
     testRuntimeOnly project(':log-to-slf4j')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly libs.slf4j.simple
 }

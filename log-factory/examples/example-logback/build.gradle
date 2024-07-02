@@ -7,7 +7,7 @@ dependencies {
 	implementation project(':log-example-base')
 
 	runtimeOnly project(':log-to-slf4j')
-	Classpaths.inheritLogbackClassic(project)
+	runtimeOnly libs.logback.classic
 }
 
 application {

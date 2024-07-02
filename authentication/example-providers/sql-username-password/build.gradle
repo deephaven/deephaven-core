@@ -11,7 +11,7 @@ dependencies {
     }
 
     pwGen project(':log-to-stream')
-    Classpaths.inheritLogbackClassic(project, 'pwGen')
+    pwGen libs.logback.classic
 }
 
 shadowJar {

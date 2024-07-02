@@ -26,7 +26,7 @@ dependencies {
     api project(':engine-table')
 
     implementation project(':extensions-parquet-base')
-    Classpaths.inheritParquetHadoop(project)
+    implementation libs.parquet.hadoop
 
     implementation project(':engine-base')
     implementation project(':extensions-csv')
@@ -35,13 +35,14 @@ dependencies {
     implementation depCommonsLang3
     implementation project(':Util')
 
-    Classpaths.inheritCommonsText(project, 'implementation')
+    implementation libs.commons.text
 
-    Classpaths.inheritJacksonPlatform(project)
-    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
-    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8'
+    implementation platform(libs.jackson.bom)
+    implementation libs.jackson.dataformat.yaml
+    implementation libs.jackson.datatype.jdk8
 
-    Classpaths.inheritImmutables(project)
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 
@@ -49,14 +50,17 @@ dependencies {
     testImplementation project(':engine-test-utils')
 
     testImplementation TestTools.projectDependency(project, 'extensions-s3')
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    testImplementation libs.junit4
 
-    Classpaths.inheritTestContainers(project)
+    testImplementation libs.testcontainers
+    testImplementation libs.testcontainers.junit.jupiter
+    testImplementation libs.testcontainers.localstack
+    testImplementation libs.testcontainers.minio
 
     testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),
             project(path: ':test-configs')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly libs.slf4j.simple
 
     runtimeOnly project(':extensions-trackedfile')
 

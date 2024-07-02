@@ -8,7 +8,7 @@ description 'Parquet Base: Libraries for working with Parquet files'
 dependencies {
     api project(':util-channel')
 
-    Classpaths.inheritParquetHadoop(project)
+    implementation libs.parquet.hadoop
 
     implementation project(':extensions-parquet-compression')
     implementation project(':Base')
@@ -19,5 +19,5 @@ dependencies {
     implementation depCommonsIo
 
     compileOnly depAnnotations
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    testImplementation libs.junit4
 }
