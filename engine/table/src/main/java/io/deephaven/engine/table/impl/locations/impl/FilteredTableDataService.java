@@ -157,12 +157,30 @@ public class FilteredTableDataService extends AbstractTableDataService {
         }
 
         @Override
-        public void handleTableLocationKey(@NotNull final ImmutableTableLocationKey tableLocationKey) {
+        public void beginTransaction() {
+            // Delegate to the wrapped listener.
+            final TableLocationProvider.Listener outputListener = getWrapped();
+            if (outputListener != null) {
+                outputListener.beginTransaction();
+            }
+        }
+
+        @Override
+        public void endTransaction() {
+            // Delegate to the wrapped listener.
+            final TableLocationProvider.Listener outputListener = getWrapped();
+            if (outputListener != null) {
+                outputListener.endTransaction();
+            }
+        }
+
+        @Override
+        public void handleTableLocationKeyAdded(@NotNull final ImmutableTableLocationKey tableLocationKey) {
             final TableLocationProvider.Listener outputListener = getWrapped();
             // We can't try to clean up null listeners here, the underlying implementation may not allow concurrent
             // unsubscribe operations.
             if (outputListener != null && locationKeyFilter.accept(tableLocationKey)) {
-                outputListener.handleTableLocationKey(tableLocationKey);
+                outputListener.handleTableLocationKeyAdded(tableLocationKey);
             }
         }
 

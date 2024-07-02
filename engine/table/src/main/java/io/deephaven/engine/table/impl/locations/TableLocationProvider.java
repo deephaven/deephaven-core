@@ -26,6 +26,10 @@ public interface TableLocationProvider extends NamedImplementation {
      */
     interface Listener extends BasicTableDataListener {
 
+        void beginTransaction();
+
+        void endTransaction();
+
         /**
          * Notify the listener of a {@link TableLocationKey} encountered while initiating or maintaining the location
          * subscription. This should occur at most once per location, but the order of delivery is <i>not</i>
@@ -33,7 +37,7 @@ public interface TableLocationProvider extends NamedImplementation {
          *
          * @param tableLocationKey The new table location key
          */
-        void handleTableLocationKey(@NotNull ImmutableTableLocationKey tableLocationKey);
+        void handleTableLocationKeyAdded(@NotNull ImmutableTableLocationKey tableLocationKey);
 
         /**
          * Notify the listener of a {@link TableLocationKey} that has been removed.

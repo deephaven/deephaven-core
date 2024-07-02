@@ -1,10 +1,14 @@
 //
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.engine.table.impl.locations.impl;
+package io.deephaven.iceberg.layout;
 
 import io.deephaven.engine.table.impl.locations.*;
+import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocationProvider;
+import io.deephaven.engine.table.impl.locations.impl.TableLocationFactory;
+import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
+import org.apache.iceberg.Snapshot;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -16,19 +20,19 @@ import java.util.Set;
  * discovery to a {@link TableLocationKeyFinder} and {@link TableLocation location} creation to a
  * {@link TableLocationFactory}.
  */
-public class PollingTableLocationProvider<TK extends TableKey, TLK extends TableLocationKey>
+public class IcebergRefreshingTableLocationProvider<TK extends TableKey, TLK extends TableLocationKey>
         extends AbstractTableLocationProvider {
 
-    private static final String IMPLEMENTATION_NAME = PollingTableLocationProvider.class.getSimpleName();
+    private static final String IMPLEMENTATION_NAME = IcebergRefreshingTableLocationProvider.class.getSimpleName();
 
-    private final TableLocationKeyFinder<TLK> locationKeyFinder;
+    private final IcebergBaseLayout locationKeyFinder;
     private final TableLocationFactory<TK, TLK> locationFactory;
     private final TableDataRefreshService refreshService;
 
     private TableDataRefreshService.CancellableSubscriptionToken subscriptionToken;
 
-    public PollingTableLocationProvider(@NotNull final TK tableKey,
-            @NotNull final TableLocationKeyFinder<TLK> locationKeyFinder,
+    public IcebergRefreshingTableLocationProvider(@NotNull final TK tableKey,
+            @NotNull final IcebergBaseLayout locationKeyFinder,
             @NotNull final TableLocationFactory<TK, TLK> locationFactory,
             @Nullable final TableDataRefreshService refreshService) {
         super(tableKey, refreshService != null);
@@ -62,6 +66,14 @@ public class PollingTableLocationProvider<TK extends TableKey, TLK extends Table
         missedKeys.forEach(this::handleTableLocationKeyRemoved);
         endTransaction();
         setInitialized();
+    }
+
+
+    public void update(final Snapshot snapshot) {
+        // Update the snapshot to the new one
+        locationKeyFinder.snapshot = snapshot;
+        // Call the refresh
+        refresh();
     }
 
     @Override
