@@ -369,13 +369,21 @@ class TableIteratorTestCase(BaseTestCase):
                 for a, b, c, d, e, f in test_table.iter_tuple():
                     ...
 
-    def test_iteration_tuple_name_error(self):
+    def test_iteration_errors(self):
         test_table = time_table("PT00:00:00.001").update(["from = i%11"])
         with self.assertRaises(ValueError) as cm:
             for t in test_table.iter_tuple():
                 pass
         self.assertIn("'from'", str(cm.exception))
 
+        with self.assertRaises(ValueError) as cm:
+            for t in test_table.iter_tuple(cols=["from_"]):
+                pass
+        self.assertIn("'from_'", str(cm.exception))
+
+        with self.assertRaises(ValueError) as cm:
+            for t in test_table.iter_chunk_tuple(chunk_size=-1):
+                pass
 
 if __name__ == '__main__':
     unittest.main()
