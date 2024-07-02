@@ -72,7 +72,14 @@ internal static class ArrowTableColumnFactory {
     new ColumnFactory<NativeArrowTable>.ForBool(NativeArrowTable.deephaven_client_ArrowTable_GetBooleanAsInteropBoolColumn),
     new ColumnFactory<NativeArrowTable>.ForString(NativeArrowTable.deephaven_client_ArrowTable_GetStringColumn),
     new ColumnFactory<NativeArrowTable>.ForDateTime(NativeArrowTable.deephaven_client_ArrowTable_GetDateTimeAsInt64Column),
-    // List - TODO(kosak)
+    // TODO(kosak): There is a whole family of types missing here, namely
+    // the Arrow list<T> types. These types arise in operations such as
+    // group_by. Each cell of a grouped column will contain a list of values,
+    // rather than a single value. Arrow supports this as list<T>. However
+    // the current version of the C++ library does not deserialize this
+    // properly. If such a column is received, the library will throw an
+    // exception. When the Deephaven library is updated to support list<T>,
+    // the factory methods here will need to be updated accordingly.
   };
 
   public static ColumnFactory<NativeArrowTable> Of(ElementTypeId typeId) {
