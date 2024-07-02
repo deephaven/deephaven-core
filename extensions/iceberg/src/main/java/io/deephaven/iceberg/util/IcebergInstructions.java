@@ -25,6 +25,12 @@ public abstract class IcebergInstructions {
     @SuppressWarnings("unused")
     public static final IcebergInstructions DEFAULT = builder().build();
 
+    public enum IcebergRefreshing {
+        STATIC,
+        AUTO_REFRESHING,
+        MANUAL_REFRESHING
+    }
+
     public static Builder builder() {
         return ImmutableIcebergInstructions.builder();
     }
@@ -47,8 +53,8 @@ public abstract class IcebergInstructions {
     public abstract Map<String, String> columnRenames();
 
     @Value.Default
-    public Boolean isRefreshing() {
-        return false;
+    public IcebergRefreshing refreshing() {
+        return IcebergRefreshing.STATIC;
     }
 
     public interface Builder {
@@ -65,7 +71,7 @@ public abstract class IcebergInstructions {
         Builder putAllColumnRenames(Map<String, ? extends String> entries);
 
         @SuppressWarnings("unused")
-        Builder isRefreshing(Boolean isRefreshing);
+        Builder refreshing(IcebergRefreshing refreshing);
 
         IcebergInstructions build();
     }

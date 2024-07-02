@@ -508,7 +508,23 @@ public class IcebergCatalogAdapter {
                     userInstructions);
         }
 
-        if (instructions.isRefreshing()) {
+        if (instructions.refreshing() == IcebergInstructions.IcebergRefreshing.STATIC) {
+            description = "Read static iceberg table with " + keyFinder;
+            updateSourceRegistrar = null;
+
+            final AbstractTableLocationProvider locationProvider = new PollingTableLocationProvider<>(
+                    StandaloneTableKey.getInstance(),
+                    keyFinder,
+                    new IcebergTableLocationFactory(),
+                    null);
+
+            return new PartitionAwareSourceTable(
+                    tableDef,
+                    description,
+                    RegionedTableComponentFactoryImpl.INSTANCE,
+                    locationProvider,
+                    updateSourceRegistrar);
+        } else if (instructions.refreshing() == IcebergInstructions.IcebergRefreshing.MANUAL_REFRESHING) {
             description = "Read refreshing iceberg table with " + keyFinder;
             updateSourceRegistrar = ExecutionContext.getContext().getUpdateGraph();
 
@@ -528,22 +544,9 @@ public class IcebergCatalogAdapter {
                     locationProvider,
                     updateSourceRegistrar);
         } else {
-            description = "Read static iceberg table with " + keyFinder;
-            updateSourceRegistrar = null;
-
-            final AbstractTableLocationProvider locationProvider = new PollingTableLocationProvider<>(
-                    StandaloneTableKey.getInstance(),
-                    keyFinder,
-                    new IcebergTableLocationFactory(),
-                    null);
-
-            return new PartitionAwareSourceTable(
-                    tableDef,
-                    description,
-                    RegionedTableComponentFactoryImpl.INSTANCE,
-                    locationProvider,
-                    updateSourceRegistrar);
+            throw new UnsupportedOperationException("Unsupported refreshing mode: " + instructions.refreshing());
         }
+
     }
 
     private static KnownLocationKeyFinder<IcebergTableLocationKey> toKnownKeys(
