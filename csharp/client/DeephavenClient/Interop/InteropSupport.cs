@@ -6,8 +6,8 @@ using System.Text.Unicode;
 namespace Deephaven.DeephavenClient.Interop;
 
 internal class LibraryPaths {
-  internal const string Dhcore = "dhcore.dll";
-  internal const string Dhclient = "dhclient.dll";
+  internal const string Dhcore = "dhcore";
+  internal const string Dhclient = "dhclient";
 }
 
 /// <summary>
