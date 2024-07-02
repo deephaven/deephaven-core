@@ -14,9 +14,9 @@ import org.apache.parquet.column.values.ValuesReader;
 
 import java.time.LocalTime;
 
-public class LocalTimeFromNanosMaterializer extends LocalTimeMaterializerBase implements PageMaterializer {
+public class LocalTimeFromNanosMaterializer extends ObjectMaterializerBase<LocalTime> implements PageMaterializer {
 
-    public static final PageMaterializerFactory Factory = new PageMaterializerFactory() {
+    public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
             return new LocalTimeFromNanosMaterializer(dataReader, (LocalTime) nullValue, numValues);
@@ -28,14 +28,14 @@ public class LocalTimeFromNanosMaterializer extends LocalTimeMaterializerBase im
         }
     };
 
-    final ValuesReader dataReader;
+    private final ValuesReader dataReader;
 
     private LocalTimeFromNanosMaterializer(ValuesReader dataReader, int numValues) {
         this(dataReader, null, numValues);
     }
 
     private LocalTimeFromNanosMaterializer(ValuesReader dataReader, LocalTime nullValue, int numValues) {
-        super(nullValue, numValues);
+        super(nullValue, new LocalTime[numValues]);
         this.dataReader = dataReader;
     }
 

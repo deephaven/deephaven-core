@@ -9,7 +9,7 @@ import org.apache.parquet.column.values.ValuesReader;
 
 public class LongFromUnsignedIntMaterializer extends LongMaterializerBase implements PageMaterializer {
 
-    public static final PageMaterializerFactory Factory = new PageMaterializerFactory() {
+    public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
             return new LongFromUnsignedIntMaterializer(dataReader, (long) nullValue, numValues);
@@ -21,7 +21,7 @@ public class LongFromUnsignedIntMaterializer extends LongMaterializerBase implem
         }
     };
 
-    final ValuesReader dataReader;
+    private final ValuesReader dataReader;
 
     private LongFromUnsignedIntMaterializer(ValuesReader dataReader, int numValues) {
         this(dataReader, 0, numValues);

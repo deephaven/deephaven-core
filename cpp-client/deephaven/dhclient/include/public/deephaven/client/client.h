@@ -372,7 +372,7 @@ public:
   /**
    * Copy constructor
    */
-  Aggregate(const Aggregate &other) noexcept;
+  Aggregate(const Aggregate &other);
   /**
    * Move constructor
    */
@@ -380,7 +380,7 @@ public:
   /**
    * Copy assigment operator.
    */
-  Aggregate &operator=(const Aggregate &other) noexcept;
+  Aggregate &operator=(const Aggregate &other);
   /**
    * Move assigment operator.
    */
@@ -654,11 +654,12 @@ public:
    * @param args The arguments to WAvg
    * @return An Aggregate object representing the aggregation
    */
-  template<typename ...Args>
+  template<typename WeightArg, typename ...Args>
   [[nodiscard]]
-  static Aggregate WAvg(Args &&...args) {
+  static Aggregate WAvg(WeightArg &&weight_column, Args &&...args) {
+    auto weight = internal::ConvertToString::ToString(std::forward<WeightArg>(weight_column));
     std::vector<std::string> vec{internal::ConvertToString::ToString(std::forward<Args>(args))...};
-    return WAvg(std::move(vec));
+    return WAvg(std::move(weight), std::move(vec));
   }
 
   /**
@@ -693,11 +694,19 @@ public:
   static AggregateCombo Create(std::vector<Aggregate> vec);
 
   /**
-   * Move constructor.
+   * Copy constructor
+   */
+  AggregateCombo(const AggregateCombo &other);
+  /**
+   * Move constructor
    */
   AggregateCombo(AggregateCombo &&other) noexcept;
   /**
-   * Move assignment operator.
+   * Copy assigment operator.
+   */
+  AggregateCombo &operator=(const AggregateCombo &other);
+  /**
+   * Move assigment operator.
    */
   AggregateCombo &operator=(AggregateCombo &&other) noexcept;
 
@@ -1090,7 +1099,7 @@ public:
    * A variadic form of By(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, or `const char *`
-   * @param args The columns to UpdateView
+   * @param args Columns to group by
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
@@ -1107,7 +1116,7 @@ public:
    * A variadic form of By(AggregateCombo, std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, or `const char *`
-   * @param args The columns to UpdateView
+   * @param columnSpecs Columns to group by.
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
@@ -1129,7 +1138,7 @@ public:
    * A variadic form of MinBy(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, or `const char *`
-   * @param args The columns to UpdateView
+   * @param columnSpecs Columns to group by.
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
@@ -1151,7 +1160,7 @@ public:
    * A variadic form of MaxBy(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, or `const char *`
-   * @param args The columns
+   * @param args Columns to group by
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
@@ -1173,7 +1182,7 @@ public:
    * A variadic form of SumBy(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, or `const char *`
-   * @param args The columns
+   * @param columnSpecs Columns to group by.
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
@@ -1195,7 +1204,7 @@ public:
    * A variadic form of AbsSumBy(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, or `const char *`
-   * @param args The columns
+   * @param args Columns to group by.
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
@@ -1217,7 +1226,7 @@ public:
    * A variadic form of VarBy(std::vector<std::string>) const that takes a combination of
    * argument types.
    * @tparam Args Any combination of `std::string`, `std::string_view`, or `const char *`
-   * @param args The columns
+   * @param args The columns to group by
    * @return A TableHandle referencing the new table
    */
   template<typename ...Args>
@@ -1370,7 +1379,9 @@ public:
    * @return A TableHandle referencing the new table
    */
   [[nodiscard]]
-  TableHandle PercentileBy(double percentile, std::vector<std::string> column_specs) const;
+  TableHandle PercentileBy(double percentile, std::vector<std::string> column_specs) const {
+    return PercentileBy(percentile, false, std::move(column_specs));
+  }
   /**
    * A variadic form of PercentileBy(double, std::vector<std::string>) const that takes a combination of
    * argument types.
@@ -1382,7 +1393,7 @@ public:
   [[nodiscard]]
   TableHandle PercentileBy(double percentile, Args &&...args) const {
     std::vector<std::string> vec{internal::ConvertToString::ToString(std::forward<Args>(args))...};
-    return PercentileBy(percentile, std::move(vec));
+    return PercentileBy(percentile, false, std::forward<Args...>(args...));
   }
 
   /**
@@ -1876,7 +1887,7 @@ public:
   /**
    * Unsubscribe from the table.
    */
-  void Unsubscribe(std::shared_ptr<SubscriptionHandle> callback);
+  void Unsubscribe(const std::shared_ptr<SubscriptionHandle> &handle);
 
   /**
    * Get access to the bytes of the Deephaven "Ticket" type (without having to reference the

@@ -214,7 +214,7 @@ void UpdateProcessor::RunUntilCancelled(std::shared_ptr<UpdateProcessor> self) {
   try {
     self->RunForeverHelper();
   } catch (...) {
-    // If the thread was been cancelled via explicit user action, then swallow all errors.
+    // If the thread has been cancelled via explicit user action, then swallow all errors.
     if (!self->cancelled_) {
       self->callback_->OnFailure(std::current_exception());
     }
@@ -228,6 +228,11 @@ void UpdateProcessor::RunForeverHelper() {
   while (true) {
     auto chunk = fsr_->Next();
     OkOrThrow(DEEPHAVEN_LOCATION_EXPR(chunk));
+    if (chunk->data == nullptr) {
+      // Stream ended. This is abnormal for Deephaven.
+      const char *message = "Unexpected end of stream";
+      throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
+    }
     const auto &cols = chunk->data->columns();
     auto column_sources = MakeReservedVector<std::shared_ptr<ColumnSource>>(cols.size());
     auto sizes = MakeReservedVector<size_t>(cols.size());

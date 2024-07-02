@@ -15,7 +15,7 @@ import java.util.Arrays;
 
 public class IntMaterializer implements PageMaterializer {
 
-    public static final PageMaterializerFactory Factory = new PageMaterializerFactory() {
+    public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
             return new IntMaterializer(dataReader, (int) nullValue, numValues);
@@ -27,10 +27,10 @@ public class IntMaterializer implements PageMaterializer {
         }
     };
 
-    final ValuesReader dataReader;
+    private final ValuesReader dataReader;
 
-    final int nullValue;
-    final int[] data;
+    private final int nullValue;
+    private final int[] data;
 
     private IntMaterializer(ValuesReader dataReader, int numValues) {
         this(dataReader, 0, numValues);

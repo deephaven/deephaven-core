@@ -21,31 +21,17 @@ public class ReplicatePageMaterializers {
 
     private static final String CHAR_MATERIALIZER_PATH = MATERIALIZER_DIR + "CharMaterializer.java";
     private static final String FLOAT_MATERIALIZER_PATH = MATERIALIZER_DIR + "FloatMaterializer.java";
-    private static final String INT_MATERIALIZER_PATH = MATERIALIZER_DIR + "IntMaterializer.java";
-    private static final String STRING_MATERIALIZER_PATH = MATERIALIZER_DIR + "StringMaterializer.java";
-
-    private static final String LOCAL_TIME_MATERIALIZER_BASE_PATH =
-            MATERIALIZER_DIR + "LocalTimeMaterializerBase.java";
-    private static final String LOCAL_TIME_FROM_MILLIS_MATERIALIZER_PATH =
-            MATERIALIZER_DIR + "LocalTimeFromMillisMaterializer.java";
     private static final String LOCAL_TIME_FROM_MICROS_MATERIALIZER_PATH =
             MATERIALIZER_DIR + "LocalTimeFromMicrosMaterializer.java";
-    private static final String LOCAL_TIME_FROM_NANOS_MATERIALIZER_PATH =
-            MATERIALIZER_DIR + "LocalTimeFromNanosMaterializer.java";
-
-    private static final String LOCAL_DATE_TIME_MATERIALIZER_BASE_PATH =
-            MATERIALIZER_DIR + "LocalDateTimeMaterializerBase.java";
     private static final String LOCAL_DATE_TIME_FROM_MILLIS_MATERIALIZER_PATH =
             MATERIALIZER_DIR + "LocalDateTimeFromMillisMaterializer.java";
-    private static final String LOCAL_DATE_TIME_FROM_MICROS_MATERIALIZER_PATH =
-            MATERIALIZER_DIR + "LocalDateTimeFromMicrosMaterializer.java";
-    private static final String LOCAL_DATE_TIME_FROM_NANOS_MATERIALIZER_PATH =
-            MATERIALIZER_DIR + "LocalDateTimeFromNanosMaterializer.java";
-
-    private static final String INSTANT_NANOS_FROM_MILLIS_MATERIALIZER_PATH =
-            MATERIALIZER_DIR + "InstantNanosFromMillisMaterializer.java";
     private static final String INSTANT_NANOS_FROM_MICROS_MATERIALIZER_PATH =
             MATERIALIZER_DIR + "InstantNanosFromMicrosMaterializer.java";
+    private static final String BIG_DECIMAL_FROM_LONG_MATERIALIZER_PATH =
+            MATERIALIZER_DIR + "BigDecimalFromLongMaterializer.java";
+    private static final String BIG_DECIMAL_FROM_BYTES_MATERIALIZER_PATH =
+            MATERIALIZER_DIR + "BigDecimalFromBytesMaterializer.java";
+    private static final String BIG_INTEGER_MATERIALIZER_PATH = MATERIALIZER_DIR + "BigIntegerMaterializer.java";
 
     public static void main(String... args) throws IOException {
         charToShortAndByte(TASK, CHAR_MATERIALIZER_PATH, NO_EXCEPTIONS);
@@ -59,16 +45,7 @@ public class ReplicatePageMaterializers {
                 {"Float", "Int"},
                 {"float", "int"}
         };
-        replaceAll(TASK, FLOAT_MATERIALIZER_PATH, INT_MATERIALIZER_PATH, null, NO_EXCEPTIONS, pairs);
-
-        // Float -> String
-        pairs = new String[][] {
-                {"readFloat()", "readBytes().toStringUsingUTF8"},
-                {"Float", "String"},
-                {"float", "String"},
-                {"dataReader, 0, numValues", "dataReader, null, numValues"}
-        };
-        replaceAll(TASK, FLOAT_MATERIALIZER_PATH, STRING_MATERIALIZER_PATH, null, NO_EXCEPTIONS, pairs);
+        replaceAll(TASK, FLOAT_MATERIALIZER_PATH, null, NO_EXCEPTIONS, pairs);
 
         // LocalTimeFromMicros -> LocalTimeFromMillis
         // We change from Micros to Millis and not the other way since converting from Long to Integer has fewer
@@ -78,56 +55,49 @@ public class ReplicatePageMaterializers {
                 {"micros", "millis"},
                 {"readLong", "readInteger"},
         };
-        replaceAll(TASK,
-                LOCAL_TIME_FROM_MICROS_MATERIALIZER_PATH,
-                LOCAL_TIME_FROM_MILLIS_MATERIALIZER_PATH,
-                null, NO_EXCEPTIONS, pairs);
+        replaceAll(TASK, LOCAL_TIME_FROM_MICROS_MATERIALIZER_PATH, null, NO_EXCEPTIONS, pairs);
 
         // LocalTimeFromMicros -> LocalTimeFromNanos
         pairs = new String[][] {
                 {"Micros", "Nanos"},
                 {"micros", "nanos"},
         };
-        replaceAll(TASK,
-                LOCAL_TIME_FROM_MICROS_MATERIALIZER_PATH,
-                LOCAL_TIME_FROM_NANOS_MATERIALIZER_PATH,
-                null, NO_EXCEPTIONS, pairs);
-
-        // LocalTimeBase -> LocalDateTimeBase
-        pairs = new String[][] {
-                {"LocalTime", "LocalDateTime"}
-        };
-        replaceAll(TASK,
-                LOCAL_TIME_MATERIALIZER_BASE_PATH,
-                LOCAL_DATE_TIME_MATERIALIZER_BASE_PATH,
-                null, NO_EXCEPTIONS, pairs);
+        replaceAll(TASK, LOCAL_TIME_FROM_MICROS_MATERIALIZER_PATH, null, NO_EXCEPTIONS, pairs);
 
         // LocalDateTimeFromMillis -> LocalDateTimeFromMicros
         pairs = new String[][] {
                 {"Millis", "Micros"}
         };
-        replaceAll(TASK,
-                LOCAL_DATE_TIME_FROM_MILLIS_MATERIALIZER_PATH,
-                LOCAL_DATE_TIME_FROM_MICROS_MATERIALIZER_PATH,
-                null, NO_EXCEPTIONS, pairs);
+        replaceAll(TASK, LOCAL_DATE_TIME_FROM_MILLIS_MATERIALIZER_PATH, null, NO_EXCEPTIONS, pairs);
 
         // LocalDateTimeFromMillis -> LocalDateTimeFromNanos
         pairs = new String[][] {
                 {"Millis", "Nanos"}
         };
-        replaceAll(TASK,
-                LOCAL_DATE_TIME_FROM_MILLIS_MATERIALIZER_PATH,
-                LOCAL_DATE_TIME_FROM_NANOS_MATERIALIZER_PATH,
-                null, NO_EXCEPTIONS, pairs);
+        replaceAll(TASK, LOCAL_DATE_TIME_FROM_MILLIS_MATERIALIZER_PATH, null, NO_EXCEPTIONS, pairs);
 
         // InstantNanosFromMicros -> InstantNanosFromMillis
         pairs = new String[][] {
                 {"Micros", "Millis"},
                 {"micros", "millis"}
         };
+        replaceAll(TASK, INSTANT_NANOS_FROM_MICROS_MATERIALIZER_PATH, null, NO_EXCEPTIONS, pairs);
+
+        // BigDecimalFromLong -> BigDecimalFromInt
+        pairs = new String[][] {
+                {"readLong", "readInteger"},
+                {"Long", "Int"}
+        };
+        replaceAll(TASK, BIG_DECIMAL_FROM_LONG_MATERIALIZER_PATH, null, NO_EXCEPTIONS, pairs);
+
+        // BigDecimal -> BigInteger
+        pairs = new String[][] {
+                {"BigDecimalFromBytes", "BigInteger"},
+                {"BigDecimal", "BigInteger"}
+        };
         replaceAll(TASK,
-                INSTANT_NANOS_FROM_MICROS_MATERIALIZER_PATH,
-                INSTANT_NANOS_FROM_MILLIS_MATERIALIZER_PATH,
+                BIG_DECIMAL_FROM_BYTES_MATERIALIZER_PATH,
+                BIG_INTEGER_MATERIALIZER_PATH,
                 null, NO_EXCEPTIONS, pairs);
     }
 }

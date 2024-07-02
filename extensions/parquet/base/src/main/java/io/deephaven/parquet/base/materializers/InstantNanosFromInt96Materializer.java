@@ -18,17 +18,17 @@ import java.time.ZoneId;
  * {@link PageMaterializer} implementation for {@link Instant Instants} stored as Int96s representing an Impala format
  * Timestamp (nanoseconds of day and Julian date encoded as 8 bytes and 4 bytes, respectively)
  */
-public class InstantFromInt96Materializer extends LongMaterializerBase implements PageMaterializer {
+public class InstantNanosFromInt96Materializer extends LongMaterializerBase implements PageMaterializer {
 
-    public static final PageMaterializerFactory Factory = new PageMaterializerFactory() {
+    public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
-            return new InstantFromInt96Materializer(dataReader, (long) nullValue, numValues);
+            return new InstantNanosFromInt96Materializer(dataReader, (long) nullValue, numValues);
         }
 
         @Override
         public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
-            return new InstantFromInt96Materializer(dataReader, numValues);
+            return new InstantNanosFromInt96Materializer(dataReader, numValues);
         }
     };
 
@@ -46,13 +46,13 @@ public class InstantFromInt96Materializer extends LongMaterializerBase implement
         setReferenceTimeZone(referenceTimeZone);
     }
 
-    final ValuesReader dataReader;
+    private final ValuesReader dataReader;
 
-    private InstantFromInt96Materializer(ValuesReader dataReader, int numValues) {
+    private InstantNanosFromInt96Materializer(ValuesReader dataReader, int numValues) {
         this(dataReader, 0, numValues);
     }
 
-    private InstantFromInt96Materializer(ValuesReader dataReader, long nullValue, int numValues) {
+    private InstantNanosFromInt96Materializer(ValuesReader dataReader, long nullValue, int numValues) {
         super(nullValue, numValues);
         this.dataReader = dataReader;
     }

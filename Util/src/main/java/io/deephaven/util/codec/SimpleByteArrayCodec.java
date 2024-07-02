@@ -49,7 +49,9 @@ public class SimpleByteArrayCodec implements ObjectCodec<byte[]> {
         if (input == null) {
             throw new IllegalArgumentException(SimpleByteArrayCodec.class.getSimpleName() + " cannot encode nulls");
         }
-        return input;
+        final byte[] output = new byte[input.length];
+        System.arraycopy(input, 0, output, 0, input.length);
+        return output;
     }
 
     @Override
@@ -72,9 +74,6 @@ public class SimpleByteArrayCodec implements ObjectCodec<byte[]> {
     public byte[] decode(@NotNull final byte[] input, final int offset, final int length) {
         if (input.length == 0) {
             return CollectionUtil.ZERO_LENGTH_BYTE_ARRAY;
-        }
-        if (offset == 0 && length == input.length) {
-            return input;
         }
         final byte[] output = new byte[length];
         System.arraycopy(input, offset, output, 0, length);

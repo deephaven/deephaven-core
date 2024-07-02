@@ -9,11 +9,10 @@ import io.deephaven.time.DateTimeUtils;
 import org.apache.parquet.column.values.ValuesReader;
 
 import java.time.LocalDate;
-import java.util.Arrays;
 
-public class LocalDateMaterializer implements PageMaterializer {
+public class LocalDateMaterializer extends ObjectMaterializerBase<LocalDate> implements PageMaterializer {
 
-    public static final PageMaterializerFactory Factory = new PageMaterializerFactory() {
+    public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
             return new LocalDateMaterializer(dataReader, (LocalDate) nullValue, numValues);
@@ -25,24 +24,15 @@ public class LocalDateMaterializer implements PageMaterializer {
         }
     };
 
-    final ValuesReader dataReader;
-
-    final LocalDate nullValue;
-    final LocalDate[] data;
+    private final ValuesReader dataReader;
 
     private LocalDateMaterializer(ValuesReader dataReader, int numValues) {
         this(dataReader, null, numValues);
     }
 
     private LocalDateMaterializer(ValuesReader dataReader, LocalDate nullValue, int numValues) {
+        super(nullValue, new LocalDate[numValues]);
         this.dataReader = dataReader;
-        this.nullValue = nullValue;
-        this.data = new LocalDate[numValues];
-    }
-
-    @Override
-    public void fillNulls(int startIndex, int endIndex) {
-        Arrays.fill(data, startIndex, endIndex, nullValue);
     }
 
     @Override
@@ -50,16 +40,5 @@ public class LocalDateMaterializer implements PageMaterializer {
         for (int ii = startIndex; ii < endIndex; ii++) {
             data[ii] = DateTimeUtils.epochDaysAsIntToLocalDate(dataReader.readInteger());
         }
-    }
-
-    @Override
-    public Object fillAll() {
-        fillValues(0, data.length);
-        return data;
-    }
-
-    @Override
-    public Object data() {
-        return data;
     }
 }

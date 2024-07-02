@@ -48,7 +48,6 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
     private final OffsetIndexReader offsetIndexReader;
     private final List<Type> fieldTypes;
     private final Function<SeekableChannelContext, Dictionary> dictionarySupplier;
-    private final PageMaterializerFactory pageMaterializerFactory;
     private final URI columnChunkURI;
     /**
      * Number of rows in the row group of this column chunk.
@@ -81,7 +80,6 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
         }
         this.fieldTypes = fieldTypes;
         this.dictionarySupplier = new SoftCachingFunction<>(this::getDictionary);
-        this.pageMaterializerFactory = PageMaterializer.factoryForType(path.getPrimitiveType());
         this.numRows = numRows;
         this.version = version;
         if (columnChunk.isSetFile_path() && FILE_URI_SCHEME.equals(rootURI.getScheme())) {
@@ -130,16 +128,18 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
     }
 
     @Override
-    public ColumnPageReaderIterator getPageIterator() {
-        return new ColumnPageReaderIteratorImpl();
+    public ColumnPageReaderIterator getPageIterator(final PageMaterializerFactory pageMaterializerFactory) {
+        return new ColumnPageReaderIteratorImpl(pageMaterializerFactory);
     }
 
     @Override
-    public ColumnPageDirectAccessor getPageAccessor(final OffsetIndex offsetIndex) {
+    public ColumnPageDirectAccessor getPageAccessor(
+            final OffsetIndex offsetIndex,
+            final PageMaterializerFactory pageMaterializerFactory) {
         if (offsetIndex == null) {
             throw new UnsupportedOperationException("Cannot use direct accessor without offset index");
         }
-        return new ColumnPageDirectAccessorImpl(offsetIndex);
+        return new ColumnPageDirectAccessorImpl(offsetIndex, pageMaterializerFactory);
     }
 
     @Override
@@ -247,10 +247,12 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
     private final class ColumnPageReaderIteratorImpl implements ColumnPageReaderIterator {
         private long nextHeaderOffset;
         private long remainingValues;
+        PageMaterializerFactory pageMaterializerFactory;
 
-        ColumnPageReaderIteratorImpl() {
+        ColumnPageReaderIteratorImpl(final PageMaterializerFactory pageMaterializerFactory) {
             this.remainingValues = columnChunk.meta_data.getNum_values();
             this.nextHeaderOffset = columnChunk.meta_data.getData_page_offset();
+            this.pageMaterializerFactory = pageMaterializerFactory;
         }
 
         @Override
@@ -335,9 +337,12 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
     private final class ColumnPageDirectAccessorImpl implements ColumnPageDirectAccessor {
 
         private final OffsetIndex offsetIndex;
+        private final PageMaterializerFactory pageMaterializerFactory;
 
-        ColumnPageDirectAccessorImpl(final OffsetIndex offsetIndex) {
+        ColumnPageDirectAccessorImpl(@NotNull final OffsetIndex offsetIndex,
+                @NotNull final PageMaterializerFactory pageMaterializerFactory) {
             this.offsetIndex = offsetIndex;
+            this.pageMaterializerFactory = pageMaterializerFactory;
         }
 
         @Override

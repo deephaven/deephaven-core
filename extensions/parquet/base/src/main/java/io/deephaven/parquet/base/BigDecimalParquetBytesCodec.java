@@ -1,10 +1,11 @@
 //
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.parquet.table;
+package io.deephaven.parquet.base;
 
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.util.codec.ObjectCodec;
+import org.apache.parquet.schema.PrimitiveType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -14,11 +15,62 @@ import java.math.RoundingMode;
 import java.nio.ByteBuffer;
 
 public class BigDecimalParquetBytesCodec implements ObjectCodec<BigDecimal> {
+
+    private static final int MIN_DECIMAL_INT_PRECISION = 1;
+    private static final int MAX_DECIMAL_INT_PRECISION = 9;
+    private static final int MIN_DECIMAL_LONG_PRECISION = 1;
+    private static final int MAX_DECIMAL_LONG_PRECISION = 18;
+
     private final int precision;
     private final int scale;
     private final int encodedSizeInBytes;
     private final RoundingMode roundingMode;
     private final byte[] nullBytes;
+
+    /**
+     * Verify that the precision and scale are valid.
+     *
+     * @throws IllegalArgumentException if the provided precision and/or scale is invalid
+     */
+    public static void verifyPrecisionAndScale(final int precision, final int scale) {
+        if (precision <= 0) {
+            throw new IllegalArgumentException(String.format("precision (=%d) should be > 0", precision));
+        }
+        if (scale < 0) {
+            throw new IllegalArgumentException(String.format("scale (=%d) should be >= 0", scale));
+        }
+        if (scale > precision) {
+            throw new IllegalArgumentException(
+                    String.format("scale (=%d) is greater than precision (=%d)", scale, precision));
+        }
+    }
+
+    /**
+     * Verify that the precision and scale are valid for the given primitive type.
+     *
+     * @throws IllegalArgumentException if the provided precision and/or scale is invalid
+     */
+    public static void verifyPrecisionAndScale(final int precision, final int scale,
+            final PrimitiveType.PrimitiveTypeName primitiveType) {
+        verifyPrecisionAndScale(precision, scale);
+        if (primitiveType == PrimitiveType.PrimitiveTypeName.INT32) {
+            if (precision < MIN_DECIMAL_INT_PRECISION || precision > MAX_DECIMAL_INT_PRECISION) {
+                throw new IllegalArgumentException(
+                        String.format(
+                                "Column with decimal logical type and INT32 primitive type should have precision in " +
+                                        "range [%d, %d], found column with precision %d",
+                                MIN_DECIMAL_INT_PRECISION, MAX_DECIMAL_INT_PRECISION, precision));
+            }
+        } else if (primitiveType == PrimitiveType.PrimitiveTypeName.INT64) {
+            if (precision < MIN_DECIMAL_LONG_PRECISION || precision > MAX_DECIMAL_LONG_PRECISION) {
+                throw new IllegalArgumentException(
+                        String.format(
+                                "Column with decimal logical type and INT64 primitive type should have precision in " +
+                                        "range [%d, %d], found column with precision %d",
+                                MIN_DECIMAL_LONG_PRECISION, MAX_DECIMAL_LONG_PRECISION, precision));
+            }
+        }
+    }
 
     /**
      *
@@ -31,15 +83,7 @@ public class BigDecimalParquetBytesCodec implements ObjectCodec<BigDecimal> {
      */
     public BigDecimalParquetBytesCodec(final int precision, final int scale, final int encodedSizeInBytes,
             final RoundingMode roundingMode) {
-        if (precision <= 0) {
-            throw new IllegalArgumentException("precision (=" + precision + ") should be > 0");
-        }
-        if (scale < 0) {
-            throw new IllegalArgumentException("scale (=" + scale + ") should be >= 0");
-        }
-        if (scale > precision) {
-            throw new IllegalArgumentException("scale (=" + scale + ") is greater than precision (=" + precision + ")");
-        }
+        verifyPrecisionAndScale(precision, scale);
         this.precision = precision;
         this.scale = scale;
         this.encodedSizeInBytes = encodedSizeInBytes;
@@ -56,6 +100,10 @@ public class BigDecimalParquetBytesCodec implements ObjectCodec<BigDecimal> {
 
     public BigDecimalParquetBytesCodec(final int precision, final int scale, final int encodedSizeInBytes) {
         this(precision, scale, encodedSizeInBytes, RoundingMode.HALF_UP);
+    }
+
+    public BigDecimalParquetBytesCodec(final int precision, final int scale) {
+        this(precision, scale, -1);
     }
 
     // Given how parquet encoding works for nulls, the actual value provided for a null is irrelevant.

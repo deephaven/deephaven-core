@@ -4,7 +4,7 @@ connectorx==0.3.3; platform.machine == 'x86_64'
 deephaven-plugin==0.6.0
 importlib_resources==6.4.0
 java-utilities==0.3.0
-jedi==0.18.2
+jedi==0.19.1
 jpy==0.17.0
 llvmlite==0.43.0
 numba==0.60.0

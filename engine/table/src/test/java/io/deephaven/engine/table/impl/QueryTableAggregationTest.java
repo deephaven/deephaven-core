@@ -2249,6 +2249,40 @@ public class QueryTableAggregationTest {
     }
 
     @Test
+    public void testWeightedSumByLong() {
+        final QueryTable table = testRefreshingTable(i(2, 4, 6).toTracking(),
+                col("Long1", 2L, 4L, 6L), col("Long2", 1L, 2L, 3L));
+        final Table result = table.wsumBy("Long2");
+        TableTools.show(result);
+        TestCase.assertEquals(1, result.size());
+        long result_wsum = result.getColumnSource("Long1", long.class).getLong(result.getRowSet().firstRowKey());
+        long wsum = 2 + 8 + 18;
+        TestCase.assertEquals(wsum, result_wsum);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(table, i(8), col("Long1", (long) Integer.MAX_VALUE), col("Long2", 7L));
+            table.notifyListeners(i(8), i(), i());
+        });
+        show(result);
+        result_wsum = result.getColumnSource("Long1", long.class).getLong(result.getRowSet().firstRowKey());
+        wsum = wsum + (7L * (long) Integer.MAX_VALUE);
+        TestCase.assertEquals(wsum, result_wsum);
+    }
+
+    @Test
+    public void testId5522() {
+        final QueryTable table = testRefreshingTable(i(2, 4, 6).toTracking(),
+                col("Long1", 10L, 20L, 30L), col("Long2", 1L, NULL_LONG, 1L));
+        final Table result = table.wsumBy("Long2");
+        TableTools.show(result);
+        TestCase.assertEquals(1, result.size());
+        long result_wsum = result.getColumnSource("Long1", long.class).getLong(result.getRowSet().firstRowKey());
+        long wsum = 10 + 30;
+        TestCase.assertEquals(wsum, result_wsum);
+    }
+
+    @Test
     public void testWeightedSumByIncremental() {
         final int[] sizes = {10, 50, 200};
         for (int size : sizes) {

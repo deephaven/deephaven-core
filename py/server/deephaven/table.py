@@ -1102,9 +1102,12 @@ class Table(JObjectWrapper):
             order_by = to_sequence(order_by)
             if not order:
                 order = (SortDirection.ASCENDING,) * len(order_by)
-            order = to_sequence(order)
-            if len(order_by) != len(order):
-                raise DHError(message="The number of sort columns must be the same as the number of sort directions.")
+            else:
+                order = to_sequence(order)
+                if any([o not in (SortDirection.ASCENDING, SortDirection.DESCENDING) for o in order]):
+                    raise DHError(message="The sort direction must be either 'ASCENDING' or 'DESCENDING'.")
+                if len(order_by) != len(order):
+                    raise DHError(message="The number of sort columns must be the same as the number of sort directions.")
 
             sort_columns = [_sort_column(col, dir_) for col, dir_ in zip(order_by, order)]
             j_sc_list = j_array_list(sort_columns)
@@ -2008,6 +2011,9 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            if not isinstance(drop_keys, bool):
+                raise DHError(message="drop_keys must be a boolean value.")
+
             by = to_sequence(by)
             return PartitionedTable(j_partitioned_table=self.j_table.partitionBy(drop_keys, *by))
         except Exception as e:
@@ -2737,12 +2743,14 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            order_by = to_sequence(order_by)
             if not order:
                 order = (SortDirection.ASCENDING,) * len(order_by)
-            order = to_sequence(order)
-            if len(order_by) != len(order):
-                raise ValueError("The number of sort columns must be the same as the number of sort directions.")
+            else:
+                order = to_sequence(order)
+                if any([o not in (SortDirection.ASCENDING, SortDirection.DESCENDING) for o in order]):
+                    raise DHError(message="The sort direction must be either 'ASCENDING' or 'DESCENDING'.")
+                if len(order_by) != len(order):
+                    raise DHError(message="The number of sort columns must be the same as the number of sort directions.")
 
             sort_columns = [_sort_column(col, dir_) for col, dir_ in zip(order_by, order)]
             j_sc_list = j_array_list(sort_columns)

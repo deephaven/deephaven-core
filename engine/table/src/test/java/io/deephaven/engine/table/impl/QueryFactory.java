@@ -664,7 +664,7 @@ public class QueryFactory {
         switch (columnTypes[colNum].getSimpleName()) {
 
             case "Instant":
-                filter.append(colName).append(" > ").append(random.nextInt(1000) * 1_000_000_000L);
+                filter.append(colName).append(" > '").append(random.nextInt(1000) * 1_000_000_000L).append("'");
                 break;
 
             case "String":

@@ -82,6 +82,13 @@ public class DateTimeUtils {
             "(?<date>[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9])(?<t>[tT]?) (?<timezone>[a-zA-Z_/]+)");
 
     /**
+     * Matches dates without time zones.
+     */
+    private static final Pattern LOCAL_DATE_PATTERN = Pattern.compile(
+            "(?<date>[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9])(?<t>[tT]?)");
+
+
+    /**
      * Matches time durations.
      */
     private static final Pattern TIME_DURATION_PATTERN = Pattern.compile(
@@ -2931,199 +2938,6 @@ public class DateTimeUtils {
         return dateTime.getMinute();
     }
 
-    ///////////////////////////////////////////////////////////////////////////////////////////////////
-    // ↓↓↓↓↓↓↓ THE METHODS BELOW ARE DEPRECATED AND WILL BE REMOVED SOON ↓↓↓↓↓↓↓
-    ///////////////////////////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * Returns the number of nanoseconds that have elapsed since the top of the day.
-     * <p>
-     * On days when daylight savings time events occur, results may be different from what is expected based upon the
-     * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
-     * upon if the daylight savings time adjustment is forwards or backwards.
-     *
-     * @param instant time
-     * @param timeZone time zone
-     * @return {@link QueryConstants#NULL_LONG} if either input is {@code null}; otherwise, number of nanoseconds that
-     *         have elapsed since the top of the day
-     * @deprecated Use {@link #nanosOfDay(Instant, ZoneId, boolean)} instead. To be removed soon.
-     */
-    @Deprecated
-    @ScriptApi
-    public static long nanosOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
-        return nanosOfDay(instant, timeZone, false);
-    }
-
-    /**
-     * Returns the number of nanoseconds that have elapsed since the top of the day.
-     * <p>
-     * On days when daylight savings time events occur, results may be different from what is expected based upon the
-     * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
-     * upon if the daylight savings time adjustment is forwards or backwards.
-     *
-     * @param dateTime time
-     * @return {@link QueryConstants#NULL_LONG} if either input is {@code null}; otherwise, number of nanoseconds that
-     *         have elapsed since the top of the day
-     * @deprecated Use {@link #nanosOfDay(ZonedDateTime, boolean)} instead. To be removed soon.
-     */
-    @Deprecated
-    @ScriptApi
-    public static long nanosOfDay(@Nullable final ZonedDateTime dateTime) {
-        return nanosOfDay(dateTime, false);
-    }
-
-    /**
-     * Returns the number of milliseconds that have elapsed since the top of the day.
-     * <p>
-     * On days when daylight savings time events occur, results may be different from what is expected based upon the
-     * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
-     * upon if the daylight savings time adjustment is forwards or backwards.
-     *
-     * @param instant time
-     * @param timeZone time zone
-     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of milliseconds that
-     *         have elapsed since the top of the day
-     * @deprecated Use {@link #millisOfDay(Instant, ZoneId, boolean)} instead. To be removed soon.
-     */
-    @Deprecated
-    @ScriptApi
-    public static int millisOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
-        return millisOfDay(instant, timeZone, false);
-    }
-
-    /**
-     * Returns the number of milliseconds that have elapsed since the top of the day.
-     * <p>
-     * On days when daylight savings time events occur, results may be different from what is expected based upon the
-     * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
-     * upon if the daylight savings time adjustment is forwards or backwards.
-     *
-     * @param dateTime time
-     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of milliseconds that
-     *         have elapsed since the top of the day
-     * @deprecated Use {@link #millisOfDay(ZonedDateTime, boolean)} instead. To be removed soon.
-     */
-    @Deprecated
-    @ScriptApi
-    public static int millisOfDay(@Nullable final ZonedDateTime dateTime) {
-        return millisOfDay(dateTime, false);
-    }
-
-    /**
-     * Returns the number of seconds that have elapsed since the top of the day.
-     * <p>
-     * On days when daylight savings time events occur, results may be different from what is expected based upon the
-     * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
-     * upon if the daylight savings time adjustment is forwards or backwards.
-     *
-     * @param instant time
-     * @param timeZone time zone
-     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of seconds that have
-     *         elapsed since the top of the day
-     * @deprecated Use {@link #secondOfDay(Instant, ZoneId, boolean)} instead. To be removed soon.
-     */
-    @Deprecated
-    @ScriptApi
-    public static int secondOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
-        return secondOfDay(instant, timeZone, false);
-    }
-
-    /**
-     * Returns the number of seconds that have elapsed since the top of the day.
-     * <p>
-     * On days when daylight savings time events occur, results may be different from what is expected based upon the
-     * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
-     * upon if the daylight savings time adjustment is forwards or backwards.
-     *
-     * @param dateTime time
-     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of seconds that have
-     *         elapsed since the top of the day
-     * @deprecated Use {@link #secondOfDay(ZonedDateTime, boolean)} instead. To be removed soon.
-     */
-    @Deprecated
-    @ScriptApi
-    public static int secondOfDay(@Nullable final ZonedDateTime dateTime) {
-        return secondOfDay(dateTime, false);
-    }
-
-    /**
-     * Returns the number of minutes that have elapsed since the top of the day.
-     * <p>
-     * On days when daylight savings time events occur, results may be different from what is expected based upon the
-     * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
-     * upon if the daylight savings time adjustment is forwards or backwards.
-     *
-     * @param instant time
-     * @param timeZone time zone
-     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of minutes that have
-     *         elapsed since the top of the day
-     * @deprecated Use {@link #minuteOfDay(Instant, ZoneId, boolean)} instead. To be removed soon.
-     */
-    @Deprecated
-    @ScriptApi
-    public static int minuteOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
-        return minuteOfDay(instant, timeZone, false);
-    }
-
-    /**
-     * Returns the number of minutes that have elapsed since the top of the day.
-     * <p>
-     * On days when daylight savings time events occur, results may be different from what is expected based upon the
-     * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
-     * upon if the daylight savings time adjustment is forwards or backwards.
-     *
-     * @param dateTime time
-     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of minutes that have
-     *         elapsed since the top of the day
-     * @deprecated Use {@link #minuteOfDay(ZonedDateTime, boolean)} instead. To be removed soon.
-     */
-    @Deprecated
-    @ScriptApi
-    public static int minuteOfDay(@Nullable final ZonedDateTime dateTime) {
-        return minuteOfDay(dateTime, false);
-    }
-
-    /**
-     * Returns the number of hours that have elapsed since the top of the day.
-     * <p>
-     * On days when daylight savings time events occur, results may be different from what is expected based upon the
-     * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
-     * upon if the daylight savings time adjustment is forwards or backwards.
-     *
-     * @param instant time
-     * @param timeZone time zone
-     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of hours that have
-     *         elapsed since the top of the day
-     * @deprecated Use {@link #hourOfDay(Instant, ZoneId, boolean)} instead. To be removed soon.
-     */
-    @Deprecated
-    @ScriptApi
-    public static int hourOfDay(@Nullable final Instant instant, @Nullable final ZoneId timeZone) {
-        return hourOfDay(instant, timeZone, false);
-    }
-
-    /**
-     * Returns the number of hours that have elapsed since the top of the day.
-     * <p>
-     * On days when daylight savings time events occur, results may be different from what is expected based upon the
-     * local time. For example, on daylight savings time change days, 9:30AM may be earlier or later in the day based
-     * upon if the daylight savings time adjustment is forwards or backwards.
-     *
-     * @param dateTime time
-     * @return {@link QueryConstants#NULL_INT} if either input is {@code null}; otherwise, number of hours that have
-     *         elapsed since the top of the day
-     * @deprecated Use {@link #hourOfDay(ZonedDateTime, boolean)} instead. To be removed soon.
-     */
-    @Deprecated
-    @ScriptApi
-    public static int hourOfDay(@Nullable final ZonedDateTime dateTime) {
-        return hourOfDay(dateTime, false);
-    }
-
-    ///////////////////////////////////////////////////////////////////////////////////////////////////
-    // ↑↑↑↑↑↑↑ THE METHODS ABOVE ARE DEPRECATED AND WILL BE REMOVED SOON ↑↑↑↑↑↑↑
-    ///////////////////////////////////////////////////////////////////////////////////////////////////
-
     /**
      * Returns the number of nanoseconds that have elapsed since the start of the day.
      *
@@ -4998,6 +4812,65 @@ public class DateTimeUtils {
 
         try {
             return parseInstant(s);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * Parses the string argument as a {@link LocalDateTime}.
+     * <p>
+     * Date time strings are formatted according to the ISO 8601 date time format
+     * {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS]} and others.
+     *
+     * @param s date time string
+     * @return a {@link LocalDateTime} represented by the input string
+     * @throws DateTimeParseException if the string cannot be parsed
+     */
+    @ScriptApi
+    @NotNull
+    public static LocalDateTime parseLocalDateTime(@NotNull final String s) {
+        // noinspection ConstantConditions
+        if (s == null) {
+            throw new DateTimeParseException("Cannot parse local date time (null): " + s);
+        }
+
+        try {
+            return LocalDateTime.parse(s);
+        } catch (java.time.format.DateTimeParseException e) {
+            // ignore
+        }
+
+        try {
+            final Matcher dtMatcher = LOCAL_DATE_PATTERN.matcher(s);
+            if (dtMatcher.matches()) {
+                final String dateString = dtMatcher.group("date");
+                return LocalDate.parse(dateString, FORMATTER_ISO_LOCAL_DATE).atTime(LocalTime.of(0, 0));
+            }
+            return LocalDateTime.parse(s, FORMATTER_ISO_LOCAL_DATE_TIME);
+        } catch (Exception ex) {
+            throw new DateTimeParseException("Cannot parse local date time: " + s, ex);
+        }
+    }
+
+    /**
+     * Parses the string argument as a {@link LocalDateTime}.
+     * <p>
+     * Date time strings are formatted according to the ISO 8601 date time format
+     * {@code yyyy-MM-ddThh:mm:ss[.SSSSSSSSS]} and others.
+     *
+     * @param s date time string
+     * @return a {@link LocalDateTime} represented by the input string, or {@code null} if the string can not be parsed
+     */
+    @ScriptApi
+    @Nullable
+    public static LocalDateTime parseLocalDateTimeQuiet(@Nullable final String s) {
+        if (s == null || s.length() <= 1) {
+            return null;
+        }
+
+        try {
+            return parseLocalDateTime(s);
         } catch (Exception e) {
             return null;
         }

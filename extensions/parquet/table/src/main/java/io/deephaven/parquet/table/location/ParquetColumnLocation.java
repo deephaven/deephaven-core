@@ -15,9 +15,9 @@ import io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.AbstractColumnLocation;
 import io.deephaven.engine.table.impl.sources.regioned.*;
+import io.deephaven.parquet.base.BigDecimalParquetBytesCodec;
+import io.deephaven.parquet.base.BigIntegerParquetBytesCodec;
 import io.deephaven.parquet.base.ColumnChunkReader;
-import io.deephaven.parquet.table.BigDecimalParquetBytesCodec;
-import io.deephaven.parquet.table.BigIntegerParquetBytesCodec;
 import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.metadata.CodecInfo;
 import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
@@ -44,6 +44,9 @@ import java.util.function.LongFunction;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+
+import static io.deephaven.parquet.base.BigDecimalParquetBytesCodec.verifyPrecisionAndScale;
+import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.BINARY;
 
 final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLocation {
 
@@ -376,7 +379,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                         toPage = ToLongPage.create(pageType);
                         break;
                     case INT96:
-                        toPage = ToInstantPage.create(pageType);
+                        toPage = ToInstantPage.createFromInt96(pageType);
                         break;
                     case DOUBLE:
                         toPage = ToDoublePage.create(pageType);
@@ -441,29 +444,49 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
 
         private final String name;
         private final ColumnChunkReader columnChunkReader;
-        private final Class<?> componentType;
+        private final Class<?> pageType;
 
         LogicalTypeVisitor(@NotNull final String name, @NotNull final ColumnChunkReader columnChunkReader,
-                final Class<?> componentType) {
+                final Class<?> pageType) {
             this.name = name;
             this.columnChunkReader = columnChunkReader;
-            this.componentType = componentType;
+            this.pageType = pageType;
         }
 
         @Override
         public Optional<ToPage<ATTR, ?>> visit(
                 final LogicalTypeAnnotation.StringLogicalTypeAnnotation stringLogicalType) {
-            return Optional
-                    .of(ToStringPage.create(componentType, columnChunkReader.getDictionarySupplier()));
+            return Optional.of(ToStringPage.create(pageType, columnChunkReader.getDictionarySupplier()));
         }
 
         @Override
         public Optional<ToPage<ATTR, ?>> visit(
                 final LogicalTypeAnnotation.TimestampLogicalTypeAnnotation timestampLogicalType) {
             if (timestampLogicalType.isAdjustedToUTC()) {
-                return Optional.of(ToInstantPage.create(componentType));
+                // The column will be stored as nanoseconds elapsed since epoch as long values
+                switch (timestampLogicalType.getUnit()) {
+                    case MILLIS:
+                        return Optional.of(ToInstantPage.createFromMillis(pageType));
+                    case MICROS:
+                        return Optional.of(ToInstantPage.createFromMicros(pageType));
+                    case NANOS:
+                        return Optional.of(ToInstantPage.createFromNanos(pageType));
+                    default:
+                        throw new IllegalArgumentException("Unsupported unit=" + timestampLogicalType.getUnit());
+                }
             }
-            return Optional.of(ToLocalDateTimePage.create(componentType));
+            // The column will be stored as as LocalDateTime
+            // Ref:https://github.com/apache/parquet-format/blob/master/LogicalTypes.md#local-semantics-timestamps-not-normalized-to-utc
+            switch (timestampLogicalType.getUnit()) {
+                case MILLIS:
+                    return Optional.of(ToLocalDateTimePage.createFromMillis(pageType));
+                case MICROS:
+                    return Optional.of(ToLocalDateTimePage.createFromMicros(pageType));
+                case NANOS:
+                    return Optional.of(ToLocalDateTimePage.createFromNanos(pageType));
+                default:
+                    throw new IllegalArgumentException("Unsupported unit=" + timestampLogicalType.getUnit());
+            }
         }
 
         @Override
@@ -471,21 +494,21 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             if (intLogicalType.isSigned()) {
                 switch (intLogicalType.getBitWidth()) {
                     case 8:
-                        return Optional.of(ToBytePage.create(componentType));
+                        return Optional.of(ToBytePage.create(pageType));
                     case 16:
-                        return Optional.of(ToShortPage.create(componentType));
+                        return Optional.of(ToShortPage.create(pageType));
                     case 32:
-                        return Optional.of(ToIntPage.create(componentType));
+                        return Optional.of(ToIntPage.create(pageType));
                     case 64:
-                        return Optional.of(ToLongPage.create(componentType));
+                        return Optional.of(ToLongPage.create(pageType));
                 }
             } else {
                 switch (intLogicalType.getBitWidth()) {
                     case 8:
                     case 16:
-                        return Optional.of(ToCharPage.create(componentType));
+                        return Optional.of(ToCharPage.create(pageType));
                     case 32:
-                        return Optional.of(ToLongPage.create(componentType));
+                        return Optional.of(ToLongPage.createFromUnsignedInt(pageType));
                 }
             }
             return Optional.empty();
@@ -493,12 +516,22 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
 
         @Override
         public Optional<ToPage<ATTR, ?>> visit(final LogicalTypeAnnotation.DateLogicalTypeAnnotation dateLogicalType) {
-            return Optional.of(ToLocalDatePage.create(componentType));
+            return Optional.of(ToLocalDatePage.create(pageType));
         }
 
         @Override
         public Optional<ToPage<ATTR, ?>> visit(final LogicalTypeAnnotation.TimeLogicalTypeAnnotation timeLogicalType) {
-            return Optional.of(ToLocalTimePage.create(componentType));
+            // isAdjustedToUTC parameter is ignored while reading LocalTime from Parquet files
+            switch (timeLogicalType.getUnit()) {
+                case MILLIS:
+                    return Optional.of(ToLocalTimePage.createFromMillis(pageType));
+                case MICROS:
+                    return Optional.of(ToLocalTimePage.createFromMicros(pageType));
+                case NANOS:
+                    return Optional.of(ToLocalTimePage.createFromNanos(pageType));
+                default:
+                    throw new IllegalArgumentException("Unsupported unit=" + timeLogicalType.getUnit());
+            }
         }
 
         @Override
@@ -508,31 +541,31 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             final PrimitiveType.PrimitiveTypeName typeName = type.getPrimitiveTypeName();
             switch (typeName) {
                 case INT32:
-                    return Optional.of(ToBigDecimalFromIntPage.create(
-                            componentType, decimalLogicalType.getPrecision(), decimalLogicalType.getScale()));
+                    return Optional.of(ToBigDecimalFromNumeric.createFromInt(pageType, decimalLogicalType.getScale()));
                 case INT64:
-                    return Optional.of(ToBigDecimalFromLongPage.create(
-                            componentType, decimalLogicalType.getPrecision(), decimalLogicalType.getScale()));
-                case FIXED_LEN_BYTE_ARRAY:
+                    return Optional.of(ToBigDecimalFromNumeric.createFromLong(pageType, decimalLogicalType.getScale()));
+                case FIXED_LEN_BYTE_ARRAY: // fall through
                 case BINARY:
-                    final int encodedSizeInBytes =
-                            (typeName == PrimitiveType.PrimitiveTypeName.BINARY) ? -1 : type.getTypeLength();
-                    if (BigDecimal.class.equals(componentType)) {
-                        return Optional.of(
-                                ToObjectPage.create(
-                                        BigDecimal.class,
-                                        new BigDecimalParquetBytesCodec(
-                                                decimalLogicalType.getPrecision(), decimalLogicalType.getScale(),
-                                                encodedSizeInBytes),
-                                        columnChunkReader.getDictionarySupplier()));
-                    } else if (BigInteger.class.equals(componentType)) {
-                        return Optional.of(
-                                ToObjectPage.create(
-                                        BigInteger.class,
-                                        new BigIntegerParquetBytesCodec(encodedSizeInBytes),
-                                        columnChunkReader.getDictionarySupplier()));
+                    final int encodedSizeInBytes = typeName == BINARY ? -1 : type.getTypeLength();
+                    if (BigDecimal.class.equals(pageType)) {
+                        final int precision = decimalLogicalType.getPrecision();
+                        final int scale = decimalLogicalType.getScale();
+                        try {
+                            verifyPrecisionAndScale(precision, scale, typeName);
+                        } catch (final IllegalArgumentException exception) {
+                            throw new TableDataException(
+                                    "Invalid scale and precision for column " + name + ": " + exception.getMessage());
+                        }
+                        return Optional.of(ToBigDecimalPage.create(
+                                pageType,
+                                new BigDecimalParquetBytesCodec(precision, scale, encodedSizeInBytes),
+                                columnChunkReader.getDictionarySupplier()));
+                    } else if (BigInteger.class.equals(pageType)) {
+                        return Optional.of(ToBigIntegerPage.create(
+                                pageType,
+                                new BigIntegerParquetBytesCodec(encodedSizeInBytes),
+                                columnChunkReader.getDictionarySupplier()));
                     }
-
                     // We won't blow up here, Maybe someone will provide us a codec instead.
                 default:
                     return Optional.empty();

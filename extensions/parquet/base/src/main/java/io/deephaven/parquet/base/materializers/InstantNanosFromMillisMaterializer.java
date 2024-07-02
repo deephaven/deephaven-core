@@ -14,7 +14,7 @@ import org.apache.parquet.column.values.ValuesReader;
 
 public class InstantNanosFromMillisMaterializer extends LongMaterializerBase implements PageMaterializer {
 
-    public static final PageMaterializerFactory Factory = new PageMaterializerFactory() {
+    public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
             return new InstantNanosFromMillisMaterializer(dataReader, (long) nullValue, numValues);
@@ -26,7 +26,7 @@ public class InstantNanosFromMillisMaterializer extends LongMaterializerBase imp
         }
     };
 
-    final ValuesReader dataReader;
+    private final ValuesReader dataReader;
 
     private InstantNanosFromMillisMaterializer(ValuesReader dataReader, int numValues) {
         this(dataReader, 0, numValues);

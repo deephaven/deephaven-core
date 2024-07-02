@@ -15,7 +15,7 @@ import java.util.Arrays;
 
 public class DoubleMaterializer implements PageMaterializer {
 
-    public static final PageMaterializerFactory Factory = new PageMaterializerFactory() {
+    public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
             return new DoubleMaterializer(dataReader, (double) nullValue, numValues);
@@ -27,10 +27,10 @@ public class DoubleMaterializer implements PageMaterializer {
         }
     };
 
-    final ValuesReader dataReader;
+    private final ValuesReader dataReader;
 
-    final double nullValue;
-    final double[] data;
+    private final double nullValue;
+    private final double[] data;
 
     private DoubleMaterializer(ValuesReader dataReader, int numValues) {
         this(dataReader, 0, numValues);
