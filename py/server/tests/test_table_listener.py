@@ -4,17 +4,18 @@
 
 import time
 import unittest
-from typing import List, Union
+from typing import List, Union, Optional
 
 import numpy
 import jpy
 
-from deephaven import time_table, new_table, input_table, DHError
+from deephaven import time_table, new_table, input_table, DHError, empty_table
 from deephaven.column import bool_col, string_col
 from deephaven.experimental import time_window
 from deephaven.jcompat import to_sequence
 from deephaven.table import Table
-from deephaven.table_listener import listen, TableListener, TableListenerHandle
+from deephaven.table_listener import listen, TableListener, TableListenerHandle, MergedListener, TableUpdate, \
+    ListenerRecorder, MergedListenerHandle, merged_listen
 from deephaven.execution_context import get_exec_ctx
 from deephaven.update_graph import exclusive_lock
 from tests.testbase import BaseTestCase
@@ -22,7 +23,7 @@ from tests.testbase import BaseTestCase
 _JColumnVectors = jpy.get_type("io.deephaven.engine.table.vectors.ColumnVectors")
 
 class TableUpdateRecorder:
-    def __init__(self, table: Table, chunk_size: int = None, cols: Union[str, List[str]] = None):
+    def __init__(self, table: Optional[Table] = None, chunk_size: int = None, cols: Union[str, List[str]] = None):
         self.table = table
         self.chunk_size = chunk_size
         self.cols = cols
@@ -34,7 +35,7 @@ class TableUpdateRecorder:
         self.replays = []
         self.modified_columns_list = []
 
-    def record(self, update, is_replay):
+    def record(self, update: TableUpdate, is_replay: bool=False):
         if self.chunk_size is None:
             self.added.append(update.added())
             self.removed.append(update.removed())
@@ -326,6 +327,112 @@ class TableListenerTestCase(BaseTestCase):
 
         with self.assertRaises(DHError):
             table_listener_handle = TableListenerHandle(self.test_table, listener_func, dependencies=dep_table)
+
+    def test_merged_listener_obj(self):
+        t1 = time_table("PT1s").update(["X=i % 11"])
+        t2 = time_table("PT2s").update(["Y=i % 8"])
+        t3 = time_table("PT3s").update(["Z=i % 5"])
+
+        class TestMergedListener(MergedListener):
+            def process(self) -> None:
+                for i, listener in enumerate(self.listener_recorders):
+                    if self.listener_recorders[i].table_update():
+                        tur.record(self.listener_recorders[i].table_update())
+
+        tml = TestMergedListener()
+        with self.subTest("Direct Handle"):
+            tur = TableUpdateRecorder()
+            mlh = MergedListenerHandle([ListenerRecorder(t) for t in [t1, t2, t3]], tml)
+            mlh.start()
+            ensure_ugp_cycles(tur, cycles=3)
+            mlh.stop()
+            mlh.start()
+            ensure_ugp_cycles(tur, cycles=6)
+            mlh.stop()
+            self.assertGreaterEqual(len(tur.replays), 6)
+
+        with self.subTest("Convenience function"):
+            tur = TableUpdateRecorder()
+            mlh = merged_listen([ListenerRecorder(t) for t in [t1, t2, t3]], tml)
+            ensure_ugp_cycles(tur, cycles=3)
+            mlh.stop()
+            mlh.start()
+            ensure_ugp_cycles(tur, cycles=6)
+            mlh.stop()
+            self.assertGreaterEqual(len(tur.replays), 6)
+
+        with self.subTest("Error input"):
+            et = empty_table(1)
+            with self.assertRaises(DHError):
+                mlh = MergedListenerHandle([ListenerRecorder(t) for t in [t1, t2, t3, et]], tml)
+
+    def test_merged_listener_func(self):
+        t1 = time_table("PT1s").update(["X=i % 11"])
+        t2 = time_table("PT2s").update(["Y=i % 8"])
+        t3 = time_table("PT3s").update(["Z=i % 5"])
+        listener_recorders = [ListenerRecorder(t) for t in [t1, t2, t3]]
+
+        def test_ml_func() -> None:
+            for i, listener in enumerate(listener_recorders):
+                if listener_recorders[i].table_update():
+                    tur.record(listener_recorders[i].table_update())
+
+        with self.subTest("Direct Handle"):
+            tur = TableUpdateRecorder()
+            mlh = MergedListenerHandle(listener_recorders, test_ml_func)
+            mlh.start()
+            ensure_ugp_cycles(tur, cycles=3)
+            mlh.stop()
+            mlh.start()
+            ensure_ugp_cycles(tur, cycles=6)
+            mlh.stop()
+            self.assertGreaterEqual(len(tur.replays), 6)
+
+        with self.subTest("Convenience function"):
+            tur = TableUpdateRecorder()
+            mlh = merged_listen(listener_recorders, test_ml_func)
+            ensure_ugp_cycles(tur, cycles=3)
+            mlh.stop()
+            mlh.start()
+            ensure_ugp_cycles(tur, cycles=6)
+            mlh.stop()
+            self.assertGreaterEqual(len(tur.replays), 6)
+
+        with self.subTest("Error input"):
+            et = empty_table(1)
+            with self.assertRaises(DHError):
+                mlh = merged_listen([ListenerRecorder(t) for t in [t1, t2, t3, et]], test_ml_func)
+
+    def test_merged_listener_with_deps(self):
+        t1 = time_table("PT1s").update(["X=i % 11"])
+        t2 = time_table("PT2s").update(["Y=i % 8"])
+        t3 = time_table("PT3s").update(["Z=i % 5"])
+
+        dep_table = time_table("PT00:00:05").update("X = i % 11")
+        ec = get_exec_ctx()
+
+        tur = TableUpdateRecorder()
+        j_arrays = []
+        class TestMergedListener(MergedListener):
+            def process(self) -> None:
+                for i, listener in enumerate(self.listener_recorders):
+                    if self.listener_recorders[i].table_update():
+                        tur.record(self.listener_recorders[i].table_update())
+
+                with ec:
+                    t = dep_table.view(["Y = i % 8"])
+                    j_arrays.append(_JColumnVectors.of(t.j_table, "Y").copyToArray())
+
+        tml = TestMergedListener()
+        mlh = MergedListenerHandle(listener_recorders=[ListenerRecorder(t) for t in [t1, t2, t3]], listener=tml, dependencies=dep_table)
+        mlh.start()
+        ensure_ugp_cycles(tur, cycles=3)
+        mlh.stop()
+        mlh.start()
+        ensure_ugp_cycles(tur, cycles=6)
+        mlh.stop()
+        self.assertGreaterEqual(len(tur.replays), 6)
+        self.assertTrue(len(j_arrays) > 0 and all([len(ja) > 0 for ja in j_arrays]))
 
 
 if __name__ == "__main__":

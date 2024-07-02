@@ -23,6 +23,9 @@ class PythonUtils {
         return pyCallable(pyObject, "on_update");
     }
 
+    static PyObject pyMergeListenerFunc(final PyObject pyObject) {
+        return pyCallable(pyObject, "process");
+    }
 
     /**
      * Creates a callable PyObject, either using method.apply() or __call__(), if the pyObjectIn has such methods
