@@ -280,11 +280,10 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
                 view.setResultId(state.getHandle().makeTicket());
                 view.setColumnSpecsList(descriptor.getKeyColumnNamesList());
                 connection.tableServiceClient().view(view, metadata, c::apply);
-            }, "view only keys columns")
+            }, "view only key columns")
                     .refetch(this, connection.metadata())
                     .then(state -> Promise.resolve(new JsTable(state.getConnection(), state)));
         }
-        assert keys != null;
         return keys.then(JsTable::copy);
     }
 
@@ -293,7 +292,6 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
      *
      * @return Promise of a Table
      */
-    @JsMethod
     public Promise<JsTable> getBaseTable() {
         return baseTable.copy();
     }
@@ -302,6 +300,12 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
     private void closeSubscriptions() {
         if (baseTable != null) {
             baseTable.close();
+        }
+        if (keys != null) {
+            keys.then(table -> {
+                table.close();
+                return Promise.resolve(table);
+            });
         }
         if (subscription != null) {
             subscription.close();
