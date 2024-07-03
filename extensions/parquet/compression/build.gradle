@@ -12,6 +12,8 @@ dependencies {
     implementation project(':Configuration')
 
     implementation depCommonsIo
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.1'
+    // TODO Is there an alternate to specifying version, the default doesn't work
 
     Classpaths.inheritGuava(project)
 

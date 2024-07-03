@@ -9,15 +9,12 @@ import io.airlift.compress.lz4.Lz4Codec;
 import io.airlift.compress.lzo.LzoCodec;
 import io.airlift.compress.zstd.ZstdCodec;
 import io.deephaven.util.SafeCloseable;
-import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.compress.CodecPool;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.CompressionCodecFactory;
-import org.apache.hadoop.io.compress.CompressionInputStream;
 import org.apache.hadoop.io.compress.Compressor;
 import org.apache.hadoop.io.compress.Decompressor;
-import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.hadoop.codec.SnappyCodec;
 import org.apache.parquet.hadoop.codec.Lz4RawCodec;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
@@ -32,7 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 
@@ -42,6 +39,7 @@ import java.util.function.Supplier;
  * CompressionCodecName enum value having loaded the codec in this way.
  */
 public class DeephavenCompressorAdapterFactory {
+    private static final String DECOMPRESSOR_HOLDER_KEY = "DECOMPRESSOR_HOLDER";
     private static volatile DeephavenCompressorAdapterFactory INSTANCE;
 
     public static DeephavenCompressorAdapterFactory getInstance() {
@@ -128,15 +126,15 @@ public class DeephavenCompressorAdapterFactory {
         }
 
         @Override
-        public BytesInput decompress(final InputStream inputStream, final int compressedSize,
+        public InputStream decompress(final InputStream inputStream, final int compressedSize,
                 final int uncompressedSize,
-                final Function<Supplier<SafeCloseable>, SafeCloseable> decompressorCache) throws IOException {
+                final BiFunction<String, Supplier<SafeCloseable>, SafeCloseable> decompressorCache) throws IOException {
             final Decompressor decompressor;
             if (canCreateDecompressorObject) {
                 // Currently, we only cache a single decompressor object inside the holder. If needed in the future, we
                 // can cache multiple decompressor objects based on the codec name.
                 final DecompressorHolder decompressorHolder =
-                        (DecompressorHolder) decompressorCache.apply(DecompressorHolder::new);
+                        (DecompressorHolder) decompressorCache.apply(DECOMPRESSOR_HOLDER_KEY, DecompressorHolder::new);
                 if (decompressorHolder.holdsDecompressor(compressionCodecName)) {
                     decompressor = decompressorHolder.getDecompressor();
                     decompressor.reset();
@@ -151,17 +149,9 @@ public class DeephavenCompressorAdapterFactory {
             } else {
                 decompressor = null;
             }
-            try {
-                // Note that we don't close the decompressed stream because doing so may return the decompressor to the
-                // pool
-                final InputStream buffered = ByteStreams.limit(IOUtils.buffer(inputStream), compressedSize);
-                final CompressionInputStream decompressed = compressionCodec.createInputStream(buffered, decompressor);
-                return BytesInput.copy(BytesInput.from(decompressed, uncompressedSize));
-            } finally {
-                if (decompressor != null) {
-                    decompressor.reset();
-                }
-            }
+            // Note that we don't close the decompressed stream because doing so may return the decompressor to the pool
+            final InputStream buffered = ByteStreams.limit(inputStream, compressedSize);
+            return compressionCodec.createInputStream(buffered, decompressor);
         }
 
         @Override

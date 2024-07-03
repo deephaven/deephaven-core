@@ -13,7 +13,7 @@ enum SeekableChannelContextNull implements SeekableChannelContext {
 
     @Override
     @Nullable
-    public SafeCloseable apply(final Supplier<SafeCloseable> resourceFactory) {
+    public SafeCloseable apply(final String key, final Supplier<SafeCloseable> resourceFactory) {
         return null;
     }
 }

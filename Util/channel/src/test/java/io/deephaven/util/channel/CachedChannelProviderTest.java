@@ -192,7 +192,7 @@ public class CachedChannelProviderTest {
 
         private final class TestChannelContext implements SeekableChannelContext {
             @Override
-            public @Nullable SafeCloseable apply(Supplier<SafeCloseable> resourceFactory) {
+            public @Nullable SafeCloseable apply(String key, Supplier<SafeCloseable> resourceFactory) {
                 throw new UnsupportedOperationException("apply");
             }
         }

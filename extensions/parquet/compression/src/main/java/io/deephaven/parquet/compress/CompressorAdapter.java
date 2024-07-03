@@ -3,15 +3,16 @@
 //
 package io.deephaven.parquet.compress;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.util.SafeCloseable;
 import org.apache.hadoop.io.compress.Decompressor;
-import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.function.Function;
+import java.nio.ByteBuffer;
+import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 /**
@@ -33,10 +34,10 @@ public interface CompressorAdapter extends SafeCloseable {
         }
 
         @Override
-        public BytesInput decompress(final InputStream inputStream, final int compressedSize,
+        public InputStream decompress(final InputStream inputStream, final int compressedSize,
                 final int uncompressedSize,
-                final Function<Supplier<SafeCloseable>, SafeCloseable> decompressorCache) {
-            return BytesInput.from(inputStream, compressedSize);
+                final BiFunction<String, Supplier<SafeCloseable>, SafeCloseable> decompressorCache) {
+            return inputStream;
         }
 
         @Override
@@ -45,6 +46,49 @@ public interface CompressorAdapter extends SafeCloseable {
         @Override
         public void close() {}
     };
+
+    // TODO What would be a good place to keep this method?
+    /**
+     * Reads exactly nBytes from the input stream into the provided byte array.
+     *
+     * @param in The input stream to read from
+     * @param nBytes The number of bytes to read
+     * @param bytes The byte array to read into
+     * @return A ByteBuffer wrapping the byte array with the limit set to nBytes
+     * @throws IOException If an error occurs while reading from the input stream
+     * @throws IllegalArgumentException If the byte array is too small to read nBytes
+     * @throws UncheckedDeephavenException If the expected number of bytes could not be read
+     */
+    static ByteBuffer readNBytes(final InputStream in, final int nBytes, final byte[] bytes) throws IOException {
+        if (nBytes > bytes.length) {
+            throw new IllegalArgumentException("bytes array of length " + bytes.length + " is too small to read "
+                    + nBytes + " bytes");
+        }
+        return readNBytesHelper(in, nBytes, bytes);
+    }
+
+    /**
+     * Reads exactly nBytes from the input stream into a new byte buffer and returns it.
+     *
+     * @see #readNBytes(InputStream, int, byte[])
+     */
+    static ByteBuffer readNBytes(final InputStream in, final int nBytes) throws IOException {
+        return readNBytesHelper(in, nBytes, new byte[nBytes]);
+    }
+
+    private static ByteBuffer readNBytesHelper(final InputStream in, final int nBytes, final byte[] bytes)
+            throws IOException {
+        int numRead = 0;
+        while (numRead < nBytes) {
+            final int count = in.read(bytes, numRead, nBytes - numRead);
+            if (count == -1) {
+                throw new UncheckedDeephavenException("Expected to read " + nBytes + " bytes, but read " +
+                        numRead + " bytes");
+            }
+            numRead += count;
+        }
+        return ByteBuffer.wrap(bytes, 0, nBytes);
+    }
 
     /**
      * Creates a new output stream that will take uncompressed writes, and flush data to the provided stream as
@@ -59,8 +103,12 @@ public interface CompressorAdapter extends SafeCloseable {
     OutputStream compress(OutputStream os) throws IOException;
 
     /**
-     * Returns an in-memory instance of BytesInput containing the fully decompressed results of the input stream. The
-     * provided {@link DecompressorHolder} is used for decompressing if compatible with the compression codec.
+     * Creates a new input stream that will read compressed data from the provided stream, and return uncompressed data.
+     * Caller should not close the returned {@link InputStream} because this might return an internally cached
+     * decompressor to the pool. Also, callers should not read more data from the returned {@link InputStream} after
+     * closing the argument {@code inputStream}.
+     * <p>
+     * The provided {@link DecompressorHolder} is used for decompressing if compatible with the compression codec.
      * Otherwise, a new decompressor is created and set in the DecompressorHolder.
      * <p>
      * Note that this method is thread safe, assuming the cached decompressor instances are not shared across threads.
@@ -69,11 +117,11 @@ public interface CompressorAdapter extends SafeCloseable {
      * @param compressedSize the number of bytes in the compressed data
      * @param uncompressedSize the number of bytes that should be present when decompressed
      * @param decompressorCache Used to cache {@link Decompressor} instances for reuse
-     * @return the decompressed bytes, copied into memory
+     * @return an input stream that will return uncompressed data
      * @throws IOException thrown if an error occurs reading data.
      */
-    BytesInput decompress(InputStream inputStream, int compressedSize, int uncompressedSize,
-            Function<Supplier<SafeCloseable>, SafeCloseable> decompressorCache) throws IOException;
+    InputStream decompress(InputStream inputStream, int compressedSize, int uncompressedSize,
+            BiFunction<String, Supplier<SafeCloseable>, SafeCloseable> decompressorCache) throws IOException;
 
     /**
      * @return the CompressionCodecName enum value that represents this compressor.

@@ -8,19 +8,25 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Supplier;
 
 public class BaseSeekableChannelContext implements SeekableChannelContext {
     /**
-     * An opaque resource object hosted by this context.
+     * A cache of opaque resource objects hosted by this context.
      */
-    private SafeCloseable resource;
+    private final Map<String, SafeCloseable> resourceCache = new HashMap<>();
 
     @Override
     @Nullable
-    public final SafeCloseable apply(@NotNull final Supplier<SafeCloseable> resourceFactory) {
+    public final SafeCloseable apply(final String key, @NotNull final Supplier<SafeCloseable> resourceFactory) {
+        SafeCloseable resource = resourceCache.get(key);
         if (resource == null) {
             resource = resourceFactory.get();
+            if (resource != null) {
+                resourceCache.put(key, resource);
+            }
         }
         return resource;
     }
@@ -28,9 +34,10 @@ public class BaseSeekableChannelContext implements SeekableChannelContext {
     @Override
     @OverridingMethodsMustInvokeSuper
     public void close() {
-        if (resource != null) {
-            resource.close();
-            resource = null;
+        for (final SafeCloseable resource : resourceCache.values()) {
+            if (resource != null) {
+                resource.close();
+            }
         }
     }
 }
