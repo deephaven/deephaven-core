@@ -7,10 +7,7 @@ import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.DataIndex;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableListener;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.table.impl.locations.TableLocation;
 import org.jetbrains.annotations.NotNull;
@@ -53,7 +50,7 @@ public interface ColumnSourceManager extends LivenessReferent {
      *
      * @return The set of added row keys, to be owned by the caller
      */
-    WritableRowSet refresh();
+    TableUpdate refresh();
 
     /**
      * Advise this ColumnSourceManager that an error has occurred, and that it will no longer be {@link #refresh()

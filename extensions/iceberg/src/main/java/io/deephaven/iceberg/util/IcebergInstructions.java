@@ -26,9 +26,7 @@ public abstract class IcebergInstructions {
     public static final IcebergInstructions DEFAULT = builder().build();
 
     public enum IcebergRefreshing {
-        STATIC,
-        AUTO_REFRESHING,
-        MANUAL_REFRESHING
+        STATIC, AUTO_REFRESHING, MANUAL_REFRESHING
     }
 
     public static Builder builder() {

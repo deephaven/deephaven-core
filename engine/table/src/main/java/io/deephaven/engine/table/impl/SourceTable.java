@@ -9,6 +9,7 @@ import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.table.impl.locations.TableDataException;
@@ -106,7 +107,6 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         }
 
         setRefreshing(isRefreshing);
-        setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
     }
 
     /**
@@ -219,10 +219,6 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
             final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate = locationBuffer.processPending();
             final ImmutableTableLocationKey[] removedKeys =
                     maybeRemoveLocations(locationUpdate.getPendingRemovedLocationKeys());
-            if (removedKeys.length > 0) {
-                throw new TableLocationRemovedException("Source table does not support removed locations",
-                        removedKeys);
-            }
             maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
 
             // This class previously had functionality to notify "location listeners", but it was never used.
@@ -232,13 +228,13 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                 return;
             }
 
-            final RowSet added = columnSourceManager.refresh();
-            if (added.isEmpty()) {
+            final TableUpdate update = columnSourceManager.refresh();
+            if (update.empty()) {
                 return;
             }
-
-            rowSet.insert(added);
-            notifyListeners(added, RowSetFactory.empty(), RowSetFactory.empty());
+            rowSet.insert(update.added());
+            rowSet.remove(update.removed());
+            notifyListeners(update);
         }
 
         @Override
