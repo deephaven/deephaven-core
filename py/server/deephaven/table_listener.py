@@ -16,7 +16,7 @@ from deephaven import update_graph
 from deephaven._wrapper import JObjectWrapper
 from deephaven.jcompat import to_sequence
 from deephaven.table import Table
-from deephaven._table_reader import _table_reader_chunk_dict
+from deephaven._table_reader import _table_reader_chunk_dict, _table_reader_all_dict
 from deephaven.update_graph import UpdateGraph
 
 _JPythonReplayListenerAdapter = jpy.get_type("io.deephaven.integrations.python.PythonReplayListenerAdapter")
@@ -48,13 +48,8 @@ class TableUpdate(JObjectWrapper):
         if not self.j_table_update.added:
             return {}
 
-        try:
-            j_row_set = self.j_table_update.added.asRowSet()
-            return next(
-                _table_reader_chunk_dict(table=self.table, cols=cols, row_set= j_row_set,
-                                         chunk_size=j_row_set.size(), prev=False, to_numpy=True))
-        except StopIteration:
-            return {}
+        return _table_reader_all_dict(table=self.table, cols=cols, row_set= self.j_table_update.added.asRowSet(),
+                                          prev=False, to_numpy=True)
 
     def added_chunks(self, chunk_size: int, cols: Union[str, List[str]] = None) -> Generator[
         Dict[str, numpy.ndarray], None, None]:
@@ -87,13 +82,8 @@ class TableUpdate(JObjectWrapper):
         if not self.j_table_update.removed:
             return {}
 
-        try:
-            j_row_set = self.j_table_update.removed.asRowSet()
-            return next(
-                _table_reader_chunk_dict(table=self.table, cols=cols, row_set=j_row_set,
-                                         chunk_size=j_row_set.size(), prev=True, to_numpy=True))
-        except StopIteration:
-            return {}
+        return _table_reader_all_dict(table=self.table, cols=cols, row_set=self.j_table_update.removed.asRowSet(),
+                                      prev=True, to_numpy=True)
 
     def removed_chunks(self, chunk_size: int, cols: Union[str, List[str]] = None) -> Generator[
         Dict[str, numpy.ndarray], None, None]:
@@ -126,13 +116,8 @@ class TableUpdate(JObjectWrapper):
         if not self.j_table_update.modified:
             return {}
 
-        try:
-            j_row_set = self.j_table_update.modified.asRowSet()
-            return next(
-                _table_reader_chunk_dict(self.table, cols=cols, row_set=j_row_set,
-                                         chunk_size=j_row_set.size(), prev=False, to_numpy=True))
-        except StopIteration:
-            return {}
+        return _table_reader_all_dict(table=self.table, cols=cols, row_set=self.j_table_update.modified.asRowSet(),
+                                          prev=False, to_numpy=True)
 
     def modified_chunks(self, chunk_size: int, cols: Union[str, List[str]] = None) -> Generator[
         Dict[str, numpy.ndarray], None, None]:
@@ -165,13 +150,8 @@ class TableUpdate(JObjectWrapper):
         if not self.j_table_update.modified:
             return {}
 
-        try:
-            j_row_set = self.j_table_update.modified.asRowSet()
-            return next(
-                _table_reader_chunk_dict(self.table, cols=cols, row_set=j_row_set,
-                                         chunk_size=j_row_set.size(), prev=True, to_numpy=True))
-        except StopIteration:
-            return {}
+        return _table_reader_all_dict(table=self.table, cols=cols, row_set=self.j_table_update.modified.asRowSet(),
+                                          prev=True, to_numpy=True)
 
     def modified_prev_chunks(self, chunk_size: int, cols: Union[str, List[str]] = None) -> Generator[
         Dict[str, numpy.ndarray], None, None]:

@@ -27,6 +27,40 @@ def _col_defs(table: Table, cols: Union[str, Sequence[str]]) -> Sequence[Column]
 
     return col_defs
 
+def _table_reader_all_dict(table: Table, *, cols: Optional[Union[str, Sequence[str]]] = None, row_set: jpy.JType,
+                             prev: bool = False, to_numpy: bool = True) -> Dict[str, np.ndarray]:
+    """ Reads all the rows in the given row set of a table into a dictionary. The dictionary is a map of column names
+    to numpy arrays.
+
+    Args:
+        table (Table):  The table to read.
+        cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
+        row_set (jpy.JType): The row set to read.
+        prev (bool): If True, read the previous values. Default is False.
+        to_numpy (bool): If True, convert the column data to numpy arrays. Default is True.
+
+    Returns:
+        A generator that yields a dictionary of column names to numpy arrays.
+
+    Raises:
+        ValueError
+    """
+    col_defs = _col_defs(table, cols)
+
+    col_sources = [table.j_table.getColumnSource(col_def.name) for col_def in col_defs]
+    j_reader_context = _JTableUpdateDataReader.makeContext(row_set.size(), *col_sources)
+    with update_graph.auto_locking_ctx(table):
+        try:
+            j_array = _JTableUpdateDataReader.readChunkColumnMajor(j_reader_context, row_set, col_sources, prev)
+
+            col_dict = {}
+            for i, col_def in enumerate(col_defs):
+                col_dict[col_def.name] = _column_to_numpy_array(col_def, j_array[i]) if to_numpy else j_array[i]
+
+            return col_dict
+        finally:
+            j_reader_context.close()
+
 def _table_reader_chunk_dict(table: Table, *, cols: Optional[Union[str, Sequence[str]]] = None, row_set: jpy.JType, chunk_size: int = 4096,
                              prev: bool = False, to_numpy: bool = True) -> Generator[Dict[str, Union[np.ndarray | jpy.JType]], None, None]:
     """ A generator that reads the chunks of rows over the given row set of a table into a dictionary. The dictionary is
