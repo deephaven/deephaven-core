@@ -15,7 +15,8 @@ dependencies {
 
     api 'io.deephaven:SuanShu:0.1.0'
 
-    Classpaths.inheritAutoService(project)
+    compileOnly libs.autoservice
+    annotationProcessor libs.autoservice.compiler
 
     testImplementation project(':engine-table')
     testImplementation project(':base-test-utils')

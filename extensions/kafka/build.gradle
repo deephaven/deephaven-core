@@ -11,7 +11,7 @@ dependencies {
     api project(':engine-processor')
 
     // Expose Avro to the users of this extension.
-    Classpaths.inheritAvro(project, JavaPlugin.API_CONFIGURATION_NAME)
+    api libs.avro
 
     // Using io.confluent dependencies requires code in the toplevel build.gradle to add their maven repository.
     // Note: the -ccs flavor is provided by confluent as their community edition. It is equivalent to the maven central
@@ -35,15 +35,16 @@ dependencies {
     implementation depTrove3
     implementation depCommonsLang3
 
-    Classpaths.inheritImmutables(project)
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables
 
     testImplementation project(':engine-test-utils')
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    testImplementation libs.junit4
 
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly project(':configs')
     testRuntimeOnly project(':test-configs')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly libs.slf4j.simple
 
-    Classpaths.inheritAssertJ(project)
+    testImplementation libs.assertj
 }

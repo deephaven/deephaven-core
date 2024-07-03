@@ -10,5 +10,6 @@ configurations {
 dependencies {
   compileOnly project(':log-factory')
 
-  Classpaths.inheritAutoService(project)
+  compileOnly libs.autoservice
+  annotationProcessor libs.autoservice.compiler
 }

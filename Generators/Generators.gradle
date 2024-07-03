@@ -19,15 +19,15 @@ dependencies {
     implementation project(':extensions-parquet-table')
     implementation depTrove3
 
-    Classpaths.inheritGroovy(project, 'groovy', 'implementation')
-    Classpaths.inheritGroovy(project, 'groovy-json', 'implementation')
+    implementation libs.groovy
+    implementation libs.groovy.json
 
     runtimeOnly project(path: ':configs')
     runtimeOnly project(path: ':test-configs')
     runtimeOnly project(':extensions-kafka')
 
     runtimeOnly project(':log-to-slf4j')
-    Classpaths.inheritLogbackClassic(project)
+    runtimeOnly libs.logback.classic
 
     testRuntimeOnly project(path: ':configs')
     testRuntimeOnly project(path: ':test-configs')

@@ -51,8 +51,9 @@ dependencies {
     jama 'gov.nist.math.jama:gov.nist.math.jama:1.1.1'
     mockrunner 'com.mockrunner:mockrunner-jdbc:1.0.4'
 
-    Classpaths.inheritJUnitClassic(project, 'junit')
-    Classpaths.inheritJMock(project, 'junit')
+    junit libs.junit4
+    junit libs.jmock.junit4
+    junit libs.jmock.imposters
 
     // Now, all the various fish libs we depend on, with inherited dependencies matching
     // the actual dependencies used in fishlib... if we were strongly coupled, we could skip
@@ -75,6 +76,6 @@ dependencies {
     // https://mvnrepository.com/artifact/com.univocity/univocity-parsers
     dhBenchmarkSupport 'com.univocity:univocity-parsers:2.6.0'
 
-    Classpaths.inheritJacksonPlatform(project, 'dhBenchmarkSupport')
-    dhBenchmarkSupport 'com.fasterxml.jackson.core:jackson-core'
+    dhBenchmarkSupport platform(libs.jackson.bom)
+    dhBenchmarkSupport libs.jackson.core
 }
