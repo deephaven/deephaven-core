@@ -9,7 +9,6 @@ configurations {
     jama.extendsFrom math3
     dxCompile
     dxRuntime.extendsFrom dxCompile
-    mockrunner
     junit
 
     fishBase
@@ -34,7 +33,6 @@ dependencies {
     jdom libs.jdom2
     math3 'org.apache.commons:commons-math3:3.6.1'
     jama 'gov.nist.math.jama:gov.nist.math.jama:1.1.1'
-    mockrunner 'com.mockrunner:mockrunner-jdbc:1.0.4'
 
     junit libs.junit4
     junit libs.jmock.junit4
