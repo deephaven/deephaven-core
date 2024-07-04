@@ -22,7 +22,7 @@ configurations {
     fishIoTest.extendsFrom fishBaseTest
 
     dhNumerics.extendsFrom fishNumerics, jama
-    dhUtil.extendsFrom commonsText, fishConfig, fishIo, jdom
+    dhUtil.extendsFrom fishConfig, fishIo, jdom
     dhPlot.extendsFrom dhUtil
     dhBenchmarkSupport.extendsFrom fishData
     dhIntegrations.extendsFrom math3
@@ -32,7 +32,6 @@ dependencies {
 
     // First, one-off configurations for stuff we need "here and there"
     jdom libs.jdom2
-    commonsText 'org.apache.commons:commons-text:1.10.0'
     math3 'org.apache.commons:commons-math3:3.6.1'
     jama 'gov.nist.math.jama:gov.nist.math.jama:1.1.1'
     mockrunner 'com.mockrunner:mockrunner-jdbc:1.0.4'
