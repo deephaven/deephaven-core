@@ -4,8 +4,7 @@ plugins {
 }
 
 configurations {
-    math3
-    jama.extendsFrom math3
+    jama
     junit
 
     fishBase
@@ -18,9 +17,8 @@ configurations {
 }
 
 dependencies {
-
     // First, one-off configurations for stuff we need "here and there"
-    math3 libs.commons.math3
+    jama libs.commons.math3
     jama libs.jama
 
     junit libs.junit4
