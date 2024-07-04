@@ -4,7 +4,7 @@ plugins {
 }
 
 configurations {
-    implementation.extendsFrom dhNumerics
+    implementation.extendsFrom jama
     testImplementation.extendsFrom fishBaseTest
 }
 

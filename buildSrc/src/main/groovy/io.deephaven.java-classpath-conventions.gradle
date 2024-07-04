@@ -11,8 +11,6 @@ configurations {
     fishIo.extendsFrom fishBase
     fishBaseTest.extendsFrom junit
     fishIoTest.extendsFrom fishBaseTest
-
-    dhNumerics.extendsFrom fishBase, jama
     dhUtil.extendsFrom fishIo
 }
 
