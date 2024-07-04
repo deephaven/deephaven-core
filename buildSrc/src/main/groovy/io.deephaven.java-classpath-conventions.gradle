@@ -7,8 +7,6 @@ configurations {
     jdom
     math3
     jama.extendsFrom math3
-    dxCompile
-    dxRuntime.extendsFrom dxCompile
     junit
 
     fishBase
