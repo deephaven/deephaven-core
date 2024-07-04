@@ -10,7 +10,6 @@ plugins {
 evaluationDependsOn ':docker-server-jetty'
 
 configurations {
-    implementation.extendsFrom dhIntegrations
     testImplementation.extendsFrom fishBaseTest
 }
 
