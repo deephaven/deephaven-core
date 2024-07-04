@@ -5,13 +5,10 @@ plugins {
 
 GwtTools.gwtLib project
 
-configurations {
-    testImplementation.extendsFrom junit
-}
-
 dependencies {
     api project(':open-api-shared-fu')
 
+    testImplementation libs.junit4
     testImplementation libs.guava
 
     implementation libs.elemental.core

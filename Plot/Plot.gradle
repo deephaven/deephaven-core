@@ -3,10 +3,6 @@ plugins {
     id 'java-library'
 }
 
-configurations {
-    testImplementation.extendsFrom junit
-}
-
 dependencies {
 
     api project(':engine-api')

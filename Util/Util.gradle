@@ -3,10 +3,6 @@ plugins {
     id 'io.deephaven.project.register'
 }
 
-configurations {
-    testImplementation.extendsFrom junit
-}
-
 dependencies {
     api project(':engine-query-constants')
     implementation project(':Base')

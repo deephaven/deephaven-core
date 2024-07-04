@@ -14,9 +14,6 @@ configurations {
     transitive = false
   }
 
-  // automatically pick up the standard junit version
-  testImplementation.extendsFrom junit
-
   js {}
   python {}
   go {}
@@ -46,6 +43,8 @@ dependencies {
   //  compile 'io.deephaven.barrage:barrage-core:0.5.0'
   download 'io.deephaven.barrage:barrage-core:0.6.0'
   download libs.arrow.flight.core
+
+  testImplementation libs.junit4
 }
 
 TaskProvider<Task> generateProtobuf = Docker.registerDockerTask(project, 'generateProtobuf') {

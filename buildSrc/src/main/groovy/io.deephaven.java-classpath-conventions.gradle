@@ -4,13 +4,8 @@ plugins {
 }
 
 configurations {
-    junit
 }
 
 dependencies {
     // First, one-off configurations for stuff we need "here and there"
-
-    junit libs.junit4
-    junit libs.jmock.junit4
-    junit libs.jmock.imposters
 }

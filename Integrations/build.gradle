@@ -9,10 +9,6 @@ plugins {
 
 evaluationDependsOn ':docker-server-jetty'
 
-configurations {
-    testImplementation.extendsFrom junit
-}
-
 dependencies {
 
     implementation project(':engine-table')

@@ -7,7 +7,6 @@ evaluationDependsOn Docker.registryProject('python')
 
 configurations {
     implementation.extendsFrom jdom
-    testImplementation.extendsFrom junit
     combinedJavadoc
 }
 

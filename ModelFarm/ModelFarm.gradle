@@ -7,10 +7,6 @@ plugins {
     id 'java-library'
 }
 
-configurations {
-    testImplementation.extendsFrom junit
-}
-
 dependencies {
     api project(':engine-table')
     api project(':engine-time')
