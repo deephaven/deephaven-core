@@ -7,7 +7,7 @@ dependencies {
 
     implementation project(':Base')
     implementation depTrove3
-    compileOnlyApi depAnnotations
+    compileOnlyApi libs.jetbrains.annotations
     implementation depCommonsLang3
 
     api 'io.deephaven:hash:0.1.0'

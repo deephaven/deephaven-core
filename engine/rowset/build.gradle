@@ -17,7 +17,7 @@ dependencies {
     implementation depCommonsLang3
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
-    compileOnly depAnnotations
+    compileOnly libs.jetbrains.annotations
 
     testImplementation libs.junit4
 

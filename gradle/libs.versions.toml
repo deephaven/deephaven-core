@@ -23,6 +23,7 @@ immutables = "2.9.2"
 jackson = "2.17.0"
 javaparser = "3.23.0"
 javax-validation = "1.0.0.GA"
+jetbrains = "24.0.0"
 jetty = "11.0.20"
 jsinterop = "2.0.2"
 # google is annoying, and have different versions released for the same groupId
@@ -118,6 +119,8 @@ jackson-datatype-jdk8 = { module = "com.fasterxml.jackson.datatype:jackson-datat
 javaparser-core = { module = "com.github.javaparser:javaparser-core", version.ref = "javaparser" }
 
 javax-validation-api = { module = "javax.validation:validation-api", version.ref = "javax-validation" }
+
+jetbrains-annotations = { module = "org.jetbrains:annotations", version.ref = "jetbrains" }
 
 jetty-alpn-java-server = { module = "org.eclipse.jetty:jetty-alpn-java-server" }
 jetty-alpn-server = { module = "org.eclipse.jetty:jetty-alpn-server" }
