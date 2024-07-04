@@ -39,6 +39,7 @@ dependencies {
     implementation project(':plugin')
     implementation libs.commons.lang3
     implementation libs.commons.text
+    implementation libs.commons.compress
 
     implementation libs.groovy
     implementation libs.groovy.json

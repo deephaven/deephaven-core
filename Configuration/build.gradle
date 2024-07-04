@@ -16,6 +16,7 @@ dependencies {
     annotationProcessor libs.autoservice.compiler
 
     testImplementation project(path: ':Base', configuration: 'tests')
+    testImplementation libs.commons.compress
 
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly libs.slf4j.simple

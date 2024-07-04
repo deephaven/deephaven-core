@@ -36,6 +36,7 @@ dependencies {
     implementation project(':Util')
 
     implementation libs.commons.text
+    implementation libs.commons.compress
 
     implementation platform(libs.jackson.bom)
     implementation libs.jackson.dataformat.yaml

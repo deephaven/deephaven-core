@@ -21,6 +21,5 @@ dependencies {
     // having to maintain this...
     fishBase project(':Base'),
             libs.trove,
-            libs.jetbrains.annotations,
-            libs.commons.compress
+            libs.jetbrains.annotations
 }

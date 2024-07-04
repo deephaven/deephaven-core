@@ -12,6 +12,7 @@ dependencies {
     api project(':engine-query-constants')
     implementation project(':log-factory')
     implementation libs.jdom2
+    implementation libs.commons.compress
 
     implementation project(':DataStructures')
     implementation project(':Configuration')
