@@ -1,8 +1,11 @@
 plugins {
+    id 'java-library'
     id 'io.deephaven.project.register'
 }
 
 dependencies {
+    api libs.trove
+
     implementation project(':Base')
     implementation project(':DataStructures')
     implementation project(':IO')

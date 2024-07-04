@@ -20,6 +20,5 @@ dependencies {
     // the actual dependencies used in fishlib... if we were strongly coupled, we could skip
     // having to maintain this...
     fishBase project(':Base'),
-            libs.trove,
             libs.jetbrains.annotations
 }
