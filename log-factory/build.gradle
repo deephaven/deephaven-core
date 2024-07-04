@@ -4,8 +4,9 @@ plugins {
 }
 
 configurations {
-  api.extendsFrom fishIo
+  api.extendsFrom fishBase
 }
 
 dependencies {
+  api project(':IO')
 }

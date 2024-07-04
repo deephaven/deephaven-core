@@ -4,10 +4,11 @@ plugins {
 }
 
 configurations {
-  compileOnly.extendsFrom fishIo
+  compileOnly.extendsFrom fishBase
 }
 
 dependencies {
+  compileOnly project(':IO')
   // consumer still needs to provide dependency
   compileOnly libs.logback.classic
 }

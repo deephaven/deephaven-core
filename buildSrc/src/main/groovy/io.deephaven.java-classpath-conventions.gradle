@@ -7,7 +7,6 @@ configurations {
     junit
 
     fishBase
-    fishIo.extendsFrom fishBase
     fishBaseTest.extendsFrom junit
     fishIoTest.extendsFrom fishBaseTest
 }
@@ -26,8 +25,6 @@ dependencies {
             libs.trove,
             libs.jetbrains.annotations,
             libs.commons.compress
-
-    fishIo project(':IO')
 
     fishBaseTest project(path: ':Base', configuration: 'tests')
 

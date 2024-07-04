@@ -4,7 +4,7 @@ plugins {
 }
 
 configurations {
-    implementation.extendsFrom fishIo
+    implementation.extendsFrom fishBase
     testImplementation.extendsFrom fishBaseTest
 }
 
