@@ -19,6 +19,5 @@ dependencies {
     // Now, all the various fish libs we depend on, with inherited dependencies matching
     // the actual dependencies used in fishlib... if we were strongly coupled, we could skip
     // having to maintain this...
-    fishBase project(':Base'),
-            libs.jetbrains.annotations
+    fishBase project(':Base')
 }
