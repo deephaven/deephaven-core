@@ -17,7 +17,7 @@ dependencies {
     implementation project(':engine-function')
     implementation project(':Configuration')
     implementation project(':log-factory')
-    implementation depJdom2
+    implementation libs.jdom2
     implementation libs.dagger
     annotationProcessor libs.dagger.compiler
 
