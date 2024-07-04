@@ -12,7 +12,7 @@ dependencies {
 
     implementation project(':engine-table')
     implementation project(':engine-base')
-    implementation depTrove3
+    implementation libs.trove
 
     compileOnly project(':util-immutables')
     annotationProcessor libs.immutables

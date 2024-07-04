@@ -6,7 +6,7 @@ plugins {
 dependencies {
 
     implementation project(':Base')
-    implementation depTrove3
+    implementation libs.trove
     compileOnlyApi libs.jetbrains.annotations
     implementation libs.commons.lang3
 

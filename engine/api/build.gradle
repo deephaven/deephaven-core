@@ -17,7 +17,7 @@ dependencies {
     api project(':engine-rowset')
 
     implementation project(':DataStructures')
-    implementation depTrove3
+    implementation libs.trove
 
     compileOnly project(':util-immutables')
     annotationProcessor libs.immutables

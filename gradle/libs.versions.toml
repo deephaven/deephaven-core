@@ -36,6 +36,7 @@ parquet = "1.14.0"
 protobuf = "3.25.3"
 slf4j = "2.0.11"
 sslcontext = "8.1.1"
+trove = "3.0.3"
 
 # test versions
 assertj = "3.19.0"
@@ -156,6 +157,8 @@ slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
 sslcontext-kickstart = { module = "io.github.hakky54:sslcontext-kickstart", version.ref = "sslcontext" }
 sslcontext-kickstart-jetty = { module = "io.github.hakky54:sslcontext-kickstart-for-jetty", version.ref = "sslcontext" }
 sslcontext-kickstart-netty = { module = "io.github.hakky54:sslcontext-kickstart-for-netty", version.ref = "sslcontext" }
+
+trove = { module = "net.sf.trove4j:trove4j", version.ref = "trove" }
 
 # test libraries
 assertj = { module = "org.assertj:assertj-core", version.ref = "assertj" }

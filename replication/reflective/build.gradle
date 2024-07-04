@@ -9,7 +9,7 @@ dependencies {
     implementation project(':replication-util')
     implementation project(':engine-table')
     implementation 'com.squareup:javapoet:1.13.0'
-    implementation depTrove3
+    implementation libs.trove
     implementation libs.commons.io
     implementation libs.commons.lang3
 

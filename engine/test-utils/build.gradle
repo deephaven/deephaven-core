@@ -16,7 +16,7 @@ dependencies {
     implementation project(':extensions-source-support')
 
     implementation libs.commons.lang3
-    implementation depTrove3
+    implementation libs.trove
 
     implementation 'it.unimi.dsi:fastutil:8.5.13'
 
