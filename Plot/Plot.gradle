@@ -6,7 +6,7 @@ plugins {
 configurations {
     implementation.extendsFrom fishBase
 
-    testImplementation.extendsFrom fishBaseTest
+    testImplementation.extendsFrom junit
 }
 
 dependencies {
@@ -29,6 +29,7 @@ dependencies {
 
     testImplementation project(':engine-test-utils')
     testImplementation TestTools.projectDependency(project, 'engine-time')
+    testImplementation project(path: ':Base', configuration: 'tests')
 
     testRuntimeOnly project(':configs')
     testRuntimeOnly project(':test-configs')

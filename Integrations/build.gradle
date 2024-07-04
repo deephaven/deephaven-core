@@ -10,7 +10,7 @@ plugins {
 evaluationDependsOn ':docker-server-jetty'
 
 configurations {
-    testImplementation.extendsFrom fishBaseTest
+    testImplementation.extendsFrom junit
 }
 
 dependencies {
@@ -21,6 +21,7 @@ dependencies {
     implementation project(':log-factory')
 
     testImplementation project(':engine-test-utils')
+    testImplementation project(path: ':Base', configuration: 'tests')
 
     // Needed for CalendarInit
     testRuntimeOnly TestTools.projectDependency(project, 'engine-time')

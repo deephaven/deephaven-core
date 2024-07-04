@@ -3,7 +3,7 @@ plugins {
 }
 
 configurations {
-    testImplementation.extendsFrom fishBaseTest
+    testImplementation.extendsFrom junit
 }
 
 sourceSets {
@@ -33,6 +33,7 @@ dependencies {
     implementation libs.univocity.parsers
 
     testImplementation project(':engine-test-utils')
+    testImplementation project(path: ':Base', configuration: 'tests')
 
     testRuntimeOnly project(path: ':configs')
     testRuntimeOnly project(path: ':test-configs')

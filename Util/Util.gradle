@@ -5,7 +5,7 @@ plugins {
 
 configurations {
     implementation.extendsFrom fishBase
-    testImplementation.extendsFrom fishBaseTest
+    testImplementation.extendsFrom junit
 }
 
 dependencies {
@@ -23,6 +23,7 @@ dependencies {
     testRuntimeOnly libs.slf4j.simple
 
     testImplementation project(':base-test-utils')
+    testImplementation project(path: ':Base', configuration: 'tests')
     testImplementation platform(libs.junit.bom)
     testImplementation libs.junit.jupiter
     testRuntimeOnly libs.junit.jupiter.engine

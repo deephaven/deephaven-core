@@ -7,7 +7,7 @@ evaluationDependsOn Docker.registryProject('python')
 
 configurations {
     implementation.extendsFrom jdom
-    testImplementation.extendsFrom fishBaseTest
+    testImplementation.extendsFrom junit
     combinedJavadoc
 }
 
@@ -28,6 +28,8 @@ dependencies {
 
     runtimeOnly project(':log-to-slf4j')
     runtimeOnly libs.logback.classic
+
+    testImplementation project(path: ':Base', configuration: 'tests')
 
     testRuntimeOnly project(path: ':configs')
     testRuntimeOnly project(path: ':test-configs')

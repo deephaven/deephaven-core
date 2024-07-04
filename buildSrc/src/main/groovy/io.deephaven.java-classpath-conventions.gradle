@@ -7,7 +7,6 @@ configurations {
     junit
 
     fishBase
-    fishBaseTest.extendsFrom junit
 }
 
 dependencies {
@@ -24,6 +23,4 @@ dependencies {
             libs.trove,
             libs.jetbrains.annotations,
             libs.commons.compress
-
-    fishBaseTest project(path: ':Base', configuration: 'tests')
 }

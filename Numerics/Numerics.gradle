@@ -4,7 +4,7 @@ plugins {
 }
 
 configurations {
-    testImplementation.extendsFrom fishBaseTest
+    testImplementation.extendsFrom junit
 }
 
 dependencies {
@@ -15,6 +15,7 @@ dependencies {
     implementation libs.commons.math3
 
     testImplementation project(':base-test-utils')
+    testImplementation project(path: ':Base', configuration: 'tests')
     testRuntimeOnly project(path: ':configs')
     testRuntimeOnly project(path: ':test-configs')
 
