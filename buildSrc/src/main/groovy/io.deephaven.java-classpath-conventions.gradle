@@ -57,7 +57,7 @@ dependencies {
     fishIoTest project(path: ':IO', configuration: 'tests')
 
     // https://mvnrepository.com/artifact/com.univocity/univocity-parsers
-    dhBenchmarkSupport 'com.univocity:univocity-parsers:2.6.0'
+    dhBenchmarkSupport libs.univocity.parsers
 
     dhBenchmarkSupport platform(libs.jackson.bom)
     dhBenchmarkSupport libs.jackson.core
