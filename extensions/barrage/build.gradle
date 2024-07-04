@@ -15,7 +15,7 @@ dependencies {
     implementation project(':Util')
     implementation project(':Configuration')
     implementation project(':util-function')
-    implementation depCommonsLang3
+    implementation libs.commons.lang3
 
     api project(':engine-table')
     implementation project(':proto:proto-backplane-grpc-flight')

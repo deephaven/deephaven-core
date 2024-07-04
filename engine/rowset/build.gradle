@@ -14,7 +14,7 @@ dependencies {
     implementation project(':engine-context')
     implementation project(':engine-updategraph')
     implementation project(':Configuration')
-    implementation depCommonsLang3
+    implementation libs.commons.lang3
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
     compileOnly libs.jetbrains.annotations

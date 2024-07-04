@@ -19,7 +19,7 @@ dependencies {
     api project(':engine-primitive')
 
     implementation project(':Base')
-    implementation depCommonsLang3
+    implementation libs.commons.lang3
 
     testImplementation project(':base-test-utils')
 }

@@ -7,7 +7,7 @@ dependencies {
     implementation project(':DataStructures')
     implementation project(':IO')
     implementation project(':log-factory')
-    implementation depCommonsLang3
+    implementation libs.commons.lang3
     testImplementation libs.junit4
     testImplementation libs.jmock.junit4
     testImplementation libs.jmock.imposters

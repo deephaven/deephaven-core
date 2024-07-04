@@ -9,7 +9,7 @@ dependencies {
 
     implementation depTrove3
     compileOnlyApi libs.jetbrains.annotations
-    implementation depCommonsLang3
+    implementation libs.commons.lang3
 
     api 'io.deephaven:hash:0.1.0'
 

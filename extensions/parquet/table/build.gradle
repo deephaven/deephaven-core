@@ -32,7 +32,7 @@ dependencies {
     implementation project(':extensions-csv')
     implementation project(':log-factory')
     implementation project(':Configuration')
-    implementation depCommonsLang3
+    implementation libs.commons.lang3
     implementation project(':Util')
 
     implementation libs.commons.text

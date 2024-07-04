@@ -7,6 +7,7 @@ awssdk = "2.24.5"
 boringssl = "2.0.61.Final"
 commons-compress = "1.26.0"
 commons-io = "2.11.0"
+commons-lang3 = "3.12.0"
 commons-text = "1.10.0"
 dagger = "2.44"
 elemental = "1.2.1"
@@ -66,6 +67,8 @@ boringssl = { module = "io.netty:netty-tcnative-boringssl-static", version.ref =
 commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commons-compress" }
 
 commons-io = { module = "commons-io:commons-io", version.ref = "commons-io" }
+
+commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "commons-lang3" }
 
 commons-text = { module = "org.apache.commons:commons-text", version.ref = "commons-text" }
 

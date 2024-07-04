@@ -11,7 +11,7 @@ dependencies {
     implementation 'com.squareup:javapoet:1.13.0'
     implementation depTrove3
     implementation libs.commons.io
-    implementation depCommonsLang3
+    implementation libs.commons.lang3
 
     runtimeOnly project(':log-to-slf4j')
     runtimeOnly project(path: ':configs')
