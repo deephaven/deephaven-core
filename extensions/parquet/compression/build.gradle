@@ -12,7 +12,7 @@ dependencies {
 
     implementation project(':Configuration')
 
-    implementation depCommonsIo
+    implementation libs.commons.io
 
     implementation libs.guava
 

@@ -21,7 +21,7 @@ dependencies {
     testImplementation libs.assertj
 
     testImplementation depCommonsCompress
-    testImplementation depCommonsIo
+    testImplementation libs.commons.io
     testImplementation project(':engine-test-utils')
 
     testImplementation libs.junit4
