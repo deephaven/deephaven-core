@@ -31,7 +31,7 @@ dependencies {
 
     // First, one-off configurations for stuff we need "here and there"
     jdom libs.jdom2
-    math3 'org.apache.commons:commons-math3:3.6.1'
+    math3 libs.commons.math3
     jama 'gov.nist.math.jama:gov.nist.math.jama:1.1.1'
 
     junit libs.junit4
