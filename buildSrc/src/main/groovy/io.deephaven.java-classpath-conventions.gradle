@@ -23,7 +23,7 @@ configurations {
     dhNumerics.extendsFrom fishNumerics, jama
     dhUtil.extendsFrom fishConfig, fishIo, jdom
     dhPlot.extendsFrom dhUtil
-    dhBenchmarkSupport.extendsFrom fishData
+    dhBenchmarkSupport
     dhIntegrations.extendsFrom math3
 }
 
