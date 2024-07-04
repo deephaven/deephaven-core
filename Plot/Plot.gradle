@@ -4,7 +4,7 @@ plugins {
 }
 
 configurations {
-    implementation.extendsFrom dhUtil
+    implementation.extendsFrom fishIo
 
     testImplementation.extendsFrom fishIoTest
 }
@@ -16,6 +16,7 @@ dependencies {
     implementation project(':engine-function')
     implementation project(':engine-tuple')
     implementation project(':log-factory')
+    implementation project(':Configuration')
 
     api libs.groovy
     implementation libs.groovy.json

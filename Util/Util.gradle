@@ -4,7 +4,7 @@ plugins {
 }
 
 configurations {
-    implementation.extendsFrom dhUtil
+    implementation.extendsFrom fishIo
     testImplementation.extendsFrom fishBaseTest
 }
 
@@ -12,6 +12,9 @@ dependencies {
     api project(':engine-query-constants')
     implementation project(':log-factory')
     implementation libs.jdom2
+
+    implementation project(':DataStructures')
+    implementation project(':Configuration')
 
     testRuntimeOnly project(path: ':configs')
     testRuntimeOnly project(path: ':test-configs')

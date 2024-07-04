@@ -10,7 +10,6 @@ configurations {
     fishIo.extendsFrom fishBase
     fishBaseTest.extendsFrom junit
     fishIoTest.extendsFrom fishBaseTest
-    dhUtil.extendsFrom fishIo
 }
 
 dependencies {
@@ -29,9 +28,6 @@ dependencies {
             libs.commons.compress
 
     fishIo project(':IO')
-
-    dhUtil project(':Configuration')
-    dhUtil project(':DataStructures')
 
     fishBaseTest project(path: ':Base', configuration: 'tests')
 
