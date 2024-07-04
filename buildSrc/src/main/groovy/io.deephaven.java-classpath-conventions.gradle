@@ -13,8 +13,7 @@ configurations {
 
     fishBase
     fishIo.extendsFrom fishBase
-    fishDataStructure.extendsFrom fishIo
-    fishConfig.extendsFrom fishDataStructure
+    fishConfig.extendsFrom fishIo
     fishNumerics.extendsFrom fishBase
     fishBaseTest.extendsFrom junit
     fishIoTest.extendsFrom fishBaseTest
@@ -47,9 +46,8 @@ dependencies {
 
     fishIo project(':IO')
 
-    fishDataStructure project(':DataStructures')
-
     fishConfig project(':Configuration')
+    fishConfig project(':DataStructures')
 
     fishBaseTest project(path: ':Base', configuration: 'tests')
 
