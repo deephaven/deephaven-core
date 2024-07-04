@@ -15,7 +15,6 @@ configurations {
     fishIo.extendsFrom fishBase
     fishDataStructure.extendsFrom fishIo
     fishConfig.extendsFrom fishDataStructure
-    fishDataGenerator.extendsFrom jdom
     fishNumerics.extendsFrom fishBase
     fishBaseTest.extendsFrom junit
     fishIoTest.extendsFrom fishBaseTest

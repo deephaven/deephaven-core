@@ -6,8 +6,6 @@ configurations {
     implementation.extendsFrom dhBenchmarkSupport
 
     testImplementation.extendsFrom fishIoTest
-
-    testRuntimeOnly.extendsFrom fishDataGenerator
 }
 
 sourceSets {
