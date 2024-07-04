@@ -8,7 +8,6 @@ configurations {
 
     fishBase
     fishBaseTest.extendsFrom junit
-    fishIoTest.extendsFrom fishBaseTest
 }
 
 dependencies {
@@ -27,6 +26,4 @@ dependencies {
             libs.commons.compress
 
     fishBaseTest project(path: ':Base', configuration: 'tests')
-
-    fishIoTest project(path: ':IO', configuration: 'tests')
 }

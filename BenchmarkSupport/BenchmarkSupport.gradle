@@ -3,7 +3,7 @@ plugins {
 }
 
 configurations {
-    testImplementation.extendsFrom fishIoTest
+    testImplementation.extendsFrom fishBaseTest
 }
 
 sourceSets {
