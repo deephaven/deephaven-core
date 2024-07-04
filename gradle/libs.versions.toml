@@ -5,8 +5,9 @@ avro = "1.11.3"
 awssdk = "2.24.5"
 # See dependency matrix for particular gRPC versions at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty
 boringssl = "2.0.61.Final"
-commons = "1.10.0"
+commons-compress = "1.26.0"
 commons-io = "2.11.0"
+commons-text = "1.10.0"
 dagger = "2.44"
 elemental = "1.2.1"
 flatbuffers = "1.12.0"
@@ -62,9 +63,11 @@ awssdk-sts = { module = "software.amazon.awssdk:sts" }
 
 boringssl = { module = "io.netty:netty-tcnative-boringssl-static", version.ref = "boringssl" }
 
-commons-text = { module = "org.apache.commons:commons-text", version.ref = "commons" }
+commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commons-compress" }
 
 commons-io = { module = "commons-io:commons-io", version.ref = "commons-io" }
+
+commons-text = { module = "org.apache.commons:commons-text", version.ref = "commons-text" }
 
 dagger = { module = "com.google.dagger:dagger", version.ref = "dagger" }
 dagger-compiler = { module = "com.google.dagger:dagger-compiler", version.ref = "dagger" }
