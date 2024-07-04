@@ -4,14 +4,13 @@ plugins {
 }
 
 configurations {
-    implementation.extendsFrom fishBase
-
     testImplementation.extendsFrom junit
 }
 
 dependencies {
 
     api project(':engine-api')
+    implementation project(':Base')
     implementation project(':engine-table')
     implementation project(':engine-function')
     implementation project(':engine-tuple')

@@ -3,10 +3,7 @@ plugins {
   id 'io.deephaven.project.register'
 }
 
-configurations {
-  api.extendsFrom fishBase
-}
-
 dependencies {
+  api project(':Base')
   api project(':IO')
 }

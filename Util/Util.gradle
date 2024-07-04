@@ -4,12 +4,12 @@ plugins {
 }
 
 configurations {
-    implementation.extendsFrom fishBase
     testImplementation.extendsFrom junit
 }
 
 dependencies {
     api project(':engine-query-constants')
+    implementation project(':Base')
     implementation project(':log-factory')
     implementation libs.jdom2
     implementation libs.commons.compress
