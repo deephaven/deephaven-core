@@ -32,7 +32,7 @@ dependencies {
     // First, one-off configurations for stuff we need "here and there"
     jdom libs.jdom2
     math3 libs.commons.math3
-    jama 'gov.nist.math.jama:gov.nist.math.jama:1.1.1'
+    jama libs.jama
 
     junit libs.junit4
     junit libs.jmock.junit4

@@ -24,6 +24,7 @@ hadoop = "3.4.0"
 iceberg = "1.5.2"
 immutables = "2.9.2"
 jackson = "2.17.0"
+jama = "1.1.1"
 javaparser = "3.23.0"
 javax-validation = "1.0.0.GA"
 jdom2 = "2.0.6.1"
@@ -126,6 +127,8 @@ jackson-core = { module = "com.fasterxml.jackson.core:jackson-core" }
 jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind" }
 jackson-dataformat-yaml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml" }
 jackson-datatype-jdk8 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jdk8" }
+
+jama = { module = "gov.nist.math.jama:gov.nist.math.jama", version.ref = "jama" }
 
 javaparser-core = { module = "com.github.javaparser:javaparser-core", version.ref = "javaparser" }
 
