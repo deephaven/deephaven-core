@@ -11,6 +11,7 @@ configurations {
 dependencies {
     api project(':engine-query-constants')
     implementation project(':log-factory')
+    implementation libs.jdom2
 
     testRuntimeOnly project(path: ':configs')
     testRuntimeOnly project(path: ':test-configs')

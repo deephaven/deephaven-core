@@ -4,7 +4,6 @@ plugins {
 }
 
 configurations {
-    jdom
     math3
     jama.extendsFrom math3
     junit
@@ -16,7 +15,7 @@ configurations {
     fishIoTest.extendsFrom fishBaseTest
 
     dhNumerics.extendsFrom fishNumerics, jama
-    dhUtil.extendsFrom fishIo, jdom
+    dhUtil.extendsFrom fishIo
     dhPlot.extendsFrom dhUtil
     dhBenchmarkSupport
     dhIntegrations.extendsFrom math3
@@ -25,7 +24,6 @@ configurations {
 dependencies {
 
     // First, one-off configurations for stuff we need "here and there"
-    jdom libs.jdom2
     math3 libs.commons.math3
     jama libs.jama
 
