@@ -10,11 +10,10 @@ configurations {
 
     fishBase
     fishIo.extendsFrom fishBase
-    fishNumerics.extendsFrom fishBase
     fishBaseTest.extendsFrom junit
     fishIoTest.extendsFrom fishBaseTest
 
-    dhNumerics.extendsFrom fishNumerics, jama
+    dhNumerics.extendsFrom fishBase, jama
     dhUtil.extendsFrom fishIo
     dhPlot.extendsFrom dhUtil
     dhBenchmarkSupport
