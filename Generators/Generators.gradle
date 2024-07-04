@@ -6,7 +6,6 @@ plugins {
 evaluationDependsOn Docker.registryProject('python')
 
 configurations {
-    implementation.extendsFrom jdom
     combinedJavadoc
 }
 

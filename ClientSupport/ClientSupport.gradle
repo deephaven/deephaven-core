@@ -2,10 +2,6 @@ plugins {
     id 'io.deephaven.project.register'
 }
 
-configurations {
-    implementation.extendsFrom dhConsole
-}
-
 dependencies {
     implementation project(':engine-table')
     implementation project(':engine-function')
