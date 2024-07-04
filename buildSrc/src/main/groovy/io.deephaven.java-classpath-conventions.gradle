@@ -15,7 +15,6 @@ configurations {
 
     dhNumerics.extendsFrom fishBase, jama
     dhUtil.extendsFrom fishIo
-    dhPlot.extendsFrom dhUtil
     dhBenchmarkSupport
     dhIntegrations.extendsFrom math3
 }

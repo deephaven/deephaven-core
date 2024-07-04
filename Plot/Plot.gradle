@@ -4,7 +4,7 @@ plugins {
 }
 
 configurations {
-    implementation.extendsFrom dhPlot
+    implementation.extendsFrom dhUtil
 
     testImplementation.extendsFrom fishIoTest
 }
