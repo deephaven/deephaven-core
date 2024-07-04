@@ -3,8 +3,6 @@ plugins {
 }
 
 configurations {
-    implementation.extendsFrom dhBenchmarkSupport
-
     testImplementation.extendsFrom fishIoTest
 }
 
@@ -31,6 +29,8 @@ dependencies {
     implementation project(':extensions-parquet-base')
     implementation project(':Configuration')
     implementation 'org.openjdk.jmh:jmh-core:1.20'
+
+    implementation libs.univocity.parsers
 
     testImplementation project(':engine-test-utils')
 

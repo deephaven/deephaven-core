@@ -15,7 +15,6 @@ configurations {
 
     dhNumerics.extendsFrom fishBase, jama
     dhUtil.extendsFrom fishIo
-    dhBenchmarkSupport
 }
 
 dependencies {
@@ -44,10 +43,4 @@ dependencies {
     fishBaseTest project(path: ':Base', configuration: 'tests')
 
     fishIoTest project(path: ':IO', configuration: 'tests')
-
-    // https://mvnrepository.com/artifact/com.univocity/univocity-parsers
-    dhBenchmarkSupport libs.univocity.parsers
-
-    dhBenchmarkSupport platform(libs.jackson.bom)
-    dhBenchmarkSupport libs.jackson.core
 }
