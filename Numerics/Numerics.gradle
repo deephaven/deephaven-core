@@ -4,7 +4,6 @@ plugins {
 }
 
 configurations {
-    implementation.extendsFrom jama
     testImplementation.extendsFrom fishBaseTest
 }
 
@@ -12,6 +11,8 @@ dependencies {
     api project(':engine-time')
     implementation project(':engine-function')
     implementation project(':log-factory')
+    implementation libs.jama
+    implementation libs.commons.math3
 
     testImplementation project(':base-test-utils')
     testRuntimeOnly project(path: ':configs')
