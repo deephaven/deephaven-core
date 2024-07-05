@@ -70,6 +70,7 @@ artifacts {
 }
 
 def gwtUnitTest = tasks.register('gwtUnitTest', Test) { t ->
+    t.group = 'verification'
     t.systemProperties = [
             'gwt.args': ['-sourceLevel auto',
                          '-runStyle HtmlUnit',
@@ -138,6 +139,7 @@ def stopSelenium = project.tasks.register('stopSelenium', DockerRemoveContainer)
 }
 
 def gwtIntegrationTest = tasks.register('gwtIntegrationTest', Test) { t ->
+    t.group = 'verification'
     t.dependsOn(deephavenDocker.portTask, seleniumHealthy)
     t.finalizedBy(deephavenDocker.endTask, stopSelenium)
     t.doFirst {
@@ -161,6 +163,7 @@ def gwtIntegrationTest = tasks.register('gwtIntegrationTest', Test) { t ->
 }
 
 tasks.register('manualGwtTest', Test) {t ->
+    t.group = 'verification'
     t.description = '''Test wiring to run either unit or integration tests with a manual browser and an already-running server.
 This makes it easier to run a tests repeatedly, either one at a time or as a class/suite, without
 paying to start/stop selenium and deephaven each time. The port will remain constant at 8888 each
