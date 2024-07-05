@@ -171,7 +171,7 @@ a test in IntelliJ to run using the manualGwtTest task, or invoke from the comma
 logging enabled and a specific test selected, e.g.:
 ./gradlew :web-client-api:manualGwtTest --info --tests io.deephaven.web.client.api.NullValueTestGwt
 
-When the URL appears to run in your browser, click on it, or refresh an existing browser window.'''
+Click the URL that is printed out to run the test in your browser, or refresh an existing browser window.'''
     t.doFirst {
         t.systemProperty 'gwt.args', ['-port 8888',
                                       '-sourceLevel auto',
