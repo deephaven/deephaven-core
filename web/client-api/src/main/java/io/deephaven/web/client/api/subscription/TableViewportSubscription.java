@@ -71,9 +71,6 @@ import static io.deephaven.web.client.api.barrage.WebBarrageUtils.serializeRange
 @TsName(namespace = "dh")
 public class TableViewportSubscription extends AbstractTableSubscription {
 
-    // TODO move to superclass and check on viewport change
-    private RangeSet serverViewport;
-
     private double firstRow;
     private double lastRow;
     private Column[] columns;
@@ -137,7 +134,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
         // TODO Rewrite shifts as adds/removed/modifies? in the past we ignored them...
         UpdateEventData detail = new UpdateEventData(barrageSubscription, rowStyleColumn, getColumns(), rowsAdded,
                 rowsRemoved, totalMods, shifted);
-        detail.offset = this.serverViewport.getFirstRow();
+        detail.offset = this.viewportRowSet.getFirstRow();
         this.viewportData = detail;
         CustomEventInit<UpdateEventData> event = CustomEventInit.create();
         event.setDetail(detail);
@@ -227,9 +224,9 @@ public class TableViewportSubscription extends AbstractTableSubscription {
         }
         if (!state().getTableDef().getAttributes().isBlinkTable()) {
             // we only set blink table viewports once; and that's in the constructor
-            serverViewport = RangeSet.ofRange((long) firstRow, (long) lastRow);
-            this.sendBarrageSubscriptionRequest(
-                    serverViewport, Js.uncheckedCast(columns), updateIntervalMs, isReverseViewport);
+            RangeSet viewport = RangeSet.ofRange((long) firstRow, (long) lastRow);
+            this.sendBarrageSubscriptionRequest(viewport, Js.uncheckedCast(columns), updateIntervalMs,
+                    isReverseViewport);
         }
     }
 
