@@ -272,16 +272,16 @@ public class TableViewportSubscription extends AbstractTableSubscription {
      * @return Promise of {@link TableData}.
      */
     @JsMethod
-    public Promise<TableData> getViewportData() {
+    public Promise<ViewportData> getViewportData() {
         retainForExternalUse();
         return getInternalViewportData();
     }
 
-    public Promise<TableData> getInternalViewportData() {
+    public Promise<ViewportData> getInternalViewportData() {
         if (isSubscriptionReady()) {
             return Promise.resolve(viewportData);
         }
-        final LazyPromise<TableData> promise = new LazyPromise<>();
+        final LazyPromise<ViewportData> promise = new LazyPromise<>();
         addEventListenerOneShot(EVENT_UPDATED, ignored -> promise.succeed(viewportData));
         return promise.asPromise();
     }

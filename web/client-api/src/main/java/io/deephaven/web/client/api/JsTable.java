@@ -47,6 +47,7 @@ import io.deephaven.web.client.api.lifecycle.HasLifecycle;
 import io.deephaven.web.client.api.state.StateCache;
 import io.deephaven.web.client.api.subscription.TableSubscription;
 import io.deephaven.web.client.api.subscription.TableViewportSubscription;
+import io.deephaven.web.client.api.subscription.ViewportData;
 import io.deephaven.web.client.api.subscription.ViewportRow;
 import io.deephaven.web.client.api.tree.JsRollupConfig;
 import io.deephaven.web.client.api.tree.JsTreeTable;
@@ -746,7 +747,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * @return Promise of {@link TableData}
      */
     @JsMethod
-    public Promise<TableData> getViewportData() {
+    public Promise<ViewportData> getViewportData() {
         TableViewportSubscription subscription = subscriptions.get(getHandle());
         if (subscription == null) {
             return Promise.reject("No viewport currently set");
