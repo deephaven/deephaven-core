@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Iterator;
 import java.util.NavigableSet;
+import java.util.NoSuchElementException;
 import java.util.PrimitiveIterator;
 import java.util.TreeMap;
 
@@ -213,6 +214,9 @@ public abstract class WebBarrageSubscription {
 
         @Override
         public Any getData(long key, int col) {
+            if (!isSubscribedColumn(col)) {
+                throw new NoSuchElementException("No column at index " + col);
+            }
             return destSources[col].get(key);
         }
     }
@@ -383,6 +387,9 @@ public abstract class WebBarrageSubscription {
 
         @Override
         public Any getData(long key, int col) {
+            if (!isSubscribedColumn(col)) {
+                throw new NoSuchElementException("No column at index " + col);
+            }
             return this.destSources[col].get(redirectedIndexes.get(key));
         }
 
