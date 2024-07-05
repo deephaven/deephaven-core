@@ -17,13 +17,14 @@ dependencies {
     implementation project(':engine-tuple')
     implementation project(':log-factory')
 
-    Classpaths.inheritGroovy(project, 'groovy', 'api')
-    Classpaths.inheritGroovy(project, 'groovy-json', 'implementation')
-    Classpaths.inheritAutoService(project)
+    api libs.groovy
+    implementation libs.groovy.json
+    compileOnly libs.autoservice
+    annotationProcessor libs.autoservice.compiler
 
     compileOnly 'javax.inject:javax.inject:1'
 
-    Classpaths.inheritGuava(project)
+    implementation libs.guava
 
     testImplementation project(':engine-test-utils')
     testImplementation TestTools.projectDependency(project, 'engine-time')
@@ -33,5 +34,5 @@ dependencies {
     testRuntimeOnly project(':Numerics')
 
     testRuntimeOnly project(':log-to-slf4j')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly libs.slf4j.simple
 }

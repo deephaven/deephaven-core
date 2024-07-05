@@ -12,23 +12,31 @@ dependencies {
     implementation project(':extensions-iceberg')
 
     // Bring in the AWS / S3 extensions
-    Classpaths.inheritIcebergCore(project)
+    api platform(libs.iceberg.bom)
+    api libs.iceberg.api
+    implementation libs.iceberg.core
+    implementation libs.iceberg.bundled.guava
 
     implementation project(':extensions-s3')
-    implementation "org.apache.iceberg:iceberg-aws"
+    implementation libs.iceberg.aws
 
-    Classpaths.inheritAWSSDK(project)
-    runtimeOnly "software.amazon.awssdk:sts"
-    runtimeOnly "software.amazon.awssdk:glue"
+    implementation platform(libs.awssdk.bom)
+    implementation libs.awssdk.s3
+    implementation libs.awssdk.crt.client
+    runtimeOnly libs.awssdk.sts
+    runtimeOnly libs.awssdk.glue
 
-    Classpaths.inheritTestContainers(project)
+    testImplementation libs.testcontainers
+    testImplementation libs.testcontainers.junit.jupiter
+    testImplementation libs.testcontainers.localstack
+    testImplementation libs.testcontainers.minio
 
     testImplementation TestTools.projectDependency(project, 'extensions-s3')
     testImplementation TestTools.projectDependency(project, 'extensions-iceberg')
 
     testRuntimeOnly project(':test-configs')
     testRuntimeOnly project(':log-to-slf4j')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly libs.slf4j.simple
 }
 
 test {

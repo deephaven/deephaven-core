@@ -9,5 +9,5 @@ configurations {
 
 dependencies {
   // consumer still needs to provide dependency
-  Classpaths.inheritLogbackClassic(project, 'compileOnly')
+  compileOnly libs.logback.classic
 }

@@ -10,5 +10,5 @@ dependencies {
     implementation project(':log-factory')
     implementation project(':Configuration')
 
-    Classpaths.inheritArrow(project, 'flight-core', 'implementation')
+    implementation libs.arrow.flight.core
 }

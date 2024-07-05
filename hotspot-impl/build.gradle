@@ -6,7 +6,8 @@ description 'Implementation for the HotSpot service to obtain JVM instrospection
 
 dependencies {
     implementation project(':hotspot')
-    Classpaths.inheritAutoService(project)
+    compileOnly libs.autoservice
+    annotationProcessor libs.autoservice.compiler
 }
 
 tasks.withType(JavaCompile).configureEach {

@@ -20,7 +20,7 @@ repositories {
     mavenLocal()
 }
 dependencies {
-    Classpaths.inheritGrpcPlatform(project)
+    implementation platform(libs.grpc.bom)
     implementation(group:'io.grpc', name:'grpc-api', classifier:'sources')
 
     implementation project(':engine-chunk')
@@ -48,11 +48,13 @@ dependencies {
     js project(path: ':proto:raw-js-openapi', configuration: 'js')
 
     testImplementation 'org.seleniumhq.selenium:selenium-remote-driver:4.16.1'
+
+    implementation libs.elemental.core
+    implementation libs.elemental.promise
+    implementation libs.elemental.dom
+
+    testImplementation libs.gwt.user
 }
-Classpaths.inheritElemental(project, 'elemental2-core', 'implementation')
-Classpaths.inheritElemental(project, 'elemental2-promise', 'implementation')
-Classpaths.inheritElemental(project, 'elemental2-dom', 'implementation')
-Classpaths.inheritGwt(project, 'gwt-user', 'testImplementation')
 
 GwtTools.gwtCompile project, 'io.deephaven.web.DeephavenApi', 'Create a jar of client JS API'
 
@@ -87,6 +89,7 @@ artifacts {
 }
 
 def gwtUnitTest = tasks.register('gwtUnitTest', Test) { t ->
+    t.group = 'verification'
     t.systemProperties = [
             'gwt.args': ['-sourceLevel auto',
                          '-runStyle HtmlUnit',
@@ -155,9 +158,10 @@ def stopSelenium = project.tasks.register('stopSelenium', DockerRemoveContainer)
 }
 
 def gwtIntegrationTest = tasks.register('gwtIntegrationTest', Test) { t ->
+    t.group = 'verification'
     t.dependsOn(deephavenDocker.portTask, seleniumHealthy)
     t.finalizedBy(deephavenDocker.endTask, stopSelenium)
-    doFirst {
+    t.doFirst {
         def webdriverUrl = "http://localhost:${seleniumPort}/"
         t.systemProperty('gwt.args', ['-sourceLevel auto',
                                       "-runStyle io.deephaven.web.junit.RunStyleRemoteWebDriver:${webdriverUrl}?firefox",
@@ -168,12 +172,43 @@ def gwtIntegrationTest = tasks.register('gwtIntegrationTest', Test) { t ->
         ].join(' '))
         t.classpath += tasks.getByName('gwtCompile').src
     }
-    t.finalizedBy(deephavenDocker.endTask)
     t.systemProperties = [
             'gwt.persistentunitcachedir':layout.buildDirectory.dir('integrationTest-unitCache').get().asFile.absolutePath,
             'webdriver.test.host':'host.docker.internal',
     ]
     t.include '**/ClientIntegrationTestSuite.class'
+    t.useJUnit()
+    t.scanForTestClasses = false
+}
+
+tasks.register('manualGwtTest', Test) {t ->
+    t.group = 'verification'
+    t.description = '''Test wiring to run either unit or integration tests with a manual browser and an already-running server.
+This makes it easier to run a tests repeatedly, either one at a time or as a class/suite, without
+paying to start/stop selenium and deephaven each time. The port will remain constant at 8888 each
+run to let breakpoints continue to work across repeated runs.
+
+To use this, first start a server on port 10000 with anonymous access enabled. Then, either select
+a test in IntelliJ to run using the manualGwtTest task, or invoke from the command line with info
+logging enabled and a specific test selected, e.g.:
+./gradlew :web-client-api:manualGwtTest --info --tests io.deephaven.web.client.api.NullValueTestGwt
+
+Click the URL that is printed out to run the test in your browser, or refresh an existing browser window.'''
+    t.doFirst {
+        t.systemProperty 'gwt.args', ['-port 8888',
+                                      '-sourceLevel auto',
+                                      '-runStyle Manual:1',
+                                      '-ea',
+                                      '-style PRETTY',
+                                      '-setProperty dh.server=http://localhost:10000',
+                                      '-setProperty compiler.useSourceMaps=true',
+                                      "-war ${layout.buildDirectory.dir('manualTest-war').get().asFile.absolutePath}"
+        ].join(' ')
+        t.classpath += tasks.getByName('gwtCompile').src
+    }
+    t.systemProperties = [
+            'gwt.persistentunitcachedir':layout.buildDirectory.dir('integrationTest-unitCache').get().asFile.absolutePath,
+    ]
     t.useJUnit()
     t.scanForTestClasses = false
 }
