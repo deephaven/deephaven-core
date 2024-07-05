@@ -374,7 +374,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                     table.setViewport(6, 14, null);
                     return assertUpdateReceived(table, viewport -> {
                         assertEquals(6d, viewport.getOffset());
-                        assertEquals(9, (int) viewport.getRows().length);
+                        assertEquals(9, viewport.getRows().length);
                     }, 1009);
                 })
                 .then(table -> {
@@ -389,7 +389,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                     }, 1010)
                             .then(t -> {
                                 t.getViewportData().then(vp -> {
-                                    // assertEquals(7, (int) vp.getOffset());
+                                    assertEquals(7d, vp.getOffset());
                                     assertEquals(11, (int) vp.getRows().length);
                                     return Promise.resolve(vp);
                                 });
