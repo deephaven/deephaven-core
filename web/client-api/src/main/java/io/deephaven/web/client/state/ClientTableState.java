@@ -100,11 +100,18 @@ public final class ClientTableState extends TableConfig {
                         case "long":
                         case "java.lang.Long":
                             return long.class;
+                        case "java.lang.Float":
+                        case "float":
+                            return float.class;
                         case "java.lang.Double":
                         case "double":
                             return double.class;
                         case "java.time.Instant":
                             return DateWrapper.class;
+                        case "java.math.BigInteger":
+                            return BigIntegerWrapper.class;
+                        case "java.math.BigDecimal":
+                            return BigDecimalWrapper.class;
                         default:
                             return Object.class;
                     }

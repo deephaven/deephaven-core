@@ -16,10 +16,13 @@ import io.deephaven.extensions.barrage.chunk.DoubleChunkReader;
 import io.deephaven.extensions.barrage.chunk.FloatChunkReader;
 import io.deephaven.extensions.barrage.chunk.IntChunkReader;
 import io.deephaven.extensions.barrage.chunk.LongChunkReader;
+import io.deephaven.extensions.barrage.chunk.ShortChunkReader;
 import io.deephaven.extensions.barrage.chunk.VarBinaryChunkInputStreamGenerator;
 import io.deephaven.extensions.barrage.chunk.VarListChunkReader;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.util.BooleanUtils;
+import io.deephaven.web.client.api.BigDecimalWrapper;
+import io.deephaven.web.client.api.BigIntegerWrapper;
 import io.deephaven.web.client.api.DateWrapper;
 import io.deephaven.web.client.api.LongWrapper;
 import org.apache.arrow.flatbuf.Date;
@@ -37,6 +40,12 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
+/**
+ * Browser-compatible implementation of the ChunkReaderFactory, with a focus on reading from arrow types rather than
+ * successfully round-tripping to the Java server.
+ * <p>
+ * Includes some specific workarounds to handle nullability that will make more sense for the browser.
+ */
 public class WebChunkReaderFactory implements ChunkReaderFactory {
     @Override
     public ChunkReader getReader(StreamReaderOptions options, int factor, TypeInfo typeInfo) {
@@ -49,6 +58,9 @@ public class WebChunkReaderFactory implements ChunkReaderFactory {
                         return new ByteChunkReader(options);
                     }
                     case 16: {
+                        if (t.isSigned()) {
+                            return new ShortChunkReader(options);
+                        }
                         return new CharChunkReader(options);
                     }
                     case 32: {
@@ -77,16 +89,16 @@ public class WebChunkReaderFactory implements ChunkReaderFactory {
                 }
             }
             case Type.Binary: {
-                if (typeInfo.type() == BigInteger.class) {
+                if (typeInfo.type() == BigIntegerWrapper.class) {
                     return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
                             totalRows) -> VarBinaryChunkInputStreamGenerator.extractChunkFromInputStream(
                                     is,
                                     fieldNodeIter,
                                     bufferInfoIter,
-                                    BigInteger::new,
+                            (val, off, len) -> new BigIntegerWrapper(new BigInteger(val, off, len)),
                                     outChunk, outOffset, totalRows);
                 }
-                if (typeInfo.type() == BigDecimal.class) {
+                if (typeInfo.type() == BigDecimalWrapper.class) {
                     return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
                             totalRows) -> VarBinaryChunkInputStreamGenerator.extractChunkFromInputStream(
                                     is,
@@ -99,10 +111,12 @@ public class WebChunkReaderFactory implements ChunkReaderFactory {
                                         final byte b3 = buf[offset + 2];
                                         final byte b4 = buf[offset + 3];
                                         final int scale = b4 << 24 | (b3 & 0xFF) << 16 | (b2 & 0xFF) << 8 | (b1 & 0xFF);
-                                        return new BigDecimal(new BigInteger(buf, offset + 4, length - 4), scale);
+                                        BigDecimal bigDecimal = new BigDecimal(new BigInteger(buf, offset + 4, length - 4), scale);
+                                        return new BigDecimalWrapper(bigDecimal);
                                     },
                                     outChunk, outOffset, totalRows);
                 }
+                throw new IllegalArgumentException("Unsupported Binary type " + typeInfo.type());
             }
             case Type.Utf8: {
                 return (fieldNodeIter, bufferInfoIter, is, outChunk, outOffset,
