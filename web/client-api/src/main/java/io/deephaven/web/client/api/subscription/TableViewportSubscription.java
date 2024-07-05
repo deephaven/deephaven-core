@@ -6,6 +6,7 @@ package io.deephaven.web.client.api.subscription;
 import com.google.flatbuffers.FlatBufferBuilder;
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
+import elemental2.core.JsArray;
 import elemental2.dom.CustomEvent;
 import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
@@ -35,7 +36,9 @@ import jsinterop.annotations.JsOptional;
 import jsinterop.base.Js;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 
 import static io.deephaven.web.client.api.barrage.WebBarrageUtils.serializeRanges;
 
@@ -214,6 +217,14 @@ public class TableViewportSubscription extends AbstractTableSubscription {
             this.columns = columns;
             this.refresh = updateIntervalMs == null ? 1000.0 : updateIntervalMs;
             return;
+        }
+        if (columns == null) {
+            // Null columns means the user wants all columns, only supported on viewports. This can't be done until the CTS has resolved
+            columns = state().getColumns();
+        } else {
+            // If columns were provided, sort a copy so that we have them in the expected order
+            columns = Js.<JsArray<Column>>uncheckedCast(columns).slice().asArray(new Column[0]);
+            Arrays.sort(columns, Comparator.comparing(Column::getIndex));
         }
         if (updateIntervalMs != null && refresh != updateIntervalMs) {
             throw new IllegalArgumentException(
