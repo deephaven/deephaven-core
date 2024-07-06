@@ -34,6 +34,9 @@ dependencies {
     implementation project(':Configuration')
     implementation depCommonsLang3
     implementation project(':Util')
+    implementation project(':codec-base')
+    implementation project(':codec-builtin')
+    implementation project(':codec-cache')
 
     implementation libs.commons.text
 

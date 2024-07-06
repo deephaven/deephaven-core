@@ -1,0 +1,10 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+description 'Codec Base: The base package for column codecs'
+
+dependencies {
+    compileOnlyApi depAnnotations
+}

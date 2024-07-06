@@ -3,7 +3,6 @@
 //
 package io.deephaven.util.codec;
 
-import io.deephaven.base.verify.Assert;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -72,6 +71,8 @@ public interface ObjectDecoder<TYPE> {
      */
     default void checkWidth(int actualWidth) throws IllegalArgumentException {
         final int expectedWidth = expectedObjectWidth();
-        Assert.eq(expectedWidth, "expectedWidth", actualWidth, "actualWidth");
+        if (expectedWidth != actualWidth) {
+            throw new IllegalArgumentException("Expected width `" + expectedWidth + "` does not match actual width `" + actualWidth + "`");
+        }
     }
 }

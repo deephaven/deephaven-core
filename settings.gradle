@@ -415,6 +415,13 @@ include ':clock-impl'
 
 include ':sql'
 
+include(':codec-base')
+project(':codec-base').projectDir = file('codec/base')
+include(':codec-builtin')
+project(':codec-builtin').projectDir = file('codec/builtin')
+include(':codec-cache')
+project(':codec-cache').projectDir = file('codec/cache')
+
 file("${rootDir}/docker/registry").list().each { name ->
     if (file("${rootDir}/docker/registry/${name}/build.gradle").exists()) {
         include(":docker-${name}")

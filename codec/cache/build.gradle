@@ -1,0 +1,13 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+description 'Codec Cache: Deephaven Codec Cache'
+
+dependencies {
+    implementation project(":codec-base"),
+                   project(":codec-builtin"),
+                   project(":Base")
+    compileOnlyApi depAnnotations
+}
