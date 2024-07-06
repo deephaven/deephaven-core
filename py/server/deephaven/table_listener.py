@@ -308,8 +308,9 @@ def _wrap_listener_obj(t: Table, listener: TableListener):
     return listener
 
 
-class TableListenerHandle:
+class TableListenerHandle(JObjectWrapper):
     """A handle to manage a table listener's lifecycle."""
+    j_object_type = _JPythonReplayListenerAdapter
 
     def __init__(self, t: Table, listener: Union[Callable, TableListener], description: str = None,
                  dependencies: Union[Table, Sequence[Table]] = None):
@@ -363,6 +364,10 @@ class TableListenerHandle:
         except Exception as e:
             raise DHError(e, "failed to create a table listener.") from e
         self.started = False
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.listener
 
     def start(self, do_replay: bool = False, replay_lock: Literal["shared", "exclusive"] = "shared") -> None:
         """Start the listener by registering it with the table and listening for updates.
