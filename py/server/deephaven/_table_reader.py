@@ -30,9 +30,9 @@ def _col_defs(table: Table, cols: Union[str, Sequence[str]]) -> Sequence[Column]
 
 
 def _table_reader_all_dict(table: Table, cols: Optional[Union[str, Sequence[str]]] = None, *, row_set: jpy.JType,
-                           prev: bool = False, to_numpy: bool = True) -> Dict[str, np.ndarray]:
+                           prev: bool = False, to_numpy: bool = True) -> Dict[str, Union[np.ndarray | jpy.JType]]:
     """ Reads all the rows in the given row set of a table into a dictionary. The dictionary is a map of column names
-    to numpy arrays.
+    to numpy arrays or Java arrays.
 
     Args:
         table (Table):  The table to read.
@@ -42,7 +42,7 @@ def _table_reader_all_dict(table: Table, cols: Optional[Union[str, Sequence[str]
         to_numpy (bool): If True, convert the column data to numpy arrays. Default is True.
 
     Returns:
-        A generator that yields a dictionary of column names to numpy arrays.
+        A generator that yields a dictionary of column names to numpy arrays or Java arrays.
 
     Raises:
         ValueError
@@ -68,7 +68,7 @@ def _table_reader_chunk_dict(table: Table, cols: Optional[Union[str, Sequence[st
                                     chunk_size: int = 2048, prev: bool = False, to_numpy: bool = True) \
         -> Generator[Dict[str, Union[np.ndarray | jpy.JType]], None, None]:
     """ A generator that reads the chunks of rows over the given row set of a table into a dictionary. The dictionary is
-    a map of column names to numpy arrays.
+    a map of column names to numpy arrays or Java arrays.
 
     Args:
         table (Table):  The table to read.
@@ -79,7 +79,7 @@ def _table_reader_chunk_dict(table: Table, cols: Optional[Union[str, Sequence[st
         to_numpy (bool): If True, convert the column data to numpy arrays. Default is True.
 
     Returns:
-        A generator that yields a dictionary of column names to numpy arrays.
+        A generator that yields a dictionary of column names to numpy arrays or Java arrays.
 
     Raises:
         ValueError
@@ -121,7 +121,7 @@ def _table_reader_dict(table: Table, cols: Optional[Union[str, Sequence[str]]] =
             crossings. Default is 2048.
 
     Returns:
-        A generator that yields a dictionary of column names to a value.
+        A generator that yields a dictionary of column names to values.
 
     Raises:
         ValueError
