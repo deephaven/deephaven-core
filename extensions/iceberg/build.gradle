@@ -35,6 +35,8 @@ dependencies {
 
     implementation libs.avro
 
+    implementation libs.commons.lang3
+
     testImplementation libs.assertj
 
     testImplementation platform(libs.junit.bom)

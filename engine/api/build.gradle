@@ -17,7 +17,7 @@ dependencies {
     api project(':engine-rowset')
 
     implementation project(':DataStructures')
-    implementation depTrove3
+    implementation libs.trove
 
     compileOnly project(':util-immutables')
     annotationProcessor libs.immutables
@@ -29,7 +29,7 @@ dependencies {
     testImplementation project(':engine-test-utils')
     testImplementation TestTools.projectDependency(project, 'engine-table')
     testImplementation TestTools.projectDependency(project, 'engine-vector')
-    testImplementation depCommonsLang3
+    testImplementation libs.commons.lang3
 
     testImplementation libs.junit4
 

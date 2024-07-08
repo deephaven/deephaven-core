@@ -9,7 +9,7 @@ dependencies {
     api project(':engine-table')
 
     implementation project(':Configuration')
-    implementation depCommonsLang3
+    implementation libs.commons.lang3
 
     implementation libs.arrow.format
     implementation libs.arrow.vector

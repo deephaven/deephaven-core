@@ -14,7 +14,6 @@ configurations {
     js
     dts
     typescriptDoclet
-    testImplementation.extendsFrom junit
 }
 
 dependencies {
@@ -28,6 +27,7 @@ dependencies {
 
     js project(path: ':proto:raw-js-openapi', configuration: 'js')
 
+    testImplementation libs.junit4
     testImplementation 'org.seleniumhq.selenium:selenium-remote-driver:4.16.1'
 
     implementation libs.elemental.core

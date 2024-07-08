@@ -20,7 +20,7 @@ dependencies {
     implementation libs.awssdk.s3
     implementation libs.awssdk.crt.client
 
-    compileOnly depAnnotations
+    compileOnly libs.jetbrains.annotations
 
     // For OSUtil
     testImplementation project(':Stats')

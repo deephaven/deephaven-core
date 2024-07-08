@@ -8,5 +8,5 @@ description 'Primitives: Expanding upon java.util.PrimitiveIterator and java.uti
 dependencies {
     implementation project(':Util')
 
-    compileOnly depAnnotations
+    compileOnly libs.jetbrains.annotations
 }
