@@ -12,7 +12,7 @@ dependencies {
 
     implementation project(':engine-table')
     implementation project(':engine-base')
-    implementation depTrove3
+    implementation libs.trove
 
     compileOnly project(':util-immutables')
     annotationProcessor libs.immutables
@@ -20,8 +20,8 @@ dependencies {
     testImplementation platform(libs.junit.bom)
     testImplementation libs.assertj
 
-    testImplementation depCommonsCompress
-    testImplementation depCommonsIo
+    testImplementation libs.commons.compress
+    testImplementation libs.commons.io
     testImplementation project(':engine-test-utils')
 
     testImplementation libs.junit4

@@ -3,11 +3,8 @@ plugins {
   id 'io.deephaven.project.register'
 }
 
-configurations {
-  compileOnly.extendsFrom fishIo
-}
-
 dependencies {
+  compileOnly project(':Base')
   compileOnly project(':log-factory')
 
   compileOnly libs.autoservice

@@ -6,8 +6,6 @@ plugins {
 evaluationDependsOn Docker.registryProject('python')
 
 configurations {
-    implementation.extendsFrom jdom
-    testImplementation.extendsFrom fishBaseTest
     combinedJavadoc
 }
 
@@ -17,7 +15,7 @@ dependencies {
     implementation project(':extensions-csv')
     implementation project(':extensions-kafka')
     implementation project(':extensions-parquet-table')
-    implementation depTrove3
+    implementation libs.trove
 
     implementation libs.groovy
     implementation libs.groovy.json
@@ -28,6 +26,8 @@ dependencies {
 
     runtimeOnly project(':log-to-slf4j')
     runtimeOnly libs.logback.classic
+
+    testImplementation project(path: ':Base', configuration: 'tests')
 
     testRuntimeOnly project(path: ':configs')
     testRuntimeOnly project(path: ':test-configs')

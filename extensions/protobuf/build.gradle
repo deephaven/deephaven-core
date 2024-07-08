@@ -13,7 +13,7 @@ dependencies {
     compileOnly project(':util-immutables')
     annotationProcessor libs.immutables
 
-    compileOnly depAnnotations
+    compileOnly libs.jetbrains.annotations
 
     testImplementation libs.assertj
 

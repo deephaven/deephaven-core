@@ -16,7 +16,7 @@ dependencies {
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 
     testImplementation project(':engine-test-utils')
-    testImplementation depCommonsLang3
+    testImplementation libs.commons.lang3
 
     testImplementation libs.junit4
     testImplementation libs.assertj
