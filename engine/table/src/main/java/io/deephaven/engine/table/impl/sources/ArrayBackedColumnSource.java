@@ -7,7 +7,6 @@ import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.table.impl.util.ShiftCallback;
 import io.deephaven.qst.type.BoxedType;
 import io.deephaven.qst.type.GenericType;
 import io.deephaven.util.type.ArrayTypeUtils;
@@ -47,7 +46,7 @@ import java.util.Collection;
  */
 public abstract class ArrayBackedColumnSource<T>
         extends AbstractColumnSource<T>
-        implements FillUnordered<Values>, ShiftCallback, WritableColumnSource<T>, InMemoryColumnSource,
+        implements FillUnordered<Values>, WritableColumnSource<T>, InMemoryColumnSource,
         ChunkedBackingStoreExposedWritableSource {
 
     static final int DEFAULT_RECYCLER_CAPACITY = 1024;

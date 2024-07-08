@@ -8,10 +8,9 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
-import io.deephaven.engine.table.impl.util.ShiftCallback;
 
 public abstract class SingleValueColumnSource<T> extends AbstractColumnSource<T>
-        implements WritableColumnSource<T>, ChunkSink<Values>, ShiftCallback, InMemoryColumnSource,
+        implements WritableColumnSource<T>, ChunkSink<Values>, InMemoryColumnSource,
         RowKeyAgnosticChunkSource<Values> {
 
     protected transient long changeTime;

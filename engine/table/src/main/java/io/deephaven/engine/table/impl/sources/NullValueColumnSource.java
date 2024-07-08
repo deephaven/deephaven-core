@@ -15,7 +15,6 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
-import io.deephaven.engine.table.impl.util.ShiftCallback;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.chunk.WritableChunk;
@@ -37,7 +36,7 @@ import static io.deephaven.util.QueryConstants.NULL_SHORT;
  * A column source that returns null for all keys. Trivially "writable" since it can only contain null values.
  */
 public final class NullValueColumnSource<T> extends AbstractColumnSource<T>
-        implements ShiftCallback, InMemoryColumnSource, RowKeyAgnosticChunkSource<Values>,
+        implements InMemoryColumnSource, RowKeyAgnosticChunkSource<Values>,
         WritableColumnSource<T> {
 
     private static final KeyedObjectKey.Basic<Pair<Class<?>, Class<?>>, NullValueColumnSource<?>> KEY_TYPE =
