@@ -37,8 +37,9 @@ dependencies {
     implementation 'it.unimi.dsi:fastutil:8.5.13'
 
     implementation project(':plugin')
-    implementation depCommonsLang3
+    implementation libs.commons.lang3
     implementation libs.commons.text
+    implementation libs.commons.compress
 
     implementation libs.groovy
     implementation libs.groovy.json

@@ -9,9 +9,9 @@ dependencies {
     implementation project(':replication-util')
     implementation project(':engine-table')
     implementation 'com.squareup:javapoet:1.13.0'
-    implementation depTrove3
-    implementation depCommonsIo
-    implementation depCommonsLang3
+    implementation libs.trove
+    implementation libs.commons.io
+    implementation libs.commons.lang3
 
     runtimeOnly project(':log-to-slf4j')
     runtimeOnly project(path: ':configs')
