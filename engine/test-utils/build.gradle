@@ -15,8 +15,8 @@ dependencies {
     implementation project(':engine-rowset-test-utils')
     implementation project(':extensions-source-support')
 
-    implementation depCommonsLang3
-    implementation depTrove3
+    implementation libs.commons.lang3
+    implementation libs.trove
 
     implementation 'it.unimi.dsi:fastutil:8.5.13'
 

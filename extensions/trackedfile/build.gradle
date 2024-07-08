@@ -12,7 +12,7 @@ dependencies {
     implementation project(':Util')
     implementation project(':engine-table')
 
-    compileOnly depAnnotations
+    compileOnly libs.jetbrains.annotations
 
     compileOnly libs.autoservice
     annotationProcessor libs.autoservice.compiler

@@ -32,8 +32,8 @@ dependencies {
     implementation project(':engine-processor-function')
     implementation project(':Configuration')
     implementation project(':log-factory')
-    implementation depTrove3
-    implementation depCommonsLang3
+    implementation libs.trove
+    implementation libs.commons.lang3
 
     compileOnly project(':util-immutables')
     annotationProcessor libs.immutables

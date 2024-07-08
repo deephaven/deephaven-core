@@ -12,7 +12,7 @@ dependencies {
     // For CountingInputStream
     implementation libs.guava
 
-    compileOnly depAnnotations
+    compileOnly libs.jetbrains.annotations
 
     testImplementation libs.assertj
     testImplementation platform(libs.junit.bom)
