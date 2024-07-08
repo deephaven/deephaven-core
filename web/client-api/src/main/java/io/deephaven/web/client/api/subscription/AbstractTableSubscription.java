@@ -431,7 +431,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
                 || (serverColumns == null && columnBitSet.cardinality() == state.getTableDef().getColumns().length)
                 || (serverColumns != null && serverColumns.equals(this.columnBitSet)))
                 && (serverViewport == null && this.viewportRowSet == null
-                || (serverViewport != null && serverViewport.equals(this.viewportRowSet)))
+                        || (serverViewport != null && serverViewport.equals(this.viewportRowSet)))
                 && serverReverseViewport == isReverseViewport;
     }
 

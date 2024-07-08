@@ -95,7 +95,7 @@ public class WebChunkReaderFactory implements ChunkReaderFactory {
                                     is,
                                     fieldNodeIter,
                                     bufferInfoIter,
-                            (val, off, len) -> new BigIntegerWrapper(new BigInteger(val, off, len)),
+                                    (val, off, len) -> new BigIntegerWrapper(new BigInteger(val, off, len)),
                                     outChunk, outOffset, totalRows);
                 }
                 if (typeInfo.type() == BigDecimalWrapper.class) {
@@ -111,7 +111,8 @@ public class WebChunkReaderFactory implements ChunkReaderFactory {
                                         final byte b3 = buf[offset + 2];
                                         final byte b4 = buf[offset + 3];
                                         final int scale = b4 << 24 | (b3 & 0xFF) << 16 | (b2 & 0xFF) << 8 | (b1 & 0xFF);
-                                        BigDecimal bigDecimal = new BigDecimal(new BigInteger(buf, offset + 4, length - 4), scale);
+                                        BigDecimal bigDecimal =
+                                                new BigDecimal(new BigInteger(buf, offset + 4, length - 4), scale);
                                         return new BigDecimalWrapper(bigDecimal);
                                     },
                                     outChunk, outOffset, totalRows);

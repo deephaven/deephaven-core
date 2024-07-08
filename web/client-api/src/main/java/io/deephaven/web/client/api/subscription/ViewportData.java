@@ -5,22 +5,8 @@ package io.deephaven.web.client.api.subscription;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
-import elemental2.core.JsArray;
-import elemental2.core.JsObject;
-import io.deephaven.web.client.api.*;
-import io.deephaven.web.shared.data.*;
-import jsinterop.annotations.JsFunction;
+import io.deephaven.web.client.api.TableData;
 import jsinterop.annotations.JsProperty;
-import jsinterop.base.Any;
-import jsinterop.base.Js;
-import jsinterop.base.JsArrayLike;
-
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.PrimitiveIterator.OfLong;
-import java.util.Set;
 
 /**
  * Extends {@link TableData}, but only contains data in the current viewport. The only API change from TableData is that

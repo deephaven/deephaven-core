@@ -219,7 +219,8 @@ public class TableViewportSubscription extends AbstractTableSubscription {
             return;
         }
         if (columns == null) {
-            // Null columns means the user wants all columns, only supported on viewports. This can't be done until the CTS has resolved
+            // Null columns means the user wants all columns, only supported on viewports. This can't be done until the
+            // CTS has resolved
             columns = state().getColumns();
         } else {
             // If columns were provided, sort a copy so that we have them in the expected order
