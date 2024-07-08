@@ -13,6 +13,7 @@ cd $DH_PREFIX/src/rdeephaven
 
 R --no-save --no-restore <<EOF
 library('pkgdown')
+sessionInfo()
 status = tryCatch(
   {
      pkgdown::build_site(preview=FALSE)
