@@ -13,7 +13,7 @@ dependencies {
     runtimeOnly project(':log-to-slf4j')
     runtimeOnly project(':logback-print-stream-globals')
     runtimeOnly project(':logback-logbuffer')
-    Classpaths.inheritLogbackClassic(project)
+    runtimeOnly libs.logback.classic
 }
 
 distributions {

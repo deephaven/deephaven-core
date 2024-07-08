@@ -11,5 +11,6 @@ dependencies {
 
   api 'io.github.classgraph:classgraph:4.8.154'
 
-  Classpaths.inheritAutoService(project)
+  compileOnly libs.autoservice
+  annotationProcessor libs.autoservice.compiler
 }

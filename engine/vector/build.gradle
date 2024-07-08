@@ -12,7 +12,7 @@ dependencies {
 
     implementation project(':Base')
 
-    compileOnly depAnnotations
+    compileOnly libs.jetbrains.annotations
 
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    testImplementation libs.junit4
 }

@@ -263,7 +263,7 @@ Notes
 
 9. Now configure the build for Deephaven Core:
    ``` 
-   cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake -DCMAKE_INSTALL_PREFIX=%HOMEDRIVE%%HOMEPATH%/dhinstall -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON
+   cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake -DCMAKE_INSTALL_PREFIX=%HOMEDRIVE%%HOMEPATH%/dhinstall -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo
    ```
    
 10. Finally, build and install Deephaven Core:

@@ -6,3 +6,15 @@ updates:
       interval: "weekly"
     commit-message:
       prefix: "chore(github-actions)"
+    labels:
+      - "NoDocumentationNeeded"
+      - "NoReleaseNotesNeeded"
+  - package-ecosystem: "gradle"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore(gradle)"
+    labels:
+      - "NoDocumentationNeeded"
+      - "NoReleaseNotesNeeded"
