@@ -51,41 +51,43 @@ public interface CompressorAdapter extends SafeCloseable {
      * Reads exactly {@code length} number of bytes from the input stream into the provided byte array.
      *
      * @param in The input stream to read from
-     * @param length The number of bytes to read
      * @param bytes The byte array to read into
-     * @return A ByteBuffer wrapping the byte array with the limit set to length
+     * @param offset The offset in the byte array to start reading at
+     * @param length The number of bytes to read
      * @throws IOException If an error occurs while reading from the input stream
      * @throws IllegalArgumentException If the byte array is too small to read length
      * @throws IOException If the expected number of bytes could not be read
      */
-    static ByteBuffer readNBytes(final InputStream in, final int length, final byte[] bytes) throws IOException {
-        if (length > bytes.length) {
-            throw new IllegalArgumentException("bytes array of length " + bytes.length + " is too small to read "
-                    + length + " bytes");
+    static void readNBytes(final InputStream in, final byte[] bytes, final int offset, final int length)
+            throws IOException {
+        if (length > bytes.length - offset) {
+            throw new IllegalArgumentException("Bytes array of length " + bytes.length + " with offset " + offset +
+                    " is too small to read " + length + " bytes");
         }
-        return readNBytesHelper(in, length, bytes);
+        readNBytesHelper(in, bytes, offset, length);
     }
 
     /**
      * Reads exactly {@code length} number of bytes from the input stream into a new byte buffer and returns it.
      *
-     * @see #readNBytes(InputStream, int, byte[])
+     * @see #readNBytesHelper(InputStream, byte[], int, int)
      */
     static ByteBuffer readNBytes(final InputStream in, final int length) throws IOException {
-        return readNBytesHelper(in, length, new byte[length]);
+        final byte[] bytes = new byte[length];
+        readNBytesHelper(in, bytes, 0, length);
+        return ByteBuffer.wrap(bytes);
     }
 
-    private static ByteBuffer readNBytesHelper(final InputStream in, final int length, final byte[] bytes)
+    private static void readNBytesHelper(final InputStream in, final byte[] bytes, final int offset, final int length)
             throws IOException {
         int numRead = 0;
         while (numRead < length) {
-            final int count = in.read(bytes, numRead, length - numRead);
+            final int count = in.read(bytes, offset + numRead, length - numRead);
             if (count == -1) {
                 throw new IOException("Expected to read " + length + " bytes, but read " + numRead + " bytes");
             }
             numRead += count;
         }
-        return ByteBuffer.wrap(bytes, 0, length);
     }
 
     /**

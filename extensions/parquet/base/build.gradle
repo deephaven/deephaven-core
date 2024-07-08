@@ -14,6 +14,7 @@ dependencies {
     implementation project(':Base')
     implementation project(':Util')
     implementation project(':engine-time')
+    implementation project(':engine-chunk')
     implementation project(':Configuration')
     implementation project(':DataStructures')
     implementation libs.commons.io
