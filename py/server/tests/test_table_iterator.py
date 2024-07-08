@@ -1,7 +1,6 @@
 #
 # Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
-import time
 import unittest
 from dataclasses import dataclass
 
@@ -42,7 +41,6 @@ class TableIteratorTestCase(BaseTestCase):
                     self.assertIn(col.name, d)
                     self.assertEqual(d[col.name].dtype, col.data_type.np_type)
                     self.assertLessEqual(len(d[col.name]), 100)
-                time.sleep(0.1)
                 total_read_size += len(d[col.name])
             self.assertEqual(total_read_size, test_table.size)
             self.assertFalse(ug.has_shared_lock(test_table))
@@ -59,7 +57,6 @@ class TableIteratorTestCase(BaseTestCase):
                     for col in cols:
                         self.assertIn(col, d)
                         self.assertLessEqual(len(d[col]), 100)
-                    time.sleep(0.1)
                     total_read_size += len(d[col])
                 self.assertEqual(total_read_size, test_table.size)
 
@@ -86,7 +83,6 @@ class TableIteratorTestCase(BaseTestCase):
                     v_type = type(d[col.name])
                     self.assertTrue(np.can_cast(col.data_type.np_type, np.dtype(v_type)) or
                                     self.assertEqual(v_type, col.data_type.j_type))
-                time.sleep(0.001)
                 total_read_size += 1
             self.assertEqual(total_read_size, test_table.size)
             self.assertFalse(ug.has_shared_lock(test_table))
@@ -102,7 +98,6 @@ class TableIteratorTestCase(BaseTestCase):
                     self.assertEqual(len(d), len(cols))
                     for col in cols:
                         self.assertIn(col, d)
-                    time.sleep(0.1)
                     total_read_size += 1
                 self.assertEqual(total_read_size, test_table.size)
                 self.assertTrue(ug.has_shared_lock(test_table))
@@ -135,7 +130,6 @@ class TableIteratorTestCase(BaseTestCase):
                     for col in cols:
                         self.assertIn(col, d)
                     total_read_size += len(d[col])
-                    time.sleep(0.001)
                 except StopIteration:
                     break
             # the table can't refresh with the lock, so the total read size must be the same as the table size
@@ -187,7 +181,6 @@ class TableIteratorTestCase(BaseTestCase):
                     for col in cols:
                         self.assertIn(col, d)
                     total_read_size += 1
-                    time.sleep(0.001)
                 except StopIteration:
                     break
             # the table can't refresh with the lock, so the total read size must be the same as the table size
@@ -284,7 +277,6 @@ class TableIteratorTestCase(BaseTestCase):
                     self.assertEqual(col.name, d._fields[i])
                     self.assertEqual(d[i].dtype, col.data_type.np_type)
                     self.assertLessEqual(len(d[i]), 100)
-                time.sleep(0.1)
                 total_read_size += len(d[i])
             self.assertEqual(total_read_size, test_table.size)
             self.assertFalse(ug.has_shared_lock(test_table))
@@ -301,7 +293,6 @@ class TableIteratorTestCase(BaseTestCase):
                     for i, col in enumerate(cols):
                         self.assertEqual(col, d._fields[i])
                         self.assertLessEqual(len(d[i]), 100)
-                    time.sleep(0.1)
                     total_read_size += len(d[i])
                 self.assertEqual(total_read_size, test_table.size)
 
@@ -328,7 +319,6 @@ class TableIteratorTestCase(BaseTestCase):
                     v_type = type(d[i])
                     self.assertTrue(np.can_cast(col.data_type.np_type, np.dtype(v_type)) or
                                     self.assertEqual(v_type, col.data_type.j_type))
-                time.sleep(0.001)
                 total_read_size += 1
             self.assertEqual(total_read_size, test_table.size)
             self.assertFalse(ug.has_shared_lock(test_table))
@@ -344,7 +334,6 @@ class TableIteratorTestCase(BaseTestCase):
                     self.assertEqual(len(d), len(cols))
                     for i, col in enumerate(cols):
                         self.assertEqual(col, d._fields[i])
-                    time.sleep(0.1)
                     total_read_size += 1
                 self.assertEqual(total_read_size, test_table.size)
                 self.assertTrue(ug.has_shared_lock(test_table))

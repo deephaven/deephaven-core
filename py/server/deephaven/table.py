@@ -515,7 +515,7 @@ class Table(JObjectWrapper):
         Additionally, the generator internally maintains a fill context. The auto acquired shared lock and the fill
         context will be released after the generator is destroyed. That can happen implicitly when the generator
         is used in a for-loop. When the generator is not used in a for-loop, to prevent resource leaks, it must be closed
-        after use by either (1) by setting it to None, (2) using the del statement, or (3) calling the close() method on it.
+        after use by either (1) setting it to None, (2) using the del statement, or (3) calling the close() method on it.
 
         Args:
             cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
@@ -542,7 +542,7 @@ class Table(JObjectWrapper):
         Additionally, the generator internally maintains a fill context. The auto acquired shared lock and the fill
         context will be released after the generator is destroyed. That can happen implicitly when the generator
         is used in a for-loop. When the generator is not used in a for-loop, to prevent resource leaks, it must be closed
-        after use by either (1) by setting it to None, (2) using the del statement, or (3) calling the close() method on it.
+        after use by either (1) setting it to None, (2) using the del statement, or (3) calling the close() method on it.
 
         Args:
             cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read. Default is None.
@@ -570,7 +570,7 @@ class Table(JObjectWrapper):
         Additionally, the generator internally maintains a fill context. The auto acquired shared lock and the fill
         context will be released after the generator is destroyed. That can happen implicitly when the generator
         is used in a for-loop. When the generator is not used in a for-loop, to prevent resource leaks, it must be closed
-        after use by either (1) by setting it to None, (2) using the del statement, or (3) calling the close() method on it.
+        after use by either (1) setting it to None, (2) using the del statement, or (3) calling the close() method on it.
 
         Args:
             cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
@@ -599,7 +599,7 @@ class Table(JObjectWrapper):
         Additionally, the generator internally maintains a fill context. The auto acquired shared lock and the fill
         context will be released after the generator is destroyed. That can happen implicitly when the generator
         is used in a for-loop. When the generator is not used in a for-loop, to prevent resource leaks, it must be closed
-        after use by either (1) by setting it to None, (2) using the del statement, or (3) calling the close() method on it.
+        after use by either (1) setting it to None, (2) using the del statement, or (3) calling the close() method on it.
 
         Args:
             cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
