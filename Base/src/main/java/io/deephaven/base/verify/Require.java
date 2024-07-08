@@ -5,9 +5,7 @@ package io.deephaven.base.verify;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.awt.EventQueue;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -580,37 +578,6 @@ public final class Require {
 
     public static <T> void notInstanceOf(Object o, String name, Class<T> type) {
         notInstanceOf(o, name, type, 1);
-    }
-
-    // ################################################################
-    // isAWTThread, isNotAWTThread
-
-    // ----------------------------------------------------------------
-    /**
-     * require (current thread is AWT Event Dispatch Thread)
-     */
-    public static void isAWTThread() {
-        isAWTThread(1);
-    }
-
-    public static void isAWTThread(int numCallsBelowRequirer) {
-        if (!EventQueue.isDispatchThread()) {
-            fail("\"" + Thread.currentThread().getName() + "\".isAWTThread()", numCallsBelowRequirer + 1);
-        }
-    }
-
-    // ----------------------------------------------------------------
-    /**
-     * require (current thread is AWT Event Dispatch Thread)
-     */
-    public static void isNotAWTThread() {
-        isNotAWTThread(1);
-    }
-
-    public static void isNotAWTThread(int numCallsBelowRequirer) {
-        if (EventQueue.isDispatchThread()) {
-            fail("!\"" + Thread.currentThread().getName() + "\".isAWTThread()", numCallsBelowRequirer + 1);
-        }
     }
 
     // ################################################################
