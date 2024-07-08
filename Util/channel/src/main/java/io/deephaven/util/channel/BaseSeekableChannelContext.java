@@ -13,20 +13,35 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 public class BaseSeekableChannelContext implements SeekableChannelContext {
+
+    /**
+     * A sentinel value to indicate that a resource is {@code null}.
+     */
+    private static final SafeCloseable NULL_SENTINEL = () -> {
+    };
+
+    /**
+     * An empty cache of resources.
+     */
+    private static final Map<String, SafeCloseable> EMPTY_CACHE = Map.of();
+
     /**
      * A cache of opaque resource objects hosted by this context.
      */
-    private final Map<String, SafeCloseable> resourceCache = new HashMap<>();
+    private Map<String, SafeCloseable> resourceCache = EMPTY_CACHE;
 
     @Override
     @Nullable
     public final SafeCloseable apply(final String key, @NotNull final Supplier<SafeCloseable> resourceFactory) {
-        SafeCloseable resource = resourceCache.get(key);
+        final Map<String, SafeCloseable> localResourceCache = resourceCache == EMPTY_CACHE
+                ? resourceCache = new HashMap<>(1)
+                : resourceCache;
+        SafeCloseable resource = localResourceCache.get(key);
+        if (resource == NULL_SENTINEL) {
+            return null;
+        }
         if (resource == null) {
-            resource = resourceFactory.get();
-            if (resource != null) {
-                resourceCache.put(key, resource);
-            }
+            resourceCache.put(key, (resource = resourceFactory.get()) == null ? NULL_SENTINEL : resource);
         }
         return resource;
     }
@@ -34,10 +49,7 @@ public class BaseSeekableChannelContext implements SeekableChannelContext {
     @Override
     @OverridingMethodsMustInvokeSuper
     public void close() {
-        for (final SafeCloseable resource : resourceCache.values()) {
-            if (resource != null) {
-                resource.close();
-            }
-        }
+        SafeCloseable.closeAll(resourceCache.values().iterator());
+        resourceCache = EMPTY_CACHE;
     }
 }

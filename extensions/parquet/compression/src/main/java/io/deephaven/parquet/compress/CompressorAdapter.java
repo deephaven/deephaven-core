@@ -3,8 +3,8 @@
 //
 package io.deephaven.parquet.compress;
 
-import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.util.SafeCloseable;
+import org.apache.commons.io.input.ProxyInputStream;
 import org.apache.hadoop.io.compress.Decompressor;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 
@@ -47,47 +47,59 @@ public interface CompressorAdapter extends SafeCloseable {
         public void close() {}
     };
 
-    // TODO What would be a good place to keep this method?
     /**
-     * Reads exactly nBytes from the input stream into the provided byte array.
+     * Reads exactly {@code length} number of bytes from the input stream into the provided byte array.
      *
      * @param in The input stream to read from
-     * @param nBytes The number of bytes to read
+     * @param length The number of bytes to read
      * @param bytes The byte array to read into
-     * @return A ByteBuffer wrapping the byte array with the limit set to nBytes
+     * @return A ByteBuffer wrapping the byte array with the limit set to length
      * @throws IOException If an error occurs while reading from the input stream
-     * @throws IllegalArgumentException If the byte array is too small to read nBytes
-     * @throws UncheckedDeephavenException If the expected number of bytes could not be read
+     * @throws IllegalArgumentException If the byte array is too small to read length
+     * @throws IOException If the expected number of bytes could not be read
      */
-    static ByteBuffer readNBytes(final InputStream in, final int nBytes, final byte[] bytes) throws IOException {
-        if (nBytes > bytes.length) {
+    static ByteBuffer readNBytes(final InputStream in, final int length, final byte[] bytes) throws IOException {
+        if (length > bytes.length) {
             throw new IllegalArgumentException("bytes array of length " + bytes.length + " is too small to read "
-                    + nBytes + " bytes");
+                    + length + " bytes");
         }
-        return readNBytesHelper(in, nBytes, bytes);
+        return readNBytesHelper(in, length, bytes);
     }
 
     /**
-     * Reads exactly nBytes from the input stream into a new byte buffer and returns it.
+     * Reads exactly {@code length} number of bytes from the input stream into a new byte buffer and returns it.
      *
      * @see #readNBytes(InputStream, int, byte[])
      */
-    static ByteBuffer readNBytes(final InputStream in, final int nBytes) throws IOException {
-        return readNBytesHelper(in, nBytes, new byte[nBytes]);
+    static ByteBuffer readNBytes(final InputStream in, final int length) throws IOException {
+        return readNBytesHelper(in, length, new byte[length]);
     }
 
-    private static ByteBuffer readNBytesHelper(final InputStream in, final int nBytes, final byte[] bytes)
+    private static ByteBuffer readNBytesHelper(final InputStream in, final int length, final byte[] bytes)
             throws IOException {
         int numRead = 0;
-        while (numRead < nBytes) {
-            final int count = in.read(bytes, numRead, nBytes - numRead);
+        while (numRead < length) {
+            final int count = in.read(bytes, numRead, length - numRead);
             if (count == -1) {
-                throw new UncheckedDeephavenException("Expected to read " + nBytes + " bytes, but read " +
-                        numRead + " bytes");
+                throw new IOException("Expected to read " + length + " bytes, but read " + numRead + " bytes");
             }
             numRead += count;
         }
-        return ByteBuffer.wrap(bytes, 0, nBytes);
+        return ByteBuffer.wrap(bytes, 0, length);
+    }
+
+    /**
+     * An {@link InputStream} that will not close the underlying stream when {@link InputStream#close()} is called.
+     */
+    final class NonClosingInputStream extends ProxyInputStream {
+        NonClosingInputStream(final InputStream inputStream) {
+            super(inputStream);
+        }
+
+        @Override
+        public void close() {
+            // Do not close the underlying stream.
+        }
     }
 
     /**

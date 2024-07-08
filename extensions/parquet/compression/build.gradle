@@ -13,8 +13,7 @@ dependencies {
     implementation project(':Configuration')
 
     implementation libs.commons.io
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.1'
-    // TODO Is there an alternate to specifying version, the default doesn't work
+    implementation project(':IO')
 
     implementation libs.guava
 

@@ -45,10 +45,8 @@ public interface SeekableChannelContext
      * to create a new resource, store it, and return it. This method can return a {@code null} if the factory returns a
      * {@code null}.
      */
-    // TODO Does this model look okay to you where we keep a string key, and strings are controlled by the classes
-    // instead of a central place?
     @Nullable
-    SafeCloseable apply(final String key, Supplier<SafeCloseable> resourceFactory);
+    SafeCloseable apply(String key, Supplier<SafeCloseable> resourceFactory);
 
     /**
      * Release any resources associated with this context. The context should not be used afterward.

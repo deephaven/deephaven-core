@@ -140,6 +140,7 @@ public class DeephavenCompressorAdapterFactory {
                     decompressor.reset();
                 } else {
                     decompressor = CodecPool.getDecompressor(compressionCodec);
+                    // Not resetting decompressor here since either a new instance or is reset when returned to the pool
                     if (decompressor == null) {
                         canCreateCompressorObject = false;
                     } else {
@@ -149,9 +150,10 @@ public class DeephavenCompressorAdapterFactory {
             } else {
                 decompressor = null;
             }
-            // Note that we don't close the decompressed stream because doing so may return the decompressor to the pool
+            // Note that we don't want the caller to close the decompressed stream because doing so may return the
+            // decompressor to the pool.
             final InputStream buffered = ByteStreams.limit(inputStream, compressedSize);
-            return compressionCodec.createInputStream(buffered, decompressor);
+            return new NonClosingInputStream(compressionCodec.createInputStream(buffered, decompressor));
         }
 
         @Override

@@ -3,7 +3,7 @@
 //
 package io.deephaven.parquet.compress;
 
-import com.fasterxml.jackson.databind.util.ByteBufferBackedInputStream;
+import io.deephaven.io.streams.ByteBufferInputStream;
 import io.deephaven.util.SafeCloseable;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
@@ -59,11 +59,10 @@ class LZ4WithLZ4RawBackupCompressorAdapter extends DeephavenCompressorAdapterFac
             // Try to decompress the bytes with LZ4 first.
             final InputStream decompressedInput =
                     super.decompress(bufferedInputStream, compressedSize, uncompressedSize, decompressorCache);
-            final ByteBuffer decompressedBuffer =
-                    CompressorAdapter.readNBytes(decompressedInput, uncompressedSize, new byte[uncompressedSize]);
+            final ByteBuffer decompressedBuffer = CompressorAdapter.readNBytes(decompressedInput, uncompressedSize);
             // If we got here, we successfully decompressed with LZ4.
             mode = DecompressionMode.LZ4;
-            return new ByteBufferBackedInputStream(decompressedBuffer);
+            return new ByteBufferInputStream(decompressedBuffer);
         } catch (final IOException ignored) {
         }
 
@@ -71,7 +70,7 @@ class LZ4WithLZ4RawBackupCompressorAdapter extends DeephavenCompressorAdapterFac
         lz4RawAdapter = DeephavenCompressorAdapterFactory.getInstance().getByName("LZ4_RAW");
         mode = DecompressionMode.LZ4_RAW;
         bufferedInputStream.reset();
-        return decompress(bufferedInputStream, compressedSize, uncompressedSize, decompressorCache);
+        return lz4RawAdapter.decompress(bufferedInputStream, compressedSize, uncompressedSize, decompressorCache);
     }
 
     @Override

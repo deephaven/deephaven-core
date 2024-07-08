@@ -4,6 +4,7 @@
 package io.deephaven.parquet.base;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.base.MathUtil;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Require;
 import io.deephaven.parquet.base.materializers.IntMaterializer;
@@ -28,7 +29,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.DataInput;
-import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -45,7 +45,9 @@ import static org.apache.parquet.column.ValuesType.VALUES;
 
 final class ColumnPageReaderImpl implements ColumnPageReader {
     private static final int NULL_OFFSET = -1;
-    private static final String BUFFER_HOLDER_KEY = "PARQUET_PAGE_BUFFER_HOLDER";
+    private static final String REPETITION_LEVELS_HOLDER_KEY = "PARQUET_REPETITION_LEVELS_HOLDER";
+    private static final String DEFINITION_LEVELS_HOLDER_KEY = "PARQUET_DEFINITION_LEVELS_HOLDER";
+    private static final String PAGE_BUFFER_HOLDER_KEY = "PARQUET_PAGE_BUFFER_HOLDER";
 
     private final String columnName;
     private final SeekableChannelsProvider channelsProvider;
@@ -198,8 +200,12 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         // creating a ByteBuffer impl for SeekableByteChannel, or by migrating this logic one layer up and ensuring we
         // construct input streams separately for repetitionLevelsIn, definitionLevelsIn, and dataIn. Both of these
         // solutions would potentially suffer from a disconnect in cache-ability that a single input stream provides.
-        final ByteBuffer repetitionLevels = readNBytes(in, header.getRepetition_levels_byte_length());
-        final ByteBuffer definitionLevels = readNBytes(in, header.getDefinition_levels_byte_length());
+        final int repetitionLevelsLength = header.getRepetition_levels_byte_length();
+        final ByteBuffer repetitionLevels = readNBytes(in, repetitionLevelsLength,
+                getCachedBuffer(channelContext, repetitionLevelsLength, REPETITION_LEVELS_HOLDER_KEY));
+        final int definitionLevelsLength = header.getDefinition_levels_byte_length();
+        final ByteBuffer definitionLevels = readNBytes(in, definitionLevelsLength,
+                getCachedBuffer(channelContext, definitionLevelsLength, DEFINITION_LEVELS_HOLDER_KEY));
         final InputStream decompressed =
                 compressorAdapter.decompress(in, compressedSize, uncompressedSize, channelContext);
         return new DataPageV2Helper(repetitionLevels, definitionLevels, decompressed, uncompressedSize);
@@ -295,17 +301,19 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
     }
 
     /**
-     * Get a cached byte array from the channel context, or create a new one if it doesn't exist or is too small.
+     * Get a cached byte array from the channel context for the provided key, or create a new one if it doesn't exist or
+     * is too small.
      */
     private static byte[] getCachedBuffer(
             @NotNull final SeekableChannelContext channelContext,
-            final int size) {
+            final int size,
+            final String key) {
         final BytesArrayHolder bufferHolder =
-                (BytesArrayHolder) channelContext.apply(BUFFER_HOLDER_KEY, BytesArrayHolder::new);
+                (BytesArrayHolder) channelContext.apply(key, BytesArrayHolder::new);
+        // Not checking for null here because we know the above factory will create a new instance if it doesn't exist
         if (bufferHolder.bytes == null || bufferHolder.bytes.length < size) {
-            bufferHolder.setBytes(new byte[size]);
-            // TODO This will allocate a new buffer every time we see a slightly larger page than before. We could
-            // potentially cache the next power of 2 buffer size, hoping that should be enough for most pages.
+            final int newSize = MathUtil.roundUpArraySize(size);
+            bufferHolder.setBytes(new byte[newSize]);
         }
         return bufferHolder.bytes;
     }
@@ -315,10 +323,12 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             @NotNull final SeekableChannelContext channelContext) {
         try {
             if (path.getMaxRepetitionLevel() != 0) {
-                final DataInput dataInputStream = new DataInputStream(decompressedInput);
-                final int length = readLittleEndianInt(dataInputStream);
-                final ByteBuffer bytes = readNBytes(decompressedInput, length, getCachedBuffer(channelContext, length));
-                bytes.order(ByteOrder.LITTLE_ENDIAN);
+                final int length =
+                        readNBytes(decompressedInput, 4, getCachedBuffer(channelContext, 4, PAGE_BUFFER_HOLDER_KEY))
+                                .order(ByteOrder.LITTLE_ENDIAN).getInt();
+                final ByteBuffer bytes = readNBytes(decompressedInput, length,
+                        getCachedBuffer(channelContext, length, PAGE_BUFFER_HOLDER_KEY))
+                        .order(ByteOrder.LITTLE_ENDIAN);
                 return readRepetitionLevels(bytes);
             } else {
                 return pageHeader.getData_page_header().getNum_values();
@@ -375,8 +385,8 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         try {
             final int uncompressedSize = pageHeader.getUncompressed_page_size();
             final ByteBuffer bytes = readNBytes(decompressedInput, uncompressedSize,
-                    getCachedBuffer(channelContext, uncompressedSize));
-            bytes.order(ByteOrder.LITTLE_ENDIAN);
+                    getCachedBuffer(channelContext, uncompressedSize, PAGE_BUFFER_HOLDER_KEY))
+                    .order(ByteOrder.LITTLE_ENDIAN);
             final RunLengthBitPackingHybridBufferDecoder rlDecoder = getRlDecoderPageV1(bytes);
             final RunLengthBitPackingHybridBufferDecoder dlDecoder = getDlDecoderPageV1(bytes);
             final ValuesReader dataReader =
@@ -433,8 +443,8 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
         try {
             final int uncompressedSize = pageHeader.getUncompressed_page_size();
             final ByteBuffer bytes = readNBytes(decompressedInput, pageHeader.getUncompressed_page_size(),
-                    getCachedBuffer(channelContext, uncompressedSize));
-            bytes.order(ByteOrder.LITTLE_ENDIAN);
+                    getCachedBuffer(channelContext, uncompressedSize, PAGE_BUFFER_HOLDER_KEY))
+                    .order(ByteOrder.LITTLE_ENDIAN);
             final RunLengthBitPackingHybridBufferDecoder rlDecoder = getRlDecoderPageV1(bytes);
             final RunLengthBitPackingHybridBufferDecoder dlDecoder = getDlDecoderPageV1(bytes);
             final ValuesReader dataReader =
@@ -486,7 +496,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             final RunLengthBitPackingHybridBufferDecoder rlDecoder = getRlDecoderPageV2(page);
             final RunLengthBitPackingHybridBufferDecoder dlDecoder = getDlDecoderPageV2(page);
             final ByteBuffer bytes = readNBytes(page.decompressedStream, page.uncompressedSize,
-                    getCachedBuffer(channelContext, page.uncompressedSize));
+                    getCachedBuffer(channelContext, page.uncompressedSize, PAGE_BUFFER_HOLDER_KEY));
             final ValuesReader dataReader =
                     new KeyIndexReader((DictionaryValuesReader) getDataReader(getEncoding(header.getEncoding()),
                             bytes, header.getNum_values(), channelContext));
@@ -506,7 +516,7 @@ final class ColumnPageReaderImpl implements ColumnPageReader {
             final RunLengthBitPackingHybridBufferDecoder rlDecoder = getRlDecoderPageV2(page);
             final RunLengthBitPackingHybridBufferDecoder dlDecoder = getDlDecoderPageV2(page);
             final ByteBuffer bytes = readNBytes(page.decompressedStream, page.uncompressedSize,
-                    getCachedBuffer(channelContext, page.uncompressedSize));
+                    getCachedBuffer(channelContext, page.uncompressedSize, PAGE_BUFFER_HOLDER_KEY));
             final ValuesReader dataReader = getDataReader(getEncoding(header.getEncoding()),
                     bytes, header.getNum_values(), channelContext);
             return materialize(pageMaterializerFactory, dlDecoder, rlDecoder, dataReader, nullValue);

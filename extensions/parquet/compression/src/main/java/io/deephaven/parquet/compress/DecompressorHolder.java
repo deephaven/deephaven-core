@@ -52,6 +52,7 @@ class DecompressorHolder implements SafeCloseable {
     @Override
     public void close() {
         if (decompressor != null) {
+            // Reset the decompressor before returning it to the pool.
             CodecPool.returnDecompressor(decompressor);
             codecName = null;
             decompressor = null;

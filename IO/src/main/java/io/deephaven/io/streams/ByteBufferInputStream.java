@@ -18,15 +18,13 @@ import org.jetbrains.annotations.NotNull;
  * This is an InputStream implementation which reads from a java.nio.ByteBuffer. If a read operation crosses the end of
  * the buffer, the BufferUnderflowException is converted to an EOFException.
  *
- * The stream contains no state other than that in in the buffer itself, so the buffer can be exchanged at will with the
+ * The stream contains no state other than the buffer itself, so the buffer can be exchanged at will with the
  * setBuffer() method.
  */
 public class ByteBufferInputStream extends java.io.InputStream implements DataInput {
 
     /** the buffer from which we read */
     protected ByteBuffer buf;
-
-    private char[] utfChars;
 
     /**
      * The DataOutput interface always writes bytes in big-endian order, while ByteBuffer allows the order to be big- or
@@ -40,7 +38,6 @@ public class ByteBufferInputStream extends java.io.InputStream implements DataIn
      */
     public ByteBufferInputStream(ByteBuffer buf) {
         this.buf = buf;
-        this.utfChars = new char[0];
     }
 
     /**
