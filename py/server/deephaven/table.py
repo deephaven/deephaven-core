@@ -585,7 +585,7 @@ class Table(JObjectWrapper):
         from deephaven._table_reader import _table_reader_chunk_dict  # to prevent circular import
 
         return _table_reader_chunk_dict(self, cols=cols, row_set=self.j_table.getRowSet(), chunk_size=chunk_size,
-                                        prev=False, to_numpy=True)
+                                        prev=False)
 
     def iter_chunk_tuple(self, cols: Optional[Union[str, Sequence[str]]] = None, tuple_name: str = 'Deephaven',
                          chunk_size: int = 2048,)-> Generator[Tuple[np.ndarray, ...], None, None]:

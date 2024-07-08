@@ -67,7 +67,7 @@ class TableUpdate(JObjectWrapper):
             return (_ for _ in ())
 
         return _table_reader_chunk_dict(table=self.table, cols=cols, row_set=self.j_table_update.added.asRowSet(),
-                                        chunk_size=chunk_size, prev=False, to_numpy=True)
+                                        chunk_size=chunk_size, prev=False)
 
     def removed(self, cols: Union[str, List[str]] = None) -> Dict[str, numpy.ndarray]:
         """Returns a dict with each key being a column name and each value being a NumPy array of
@@ -83,7 +83,7 @@ class TableUpdate(JObjectWrapper):
             return {}
 
         return _table_reader_all_dict(table=self.table, cols=cols, row_set=self.j_table_update.removed.asRowSet(),
-                                      prev=True, to_numpy=True)
+                                      prev=True)
 
     def removed_chunks(self, chunk_size: int, cols: Union[str, List[str]] = None) -> Generator[
         Dict[str, numpy.ndarray], None, None]:
@@ -101,7 +101,7 @@ class TableUpdate(JObjectWrapper):
             return (_ for _ in ())
 
         return _table_reader_chunk_dict(table=self.table, cols=cols, row_set=self.j_table_update.removed.asRowSet(),
-                                        chunk_size=chunk_size, prev=True, to_numpy=True)
+                                        chunk_size=chunk_size, prev=True)
 
     def modified(self, cols: Union[str, List[str]] = None) -> Dict[str, numpy.ndarray]:
         """Returns a dict with each key being a column name and each value being a NumPy array of the current values of
@@ -135,7 +135,7 @@ class TableUpdate(JObjectWrapper):
             return (_ for _ in ())
 
         return _table_reader_chunk_dict(self.table, cols=cols, row_set=self.j_table_update.modified.asRowSet(),
-                                        chunk_size=chunk_size, prev=False, to_numpy=True)
+                                        chunk_size=chunk_size, prev=False)
 
     def modified_prev(self, cols: Union[str, List[str]] = None) -> Dict[str, numpy.ndarray]:
         """Returns a dict with each key being a column name and each value being a NumPy array of the previous values of
@@ -169,7 +169,7 @@ class TableUpdate(JObjectWrapper):
             return (_ for _ in ())
 
         return _table_reader_chunk_dict(self.table, cols=cols, row_set=self.j_table_update.modified.asRowSet(),
-                                        chunk_size=chunk_size, prev=True, to_numpy=True)
+                                        chunk_size=chunk_size, prev=True)
 
     @property
     def shifted(self):
