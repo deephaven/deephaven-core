@@ -7,8 +7,8 @@ description 'Engine Chunks: Array-like data structures for dense, efficient data
 
 dependencies {
     api project(':Util')
+    api project(':codec-api:')
     implementation project(':Base')
-    implementation project(':codec-api:')
 
     testImplementation libs.junit4
 
