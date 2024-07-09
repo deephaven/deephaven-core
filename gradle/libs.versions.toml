@@ -78,6 +78,7 @@ vertispan-ts-defs = "1.0.0-RC4"
 
 # test versions
 assertj = "3.19.0"
+h2database = "2.1.212"
 jmock = "2.12.0"
 junit = "5.7.2"
 junit4 = "4.13.2"
@@ -280,6 +281,8 @@ vertispan-ts-defs-doclet = { module = "com.vertispan.tsdefs:jsinterop-ts-defs-do
 
 # test libraries
 assertj = { module = "org.assertj:assertj-core", version.ref = "assertj" }
+
+h2database-h2 = { module = "com.h2database:h2", version.ref = "h2database" }
 
 jmh-core = { module = "org.openjdk.jmh:jmh-core", version.ref = "jmh" }
 jmh-generator-annprocess = { module = "org.openjdk.jmh:jmh-generator-annprocess", version.ref = "jmh" }

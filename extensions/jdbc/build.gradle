@@ -17,7 +17,7 @@ dependencies {
     testImplementation libs.assertj
 
     testImplementation project(':engine-test-utils')
-    testImplementation 'com.h2database:h2:2.1.212'
+    testImplementation libs.h2database.h2
 
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly project(':configs')
