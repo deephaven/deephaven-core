@@ -63,6 +63,7 @@ slf4j = "2.0.11"
 snappy = "1.1.10.5"
 squareup = "1.13.0"
 sslcontext = "8.1.1"
+tdunning = "3.2"
 trove = "3.0.3"
 undercouch = "2.15.1"
 univocity = "2.6.0"
@@ -245,6 +246,8 @@ squareup-javapoet = { module = "com.squareup:javapoet", version.ref = "squareup"
 sslcontext-kickstart = { module = "io.github.hakky54:sslcontext-kickstart", version.ref = "sslcontext" }
 sslcontext-kickstart-jetty = { module = "io.github.hakky54:sslcontext-kickstart-for-jetty", version.ref = "sslcontext" }
 sslcontext-kickstart-netty = { module = "io.github.hakky54:sslcontext-kickstart-for-netty", version.ref = "sslcontext" }
+
+tdunning-t-digest = { module = "com.tdunning:t-digest", version.ref = "tdunning" }
 
 trove = { module = "net.sf.trove4j:trove4j", version.ref = "trove" }
 
