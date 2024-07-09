@@ -52,6 +52,7 @@ postgresql = "42.7.1"
 protobuf = "3.25.3"
 randelshofer = "1.0.0"
 rdblue = "0.1.1"
+selenium = "4.16.1"
 slf4j = "2.0.11"
 snappy = "1.1.10.5"
 squareup = "1.13.0"
@@ -210,6 +211,8 @@ protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "p
 randelshofer-fastdoubleparser = { module = "ch.randelshofer:fastdoubleparser", version.ref = "randelshofer" }
 
 rdblue-brotli-codec = { module = "com.github.rdblue:brotli-codec", version.ref = "rdblue" }
+
+selenium-remote-driver = { module = "org.seleniumhq.selenium:selenium-remote-driver", version.ref = "selenium" }
 
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 slf4j-jul-to-slf4j = { module = "org.slf4j:jul-to-slf4j", version.ref = "slf4j" }

@@ -28,7 +28,7 @@ dependencies {
     js project(path: ':proto:raw-js-openapi', configuration: 'js')
 
     testImplementation libs.junit4
-    testImplementation 'org.seleniumhq.selenium:selenium-remote-driver:4.16.1'
+    testImplementation libs.selenium.remote.driver
 
     implementation libs.elemental.core
     implementation libs.elemental.promise
