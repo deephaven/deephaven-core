@@ -6,7 +6,7 @@ plugins {
 dependencies {
     api project(':extensions-json-jackson')
     api project(':engine-processor')
-    api 'de.undercouch:bson4jackson:2.15.1'
+    api libs.undercouch.bson4jackson
 
     compileOnly project(':util-immutables')
     annotationProcessor libs.immutables.value
