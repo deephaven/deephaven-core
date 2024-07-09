@@ -8,7 +8,7 @@ dependencies {
   annotationProcessor libs.immutables.value
   compileOnly libs.immutables.value.annotations
 
-  implementation ('com.github.oshi:oshi-core:5.8.3') {
+  implementation (libs.oshi.core) {
     because 'it is able to greatly simplify collection of system information'
   }
 }

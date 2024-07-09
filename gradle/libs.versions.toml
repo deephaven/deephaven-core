@@ -59,6 +59,7 @@ logback = "1.4.14"
 lz4 = "1.8.0"
 mindrot = "0.4"
 nidi = "0.18.1"
+oshi = "5.8.3"
 parquet = "1.14.0"
 picocli = "4.6.1"
 postgresql = "42.7.1"
@@ -243,6 +244,8 @@ lz4-java = { module = "org.lz4:lz4-java", version.ref = "lz4" }
 mindrot-jbcrypt = { module = "org.mindrot:jbcrypt", version.ref = "mindrot" }
 
 nidi-graphviz-java = { module = "guru.nidi:graphviz-java", version.ref = "nidi" }
+
+oshi-core = { module = "com.github.oshi:oshi-core", version.ref = "oshi" }
 
 parquet-hadoop = { module = "org.apache.parquet:parquet-hadoop", version.ref = "parquet" }
 
