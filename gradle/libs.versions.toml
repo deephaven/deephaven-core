@@ -12,6 +12,7 @@ commons-math3 = "3.6.1"
 commons-text = "1.10.0"
 dagger = "2.44"
 deephaven-barrage = "0.6.0"
+deephaven-csv = "0.12.0"
 deephaven-hash = "0.1.0"
 elemental = "1.2.1"
 flatbuffers = "1.12.0"
@@ -86,6 +87,9 @@ dagger-compiler = { module = "com.google.dagger:dagger-compiler", version.ref = 
 
 deephaven-barrage-core = { module = "io.deephaven.barrage:barrage-core", version.ref = "deephaven-barrage" }
 deephaven-barrage-format = { module = "io.deephaven.barrage:barrage-format", version.ref = "deephaven-barrage" }
+
+deephaven-csv = { module = "io.deephaven:deephaven-csv", version.ref = "deephaven-csv" }
+deephaven-csv-fast-double-parser = { module = "io.deephaven:deephaven-csv-fast-double-parser", version.ref = "deephaven-csv" }
 
 deephaven-hash = { module = "io.deephaven:hash", version.ref = "deephaven-hash" }
 
