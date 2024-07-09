@@ -11,7 +11,7 @@ dependencies {
     implementation project(':engine-query-constants')
 
     compileOnly project(':util-immutables')
-    annotationProcessor libs.immutables
+    annotationProcessor libs.immutables.value
 
     compileOnly libs.jetbrains.annotations
 
@@ -45,6 +45,6 @@ spotless {
 
 protobuf {
     protoc {
-        artifact = 'com.google.protobuf:protoc:3.25.3'
+        artifact = "com.google.protobuf:protoc:${libs.versions.protobuf.get()}"
     }
 }

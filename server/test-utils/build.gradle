@@ -20,7 +20,7 @@ dependencies {
     api libs.grpc.testing
 
     compileOnly project(':util-immutables')
-    annotationProcessor libs.immutables
+    annotationProcessor libs.immutables.value
 
     implementation libs.arrow.flight.core
 

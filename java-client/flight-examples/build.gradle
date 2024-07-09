@@ -7,7 +7,7 @@ dependencies {
     implementation project(':java-client-flight')
     implementation project(':java-client-example-utilities')
 
-    implementation "io.deephaven.barrage:barrage-format:0.6.0"
+    implementation libs.deephaven.barrage.format
 
     testImplementation libs.assertj
     testImplementation platform(libs.junit.bom)
