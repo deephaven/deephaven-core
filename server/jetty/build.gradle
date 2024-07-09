@@ -21,7 +21,7 @@ dependencies {
     implementation platform(libs.grpc.bom)
     implementation platform(libs.jetty.bom)
 
-    api 'jakarta.servlet:jakarta.servlet-api:5.0.0'
+    api libs.jakarata.servlet.api
     implementation libs.jetty.servlet
     implementation libs.jetty.servlets
     implementation libs.jetty.webapp

@@ -6,7 +6,7 @@ plugins {
 dependencies {
     implementation platform(libs.grpc.bom)
     implementation libs.grpc.core
-    compileOnly 'jakarta.servlet:jakarta.servlet-api:5.0.0',
+    compileOnly libs.jakarata.servlet.api,
             'org.apache.tomcat:annotations-api:6.0.53'
 
     implementation libs.guava
