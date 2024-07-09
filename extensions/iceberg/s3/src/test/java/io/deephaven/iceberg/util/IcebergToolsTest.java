@@ -130,14 +130,15 @@ public abstract class IcebergToolsTest {
         final Namespace ns = Namespace.of("sales");
 
         Collection<TableIdentifier> tables = adapter.listTables(ns);
-        Assert.eq(tables.size(), "tables.size()", 3, "3 tables in the namespace");
+        Assert.eq(tables.size(), "tables.size()", 4, "4 tables in the namespace");
         Assert.eqTrue(tables.contains(TableIdentifier.of(ns, "sales_multi")), "tables.contains(sales_multi)");
         Assert.eqTrue(tables.contains(TableIdentifier.of(ns, "sales_partitioned")),
                 "tables.contains(sales_partitioned)");
         Assert.eqTrue(tables.contains(TableIdentifier.of(ns, "sales_single")), "tables.contains(sales_single)");
+        Assert.eqTrue(tables.contains(TableIdentifier.of(ns, "sales_renamed")), "tables.contains(sales_renamed)");
 
         Table table = adapter.listTablesAsTable(ns);
-        Assert.eq(table.size(), "table.size()", 3, "3 tables in the namespace");
+        Assert.eq(table.size(), "table.size()", 4, "4 tables in the namespace");
         Assert.eqTrue(table.getColumnSource("Namespace").getType().equals(String.class), "namespace column type");
         Assert.eqTrue(table.getColumnSource("TableName").getType().equals(String.class), "table_name column type");
         Assert.eqTrue(table.getColumnSource("TableIdentifierObject").getType().equals(TableIdentifier.class),
@@ -145,7 +146,7 @@ public abstract class IcebergToolsTest {
 
         // Test the string versions of the methods
         table = adapter.listTablesAsTable("sales");
-        Assert.eq(table.size(), "table.size()", 3, "3 tables in the namespace");
+        Assert.eq(table.size(), "table.size()", 4, "4 tables in the namespace");
     }
 
     @Test
@@ -509,8 +510,8 @@ public abstract class IcebergToolsTest {
 
         final IcebergInstructions localInstructions = IcebergInstructions.builder()
                 .dataInstructions(instructions.dataInstructions().get())
-                .putColumnRenames("RegionName", "Region")
-                .putColumnRenames("ItemType", "Item_Type")
+                .putColumnRenames("Region", "RegionName")
+                .putColumnRenames("Item_Type", "ItemType")
                 .build();
 
         final IcebergCatalogAdapter adapter =
@@ -522,6 +523,86 @@ public abstract class IcebergToolsTest {
 
         // Verify we retrieved all the rows.
         Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
+    }
+
+    @Test
+    public void testOpenTableColumnLegalization() throws ExecutionException, InterruptedException, TimeoutException {
+        uploadParquetFiles(new File(IcebergToolsTest.class.getResource("/warehouse/sales/sales_renamed").getPath()),
+                warehousePath);
+
+        final IcebergInstructions localInstructions = IcebergInstructions.builder()
+                .dataInstructions(instructions.dataInstructions().get())
+                .build();
+
+        final IcebergCatalogAdapter adapter =
+                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+
+        final Namespace ns = Namespace.of("sales");
+        final TableIdentifier tableId = TableIdentifier.of(ns, "sales_renamed");
+        final io.deephaven.engine.table.Table table = adapter.readTable(tableId, localInstructions);
+
+        // Verify we retrieved all the rows.
+        Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
+
+        Assert.eqTrue(table.getDefinition().getColumn("Region_Name") != null, "'Region Name' renamed");
+        Assert.eqTrue(table.getDefinition().getColumn("ItemType") != null, "'Item&Type' renamed");
+        Assert.eqTrue(table.getDefinition().getColumn("UnitsSold") != null, "'Units/Sold' renamed");
+        Assert.eqTrue(table.getDefinition().getColumn("Unit_Price") != null, "'Unit Pricee' renamed");
+        Assert.eqTrue(table.getDefinition().getColumn("Order_Date") != null, "'Order Date' renamed");
+    }
+
+    @Test
+    public void testOpenTableColumnLegalizationRename() throws ExecutionException, InterruptedException, TimeoutException {
+        uploadParquetFiles(new File(IcebergToolsTest.class.getResource("/warehouse/sales/sales_renamed").getPath()),
+                warehousePath);
+
+        final IcebergInstructions localInstructions = IcebergInstructions.builder()
+                .dataInstructions(instructions.dataInstructions().get())
+                .putColumnRenames("Item&Type", "Item_Type")
+                .putColumnRenames("Units/Sold", "Units_Sold")
+                .build();
+
+        final IcebergCatalogAdapter adapter =
+                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+
+        final Namespace ns = Namespace.of("sales");
+        final TableIdentifier tableId = TableIdentifier.of(ns, "sales_renamed");
+        final io.deephaven.engine.table.Table table = adapter.readTable(tableId, localInstructions);
+
+        // Verify we retrieved all the rows.
+        Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
+
+        Assert.eqTrue(table.getDefinition().getColumn("Region_Name") != null, "'Region Name' renamed");
+        Assert.eqTrue(table.getDefinition().getColumn("Item_Type") != null, "'Item&Type' renamed");
+        Assert.eqTrue(table.getDefinition().getColumn("Units_Sold") != null, "'Units/Sold' renamed");
+        Assert.eqTrue(table.getDefinition().getColumn("Unit_Price") != null, "'Unit Pricee' renamed");
+        Assert.eqTrue(table.getDefinition().getColumn("Order_Date") != null, "'Order Date' renamed");
+    }
+
+    @Test
+    public void testOpenTableColumnLegalizationPartitionException() throws ExecutionException, InterruptedException, TimeoutException {
+        final TableDefinition tableDef = TableDefinition.of(
+                ColumnDefinition.ofInt("Year").withPartitioning(),
+                ColumnDefinition.ofInt("Month").withPartitioning());
+
+        final IcebergInstructions localInstructions = IcebergInstructions.builder()
+                .tableDefinition(tableDef)
+                .putColumnRenames("Year", "Current Year")
+                .putColumnRenames("Month", "Current Month")
+                .dataInstructions(instructions.dataInstructions().get())
+                .build();
+
+        final IcebergCatalogAdapter adapter =
+                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+
+        final Namespace ns = Namespace.of("sales");
+        final TableIdentifier tableId = TableIdentifier.of(ns, "sales_partitioned");
+        try {
+            final io.deephaven.engine.table.Table table = adapter.readTable(tableId, localInstructions);
+            Assert.statementNeverExecuted("Expected an exception for missing columns");
+        } catch (final TableDataException e) {
+            Assert.eqTrue(e.getMessage().contains("invalid column name provided"), "Exception message");
+        }
     }
 
     @Test

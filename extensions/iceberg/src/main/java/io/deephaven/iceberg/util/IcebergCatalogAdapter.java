@@ -3,6 +3,7 @@
 //
 package io.deephaven.iceberg.util;
 
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.PartitionAwareSourceTable;
@@ -453,10 +454,39 @@ public class IcebergCatalogAdapter {
         // Get the user supplied table definition.
         final TableDefinition userTableDef = userInstructions.tableDefinition().orElse(null);
 
+        final Set<String> takenNames = new HashSet<>();
+
+        // Map all the column names in the schema to their legalized names.
+        final Map<String,String> legalizedColumnRenames = new HashMap<>();
+
+        // Validate user-supplied names meet legalization requirements
+        for (final Map.Entry<String,String> entry : userInstructions.columnRenames().entrySet()) {
+            final String destinationName = entry.getValue();
+            if (!NameValidator.isValidColumnName(destinationName)) {
+                throw new TableDataException(
+                        String.format("%s:%d - invalid column name provided (%s)", table, snapshot.snapshotId(), destinationName));
+            }
+            // Add these renames to the legalized list.
+            legalizedColumnRenames.put(entry.getKey(), destinationName);
+            takenNames.add(destinationName);
+        }
+
+        for (final Types.NestedField field : schema.columns()) {
+            final String name = field.name();
+            // Do we already have a valid rename for this column from the user or a partitioned column?
+            if (!legalizedColumnRenames.containsKey(name)) {
+                final String legalizedName
+                        = NameValidator.legalizeColumnName(name, s -> s.replace(" ", "_"), takenNames);
+                if (!legalizedName.equals(name)) {
+                    legalizedColumnRenames.put(name, legalizedName);
+                    takenNames.add(legalizedName);
+                }
+            }
+        }
+
         // Get the table definition from the schema (potentially limited by the user supplied table definition and
         // applying column renames).
-        final TableDefinition icebergTableDef =
-                fromSchema(schema, partitionSpec, userTableDef, userInstructions.columnRenames());
+        final TableDefinition icebergTableDef = fromSchema(schema, partitionSpec, userTableDef, legalizedColumnRenames);
 
         // If the user supplied a table definition, make sure it's fully compatible.
         final TableDefinition tableDef;
