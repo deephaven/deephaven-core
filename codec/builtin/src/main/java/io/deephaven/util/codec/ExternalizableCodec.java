@@ -64,8 +64,8 @@ public class ExternalizableCodec<T extends Externalizable> implements ObjectCode
             return result;
         } catch (IOException e) {
             throw new UncheckedIOException(e);
-        } catch (IllegalAccessException | InstantiationException | ClassNotFoundException | InvocationTargetException |
-                 NoSuchMethodException e) {
+        } catch (IllegalAccessException | InstantiationException | ClassNotFoundException | InvocationTargetException
+                | NoSuchMethodException e) {
             throw new RuntimeException(e);
         }
     }

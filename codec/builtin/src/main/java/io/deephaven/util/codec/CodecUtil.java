@@ -17,7 +17,7 @@ import java.nio.charset.CharsetEncoder;
 class CodecUtil {
     public static final byte[] ZERO_LENGTH_BYTE_ARRAY = new byte[0];
 
-    private CodecUtil(){}
+    private CodecUtil() {}
 
     /**
      * Encode the given string in UTF-8 format into the given ByteBuffer. The string is encoded as an int length

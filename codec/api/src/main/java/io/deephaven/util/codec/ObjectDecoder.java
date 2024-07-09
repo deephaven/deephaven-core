@@ -72,7 +72,8 @@ public interface ObjectDecoder<TYPE> {
     default void checkWidth(int actualWidth) throws IllegalArgumentException {
         final int expectedWidth = expectedObjectWidth();
         if (expectedWidth != actualWidth) {
-            throw new IllegalArgumentException("Expected width `" + expectedWidth + "` does not match actual width `" + actualWidth + "`");
+            throw new IllegalArgumentException(
+                    "Expected width `" + expectedWidth + "` does not match actual width `" + actualWidth + "`");
         }
     }
 }
