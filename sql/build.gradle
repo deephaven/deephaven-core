@@ -8,7 +8,7 @@ description = 'The Deephaven SQL parser'
 
 dependencies {
     api project(':qst')
-    implementation 'org.apache.calcite:calcite-core:1.36.0'
+    implementation libs.calcite.core
     constraints {
         // This constraint can be removed once calcite-core has next release and we can
         // pick up the fixed dependency transitively.

@@ -6,6 +6,7 @@ avro = "1.11.3"
 awssdk = "2.24.5"
 # See dependency matrix for particular gRPC versions at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty
 boringssl = "2.0.61.Final"
+calcite = "1.36.0"
 commons-compress = "1.26.0"
 commons-io = "2.11.0"
 commons-lang3 = "3.12.0"
@@ -87,6 +88,8 @@ awssdk-s3-transfer-manager = { module = "software.amazon.awssdk:s3-transfer-mana
 awssdk-sts = { module = "software.amazon.awssdk:sts" }
 
 boringssl = { module = "io.netty:netty-tcnative-boringssl-static", version.ref = "boringssl" }
+
+calcite-core = { module = "org.apache.calcite:calcite-core", version.ref = "calcite" }
 
 commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commons-compress" }
 
