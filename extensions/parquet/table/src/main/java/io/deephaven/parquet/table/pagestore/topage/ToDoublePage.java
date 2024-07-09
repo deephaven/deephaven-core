@@ -9,12 +9,15 @@ package io.deephaven.parquet.table.pagestore.topage;
 
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Any;
+import io.deephaven.parquet.base.PageMaterializerFactory;
+import io.deephaven.parquet.base.materializers.DoubleMaterializer;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE_BOXED;
 
 public class ToDoublePage<ATTR extends Any> implements ToPage<ATTR, double[]> {
 
+    @SuppressWarnings("rawtypes")
     private static final ToDoublePage INSTANCE = new ToDoublePage<>();
 
     public static <ATTR extends Any> ToDoublePage<ATTR> create(Class<?> nativeType) {
@@ -26,8 +29,7 @@ public class ToDoublePage<ATTR extends Any> implements ToPage<ATTR, double[]> {
         throw new IllegalArgumentException("The native type for a Double column is " + nativeType.getCanonicalName());
     }
 
-    @SuppressWarnings("WeakerAccess")
-    ToDoublePage() {}
+    private ToDoublePage() {}
 
     @Override
     @NotNull
@@ -45,5 +47,11 @@ public class ToDoublePage<ATTR extends Any> implements ToPage<ATTR, double[]> {
     @NotNull
     public final Object nullValue() {
         return NULL_DOUBLE_BOXED;
+    }
+
+    @Override
+    @NotNull
+    public final PageMaterializerFactory getPageMaterializerFactory() {
+        return DoubleMaterializer.FACTORY;
     }
 }

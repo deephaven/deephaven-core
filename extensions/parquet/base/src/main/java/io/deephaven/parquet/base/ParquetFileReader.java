@@ -96,15 +96,20 @@ public class ParquetFileReader {
         try (
                 final SeekableChannelContext context = channelsProvider.makeSingleUseContext();
                 final SeekableByteChannel ch = channelsProvider.getReadChannel(context, parquetFileURI)) {
-            positionToFileMetadata(parquetFileURI, ch);
-            try (final InputStream in = channelsProvider.getInputStream(ch)) {
+            final int footerLength = positionToFileMetadata(parquetFileURI, ch);
+            try (final InputStream in = channelsProvider.getInputStream(ch, footerLength)) {
                 fileMetaData = Util.readFileMetaData(in);
             }
         }
         type = fromParquetSchema(fileMetaData.schema, fileMetaData.column_orders);
     }
 
-    private static void positionToFileMetadata(URI parquetFileURI, SeekableByteChannel readChannel) throws IOException {
+    /**
+     * Read the footer length and position the channel to the start of the footer.
+     *
+     * @return The length of the footer
+     */
+    private static int positionToFileMetadata(URI parquetFileURI, SeekableByteChannel readChannel) throws IOException {
         final long fileLen = readChannel.size();
         if (fileLen < MAGIC.length + FOOTER_LENGTH_SIZE + MAGIC.length) { // MAGIC + data + footer +
             // footerIndex + MAGIC
@@ -128,6 +133,7 @@ public class ParquetFileReader {
                     "corrupted file: the footer index is not within the file: " + footerIndex);
         }
         readChannel.position(footerIndex);
+        return footerLength;
     }
 
     private static int makeLittleEndianInt(byte b0, byte b1, byte b2, byte b3) {

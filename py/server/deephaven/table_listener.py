@@ -6,7 +6,7 @@
 from abc import ABC, abstractmethod
 from functools import wraps
 from inspect import signature
-from typing import Callable, Union, List, Generator, Dict, Optional, Literal
+from typing import Callable, Union, List, Generator, Dict, Optional, Literal, Sequence
 
 import jpy
 import numpy
@@ -61,6 +61,8 @@ def _changes_to_numpy(table: Table, cols: Union[str, List[str]], row_set, chunk_
 
 
 class TableUpdate(JObjectWrapper):
+    """A TableUpdate object represents a table update event.  It contains the added, removed, and modified rows in the
+    table. """
     j_object_type = _JTableUpdate
 
     def __init__(self, table: Table, j_table_update: jpy.JType):
@@ -306,39 +308,13 @@ def _wrap_listener_obj(t: Table, listener: TableListener):
     return listener
 
 
-def listen(t: Table, listener: Union[Callable, TableListener], description: str = None, do_replay: bool = False,
-           replay_lock: Literal["shared", "exclusive"] = "shared"):
-    """This is a convenience function that creates a TableListenerHandle object and immediately starts it to listen
-    for table updates.
-
-    The function returns the created TableListenerHandle object whose 'stop' method can be called to stop listening.
-    If it goes out of scope and is garbage collected, the listener will stop receiving any table updates.
-
-    Args:
-        t (Table): table to listen to
-        listener (Union[Callable, TableListener]): listener for table changes
-        description (str, optional): description for the UpdatePerformanceTracker to append to the listener's entry
-            description, default is None
-        do_replay (bool): whether to replay the initial snapshot of the table, default is False
-        replay_lock (str): the lock type used during replay, default is 'shared', can also be 'exclusive'
-
-    Returns:
-        a TableListenerHandle
-
-    Raises:
-        DHError
-    """
-    table_listener_handle = TableListenerHandle(t=t, listener=listener, description=description)
-    table_listener_handle.start(do_replay=do_replay, replay_lock=replay_lock)
-    return table_listener_handle
-
-
 class TableListenerHandle(JObjectWrapper):
     """A handle to manage a table listener's lifecycle."""
     j_object_type = _JPythonReplayListenerAdapter
 
-    def __init__(self, t: Table, listener: Union[Callable, TableListener], description: str = None):
-        """Creates a new table listener handle.
+    def __init__(self, t: Table, listener: Union[Callable, TableListener], description: str = None,
+                 dependencies: Union[Table, Sequence[Table]] = None):
+        """Creates a new table listener handle with dependencies.
 
         Table change events are processed by 'listener', which can be either
         (1) a callable (e.g. function) or
@@ -350,26 +326,48 @@ class TableListenerHandle(JObjectWrapper):
         The 'is_replay' parameter is used only by replay listeners, it is set to 'true' when replaying the initial
         snapshot and 'false' during normal updates.
 
+        Note: Don't do table operations in the listener. Do them beforehand, and add the results as dependencies.
+
         Args:
             t (Table): table to listen to
             listener (Union[Callable, TableListener]): listener for table changes
             description (str, optional): description for the UpdatePerformanceTracker to append to the listener's entry
                 description, default is None
+            dependencies (Union[Table, Sequence[Table]]): tables that must be satisfied before the listener's execution.
+                A refreshing table is considered to be satisfied if all possible updates to the table have been processed
+                in the current update graph cycle. A static table is always considered to be satisfied. If a specified
+                table is refreshing, it must belong to the same update graph as the table being listened to. Default is
+                None.
+
+                Dependencies ensure that the listener can safely access the dependent tables during its execution. This
+                mainly includes reading the data from the tables. While performing operations on the dependent tables in
+                the listener is safe, it is not recommended because reading or operating on the result tables of those
+                operations may not be safe. It is best to perform the operations on the dependent tables beforehand,
+                and then add the result tables as dependencies to the listener so that they can be safely read in it.
 
         Raises:
-            ValueError
+            DHError
         """
         self.t = t
+        self.description = description
+        self.dependencies = to_sequence(dependencies)
 
         if callable(listener):
-            listener_wrapped = _wrap_listener_func(t, listener)
+            self.listener_wrapped = _wrap_listener_func(t, listener)
         elif isinstance(listener, TableListener):
-            listener_wrapped = _wrap_listener_obj(t, listener)
+            self.listener_wrapped = _wrap_listener_obj(t, listener)
         else:
-            raise ValueError("listener is neither callable nor TableListener object")
-        self.listener = _JPythonReplayListenerAdapter(description, t.j_table, False, listener_wrapped)
+            raise DHError(message="listener is neither callable nor TableListener object")
 
+        try:
+            self.listener = _JPythonReplayListenerAdapter.create(description, t.j_table, False, self.listener_wrapped, self.dependencies)
+        except Exception as e:
+            raise DHError(e, "failed to create a table listener.") from e
         self.started = False
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.listener
 
     def start(self, do_replay: bool = False, replay_lock: Literal["shared", "exclusive"] = "shared") -> None:
         """Start the listener by registering it with the table and listening for updates.
@@ -408,6 +406,44 @@ class TableListenerHandle(JObjectWrapper):
         self.t.j_table.removeUpdateListener(self.listener)
         self.started = False
 
-    @property
-    def j_object(self) -> jpy.JType:
-        return self.listener
+
+def listen(t: Table, listener: Union[Callable, TableListener], description: str = None, do_replay: bool = False,
+           replay_lock: Literal["shared", "exclusive"] = "shared", dependencies: Union[Table, Sequence[Table]] = None)\
+        -> TableListenerHandle:
+    """This is a convenience function that creates a TableListenerHandle object and immediately starts it to listen
+    for table updates.
+
+    The function returns the created TableListenerHandle object whose 'stop' method can be called to stop listening.
+    If it goes out of scope and is garbage collected, the listener will stop receiving any table updates.
+
+    Note: Don't do table operations in the listener. Do them beforehand, and add the results as dependencies.
+
+    Args:
+        t (Table): table to listen to
+        listener (Union[Callable, TableListener]): listener for table changes
+        description (str, optional): description for the UpdatePerformanceTracker to append to the listener's entry
+            description, default is None
+        do_replay (bool): whether to replay the initial snapshot of the table, default is False
+        replay_lock (str): the lock type used during replay, default is 'shared', can also be 'exclusive'
+        dependencies (Union[Table, Sequence[Table]]): tables that must be satisfied before the listener's execution.
+            A refreshing table is considered to be satisfied if all possible updates to the table have been processed
+            in the current update graph cycle. A static table is always considered to be satisfied. If a specified
+            table is refreshing, it must belong to the same update graph as the table being listened to. Default is
+            None.
+
+            Dependencies ensure that the listener can safely access the dependent tables during its execution. This
+            mainly includes reading the data from the tables. While performing operations on the dependent tables in
+            the listener is safe, it is not recommended because reading or operating on the result tables of those
+            operations may not be safe. It is best to perform the operations on the dependent tables beforehand,
+            and then add the result tables as dependencies to the listener so that they can be safely read in it.
+
+    Returns:
+        a TableListenerHandle
+
+    Raises:
+        DHError
+    """
+    table_listener_handle = TableListenerHandle(t=t, dependencies=dependencies, listener=listener,
+                                                                    description=description)
+    table_listener_handle.start(do_replay=do_replay, replay_lock=replay_lock)
+    return table_listener_handle

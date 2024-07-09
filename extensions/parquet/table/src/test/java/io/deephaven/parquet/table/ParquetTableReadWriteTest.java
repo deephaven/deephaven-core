@@ -37,6 +37,7 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.BigDecimalUtils;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
+import io.deephaven.parquet.base.BigDecimalParquetBytesCodec;
 import io.deephaven.parquet.base.InvalidParquetFileException;
 import io.deephaven.parquet.base.NullStatistics;
 import io.deephaven.parquet.table.location.ParquetTableLocation;
@@ -163,7 +164,7 @@ public final class ParquetTableReadWriteTest {
                         "someCharColumn = (char)i",
                         "someTime = DateTimeUtils.now() + i",
                         "someKey = `` + (int)(i /100)",
-                        "someBiColumn = java.math.BigInteger.valueOf(ii)",
+                        "someBiColumn = i % 10 == 0 ? null : java.math.BigInteger.valueOf(ii)",
                         "someDateColumn = i % 10 == 0 ? null : java.time.LocalDate.ofEpochDay(i)",
                         "someTimeColumn = i % 10 == 0 ? null : java.time.LocalTime.of(i%24, i%60, (i+10)%60)",
                         "someDateTimeColumn = i % 10 == 0 ? null : java.time.LocalDateTime.of(2000+i%10, i%12+1, i%30+1, (i+4)%24, (i+5)%60, (i+6)%60, i)",
@@ -182,10 +183,10 @@ public final class ParquetTableReadWriteTest {
                         "nullDateColumn = (java.time.LocalDate)null",
                         "nullTimeColumn = (java.time.LocalTime)null"));
         if (includeBigDecimal) {
-            columns.add("bdColumn = java.math.BigDecimal.valueOf(ii).stripTrailingZeros()");
+            columns.add("bdColumn = i % 10 == 0 ? null : java.math.BigDecimal.valueOf(ii).stripTrailingZeros()");
         }
         if (includeSerializable) {
-            columns.add("someSerializable = new SomeSillyTest(i)");
+            columns.add("someSerializable = i % 10 == 0 ? null : new SomeSillyTest(i)");
         }
         return TableTools.emptyTable(size).select(
                 Selectable.from(columns));
@@ -521,14 +522,10 @@ public final class ParquetTableReadWriteTest {
 
         final Table fromDisk = checkSingleTable(table, dest).select();
 
-        try {
-            // The following file is tagged as LZ4 compressed based on its metadata, but is actually compressed with
-            // LZ4_RAW. We should be able to read it anyway with no exceptions.
-            String path = TestParquetTools.class.getResource("/sample_lz4_compressed.parquet").getFile();
-            readTable(path, EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.SINGLE_FILE)).select();
-        } catch (RuntimeException e) {
-            TestCase.fail("Failed to read parquet file sample_lz4_compressed.parquet");
-        }
+        // The following file is tagged as LZ4 compressed based on its metadata, but is actually compressed with
+        // LZ4_RAW. We should be able to read it anyway with no exceptions.
+        String path = TestParquetTools.class.getResource("/sample_lz4_compressed.parquet").getFile();
+        readTable(path, EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.SINGLE_FILE)).select();
         final File randomDest = new File(rootFile, "random.parquet");
         writeTable(fromDisk, randomDest.getPath(), ParquetTools.LZ4_RAW);
 
@@ -1369,6 +1366,52 @@ public final class ParquetTableReadWriteTest {
         }
     }
 
+    @Test
+    public void decimalLogicalTypeTest() {
+        final Table expected = TableTools.emptyTable(100_000).update(
+                "DecimalIntCol = ii % 10 == 0 ? null : java.math.BigDecimal.valueOf(ii*12, 5)",
+                "DecimalLongCol = ii % 10 == 0 ? null : java.math.BigDecimal.valueOf(ii*212, 8)");
+
+        {
+            // This reference file has Decimal logical type columns stored as INT32 and INT64 physical types
+            final String path =
+                    ParquetTableReadWriteTest.class.getResource("/ReferenceDecimalLogicalType.parquet").getFile();
+            final Table fromDisk = readParquetFileFromGitLFS(new File(path));
+            final ParquetMetadata metadata =
+                    new ParquetTableLocationKey(new File(path).toURI(), 0, null, ParquetInstructions.EMPTY)
+                            .getMetadata();
+            final List<ColumnDescriptor> columnsMetadata = metadata.getFileMetaData().getSchema().getColumns();
+            assertEquals("DECIMAL(7,5)",
+                    columnsMetadata.get(0).getPrimitiveType().getLogicalTypeAnnotation().toString());
+            assertEquals(PrimitiveType.PrimitiveTypeName.INT32,
+                    columnsMetadata.get(0).getPrimitiveType().getPrimitiveTypeName());
+            assertEquals("DECIMAL(12,8)",
+                    columnsMetadata.get(1).getPrimitiveType().getLogicalTypeAnnotation().toString());
+            assertEquals(PrimitiveType.PrimitiveTypeName.INT64,
+                    columnsMetadata.get(1).getPrimitiveType().getPrimitiveTypeName());
+            assertTableEquals(expected, fromDisk);
+        }
+
+        {
+            // This reference file has Decimal logical type columns stored as FIXED_LEN_BYTE_ARRAY physical types
+            final String path =
+                    ParquetTableReadWriteTest.class.getResource("/ReferenceDecimalLogicalType2.parquet").getFile();
+            final Table fromDisk = readParquetFileFromGitLFS(new File(path));
+            final ParquetMetadata metadata =
+                    new ParquetTableLocationKey(new File(path).toURI(), 0, null, ParquetInstructions.EMPTY)
+                            .getMetadata();
+            final List<ColumnDescriptor> columnsMetadata = metadata.getFileMetaData().getSchema().getColumns();
+            assertEquals("DECIMAL(7,5)",
+                    columnsMetadata.get(0).getPrimitiveType().getLogicalTypeAnnotation().toString());
+            assertEquals(PrimitiveType.PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY,
+                    columnsMetadata.get(0).getPrimitiveType().getPrimitiveTypeName());
+            assertEquals("DECIMAL(12,8)",
+                    columnsMetadata.get(1).getPrimitiveType().getLogicalTypeAnnotation().toString());
+            assertEquals(PrimitiveType.PrimitiveTypeName.FIXED_LEN_BYTE_ARRAY,
+                    columnsMetadata.get(1).getPrimitiveType().getPrimitiveTypeName());
+            assertTableEquals(expected, fromDisk);
+        }
+    }
 
     @Test
     public void testVectorColumns() {
@@ -1533,7 +1576,7 @@ public final class ParquetTableReadWriteTest {
      */
     private Table maybeFixBigDecimal(Table toFix) {
         final BigDecimalUtils.PrecisionAndScale pas = BigDecimalUtils.computePrecisionAndScale(toFix, "bdColumn");
-        final BigDecimalParquetBytesCodec codec = new BigDecimalParquetBytesCodec(pas.precision, pas.scale, -1);
+        final BigDecimalParquetBytesCodec codec = new BigDecimalParquetBytesCodec(pas.precision, pas.scale);
 
         ExecutionContext.getContext()
                 .getQueryScope()
@@ -1655,7 +1698,7 @@ public final class ParquetTableReadWriteTest {
 
     /**
      * Reference data is generated using the following code:
-     * 
+     *
      * <pre>
      *      num_rows = 100000
      *      dh_table = empty_table(num_rows).update(formulas=[
@@ -2304,6 +2347,26 @@ public final class ParquetTableReadWriteTest {
         writeTable(anotherTable, pqDotFile.getPath());
         fromDisk = readTable(parentURI.toString());
         assertTableEquals(fromDisk, partitionedTable);
+    }
+
+    @Test
+    public void readParquetFilesWithCodec() {
+        final Table table = TableTools.emptyTable(10000)
+                .update("bdColumn = java.math.BigDecimal.valueOf(ii).stripTrailingZeros()",
+                        "biColumn = i % 10 == 0 ? null : java.math.BigInteger.valueOf(ii*512)")
+                .select();
+
+        // Set codecs for each column
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .addColumnCodec("bdColumn", "io.deephaven.util.codec.BigDecimalCodec", "20,1,allowrounding")
+                .addColumnCodec("biColumn", "io.deephaven.util.codec.BigIntegerCodec")
+                .build();
+
+        final File parentDir = new File(rootFile, "tempDir");
+        parentDir.mkdir();
+        final File dest = new File(parentDir, "dataWithCodecInfo.parquet");
+        ParquetTools.writeTable(table, dest.getPath(), instructions);
+        checkSingleTable(table, dest);
     }
 
     @Test

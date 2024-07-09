@@ -35,6 +35,7 @@ import org.apache.parquet.schema.PrimitiveType;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -402,12 +403,12 @@ public class ParquetSchemaReader {
             @Override
             public Optional<Class<?>> visit(
                     final LogicalTypeAnnotation.DecimalLogicalTypeAnnotation decimalLogicalType) {
-                // This pair of values (precision=1, scale=0) is set at write tiem as a marker so that we can recover
+                // This pair of values (precision=1, scale=0) is set at write time as a marker so that we can recover
                 // the fact that the type is a BigInteger, not a BigDecimal when the fies are read.
                 if (decimalLogicalType.getPrecision() == 1 && decimalLogicalType.getScale() == 0) {
                     return Optional.of(BigInteger.class);
                 }
-                return Optional.of(java.math.BigDecimal.class);
+                return Optional.of(BigDecimal.class);
             }
 
             @Override

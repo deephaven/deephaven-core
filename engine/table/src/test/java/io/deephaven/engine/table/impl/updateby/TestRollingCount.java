@@ -74,8 +74,7 @@ public class TestRollingCount extends BaseUpdateByTest {
 
     private String[] getFormulas(String[] columns) {
         return Arrays.stream(columns)
-                // Force null instead of NaN when vector size == 0
-                .map(c -> String.format("%s=count(%s)", c, c, c))
+                .map(c -> String.format("%s=count(%s)", c, c))
                 .toArray(String[]::new);
     }
 
@@ -235,6 +234,13 @@ public class TestRollingCount extends BaseUpdateByTest {
     // endregion Object Helper functions
 
     // region Static Zero Key Tests
+    @Test
+    public void testStaticZeroKeyAllNullVector() {
+        final int prevTicks = 1;
+        final int postTicks = 0;
+
+        doTestStaticZeroKey(prevTicks, postTicks);
+    }
 
     @Test
     public void testStaticZeroKeyRev() {

@@ -1105,6 +1105,16 @@ class TableTestCase(BaseTestCase):
             t = partitioned_by_formula()
             self.assertIsNotNone(t)
 
+    def test_arg_validation(self):
+        t = empty_table(1).update(["A=i", "B=i", "C=i"])
+        with self.assertRaises(DHError) as cm:
+            t.sort("A", "B")
+        self.assertIn("The sort direction must be", str(cm.exception))
+
+        with self.assertRaises(DHError) as cm:
+            t.partition_by("A", "B")
+        self.assertIn("drop_keys must be", str(cm.exception))
+
 
 if __name__ == "__main__":
     unittest.main()

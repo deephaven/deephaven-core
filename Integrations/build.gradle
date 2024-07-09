@@ -9,11 +9,6 @@ plugins {
 
 evaluationDependsOn ':docker-server-jetty'
 
-configurations {
-    implementation.extendsFrom dhIntegrations
-    testImplementation.extendsFrom fishBaseTest
-}
-
 dependencies {
 
     implementation project(':engine-table')
@@ -22,6 +17,7 @@ dependencies {
     implementation project(':log-factory')
 
     testImplementation project(':engine-test-utils')
+    testImplementation project(path: ':Base', configuration: 'tests')
 
     // Needed for CalendarInit
     testRuntimeOnly TestTools.projectDependency(project, 'engine-time')
@@ -78,13 +74,13 @@ def runInDocker = { String name, String sourcePath, List<String> command, Closur
         }
         parentContainers = [project(':docker-server-jetty').tasks.findByName('buildDocker-server-jetty')] // deephaven/server-jetty
 
-        imageName = 'deephaven/py-integrations:local-build'
+        imageName = Docker.localImageName('py-integrations')
 
         addConfig(it)
 
         dockerfile {
             // set up the container, env vars - things that aren't likely to change
-            from 'deephaven/server-jetty:local-build'
+            from Docker.localImageName('server-jetty')
             runCommand '''set -eux; \\
                       pip3 install unittest-xml-reporting==3.0.4; \\
                       mkdir -p /out/report; \\

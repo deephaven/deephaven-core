@@ -411,6 +411,8 @@ public class TypeInfos {
      * We will encode BigIntegers as Decimal types. Parquet has no special type for BigIntegers, but we can maintain
      * external compatibility by encoding them as fixed length decimals of scale 1. Internally, we'll record that we
      * wrote this as a decimal, so we can properly decode it back to BigInteger.
+     *
+     * @see ParquetSchemaReader
      */
     private enum BigIntegerType implements TypeInfo {
         INSTANCE;

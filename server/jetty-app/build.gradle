@@ -13,7 +13,7 @@ dependencies {
     runtimeOnly project(':log-to-slf4j')
     runtimeOnly project(':logback-print-stream-globals')
     runtimeOnly project(':logback-logbuffer')
-    Classpaths.inheritLogbackClassic(project)
+    runtimeOnly libs.logback.classic
 }
 
 distributions {
@@ -54,7 +54,13 @@ if (!hasProperty('excludeSql')) {
 if (!hasProperty('excludeS3')) {
     dependencies {
         runtimeOnly project(':extensions-s3')
-        runtimeOnly project(':extensions-iceberg:s3')
+        runtimeOnly project(':extensions-iceberg-s3')
+    }
+}
+
+if (!hasProperty('excludeJson')) {
+    dependencies {
+        runtimeOnly project(':extensions-json-jackson')
     }
 }
 
