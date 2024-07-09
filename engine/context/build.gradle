@@ -17,7 +17,7 @@ dependencies {
     implementation project(':table-api')
     implementation project(':IO')
 
-    implementation 'com.github.f4b6a3:uuid-creator:5.2.0'
+    implementation libs.f4b6a3.uuid.creator
 
     implementation libs.commons.text
 

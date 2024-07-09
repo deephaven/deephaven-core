@@ -21,6 +21,7 @@ deephaven-suan-shu = "0.1.0"
 dev-dirs = "26"
 dsi = "8.5.13"
 elemental = "1.2.1"
+f4b6a3 = "5.2.0"
 flatbuffers = "1.12.0"
 freemarker = "2.3.31"
 google-findbugs = "3.0.2"
@@ -134,6 +135,8 @@ dev-dirs-directories = { module = "dev.dirs:directories", version.ref = "dev-dir
 dsi-fastutil = { module = "it.unimi.dsi:fastutil", version.ref = "dsi" }
 
 elemental-core = { module = "com.google.elemental2:elemental2-core", version.ref = "elemental" }
+
+f4b6a3-uuid-creator = { module = "com.github.f4b6a3:uuid-creator", version.ref = "f4b6a3" }
 
 flatbuffers-java = { module = "com.google.flatbuffers:flatbuffers-java", version.ref = "flatbuffers" }
 
