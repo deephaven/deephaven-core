@@ -24,7 +24,7 @@ dependencies {
     implementation libs.arrow.format
 
     compileOnly project(':util-immutables')
-    annotationProcessor libs.immutables
+    annotationProcessor libs.immutables.value
 
     testImplementation project(':engine-test-utils')
 

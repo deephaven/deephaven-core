@@ -36,7 +36,7 @@ dependencies {
     implementation libs.commons.lang3
 
     compileOnly project(':util-immutables')
-    annotationProcessor libs.immutables
+    annotationProcessor libs.immutables.value
 
     testImplementation project(':engine-test-utils')
     testImplementation libs.junit4

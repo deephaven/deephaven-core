@@ -22,7 +22,7 @@ dependencies {
   implementation libs.sslcontext.kickstart.netty
 
   compileOnly project(':util-immutables')
-  annotationProcessor libs.immutables
+  annotationProcessor libs.immutables.value
 
   compileOnly libs.autoservice
   annotationProcessor libs.autoservice.compiler

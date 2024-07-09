@@ -7,5 +7,5 @@ description = 'The Deephaven plugin interface'
 
 dependencies {
     compileOnly project(':util-immutables')
-    annotationProcessor libs.immutables
+    annotationProcessor libs.immutables.value
 }

@@ -11,7 +11,7 @@ dependencies {
     implementation project(':engine-query-constants')
 
     compileOnly project(':util-immutables')
-    annotationProcessor libs.immutables
+    annotationProcessor libs.immutables.value
 
     compileOnly libs.jetbrains.annotations
 

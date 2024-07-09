@@ -152,7 +152,8 @@ iceberg-bom = { module = "org.apache.iceberg:iceberg-bom", version.ref = "iceber
 iceberg-bundled-guava = { module = "org.apache.iceberg:iceberg-bundled-guava" }
 iceberg-core = { module = "org.apache.iceberg:iceberg-core" }
 
-immutables = { module = "org.immutables:value", version.ref = "immutables" }
+immutables-value = { module = "org.immutables:value", version.ref = "immutables" }
+immutables-value-annotations = { module = "org.immutables:value-annotations", version.ref = "immutables" }
 
 elemental-dom = { module = "com.google.elemental2:elemental2-dom", version.ref = "elemental" }
 elemental-promise = { module = "com.google.elemental2:elemental2-promise", version.ref = "elemental" }

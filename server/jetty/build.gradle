@@ -38,7 +38,7 @@ dependencies {
     implementation libs.jetty.websocket.jakarta.server
 
     compileOnly project(':util-immutables')
-    annotationProcessor libs.immutables
+    annotationProcessor libs.immutables.value
 
     implementation project(':ssl-kickstart')
     implementation libs.sslcontext.kickstart.jetty

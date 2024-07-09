@@ -15,7 +15,7 @@ dependencies {
     implementation libs.trove
 
     compileOnly project(':util-immutables')
-    annotationProcessor libs.immutables
+    annotationProcessor libs.immutables.value
 
     testImplementation platform(libs.junit.bom)
     testImplementation libs.assertj

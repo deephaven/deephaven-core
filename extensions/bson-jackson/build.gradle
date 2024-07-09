@@ -9,7 +9,7 @@ dependencies {
     api 'de.undercouch:bson4jackson:2.15.1'
 
     compileOnly project(':util-immutables')
-    annotationProcessor libs.immutables
+    annotationProcessor libs.immutables.value
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 

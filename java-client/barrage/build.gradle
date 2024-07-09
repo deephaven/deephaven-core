@@ -13,7 +13,7 @@ dependencies {
     compileOnly libs.javax.inject
 
     compileOnly project(':util-immutables')
-    annotationProcessor libs.immutables
+    annotationProcessor libs.immutables.value
 
     implementation libs.slf4j.api
     testRuntimeOnly libs.slf4j.simple

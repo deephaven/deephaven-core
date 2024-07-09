@@ -20,7 +20,7 @@ dependencies {
     implementation libs.trove
 
     compileOnly project(':util-immutables')
-    annotationProcessor libs.immutables
+    annotationProcessor libs.immutables.value
 
     implementation libs.guava
 

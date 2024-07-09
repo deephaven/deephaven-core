@@ -22,7 +22,7 @@ dependencies {
     implementation libs.commons.text
 
     compileOnly project(':util-immutables')
-    annotationProcessor libs.immutables
+    annotationProcessor libs.immutables.value
 
     testImplementation project(':engine-test-utils')
 

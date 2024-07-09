@@ -10,7 +10,7 @@ dependencies {
   implementation libs.commons.text
 
   compileOnly project(':util-immutables')
-  annotationProcessor libs.immutables
+  annotationProcessor libs.immutables.value
 
   compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 

@@ -59,7 +59,7 @@ dependencies {
     testAnnotationProcessor libs.autoservice.compiler
 
     compileOnly project(':util-immutables')
-    annotationProcessor libs.immutables
+    annotationProcessor libs.immutables.value
 
     implementation project(':Plot')
 
