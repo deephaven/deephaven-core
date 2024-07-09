@@ -9,7 +9,7 @@ dependencies {
 
   compileOnly libs.javax.inject
 
-  api 'io.github.classgraph:classgraph:4.8.154'
+  api libs.classgraph
 
   compileOnly libs.autoservice
   annotationProcessor libs.autoservice.compiler
