@@ -60,6 +60,7 @@ lz4 = "1.8.0"
 mindrot = "0.4"
 nidi = "0.18.1"
 oshi = "5.8.3"
+pac4j = "5.7.0"
 parquet = "1.14.0"
 picocli = "4.6.1"
 postgresql = "42.7.1"
@@ -246,6 +247,9 @@ mindrot-jbcrypt = { module = "org.mindrot:jbcrypt", version.ref = "mindrot" }
 nidi-graphviz-java = { module = "guru.nidi:graphviz-java", version.ref = "nidi" }
 
 oshi-core = { module = "com.github.oshi:oshi-core", version.ref = "oshi" }
+
+pac4j-http = { module = "org.pac4j:pac4j-http", version.ref = "pac4j" }
+pac4j-oidc = { module = "org.pac4j:pac4j-oidc", version.ref = "pac4j" }
 
 parquet-hadoop = { module = "org.apache.parquet:parquet-hadoop", version.ref = "parquet" }
 
