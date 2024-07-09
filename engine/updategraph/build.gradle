@@ -12,7 +12,7 @@ dependencies {
     implementation project(':Configuration')
     implementation libs.commons.lang3
 
-    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+    compileOnly libs.google.findbugs.jsr305
     compileOnly libs.jetbrains.annotations
 
     testImplementation project(':engine-context')

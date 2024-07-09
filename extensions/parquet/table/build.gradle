@@ -45,7 +45,7 @@ dependencies {
     compileOnly project(':util-immutables')
     annotationProcessor libs.immutables.value
 
-    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+    compileOnly libs.google.findbugs.jsr305
 
     testImplementation project(':base-test-utils')
     testImplementation project(':engine-test-utils')
