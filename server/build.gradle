@@ -94,7 +94,7 @@ dependencies {
 
     implementation project(':grpc-java:grpc-mtls')
 
-    implementation 'dev.dirs:directories:26'
+    implementation libs.dev.dirs.directories
 
     testImplementation project(':server-test-utils')
 

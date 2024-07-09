@@ -17,6 +17,7 @@ deephaven-barrage = "0.6.0"
 deephaven-csv = "0.12.0"
 deephaven-hash = "0.1.0"
 deephaven-suan-shu = "0.1.0"
+dev-dirs = "26"
 elemental = "1.2.1"
 flatbuffers = "1.12.0"
 groovy = "3.0.21"
@@ -117,6 +118,8 @@ deephaven-csv-fast-double-parser = { module = "io.deephaven:deephaven-csv-fast-d
 deephaven-hash = { module = "io.deephaven:hash", version.ref = "deephaven-hash" }
 
 deephaven-suan-shu = { module = "io.deephaven:SuanShu", version.ref = "deephaven-suan-shu" }
+
+dev-dirs-directories = { module = "dev.dirs:directories", version.ref = "dev-dirs" }
 
 elemental-core = { module = "com.google.elemental2:elemental2-core", version.ref = "elemental" }
 
