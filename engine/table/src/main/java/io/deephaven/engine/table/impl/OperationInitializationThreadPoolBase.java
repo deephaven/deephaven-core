@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Base implementation of OperationInitializer that delegates to a pool of threads.
  */
-class OperationInitializationThreadPoolBase implements OperationInitializer {
+public class OperationInitializationThreadPoolBase implements OperationInitializer {
 
     private final ThreadLocal<Boolean> isInitializationThread = ThreadLocal.withInitial(() -> false);
 
@@ -27,7 +27,8 @@ class OperationInitializationThreadPoolBase implements OperationInitializer {
 
     private final int numThreads;
 
-    OperationInitializationThreadPoolBase(ThreadInitializationFactory factory, int numThreads, String threadGroupName) {
+    protected OperationInitializationThreadPoolBase(final ThreadInitializationFactory factory, final int numThreads,
+            final String threadGroupName) {
         this.numThreads = numThreads;
         final ThreadGroup threadGroup = new ThreadGroup(threadGroupName);
         final ThreadFactory threadFactory = new NamingThreadFactory(
@@ -54,7 +55,7 @@ class OperationInitializationThreadPoolBase implements OperationInitializer {
     }
 
     @Override
-    public Future<?> submit(Runnable runnable) {
+    public Future<?> submit(final Runnable runnable) {
         return executorService.submit(runnable);
     }
 

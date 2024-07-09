@@ -1539,14 +1539,14 @@ public class ConstructSnapshot {
                 nonEmptyColumnsIndices)) {
             return false;
         }
+        boolean canParallelize = false;
         if (!nonEmptyColumnsIndices.isEmpty()) {
             final ExecutionContext executionContext = ExecutionContext.getContext();
-            final boolean canParallelize =
-                    ENABLE_PARALLEL_SNAPSHOT &&
-                            executionContext.getOperationInitializer().canParallelize() &&
-                            nonEmptyColumnsIndices.size() > 1 &&
-                            (snapshot.rowsIncluded.size() > MINIMUM_PARALLEL_SNAPSHOT_ROWS ||
-                                    !allColumnSourcesInMemory(table, columnSources, nonEmptyColumnsIndices));
+            canParallelize = ENABLE_PARALLEL_SNAPSHOT &&
+                    executionContext.getOperationInitializer().canParallelize() &&
+                    nonEmptyColumnsIndices.size() > 1 &&
+                    (snapshot.rowsIncluded.size() >= MINIMUM_PARALLEL_SNAPSHOT_ROWS ||
+                            !allColumnSourcesInMemory(table, columnSources, nonEmptyColumnsIndices));
             if (canParallelize) {
                 if (!snapshotColumnsParallel(columnSources, nonEmptyColumnsIndices, table, usePrev, executionContext,
                         snapshot)) {
@@ -1561,6 +1561,7 @@ public class ConstructSnapshot {
             final LogEntry logEntry = log.debug().append(System.identityHashCode(logIdentityObject))
                     .append(": Snapshot candidate step=")
                     .append((usePrev ? -1 : 0) + LogicalClock.getStep(getConcurrentAttemptClockValue()))
+                    .append(", canParallelize=").append(canParallelize)
                     .append(", rows=").append(snapshot.rowsIncluded).append("/").append(keysToSnapshot)
                     .append(", cols=");
             if (columnsToSnapshot == null) {
@@ -1592,17 +1593,18 @@ public class ConstructSnapshot {
     }
 
     /**
-     * Recursively check if the column source is in-memory or redirected to an in-memory column source.
+     * Check if the column source is in-memory or redirected to an in-memory column source.
      */
-    private static boolean isColumnSourceInMemory(final ColumnSource<?> columnSource) {
-        if (columnSource instanceof InMemoryColumnSource) {
-            return true;
-        }
-        if (!(columnSource instanceof RedirectedColumnSource)) {
-            return false;
-        }
-        final ColumnSource<?> innerSource = ((RedirectedColumnSource<?>) columnSource).getInnerSource();
-        return isColumnSourceInMemory(innerSource);
+    private static boolean isColumnSourceInMemory(ColumnSource<?> columnSource) {
+        do {
+            if (columnSource instanceof InMemoryColumnSource) {
+                return ((InMemoryColumnSource) columnSource).isInMemory();
+            }
+            if (!(columnSource instanceof RedirectedColumnSource)) {
+                return false;
+            }
+            columnSource = ((RedirectedColumnSource<?>) columnSource).getInnerSource();
+        } while (true);
     }
 
     private static boolean snapshotColumnsParallel(

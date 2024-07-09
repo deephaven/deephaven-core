@@ -63,7 +63,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             final SessionService.ErrorTransformer errorTransformer,
             final TicketRouter ticketRouter,
             final ArrowFlightUtil.DoExchangeMarshaller.Factory doExchangeFactory,
-            Map<String, AuthenticationRequestHandler> authRequestHandlers,
+            final Map<String, AuthenticationRequestHandler> authRequestHandlers,
             @Named(OperationInitializer.EGRESS_NAME) final OperationInitializer operationInitializer) {
         this.executorService = executorService;
         this.streamGeneratorFactory = streamGeneratorFactory;

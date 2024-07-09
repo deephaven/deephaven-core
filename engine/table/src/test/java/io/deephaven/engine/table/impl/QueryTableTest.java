@@ -2707,31 +2707,32 @@ public class QueryTableTest extends QueryTableTestBase {
                 ColumnVectors.ofObject(t1, "Y", String.class).toArray());
     }
 
-    private static class CustomOperationInitializationThreadPool extends EgressInitializationThreadPool {
+    private static final class CustomOperationInitializationThreadPool extends EgressInitializationThreadPool {
         private final AtomicBoolean isUsed = new AtomicBoolean(false);
 
-        CustomOperationInitializationThreadPool() {
+        public CustomOperationInitializationThreadPool() {
             super(ThreadInitializationFactory.NO_OP);
         }
 
-        boolean isUsed() {
+        public boolean isUsed() {
             return isUsed.get();
         }
 
         @Override
-        public Future<?> submit(Runnable runnable) {
+        public Future<?> submit(final Runnable runnable) {
             isUsed.set(true);
             return super.submit(runnable);
         }
 
-        void reset() {
+        public void reset() {
             isUsed.set(false);
         }
     }
 
     public void testEmptyTableSnapshot() {
         final Table emptyTableNoColumns = emptyTable(0);
-        final Table emptyTableWithColumns = emptyTable(0).update("X = i");
+        final Table emptyTableWithSingleColumn = emptyTable(0).update("X = i");
+        final Table emptyTableWithMultipleColumns = emptyTable(0).update("X = i", "Y = 2*i", "Z = 3*i");
         final CustomOperationInitializationThreadPool customOperationInitilaizer =
                 new CustomOperationInitializationThreadPool();
         try (SafeCloseable ignored =
@@ -2744,11 +2745,25 @@ public class QueryTableTest extends QueryTableTestBase {
             }
 
             try (final BarrageMessage snap =
-                    ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) emptyTableWithColumns)) {
+                    ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) emptyTableWithSingleColumn)) {
                 assertTrue(snap.rowsIncluded.isEmpty());
                 assertTrue(snap.addColumnData.length == 1);
+                assertTrue(snap.modColumnData.length == 1);
                 assertTrue(snap.addColumnData[0].data.isEmpty());
                 assertTrue(snap.modColumnData[0].data.isEmpty());
+            }
+
+            try (final BarrageMessage snap =
+                    ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) emptyTableWithMultipleColumns)) {
+                assertTrue(snap.rowsIncluded.isEmpty());
+                assertTrue(snap.addColumnData.length == 3);
+                assertTrue(snap.modColumnData.length == 3);
+                assertTrue(snap.addColumnData[0].data.isEmpty());
+                assertTrue(snap.addColumnData[1].data.isEmpty());
+                assertTrue(snap.addColumnData[2].data.isEmpty());
+                assertTrue(snap.modColumnData[0].data.isEmpty());
+                assertTrue(snap.modColumnData[1].data.isEmpty());
+                assertTrue(snap.modColumnData[2].data.isEmpty());
             }
         }
 

@@ -283,7 +283,6 @@ public class BarrageMessageProducer extends LivenessArtifact
         }
     }
 
-    private final OperationInitializer operationInitializer;
     private final UpdatePropagationJob updatePropagationJob;
 
     /**
@@ -336,8 +335,7 @@ public class BarrageMessageProducer extends LivenessArtifact
 
         this.propagationRowSet = RowSetFactory.empty();
         this.updateIntervalMs = updateIntervalMs;
-        this.operationInitializer = operationInitializer;
-        this.updatePropagationJob = new UpdatePropagationJob();
+        this.updatePropagationJob = new UpdatePropagationJob(operationInitializer);
         this.onGetSnapshot = onGetSnapshot;
 
         this.parentTableSize = parent.size();
@@ -1009,7 +1007,7 @@ public class BarrageMessageProducer extends LivenessArtifact
         private final AtomicBoolean needsRun = new AtomicBoolean();
         private final ExecutionContext executionContext;
 
-        UpdatePropagationJob() {
+        UpdatePropagationJob(final OperationInitializer operationInitializer) {
             this.executionContext = ExecutionContext.newBuilder()
                     .setOperationInitializer(operationInitializer)
                     .markSystemic()
