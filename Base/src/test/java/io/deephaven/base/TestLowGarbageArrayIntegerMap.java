@@ -60,7 +60,6 @@ public class TestLowGarbageArrayIntegerMap extends TestCase {
             integerToStringMap.put(-1, "negative one");
             fail("expected bad index to fail");
         } catch (RequirementFailure requirementFailure) {
-            assertTrue(requirementFailure.isThisStackFrameCulprit(-1));
         }
 
         try {

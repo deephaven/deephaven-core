@@ -89,8 +89,7 @@ public final class Require {
     // ----------------------------------------------------------------
     private static void fail(String conditionText, int numCallsBelowRequirer) {
         final RequirementFailure requirementFailure = new RequirementFailure(
-                ExceptionMessageUtil.failureMessage("Requirement", "required", conditionText, null),
-                numCallsBelowRequirer + 1);
+                ExceptionMessageUtil.failureMessage("Requirement", "required", conditionText, null));
         if (onFailureCallback != null) {
             try {
                 onFailureCallback.accept(requirementFailure);
@@ -103,8 +102,7 @@ public final class Require {
     // ----------------------------------------------------------------
     private static void fail(String conditionText, String detailMessage, int numCallsBelowRequirer) {
         final RequirementFailure requirementFailure = new RequirementFailure(
-                ExceptionMessageUtil.failureMessage("Requirement", "required", conditionText, detailMessage),
-                numCallsBelowRequirer + 1);
+                ExceptionMessageUtil.failureMessage("Requirement", "required", conditionText, detailMessage));
         if (onFailureCallback != null) {
             try {
                 onFailureCallback.accept(requirementFailure);
