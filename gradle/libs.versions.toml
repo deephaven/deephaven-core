@@ -50,6 +50,7 @@ protobuf = "3.25.3"
 rdblue = "0.1.1"
 slf4j = "2.0.11"
 snappy = "1.1.10.5"
+squareup = "1.13.0"
 sslcontext = "8.1.1"
 trove = "3.0.3"
 univocity = "2.6.0"
@@ -201,6 +202,8 @@ slf4j-jul-to-slf4j = { module = "org.slf4j:jul-to-slf4j", version.ref = "slf4j" 
 slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
 
 snappy-java = { module = "org.xerial.snappy:snappy-java", version.ref = "snappy" }
+
+squareup-javapoet = { module = "com.squareup:javapoet", version.ref = "squareup" }
 
 sslcontext-kickstart = { module = "io.github.hakky54:sslcontext-kickstart", version.ref = "sslcontext" }
 sslcontext-kickstart-jetty = { module = "io.github.hakky54:sslcontext-kickstart-for-jetty", version.ref = "sslcontext" }
