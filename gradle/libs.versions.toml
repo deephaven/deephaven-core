@@ -27,6 +27,7 @@ gwt = "2.11.0"
 # used by GwtTools
 gwtJetty = "9.4.44.v20210927"
 hadoop = "3.4.0"
+hdrhistogram = "2.1.12"
 iceberg = "1.5.2"
 immutables = "2.9.2"
 jackson = "2.17.0"
@@ -145,6 +146,8 @@ hadoop-hdfs-client = { module = "org.apache.hadoop:hadoop-hdfs-client", version.
 woodstox-core = { module = "com.fasterxml.woodstox:woodstox-core", version = "6.6.2" }
 hadoop-shaded-guava = { module = "org.apache.hadoop.thirdparty:hadoop-shaded-guava", version = "1.2.0" }
 commons-collections = { module = "commons-collections:commons-collections", version = "3.2.2" }
+
+hdrhistogram = { module = "org.hdrhistogram:HdrHistogram", version.ref = "hdrhistogram" }
 
 iceberg-api = { module = "org.apache.iceberg:iceberg-api" }
 iceberg-aws = { module = "org.apache.iceberg:iceberg-aws" }
