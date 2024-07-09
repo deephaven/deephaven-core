@@ -3,6 +3,7 @@
 //
 package io.deephaven.util.codec;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.time.Instant;
@@ -10,7 +11,6 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 public class ZonedDateTimeCodecTest {
     private void roundTripWithOffset(final ZonedDateTime value, final int offset) {
@@ -28,7 +28,7 @@ public class ZonedDateTimeCodecTest {
             assertEquals(codec.expectedObjectWidth(), enc.length - offset);
         }
         final ZonedDateTime v1 = codec.decode(enc, offset, enc.length - offset);
-        assertEquals(value, v1);
+        Assert.assertEquals(value, v1);
     }
 
     @Test
@@ -42,7 +42,7 @@ public class ZonedDateTimeCodecTest {
             roundTripWithOffset(ZonedDateTime.ofInstant(
                     Instant.ofEpochSecond(ZonedDateTimeCodec.MAX_CONVERTIBLE_SECONDS + 1),
                     ZoneId.of("America/New_York")), 0);
-            fail();
+            Assert.fail();
         } catch (IllegalArgumentException ignored) {
         }
 

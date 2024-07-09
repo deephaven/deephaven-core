@@ -46,7 +46,7 @@ public class BigIntegerCodecTest extends TestCase {
             assertEquals(codec.expectedObjectWidth(), enc.length - offset);
         }
         final BigInteger v1 = codec.decode(enc, offset, enc.length - offset);
-        assertEquals(expected, v1);
+        TestCase.assertEquals(expected, v1);
     }
 
     private void expectIllegalArgumentException(final String args, final long value) {
@@ -76,7 +76,7 @@ public class BigIntegerCodecTest extends TestCase {
             assertEquals(codec.expectedObjectWidth(), enc.length - offset);
         }
         final BigInteger v1 = codec.decode(enc, offset, enc.length - offset);
-        assertEquals(v1, null);
+        TestCase.assertEquals(v1, null);
     }
 
     public void testVariableEncoding() {

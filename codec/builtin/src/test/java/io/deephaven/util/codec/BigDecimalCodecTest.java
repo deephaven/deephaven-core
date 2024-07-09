@@ -54,7 +54,7 @@ public class BigDecimalCodecTest extends TestCase {
             assertEquals(codec.expectedObjectWidth(), enc.length - offset);
         }
         final BigDecimal v1 = codec.decode(enc, offset, enc.length - offset);
-        assertEquals(expected.stripTrailingZeros(), v1);
+        TestCase.assertEquals(expected.stripTrailingZeros(), v1);
     }
 
     private void expectIllegalArgumentException(final String args, final double value) {
@@ -84,7 +84,7 @@ public class BigDecimalCodecTest extends TestCase {
             assertEquals(codec.expectedObjectWidth(), enc.length - offset);
         }
         final BigDecimal v1 = codec.decode(enc, offset, enc.length - offset);
-        assertEquals(v1, null);
+        TestCase.assertEquals(v1, null);
     }
 
     public void testVariableEncoding() {

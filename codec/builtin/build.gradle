@@ -12,4 +12,6 @@ dependencies {
     implementation project(":engine-query-constants")
 
     compileOnly libs.jetbrains.annotations
+
+    testImplementation libs.junit4
 }

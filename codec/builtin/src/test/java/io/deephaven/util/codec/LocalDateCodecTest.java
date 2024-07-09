@@ -50,7 +50,7 @@ public class LocalDateCodecTest extends TestCase {
             assertEquals(codec.expectedObjectWidth(), enc.length - offset);
         }
         final LocalDate v1 = codec.decode(enc, offset, enc.length - offset);
-        assertEquals(expected, v1);
+        TestCase.assertEquals(expected, v1);
     }
 
     private void expectIllegalArgumentException(final String args, final LocalDate value) {
@@ -70,7 +70,7 @@ public class LocalDateCodecTest extends TestCase {
             assertEquals(codec.expectedObjectWidth(), enc.length);
         }
         final LocalDate v1 = codec.decode(enc, 0, enc.length);
-        assertEquals(v1, null);
+        TestCase.assertEquals(v1, null);
     }
 
     public void testFullEncoding() {
