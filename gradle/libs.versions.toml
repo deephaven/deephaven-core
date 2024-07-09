@@ -43,6 +43,7 @@ logback = "1.4.14"
 parquet = "1.14.0"
 protobuf = "3.25.3"
 slf4j = "2.0.11"
+snappy = "1.1.10.5"
 sslcontext = "8.1.1"
 trove = "3.0.3"
 univocity = "2.6.0"
@@ -180,6 +181,8 @@ protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "p
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 slf4j-jul-to-slf4j = { module = "org.slf4j:jul-to-slf4j", version.ref = "slf4j" }
 slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
+
+snappy-java = { module = "org.xerial.snappy:snappy-java", version.ref = "snappy" }
 
 sslcontext-kickstart = { module = "io.github.hakky54:sslcontext-kickstart", version.ref = "sslcontext" }
 sslcontext-kickstart-jetty = { module = "io.github.hakky54:sslcontext-kickstart-for-jetty", version.ref = "sslcontext" }
