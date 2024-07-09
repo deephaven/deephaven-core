@@ -177,7 +177,7 @@ def _table_reader_dict(table: Table, cols: Optional[Union[str, Sequence[str]]] =
     Raises:
         ValueError
     """
-    def _emitter(col_defs: Sequence[Column], j_array: jpy.JType) -> Iterable[dict[str, Any]]:
+    def _emitter(col_defs: Sequence[Column], j_array: jpy.JType) -> Iterable[Dict[str, Any]]:
         make_dict = lambda values: {col_def.name: value for col_def, value in zip(col_defs, values)}
         mvs = [memoryview(j_array[i]) if col_def.data_type.is_primitive else j_array[i] for i, col_def in enumerate(col_defs)]
         return map(make_dict, zip(*mvs))
