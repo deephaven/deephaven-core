@@ -41,6 +41,7 @@ jsinterop = "2.0.2"
 jsinterop-base = "1.0.1"
 logback = "1.4.14"
 lz4 = "1.8.0"
+nidi = "0.18.1"
 parquet = "1.14.0"
 protobuf = "3.25.3"
 rdblue = "0.1.1"
@@ -177,6 +178,8 @@ jsinterop-base = { module = "com.google.jsinterop:base", version.ref = "jsintero
 logback-classic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 
 lz4-java = { module = "org.lz4:lz4-java", version.ref = "lz4" }
+
+nidi-graphviz-java = { module = "guru.nidi:graphviz-java", version.ref = "nidi" }
 
 parquet-hadoop = { module = "org.apache.parquet:parquet-hadoop", version.ref = "parquet" }
 

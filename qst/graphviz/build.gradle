@@ -8,7 +8,7 @@ description = "Converts a list of QSTs into other formats."
 dependencies {
     implementation project(':qst')
 
-    implementation 'guru.nidi:graphviz-java:0.18.1'
+    implementation libs.nidi.graphviz.java
 
     implementation 'info.picocli:picocli:4.6.1'
 
