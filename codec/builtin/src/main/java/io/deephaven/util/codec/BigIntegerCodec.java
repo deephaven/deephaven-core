@@ -32,7 +32,7 @@ public class BigIntegerCodec implements ObjectCodec<BigInteger> {
         // noinspection ConstantConditions
         try {
             int _precision = 0; // zero indicates unlimited precision, variable width encoding
-            if (arguments != null && arguments.trim().length() > 0) {
+            if (arguments != null && !arguments.trim().isEmpty()) {
                 _precision = Integer.parseInt(arguments.trim());
                 if (_precision < 1) {
                     throw new IllegalArgumentException("Specified precision must be >= 1");
@@ -61,9 +61,8 @@ public class BigIntegerCodec implements ObjectCodec<BigInteger> {
         return 0;
     }
 
-    @NotNull
     @Override
-    public byte[] encode(@Nullable final BigInteger input) {
+    public byte @NotNull [] encode(@Nullable final BigInteger input) {
         return input == null
                 ? codec.encodedNullValue()
                 : codec.encode(new BigDecimal(input));
@@ -71,7 +70,7 @@ public class BigIntegerCodec implements ObjectCodec<BigInteger> {
 
     @Nullable
     @Override
-    public BigInteger decode(@NotNull final byte[] input, final int offset, final int length) {
+    public BigInteger decode(final byte @NotNull [] input, final int offset, final int length) {
         final BigDecimal bd = codec.decode(input, offset, length);
         return bd == null ? null : bd.toBigInteger();
     }

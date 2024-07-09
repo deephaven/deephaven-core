@@ -3,7 +3,6 @@
 //
 package io.deephaven.util.codec;
 
-import io.deephaven.datastructures.util.CollectionUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -23,7 +22,6 @@ import java.util.Map;
  */
 @SuppressWarnings("unused")
 public abstract class MapCodec<K, V> implements ObjectCodec<Map<K, V>> {
-    private static final byte[] nullBytes = CollectionUtil.ZERO_LENGTH_BYTE_ARRAY;
     private static final byte[] zeroBytes = new byte[4];
 
     private static final int MINIMUM_SCRATCH_CAPACITY = 4096;
@@ -47,13 +45,12 @@ public abstract class MapCodec<K, V> implements ObjectCodec<Map<K, V>> {
         return 0;
     }
 
-    @NotNull
     @Override
-    public byte[] encode(@Nullable final Map<K, V> input) {
+    public byte @NotNull [] encode(@Nullable final Map<K, V> input) {
         if (input == null) {
-            return nullBytes;
+            return CodecUtil.ZERO_LENGTH_BYTE_ARRAY;
         }
-        if (input.size() == 0) {
+        if (input.isEmpty()) {
             return zeroBytes;
         }
 
@@ -137,7 +134,7 @@ public abstract class MapCodec<K, V> implements ObjectCodec<Map<K, V>> {
 
     @Nullable
     @Override
-    public Map<K, V> decode(@NotNull final byte[] input, final int offset, final int length) {
+    public Map<K, V> decode(final byte @NotNull [] input, final int offset, final int length) {
         if (input.length == 0) {
             return null;
         }

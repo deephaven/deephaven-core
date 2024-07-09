@@ -1,10 +1,9 @@
 //
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.util;
+package io.deephaven.util.codec;
 
 import io.deephaven.base.string.EncodingInfo;
-import org.apache.commons.io.ByteOrderMark;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.BufferOverflowException;
@@ -12,63 +11,13 @@ import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
-import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
-import java.util.Arrays;
 
-public class EncodingUtil {
-    @SuppressWarnings("WeakerAccess")
-    public static final ByteOrderMark[] EMPTY_BOM_ARRAY = new ByteOrderMark[0];
+class CodecUtil {
+    public static final byte[] ZERO_LENGTH_BYTE_ARRAY = new byte[0];
 
-    /**
-     * Get the {@link EncodingInfo} associated with a particular {@link Charset}
-     *
-     * @param charSet The charset
-     * @return the matching {@link EncodingInfo}
-     * @throws IllegalArgumentException if there is no associated encoding
-     */
-    @NotNull
-    public static EncodingInfo getEncodingInfoForCharset(@NotNull Charset charSet) throws IllegalArgumentException {
-        return getEncodingInfoForCharset(charSet.name());
-    }
-
-    /**
-     * Get the {@link EncodingInfo} associated with a particular charset name
-     *
-     * @param charsetName the charset
-     * @return the matching {@link EncodingInfo}
-     * @throws IllegalArgumentException if there is no associated encoding
-     */
-    public static EncodingInfo getEncodingInfoForCharset(@NotNull String charsetName) {
-        return Arrays.stream(EncodingInfo.values())
-                .filter(info -> info.getCharset().name().equals(charsetName))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("No EncodingInfo for " + charsetName));
-    }
-
-    /**
-     * Get an array containing the possible {@link ByteOrderMark byte order marks} that could be present within a file
-     * of the specified encoding. This is intended for use with {@link org.apache.commons.io.input.BOMInputStream}
-     *
-     * @param encoding The encoding.
-     * @return An array containing the possible {@link ByteOrderMark BOMs} for the encoding.
-     */
-    @NotNull
-    public static ByteOrderMark[] getBOMsForEncoding(EncodingInfo encoding) {
-        switch (encoding) {
-            case UTF_8:
-                return new ByteOrderMark[] {ByteOrderMark.UTF_8};
-            case UTF_16BE:
-                return new ByteOrderMark[] {ByteOrderMark.UTF_16BE};
-            case UTF_16LE:
-                return new ByteOrderMark[] {ByteOrderMark.UTF_16LE};
-            case UTF_16:
-                return new ByteOrderMark[] {ByteOrderMark.UTF_16BE, ByteOrderMark.UTF_16LE};
-        }
-
-        return EMPTY_BOM_ARRAY;
-    }
+    private CodecUtil(){}
 
     /**
      * Encode the given string in UTF-8 format into the given ByteBuffer. The string is encoded as an int length

@@ -21,9 +21,8 @@ public class SerializableCodec<T> implements ObjectCodec<T> {
 
     public SerializableCodec(@SuppressWarnings("unused") String dummy) {}
 
-    @NotNull
     @Override
-    public byte[] encode(@Nullable T input) {
+    public byte @NotNull [] encode(@Nullable T input) {
         try {
             final ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
             final ObjectOutputStream objectOutput = new ObjectOutputStream(byteOutput);
@@ -52,7 +51,7 @@ public class SerializableCodec<T> implements ObjectCodec<T> {
 
     @Nullable
     @Override
-    public T decode(@NotNull byte[] input, int offset, int length) {
+    public T decode(byte @NotNull [] input, int offset, int length) {
         try {
             final ByteArrayInputStream byteInput = new ByteArrayInputStream(input, offset, length);
             final ObjectInputStream objectInput = new ObjectInputStream(byteInput);

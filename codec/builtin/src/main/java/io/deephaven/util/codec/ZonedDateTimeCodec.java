@@ -3,7 +3,6 @@
 //
 package io.deephaven.util.codec;
 
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -19,11 +18,10 @@ public class ZonedDateTimeCodec implements ObjectCodec<ZonedDateTime> {
 
     public ZonedDateTimeCodec(String args) {}
 
-    @NotNull
     @Override
-    public byte[] encode(@Nullable ZonedDateTime input) {
+    public byte @NotNull [] encode(@Nullable ZonedDateTime input) {
         if (input == null) {
-            return CollectionUtil.ZERO_LENGTH_BYTE_ARRAY;
+            return CodecUtil.ZERO_LENGTH_BYTE_ARRAY;
         }
 
         final int bufSize = computeSize(input);
@@ -40,7 +38,7 @@ public class ZonedDateTimeCodec implements ObjectCodec<ZonedDateTime> {
 
     @Nullable
     @Override
-    public ZonedDateTime decode(@NotNull byte[] input, int offset, int length) {
+    public ZonedDateTime decode(byte @NotNull [] input, int offset, int length) {
         if (length == 0) {
             return null;
         }

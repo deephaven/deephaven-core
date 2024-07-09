@@ -3,8 +3,6 @@
 //
 package io.deephaven.util.codec;
 
-import io.deephaven.util.EncodingUtil;
-
 import java.nio.ByteBuffer;
 import java.util.Map;
 
@@ -36,11 +34,11 @@ abstract class StringKeyedMapCodec<V> extends MapCodec<String, V> {
 
     @Override
     String decodeKey(ByteBuffer byteBuffer) {
-        return EncodingUtil.getUtf8String(byteBuffer);
+        return CodecUtil.getUtf8String(byteBuffer);
     }
 
     @Override
     void encodeKey(ByteBuffer scratch, String key) {
-        EncodingUtil.putUtf8String(scratch, key);
+        CodecUtil.putUtf8String(scratch, key);
     }
 }

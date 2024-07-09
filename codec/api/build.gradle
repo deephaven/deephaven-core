@@ -3,10 +3,8 @@ plugins {
     id 'io.deephaven.project.register'
 }
 
-description 'Codec Cache: Deephaven Codec Cache'
+description 'Codec API: The base package for column codecs'
 
 dependencies {
-    api project(":codec-api")
-
     compileOnly libs.jetbrains.annotations
 }

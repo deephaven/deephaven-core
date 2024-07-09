@@ -104,9 +104,8 @@ public class LocalDateCodec implements ObjectCodec<LocalDate> {
         return 0;
     }
 
-    @NotNull
     @Override
-    public byte[] encode(@Nullable final LocalDate input) {
+    public byte @NotNull [] encode(@Nullable final LocalDate input) {
         if (input == null) {
             if (nullBytes != null) {
                 return nullBytes;
@@ -157,7 +156,7 @@ public class LocalDateCodec implements ObjectCodec<LocalDate> {
 
     @Nullable
     @Override
-    public LocalDate decode(@NotNull final byte[] input, final int offset, final int length) {
+    public LocalDate decode(final byte @NotNull [] input, final int offset, final int length) {
         final int year, month, dayOfMonth;
         if (input[offset] == NULL_INDICATOR) {
             return null;

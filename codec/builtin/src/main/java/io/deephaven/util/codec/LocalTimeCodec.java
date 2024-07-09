@@ -99,9 +99,8 @@ public class LocalTimeCodec implements ObjectCodec<LocalTime> {
         return 0;
     }
 
-    @NotNull
     @Override
-    public byte[] encode(@Nullable final LocalTime input) {
+    public byte @NotNull [] encode(@Nullable final LocalTime input) {
 
         if (input == null) {
             if (nullBytes != null) {
@@ -130,7 +129,7 @@ public class LocalTimeCodec implements ObjectCodec<LocalTime> {
 
     @Nullable
     @Override
-    public LocalTime decode(@NotNull final byte[] input, final int offset, final int length) {
+    public LocalTime decode(final byte @NotNull [] input, final int offset, final int length) {
         // test for null indicator (leading bit)
         if ((input[offset] & NULL_INDICATOR) != 0) {
             return null;

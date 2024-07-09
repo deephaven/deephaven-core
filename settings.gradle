@@ -415,8 +415,8 @@ include ':clock-impl'
 
 include ':sql'
 
-include(':codec-base')
-project(':codec-base').projectDir = file('codec/base')
+include(':codec-api')
+project(':codec-api').projectDir = file('codec/api')
 include(':codec-builtin')
 project(':codec-builtin').projectDir = file('codec/builtin')
 include(':codec-cache')

@@ -44,9 +44,8 @@ public class UTF8StringAsByteArrayCodec implements ObjectCodec<String> {
         expectedWidth = size;
     }
 
-    @NotNull
     @Override
-    public byte[] encode(@Nullable final String input) {
+    public byte @NotNull [] encode(@Nullable final String input) {
         if (input == null) {
             throw new IllegalArgumentException(
                     UTF8StringAsByteArrayCodec.class.getSimpleName() + " cannot encode nulls");
@@ -71,7 +70,7 @@ public class UTF8StringAsByteArrayCodec implements ObjectCodec<String> {
 
     @Nullable
     @Override
-    public String decode(@NotNull final byte[] input, final int offset, final int length) {
+    public String decode(final byte @NotNull [] input, final int offset, final int length) {
         return new String(input, offset, length, StandardCharsets.UTF_8);
     }
 

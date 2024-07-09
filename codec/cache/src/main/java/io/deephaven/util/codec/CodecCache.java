@@ -3,25 +3,19 @@
 //
 package io.deephaven.util.codec;
 
-import io.deephaven.base.verify.Require;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Cache for {@link ObjectCodec} instances.
  */
 public enum CodecCache {
-
     DEFAULT;
 
     /**
@@ -34,7 +28,7 @@ public enum CodecCache {
 
         private Item(@NotNull final String className,
                 @Nullable final String arguments) {
-            Require.neqNull(className, "className");
+            Objects.requireNonNull(className);
 
             final Class<? extends ObjectCodec> codecClass;
             try {
@@ -78,27 +72,5 @@ public enum CodecCache {
         return (ObjectCodec<TYPE>) items
                 .computeIfAbsent(className, (cn) -> new HashMap<>())
                 .computeIfAbsent(arguments, (a) -> new Item(className, a)).codec;
-    }
-
-    /**
-     * Get the default {@link ObjectCodec} class to use for the given column type.
-     *
-     * @param dataType The column data type
-     * @return The name of the default {@link ObjectCodec} subclass to use for encoding the given type
-     */
-    public static String getDefaultCodecClass(@NotNull final Class<?> dataType) {
-        if (dataType.equals(LocalDate.class)) {
-            return LocalDateCodec.class.getName();
-        } else if (dataType.equals(LocalTime.class)) {
-            return LocalTimeCodec.class.getName();
-        } else if (dataType.equals(BigDecimal.class)) {
-            return BigDecimalCodec.class.getName();
-        } else if (dataType.equals(BigInteger.class)) {
-            return BigIntegerCodec.class.getName();
-        } else if (dataType.equals(ZonedDateTime.class)) {
-            return ZonedDateTimeCodec.class.getName();
-        } else {
-            return null;
-        }
     }
 }

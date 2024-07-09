@@ -3,7 +3,6 @@
 //
 package io.deephaven.util.codec;
 
-import io.deephaven.datastructures.util.CollectionUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -73,18 +72,18 @@ public class BigDecimalCodec implements ObjectCodec<BigDecimal> {
         try {
             int _precision = 0, _scale = 0; // zero indicates unlimited precision/scale, variable width encoding
             boolean _strict = true;
-            if (arguments != null && arguments.trim().length() > 0) {
+            if (arguments != null && !arguments.trim().isEmpty()) {
                 final String[] tokens = arguments.split(",");
-                if (tokens.length > 0 && tokens[0].trim().length() > 0) {
+                if (tokens.length > 0 && !tokens[0].trim().isEmpty()) {
                     _precision = Integer.parseInt(tokens[0].trim());
                     if (_precision < 1) {
                         throw new IllegalArgumentException("Specified precision must be >= 1");
                     }
                 }
-                if (tokens.length > 1 && tokens[1].trim().length() > 0) {
+                if (tokens.length > 1 && !tokens[1].trim().isEmpty()) {
                     _scale = Integer.parseInt(tokens[1].trim());
                 }
-                if (tokens.length > 2 && tokens[2].trim().length() > 0) {
+                if (tokens.length > 2 && !tokens[2].trim().isEmpty()) {
                     String mode = tokens[2].trim();
                     switch (mode.toLowerCase()) {
                         case "allowrounding":
@@ -141,13 +140,12 @@ public class BigDecimalCodec implements ObjectCodec<BigDecimal> {
             final byte[] unscaledZero = BigDecimal.ZERO.unscaledValue().toByteArray();
             zeroBytes = new byte[Integer.BYTES + unscaledZero.length];
             Arrays.fill(zeroBytes, (byte) 0);
-            nullBytes = CollectionUtil.ZERO_LENGTH_BYTE_ARRAY;
+            nullBytes = CodecUtil.ZERO_LENGTH_BYTE_ARRAY;
         }
     }
 
-    @NotNull
     @Override
-    public byte[] encode(@Nullable final BigDecimal input) {
+    public byte @NotNull [] encode(@Nullable final BigDecimal input) {
         if (input == null) {
             return nullBytes;
         }
@@ -173,7 +171,7 @@ public class BigDecimalCodec implements ObjectCodec<BigDecimal> {
         // (i.e. too high a scale requires reducing precision to "make room")
         if ((value.precision() > this.precision || value.scale() > scale)) {
             if (strict) {
-                throw new IllegalArgumentException("Unable to encode value " + value.toString() + " with precision "
+                throw new IllegalArgumentException("Unable to encode value " + value + " with precision "
                         + precision + " scale " + scale);
             }
             final int targetPrecision = Math.min(precision, value.precision() - Math.max(0, value.scale() - scale));
@@ -194,7 +192,7 @@ public class BigDecimalCodec implements ObjectCodec<BigDecimal> {
         // copy unscaled bytes to proper size array
         final byte[] unscaledValue = value.unscaledValue().toByteArray();
         if (unscaledValue.length >= bytes.length) { // unscaled value must be at most one less than length of our buffer
-            throw new IllegalArgumentException("Value " + input.toString() + " is too large to encode with precision "
+            throw new IllegalArgumentException("Value " + input + " is too large to encode with precision "
                     + precision + " and scale " + scale);
         }
 
@@ -213,7 +211,7 @@ public class BigDecimalCodec implements ObjectCodec<BigDecimal> {
 
     @Nullable
     @Override
-    public BigDecimal decode(@NotNull final byte[] input, final int offset, final int length) {
+    public BigDecimal decode(final byte @NotNull [] input, final int offset, final int length) {
 
         // variable size value
         if (precision == 0) {

@@ -28,7 +28,7 @@ dependencies {
     implementation project(':Configuration')
     implementation project(':log-factory')
     implementation project(':Stats')
-    implementation project(':codec-base')
+    implementation project(':codec-api')
     implementation project(':codec-builtin')
     implementation project(':codec-cache')
 

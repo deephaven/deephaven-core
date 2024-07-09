@@ -3,7 +3,6 @@
 //
 package io.deephaven.util.codec;
 
-import io.deephaven.datastructures.util.CollectionUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -43,9 +42,8 @@ public class SimpleByteArrayCodec implements ObjectCodec<byte[]> {
         expectedWidth = size;
     }
 
-    @NotNull
     @Override
-    public byte[] encode(@Nullable final byte[] input) {
+    public byte @NotNull [] encode(final byte @Nullable [] input) {
         if (input == null) {
             throw new IllegalArgumentException(SimpleByteArrayCodec.class.getSimpleName() + " cannot encode nulls");
         }
@@ -69,11 +67,10 @@ public class SimpleByteArrayCodec implements ObjectCodec<byte[]> {
         return 0;
     }
 
-    @Nullable
     @Override
-    public byte[] decode(@NotNull final byte[] input, final int offset, final int length) {
+    public byte @Nullable [] decode(final byte @NotNull [] input, final int offset, final int length) {
         if (input.length == 0) {
-            return CollectionUtil.ZERO_LENGTH_BYTE_ARRAY;
+            return CodecUtil.ZERO_LENGTH_BYTE_ARRAY;
         }
         final byte[] output = new byte[length];
         System.arraycopy(input, offset, output, 0, length);

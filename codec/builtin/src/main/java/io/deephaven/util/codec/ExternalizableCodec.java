@@ -7,6 +7,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
 
 public class ExternalizableCodec<T extends Externalizable> implements ObjectCodec<T> {
 
@@ -21,9 +22,8 @@ public class ExternalizableCodec<T extends Externalizable> implements ObjectCode
         }
     }
 
-    @NotNull
     @Override
-    public byte[] encode(@Nullable T input) {
+    public byte @NotNull [] encode(@Nullable T input) {
         if (input == null) {
             throw new UnsupportedOperationException(getClass() + " does not support null input");
         }
@@ -55,16 +55,17 @@ public class ExternalizableCodec<T extends Externalizable> implements ObjectCode
 
     @Nullable
     @Override
-    public T decode(@NotNull byte[] input, int offset, int length) {
+    public T decode(byte @NotNull [] input, int offset, int length) {
         try {
             final ByteArrayInputStream byteInput = new ByteArrayInputStream(input, offset, length);
             final ObjectInputStream objectInput = new ObjectInputStream(byteInput);
-            T result = externalizableClass.newInstance();
+            T result = externalizableClass.getDeclaredConstructor().newInstance();
             result.readExternal(objectInput);
             return result;
         } catch (IOException e) {
             throw new UncheckedIOException(e);
-        } catch (IllegalAccessException | InstantiationException | ClassNotFoundException e) {
+        } catch (IllegalAccessException | InstantiationException | ClassNotFoundException | InvocationTargetException |
+                 NoSuchMethodException e) {
             throw new RuntimeException(e);
         }
     }

@@ -7,13 +7,13 @@ description 'Engine Chunks: Array-like data structures for dense, efficient data
 
 dependencies {
     api project(':Util')
-    implementation project(':Base'),
-            project(':codec-base:')
+    implementation project(':Base')
+    implementation project(':codec-api:')
 
     testImplementation libs.junit4
 
-    testRuntimeOnly project(':log-to-slf4j'),
-            project(path: ':configs'),
-            project(path: ':test-configs')
+    testRuntimeOnly project(':log-to-slf4j')
+    testRuntimeOnly project(path: ':configs')
+    testRuntimeOnly project(path: ':test-configs')
     testRuntimeOnly libs.slf4j.simple
 }
