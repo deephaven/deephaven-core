@@ -64,8 +64,7 @@ def _table_reader_chunk(table: Table, cols: Optional[Union[str, Sequence[str]]] 
                         emitter: Callable[[Sequence[Column], jpy.JType], Iterable[T]], row_set: jpy.JType,
                         chunk_size: int = 2048, prev: bool = False) \
         -> Generator[T, None, None]:
-    """ A generator that reads the chunks of rows over the given row set of a table into a dictionary. The dictionary is
-    a map of column names to numpy arrays or Java arrays.
+    """ Returns a generator that reads one chunk of rows at a time from the table.  The emitter converts the Java chunk into the generator output value.
 
     Args:
         table (Table):  The table to read.
