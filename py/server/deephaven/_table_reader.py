@@ -70,6 +70,8 @@ def _table_reader_chunk(table: Table, cols: Optional[Union[str, Sequence[str]]] 
     Args:
         table (Table):  The table to read.
         cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
+        emitter (Callable[[Sequence[Column], jpy.JType], Generator[T, None, None]]): The function that returns a generator
+            that yields the data from the column definitions and the column data in the form of Java arrays.
         row_set (jpy.JType): The row set to read.
         chunk_size (int): The number of rows to read at a time. Default is 4096.
         prev (bool): If True, read the previous values. Default is False.
@@ -121,7 +123,7 @@ def _table_reader_chunk_dict(table: Table, cols: Optional[Union[str, Sequence[st
     def _emitter(col_defs, j_array) -> Generator[Dict[str, np.ndarray], None, None]:
         yield {col_def.name: _column_to_numpy_array(col_def, j_array[i]) for i, col_def in enumerate(col_defs)}
 
-    yield from _table_reader_chunk(table, cols, emitter=_emitter, row_set=row_set, chunk_size=chunk_size, prev=prev)
+    return _table_reader_chunk(table, cols, emitter=_emitter, row_set=row_set, chunk_size=chunk_size, prev=prev)
 
 
 def _table_reader_chunk_tuple(table: Table, cols: Optional[Union[str, Sequence[str]]] = None, *,
@@ -155,7 +157,7 @@ def _table_reader_chunk_tuple(table: Table, cols: Optional[Union[str, Sequence[s
     def _emitter(col_defs, j_array) -> Generator[Tuple[np.ndarray, ...], None, None]:
         yield named_tuple_class._make((_column_to_numpy_array(col_def, j_array[i]) for i, col_def in enumerate(col_defs)))
 
-    yield from _table_reader_chunk(table, cols, emitter=_emitter, row_set=table.j_table.getRowSet(), chunk_size=chunk_size, prev=False)
+    return _table_reader_chunk(table, cols, emitter=_emitter, row_set=table.j_table.getRowSet(), chunk_size=chunk_size, prev=False)
 
 def _table_reader_dict(table: Table, cols: Optional[Union[str, Sequence[str]]] = None, chunk_size: int = 2048) \
         -> Generator[Dict[str, Any], None, None]:
@@ -180,7 +182,7 @@ def _table_reader_dict(table: Table, cols: Optional[Union[str, Sequence[str]]] =
         for i in range(row_count):
             yield {col_def.name: j_arrays[j][i] for j, col_def in enumerate(col_defs)}
 
-    yield from _table_reader_chunk(table, cols, emitter=_emitter, row_set=table.j_table.getRowSet(), chunk_size=chunk_size, prev=False)
+    return _table_reader_chunk(table, cols, emitter=_emitter, row_set=table.j_table.getRowSet(), chunk_size=chunk_size, prev=False)
 
 def _table_reader_tuple(table: Table, cols: Optional[Union[str, Sequence[str]]] = None, tuple_name: str = 'Deephaven',
                         chunk_size: int = 2048) -> Generator[Tuple[Any, ...], None, None]:
@@ -216,4 +218,4 @@ def _table_reader_tuple(table: Table, cols: Optional[Union[str, Sequence[str]]] 
         for i in range(row_count):
             yield named_tuple_class._make((j_arrays[j][i] for j in range(len(col_defs))))
 
-    yield from _table_reader_chunk(table, cols, emitter=_emitter, row_set=table.j_table.getRowSet(), chunk_size=chunk_size, prev=False)
+    return _table_reader_chunk(table, cols, emitter=_emitter, row_set=table.j_table.getRowSet(), chunk_size=chunk_size, prev=False)
