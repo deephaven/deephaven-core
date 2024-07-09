@@ -20,8 +20,8 @@ dependencies {
     implementation project(':web-shared-beans')
     implementation project(':web-client-backplane')
 
-    implementation 'com.vertispan.tsdefs:jsinterop-ts-defs-annotations:1.0.0-RC4'
-    typescriptDoclet 'com.vertispan.tsdefs:jsinterop-ts-defs-doclet:1.0.0-RC4'
+    implementation libs.vertispan.ts.defs.annotations
+    typescriptDoclet libs.vertispan.ts.defs.doclet
 
     implementation 'com.vertispan.nio:gwt-nio:1.0-alpha-1'
 
