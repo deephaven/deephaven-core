@@ -45,6 +45,7 @@ mindrot = "0.4"
 nidi = "0.18.1"
 parquet = "1.14.0"
 picocli = "4.6.1"
+postgresql = "42.7.1"
 protobuf = "3.25.3"
 rdblue = "0.1.1"
 slf4j = "2.0.11"
@@ -188,6 +189,8 @@ nidi-graphviz-java = { module = "guru.nidi:graphviz-java", version.ref = "nidi" 
 parquet-hadoop = { module = "org.apache.parquet:parquet-hadoop", version.ref = "parquet" }
 
 picocli = { module = "info.picocli:picocli", version.ref = "picocli" }
+
+postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
 
 protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf" }
 
