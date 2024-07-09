@@ -43,6 +43,7 @@ logback = "1.4.14"
 lz4 = "1.8.0"
 parquet = "1.14.0"
 protobuf = "3.25.3"
+rdblue = "0.1.1"
 slf4j = "2.0.11"
 snappy = "1.1.10.5"
 sslcontext = "8.1.1"
@@ -180,6 +181,8 @@ lz4-java = { module = "org.lz4:lz4-java", version.ref = "lz4" }
 parquet-hadoop = { module = "org.apache.parquet:parquet-hadoop", version.ref = "parquet" }
 
 protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf" }
+
+rdblue-brotli-codec = { module = "com.github.rdblue:brotli-codec", version.ref = "rdblue" }
 
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 slf4j-jul-to-slf4j = { module = "org.slf4j:jul-to-slf4j", version.ref = "slf4j" }
