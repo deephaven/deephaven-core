@@ -58,6 +58,7 @@ squareup = "1.13.0"
 sslcontext = "8.1.1"
 trove = "3.0.3"
 univocity = "2.6.0"
+vertispan-nio = "1.0-alpha-1"
 vertispan-ts-defs = "1.0.0-RC4"
 
 # test versions
@@ -225,6 +226,8 @@ sslcontext-kickstart-netty = { module = "io.github.hakky54:sslcontext-kickstart-
 trove = { module = "net.sf.trove4j:trove4j", version.ref = "trove" }
 
 univocity-parsers = { module = "com.univocity:univocity-parsers", version.ref = "univocity" }
+
+vertispan-nio-gwt = { module = "com.vertispan.nio:gwt-nio", version.ref = "vertispan-nio" }
 
 vertispan-ts-defs-annotations = { module = "com.vertispan.tsdefs:jsinterop-ts-defs-annotations", version.ref = "vertispan-ts-defs" }
 vertispan-ts-defs-doclet = { module = "com.vertispan.tsdefs:jsinterop-ts-defs-doclet", version.ref = "vertispan-ts-defs" }

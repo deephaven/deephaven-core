@@ -23,7 +23,7 @@ dependencies {
     implementation libs.vertispan.ts.defs.annotations
     typescriptDoclet libs.vertispan.ts.defs.doclet
 
-    implementation 'com.vertispan.nio:gwt-nio:1.0-alpha-1'
+    implementation libs.vertispan.nio.gwt
 
     js project(path: ':proto:raw-js-openapi', configuration: 'js')
 
