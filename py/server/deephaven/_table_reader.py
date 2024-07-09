@@ -3,7 +3,7 @@
 #
 """This module supports reading the data in a Deephaven table in a chunked manner."""
 from collections import namedtuple
-from typing import Union, Sequence, Generator, Dict, Optional, Any, Tuple, Callable, TypeVar
+from typing import Union, Sequence, Generator, Dict, Optional, Any, Tuple, Callable, TypeVar, Iterable
 
 import jpy
 import numpy as np
@@ -61,7 +61,7 @@ def _table_reader_all_dict(table: Table, cols: Optional[Union[str, Sequence[str]
 
 
 def _table_reader_chunk(table: Table, cols: Optional[Union[str, Sequence[str]]] = None, *,
-                        emitter: Callable[[Sequence[Column], jpy.JType], Generator[T, None, None]], row_set: jpy.JType,
+                        emitter: Callable[[Sequence[Column], jpy.JType], Iterable[T]], row_set: jpy.JType,
                         chunk_size: int = 2048, prev: bool = False) \
         -> Generator[T, None, None]:
     """ A generator that reads the chunks of rows over the given row set of a table into a dictionary. The dictionary is
@@ -77,6 +77,7 @@ def _table_reader_chunk(table: Table, cols: Optional[Union[str, Sequence[str]]] 
         prev (bool): If True, read the previous values. Default is False.
 
     Returns:
+
         A generator that yields a dictionary of column names to numpy arrays or Java arrays.
 
     Raises:
@@ -120,7 +121,7 @@ def _table_reader_chunk_dict(table: Table, cols: Optional[Union[str, Sequence[st
     Raises:
         ValueError
     """
-    def _emitter(col_defs, j_array) -> Generator[Dict[str, np.ndarray], None, None]:
+    def _emitter(col_defs: Sequence[Column], j_array: jpy.JType) -> Generator[Dict[str, np.ndarray], None, None]:
         yield {col_def.name: _column_to_numpy_array(col_def, j_array[i]) for i, col_def in enumerate(col_defs)}
 
     return _table_reader_chunk(table, cols, emitter=_emitter, row_set=row_set, chunk_size=chunk_size, prev=prev)
@@ -154,8 +155,8 @@ def _table_reader_chunk_tuple(table: Table, cols: Optional[Union[str, Sequence[s
     """
     named_tuple_class = namedtuple(tuple_name, cols or [col.name for col in table.columns], rename=False)
 
-    def _emitter(col_defs, j_array) -> Generator[Tuple[np.ndarray, ...], None, None]:
-        yield named_tuple_class._make((_column_to_numpy_array(col_def, j_array[i]) for i, col_def in enumerate(col_defs)))
+    def _emitter(col_defs: Sequence[Column], j_array: jpy.JType) -> Generator[Tuple[np.ndarray], None, None]:
+        yield named_tuple_class._make([_column_to_numpy_array(col_def, j_array[i]) for i, col_def in enumerate(col_defs)])
 
     return _table_reader_chunk(table, cols, emitter=_emitter, row_set=table.j_table.getRowSet(), chunk_size=chunk_size, prev=False)
 
@@ -176,11 +177,10 @@ def _table_reader_dict(table: Table, cols: Optional[Union[str, Sequence[str]]] =
     Raises:
         ValueError
     """
-    def _emitter(col_defs, j_array) -> Generator[Dict[str, Any], None, None]:
-        row_count = len(j_array[0])
-        j_arrays = [j_array[j] for j, col_def in enumerate(col_defs)]
-        for i in range(row_count):
-            yield {col_def.name: j_arrays[j][i] for j, col_def in enumerate(col_defs)}
+    def _emitter(col_defs: Sequence[Column], j_array: jpy.JType) -> Iterable[dict[str, Any]]:
+        make_dict = lambda values: {col_def.name: value for col_def, value in zip(col_defs, values)}
+        mvs = [memoryview(j_array[i]) if col_def.data_type.is_primitive else j_array[i] for i, col_def in enumerate(col_defs)]
+        return map(make_dict, zip(*mvs))
 
     return _table_reader_chunk(table, cols, emitter=_emitter, row_set=table.j_table.getRowSet(), chunk_size=chunk_size, prev=False)
 
@@ -212,10 +212,8 @@ def _table_reader_tuple(table: Table, cols: Optional[Union[str, Sequence[str]]] 
     """
     named_tuple_class = namedtuple(tuple_name, cols or [col.name for col in table.columns], rename=False)
 
-    def _emitter(col_defs, j_array) -> Generator[Tuple[Any, ...], None, None]:
-        row_count = len(j_array[0])
-        j_arrays = [j_array[j] for j, col_def in enumerate(col_defs)]
-        for i in range(row_count):
-            yield named_tuple_class._make((j_arrays[j][i] for j in range(len(col_defs))))
+    def _emitter(col_defs: Sequence[Column], j_array: jpy.JType) -> Iterable[Tuple[Any, ...]]:
+        mvs = [memoryview(j_array[i]) if col_def.data_type.is_primitive else j_array[i] for i, col_def in enumerate(col_defs)]
+        return map(named_tuple_class._make, zip(*mvs))
 
     return _table_reader_chunk(table, cols, emitter=_emitter, row_set=table.j_table.getRowSet(), chunk_size=chunk_size, prev=False)
