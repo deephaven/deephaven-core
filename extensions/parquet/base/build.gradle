@@ -17,8 +17,8 @@ dependencies {
     implementation project(':Configuration')
     implementation project(':DataStructures')
     implementation project(':codec-base')
-    implementation depCommonsIo
+    implementation libs.commons.io
 
-    compileOnly depAnnotations
+    compileOnly libs.jetbrains.annotations
     testImplementation libs.junit4
 }

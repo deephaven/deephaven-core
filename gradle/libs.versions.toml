@@ -5,7 +5,11 @@ avro = "1.11.3"
 awssdk = "2.24.5"
 # See dependency matrix for particular gRPC versions at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty
 boringssl = "2.0.61.Final"
-commons = "1.10.0"
+commons-compress = "1.26.0"
+commons-io = "2.11.0"
+commons-lang3 = "3.12.0"
+commons-math3 = "3.6.1"
+commons-text = "1.10.0"
 dagger = "2.44"
 elemental = "1.2.1"
 flatbuffers = "1.12.0"
@@ -20,8 +24,11 @@ hadoop = "3.4.0"
 iceberg = "1.5.2"
 immutables = "2.9.2"
 jackson = "2.17.0"
+jama = "1.1.1"
 javaparser = "3.23.0"
 javax-validation = "1.0.0.GA"
+jdom2 = "2.0.6.1"
+jetbrains = "24.0.0"
 jetty = "11.0.20"
 jsinterop = "2.0.2"
 # google is annoying, and have different versions released for the same groupId
@@ -31,6 +38,8 @@ parquet = "1.14.0"
 protobuf = "3.25.3"
 slf4j = "2.0.11"
 sslcontext = "8.1.1"
+trove = "3.0.3"
+univocity = "2.6.0"
 
 # test versions
 assertj = "3.19.0"
@@ -60,7 +69,15 @@ awssdk-sts = { module = "software.amazon.awssdk:sts" }
 
 boringssl = { module = "io.netty:netty-tcnative-boringssl-static", version.ref = "boringssl" }
 
-commons-text = { module = "org.apache.commons:commons-text", version.ref = "commons" }
+commons-compress = { module = "org.apache.commons:commons-compress", version.ref = "commons-compress" }
+
+commons-io = { module = "commons-io:commons-io", version.ref = "commons-io" }
+
+commons-lang3 = { module = "org.apache.commons:commons-lang3", version.ref = "commons-lang3" }
+
+commons-math3 = { module = "org.apache.commons:commons-math3", version.ref = "commons-math3" }
+
+commons-text = { module = "org.apache.commons:commons-text", version.ref = "commons-text" }
 
 dagger = { module = "com.google.dagger:dagger", version.ref = "dagger" }
 dagger-compiler = { module = "com.google.dagger:dagger-compiler", version.ref = "dagger" }
@@ -112,9 +129,15 @@ jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind" }
 jackson-dataformat-yaml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml" }
 jackson-datatype-jdk8 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jdk8" }
 
+jama = { module = "gov.nist.math.jama:gov.nist.math.jama", version.ref = "jama" }
+
 javaparser-core = { module = "com.github.javaparser:javaparser-core", version.ref = "javaparser" }
 
 javax-validation-api = { module = "javax.validation:validation-api", version.ref = "javax-validation" }
+
+jdom2 = { module = "org.jdom:jdom2", version.ref = "jdom2" }
+
+jetbrains-annotations = { module = "org.jetbrains:annotations", version.ref = "jetbrains" }
 
 jetty-alpn-java-server = { module = "org.eclipse.jetty:jetty-alpn-java-server" }
 jetty-alpn-server = { module = "org.eclipse.jetty:jetty-alpn-server" }
@@ -141,6 +164,10 @@ slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
 sslcontext-kickstart = { module = "io.github.hakky54:sslcontext-kickstart", version.ref = "sslcontext" }
 sslcontext-kickstart-jetty = { module = "io.github.hakky54:sslcontext-kickstart-for-jetty", version.ref = "sslcontext" }
 sslcontext-kickstart-netty = { module = "io.github.hakky54:sslcontext-kickstart-for-netty", version.ref = "sslcontext" }
+
+trove = { module = "net.sf.trove4j:trove4j", version.ref = "trove" }
+
+univocity-parsers = { module = "com.univocity:univocity-parsers", version.ref = "univocity" }
 
 # test libraries
 assertj = { module = "org.assertj:assertj-core", version.ref = "assertj" }

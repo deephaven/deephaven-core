@@ -32,13 +32,14 @@ dependencies {
     implementation project(':extensions-csv')
     implementation project(':log-factory')
     implementation project(':Configuration')
-    implementation depCommonsLang3
+    implementation libs.commons.lang3
     implementation project(':Util')
     implementation project(':codec-base')
     implementation project(':codec-builtin')
     implementation project(':codec-cache')
 
     implementation libs.commons.text
+    implementation libs.commons.compress
 
     implementation platform(libs.jackson.bom)
     implementation libs.jackson.dataformat.yaml

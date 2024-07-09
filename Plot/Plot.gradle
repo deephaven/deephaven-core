@@ -3,19 +3,15 @@ plugins {
     id 'java-library'
 }
 
-configurations {
-    implementation.extendsFrom dhPlot
-
-    testImplementation.extendsFrom fishIoTest
-}
-
 dependencies {
 
     api project(':engine-api')
+    implementation project(':Base')
     implementation project(':engine-table')
     implementation project(':engine-function')
     implementation project(':engine-tuple')
     implementation project(':log-factory')
+    implementation project(':Configuration')
 
     api libs.groovy
     implementation libs.groovy.json
@@ -25,9 +21,11 @@ dependencies {
     compileOnly 'javax.inject:javax.inject:1'
 
     implementation libs.guava
+    implementation libs.commons.lang3
 
     testImplementation project(':engine-test-utils')
     testImplementation TestTools.projectDependency(project, 'engine-time')
+    testImplementation project(path: ':Base', configuration: 'tests')
 
     testRuntimeOnly project(':configs')
     testRuntimeOnly project(':test-configs')
