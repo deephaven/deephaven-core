@@ -28,6 +28,7 @@ f4b6a3 = "5.2.0"
 flatbuffers = "1.12.0"
 freemarker = "2.3.31"
 google-findbugs = "3.0.2"
+google-java-allocation-instrumenter = "3.3.0"
 groovy = "3.0.21"
 # Only bump this in concert with boringssl
 grpc = "1.58.0"
@@ -154,6 +155,8 @@ flatbuffers-java = { module = "com.google.flatbuffers:flatbuffers-java", version
 freemarker = { module = "org.freemarker:freemarker", version.ref = "freemarker" }
 
 google-findbugs-jsr305 = { module = "com.google.code.findbugs:jsr305", version.ref = "google-findbugs" }
+
+google-java-allocation-instrumenter = { module = "com.google.code.java-allocation-instrumenter:java-allocation-instrumenter", version.ref = "google-java-allocation-instrumenter"}
 
 groovy = { module = "org.codehaus.groovy:groovy", version.ref = "groovy" }
 groovy-json = { module = "org.codehaus.groovy:groovy-json", version.ref = "groovy" }
