@@ -457,14 +457,15 @@ public class IcebergCatalogAdapter {
         final Set<String> takenNames = new HashSet<>();
 
         // Map all the column names in the schema to their legalized names.
-        final Map<String,String> legalizedColumnRenames = new HashMap<>();
+        final Map<String, String> legalizedColumnRenames = new HashMap<>();
 
         // Validate user-supplied names meet legalization requirements
-        for (final Map.Entry<String,String> entry : userInstructions.columnRenames().entrySet()) {
+        for (final Map.Entry<String, String> entry : userInstructions.columnRenames().entrySet()) {
             final String destinationName = entry.getValue();
             if (!NameValidator.isValidColumnName(destinationName)) {
                 throw new TableDataException(
-                        String.format("%s:%d - invalid column name provided (%s)", table, snapshot.snapshotId(), destinationName));
+                        String.format("%s:%d - invalid column name provided (%s)", table, snapshot.snapshotId(),
+                                destinationName));
             }
             // Add these renames to the legalized list.
             legalizedColumnRenames.put(entry.getKey(), destinationName);
@@ -475,8 +476,8 @@ public class IcebergCatalogAdapter {
             final String name = field.name();
             // Do we already have a valid rename for this column from the user or a partitioned column?
             if (!legalizedColumnRenames.containsKey(name)) {
-                final String legalizedName
-                        = NameValidator.legalizeColumnName(name, s -> s.replace(" ", "_"), takenNames);
+                final String legalizedName =
+                        NameValidator.legalizeColumnName(name, s -> s.replace(" ", "_"), takenNames);
                 if (!legalizedName.equals(name)) {
                     legalizedColumnRenames.put(name, legalizedName);
                     takenNames.add(legalizedName);

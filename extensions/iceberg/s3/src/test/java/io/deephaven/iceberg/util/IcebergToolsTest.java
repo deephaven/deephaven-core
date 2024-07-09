@@ -552,7 +552,8 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testOpenTableColumnLegalizationRename() throws ExecutionException, InterruptedException, TimeoutException {
+    public void testOpenTableColumnLegalizationRename()
+            throws ExecutionException, InterruptedException, TimeoutException {
         uploadParquetFiles(new File(IcebergToolsTest.class.getResource("/warehouse/sales/sales_renamed").getPath()),
                 warehousePath);
 
@@ -580,7 +581,8 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testOpenTableColumnLegalizationPartitionException() throws ExecutionException, InterruptedException, TimeoutException {
+    public void testOpenTableColumnLegalizationPartitionException()
+            throws ExecutionException, InterruptedException, TimeoutException {
         final TableDefinition tableDef = TableDefinition.of(
                 ColumnDefinition.ofInt("Year").withPartitioning(),
                 ColumnDefinition.ofInt("Month").withPartitioning());
