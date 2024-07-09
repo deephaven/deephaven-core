@@ -19,6 +19,7 @@ deephaven-csv = "0.12.0"
 deephaven-hash = "0.1.0"
 deephaven-suan-shu = "0.1.0"
 dev-dirs = "26"
+dsi = "8.5.13"
 elemental = "1.2.1"
 flatbuffers = "1.12.0"
 freemarker = "2.3.31"
@@ -129,6 +130,8 @@ deephaven-hash = { module = "io.deephaven:hash", version.ref = "deephaven-hash" 
 deephaven-suan-shu = { module = "io.deephaven:SuanShu", version.ref = "deephaven-suan-shu" }
 
 dev-dirs-directories = { module = "dev.dirs:directories", version.ref = "dev-dirs" }
+
+dsi-fastutil = { module = "it.unimi.dsi:fastutil", version.ref = "dsi" }
 
 elemental-core = { module = "com.google.elemental2:elemental2-core", version.ref = "elemental" }
 

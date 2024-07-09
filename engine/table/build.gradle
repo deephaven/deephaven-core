@@ -34,7 +34,7 @@ dependencies {
     implementation libs.tdunning.t.digest
     implementation libs.squareup.javapoet
     implementation libs.classgraph
-    implementation 'it.unimi.dsi:fastutil:8.5.13'
+    implementation libs.dsi.fastutil
 
     implementation project(':plugin')
     implementation libs.commons.lang3
