@@ -10,7 +10,7 @@ dependencies {
     api project(':extensions-barrage')
     implementation project(':log-factory')
 
-    compileOnly 'javax.inject:javax.inject:1'
+    compileOnly libs.javax.inject
 
     compileOnly project(':util-immutables')
     annotationProcessor libs.immutables

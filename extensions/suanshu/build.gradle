@@ -7,7 +7,7 @@ dependencies {
     compileOnly project(':Base')
     compileOnly project(':engine-table')
 
-    compileOnly 'javax.inject:javax.inject:1'
+    compileOnly libs.javax.inject
 
     api libs.deephaven.suan.shu
 

@@ -26,7 +26,7 @@ dependencies {
 
   compileOnly libs.autoservice
   annotationProcessor libs.autoservice.compiler
-  compileOnly 'javax.inject:javax.inject:1'
+  compileOnly libs.javax.inject
 
   testImplementation platform(libs.junit.bom)
   testImplementation libs.junit.jupiter

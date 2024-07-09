@@ -31,6 +31,7 @@ immutables = "2.9.2"
 jackson = "2.17.0"
 jama = "1.1.1"
 javaparser = "3.23.0"
+javax-inject = "1"
 javax-validation = "1.0.0.GA"
 jdom2 = "2.0.6.1"
 jetbrains = "24.0.0"
@@ -158,6 +159,8 @@ jackson-datatype-jdk8 = { module = "com.fasterxml.jackson.datatype:jackson-datat
 jama = { module = "gov.nist.math.jama:gov.nist.math.jama", version.ref = "jama" }
 
 javaparser-core = { module = "com.github.javaparser:javaparser-core", version.ref = "javaparser" }
+
+javax-inject = { module = "javax.inject:javax.inject", version.ref = "javax-inject" }
 
 javax-validation-api = { module = "javax.validation:validation-api", version.ref = "javax-validation" }
 

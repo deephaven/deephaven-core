@@ -35,7 +35,7 @@ dependencies {
   // downstream classpaths
   compileOnly libs.arrow.flight.core
 
-  compileOnly 'javax.inject:javax.inject:1'
+  compileOnly libs.javax.inject
   compileOnly "javax.annotation:javax.annotation-api:1.3.1"
 
   // technically we should have a runtime dependency on barrage-core, but instead we are regenerating
