@@ -299,37 +299,36 @@ public class ByteBufferInputStream extends InputStream implements DataInput {
 
     @Override
     public String readUTF() throws IOException {
-        throw new UnsupportedOperationException("readUTF");
-        // int length = 0;
-        // int total = readUnsignedShort();
-        //
-        // final char[] chars = new char[total];
-        //
-        // while (total > 0) {
-        // final int b1 = buf.get();
-        // if ((b1 & 0x80) == 0) {
-        // chars[length++] = (char) (b1 & 0xff);
-        // total--;
-        // } else if ((b1 & 0xe0) == 0xc0) {
-        // final int b2 = buf.get();
-        // if ((b2 & 0xc0) != 0x80) {
-        // throw new UTFDataFormatException("malformed second byte " + b2);
-        // }
-        // chars[length++] = (char) (((b1 & 0x1F) << 6) | (b2 & 0x3F));
-        // total -= 2;
-        // } else if ((b1 & 0xf0) == 0xe0) {
-        // final int b2 = buf.get();
-        // final int b3 = buf.get();
-        // if ((b2 & 0xc0) != 0x80 || (b3 & 0xc0) != 0x80) {
-        // throw new UTFDataFormatException("malformed second byte " + b2 + " or third byte " + b3);
-        // }
-        // chars[length++] = (char) (((b1 & 0x0F) << 12) | ((b2 & 0x3F) << 6) | (b3 & 0x3F));
-        // total -= 3;
-        // } else {
-        // throw new UTFDataFormatException("malformed first byte " + b1);
-        // }
-        // }
-        //
-        // return new String(chars, 0, length);
+        int length = 0;
+        int total = readUnsignedShort();
+
+        final char[] chars = new char[total];
+
+        while (total > 0) {
+            final int b1 = buf.get();
+            if ((b1 & 0x80) == 0) {
+                chars[length++] = (char) (b1 & 0xff);
+                total--;
+            } else if ((b1 & 0xe0) == 0xc0) {
+                final int b2 = buf.get();
+                if ((b2 & 0xc0) != 0x80) {
+                    throw new UTFDataFormatException("malformed second byte " + b2);
+                }
+                chars[length++] = (char) (((b1 & 0x1F) << 6) | (b2 & 0x3F));
+                total -= 2;
+            } else if ((b1 & 0xf0) == 0xe0) {
+                final int b2 = buf.get();
+                final int b3 = buf.get();
+                if ((b2 & 0xc0) != 0x80 || (b3 & 0xc0) != 0x80) {
+                    throw new UTFDataFormatException("malformed second byte " + b2 + " or third byte " + b3);
+                }
+                chars[length++] = (char) (((b1 & 0x0F) << 12) | ((b2 & 0x3F) << 6) | (b3 & 0x3F));
+                total -= 3;
+            } else {
+                throw new UTFDataFormatException("malformed first byte " + b1);
+            }
+        }
+
+        return new String(chars, 0, length);
     }
 }
