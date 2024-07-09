@@ -18,7 +18,7 @@ dependencies {
 
     compileOnly libs.jetbrains.annotations
 
-    runtimeOnly('org.lz4:lz4-java:1.8.0') {
+    runtimeOnly(libs.lz4.java) {
         // also consider lz4-pure-java to avoid native code
         because 'hadoop-common required dependency for LZ4Codec'
     }
