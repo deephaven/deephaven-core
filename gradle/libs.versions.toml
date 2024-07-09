@@ -34,6 +34,7 @@ hdrhistogram = "2.1.12"
 iceberg = "1.5.2"
 immutables = "2.9.2"
 jackson = "2.17.0"
+jakarta-websocket = "2.0.0"
 jama = "1.1.1"
 javaparser = "3.23.0"
 javax-annotation = "1.3.1"
@@ -177,6 +178,8 @@ jackson-core = { module = "com.fasterxml.jackson.core:jackson-core" }
 jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind" }
 jackson-dataformat-yaml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml" }
 jackson-datatype-jdk8 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jdk8" }
+
+jakarta-websocket-api = { module = "jakarta.websocket:jakarta.websocket-api", version.ref = "jakarta-websocket" }
 
 jama = { module = "gov.nist.math.jama:gov.nist.math.jama", version.ref = "jama" }
 

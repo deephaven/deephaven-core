@@ -10,7 +10,7 @@ dependencies {
     implementation 'jakarta.servlet:jakarta.servlet-api:5.0.0'
 
 //    compileOnly 'javax.websocket:javax.websocket-api:1.1'
-    implementation 'jakarta.websocket:jakarta.websocket-api:2.0.0'
+    implementation libs.jakarta.websocket.api
 
     implementation libs.guava
 }
