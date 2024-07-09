@@ -43,6 +43,7 @@ logback = "1.4.14"
 lz4 = "1.8.0"
 nidi = "0.18.1"
 parquet = "1.14.0"
+picocli = "4.6.1"
 protobuf = "3.25.3"
 rdblue = "0.1.1"
 slf4j = "2.0.11"
@@ -182,6 +183,8 @@ lz4-java = { module = "org.lz4:lz4-java", version.ref = "lz4" }
 nidi-graphviz-java = { module = "guru.nidi:graphviz-java", version.ref = "nidi" }
 
 parquet-hadoop = { module = "org.apache.parquet:parquet-hadoop", version.ref = "parquet" }
+
+picocli = { module = "info.picocli:picocli", version.ref = "picocli" }
 
 protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "protobuf" }
 
