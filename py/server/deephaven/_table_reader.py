@@ -105,7 +105,7 @@ def _table_reader_chunk(table: Table, cols: Optional[Union[str, Sequence[str]]] 
 def _table_reader_chunk_dict(table: Table, cols: Optional[Union[str, Sequence[str]]] = None, *, row_set: jpy.JType,
                                     chunk_size: int = 2048, prev: bool = False) \
         -> Generator[Dict[str, np.ndarray], None, None]:
-    """ A generator that reads the chunks of rows over the given row set of a table into a dictionary. The dictionary is
+    """ Returns a generator that reads one chunk of rows at a time from the table into a dictionary. The dictionary is
     a map of column names to numpy arrays or Java arrays.
 
     Args:
