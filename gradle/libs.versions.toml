@@ -82,6 +82,7 @@ jmock = "2.12.0"
 junit = "5.7.2"
 junit4 = "4.13.2"
 testcontainers = "1.19.4"
+jmh = "1.35"
 
 [libraries]
 airlift-aircompressor = { module = "io.airlift:aircompressor", version.ref = "airlift"}
@@ -279,6 +280,9 @@ vertispan-ts-defs-doclet = { module = "com.vertispan.tsdefs:jsinterop-ts-defs-do
 
 # test libraries
 assertj = { module = "org.assertj:assertj-core", version.ref = "assertj" }
+
+jmh-core = { module = "org.openjdk.jmh:jmh-core", version.ref = "jmh" }
+jmh-generator-annprocess = { module = "org.openjdk.jmh:jmh-generator-annprocess", version.ref = "jmh" }
 
 jmock-imposters = { module = "org.jmock:jmock-imposters", version.ref = "jmock" }
 jmock-junit4 = { module = "org.jmock:jmock-junit4", version.ref = "jmock" }

@@ -118,7 +118,7 @@ tasks.testOutOfBand.maxHeapSize = maxHeapSize
 tasks.test.maxHeapSize = maxHeapSize
 
 jmh {
-    jmhVersion = '1.35'
+    jmhVersion = libs.versions.jmh.get()
 }
 
 // No need to assemble the jar by default on build
