@@ -167,9 +167,6 @@ public final class NullValueColumnSource<T> extends AbstractColumnSource<T>
     }
 
     @Override
-    public void shift(long start, long end, long offset) {}
-
-    @Override
     public boolean isImmutable() {
         return true;
     }

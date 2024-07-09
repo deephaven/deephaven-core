@@ -78,11 +78,6 @@ public abstract class NanosBasedTimeArraySource<TIME_TYPE> extends AbstractColum
     public final long getAndSetUnsafe(long rowKey, long newValue) {
         return nanoSource.getAndSetUnsafe(rowKey, newValue);
     }
-
-    @Override
-    public void shift(long start, long end, long offset) {
-        nanoSource.shift(start, end, offset);
-    }
     // endregion
 
     // region ArraySource impl

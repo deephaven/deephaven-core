@@ -25,9 +25,6 @@ public abstract class SingleValueColumnSource<T> extends AbstractColumnSource<T>
         isTrackingPrevValues = true;
     }
 
-    @Override
-    public void shift(long start, long end, long offset) {}
-
     public static <T> SingleValueColumnSource<T> getSingleValueColumnSource(Class<T> type) {
         SingleValueColumnSource<?> result;
         if (type == Byte.class || type == byte.class) {

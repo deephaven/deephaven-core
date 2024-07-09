@@ -60,9 +60,6 @@ public abstract class ImmutableConstantNanosBasedTimeSource<TIME_TYPE> extends A
     public long getPrevLong(long rowKey) {
         return nanoSource.getPrevLong(rowKey);
     }
-
-    @Override
-    public final void shift(final long start, final long end, final long offset) {}
     // endregion
 
     // region Chunking

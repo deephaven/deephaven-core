@@ -18,10 +18,11 @@ import org.jetbrains.annotations.NotNull;
 import java.io.Serializable;
 
 /**
- * A set of sorted shifts. To apply shifts without losing data, use {@link RowSetShiftData#apply(Callback)}. The
- * callback will be invoked with shifts in an order that will preserve data when applied immediately using memmove
- * semantics. Internally the shifts are ordered by rangeStart. The {@link RowSetShiftData.Builder} will verify that no
- * two ranges overlap before or after shifting and assert that the constructed {@code RowSetShiftData} will be valid.
+ * A set of sorted shifts. To apply shifts without losing data, use
+ * {@link RowSetShiftData#apply(RowKeyRangeShiftCallback)}. The callback will be invoked with shifts in an order that
+ * will preserve data when applied immediately using memmove semantics. Internally the shifts are ordered by rangeStart.
+ * The {@link RowSetShiftData.Builder} will verify that no two ranges overlap before or after shifting and assert that
+ * the constructed {@code RowSetShiftData} will be valid.
  */
 public final class RowSetShiftData implements Serializable, LogOutputAppendable {
 
@@ -224,8 +225,12 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      */
     public static final RowSetShiftData EMPTY = new RowSetShiftData();
 
+    /**
+     * Functional interface to pass to {@link RowSetShiftData#apply(RowKeyRangeShiftCallback)} or
+     * {@link RowSetShiftData#unapply(RowKeyRangeShiftCallback)} to get information about each shift recorded.
+     */
     @FunctionalInterface
-    public interface Callback {
+    public interface RowKeyRangeShiftCallback {
         /**
          * Process the shift.
          *
@@ -243,7 +248,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      *
      * @param shiftCallback the callback that will process all shifts
      */
-    public void apply(final Callback shiftCallback) {
+    public void apply(final RowKeyRangeShiftCallback shiftCallback) {
         final int polaritySwapSize = polaritySwapIndices.size();
         for (int idx = 0; idx < polaritySwapSize; ++idx) {
             int start = (idx == 0) ? 0 : polaritySwapIndices.get(idx - 1);
@@ -267,7 +272,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      *
      * @param shiftCallback the callback that will process all reverse shifts
      */
-    public void unapply(final Callback shiftCallback) {
+    public void unapply(final RowKeyRangeShiftCallback shiftCallback) {
         final int polaritySwapSize = polaritySwapIndices.size();
         for (int idx = 0; idx < polaritySwapSize; ++idx) {
             int start = (idx == 0) ? 0 : polaritySwapIndices.get(idx - 1);

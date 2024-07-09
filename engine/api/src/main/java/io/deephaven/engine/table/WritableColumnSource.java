@@ -68,15 +68,6 @@ public interface WritableColumnSource<T> extends ColumnSource<T>, ChunkSink<Valu
      */
     void ensureCapacity(long capacity, boolean nullFilled);
 
-    /**
-     * Shifts the column values in the source in the given range by the provided offset.
-     *
-     * @param start The first key to move by the specified offset
-     * @param end The last key to move by the specified offset
-     * @param offset The offset to move each key by
-     */
-    void shift(long start, long end, long offset);
-
     // WritableColumnSource provides a slow, default implementation of fillFromChunk. Inheritors who care should provide
     // something more efficient.
 
