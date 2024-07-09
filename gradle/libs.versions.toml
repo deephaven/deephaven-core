@@ -11,6 +11,7 @@ commons-lang3 = "3.12.0"
 commons-math3 = "3.6.1"
 commons-text = "1.10.0"
 dagger = "2.44"
+deephaven-hash = "0.1.0"
 elemental = "1.2.1"
 flatbuffers = "1.12.0"
 groovy = "3.0.21"
@@ -81,6 +82,8 @@ commons-text = { module = "org.apache.commons:commons-text", version.ref = "comm
 
 dagger = { module = "com.google.dagger:dagger", version.ref = "dagger" }
 dagger-compiler = { module = "com.google.dagger:dagger-compiler", version.ref = "dagger" }
+
+deephaven-hash = { module = "io.deephaven:hash", version.ref = "deephaven-hash" }
 
 elemental-core = { module = "com.google.elemental2:elemental2-core", version.ref = "elemental" }
 
