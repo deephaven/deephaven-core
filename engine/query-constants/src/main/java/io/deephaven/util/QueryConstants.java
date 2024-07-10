@@ -187,7 +187,13 @@ public class QueryConstants {
     /**
      * Minimum finite value of type float.
      */
-    public static final float MIN_FINITE_FLOAT = Math.nextUp(-Float.MAX_VALUE);
+    /*
+     * Implemented as a constant, so that it can be translated correctly to JS, without needing a proper Math.nextUp()
+     * or nextAfter() implementation that works in JavaScript. Value is generated through running
+     * "Float.toHexString(Math.nextUp(-Float.MAX_VALUE))" in jshell, and tests will validate that this matches the
+     * expected expression.
+     */
+    public static final float MIN_FINITE_FLOAT = -0x1.fffffcp127f;
 
     /**
      * Maximum finite value of type float.
@@ -241,7 +247,13 @@ public class QueryConstants {
     /**
      * Minimum finite value of type double.
      */
-    public static final double MIN_FINITE_DOUBLE = Math.nextUp(-Double.MAX_VALUE);
+    /*
+     * Implemented as a constant, so that it can be translated correctly to JS, without needing a proper Math.nextUp()
+     * or nextAfter() implementation that works in JavaScript. Value is generated through running
+     * "Double.toHexString(Math.nextUp(-Double.MAX_VALUE))" in jshell, and tests will validate that this matches the
+     * expected expression.
+     */
+    public static final double MIN_FINITE_DOUBLE = -0x1.ffffffffffffep1023;
 
     /**
      * Maximum finite value of type double.
