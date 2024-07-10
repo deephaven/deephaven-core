@@ -11,11 +11,21 @@ public class QueryConstantsTest {
 
     @Test
     public void testMinFiniteFloat() {
-        assertEquals(Math.nextUp(-Float.MAX_VALUE), QueryConstants.MIN_FINITE_FLOAT, 0);
+        final float calculated = Math.nextUp(-Float.MAX_VALUE);
+        // noinspection SimplifiableAssertion
+        assertTrue(calculated == QueryConstants.MIN_FINITE_FLOAT);
+        assertEquals(
+                Float.floatToIntBits(calculated),
+                Float.floatToIntBits(QueryConstants.MIN_FINITE_FLOAT));
     }
 
     @Test
     public void testMinFiniteDouble() {
-        assertEquals(Math.nextUp(-Double.MAX_VALUE), QueryConstants.MIN_FINITE_DOUBLE, 0);
+        final double calculated = Math.nextUp(-Double.MAX_VALUE);
+        // noinspection SimplifiableAssertion
+        assertTrue(calculated == QueryConstants.MIN_FINITE_DOUBLE);
+        assertEquals(
+                Double.doubleToLongBits(calculated),
+                Double.doubleToLongBits(QueryConstants.MIN_FINITE_DOUBLE));
     }
 }
