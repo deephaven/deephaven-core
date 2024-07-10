@@ -4,7 +4,7 @@
 package io.deephaven.parquet.compress;
 
 import io.deephaven.io.streams.ByteBufferInputStream;
-import io.deephaven.util.SafeCloseable;
+import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 
@@ -12,8 +12,6 @@ import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.util.function.BiFunction;
-import java.util.function.Supplier;
 
 /**
  * This is the default adapter for LZ4 files. It attempts to decompress with LZ4 and falls back to LZ4_RAW on failure.
@@ -53,7 +51,7 @@ class LZ4WithLZ4RawBackupCompressorAdapter extends DeephavenCompressorAdapterFac
             return lz4RawAdapter.decompress(inputStream, compressedSize, uncompressedSize, decompressorCache);
         }
         // Buffer input data in case we need to retry with LZ4_RAW.
-        final BufferedInputStream bufferedInputStream = new BufferedInputStream(inputStream, compressedSize);
+        final BufferedInputStream bufferedInputStream = IOUtils.buffer(inputStream, compressedSize);
         bufferedInputStream.mark(compressedSize);
         try {
             // Try to decompress the bytes with LZ4 first.
