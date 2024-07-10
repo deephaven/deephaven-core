@@ -21,7 +21,7 @@ import java.util.Arrays;
  * An efficient reader for a Python table listener to extract columnar data based on the {@link RowSequence} in the
  * {@link TableUpdate}
  */
-public class PythonListenerTableUpdateDataReader {
+public class PythonTableDataReader {
 
     /**
      * Factory method for instance of {@link Context}
