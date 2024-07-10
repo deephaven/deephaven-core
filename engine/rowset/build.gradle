@@ -8,16 +8,16 @@ description 'Engine RowSets: Data structures for working with row keys'
 dependencies {
     api project(':engine-chunk')
     api project(':Base')
-    api depTrove3
+    api libs.trove
 
     implementation project(':Container')
     implementation project(':engine-context')
     implementation project(':engine-updategraph')
     implementation project(':Configuration')
-    implementation depCommonsLang3
+    implementation libs.commons.lang3
 
-    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
-    compileOnly depAnnotations
+    compileOnly libs.google.findbugs.jsr305
+    compileOnly libs.jetbrains.annotations
 
     testImplementation libs.junit4
 

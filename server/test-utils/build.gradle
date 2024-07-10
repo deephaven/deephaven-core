@@ -13,14 +13,14 @@ dependencies {
     implementation project(':proto:proto-backplane-grpc-flight')
     implementation project(':extensions-barrage')
     implementation project(':test-configs')
-    implementation depCommonsLang3
+    implementation libs.commons.lang3
     api project(':engine-test-utils')
 
     api platform(libs.grpc.bom)
     api libs.grpc.testing
 
     compileOnly project(':util-immutables')
-    annotationProcessor libs.immutables
+    annotationProcessor libs.immutables.value
 
     implementation libs.arrow.flight.core
 

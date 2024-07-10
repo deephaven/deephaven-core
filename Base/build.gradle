@@ -7,11 +7,11 @@ dependencies {
 
     api project(':clock')
 
-    implementation depTrove3
-    compileOnlyApi depAnnotations
-    implementation depCommonsLang3
+    implementation libs.trove
+    compileOnlyApi libs.jetbrains.annotations
+    implementation libs.commons.lang3
 
-    api 'io.deephaven:hash:0.1.0'
+    api libs.deephaven.hash
 
     testImplementation libs.junit4
     testImplementation libs.jmock.junit4

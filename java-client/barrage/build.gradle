@@ -3,11 +3,6 @@ plugins {
     id 'io.deephaven.project.register'
 }
 
-configurations {
-    implementation.extendsFrom irisDb
-    testImplementation.extendsFrom irisDbTest
-}
-
 description = 'The Deephaven Barrage Client'
 
 dependencies {
@@ -15,10 +10,10 @@ dependencies {
     api project(':extensions-barrage')
     implementation project(':log-factory')
 
-    compileOnly 'javax.inject:javax.inject:1'
+    compileOnly libs.javax.inject
 
     compileOnly project(':util-immutables')
-    annotationProcessor libs.immutables
+    annotationProcessor libs.immutables.value
 
     implementation libs.slf4j.api
     testRuntimeOnly libs.slf4j.simple

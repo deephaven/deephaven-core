@@ -3,11 +3,6 @@ plugins {
     id 'io.deephaven.project.register'
 }
 
-configurations {
-    implementation.extendsFrom irisDb
-    testImplementation.extendsFrom irisDbTest
-}
-
 description = 'An extension integrating Barrage with Deephaven\'s Table Model'
 
 dependencies {
@@ -15,13 +10,13 @@ dependencies {
     implementation project(':Util')
     implementation project(':Configuration')
     implementation project(':util-function')
-    implementation depCommonsLang3
+    implementation libs.commons.lang3
 
     api project(':engine-table')
     implementation project(':proto:proto-backplane-grpc-flight')
     implementation project(':log-factory')
-    api 'io.deephaven.barrage:barrage-format:0.6.0'
-    implementation 'org.hdrhistogram:HdrHistogram:2.1.12'
+    api libs.deephaven.barrage.format
+    implementation libs.hdrhistogram
 
     implementation libs.flatbuffers.java
 
@@ -29,7 +24,7 @@ dependencies {
     implementation libs.arrow.format
 
     compileOnly project(':util-immutables')
-    annotationProcessor libs.immutables
+    annotationProcessor libs.immutables.value
 
     testImplementation project(':engine-test-utils')
 

@@ -10,7 +10,7 @@ dependencies {
     api libs.jackson.core
 
     // https://github.com/FasterXML/jackson-core/issues/1229
-    implementation 'ch.randelshofer:fastdoubleparser:1.0.0'
+    implementation libs.randelshofer.fastdoubleparser
 
     api project(':extensions-json')
 
@@ -20,11 +20,11 @@ dependencies {
     implementation project(':engine-time')
 
     compileOnly project(':util-immutables')
-    annotationProcessor libs.immutables
+    annotationProcessor libs.immutables.value
 
     compileOnly libs.autoservice
     annotationProcessor libs.autoservice.compiler
-    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+    compileOnly libs.google.findbugs.jsr305
 
     testImplementation libs.assertj
     testImplementation platform(libs.junit.bom)

@@ -32,19 +32,20 @@ dependencies {
     implementation project(':extensions-csv')
     implementation project(':log-factory')
     implementation project(':Configuration')
-    implementation depCommonsLang3
+    implementation libs.commons.lang3
     implementation project(':Util')
 
     implementation libs.commons.text
+    implementation libs.commons.compress
 
     implementation platform(libs.jackson.bom)
     implementation libs.jackson.dataformat.yaml
     implementation libs.jackson.datatype.jdk8
 
     compileOnly project(':util-immutables')
-    annotationProcessor libs.immutables
+    annotationProcessor libs.immutables.value
 
-    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+    compileOnly libs.google.findbugs.jsr305
 
     testImplementation project(':base-test-utils')
     testImplementation project(':engine-test-utils')
@@ -65,7 +66,7 @@ dependencies {
     runtimeOnly project(':extensions-trackedfile')
 
     brotliTestImplementation project(':extensions-parquet-table')
-    brotliTestImplementation('com.github.rdblue:brotli-codec:0.1.1')
+    brotliTestImplementation(libs.rdblue.brotli.codec)
     brotliTestRuntimeOnly project(':log-to-slf4j'),
                          project(path: ':configs'),
                          project(path: ':test-configs')

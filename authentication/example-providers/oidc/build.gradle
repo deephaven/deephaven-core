@@ -1,4 +1,4 @@
 dependencies {
-    implementation 'org.pac4j:pac4j-oidc:5.7.0'
-    implementation 'org.pac4j:pac4j-http:5.7.0'
+    implementation libs.pac4j.oidc
+    implementation libs.pac4j.http
 }

@@ -17,19 +17,19 @@ dependencies {
     api project(':engine-rowset')
 
     implementation project(':DataStructures')
-    implementation depTrove3
+    implementation libs.trove
 
     compileOnly project(':util-immutables')
-    annotationProcessor libs.immutables
+    annotationProcessor libs.immutables.value
 
     implementation libs.guava
 
-    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+    compileOnly libs.google.findbugs.jsr305
 
     testImplementation project(':engine-test-utils')
     testImplementation TestTools.projectDependency(project, 'engine-table')
     testImplementation TestTools.projectDependency(project, 'engine-vector')
-    testImplementation depCommonsLang3
+    testImplementation libs.commons.lang3
 
     testImplementation libs.junit4
 

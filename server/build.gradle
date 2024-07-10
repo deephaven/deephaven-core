@@ -14,7 +14,7 @@ dependencies {
     implementation project(':extensions-jdbc')
     implementation project(':Util');
     implementation project(':Integrations')
-    implementation depCommonsLang3
+    implementation libs.commons.lang3
     implementation libs.commons.text
 
     implementation libs.javaparser.core
@@ -24,7 +24,7 @@ dependencies {
     api(project(':java-client-session-dagger')) {
         because 'downstream dagger compile, see deephaven-core#1722'
     }
-    implementation 'org.hdrhistogram:HdrHistogram:2.1.12'
+    implementation libs.hdrhistogram
 
     implementation project(':proto:proto-backplane-grpc-flight')
     api(project(':open-api-lang-tools')) {
@@ -37,7 +37,7 @@ dependencies {
     api(project(':application-mode')) {
         because 'downstream dagger compile, see deephaven-core#1722'
     }
-    implementation 'com.github.f4b6a3:uuid-creator:5.2.0'
+    implementation libs.f4b6a3.uuid.creator
 
     api(project(':Configuration')) {
         because 'jetty/netty implementations will access the configuration in their main()s'
@@ -59,7 +59,7 @@ dependencies {
     testAnnotationProcessor libs.autoservice.compiler
 
     compileOnly project(':util-immutables')
-    annotationProcessor libs.immutables
+    annotationProcessor libs.immutables.value
 
     implementation project(':Plot')
 
@@ -94,7 +94,7 @@ dependencies {
 
     implementation project(':grpc-java:grpc-mtls')
 
-    implementation 'dev.dirs:directories:26'
+    implementation libs.dev.dirs.directories
 
     testImplementation project(':server-test-utils')
 

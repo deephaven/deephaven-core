@@ -7,7 +7,7 @@ dependencies {
     implementation project(':Integrations')
 
     compileOnly project(':util-immutables')
-    annotationProcessor libs.immutables
+    annotationProcessor libs.immutables.value
 
     // we'll rely on the engine-table module to provide the necessary groovy dependencies
     compileOnly libs.groovy

@@ -6,7 +6,7 @@ plugins {
 dependencies {
     api project(':qst-type')
 
-    compileOnly depAnnotations
+    compileOnly libs.jetbrains.annotations
 
     testImplementation libs.assertj
     testImplementation platform(libs.junit.bom)

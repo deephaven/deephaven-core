@@ -20,7 +20,7 @@ dependencies {
     implementation libs.awssdk.s3
     implementation libs.awssdk.crt.client
 
-    compileOnly depAnnotations
+    compileOnly libs.jetbrains.annotations
 
     // For OSUtil
     testImplementation project(':Stats')
@@ -29,7 +29,7 @@ dependencies {
     annotationProcessor libs.autoservice.compiler
 
     compileOnly project(':util-immutables')
-    annotationProcessor libs.immutables
+    annotationProcessor libs.immutables.value
 
     testImplementation libs.assertj
     testImplementation platform(libs.junit.bom)

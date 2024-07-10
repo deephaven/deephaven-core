@@ -13,7 +13,7 @@ dependencies {
     implementation project(':IO')
     implementation project(':log-factory')
 
-    testImplementation 'org.spockframework:spock-core:2.0-groovy-3.0'
+    testImplementation libs.spockframework.core
 
     testImplementation platform(libs.junit.bom)
     testImplementation libs.junit.jupiter

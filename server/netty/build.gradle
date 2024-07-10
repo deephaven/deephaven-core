@@ -21,7 +21,7 @@ dependencies {
     implementation libs.grpc.netty
 
     compileOnly project(':util-immutables')
-    annotationProcessor libs.immutables
+    annotationProcessor libs.immutables.value
 
     implementation project(':ssl-kickstart')
     implementation libs.sslcontext.kickstart.netty
