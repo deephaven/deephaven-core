@@ -528,8 +528,8 @@ class Table(JObjectWrapper):
         Raises:
             ValueError
         """
-        from deephaven._table_reader import _table_reader_dict # to prevent circular import
-        return _table_reader_dict(self, cols, chunk_size=chunk_size)
+        from deephaven._table_reader import _table_reader_row_dict # to prevent circular import
+        return _table_reader_row_dict(self, cols, chunk_size=chunk_size)
 
     def iter_tuple(self, cols: Optional[Union[str, Sequence[str]]] = None, *, tuple_name: str = 'Deephaven',
                    chunk_size: int = 2048) -> Generator[Tuple[Any, ...], None, None]:
@@ -556,8 +556,8 @@ class Table(JObjectWrapper):
         Raises:
             ValueError
         """
-        from deephaven._table_reader import _table_reader_tuple # to prevent circular import
-        return _table_reader_tuple(self, cols, tuple_name = tuple_name, chunk_size = chunk_size)
+        from deephaven._table_reader import _table_reader_row_tuple # to prevent circular import
+        return _table_reader_row_tuple(self, cols, tuple_name = tuple_name, chunk_size = chunk_size)
 
     def iter_chunk_dict(self, cols: Optional[Union[str, Sequence[str]]] = None, chunk_size: int = 2048) \
             -> Generator[Dict[str, np.ndarray], None, None]:

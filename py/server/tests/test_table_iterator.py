@@ -374,5 +374,6 @@ class TableIteratorTestCase(BaseTestCase):
             for t in test_table.iter_chunk_tuple(chunk_size=-1):
                 pass
 
+
 if __name__ == '__main__':
     unittest.main()
