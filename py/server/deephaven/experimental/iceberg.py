@@ -12,12 +12,13 @@ from deephaven.column import Column
 from deephaven.dtypes import DType
 from deephaven.experimental import s3
 
-from deephaven.jcompat import j_table_definition
+from deephaven.jcompat import j_table_definition, j_hashmap
 
 from deephaven.table import Table
 
 _JIcebergInstructions = jpy.get_type("io.deephaven.iceberg.util.IcebergInstructions")
 _JIcebergCatalogAdapter = jpy.get_type("io.deephaven.iceberg.util.IcebergCatalogAdapter")
+_JIcebergTools = jpy.get_type("io.deephaven.iceberg.util.IcebergTools")
 
 # IcebergToolsS3 is an optional library
 try:
@@ -247,6 +248,34 @@ def adapter_aws_glue(
                 name,
                 catalog_uri,
                 warehouse_location))
+    except Exception as e:
+        raise DHError(e, "Failed to build Iceberg Catalog Adapter") from e
+
+
+def adapter(
+        properties: Dict[str, str],
+        name: Optional[str] = None
+) -> IcebergCatalogAdapter:
+    """
+    Create a catalog adapter using a properties map.
+
+    Args:
+        properties (Dict[str, str]): the location of the warehouse.
+        name (Optional[str]): a descriptive name of the catalog; if omitted the catalog name is inferred from the
+            catalog URI property.
+
+    Returns:
+        IcebergCatalogAdapter: the catalog adapter for the provided AWS Glue catalog.
+
+    Raises:
+        DHError: If unable to build the catalog adapter.
+    """
+
+    try:
+        return IcebergCatalogAdapter(
+            _JIcebergTools.createAdapter(
+                name,
+                j_hashmap(properties)))
     except Exception as e:
         raise DHError(e, "Failed to build Iceberg Catalog Adapter") from e
 
