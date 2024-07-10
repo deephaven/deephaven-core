@@ -49,10 +49,10 @@ class TableUpdate(JObjectWrapper):
         Returns:
             a dict
         """
-        if not self.j_table_update.added():
+        if not (added := self.j_table_update.added()):
             return {}
 
-        return _table_reader_all_dict(table=self.table, cols=cols, row_set= self.j_table_update.added.asRowSet(),
+        return _table_reader_all_dict(table=self.table, cols=cols, row_set= added.asRowSet(),
                                           prev=False, to_numpy=True)
 
     def added_chunks(self, chunk_size: int, cols: Union[str, List[str]] = None) -> Generator[
@@ -67,10 +67,10 @@ class TableUpdate(JObjectWrapper):
         Returns:
             a generator
         """
-        if not self.j_table_update.added():
+        if not (added := self.j_table_update.added()):
             return (_ for _ in ())
 
-        return _table_reader_chunk_dict(table=self.table, cols=cols, row_set=self.j_table_update.added.asRowSet(),
+        return _table_reader_chunk_dict(table=self.table, cols=cols, row_set=added.asRowSet(),
                                         chunk_size=chunk_size, prev=False)
 
     def removed(self, cols: Union[str, List[str]] = None) -> Dict[str, numpy.ndarray]:
@@ -83,10 +83,10 @@ class TableUpdate(JObjectWrapper):
         Returns:
             a dict
         """
-        if not self.j_table_update.removed():
+        if not (removed := self.j_table_update.removed()):
             return {}
 
-        return _table_reader_all_dict(table=self.table, cols=cols, row_set=self.j_table_update.removed.asRowSet(),
+        return _table_reader_all_dict(table=self.table, cols=cols, row_set=removed.asRowSet(),
                                       prev=True)
 
     def removed_chunks(self, chunk_size: int, cols: Union[str, List[str]] = None) -> Generator[
@@ -101,10 +101,10 @@ class TableUpdate(JObjectWrapper):
         Returns:
             a generator
         """
-        if not self.j_table_update.removed():
+        if not (removed := self.j_table_update.removed()):
             return (_ for _ in ())
 
-        return _table_reader_chunk_dict(table=self.table, cols=cols, row_set=self.j_table_update.removed.asRowSet(),
+        return _table_reader_chunk_dict(table=self.table, cols=cols, row_set=removed.asRowSet(),
                                         chunk_size=chunk_size, prev=True)
 
     def modified(self, cols: Union[str, List[str]] = None) -> Dict[str, numpy.ndarray]:
@@ -117,10 +117,10 @@ class TableUpdate(JObjectWrapper):
         Returns:
             a dict
         """
-        if not self.j_table_update.modified():
+        if not (modified := self.j_table_update.modified()):
             return {}
 
-        return _table_reader_all_dict(table=self.table, cols=cols, row_set=self.j_table_update.modified.asRowSet(),
+        return _table_reader_all_dict(table=self.table, cols=cols, row_set=modified.asRowSet(),
                                           prev=False, to_numpy=True)
 
     def modified_chunks(self, chunk_size: int, cols: Union[str, List[str]] = None) -> Generator[
@@ -135,10 +135,10 @@ class TableUpdate(JObjectWrapper):
         Returns:
             a generator
         """
-        if not self.j_table_update.modified():
+        if not (modified := self.j_table_update.modified()):
             return (_ for _ in ())
 
-        return _table_reader_chunk_dict(self.table, cols=cols, row_set=self.j_table_update.modified.asRowSet(),
+        return _table_reader_chunk_dict(self.table, cols=cols, row_set=modified.asRowSet(),
                                         chunk_size=chunk_size, prev=False)
 
     def modified_prev(self, cols: Union[str, List[str]] = None) -> Dict[str, numpy.ndarray]:
@@ -151,10 +151,10 @@ class TableUpdate(JObjectWrapper):
         Returns:
             a dict
         """
-        if not self.j_table_update.modified():
+        if not (modified := self.j_table_update.modified()):
             return {}
 
-        return _table_reader_all_dict(table=self.table, cols=cols, row_set=self.j_table_update.modified.asRowSet(),
+        return _table_reader_all_dict(table=self.table, cols=cols, row_set=modified.asRowSet(),
                                           prev=True, to_numpy=True)
 
     def modified_prev_chunks(self, chunk_size: int, cols: Union[str, List[str]] = None) -> Generator[
@@ -169,10 +169,10 @@ class TableUpdate(JObjectWrapper):
         Returns:
             a generator
         """
-        if not self.j_table_update.modified():
+        if not (modified := self.j_table_update.modified()):
             return (_ for _ in ())
 
-        return _table_reader_chunk_dict(self.table, cols=cols, row_set=self.j_table_update.modified.asRowSet(),
+        return _table_reader_chunk_dict(self.table, cols=cols, row_set=modified.asRowSet(),
                                         chunk_size=chunk_size, prev=True)
 
     @property
@@ -495,7 +495,7 @@ class MergedListenerHandle:
         except Exception as e:
             raise DHError(e, "failed to create a merged listener adapter.") from e
 
-    def process(self) -> None:
+    def _process(self) -> None:
         """Process the table updates from the listener recorders."""
         self.listener({lr.table: lr.table_update() for lr in self.listener_recorders})
 

@@ -24,7 +24,7 @@ class PythonUtils {
     }
 
     static PyObject pyMergeListenerFunc(final PyObject pyObject) {
-        return pyCallable(pyObject, "process");
+        return pyCallable(pyObject, "_process");
     }
 
     /**
