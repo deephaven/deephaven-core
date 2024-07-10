@@ -226,22 +226,6 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
     public static final RowSetShiftData EMPTY = new RowSetShiftData();
 
     /**
-     * Functional interface to pass to {@link RowSetShiftData#apply(RowKeyRangeShiftCallback)} or
-     * {@link RowSetShiftData#unapply(RowKeyRangeShiftCallback)} to get information about each shift recorded.
-     */
-    @FunctionalInterface
-    public interface RowKeyRangeShiftCallback {
-        /**
-         * Process the shift.
-         *
-         * @param beginRange start of range (inclusive)
-         * @param endRange end of range (inclusive)
-         * @param shiftDelta amount range has moved by
-         */
-        void shift(long beginRange, long endRange, long shiftDelta);
-    }
-
-    /**
      * Apply all shifts in a memmove-semantics-safe ordering through the provided {@code shiftCallback}.
      * <p>
      * Use this to move from pre-shift keyspace to post-shift keyspace.
