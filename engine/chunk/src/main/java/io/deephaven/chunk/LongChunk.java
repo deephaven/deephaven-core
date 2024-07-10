@@ -12,6 +12,9 @@ import io.deephaven.chunk.attributes.Any;
 
 import org.jetbrains.annotations.NotNull;
 
+// region ApplyDecoderImports
+// endregion ApplyDecoderImports
+
 // region BufferImports
 import java.nio.Buffer;
 import java.nio.LongBuffer;
@@ -126,6 +129,9 @@ public class LongChunk<ATTR extends Any> extends ChunkBase<ATTR> {
         visitor.visit(this);
         return visitor;
     }
+
+    // region ApplyDecoder
+    // endregion ApplyDecoder
 
     // region CopyToBuffer
     @Override

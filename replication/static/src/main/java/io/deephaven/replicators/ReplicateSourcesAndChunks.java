@@ -570,7 +570,23 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateByteChunks() throws IOException {
-        charToByte(TASK, "engine/chunk/src/main/java/io/deephaven/chunk/CharChunk.java");
+        final String className = charToByte(TASK, "engine/chunk/src/main/java/io/deephaven/chunk/CharChunk.java");
+        final File classFile = new File(className);
+
+        List<String> classLines = FileUtils.readLines(classFile, Charset.defaultCharset());
+
+        classLines = replaceRegion(classLines, "ApplyDecoder", Arrays.asList(
+                "    public final <T> T applyDecoder(ObjectDecoder<T> decoder) {",
+                "        return decoder.decode(data, offset, size);",
+                "    }",
+                "",
+                "    public final <T> T applyDecoder(ObjectDecoder<T> decoder, int offsetSrc, int length) {",
+                "        return decoder.decode(data, offset + offsetSrc, length);",
+                "    }"));
+        classLines = replaceRegion(classLines, "ApplyDecoderImports", Collections.singletonList(
+                "import io.deephaven.util.codec.ObjectDecoder;"));
+
+        FileUtils.writeLines(classFile, classLines);
     }
 
     private static void replicateBooleanChunks() throws IOException {

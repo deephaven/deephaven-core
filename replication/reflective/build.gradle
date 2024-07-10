@@ -12,7 +12,6 @@ dependencies {
     implementation libs.trove
     implementation libs.commons.io
     implementation libs.commons.lang3
-    implementation libs.jetbrains.annotations
 
     runtimeOnly project(':log-to-slf4j')
     runtimeOnly project(path: ':configs')
