@@ -12,10 +12,6 @@ import io.deephaven.chunk.attributes.Any;
 
 import org.jetbrains.annotations.NotNull;
 
-// region ApplyDecoderImports
-import io.deephaven.util.codec.ObjectDecoder;
-// endregion ApplyDecoderImports
-
 // region BufferImports
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
@@ -130,16 +126,6 @@ public class ByteChunk<ATTR extends Any> extends ChunkBase<ATTR> {
         visitor.visit(this);
         return visitor;
     }
-
-    // region ApplyDecoder
-    public final <T> T applyDecoder(ObjectDecoder<T> decoder) {
-        return decoder.decode(data, offset, size);
-    }
-
-    public final <T> T applyDecoder(ObjectDecoder<T> decoder, int offsetSrc, int length) {
-        return decoder.decode(data, offset + offsetSrc, length);
-    }
-    // endregion ApplyDecoder
 
     // region CopyToBuffer
     @Override

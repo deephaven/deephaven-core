@@ -12,9 +12,6 @@ import io.deephaven.chunk.attributes.Any;
 
 import org.jetbrains.annotations.NotNull;
 
-// region ApplyDecoderImports
-// endregion ApplyDecoderImports
-
 // region BufferImports
 // endregion BufferImports
 
@@ -129,9 +126,6 @@ public class ObjectChunk<T, ATTR extends Any> extends ChunkBase<ATTR> {
         visitor.visit(this);
         return visitor;
     }
-
-    // region ApplyDecoder
-    // endregion ApplyDecoder
 
     // region CopyToBuffer
     // endregion CopyToBuffer
