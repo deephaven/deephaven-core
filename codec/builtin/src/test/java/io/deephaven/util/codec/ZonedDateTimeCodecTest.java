@@ -28,7 +28,7 @@ public class ZonedDateTimeCodecTest {
             assertEquals(codec.expectedObjectWidth(), enc.length - offset);
         }
         final ZonedDateTime v1 = codec.decode(enc, offset, enc.length - offset);
-        Assert.assertEquals(value, v1);
+        assertEquals(value, v1);
     }
 
     @Test

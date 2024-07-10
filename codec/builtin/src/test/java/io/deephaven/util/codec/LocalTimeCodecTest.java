@@ -49,7 +49,7 @@ public class LocalTimeCodecTest extends TestCase {
             assertEquals(codec.expectedObjectWidth(), enc.length - offset);
         }
         final LocalTime v1 = codec.decode(enc, offset, enc.length - offset);
-        TestCase.assertEquals(expected, v1);
+        assertEquals(expected, v1);
     }
 
     private void expectIllegalArgumentException(final String args, final LocalTime value) {
@@ -69,7 +69,7 @@ public class LocalTimeCodecTest extends TestCase {
             assertEquals(codec.expectedObjectWidth(), enc.length);
         }
         final LocalTime v1 = codec.decode(enc, 0, enc.length);
-        TestCase.assertEquals(v1, null);
+        assertEquals(v1, null);
     }
 
     public void testNanosEncoding() {
