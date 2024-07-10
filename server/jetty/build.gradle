@@ -21,7 +21,7 @@ dependencies {
     implementation platform(libs.grpc.bom)
     implementation platform(libs.jetty.bom)
 
-    api 'jakarta.servlet:jakarta.servlet-api:5.0.0'
+    api libs.jakarata.servlet.api
     implementation libs.jetty.servlet
     implementation libs.jetty.servlets
     implementation libs.jetty.webapp
@@ -38,7 +38,7 @@ dependencies {
     implementation libs.jetty.websocket.jakarta.server
 
     compileOnly project(':util-immutables')
-    annotationProcessor libs.immutables
+    annotationProcessor libs.immutables.value
 
     implementation project(':ssl-kickstart')
     implementation libs.sslcontext.kickstart.jetty

@@ -7,7 +7,7 @@ description = 'The Deephaven SSL Configuration'
 
 dependencies {
     compileOnly project(':util-immutables')
-    annotationProcessor libs.immutables
+    annotationProcessor libs.immutables.value
 
     implementation platform(libs.grpc.bom)
     api platform(libs.jackson.bom)

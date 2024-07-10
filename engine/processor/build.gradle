@@ -9,7 +9,7 @@ dependencies {
     api project(':engine-chunk')
 
     compileOnly project(':util-immutables')
-    annotationProcessor libs.immutables
+    annotationProcessor libs.immutables.value
 
     testImplementation libs.assertj
     testImplementation platform(libs.junit.bom)

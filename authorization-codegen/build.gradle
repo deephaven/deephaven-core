@@ -13,5 +13,5 @@ dependencies {
     implementation platform(libs.grpc.bom)
     implementation libs.grpc.services
 
-    implementation 'com.squareup:javapoet:1.13.0'
+    implementation libs.squareup.javapoet
 }

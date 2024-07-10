@@ -6,12 +6,12 @@ plugins {
 dependencies {
     api project(':extensions-json-jackson')
     api project(':engine-processor')
-    api 'de.undercouch:bson4jackson:2.15.1'
+    api libs.undercouch.bson4jackson
 
     compileOnly project(':util-immutables')
-    annotationProcessor libs.immutables
+    annotationProcessor libs.immutables.value
 
-    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+    compileOnly libs.google.findbugs.jsr305
 
     testImplementation platform(libs.jackson.bom)
     testImplementation libs.jackson.databind
