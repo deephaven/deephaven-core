@@ -429,12 +429,11 @@ class _ListenerRecorder (JObjectWrapper):
 
 
 class MergedListener(ABC):
-    """A MergedListener has a collection of ListenerRecorder. Each one must complete before the merged listener
-    executes only once for the current update graph cycle. """
+    """An abstract multi-table listener class that should be subclassed by any user multi-table listener class."""
 
     @abstractmethod
     def on_update(self, updates: Dict[Table, TableUpdate]) -> None:
-        """The required method on a user defined subclass of MergedListener that processes the table updates from the
+        """The required method on a listener object that receives table updates from the
         tables that are listened to.
         """
         ...
@@ -449,7 +448,7 @@ class MergedListenerHandle:
 
         Table change events are processed by 'listener', which can be either
         (1) a callable (e.g. function) or
-        (2) an instance of MergedTableListener type which provides an "on_update" method.
+        (2) an instance of MergedListener type which provides an "on_update" method.
         The callable or the on_update method must take 1 parameter of type Dict[Table, TableUpdate].
 
         Note: Don't do table operations in the listener. Do them beforehand, and add the results as dependencies.
@@ -524,7 +523,7 @@ class MergedListenerHandle:
 
 def merged_listen(tables: Sequence[Table], listener: Union[Callable[[Dict[Table, TableUpdate]], None], MergedListener],
                   description: str = None, dependencies: Union[Table, Sequence[Table]] = None) -> MergedListenerHandle:
-    """This is a convenience function that creates a MergedTableListenerHandle object and immediately starts it to
+    """This is a convenience function that creates a MergedListenerHandle object and immediately starts it to
     listen for table updates.
 
     The function returns the created MergedListenerHandle object whose 'stop' method can be called to stop
