@@ -257,7 +257,50 @@ def adapter(
         name: Optional[str] = None
 ) -> IcebergCatalogAdapter:
     """
-    Create a catalog adapter using a properties map.
+    Create an Iceberg catalog adapter for an Iceberg catalog created from configuration properties. These properties
+    map to the Iceberg catalog Java API properties and are used to create the catalog and file IO implementations.
+
+    The minimal set of properties required to create an Iceberg catalog are the following:
+    - `catalog-impl` - the Java catalog implementation to use.
+    - `warehouse` - the location of the warehouse.
+    - `uri` - the URI of the catalog
+    - `io-impl` - the Java file IO implementation to use.
+
+    Additional properties can be provided to configure the catalog and file IO implementations. For example, when using
+    an S3 backend, the following properties can be provided:
+
+    Example usage #1 - REST catalog with an S3 backend (using MinIO):
+    ```
+    from deephaven.experimental import s3, iceberg
+
+    properties = {
+        "catalog-impl" : "org.apache.iceberg.rest.RESTCatalog",
+        "uri" : "http://rest:8181",
+        "warehouse" : "s3a://warehouse/wh",
+        "io-impl" : "org.apache.iceberg.aws.s3.S3FileIO",
+        "client.region" : "us-east-1",
+        "s3.access-key-id" : "admin",
+        "s3.secret-access-key" : "password",
+        "s3.endpoint" : "http://minio:9000"
+    }
+
+    adapter = iceberg.adapter_generic(name="generic-adapter", properties=properties);
+    ```
+
+    Example usage #2 - AWS Glue catalog:
+    ```
+    from deephaven.experimental import s3, iceberg
+
+    ## Note: region and credential information are loaded by the catalog from the environment
+    properties = {
+        "catalog-impl" : "org.apache.iceberg.aws.glue.GlueCatalog",
+        "uri" : "s3://lab-warehouse/sales",
+        "warehouse" : "s3://lab-warehouse/sales",
+        "io-impl" : "org.apache.iceberg.aws.s3.S3FileIO"
+    }
+
+    adapter = iceberg.adapter_generic(name="generic-adapter", properties=properties);
+    ```
 
     Args:
         properties (Dict[str, str]): the location of the warehouse.

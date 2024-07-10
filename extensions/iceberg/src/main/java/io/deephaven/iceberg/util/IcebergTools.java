@@ -24,26 +24,31 @@ public abstract class IcebergTools {
     }
 
     /**
-     * <p> Create an Iceberg catalog adapter for an Iceberg catalog created from configuration properties. These properties
+     * <p>
+     * Create an Iceberg catalog adapter for an Iceberg catalog created from configuration properties. These properties
      * map to the Iceberg catalog Java API properties and are used to create the catalog and file IO implementations.
      * </p>
-     * <p> This is a wrapper around {@link CatalogUtil#buildIcebergCatalog(String, Map, Object)} and accepts the same
+     * <p>
+     * This is a wrapper around {@link CatalogUtil#buildIcebergCatalog(String, Map, Object)} and accepts the same
      * properties. The minimal set of properties required to create an Iceberg catalog are:
      * <ul>
-     *     <li>{@link CatalogProperties#CATALOG_IMPL}</li>
-     *     <li>{@link CatalogProperties#URI}</li>
-     *     <li>{@link CatalogProperties#WAREHOUSE_LOCATION}</li>
-     *     <li>{@link CatalogProperties#FILE_IO_IMPL}</li>
+     * <li>{@link CatalogProperties#CATALOG_IMPL}</li>
+     * <li>{@link CatalogProperties#URI}</li>
+     * <li>{@link CatalogProperties#WAREHOUSE_LOCATION}</li>
+     * <li>{@link CatalogProperties#FILE_IO_IMPL}</li>
      * </ul>
-     * <p>Additional properties for the specific catalog should also be included, such as as S3-specific properties for
-     * authentication or endpoint overriding.</p>
+     * <p>
+     * Additional properties for the specific catalog should also be included, such as as S3-specific properties for
+     * authentication or endpoint overriding.
+     * </p>
+     * 
      * @param name the name of the catalog; if omitted, the catalog URI will be used to generate a name
      * @param properties the map containing the Iceberg catalog properties to use
      * @return the Iceberg catalog adapter
      */
     public static IcebergCatalogAdapter createAdapter(
             @Nullable final String name,
-            @NotNull final Map<String,String> properties) {
+            @NotNull final Map<String, String> properties) {
 
         // Validate the minimum required properties are set.
         if (!properties.containsKey(CatalogProperties.CATALOG_IMPL)) {
