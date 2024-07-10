@@ -4,15 +4,13 @@
 package io.deephaven.parquet.compress;
 
 import io.deephaven.util.SafeCloseable;
-import org.apache.commons.io.input.ProxyInputStream;
 import org.apache.hadoop.io.compress.Decompressor;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
-import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
 /**
@@ -34,9 +32,11 @@ public interface CompressorAdapter extends SafeCloseable {
         }
 
         @Override
-        public InputStream decompress(final InputStream inputStream, final int compressedSize,
+        public InputStream decompress(
+                final InputStream inputStream,
+                final int compressedSize,
                 final int uncompressedSize,
-                final BiFunction<String, Supplier<SafeCloseable>, SafeCloseable> decompressorCache) {
+                final ResourceCache decompressorCache) {
             return inputStream;
         }
 
@@ -55,7 +55,7 @@ public interface CompressorAdapter extends SafeCloseable {
      * @param offset The offset in the byte array to start reading at
      * @param length The number of bytes to read
      * @throws IOException If an error occurs while reading from the input stream
-     * @throws IllegalArgumentException If the byte array is too small to read length
+     * @throws IllegalArgumentException If the byte array is too small to read {@code length} number of bytes
      * @throws IOException If the expected number of bytes could not be read
      */
     static void readNBytes(final InputStream in, final byte[] bytes, final int offset, final int length)
@@ -68,14 +68,14 @@ public interface CompressorAdapter extends SafeCloseable {
     }
 
     /**
-     * Reads exactly {@code length} number of bytes from the input stream into a new byte buffer and returns it.
+     * Reads exactly {@code length} number of bytes from the input stream into a new byte array and returns it.
      *
      * @see #readNBytesHelper(InputStream, byte[], int, int)
      */
-    static ByteBuffer readNBytes(final InputStream in, final int length) throws IOException {
+    static byte[] readNBytes(final InputStream in, final int length) throws IOException {
         final byte[] bytes = new byte[length];
         readNBytesHelper(in, bytes, 0, length);
-        return ByteBuffer.wrap(bytes);
+        return bytes;
     }
 
     private static void readNBytesHelper(final InputStream in, final byte[] bytes, final int offset, final int length)
@@ -93,9 +93,9 @@ public interface CompressorAdapter extends SafeCloseable {
     /**
      * An {@link InputStream} that will not close the underlying stream when {@link InputStream#close()} is called.
      */
-    final class NonClosingInputStream extends ProxyInputStream {
-        NonClosingInputStream(final InputStream inputStream) {
-            super(inputStream);
+    final class InputStreamNoClose extends FilterInputStream {
+        InputStreamNoClose(final InputStream in) {
+            super(in);
         }
 
         @Override
@@ -116,6 +116,10 @@ public interface CompressorAdapter extends SafeCloseable {
      */
     OutputStream compress(OutputStream os) throws IOException;
 
+    interface ResourceCache {
+        DecompressorHolder get(Supplier<DecompressorHolder> factory);
+    }
+
     /**
      * Creates a new input stream that will read compressed data from the provided stream, and return uncompressed data.
      * Caller should not close the returned {@link InputStream} because this might return an internally cached
@@ -134,8 +138,11 @@ public interface CompressorAdapter extends SafeCloseable {
      * @return an input stream that will return uncompressed data
      * @throws IOException thrown if an error occurs reading data.
      */
-    InputStream decompress(InputStream inputStream, int compressedSize, int uncompressedSize,
-            BiFunction<String, Supplier<SafeCloseable>, SafeCloseable> decompressorCache) throws IOException;
+    InputStream decompress(
+            InputStream inputStream,
+            int compressedSize,
+            int uncompressedSize,
+            ResourceCache decompressorCache) throws IOException;
 
     /**
      * @return the CompressionCodecName enum value that represents this compressor.

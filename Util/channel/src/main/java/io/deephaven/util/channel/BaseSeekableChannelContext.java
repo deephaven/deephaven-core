@@ -32,7 +32,9 @@ public class BaseSeekableChannelContext implements SeekableChannelContext {
 
     @Override
     @Nullable
-    public final SafeCloseable apply(final String key, @NotNull final Supplier<SafeCloseable> resourceFactory) {
+    public final <T extends SafeCloseable> T getCachedResource(
+            final String key,
+            @NotNull final Supplier<T> resourceFactory) {
         final Map<String, SafeCloseable> localResourceCache = resourceCache == EMPTY_CACHE
                 ? resourceCache = new HashMap<>(1)
                 : resourceCache;
@@ -43,7 +45,8 @@ public class BaseSeekableChannelContext implements SeekableChannelContext {
         if (resource == null) {
             resourceCache.put(key, (resource = resourceFactory.get()) == null ? NULL_SENTINEL : resource);
         }
-        return resource;
+        // noinspection unchecked
+        return (T) resource;
     }
 
     @Override

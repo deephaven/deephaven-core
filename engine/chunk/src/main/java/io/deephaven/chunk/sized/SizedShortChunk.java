@@ -10,6 +10,7 @@ package io.deephaven.chunk.sized;
 import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.util.SafeCloseable;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * A wrapper for a short chunk that allows you to resize the chunk to a capacity.
@@ -28,8 +29,9 @@ public final class SizedShortChunk<T extends Any> implements SafeCloseable {
     /**
      * Get the underlying chunk.
      *
-     * @return the underlying chunk.
+     * @return the underlying chunk. May be {@code null} if the chunk has not been initialized.
      */
+    @Nullable
     public WritableShortChunk<T> get() {
         return chunk;
     }

@@ -3,7 +3,6 @@
 //
 package io.deephaven.util.channel;
 
-import java.util.function.BiFunction;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.Nullable;
 
@@ -13,11 +12,10 @@ import java.util.function.Supplier;
  * Context object for reading and writing to channels created by {@link SeekableChannelsProvider}.
  * <p>
  * The context object can hold {@link SafeCloseable} resources corresponding to {@link String} keys, which can be
- * plugged into the context by calling the {@link #apply(String, Supplier)} method. These resources will be closed when
- * the context is closed.
+ * plugged into the context by calling the {@link #getCachedResource(String, Supplier)} method. These resources will be
+ * closed when the context is closed.
  */
-public interface SeekableChannelContext
-        extends BiFunction<String, Supplier<SafeCloseable>, SafeCloseable>, SafeCloseable {
+public interface SeekableChannelContext extends SafeCloseable {
 
     SeekableChannelContext NULL = SeekableChannelContextNull.NULL_CONTEXT_INSTANCE;
 
@@ -46,7 +44,7 @@ public interface SeekableChannelContext
      * {@code null}.
      */
     @Nullable
-    SafeCloseable apply(String key, Supplier<SafeCloseable> resourceFactory);
+    <T extends SafeCloseable> T getCachedResource(String key, Supplier<T> resourceFactory);
 
     /**
      * Release any resources associated with this context. The context should not be used afterward.

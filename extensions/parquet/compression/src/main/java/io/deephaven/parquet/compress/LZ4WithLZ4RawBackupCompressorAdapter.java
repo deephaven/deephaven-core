@@ -43,7 +43,7 @@ class LZ4WithLZ4RawBackupCompressorAdapter extends DeephavenCompressorAdapterFac
             final InputStream inputStream,
             final int compressedSize,
             final int uncompressedSize,
-            final BiFunction<String, Supplier<SafeCloseable>, SafeCloseable> decompressorCache)
+            final ResourceCache decompressorCache)
             throws IOException {
         if (mode == DecompressionMode.LZ4) {
             return super.decompress(inputStream, compressedSize, uncompressedSize, decompressorCache);
@@ -59,10 +59,10 @@ class LZ4WithLZ4RawBackupCompressorAdapter extends DeephavenCompressorAdapterFac
             // Try to decompress the bytes with LZ4 first.
             final InputStream decompressedInput =
                     super.decompress(bufferedInputStream, compressedSize, uncompressedSize, decompressorCache);
-            final ByteBuffer decompressedBuffer = CompressorAdapter.readNBytes(decompressedInput, uncompressedSize);
+            final byte[] decompressedBytes = CompressorAdapter.readNBytes(decompressedInput, uncompressedSize);
             // If we got here, we successfully decompressed with LZ4.
             mode = DecompressionMode.LZ4;
-            return new ByteBufferInputStream(decompressedBuffer);
+            return new ByteBufferInputStream(ByteBuffer.wrap(decompressedBytes));
         } catch (final IOException ignored) {
         }
 

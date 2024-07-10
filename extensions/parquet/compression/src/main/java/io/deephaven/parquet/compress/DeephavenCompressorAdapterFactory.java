@@ -8,7 +8,6 @@ import io.airlift.compress.gzip.JdkGzipCodec;
 import io.airlift.compress.lz4.Lz4Codec;
 import io.airlift.compress.lzo.LzoCodec;
 import io.airlift.compress.zstd.ZstdCodec;
-import io.deephaven.util.SafeCloseable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.compress.CodecPool;
 import org.apache.hadoop.io.compress.CompressionCodec;
@@ -29,8 +28,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.function.BiFunction;
-import java.util.function.Supplier;
 
 
 /**
@@ -39,7 +36,6 @@ import java.util.function.Supplier;
  * CompressionCodecName enum value having loaded the codec in this way.
  */
 public class DeephavenCompressorAdapterFactory {
-    private static final String DECOMPRESSOR_HOLDER_KEY = "DECOMPRESSOR_HOLDER";
     private static volatile DeephavenCompressorAdapterFactory INSTANCE;
 
     public static DeephavenCompressorAdapterFactory getInstance() {
@@ -126,21 +122,23 @@ public class DeephavenCompressorAdapterFactory {
         }
 
         @Override
-        public InputStream decompress(final InputStream inputStream, final int compressedSize,
+        public InputStream decompress(
+                final InputStream inputStream,
+                final int compressedSize,
                 final int uncompressedSize,
-                final BiFunction<String, Supplier<SafeCloseable>, SafeCloseable> decompressorCache) throws IOException {
+                final ResourceCache decompressorCache) throws IOException {
             final Decompressor decompressor;
             if (canCreateDecompressorObject) {
                 // Currently, we only cache a single decompressor object inside the holder. If needed in the future, we
                 // can cache multiple decompressor objects based on the codec name.
-                final DecompressorHolder decompressorHolder =
-                        (DecompressorHolder) decompressorCache.apply(DECOMPRESSOR_HOLDER_KEY, DecompressorHolder::new);
+                final DecompressorHolder decompressorHolder = decompressorCache.get(DecompressorHolder::new);
                 if (decompressorHolder.holdsDecompressor(compressionCodecName)) {
                     decompressor = decompressorHolder.getDecompressor();
                     decompressor.reset();
                 } else {
                     decompressor = CodecPool.getDecompressor(compressionCodec);
-                    // Not resetting decompressor here since either a new instance or is reset when returned to the pool
+                    // Not resetting decompressor here since it's either a new instance or was reset when previously
+                    // returned to the pool
                     if (decompressor == null) {
                         canCreateCompressorObject = false;
                     } else {
@@ -153,7 +151,7 @@ public class DeephavenCompressorAdapterFactory {
             // Note that we don't want the caller to close the decompressed stream because doing so may return the
             // decompressor to the pool.
             final InputStream buffered = ByteStreams.limit(inputStream, compressedSize);
-            return new NonClosingInputStream(compressionCodec.createInputStream(buffered, decompressor));
+            return new InputStreamNoClose(compressionCodec.createInputStream(buffered, decompressor));
         }
 
         @Override
