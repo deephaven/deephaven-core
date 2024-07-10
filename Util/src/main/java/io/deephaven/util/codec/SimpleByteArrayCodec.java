@@ -3,7 +3,7 @@
 //
 package io.deephaven.util.codec;
 
-import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -73,7 +73,7 @@ public class SimpleByteArrayCodec implements ObjectCodec<byte[]> {
     @Override
     public byte[] decode(@NotNull final byte[] input, final int offset, final int length) {
         if (input.length == 0) {
-            return CollectionUtil.ZERO_LENGTH_BYTE_ARRAY;
+            return ArrayTypeUtils.EMPTY_BYTE_ARRAY;
         }
         final byte[] output = new byte[length];
         System.arraycopy(input, offset, output, 0, length);

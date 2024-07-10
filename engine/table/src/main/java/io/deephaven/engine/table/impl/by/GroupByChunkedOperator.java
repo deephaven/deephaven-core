@@ -7,7 +7,6 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.*;
@@ -404,7 +403,7 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
         initializeNewRowSetPreviousValues(resultTable.getRowSet());
         return registeredWithHelper
                 ? new InputToResultModifiedColumnSetFactory(resultTable,
-                        resultAggregatedColumns.keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY))
+                        resultAggregatedColumns.keySet().toArray(String[]::new))
                 : null;
     }
 

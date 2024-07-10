@@ -3,7 +3,7 @@
 //
 package io.deephaven.util.codec;
 
-import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -23,7 +23,7 @@ import java.util.Map;
  */
 @SuppressWarnings("unused")
 public abstract class MapCodec<K, V> implements ObjectCodec<Map<K, V>> {
-    private static final byte[] nullBytes = CollectionUtil.ZERO_LENGTH_BYTE_ARRAY;
+    private static final byte[] nullBytes = ArrayTypeUtils.EMPTY_BYTE_ARRAY;
     private static final byte[] zeroBytes = new byte[4];
 
     private static final int MINIMUM_SCRATCH_CAPACITY = 4096;

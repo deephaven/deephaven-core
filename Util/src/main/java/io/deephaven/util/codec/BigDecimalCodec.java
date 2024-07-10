@@ -3,7 +3,7 @@
 //
 package io.deephaven.util.codec;
 
-import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -141,7 +141,7 @@ public class BigDecimalCodec implements ObjectCodec<BigDecimal> {
             final byte[] unscaledZero = BigDecimal.ZERO.unscaledValue().toByteArray();
             zeroBytes = new byte[Integer.BYTES + unscaledZero.length];
             Arrays.fill(zeroBytes, (byte) 0);
-            nullBytes = CollectionUtil.ZERO_LENGTH_BYTE_ARRAY;
+            nullBytes = ArrayTypeUtils.EMPTY_BYTE_ARRAY;
         }
     }
 

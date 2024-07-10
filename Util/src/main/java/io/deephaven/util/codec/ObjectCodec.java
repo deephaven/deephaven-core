@@ -24,8 +24,8 @@ public interface ObjectCodec<TYPE> extends ObjectDecoder<TYPE> {
 
     /**
      * Encode the specified input as an array of bytes. Note that it is up to the implementation how to encode null
-     * inputs. The use of a zero-length byte array (e.g.
-     * {@link io.deephaven.datastructures.util.CollectionUtil#ZERO_LENGTH_BYTE_ARRAY}) is strongly encouraged.
+     * inputs. The use of a zero-length byte array (e.g. {@link io.deephaven.util.type.ArrayTypeUtils#EMPTY_BYTE_ARRAY})
+     * is strongly encouraged.
      *
      * @param input The input object, possibly null
      * @return The output byte array
