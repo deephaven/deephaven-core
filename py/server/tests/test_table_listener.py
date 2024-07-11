@@ -35,7 +35,7 @@ class TableUpdateRecorder:
         self.replays = []
         self.modified_columns_list = []
 
-    def record(self, update: TableUpdate, is_replay: bool=False):
+    def record(self, update: TableUpdate, is_replay: bool):
         if self.chunk_size is None:
             self.added.append(update.added())
             self.removed.append(update.removed())
@@ -334,10 +334,10 @@ class TableListenerTestCase(BaseTestCase):
         t3 = time_table("PT3s").update(["Z=i % 5"])
 
         class TestMergedListener(MergedListener):
-            def on_update(self, updates: Dict[Table, TableUpdate]) -> None:
+            def on_update(self, updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
                 for update in updates.values():
                     if update:
-                        tur.record(update)
+                        tur.record(update, is_replay)
 
         tml = TestMergedListener()
         with self.subTest("Direct Handle"):
@@ -366,9 +366,9 @@ class TableListenerTestCase(BaseTestCase):
         t2 = time_table("PT2s").update(["Y=i % 8"])
         t3 = time_table("PT3s").update(["Z=i % 5"])
 
-        def test_ml_func(updates: Dict[Table, TableUpdate]) -> None:
+        def test_ml_func(updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
             if updates[t1] or updates[t3]:
-                    tur.record(updates[t1])
+                    tur.record(updates[t1], is_replay)
 
         with self.subTest("Direct Handle"):
             tur = TableUpdateRecorder()
@@ -402,9 +402,9 @@ class TableListenerTestCase(BaseTestCase):
         tur = TableUpdateRecorder()
         j_arrays = []
         class TestMergedListener(MergedListener):
-            def on_update(self, updates: Dict[Table, TableUpdate]) -> None:
+            def on_update(self, updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
                 if updates[t1] and updates[t2]:
-                    tur.record(updates[t2])
+                    tur.record(updates[t2], is_replay)
 
                 with ec:
                     t = dep_table.view(["Y = i % 8"])
@@ -435,6 +435,46 @@ class TableListenerTestCase(BaseTestCase):
         with self.assertRaises(DHError) as cm:
             mlh = merged_listen([t1, et], test_ml_func)
         self.assertIn("must be a refreshing table", str(cm.exception))
+
+    def test_merged_listener_replay(self):
+        t1 = time_table("PT1s").update(["X=i % 11"])
+        t2 = time_table("PT2s").update(["Y=i % 8"])
+        t3 = time_table("PT3s").update(["Z=i % 5"])
+
+        class TestMergedListener(MergedListener):
+            def on_update(self, updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
+                for update in updates.values():
+                    if update:
+                        tur.record(update, is_replay)
+
+        tml = TestMergedListener()
+        t1.await_update()
+        with self.subTest("MergedListener - replay"):
+            tur = TableUpdateRecorder()
+            mlh = merged_listen([t1, t2, t3], tml, do_replay=True)
+            ensure_ugp_cycles(tur, cycles=3)
+            mlh.stop()
+            mlh.start(do_replay=True, replay_lock="exclusive")
+            ensure_ugp_cycles(tur, cycles=6)
+            mlh.stop()
+            self.assertGreaterEqual(len(tur.replays), 6)
+            self.assertTrue(any(tur.replays))
+
+        def test_ml_func(updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
+            if updates[t1] or updates[t3]:
+                    tur.record(updates[t1], is_replay)
+
+        with self.subTest("Direct Handle - replay"):
+            tur = TableUpdateRecorder()
+            mlh = MergedListenerHandle([t1, t2, t3], test_ml_func)
+            mlh.start(do_replay=True, replay_lock="shared")
+            ensure_ugp_cycles(tur, cycles=3)
+            mlh.stop()
+            mlh.start(do_replay=True, replay_lock="exclusive")
+            ensure_ugp_cycles(tur, cycles=6)
+            mlh.stop()
+            self.assertGreaterEqual(len(tur.replays), 6)
+            self.assertTrue(any(tur.replays))
 
 
 if __name__ == "__main__":

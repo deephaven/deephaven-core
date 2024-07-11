@@ -14,7 +14,7 @@ import numpy
 from deephaven import DHError
 from deephaven import update_graph
 from deephaven._wrapper import JObjectWrapper
-from deephaven.jcompat import to_sequence
+from deephaven.jcompat import to_sequence, j_list_to_list
 from deephaven.table import Table
 from deephaven._table_reader import _table_reader_all_dict, _table_reader_chunk_dict
 from deephaven.update_graph import UpdateGraph
@@ -273,8 +273,8 @@ class TableListenerHandle(JObjectWrapper):
         The callable or the on_update method must have the following signatures.
         * (update: TableUpdate, is_replay: bool): support replaying the initial table snapshot and normal table updates
         The 'update' parameter is an object that describes the table update;
-        The 'is_replay' parameter is used only by replay listeners, it is set to 'true' when replaying the initial
-        snapshot and 'false' during normal updates.
+        The 'is_replay' parameter is used only by replay listeners, it is set to 'True' when replaying the initial
+        snapshot and 'False' during normal updates.
 
         Note: Don't do table operations in the listener. Do them beforehand, and add the results as dependencies.
 
@@ -310,14 +310,14 @@ class TableListenerHandle(JObjectWrapper):
             raise DHError(message="listener is neither callable nor TableListener object")
 
         try:
-            self.listener = _JPythonReplayListenerAdapter.create(description, t.j_table, False, self.listener_wrapped, self.dependencies)
+            self.listener_adapter = _JPythonReplayListenerAdapter.create(description, t.j_table, False, self.listener_wrapped, self.dependencies)
         except Exception as e:
             raise DHError(e, "failed to create a table listener.") from e
         self.started = False
 
     @property
     def j_object(self) -> jpy.JType:
-        return self.listener
+        return self.listener_adapter
 
     def start(self, do_replay: bool = False, replay_lock: Literal["shared", "exclusive"] = "shared") -> None:
         """Start the listener by registering it with the table and listening for updates.
@@ -335,9 +335,9 @@ class TableListenerHandle(JObjectWrapper):
         try:
             def _start():
                 if do_replay:
-                    self.listener.replay()
+                    self.listener_adapter.replay()
 
-                self.t.j_table.addUpdateListener(self.listener)
+                self.t.j_table.addUpdateListener(self.listener_adapter)
 
             if do_replay:
                 _do_locked(self.t, _start, lock_type=replay_lock)
@@ -353,7 +353,7 @@ class TableListenerHandle(JObjectWrapper):
 
         if not self.started:
             return
-        self.t.j_table.removeUpdateListener(self.listener)
+        self.t.j_table.removeUpdateListener(self.listener_adapter)
         self.started = False
 
 
@@ -431,30 +431,40 @@ class MergedListener(ABC):
     """An abstract multi-table listener class that should be subclassed by any user multi-table listener class."""
 
     @abstractmethod
-    def on_update(self, updates: Dict[Table, TableUpdate]) -> None:
+    def on_update(self, updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
         """The required method on a listener object that receives table updates from the
         tables that are listened to.
         """
         ...
 
 
-class MergedListenerHandle:
+class MergedListenerHandle(JObjectWrapper):
     """A handle to manage a merged listener's lifecycle."""
+    j_object_type = _JPythonMergedListenerAdapter
 
-    def __init__(self, tables: Sequence[Table], listener: Union[Callable[[Dict[Table, TableUpdate]], None], MergedListener],
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.merged_listener_adapter
+
+    def __init__(self, tables: Sequence[Table], listener: Union[Callable[[Dict[Table, TableUpdate], bool], None], MergedListener],
                  description: str = None, dependencies: Union[Table, Sequence[Table]] = None):
         """Creates a new MergedListenerHandle with the provided listener recorders and dependencies.
 
         Table change events are processed by 'listener', which can be either
         (1) a callable (e.g. function) or
         (2) an instance of MergedListener type which provides an "on_update" method.
-        The callable or the on_update method must take 1 parameter of type Dict[Table, TableUpdate].
+        The callable or the on_update method must have the following signature.
+        *(updates: Dict[Table, TableUpdate], is_replay: bool): support replaying the initial table snapshots and normal table updates
+        The 'updates' parameter is a dictionary of Table to TableUpdate;
+        The 'is_replay' parameter is used only by replay listeners, it is set to 'True' when replaying the initial
+        snapshots and 'False' during normal updates.
+
 
         Note: Don't do table operations in the listener. Do them beforehand, and add the results as dependencies.
 
         Args:
             tables (Sequence[Table]): tables to listen to
-            listener (Union[Callable[[Dict[Table, TableUpdate]], None], MergedListener]): listener to process table updates
+            listener (Union[Callable[[Dict[Table, TableUpdate], bool], None], MergedListener]): listener to process table updates
                 from the tables.
             description (str, optional): description for the UpdatePerformanceTracker to append to the listener's entry
             dependencies (Union[Table, Sequence[Table]]): tables that must be satisfied before the listener's execution.
@@ -484,6 +494,10 @@ class MergedListenerHandle:
             self.listener = listener.on_update
         else:
             self.listener = listener
+        n_params = len(signature(self.listener).parameters)
+        if n_params != 2:
+            raise ValueError("merged listener function must have 2 (updates, is_replay) parameters.")
+
 
         try:
             self.merged_listener_adapter = _JPythonMergedListenerAdapter.create(
@@ -495,19 +509,49 @@ class MergedListenerHandle:
         except Exception as e:
             raise DHError(e, "failed to create a merged listener adapter.") from e
 
-    def _process(self) -> None:
-        """Process the table updates from the listener recorders."""
-        self.listener({lr.table: lr.table_update() for lr in self.listener_recorders})
+    def _process(self, replay_updates: Optional[jpy.JType] = None) -> None:
+        """Process the table updates from the listener recorders.
 
-    def start(self) -> None:
-        """Start the listener."""
+        Args:
+            replay_updates (Optional[jpy.JType]): the replay updates, only provided during replay.
+        """
+        if replay_updates:
+            self.listener({t: tu for t, tu in zip(self.tables, j_list_to_list(replay_updates))}, True)
+        else:
+            self.listener({lr.table: lr.table_update() for lr in self.listener_recorders}, False)
+
+    def start(self, do_replay: bool = False, replay_lock: Literal["shared", "exclusive"] = "shared") -> None:
+        """Start the listener.
+
+        Args:
+            do_replay (bool): whether to replay the initial snapshots of the tables, default is False
+            replay_lock (str): the lock type used during replay, default is 'shared', can also be 'exclusive'.
+
+        Raises:
+            DHError
+        """
         if self.started:
             raise RuntimeError("Attempting to start an already started merged listener..")
 
-        with update_graph.auto_locking_ctx(self.listener_recorders[0].table.update_graph):
-            for lr in self.listener_recorders:
-                lr.table.j_table.addUpdateListener(lr.j_listener_recorder)
-            self.started = True
+        try:
+            def _start():
+                if do_replay:
+                    self.merged_listener_adapter.replay()
+
+                with update_graph.auto_locking_ctx(self.tables[0].update_graph):
+                    for lr in self.listener_recorders:
+                        lr.table.j_table.addUpdateListener(lr.j_listener_recorder)
+
+            if do_replay:
+                _do_locked(self.tables[0].update_graph, _start, lock_type=replay_lock)
+            else:
+                _start()
+
+        except Exception as e:
+            raise DHError(e, "failed to listen to the table changes.") from e
+
+        self.started = True
+
 
     def stop(self) -> None:
         """Stop the listener."""
@@ -521,7 +565,8 @@ class MergedListenerHandle:
 
 
 def merged_listen(tables: Sequence[Table], listener: Union[Callable[[Dict[Table, TableUpdate]], None], MergedListener],
-                  description: str = None, dependencies: Union[Table, Sequence[Table]] = None) -> MergedListenerHandle:
+                do_replay: bool = False, replay_lock: Literal["shared", "exclusive"] = "shared",
+                description: str = None, dependencies: Union[Table, Sequence[Table]] = None) -> MergedListenerHandle:
     """This is a convenience function that creates a MergedListenerHandle object and immediately starts it to
     listen for table updates.
 
@@ -536,6 +581,8 @@ def merged_listen(tables: Sequence[Table], listener: Union[Callable[[Dict[Table,
             from the tables.
         description (str, optional): description for the UpdatePerformanceTracker to append to the listener's entry
             description, default is None
+        do_replay (bool): whether to replay the initial snapshots of the tables, default is False
+        replay_lock (str): the lock type used during replay, default is 'shared', can also be 'exclusive'
         dependencies (Union[Table, Sequence[Table]]): tables that must be satisfied before the listener's execution.
             A refreshing table is considered to be satisfied if all possible updates to the table have been processed
             in the current update graph cycle. A static table is always considered to be satisfied. If a specified
@@ -550,5 +597,5 @@ def merged_listen(tables: Sequence[Table], listener: Union[Callable[[Dict[Table,
     """
     merged_listener_handle = MergedListenerHandle(tables=tables, listener=listener,
                                                   description=description, dependencies=dependencies)
-    merged_listener_handle.start()
+    merged_listener_handle.start(do_replay=do_replay, replay_lock=replay_lock)
     return merged_listener_handle

@@ -48,6 +48,11 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
             AtomicLongFieldUpdater.newUpdater(MergedListener.class, "lastCompletedStep");
 
     private final UpdateGraph updateGraph;
+
+    protected Iterable<? extends ListenerRecorder> getRecorders() {
+        return recorders;
+    }
+
     private final Iterable<? extends ListenerRecorder> recorders;
     private final Iterable<NotificationQueue.Dependency> dependencies;
     private final String listenerDescription;

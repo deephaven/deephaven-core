@@ -4,8 +4,14 @@
 package io.deephaven.integrations.python;
 
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.ListenerRecorder;
 import io.deephaven.engine.table.impl.MergedListener;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.SafeCloseable;
@@ -13,6 +19,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jpy.PyObject;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -65,6 +72,22 @@ public class PythonMergedListenerAdapter extends MergedListener {
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             return new PythonMergedListenerAdapter(recorders, dependencies, listenerDescription, pyObjectIn);
         }
+    }
+
+    public void replay() {
+        final RowSet emptyRowSet = RowSetFactory.empty();
+        final RowSetShiftData emptyShift = RowSetShiftData.EMPTY;
+        final ModifiedColumnSet emptyColumnSet = ModifiedColumnSet.EMPTY;
+
+        ArrayList<TableUpdate> updates = new ArrayList<>();
+        for (ListenerRecorder recorder : getRecorders()) {
+            final TableUpdate update =
+                    new TableUpdateImpl(recorder.getParent().getRowSet(), emptyRowSet, emptyRowSet, emptyShift,
+                            emptyColumnSet);
+            updates.add(recorder.getUpdate());
+        }
+
+        pyCallable.call("__call__", updates);
     }
 
     @Override
