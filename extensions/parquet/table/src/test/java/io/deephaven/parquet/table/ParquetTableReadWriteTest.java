@@ -1565,6 +1565,38 @@ public final class ParquetTableReadWriteTest {
         }
     }
 
+    @Test
+    public void nullStringDictEncodingTest() {
+        // The following file has a null string column encoded as a dictionary. We should be able to read/sort
+        // it without any exceptions.
+        String path =
+                ParquetTableReadWriteTest.class.getResource("/ReferenceNullStringDictEncoded1.parquet").getFile();
+
+        // Verify that the column uses dictionary encoding.
+        ParquetMetadata metadata =
+                new ParquetTableLocationKey(new File(path).toURI(), 0, null, ParquetInstructions.EMPTY).getMetadata();
+        String strColumnMetadata = metadata.getBlocks().get(0).getColumns().get(1).toString();
+        assertTrue(strColumnMetadata.contains("nullString") && strColumnMetadata.contains("RLE_DICTIONARY"));
+
+        Table expected = TableTools.emptyTable(2048).update("someLong = i", "nullString = (String)null");
+        assertTableEquals(expected, readTable(path).sort("nullString"));
+        assertTableEquals(expected, readTable(path).sortDescending("nullString"));
+
+        // The following file has a string column with all values null except for the last one encoded as a dictionary.
+        // We should be able to read/sort it without any exceptions.
+        path = ParquetTableReadWriteTest.class.getResource("/ReferenceNullStringDictEncoded2.parquet").getFile();
+
+        // Verify that the column uses dictionary encoding.
+        metadata =
+                new ParquetTableLocationKey(new File(path).toURI(), 0, null, ParquetInstructions.EMPTY).getMetadata();
+        strColumnMetadata = metadata.getBlocks().get(0).getColumns().get(1).toString();
+        assertTrue(strColumnMetadata.contains("someString") && strColumnMetadata.contains("RLE_DICTIONARY"));
+        expected =
+                TableTools.emptyTable(2048).update("someLong = i", "someString = i == 2047 ? `Hello` : (String)null");
+        assertTableEquals(expected, readTable(path).sort("someString"));
+        assertTableEquals(expected.sortDescending("someString"), readTable(path).sortDescending("someString"));
+    }
+
     /**
      * Encoding bigDecimal is tricky -- the writer will try to pick the precision and scale automatically. Because of
      * that tableTools.assertTableEquals will fail because, even though the numbers are identical, the representation

@@ -359,6 +359,13 @@ public class SortHelpers {
         final ColumnSource<Long> reinterpreted = columnSource.reinterpret(long.class);
         final Table symbolTable = ((SymbolTableSource<?>) columnSource).getStaticSymbolTable(rowSet, true);
 
+        if (symbolTable.isEmpty()) {
+            // All nulls, so we can just return the row set as the sort mapping
+            final long[] rowKeysArray = new long[rowSet.intSize()];
+            rowSet.fillRowKeyChunk(WritableLongChunk.writableChunkWrap(rowKeysArray));
+            return new ArraySortMapping(rowKeysArray);
+        }
+
         if (symbolTable.size() >= sortSize) {
             // the very first thing we will do is sort the symbol table, using a regular sort; if it is larger than the
             // actual table we care to sort, then it is wasteful to use the symbol table sorting
