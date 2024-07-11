@@ -79,6 +79,8 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -1563,6 +1565,127 @@ public final class ParquetTableReadWriteTest {
             TestCase.fail("Exception expected for exceeding dictionary size");
         } catch (DictionarySizeExceededException expected) {
         }
+    }
+
+    /**
+     * Test if we can read/sort a parquet file with a null string column encoded as a dictionary.
+     */
+    @Test
+    public void nullStringDictEncodingTest() {
+        final int NUM_ROWS = 2048;
+        {
+            // The following file has a null string column encoded as a dictionary. We should be able to read/sort
+            // it without any exceptions.
+            final String path =
+                    ParquetTableReadWriteTest.class.getResource("/ReferenceNullStringDictEncoded1.parquet").getFile();
+            final Table expected = TableTools.emptyTable(NUM_ROWS).update("someLong = i",
+                    "someString = (String)null");
+            nullStringDictEncodingTestHelper(path, expected);
+        }
+
+        {
+            // The following file has a string column with all values null except for the last one encoded as a
+            // dictionary. We should be able to read/sort it without any exceptions.
+            final String path =
+                    ParquetTableReadWriteTest.class.getResource("/ReferenceNullStringDictEncoded2.parquet").getFile();
+            final Table expected = TableTools.emptyTable(NUM_ROWS).update("someLong = i",
+                    "someString = i == 2047 ? `Hello` : (String)null");
+            nullStringDictEncodingTestHelper(path, expected);
+        }
+    }
+
+    private static void nullStringDictEncodingTestHelper(final String path, final Table expected) {
+        // Verify that the column uses dictionary encoding.
+        final ParquetMetadata metadata =
+                new ParquetTableLocationKey(new File(path).toURI(), 0, null, ParquetInstructions.EMPTY)
+                        .getMetadata();
+        final String strColumnMetadata = metadata.getBlocks().get(0).getColumns().get(1).toString();
+        assertTrue(strColumnMetadata.contains("someString") && strColumnMetadata.contains("RLE_DICTIONARY"));
+
+        // Sort and compare
+        assertTableEquals(expected, readTable(path).sort("someString"));
+        assertTableEquals(expected.sortDescending("someString"),
+                readTable(path).sortDescending("someString"));
+    }
+
+    /**
+     * Extension of {@link #nullStringDictEncodingTest()} test, for testing if we can read/sort a table with regions
+     * having null string columns encoded as a dictionary.
+     */
+    @Test
+    public void nullRegionDictionaryEncodingTest() throws IOException {
+        // The following file has a null string column encoded as a dictionary.
+        final File allNullsFile = new File(
+                ParquetTableReadWriteTest.class.getResource("/ReferenceNullStringDictEncoded1.parquet").getFile());
+        final Table allNullsTable = readTable(allNullsFile.toString()).select();
+        final File allButOneNullFile = new File(
+                ParquetTableReadWriteTest.class.getResource("/ReferenceNullStringDictEncoded2.parquet").getFile());
+        final Table allButOneNullTable = readTable(allButOneNullFile.toString()).select();
+        final File testDir = new File(rootFile, "nullRegionDictionaryEncodingTest");
+        final File firstRegion = new File(testDir, "Region1.parquet");
+        final File secondRegion = new File(testDir, "Region2.parquet");
+        final File thirdRegion = new File(testDir, "Region3.parquet");
+        final File fourthRegion = new File(testDir, "Region4.parquet");
+
+        // The first test is for a table where all three regions have null values for the string column.
+        nullRegionDictionaryEncodingTestHelper(
+                allNullsFile, allNullsFile, allNullsFile,
+                allNullsTable, allNullsTable, allNullsTable,
+                firstRegion, secondRegion, thirdRegion);
+
+        // The next test is for a table where the first-region has non-null values and the second and third have null
+        // values for the string column.
+        nullRegionDictionaryEncodingTestHelper(
+                allButOneNullFile, allNullsFile, allNullsFile,
+                allButOneNullTable, allNullsTable, allNullsTable,
+                firstRegion, secondRegion, thirdRegion);
+
+        // The next test is for a table where the second-region has non-null values, and the first and third have null
+        // values for the string column.
+        nullRegionDictionaryEncodingTestHelper(
+                allNullsFile, allButOneNullFile, allNullsFile,
+                allNullsTable, allButOneNullTable, allNullsTable,
+                firstRegion, secondRegion, thirdRegion);
+
+        // The next test is for a table where the third-region has non-null values, and the first two have null values
+        // for the string column.
+        nullRegionDictionaryEncodingTestHelper(
+                allNullsFile, allNullsFile, allButOneNullFile,
+                allNullsTable, allNullsTable, allButOneNullTable,
+                firstRegion, secondRegion, thirdRegion);
+
+        {
+            // The next test is for a table where the first and region have null values and the second and fourth two
+            // have null values for the string column.
+            testDir.mkdir();
+            Files.copy(allNullsFile.toPath(), firstRegion.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(allButOneNullFile.toPath(), secondRegion.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(allNullsFile.toPath(), thirdRegion.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(allButOneNullFile.toPath(), fourthRegion.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            final Table expected = merge(allNullsTable, allButOneNullTable, allNullsTable, allButOneNullTable);
+            assertTableEquals(expected.sort("someString"),
+                    readTable(testDir.toString()).sort("someString"));
+            assertTableEquals(expected.sortDescending("someString"),
+                    readTable(testDir.toString()).sortDescending("someString"));
+            FileUtils.deleteRecursively(testDir);
+        }
+    }
+
+    private static void nullRegionDictionaryEncodingTestHelper(
+            final File firstSource, final File secondSource, final File thirdSource,
+            final Table firstTable, final Table secondTable, final Table thirdTable,
+            final File firstRegion, final File secondRegion, final File thirdRegion) throws IOException {
+        final File testDir = new File(rootFile, "nullRegionDictionaryEncodingTest");
+        testDir.mkdir();
+        Files.copy(firstSource.toPath(), firstRegion.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(secondSource.toPath(), secondRegion.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(thirdSource.toPath(), thirdRegion.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        final Table expected = merge(firstTable, secondTable, thirdTable);
+        assertTableEquals(expected.sort("someString"),
+                readTable(testDir.toString()).sort("someString"));
+        assertTableEquals(expected.sortDescending("someString"),
+                readTable(testDir.toString()).sortDescending("someString"));
+        FileUtils.deleteRecursively(testDir);
     }
 
     /**
