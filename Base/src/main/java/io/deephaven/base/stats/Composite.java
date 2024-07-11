@@ -25,13 +25,13 @@ public class Composite extends Value {
 
     // ----------------------------------------------------------------
     private static Value[] checkValues(Value[] values) {
-        Require.neqNull(values, "values", 1);
-        Require.gtZero(values.length, "values.length", 1);
-        Require.neqNull(values[0], "values[0]", 1);
+        Require.neqNull(values, "values");
+        Require.gtZero(values.length, "values.length");
+        Require.neqNull(values[0], "values[0]");
         char typeTag = values[0].getTypeTag();
         for (int nIndex = 1; nIndex < values.length; nIndex++) {
-            Require.neqNull(values[nIndex], "values[nIndex]", 1);
-            Require.eq(values[nIndex].getTypeTag(), "values[nIndex].getTypeTag()", typeTag, "typeTag", 1);
+            Require.neqNull(values[nIndex], "values[nIndex]");
+            Require.eq(values[nIndex].getTypeTag(), "values[nIndex].getTypeTag()", typeTag, "typeTag");
         }
         return values;
     }
