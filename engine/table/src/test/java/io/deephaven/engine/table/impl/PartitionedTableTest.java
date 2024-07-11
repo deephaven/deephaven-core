@@ -10,7 +10,6 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.base.SleepUtil;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.exceptions.TableInitializationException;
@@ -340,12 +339,12 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
 
         Table merged = partitionedTable.merge();
         if (SystemicObjectTracker.isSystemicObjectMarkingEnabled()) {
-            TestCase.assertEquals(mapFromArray(String.class, Object.class, "quux", "baz",
+            TestCase.assertEquals(mapFromArray("quux", "baz",
                     Table.SORTABLE_COLUMNS_ATTRIBUTE, "bar", Table.MERGED_TABLE_ATTRIBUTE, true,
                     Table.SYSTEMIC_TABLE_ATTRIBUTE, Boolean.TRUE), merged.getAttributes());
         } else {
             TestCase.assertEquals(
-                    mapFromArray(String.class, Object.class, "quux", "baz",
+                    mapFromArray("quux", "baz",
                             Table.SORTABLE_COLUMNS_ATTRIBUTE, "bar", Table.MERGED_TABLE_ATTRIBUTE, true),
                     merged.getAttributes());
         }
@@ -357,12 +356,12 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
         // the merged table just takes the set that is consistent
         merged = transformed.merge();
         if (SystemicObjectTracker.isSystemicObjectMarkingEnabled()) {
-            TestCase.assertEquals(mapFromArray(String.class, Object.class, "quux", "baz",
+            TestCase.assertEquals(mapFromArray("quux", "baz",
                     Table.SORTABLE_COLUMNS_ATTRIBUTE, "bar", Table.MERGED_TABLE_ATTRIBUTE, true,
                     Table.SYSTEMIC_TABLE_ATTRIBUTE, Boolean.TRUE), merged.getAttributes());
         } else {
             TestCase.assertEquals(
-                    mapFromArray(String.class, Object.class, "quux", "baz",
+                    mapFromArray("quux", "baz",
                             Table.SORTABLE_COLUMNS_ATTRIBUTE, "bar", Table.MERGED_TABLE_ATTRIBUTE, true),
                     merged.getAttributes());
         }
@@ -1113,22 +1112,10 @@ public class PartitionedTableTest extends RefreshingTableTestCase {
     }
 
     @SuppressWarnings({"unchecked"})
-    public static <K, V> Map<K, V> mapFromArray(Class<K> typeK, Class<V> typeV, Object... data) {
-        Require.neqNull(data, "data");
-        Require.requirement(0 == data.length % 2, "0==data.length%2");
-        Map<K, V> map = new LinkedHashMap<K, V>((data.length / 2 + 1) * 4 / 3);
+    public static <K, V> Map<K, V> mapFromArray(Object... data) {
+        Map<K, V> map = new LinkedHashMap<K, V>();
         for (int nIndex = 0; nIndex < data.length; nIndex += 2) {
-            Object key = data[nIndex];
-            if (null != key) {
-                Require.instanceOf(key, "key", typeK);
-            }
-            Require.requirement(false == map.containsKey(key), "false==map.containsKey(data[nIndex])", key,
-                    "data[nIndex]");
-            Object value = data[nIndex + 1];
-            if (null != value) {
-                Require.instanceOf(value, "value", typeV);
-            }
-            map.put((K) key, (V) value);
+            map.put((K) data[nIndex], (V) data[nIndex + 1]);
         }
         return map;
     }
