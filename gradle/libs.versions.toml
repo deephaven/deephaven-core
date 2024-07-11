@@ -82,7 +82,7 @@ vertispan-ts-defs = "1.0.0-RC4"
 # test versions
 assertj = "3.19.0"
 h2database = "2.2.224"
-jmock = "2.12.0"
+jmock = "2.13.1"
 junit = "5.7.2"
 junit4 = "4.13.2"
 testcontainers = "1.19.4"
