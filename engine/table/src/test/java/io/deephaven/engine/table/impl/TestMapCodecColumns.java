@@ -4,7 +4,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.FileUtils;
-import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -77,26 +78,26 @@ public class TestMapCodecColumns {
     public void setUp() {
         table = TableTools.newTable(TABLE_DEFINITION,
                 TableTools.col("StrStrMap",
-                        CollectionUtil.mapFromArray(String.class, String.class, "AK", "AV", "BK", "BV"),
+                        mapFromArray(String.class, String.class, "AK", "AV", "BK", "BV"),
                         null, Collections.singletonMap("Key", "Value")),
                 TableTools.col("StrBoolMap",
-                        CollectionUtil.mapFromArray(String.class, Boolean.class, "True", true, "False", false, "Null",
+                        mapFromArray(String.class, Boolean.class, "True", true, "False", false, "Null",
                                 null),
                         null, Collections.singletonMap("Truthiness", true)),
                 TableTools.col("StrDoubleMap",
-                        CollectionUtil.mapFromArray(String.class, Double.class, "One", 1.0, "Two", 2.0, "Null", null),
+                        mapFromArray(String.class, Double.class, "One", 1.0, "Two", 2.0, "Null", null),
                         null,
                         Collections.singletonMap("Pi", Math.PI)),
                 TableTools.col("StrFloatMap",
-                        CollectionUtil.mapFromArray(String.class, Float.class, "Ten", 10.0f, "Twenty", 20.0f, "Null",
+                        mapFromArray(String.class, Float.class, "Ten", 10.0f, "Twenty", 20.0f, "Null",
                                 null),
                         null, Collections.singletonMap("e", (float) Math.E)),
                 TableTools.col("StrIntMap",
-                        CollectionUtil.mapFromArray(String.class, Integer.class, "Million", 1_000_000, "Billion",
+                        mapFromArray(String.class, Integer.class, "Million", 1_000_000, "Billion",
                                 1_000_000_000, "Null", null),
                         null, Collections.singletonMap("Negative", -1)),
                 TableTools.col("StrLongMap",
-                        CollectionUtil.mapFromArray(String.class, Long.class, "Trillion", 1_000_000_000_000L,
+                        mapFromArray(String.class, Long.class, "Trillion", 1_000_000_000_000L,
                                 "Billion", 1_000_000_000L, "Null", null),
                         null, Collections.singletonMap("Negative", -1L)));
     }
@@ -114,5 +115,26 @@ public class TestMapCodecColumns {
         } finally {
             FileUtils.deleteRecursively(dir);
         }
+    }
+
+    @SuppressWarnings({"unchecked"})
+    public static <K, V> Map<K, V> mapFromArray(Class<K> typeK, Class<V> typeV, Object... data) {
+        Require.neqNull(data, "data");
+        Require.requirement(0 == data.length % 2, "0==data.length%2");
+        Map<K, V> map = new LinkedHashMap<K, V>((data.length / 2 + 1) * 4 / 3);
+        for (int nIndex = 0; nIndex < data.length; nIndex += 2) {
+            Object key = data[nIndex];
+            if (null != key) {
+                Require.instanceOf(key, "key", typeK);
+            }
+            Require.requirement(false == map.containsKey(key), "false==map.containsKey(data[nIndex])", key,
+                    "data[nIndex]");
+            Object value = data[nIndex + 1];
+            if (null != value) {
+                Require.instanceOf(value, "value", typeV);
+            }
+            map.put((K) key, (V) value);
+        }
+        return map;
     }
 }
