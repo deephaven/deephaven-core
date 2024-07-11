@@ -11,6 +11,8 @@ import java.io.UTFDataFormatException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 
+import org.jetbrains.annotations.NotNull;
+
 /**
  * This is an InputStream implementation which reads from a java.nio.ByteBuffer. If a read operation crosses the end of
  * the buffer, the BufferUnderflowException is converted to an EOFException.
@@ -53,7 +55,7 @@ public class ByteBufferInputStream extends InputStream implements DataInput {
     }
 
     @Override
-    public int read(byte b[]) throws IOException {
+    public int read(byte[] b) throws IOException {
         int n = Math.min(buf.remaining(), b.length);
         if (n == 0 && b.length > 0) {
             return -1;
@@ -63,7 +65,7 @@ public class ByteBufferInputStream extends InputStream implements DataInput {
     }
 
     @Override
-    public int read(byte b[], int off, int len) throws IOException {
+    public int read(byte[] b, int off, int len) throws IOException {
         int n = Math.min(buf.remaining(), len);
         if (n == 0 && len > 0) {
             return -1;
@@ -112,7 +114,7 @@ public class ByteBufferInputStream extends InputStream implements DataInput {
     // -----------------------------------------------------------------------------------
 
     @Override
-    public void readFully(byte b[]) throws IOException {
+    public void readFully(byte[] b) throws IOException {
         try {
             buf.get(b, 0, b.length);
         } catch (BufferUnderflowException x) {
@@ -121,7 +123,7 @@ public class ByteBufferInputStream extends InputStream implements DataInput {
     }
 
     @Override
-    public void readFully(byte b[], int off, int len) throws IOException {
+    public void readFully(byte[] b, int off, int len) throws IOException {
         try {
             buf.get(b, off, len);
         } catch (BufferUnderflowException x) {
@@ -296,7 +298,7 @@ public class ByteBufferInputStream extends InputStream implements DataInput {
         return new String(chars);
     }
 
-
+    @NotNull
     @Override
     public String readUTF() throws IOException {
         int length = 0;
