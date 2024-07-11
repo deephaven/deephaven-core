@@ -36,6 +36,9 @@ class TableUpdateRecorder:
         self.modified_columns_list = []
 
     def record(self, update: TableUpdate, is_replay: bool):
+        if not update:
+            return
+        
         if self.chunk_size is None:
             self.added.append(update.added())
             self.removed.append(update.removed())
@@ -336,8 +339,7 @@ class TableListenerTestCase(BaseTestCase):
         class TestMergedListener(MergedListener):
             def on_update(self, updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
                 for update in updates.values():
-                    if update:
-                        tur.record(update, is_replay)
+                    tur.record(update, is_replay)
 
         tml = TestMergedListener()
         with self.subTest("Direct Handle"):
@@ -368,7 +370,7 @@ class TableListenerTestCase(BaseTestCase):
 
         def test_ml_func(updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
             if updates[t1] or updates[t3]:
-                    tur.record(updates[t1], is_replay)
+                tur.record(updates[t1], is_replay)
 
         with self.subTest("Direct Handle"):
             tur = TableUpdateRecorder()
@@ -444,11 +446,12 @@ class TableListenerTestCase(BaseTestCase):
         class TestMergedListener(MergedListener):
             def on_update(self, updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
                 for update in updates.values():
-                    if update:
-                        tur.record(update, is_replay)
+                    tur.record(update, is_replay)
 
         tml = TestMergedListener()
         t1.await_update()
+        t2.await_update()
+        t3.await_update()
         with self.subTest("MergedListener - replay"):
             tur = TableUpdateRecorder()
             mlh = merged_listen([t1, t2, t3], tml, do_replay=True)
@@ -458,11 +461,10 @@ class TableListenerTestCase(BaseTestCase):
             ensure_ugp_cycles(tur, cycles=6)
             mlh.stop()
             self.assertGreaterEqual(len(tur.replays), 6)
-            self.assertTrue(any(tur.replays))
+            self.assertEqual(tur.replays.count(True), 2 * 3)
 
         def test_ml_func(updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
-            if updates[t1] or updates[t3]:
-                    tur.record(updates[t1], is_replay)
+            tur.record(updates[t3], is_replay)
 
         with self.subTest("Direct Handle - replay"):
             tur = TableUpdateRecorder()
@@ -474,7 +476,7 @@ class TableListenerTestCase(BaseTestCase):
             ensure_ugp_cycles(tur, cycles=6)
             mlh.stop()
             self.assertGreaterEqual(len(tur.replays), 6)
-            self.assertTrue(any(tur.replays))
+            self.assertEqual(tur.replays.count(True), 2)
 
 
 if __name__ == "__main__":

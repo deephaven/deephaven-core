@@ -516,7 +516,7 @@ class MergedListenerHandle(JObjectWrapper):
             replay_updates (Optional[jpy.JType]): the replay updates, only provided during replay.
         """
         if replay_updates:
-            self.listener({t: tu for t, tu in zip(self.tables, j_list_to_list(replay_updates))}, True)
+            self.listener({t: TableUpdate(t, tu) for t, tu in zip(self.tables, j_list_to_list(replay_updates))}, True)
         else:
             self.listener({lr.table: lr.table_update() for lr in self.listener_recorders}, False)
 

@@ -84,7 +84,7 @@ public class PythonMergedListenerAdapter extends MergedListener {
             final TableUpdate update =
                     new TableUpdateImpl(recorder.getParent().getRowSet(), emptyRowSet, emptyRowSet, emptyShift,
                             emptyColumnSet);
-            updates.add(recorder.getUpdate());
+            updates.add(update);
         }
 
         pyCallable.call("__call__", updates);
