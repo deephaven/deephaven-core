@@ -4,15 +4,14 @@
 package io.deephaven.engine.rowset;
 
 /**
- * Implementing this indicates that instances should be informed when shifts occur to perform their own bookkeeping as
- * necessary.
+ * Callback interface for propagating shifts over entire {@link RowSet RowSets}.
  */
 public interface RowSetShiftCallback {
     /**
-     * Signals that the range should be shifted by the provided offset.
+     * Signals that the row keys in {@code rowSet} should be shifted by the provided {@code shiftDelta}.
      *
-     * @param rowSet The keys to shift
-     * @param offset The offset to move each key by
+     * @param rowSet The row keys to shift
+     * @param shiftDelta The shift delta to apply to each row key in {@code rowSet}
      */
-    void shift(RowSet rowSet, long offset);
+    void shift(RowSet rowSet, long shiftDelta);
 }
