@@ -261,22 +261,28 @@ def adapter(
     map to the Iceberg catalog Java API properties and are used to create the catalog and file IO implementations.
 
     The minimal set of properties required to create an Iceberg catalog are the following:
-    - `catalog-impl` - the Java catalog implementation to use.
-    - `warehouse` - the location of the warehouse.
+    - `catalog-impl` or `type` - the Java catalog implementation to use. When providing `catalog-impl`, the
+            implementing Java class should be provided (e.g. `org.apache.iceberg.rest.RESTCatalog` or
+            `org.apache.iceberg.aws.glue.GlueCatalog`. Choices for `type` include `hive`, `hadoop`, `rest`, `glue`,
+            `nessie`, `jdbc`.
     - `uri` - the URI of the catalog
-    - `io-impl` - the Java file IO implementation to use.
+    - `io-impl` - the Java file IO implementation to use. Common choices are: `org.apache.iceberg.aws.s3.S3FileIO`
+            and `org.apache.iceberg.hadoop.HadoopFileIO`
 
-    Additional properties can be provided to configure the catalog and file IO implementations. For example, when using
-    an S3 backend, the following properties can be provided:
+    Other common properties include:
+    - `warehouse` - the location of the data warehouse.
+    - `client.region` - the region of the AWS client.
+    - `s3.access-key-id` - the S3 access key for reading files.
+    - `s3.secret-access-key` - the S3 secret access key for reading files.
+    - `s3.endpoint` - the S3 endpoint to connect to.
 
     Example usage #1 - REST catalog with an S3 backend (using MinIO):
     ```
     from deephaven.experimental import s3, iceberg
 
     properties = {
-        "catalog-impl" : "org.apache.iceberg.rest.RESTCatalog",
+        "type" : "rest",
         "uri" : "http://rest:8181",
-        "warehouse" : "s3a://warehouse/wh",
         "io-impl" : "org.apache.iceberg.aws.s3.S3FileIO",
         "client.region" : "us-east-1",
         "s3.access-key-id" : "admin",

@@ -44,6 +44,8 @@ public class IcebergCatalogAdapter {
     private final Catalog catalog;
     private final FileIO fileIO;
 
+    private final Map<String, String> properties = new HashMap<>();;
+
     /**
      * Construct an IcebergCatalogAdapter from a catalog and file IO.
      */
@@ -52,6 +54,20 @@ public class IcebergCatalogAdapter {
             @NotNull final FileIO fileIO) {
         this.catalog = catalog;
         this.fileIO = fileIO;
+    }
+
+    /**
+     * Construct an IcebergCatalogAdapter from a catalog, file IO, and property collection.
+     */
+    IcebergCatalogAdapter(
+            @NotNull final Catalog catalog,
+            @NotNull final FileIO fileIO,
+            @NotNull final Map<String, String> properties) {
+        this.catalog = catalog;
+        this.fileIO = fileIO;
+
+        // Copy the properties map to ensure immutability.
+        this.properties.putAll(properties);
     }
 
     /**

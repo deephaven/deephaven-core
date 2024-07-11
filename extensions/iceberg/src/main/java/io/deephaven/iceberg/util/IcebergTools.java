@@ -32,10 +32,24 @@ public abstract class IcebergTools {
      * This is a wrapper around {@link CatalogUtil#buildIcebergCatalog(String, Map, Object)} and accepts the same
      * properties. The minimal set of properties required to create an Iceberg catalog are:
      * <ul>
-     * <li>{@link CatalogProperties#CATALOG_IMPL}</li>
-     * <li>{@link CatalogProperties#URI}</li>
-     * <li>{@link CatalogProperties#WAREHOUSE_LOCATION}</li>
-     * <li>{@link CatalogProperties#FILE_IO_IMPL}</li>
+     * <li>{@code "catalog-impl"} or {@code "type"} - the Java catalog implementation to use. When providing
+     * {@code "catalog-impl"}, the implementing Java class should be provided (e.g.
+     * {@code "org.apache.iceberg.rest.RESTCatalog"} or {@code "org.apache.iceberg.aws.glue.GlueCatalog")}. Choices for
+     * {@code "type"} include {@code "hive"}, {@code "hadoop"}, {@code "rest"}, {@code "glue"}, {@code "nessie"},
+     * {@code "jdbc"}.</li>
+     * <li>{@code "uri"} - the URI of the catalog.</li>
+     * <li>{@code "io-impl"} - the Java FileIO implementation to use. Common choices are:
+     * {@code "org.apache.iceberg.aws.s3.S3FileIO"} and {@code "org.apache.iceberg.hadoop.HadoopFileIO"}</li>
+     * </ul>
+     * <p>
+     * Other common properties include:
+     * </p>
+     * <ul>
+     * <li>{@code "warehouse"} - the location of the data warehouse.</li>
+     * <li>{@code "client.region"} - the region of the AWS client.</li>
+     * <li>{@code "s3.access-key-id"} - the S3 access key for reading files.</li>
+     * <li>{@code "s3.secret-access-key"} - the S3 secret access key for reading files.</li>
+     * <li>{@code "s3.endpoint"} - the S3 endpoint to connect to.</li>
      * </ul>
      * <p>
      * Additional properties for the specific catalog should also be included, such as as S3-specific properties for
@@ -51,17 +65,13 @@ public abstract class IcebergTools {
             @NotNull final Map<String, String> properties) {
 
         // Validate the minimum required properties are set.
-        if (!properties.containsKey(CatalogProperties.CATALOG_IMPL)) {
-            throw new IllegalArgumentException(String.format("Catalog implementation property '%s' is required",
+        if (!properties.containsKey(CatalogProperties.CATALOG_IMPL) && !properties.containsKey("type")) {
+            throw new IllegalArgumentException(String.format("Catalog type or implementation property '%s' is required",
                     CatalogProperties.CATALOG_IMPL));
         }
         if (!properties.containsKey(CatalogProperties.URI)) {
             throw new IllegalArgumentException(String.format("Catalog URI property '%s' is required",
                     CatalogProperties.URI));
-        }
-        if (!properties.containsKey(CatalogProperties.WAREHOUSE_LOCATION)) {
-            throw new IllegalArgumentException(String.format("Warehouse location property '%s' is required",
-                    CatalogProperties.WAREHOUSE_LOCATION));
         }
         if (!properties.containsKey(CatalogProperties.FILE_IO_IMPL)) {
             throw new IllegalArgumentException(String.format("File IO implementation property '%s' is required",
@@ -78,6 +88,6 @@ public abstract class IcebergTools {
         final String fileIOImpl = properties.get(CatalogProperties.FILE_IO_IMPL);
         final FileIO fileIO = CatalogUtil.loadFileIO(fileIOImpl, properties, null);
 
-        return new IcebergCatalogAdapter(catalog, fileIO);
+        return new IcebergCatalogAdapter(catalog, fileIO, properties);
     }
 }
