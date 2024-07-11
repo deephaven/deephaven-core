@@ -1567,13 +1567,6 @@ public final class ParquetTableReadWriteTest {
         }
     }
 
-    @Test
-    public void sortTesting() {
-        final String path = "/Users/shivammalhotra/Documents/devin-data.parquet";
-        final Table table = readTable(path).coalesce();
-        table.sort("age").select();
-    }
-
     /**
      * Test if we can read/sort a parquet file with a null string column encoded as a dictionary.
      */
