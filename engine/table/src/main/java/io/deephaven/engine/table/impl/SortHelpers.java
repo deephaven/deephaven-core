@@ -361,9 +361,7 @@ public class SortHelpers {
 
         if (symbolTable.isEmpty()) {
             // All nulls, so we can just return the row set as the sort mapping
-            final long[] rowKeysArray = new long[rowSet.intSize()];
-            rowSet.fillRowKeyChunk(WritableLongChunk.writableChunkWrap(rowKeysArray));
-            return new ArraySortMapping(rowKeysArray);
+            return new IndexedSortMapping(rowSet.size(), new long[] {rowSet.size()}, new RowSet[] {rowSet});
         }
 
         if (symbolTable.size() >= sortSize) {
