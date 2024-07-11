@@ -59,7 +59,7 @@ public class TestLowGarbageArrayIntegerMap extends TestCase {
         try {
             integerToStringMap.put(-1, "negative one");
             fail("expected bad index to fail");
-        } catch (RequirementFailure requirementFailure) {
+        } catch (RequirementFailure expected) {
         }
 
         try {
