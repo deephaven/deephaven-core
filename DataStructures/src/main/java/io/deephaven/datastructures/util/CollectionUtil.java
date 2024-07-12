@@ -30,29 +30,17 @@ public class CollectionUtil {
 
     // ----------------------------------------------------------------
     public static <K, V> Map<K, V> unmodifiableMapFromArray(Class<K> typeK, Class<V> typeV, Object... data) {
-        try {
-            return Collections.unmodifiableMap(mapFromArray(typeK, typeV, data));
-        } catch (RequirementFailure e) {
-            throw e.adjustForDelegatingMethod();
-        }
+        return Collections.unmodifiableMap(mapFromArray(typeK, typeV, data));
     }
 
     // ----------------------------------------------------------------
     public static <K, V> Map<K, V> unmodifiableInvertMap(Map<V, K> sourceMap) {
-        try {
-            return Collections.unmodifiableMap(invertMap(sourceMap));
-        } catch (RequirementFailure e) {
-            throw e.adjustForDelegatingMethod();
-        }
+        return Collections.unmodifiableMap(invertMap(sourceMap));
     }
 
     // ----------------------------------------------------------------
     public static <E> Set<E> unmodifiableSetFromArray(E... data) {
-        try {
-            return Collections.unmodifiableSet(setFromArray(data));
-        } catch (RequirementFailure e) {
-            throw e.adjustForDelegatingMethod();
-        }
+        return Collections.unmodifiableSet(setFromArray(data));
     }
 
     // ----------------------------------------------------------------
