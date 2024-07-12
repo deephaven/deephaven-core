@@ -3,7 +3,6 @@
 //
 package io.deephaven.base.verify;
 
-import java.awt.EventQueue;
 import java.util.function.Consumer;
 
 // --------------------------------------------------------------------
@@ -356,25 +355,6 @@ public final class Assert {
         if (type.isInstance(o)) {
             fail("!(" + name + " instanceof " + type + ")",
                     name + " instanceof " + o.getClass() + " (" + ExceptionMessageUtil.valueAndName(o, name) + ")");
-        }
-    }
-
-    // ################################################################
-    // isAWTThread, isNotAWTThread
-
-    // ----------------------------------------------------------------
-    /** assert (current thread is AWT Event Dispatch Thread) */
-    public static void isAWTThread() {
-        if (!EventQueue.isDispatchThread()) {
-            fail("\"" + Thread.currentThread().getName() + "\".isAWTThread()");
-        }
-    }
-
-    // ----------------------------------------------------------------
-    /** assert (current thread is AWT Event Dispatch Thread) */
-    public static void isNotAWTThread() {
-        if (EventQueue.isDispatchThread()) {
-            fail("!\"" + Thread.currentThread().getName() + "\".isAWTThread()");
         }
     }
 

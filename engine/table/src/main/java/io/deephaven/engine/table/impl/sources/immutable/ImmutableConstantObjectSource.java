@@ -16,7 +16,6 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.sources.*;
-import io.deephaven.engine.table.impl.util.ShiftData;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
@@ -29,7 +28,7 @@ import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
  */
 public class ImmutableConstantObjectSource<T>
         extends AbstractColumnSource<T>
-        implements ImmutableColumnSourceGetDefaults.ForObject<T>, ShiftData.ShiftCallback, InMemoryColumnSource,
+        implements ImmutableColumnSourceGetDefaults.ForObject<T>, InMemoryColumnSource,
         RowKeyAgnosticChunkSource<Values> /* MIXIN_IMPLS */ {
 
     private final T value;
@@ -66,9 +65,6 @@ public class ImmutableConstantObjectSource<T>
             @NotNull final RowSequence rowSequence) {
         fillChunk(context, destination, rowSequence);
     }
-
-    @Override
-    public final void shift(final long start, final long end, final long offset) {}
 
     @Override
     public void fillChunkUnordered(

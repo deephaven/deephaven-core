@@ -20,8 +20,8 @@ dependencies {
             TestTools.projectDependency(project, 'engine-rowset'),
             TestTools.projectDependency(project, 'engine-table')
 
-    testAnnotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.35'
-    testCompileOnly 'org.openjdk.jmh:jmh-generator-annprocess:1.35'
+    testAnnotationProcessor libs.jmh.generator.annprocess
+    testCompileOnly libs.jmh.generator.annprocess
 
     testRuntimeOnly project(path: ':configs')
     testRuntimeOnly project(path: ':test-configs')

@@ -20,15 +20,15 @@ dependencies {
     implementation project(':web-shared-beans')
     implementation project(':web-client-backplane')
 
-    implementation 'com.vertispan.tsdefs:jsinterop-ts-defs-annotations:1.0.0-RC4'
-    typescriptDoclet 'com.vertispan.tsdefs:jsinterop-ts-defs-doclet:1.0.0-RC4'
+    implementation libs.vertispan.ts.defs.annotations
+    typescriptDoclet libs.vertispan.ts.defs.doclet
 
-    implementation 'com.vertispan.nio:gwt-nio:1.0-alpha-1'
+    implementation libs.vertispan.nio.gwt
 
     js project(path: ':proto:raw-js-openapi', configuration: 'js')
 
     testImplementation libs.junit4
-    testImplementation 'org.seleniumhq.selenium:selenium-remote-driver:4.16.1'
+    testImplementation libs.selenium.remote.driver
 
     implementation libs.elemental.core
     implementation libs.elemental.promise
@@ -70,8 +70,10 @@ artifacts {
 }
 
 def gwtUnitTest = tasks.register('gwtUnitTest', Test) { t ->
+    t.group = 'verification'
     t.systemProperties = [
-            'gwt.args': ['-runStyle HtmlUnit',
+            'gwt.args': ['-sourceLevel auto',
+                         '-runStyle HtmlUnit',
                          '-ea',
                          '-style PRETTY',
                          "-war ${layout.buildDirectory.dir('unitTest-war').get().asFile.absolutePath}"
@@ -137,11 +139,13 @@ def stopSelenium = project.tasks.register('stopSelenium', DockerRemoveContainer)
 }
 
 def gwtIntegrationTest = tasks.register('gwtIntegrationTest', Test) { t ->
+    t.group = 'verification'
     t.dependsOn(deephavenDocker.portTask, seleniumHealthy)
     t.finalizedBy(deephavenDocker.endTask, stopSelenium)
-    doFirst {
+    t.doFirst {
         def webdriverUrl = "http://localhost:${seleniumPort}/"
-        t.systemProperty('gwt.args', ["-runStyle io.deephaven.web.junit.RunStyleRemoteWebDriver:${webdriverUrl}?firefox",
+        t.systemProperty('gwt.args', ['-sourceLevel auto',
+                                      "-runStyle io.deephaven.web.junit.RunStyleRemoteWebDriver:${webdriverUrl}?firefox",
                                       '-ea',
                                       '-style PRETTY',
                                       "-setProperty dh.server=http://${deephavenDocker.containerName.get()}:10000",
@@ -149,12 +153,43 @@ def gwtIntegrationTest = tasks.register('gwtIntegrationTest', Test) { t ->
         ].join(' '))
         t.classpath += tasks.getByName('gwtCompile').src
     }
-    t.finalizedBy(deephavenDocker.endTask)
     t.systemProperties = [
             'gwt.persistentunitcachedir':layout.buildDirectory.dir('integrationTest-unitCache').get().asFile.absolutePath,
             'webdriver.test.host':'host.docker.internal',
     ]
     t.include '**/ClientIntegrationTestSuite.class'
+    t.useJUnit()
+    t.scanForTestClasses = false
+}
+
+tasks.register('manualGwtTest', Test) {t ->
+    t.group = 'verification'
+    t.description = '''Test wiring to run either unit or integration tests with a manual browser and an already-running server.
+This makes it easier to run a tests repeatedly, either one at a time or as a class/suite, without
+paying to start/stop selenium and deephaven each time. The port will remain constant at 8888 each
+run to let breakpoints continue to work across repeated runs.
+
+To use this, first start a server on port 10000 with anonymous access enabled. Then, either select
+a test in IntelliJ to run using the manualGwtTest task, or invoke from the command line with info
+logging enabled and a specific test selected, e.g.:
+./gradlew :web-client-api:manualGwtTest --info --tests io.deephaven.web.client.api.NullValueTestGwt
+
+Click the URL that is printed out to run the test in your browser, or refresh an existing browser window.'''
+    t.doFirst {
+        t.systemProperty 'gwt.args', ['-port 8888',
+                                      '-sourceLevel auto',
+                                      '-runStyle Manual:1',
+                                      '-ea',
+                                      '-style PRETTY',
+                                      '-setProperty dh.server=http://localhost:10000',
+                                      '-setProperty compiler.useSourceMaps=true',
+                                      "-war ${layout.buildDirectory.dir('manualTest-war').get().asFile.absolutePath}"
+        ].join(' ')
+        t.classpath += tasks.getByName('gwtCompile').src
+    }
+    t.systemProperties = [
+            'gwt.persistentunitcachedir':layout.buildDirectory.dir('integrationTest-unitCache').get().asFile.absolutePath,
+    ]
     t.useJUnit()
     t.scanForTestClasses = false
 }

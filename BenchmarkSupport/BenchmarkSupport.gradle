@@ -24,7 +24,7 @@ dependencies {
     implementation project(':extensions-parquet-table')
     implementation project(':extensions-parquet-base')
     implementation project(':Configuration')
-    implementation 'org.openjdk.jmh:jmh-core:1.20'
+    implementation libs.jmh.core
 
     implementation libs.univocity.parsers
 

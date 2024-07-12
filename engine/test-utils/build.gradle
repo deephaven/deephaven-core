@@ -18,7 +18,7 @@ dependencies {
     implementation libs.commons.lang3
     implementation libs.trove
 
-    implementation 'it.unimi.dsi:fastutil:8.5.13'
+    implementation libs.dsi.fastutil
 
     implementation libs.junit4
     implementation platform(libs.junit.bom)

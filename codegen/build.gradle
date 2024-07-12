@@ -7,6 +7,6 @@ plugins {
 description 'Codegen: Code generation utilities'
 
 dependencies {
-    implementation 'org.freemarker:freemarker:2.3.31'
+    implementation libs.freemarker
     testImplementation libs.junit4
 }

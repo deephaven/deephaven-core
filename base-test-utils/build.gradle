@@ -10,7 +10,7 @@ dependencies {
     compileOnlyApi libs.jetbrains.annotations
     implementation libs.commons.lang3
 
-    api 'io.deephaven:hash:0.1.0'
+    api libs.deephaven.hash
 
     api libs.junit4
     api libs.jmock.junit4

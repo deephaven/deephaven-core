@@ -379,8 +379,8 @@ public class TypeUtils {
      * @return true if {@code c} is a numeric primitive, false otherwise
      */
     public static boolean isPrimitiveNumeric(@NotNull final Class<?> c) {
-        return c.equals(double.class) || c.equals(float.class)
-                || c.equals(int.class) || c.equals(long.class) || c.equals(short.class) || c.equals(byte.class);
+        return c == double.class || c == float.class
+                || c == int.class || c == long.class || c == short.class || c == byte.class;
     }
 
     /**
@@ -400,7 +400,7 @@ public class TypeUtils {
      * @return true if {@code c} equals char.class, false otherwise
      */
     public static boolean isPrimitiveChar(@NotNull final Class<?> c) {
-        return c.equals(char.class);
+        return c == char.class;
     }
 
     /**
@@ -410,7 +410,7 @@ public class TypeUtils {
      * @return true if Character.class is assignable from {@code c}, false otherwise
      */
     public static boolean isBoxedChar(@NotNull final Class<?> c) {
-        return Character.class.isAssignableFrom(c);
+        return Character.class == c;
     }
 
     /**
@@ -420,7 +420,7 @@ public class TypeUtils {
      * @return true if Integer.class is assignable from {@code c}, false otherwise
      */
     public static boolean isBoxedInteger(@NotNull final Class<?> c) {
-        return Integer.class.isAssignableFrom(c);
+        return Integer.class == c;
     }
 
     /**
@@ -430,7 +430,7 @@ public class TypeUtils {
      * @return true if Long.class is assignable from {@code c}, false otherwise
      */
     public static boolean isBoxedLong(@NotNull final Class<?> c) {
-        return Long.class.isAssignableFrom(c);
+        return Long.class == c;
     }
 
     /**
@@ -440,7 +440,7 @@ public class TypeUtils {
      * @return true if Short.class is assignable from {@code c}, false otherwise
      */
     public static boolean isBoxedShort(@NotNull final Class<?> c) {
-        return Short.class.isAssignableFrom(c);
+        return Short.class == c;
     }
 
     /**
@@ -450,7 +450,7 @@ public class TypeUtils {
      * @return true if Float.class is assignable from {@code c}, false otherwise
      */
     public static boolean isBoxedFloat(@NotNull final Class<?> c) {
-        return Float.class.isAssignableFrom(c);
+        return Float.class == c;
     }
 
     /**
@@ -460,7 +460,7 @@ public class TypeUtils {
      * @return true if Double.class is assignable from {@code c}, false otherwise
      */
     public static boolean isBoxedDouble(@NotNull final Class<?> c) {
-        return Double.class.isAssignableFrom(c);
+        return Double.class == c;
     }
 
     /**
@@ -470,7 +470,7 @@ public class TypeUtils {
      * @return true if Byte.class is assignable from {@code c}, false otherwise
      */
     public static boolean isBoxedByte(@NotNull final Class<?> c) {
-        return Byte.class.isAssignableFrom(c);
+        return Byte.class == c;
     }
 
     /**
@@ -490,7 +490,7 @@ public class TypeUtils {
      * @return true if Boolean.class is assignable from {@code c}, false otherwise
      */
     public static boolean isBoxedBoolean(@NotNull final Class<?> c) {
-        return Boolean.class.isAssignableFrom(c);
+        return Boolean.class == c;
     }
 
     /**
@@ -532,7 +532,7 @@ public class TypeUtils {
      * @return true if the type is a String, false otherwise
      */
     public static boolean isString(Class<?> type) {
-        return String.class.isAssignableFrom(type);
+        return String.class == type;
     }
 
     /**

@@ -10,16 +10,16 @@ import java.io.UTFDataFormatException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 
-import io.deephaven.base.string.cache.CharSequenceAdapterBuilder;
-import io.deephaven.base.string.cache.StringCache;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * This is an InputStream implementation which reads from a java.nio.ByteBuffer. If a read operation crosses the end of
  * the buffer, the BufferUnderflowException is converted to an EOFException.
- *
+ * <p>
  * The stream contains no state other than the buffer itself, so the buffer can be exchanged at will with the
  * setBuffer() method.
+ * <p>
+ * Endianness is determined by the provided buffer itself.
  */
 public class ByteBufferInputStream extends java.io.InputStream implements DataInput {
 
@@ -61,7 +61,7 @@ public class ByteBufferInputStream extends java.io.InputStream implements DataIn
     }
 
     @Override
-    public int read(byte b[]) throws IOException {
+    public int read(byte[] b) throws IOException {
         int n = Math.min(buf.remaining(), b.length);
         if (n == 0 && b.length > 0) {
             return -1;
@@ -71,7 +71,7 @@ public class ByteBufferInputStream extends java.io.InputStream implements DataIn
     }
 
     @Override
-    public int read(byte b[], int off, int len) throws IOException {
+    public int read(byte[] b, int off, int len) throws IOException {
         int n = Math.min(buf.remaining(), len);
         if (n == 0 && len > 0) {
             return -1;
@@ -120,7 +120,7 @@ public class ByteBufferInputStream extends java.io.InputStream implements DataIn
     // -----------------------------------------------------------------------------------
 
     @Override
-    public void readFully(byte b[]) throws IOException {
+    public void readFully(byte[] b) throws IOException {
         try {
             buf.get(b, 0, b.length);
         } catch (BufferUnderflowException x) {
@@ -129,7 +129,7 @@ public class ByteBufferInputStream extends java.io.InputStream implements DataIn
     }
 
     @Override
-    public void readFully(byte b[], int off, int len) throws IOException {
+    public void readFully(byte[] b, int off, int len) throws IOException {
         try {
             buf.get(b, off, len);
         } catch (BufferUnderflowException x) {
@@ -304,6 +304,7 @@ public class ByteBufferInputStream extends java.io.InputStream implements DataIn
         return new String(chars);
     }
 
+    @NotNull
     @Override
     public String readUTF() throws IOException {
         int length = 0;
@@ -337,49 +338,5 @@ public class ByteBufferInputStream extends java.io.InputStream implements DataIn
         }
 
         return new String(chars, 0, length);
-    }
-
-    public String readUTF(@NotNull final CharSequenceAdapterBuilder output,
-            @NotNull final StringCache<String> cache) throws IOException {
-        readUTF(output);
-        return cache.getCachedString(output);
-    }
-
-    public void readUTF(@NotNull final CharSequenceAdapterBuilder output) throws IOException {
-        int total = readUnsignedShort();
-
-        output.clear().reserveCapacity(total);
-
-        while (total > 0) {
-            final int b1 = buf.get();
-            if ((b1 & 0x80) == 0) {
-                output.append((char) (b1 & 0xff));
-                total--;
-            } else if ((b1 & 0xe0) == 0xc0) {
-                final int b2 = buf.get();
-                if ((b2 & 0xc0) != 0x80) {
-                    throw new UTFDataFormatException("malformed second byte " + b2);
-                }
-                output.append((char) (((b1 & 0x1F) << 6) | (b2 & 0x3F)));
-                total -= 2;
-            } else if ((b1 & 0xf0) == 0xe0) {
-                final int b2 = buf.get();
-                final int b3 = buf.get();
-                if ((b2 & 0xc0) != 0x80 || (b3 & 0xc0) != 0x80) {
-                    throw new UTFDataFormatException("malformed second byte " + b2 + " or third byte " + b3);
-                }
-                output.append((char) (((b1 & 0x0F) << 12) | ((b2 & 0x3F) << 6) | (b3 & 0x3F)));
-                total -= 3;
-            } else {
-                throw new UTFDataFormatException("malformed first byte " + b1);
-            }
-        }
-    }
-
-    public void read(ByteBuffer dest, int length) {
-        final int sourceLimit = buf.limit();
-        buf.limit(buf.position() + length); // Constrain buf.remaining() to length
-        dest.put(buf);
-        buf.limit(sourceLimit);
     }
 }
