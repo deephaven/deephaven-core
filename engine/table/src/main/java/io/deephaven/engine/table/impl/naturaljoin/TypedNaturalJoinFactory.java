@@ -262,8 +262,10 @@ public class TypedNaturalJoinFactory {
         builder.addStatement("$T.statementNeverExecuted($S)", Assert.class,
                 "Could not find existing right row in state");
         builder.nextControlFlow("else");
-        // we need to check if our left hand side is empty at this location, if so then we must mark the location as a tombstone and reduce the number of entries in the table
-        builder.addStatement("final boolean leftEmpty = $LLeftRowSet.getUnsafe($L).isEmpty()", sourceType, tableLocation);
+        // we need to check if our left hand side is empty at this location, if so then we must mark the location as a
+        // tombstone and reduce the number of entries in the table
+        builder.addStatement("final boolean leftEmpty = $LLeftRowSet.getUnsafe($L).isEmpty()", sourceType,
+                tableLocation);
         builder.beginControlFlow("if (leftEmpty)");
         builder.addStatement("$LRightRowKey.set($L, $L)", sourceType, tableLocation, hasherConfig.tombstoneStateName);
         builder.addStatement("liveEntries--");

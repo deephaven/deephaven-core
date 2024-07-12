@@ -974,7 +974,8 @@ public class TypedHasherFactory {
         } else {
             extraParamNames = "";
         }
-        builder.beginControlFlow("if (migrateOneLocation(--rehashPointer" + (hasherConfig.supportTombstones ? ", false" : "") + extraParamNames + "))");
+        builder.beginControlFlow("if (migrateOneLocation(--rehashPointer"
+                + (hasherConfig.supportTombstones ? ", false" : "") + extraParamNames + "))");
         builder.addStatement("rehashedEntries++");
         builder.endControlFlow();
         builder.endControlFlow();
@@ -1050,7 +1051,8 @@ public class TypedHasherFactory {
 
         builder.addStatement("int destinationTableLocation = hashToTableLocation(hash)");
 
-        builder.beginControlFlow("while (!isStateEmpty($L.getUnsafe(destinationTableLocation)))", hasherConfig.mainStateName);
+        builder.beginControlFlow("while (!isStateEmpty($L.getUnsafe(destinationTableLocation)))",
+                hasherConfig.mainStateName);
         builder.addStatement("destinationTableLocation = nextTableLocation(destinationTableLocation)");
         builder.endControlFlow();
 
@@ -1086,7 +1088,8 @@ public class TypedHasherFactory {
             extraParamNames = "";
         }
 
-        builder.addStatement("while (migrateOneLocation(location++" + (hasherConfig.supportTombstones ? ", true" : "") + extraParamNames + ") && location < alternateTableSize)");
+        builder.addStatement("while (migrateOneLocation(location++" + (hasherConfig.supportTombstones ? ", true" : "")
+                + extraParamNames + ") && location < alternateTableSize)");
 
         final MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("migrateFront")
                 .addModifiers(Modifier.PROTECTED)
@@ -1310,9 +1313,11 @@ public class TypedHasherFactory {
             buildSpec.insert.accept(hasherConfig, chunkTypes, builder);
         }
         builder.addStatement("break");
-        final String keyEqualsExpression = alternate ? getEqualsStatementAlternate(chunkTypes) : getEqualsStatement(chunkTypes);
+        final String keyEqualsExpression =
+                alternate ? getEqualsStatementAlternate(chunkTypes) : getEqualsStatement(chunkTypes);
         if (hasherConfig.supportTombstones) {
-            builder.nextControlFlow("else if (!isStateDeleted($L) && " + keyEqualsExpression + ")", buildSpec.stateValueName);
+            builder.nextControlFlow("else if (!isStateDeleted($L) && " + keyEqualsExpression + ")",
+                    buildSpec.stateValueName);
         } else {
             builder.nextControlFlow("else if (" + keyEqualsExpression + ")");
         }
@@ -1398,14 +1403,12 @@ public class TypedHasherFactory {
         }
         builder.addStatement("int $L = $L", tableLocationName, firstTableLocationName);
 
-        final String stateValueName ;
-        if(ps.stateValueName != null) {
+        final String stateValueName;
+        if (ps.stateValueName != null) {
             stateValueName = ps.stateValueName;
-        }
-        else if (hasherConfig.supportTombstones) {
+        } else if (hasherConfig.supportTombstones) {
             stateValueName = "stateValue";
-        }
-        else {
+        } else {
             stateValueName = null;
         }
         if (!alternate && stateValueName != null) {
@@ -1419,10 +1422,11 @@ public class TypedHasherFactory {
                     stateSourceName, tableLocationName);
         } else {
             builder.beginControlFlow("while (!isStateEmpty($L = $L.getUnsafe($L)))", stateValueName,
-                stateSourceName, tableLocationName);
+                    stateSourceName, tableLocationName);
         }
 
-        final String equalsStatement = alternate ? getEqualsStatementAlternate(chunkTypes) : getEqualsStatement(chunkTypes);
+        final String equalsStatement =
+                alternate ? getEqualsStatementAlternate(chunkTypes) : getEqualsStatement(chunkTypes);
         if (hasherConfig.supportTombstones) {
             builder.beginControlFlow("if (!isStateDeleted($L) && " + equalsStatement + ")", stateValueName);
         } else {

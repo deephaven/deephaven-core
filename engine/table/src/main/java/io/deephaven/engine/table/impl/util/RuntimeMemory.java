@@ -158,7 +158,7 @@ public class RuntimeMemory {
             final DecimalFormat format = new DecimalFormat("###,###");
             return "Sample{" +
                     "usedMemory (calculated)=" + format.format(totalMemory - freeMemory) +
-                    ", freeMemory=" + format.format(freeMemory)  +
+                    ", freeMemory=" + format.format(freeMemory) +
                     ", totalMemory=" + format.format(totalMemory) +
                     ", totalCollections=" + format.format(totalCollections) +
                     ", totalCollectionTimeMs=" + format.format(totalCollectionTimeMs) +

@@ -300,7 +300,8 @@ public class HasherConfig<T> {
             Assert.neqNull(stateType, "stateType");
 
             return new HasherConfig<>(baseClass, classPrefix, packageGroup, packageMiddle, openAddressed,
-                    openAddressedAlternate, supportTombstones, alwaysMoveMain, includeOriginalSources, supportRehash, mainStateName,
+                    openAddressedAlternate, supportTombstones, alwaysMoveMain, includeOriginalSources, supportRehash,
+                    mainStateName,
                     overflowOrAlternateStateName, emptyStateName, tombstoneStateName,
                     stateType, moveMainFull, moveMainAlternate, rehashFullSetup, extraPartialRehashParameters, probes,
                     builds, extraMethods);
