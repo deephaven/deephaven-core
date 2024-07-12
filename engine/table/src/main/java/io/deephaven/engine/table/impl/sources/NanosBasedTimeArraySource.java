@@ -15,14 +15,13 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
-import io.deephaven.engine.table.impl.util.ShiftCallback;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.*;
 
 public abstract class NanosBasedTimeArraySource<TIME_TYPE> extends AbstractColumnSource<TIME_TYPE>
-        implements FillUnordered<Values>, ShiftCallback, WritableColumnSource<TIME_TYPE>,
+        implements FillUnordered<Values>, WritableColumnSource<TIME_TYPE>,
         InMemoryColumnSource, WritableSourceWithPrepareForParallelPopulation, ConvertibleTimeSource {
 
     protected final LongArraySource nanoSource;
@@ -78,11 +77,6 @@ public abstract class NanosBasedTimeArraySource<TIME_TYPE> extends AbstractColum
 
     public final long getAndSetUnsafe(long rowKey, long newValue) {
         return nanoSource.getAndSetUnsafe(rowKey, newValue);
-    }
-
-    @Override
-    public void shift(long start, long end, long offset) {
-        nanoSource.shift(start, end, offset);
     }
     // endregion
 

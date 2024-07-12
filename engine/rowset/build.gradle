@@ -8,7 +8,7 @@ description 'Engine RowSets: Data structures for working with row keys'
 dependencies {
     api project(':engine-chunk')
     api project(':Base')
-    api libs.trove
+    implementation libs.trove
 
     implementation project(':Container')
     implementation project(':engine-context')

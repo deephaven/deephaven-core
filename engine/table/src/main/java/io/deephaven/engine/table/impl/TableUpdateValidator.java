@@ -10,9 +10,9 @@ import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.hashing.ChunkEquals;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.rowset.RowKeyRangeShiftCallback;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
@@ -325,7 +325,7 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
         columnInfos = ciBuilder.toArray(new ColumnInfo[0]);
     }
 
-    private class ColumnInfo implements RowSetShiftData.Callback, SafeCloseable {
+    private class ColumnInfo implements RowKeyRangeShiftCallback, SafeCloseable {
         final String name;
         final boolean isPrimitive;
         final ModifiedColumnSet modifiedColumnSet;
