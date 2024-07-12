@@ -7,10 +7,7 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
@@ -19,6 +16,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.table.impl.util.RuntimeMemory;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
@@ -1657,6 +1655,35 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             updateGraph.runWithinUnitTestCycle(() -> {
                 generateAppends(100_000, random, leftTable, leftColumnInfo);
                 generateAppends(100_000, random, rightTable, rightColumnInfo);
+            });
+        }
+    }
+
+    public void testCyclingBuckets() {
+        final QueryTable cells = TstUtils.testRefreshingTable(RowSetFactory.fromRange(0, 999).toTracking());
+
+        final Table left = cells.updateView("Bucket=ii", "SentinelL=1_000_000_000 + ii");
+        final Table right = cells.updateView("Bucket=ii", "SentinelR=2_000_000_000 + ii");
+
+        final Table joined = left.naturalJoin(right, "Bucket");
+
+        // create 100,000,000 buckets
+        final RuntimeMemory.Sample sample = new RuntimeMemory.Sample();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        for (long step = 0; step <= 100_000; ++step) {
+            final long fstep = step;
+            if (fstep % 10000 == 0) {
+                System.out.println("Step = " + fstep);
+                System.gc();
+                RuntimeMemory.getInstance().read(sample);
+                System.out.println(sample);
+            }
+            updateGraph.runWithinUnitTestCycle(() -> {
+                final WritableRowSet removed = RowSetFactory.fromRange(fstep * 1000, fstep * 1000 + 999);
+                removeRows(cells, removed);
+                final WritableRowSet added = RowSetFactory.fromRange((fstep + 1) * 1000, (fstep + 1) * 1000 + 999);
+                addToTable(cells, added);
+                cells.notifyListeners(added, removed, RowSetFactory.empty());
             });
         }
     }
