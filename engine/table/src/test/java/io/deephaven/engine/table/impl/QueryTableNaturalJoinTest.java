@@ -1662,8 +1662,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
     public void testCyclingBuckets() {
         final QueryTable cells = TstUtils.testRefreshingTable(RowSetFactory.fromRange(0, 999).toTracking());
 
-        final Table left = cells.updateView("Bucket=k", "SentinelL=1_000_000_000 + k");
-        final Table right = cells.updateView("Bucket=k", "SentinelR=2_000_000_000 + k");
+        final Table left = cells.updateView("Bucket=k", "SentinelL=1_000_000_000 + k").flatten();
+        final Table right = cells.updateView("Bucket=k", "SentinelR=2_000_000_000 + k").flatten();
 
         final Table joined = left.naturalJoin(right, "Bucket");
 
