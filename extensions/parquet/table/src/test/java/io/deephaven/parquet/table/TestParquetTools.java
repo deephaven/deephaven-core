@@ -21,10 +21,7 @@ import io.deephaven.parquet.table.layout.ParquetKeyValuePartitionedLayout;
 import io.deephaven.stringset.HashStringSet;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.time.DateTimeUtils;
-import io.deephaven.vector.IntVector;
-import io.deephaven.vector.IntVectorDirect;
-import io.deephaven.vector.LongVector;
-import io.deephaven.vector.LongVectorDirect;
+import io.deephaven.vector.*;
 import junit.framework.TestCase;
 import org.junit.*;
 
@@ -532,6 +529,36 @@ public class TestParquetTools {
         ParquetTools.writeTable(source, f2w.getPath());
         final Table readBack = ParquetTools.readTable(f2w.getPath());
         assertTableEquals(transform.apply(source), transform.apply(readBack));
+    }
+
+    // This method is used in a formula.  Do not remove
+    @SuppressWarnings("unused")
+    public static DoubleVector generateDoubles(int howMany) {
+        final double[] yarr = new double[howMany];
+        for (int ii = 0; ii < howMany; ii++) {
+            yarr[ii] = ii;
+        }
+        return new DoubleVectorDirect(yarr);
+    }
+
+    // This method is used in a formula.  Do not remove
+    @SuppressWarnings("unused")
+    public static FloatVector generateFloats(int howMany) {
+        final float[] yarr = new float[howMany];
+        for (int ii = 0; ii < howMany; ii++) {
+            yarr[ii] = ii;
+        }
+        return new FloatVectorDirect(yarr);
+    }
+
+    // This method is used in a formula.  Do not remove
+    @SuppressWarnings("unused")
+    public static ObjectVector<String> makeSillyStringArray(int howMany) {
+        final String[] fireTruck = new String[howMany];
+        for (int ii = 0; ii < howMany; ii++) {
+            fireTruck[ii] = String.format("%04d", ii);
+        }
+        return new ObjectVectorDirect<>(fireTruck);
     }
 
     /**
