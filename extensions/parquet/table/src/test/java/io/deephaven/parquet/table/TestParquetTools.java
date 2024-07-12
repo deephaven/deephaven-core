@@ -531,7 +531,7 @@ public class TestParquetTools {
         assertTableEquals(transform.apply(source), transform.apply(readBack));
     }
 
-    // This method is used in a formula.  Do not remove
+    // This method is used in a formula. Do not remove
     @SuppressWarnings("unused")
     public static DoubleVector generateDoubles(int howMany) {
         final double[] yarr = new double[howMany];
@@ -541,7 +541,7 @@ public class TestParquetTools {
         return new DoubleVectorDirect(yarr);
     }
 
-    // This method is used in a formula.  Do not remove
+    // This method is used in a formula. Do not remove
     @SuppressWarnings("unused")
     public static FloatVector generateFloats(int howMany) {
         final float[] yarr = new float[howMany];
@@ -551,7 +551,7 @@ public class TestParquetTools {
         return new FloatVectorDirect(yarr);
     }
 
-    // This method is used in a formula.  Do not remove
+    // This method is used in a formula. Do not remove
     @SuppressWarnings("unused")
     public static ObjectVector<String> makeSillyStringArray(int howMany) {
         final String[] fireTruck = new String[howMany];
