@@ -496,7 +496,7 @@ class MergedListenerHandle(JObjectWrapper):
             self.listener = listener
         n_params = len(signature(self.listener).parameters)
         if n_params != 2:
-            raise ValueError("merged listener function must have 2 (updates, is_replay) parameters.")
+            raise ValueError("merged listener function must have 2 parameters (updates, is_replay).")
 
 
         try:
@@ -521,7 +521,7 @@ class MergedListenerHandle(JObjectWrapper):
             self.listener({lr.table: lr.table_update() for lr in self.listener_recorders}, False)
 
     def start(self, do_replay: bool = False, replay_lock: Literal["shared", "exclusive"] = "shared") -> None:
-        """Start the listener.
+        """Start the listener by registering it with the tables and listening for updates.
 
         Args:
             do_replay (bool): whether to replay the initial snapshots of the tables, default is False

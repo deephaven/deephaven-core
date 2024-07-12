@@ -28,7 +28,7 @@ import java.util.stream.Stream;
  * A Deephaven merged listener which fires when any of its bound listener recorders has updates and all of its
  * dependencies have been satisfied. The listener then invokes the Python listener object.
  *
- * The Python listener object must be a Python MergedListener instance that provides a "process" method implementation
+ * The Python listener object must be a Python MergedListener instance that provides a "_process" method implementation
  * with no argument.
  */
 public class PythonMergedListenerAdapter extends MergedListener {
