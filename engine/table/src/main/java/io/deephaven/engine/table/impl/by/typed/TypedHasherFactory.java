@@ -639,6 +639,7 @@ public class TypedHasherFactory {
         hasherBuilder.addMethod(createHashMethod(chunkTypes));
 
         if (hasherConfig.openAddressed) {
+            hasherBuilder.addMethod(createIsEmptyMethod(hasherConfig));
             if (hasherConfig.openAddressedAlternate) {
                 hasherBuilder.addMethod(createMigrateLocationMethod(hasherConfig, chunkTypes));
                 hasherBuilder.addMethod(createRehashInternalPartialMethod(hasherConfig, chunkTypes));
@@ -1027,7 +1028,7 @@ public class TypedHasherFactory {
 
         builder.addStatement("final $T currentStateValue = $L.getUnsafe(locationToMigrate)", hasherConfig.stateType,
                 hasherConfig.overflowOrAlternateStateName);
-        builder.beginControlFlow("if (currentStateValue == $L)", hasherConfig.emptyStateName);
+        builder.beginControlFlow("if (isStateEmpty(currentStateValue))");
         builder.addStatement("return false");
         builder.endControlFlow();
 
@@ -1080,6 +1081,25 @@ public class TypedHasherFactory {
                 .addCode(builder.build());
 
         hasherConfig.extraPartialRehashParameters.forEach(methodBuilder::addParameter);
+
+        return methodBuilder.build();
+    }
+
+    @NotNull
+    private static MethodSpec createIsEmptyMethod(HasherConfig<?> hasherConfig) {
+        final CodeBlock.Builder builder = CodeBlock.builder();
+
+        if (hasherConfig.supportTombstones) {
+            builder.addStatement("return state == $L || state == $L", hasherConfig.emptyStateName, hasherConfig.tombstoneStateName);
+        } else {
+            builder.addStatement("return state == $L", hasherConfig.emptyStateName);
+        }
+
+        final MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("isStateEmpty")
+                .addModifiers(Modifier.FINAL, Modifier.STATIC)
+                .returns(boolean.class)
+                .addParameter(hasherConfig.stateType, "state")
+                .addCode(builder.build());
 
         return methodBuilder.build();
     }
@@ -1222,11 +1242,7 @@ public class TypedHasherFactory {
             builder.addStatement("$T $L = $L.getUnsafe($L)", hasherConfig.stateType, buildSpec.stateValueName,
                     hasherConfig.mainStateName, tableLocationName);
         }
-        if (hasherConfig.supportTombstones) {
-            builder.beginControlFlow("if ($L == $L || $L == $L)", buildSpec.stateValueName, hasherConfig.emptyStateName, buildSpec.stateValueName, hasherConfig.tombstoneStateName);
-        } else {
-            builder.beginControlFlow("if ($L == $L)", buildSpec.stateValueName, hasherConfig.emptyStateName);
-        }
+        builder.beginControlFlow("if (isStateEmpty($L))", buildSpec.stateValueName);
 
         if (hasherConfig.openAddressedAlternate && !alternate && buildSpec.allowAlternates) {
             // we might need to do an alternative build here
@@ -1329,14 +1345,11 @@ public class TypedHasherFactory {
         if(ps.stateValueName != null) {
             stateValueName=ps.stateValueName;
         }
-        else if (hasherConfig.supportTombstones) {
-            stateValueName = "stateValue";
-        }
         else {
             stateValueName = null;
         }
         if (!alternate && stateValueName != null) {
-            builder.addStatement("$T $L", hasherConfig.stateType, ps.stateValueName);
+            builder.addStatement("$T $L", hasherConfig.stateType, stateValueName);
         }
 
         final String stateSourceName =
@@ -1346,17 +1359,9 @@ public class TypedHasherFactory {
                     stateSourceName, tableLocationName,
                     hasherConfig.emptyStateName);
         } else {
-            if (hasherConfig.supportTombstones) {
-                builder.beginControlFlow("while (($L = $L.getUnsafe($L)) != $L && ($L != $L))", stateValueName,
-                        stateSourceName, tableLocationName,
-                        hasherConfig.emptyStateName,
-                        stateValueName,
-                        hasherConfig.tombstoneStateName);
-            } else {
-                builder.beginControlFlow("while (($L = $L.getUnsafe($L)) != $L)", stateValueName,
-                    stateSourceName, tableLocationName,
-                    hasherConfig.emptyStateName);
-            }
+            builder.beginControlFlow("while (!isStateEmpty($L = $L.getUnsafe($L)))", stateValueName,
+                stateSourceName, tableLocationName,
+                hasherConfig.emptyStateName);
         }
 
         builder.beginControlFlow(

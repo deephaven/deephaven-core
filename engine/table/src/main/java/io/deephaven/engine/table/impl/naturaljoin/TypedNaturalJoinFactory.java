@@ -229,7 +229,7 @@ public class TypedNaturalJoinFactory {
 
     private static void checkForDuplicateErrorLeftDecorate(CodeBlock.Builder builder, String leftRowKey,
             String rightRowState) {
-        builder.beginControlFlow("if ($L <= $L)", rightRowState, IncrementalNaturalJoinStateManagerTypedBase.FIRST_DUPLICATE);
+        builder.beginControlFlow("if ($L <= $L)", rightRowState, "FIRST_DUPLICATE");
         builder.addStatement(
                 "throw new IllegalStateException(\"Natural Join found duplicate right key for \" + extractKeyStringFromSourceTable($L))",
                 leftRowKey);
