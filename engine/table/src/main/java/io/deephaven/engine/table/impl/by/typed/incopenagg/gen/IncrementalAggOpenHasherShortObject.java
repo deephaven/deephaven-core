@@ -67,12 +67,12 @@ final class IncrementalAggOpenHasherShortObject extends IncrementalChunkedOperat
             int tableLocation = firstTableLocation;
             MAIN_SEARCH: while (true) {
                 int outputPosition = mainOutputPosition.getUnsafe(tableLocation);
-                if (outputPosition == EMPTY_OUTPUT_POSITION) {
+                if (isStateEmpty(outputPosition)) {
                     final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
                     int alternateTableLocation = firstAlternateTableLocation;
                     while (alternateTableLocation < rehashPointer) {
                         outputPosition = alternateOutputPosition.getUnsafe(alternateTableLocation);
-                        if (outputPosition == EMPTY_OUTPUT_POSITION) {
+                        if (isStateEmpty(outputPosition)) {
                             break;
                         } else if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0) && eq(alternateKeySource1.getUnsafe(alternateTableLocation), k1)) {
                             outputPositions.set(chunkPosition, outputPosition);
@@ -113,7 +113,7 @@ final class IncrementalAggOpenHasherShortObject extends IncrementalChunkedOperat
             boolean found = false;
             int tableLocation = firstTableLocation;
             int outputPosition;
-            while ((outputPosition = mainOutputPosition.getUnsafe(tableLocation)) != EMPTY_OUTPUT_POSITION) {
+            while (!isStateEmpty(outputPosition = mainOutputPosition.getUnsafe(tableLocation))) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0) && eq(mainKeySource1.getUnsafe(tableLocation), k1)) {
                     outputPositions.set(chunkPosition, outputPosition);
                     found = true;
@@ -127,7 +127,7 @@ final class IncrementalAggOpenHasherShortObject extends IncrementalChunkedOperat
                 boolean alternateFound = false;
                 if (firstAlternateTableLocation < rehashPointer) {
                     int alternateTableLocation = firstAlternateTableLocation;
-                    while ((outputPosition = alternateOutputPosition.getUnsafe(alternateTableLocation)) != EMPTY_OUTPUT_POSITION) {
+                    while (!isStateEmpty(outputPosition = alternateOutputPosition.getUnsafe(alternateTableLocation))) {
                         if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0) && eq(alternateKeySource1.getUnsafe(alternateTableLocation), k1)) {
                             outputPositions.set(chunkPosition, outputPosition);
                             alternateFound = true;
@@ -150,16 +150,24 @@ final class IncrementalAggOpenHasherShortObject extends IncrementalChunkedOperat
         return hash;
     }
 
+    private static final boolean isStateAvailable(int state) {
+        return state == EMPTY_OUTPUT_POSITION;
+    }
+
+    private static final boolean isStateEmpty(int state) {
+        return state == EMPTY_OUTPUT_POSITION;
+    }
+
     private boolean migrateOneLocation(int locationToMigrate) {
         final int currentStateValue = alternateOutputPosition.getUnsafe(locationToMigrate);
-        if (currentStateValue == EMPTY_OUTPUT_POSITION) {
+        if (isStateEmpty(currentStateValue)) {
             return false;
         }
         final short k0 = alternateKeySource0.getUnsafe(locationToMigrate);
         final Object k1 = alternateKeySource1.getUnsafe(locationToMigrate);
         final int hash = hash(k0, k1);
         int destinationTableLocation = hashToTableLocation(hash);
-        while (mainOutputPosition.getUnsafe(destinationTableLocation) != EMPTY_OUTPUT_POSITION) {
+        while (!isStateEmpty(mainOutputPosition.getUnsafe(destinationTableLocation))) {
             destinationTableLocation = nextTableLocation(destinationTableLocation);
         }
         mainKeySource0.set(destinationTableLocation, k0);
@@ -218,7 +226,7 @@ final class IncrementalAggOpenHasherShortObject extends IncrementalChunkedOperat
         mainOutputPosition.setArray(destState);
         for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket) {
             final int currentStateValue = originalStateArray[sourceBucket];
-            if (currentStateValue == EMPTY_OUTPUT_POSITION) {
+            if (isStateEmpty(currentStateValue)) {
                 continue;
             }
             final short k0 = originalKeyArray0[sourceBucket];

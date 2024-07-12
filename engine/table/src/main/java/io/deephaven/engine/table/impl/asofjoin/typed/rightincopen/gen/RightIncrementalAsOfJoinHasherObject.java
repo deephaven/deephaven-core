@@ -59,12 +59,12 @@ final class RightIncrementalAsOfJoinHasherObject extends RightIncrementalAsOfJoi
             int tableLocation = firstTableLocation;
             MAIN_SEARCH: while (true) {
                 byte rowState = stateSource.getUnsafe(tableLocation);
-                if (rowState == ENTRY_EMPTY_STATE) {
+                if (isStateEmpty(rowState)) {
                     final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
                     int alternateTableLocation = firstAlternateTableLocation;
                     while (alternateTableLocation < rehashPointer) {
                         rowState = alternateStateSource.getUnsafe(alternateTableLocation);
-                        if (rowState == ENTRY_EMPTY_STATE) {
+                        if (isStateEmpty(rowState)) {
                             break;
                         } else if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
                             final long cookie = getCookieAlternate(alternateTableLocation);
@@ -121,12 +121,12 @@ final class RightIncrementalAsOfJoinHasherObject extends RightIncrementalAsOfJoi
             int tableLocation = firstTableLocation;
             MAIN_SEARCH: while (true) {
                 byte rowState = stateSource.getUnsafe(tableLocation);
-                if (rowState == ENTRY_EMPTY_STATE) {
+                if (isStateEmpty(rowState)) {
                     final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
                     int alternateTableLocation = firstAlternateTableLocation;
                     while (alternateTableLocation < rehashPointer) {
                         rowState = alternateStateSource.getUnsafe(alternateTableLocation);
-                        if (rowState == ENTRY_EMPTY_STATE) {
+                        if (isStateEmpty(rowState)) {
                             break;
                         } else if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
                             final long cookie = getCookieAlternate(alternateTableLocation);
@@ -182,7 +182,7 @@ final class RightIncrementalAsOfJoinHasherObject extends RightIncrementalAsOfJoi
             boolean found = false;
             int tableLocation = firstTableLocation;
             byte rowState;
-            while ((rowState = stateSource.getUnsafe(tableLocation)) != ENTRY_EMPTY_STATE) {
+            while (!isStateEmpty(rowState = stateSource.getUnsafe(tableLocation))) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     if (sequentialBuilders != null) {
                         final long cookie = getCookieMain(tableLocation);
@@ -201,7 +201,7 @@ final class RightIncrementalAsOfJoinHasherObject extends RightIncrementalAsOfJoi
                 final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
                 if (firstAlternateTableLocation < rehashPointer) {
                     int alternateTableLocation = firstAlternateTableLocation;
-                    while ((rowState = alternateStateSource.getUnsafe(alternateTableLocation)) != ENTRY_EMPTY_STATE) {
+                    while (!isStateEmpty(rowState = alternateStateSource.getUnsafe(alternateTableLocation))) {
                         if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
                             if (sequentialBuilders != null) {
                                 final long cookie = getCookieAlternate(alternateTableLocation);
@@ -225,15 +225,23 @@ final class RightIncrementalAsOfJoinHasherObject extends RightIncrementalAsOfJoi
         return hash;
     }
 
+    private static final boolean isStateAvailable(byte state) {
+        return state == ENTRY_EMPTY_STATE;
+    }
+
+    private static final boolean isStateEmpty(byte state) {
+        return state == ENTRY_EMPTY_STATE;
+    }
+
     private boolean migrateOneLocation(int locationToMigrate) {
         final byte currentStateValue = alternateStateSource.getUnsafe(locationToMigrate);
-        if (currentStateValue == ENTRY_EMPTY_STATE) {
+        if (isStateEmpty(currentStateValue)) {
             return false;
         }
         final Object k0 = alternateKeySource0.getUnsafe(locationToMigrate);
         final int hash = hash(k0);
         int destinationTableLocation = hashToTableLocation(hash);
-        while (stateSource.getUnsafe(destinationTableLocation) != ENTRY_EMPTY_STATE) {
+        while (!isStateEmpty(stateSource.getUnsafe(destinationTableLocation))) {
             destinationTableLocation = nextTableLocation(destinationTableLocation);
         }
         mainKeySource0.set(destinationTableLocation, k0);
@@ -300,7 +308,7 @@ final class RightIncrementalAsOfJoinHasherObject extends RightIncrementalAsOfJoi
         mainCookieSource.setArray(destModifiedCookie);
         for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket) {
             final byte currentStateValue = originalStateArray[sourceBucket];
-            if (currentStateValue == ENTRY_EMPTY_STATE) {
+            if (isStateEmpty(currentStateValue)) {
                 continue;
             }
             final Object k0 = originalKeyArray0[sourceBucket];

@@ -46,7 +46,9 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     // how much of the alternate sources are necessary to rehash?
     protected int rehashPointer = 0;
 
+    // how many entries are taking up slots in the hash table
     protected long numEntries = 0;
+    protected long liveEntries = 0;
 
     // the table will be rehashed to a load factor of targetLoadFactor if our loadFactor exceeds maximumLoadFactor
     private final double maximumLoadFactor;

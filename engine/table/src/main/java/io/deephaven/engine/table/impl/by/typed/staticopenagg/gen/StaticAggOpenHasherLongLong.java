@@ -55,7 +55,7 @@ final class StaticAggOpenHasherLongLong extends StaticChunkedOperatorAggregation
             int tableLocation = firstTableLocation;
             while (true) {
                 int outputPosition = mainOutputPosition.getUnsafe(tableLocation);
-                if (outputPosition == EMPTY_OUTPUT_POSITION) {
+                if (isStateEmpty(outputPosition)) {
                     numEntries++;
                     mainKeySource0.set(tableLocation, k0);
                     mainKeySource1.set(tableLocation, k1);
@@ -81,6 +81,14 @@ final class StaticAggOpenHasherLongLong extends StaticChunkedOperatorAggregation
         return hash;
     }
 
+    private static final boolean isStateAvailable(int state) {
+        return state == EMPTY_OUTPUT_POSITION;
+    }
+
+    private static final boolean isStateEmpty(int state) {
+        return state == EMPTY_OUTPUT_POSITION;
+    }
+
     @Override
     protected void rehashInternalFull(final int oldSize) {
         final long[] destKeyArray0 = new long[tableSize];
@@ -95,7 +103,7 @@ final class StaticAggOpenHasherLongLong extends StaticChunkedOperatorAggregation
         mainOutputPosition.setArray(destState);
         for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket) {
             final int currentStateValue = originalStateArray[sourceBucket];
-            if (currentStateValue == EMPTY_OUTPUT_POSITION) {
+            if (isStateEmpty(currentStateValue)) {
                 continue;
             }
             final long k0 = originalKeyArray0[sourceBucket];

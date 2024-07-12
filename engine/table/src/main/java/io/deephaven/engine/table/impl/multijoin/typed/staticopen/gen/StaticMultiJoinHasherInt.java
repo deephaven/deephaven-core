@@ -51,7 +51,7 @@ final class StaticMultiJoinHasherInt extends StaticMultiJoinStateManagerTypedBas
             int tableLocation = firstTableLocation;
             while (true) {
                 int slotValue = slotToOutputRow.getUnsafe(tableLocation);
-                if (slotValue == EMPTY_OUTPUT_ROW) {
+                if (isStateEmpty(slotValue)) {
                     numEntries++;
                     mainKeySource0.set(tableLocation, k0);
                     final int outputKey = numEntries - 1;
@@ -78,6 +78,14 @@ final class StaticMultiJoinHasherInt extends StaticMultiJoinStateManagerTypedBas
         return hash;
     }
 
+    private static final boolean isStateAvailable(int state) {
+        return state == EMPTY_OUTPUT_ROW;
+    }
+
+    private static final boolean isStateEmpty(int state) {
+        return state == EMPTY_OUTPUT_ROW;
+    }
+
     @Override
     protected void rehashInternalFull(final int oldSize) {
         final int[] destKeyArray0 = new int[tableSize];
@@ -89,7 +97,7 @@ final class StaticMultiJoinHasherInt extends StaticMultiJoinStateManagerTypedBas
         slotToOutputRow.setArray(destState);
         for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket) {
             final int currentStateValue = originalStateArray[sourceBucket];
-            if (currentStateValue == EMPTY_OUTPUT_ROW) {
+            if (isStateEmpty(currentStateValue)) {
                 continue;
             }
             final int k0 = originalKeyArray0[sourceBucket];

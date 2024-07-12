@@ -53,7 +53,7 @@ import java.util.stream.IntStream;
  */
 public class TypedHasherFactory {
     private static final boolean USE_PREGENERATED_HASHERS =
-            Configuration.getInstance().getBooleanWithDefault("TypedHasherFactory.usePregeneratedHashers", false);
+            Configuration.getInstance().getBooleanWithDefault("TypedHasherFactory.usePregeneratedHashers", true);
 
     /**
      * Produce a hasher for the given base class and column sources.
@@ -639,7 +639,11 @@ public class TypedHasherFactory {
         hasherBuilder.addMethod(createHashMethod(chunkTypes));
 
         if (hasherConfig.openAddressed) {
+            hasherBuilder.addMethod(createIsStateAvailableMethod(hasherConfig));
             hasherBuilder.addMethod(createIsEmptyMethod(hasherConfig));
+            if (hasherConfig.supportTombstones) {
+                hasherBuilder.addMethod(createIsDeletedMethod(hasherConfig));
+            }
             if (hasherConfig.openAddressedAlternate) {
                 hasherBuilder.addMethod(createMigrateLocationMethod(hasherConfig, chunkTypes));
                 hasherBuilder.addMethod(createRehashInternalPartialMethod(hasherConfig, chunkTypes));
@@ -913,7 +917,7 @@ public class TypedHasherFactory {
             builder.addStatement("final $T currentStateValue = ($T)originalStateArray[sourceBucket]",
                     hasherConfig.stateType, hasherConfig.stateType);
         }
-        builder.beginControlFlow("if (currentStateValue == $L)", hasherConfig.emptyStateName);
+        builder.beginControlFlow("if (isStateEmpty(currentStateValue))");
         builder.addStatement("continue");
         builder.endControlFlow();
 
@@ -1041,8 +1045,7 @@ public class TypedHasherFactory {
 
         builder.addStatement("int destinationTableLocation = hashToTableLocation(hash)");
 
-        builder.beginControlFlow("while ($L.getUnsafe(destinationTableLocation) != $L)", hasherConfig.mainStateName,
-                hasherConfig.emptyStateName);
+        builder.beginControlFlow("while (!isStateEmpty($L.getUnsafe(destinationTableLocation)))", hasherConfig.mainStateName);
         builder.addStatement("destinationTableLocation = nextTableLocation(destinationTableLocation)");
         builder.endControlFlow();
 
@@ -1085,8 +1088,11 @@ public class TypedHasherFactory {
         return methodBuilder.build();
     }
 
+    /**
+     * The isStateAvailable method indicates that the state is available to write a new value to.
+     */
     @NotNull
-    private static MethodSpec createIsEmptyMethod(HasherConfig<?> hasherConfig) {
+    private static MethodSpec createIsStateAvailableMethod(HasherConfig<?> hasherConfig) {
         final CodeBlock.Builder builder = CodeBlock.builder();
 
         if (hasherConfig.supportTombstones) {
@@ -1095,8 +1101,42 @@ public class TypedHasherFactory {
             builder.addStatement("return state == $L", hasherConfig.emptyStateName);
         }
 
+        final MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("isStateAvailable")
+                .addModifiers(Modifier.FINAL, Modifier.STATIC, Modifier.PRIVATE)
+                .returns(boolean.class)
+                .addParameter(hasherConfig.stateType, "state")
+                .addCode(builder.build());
+
+        return methodBuilder.build();
+    }
+
+    /**
+     * The isStateEmpty method indicates that the state is empty, for probe iteration.
+     */
+    private static MethodSpec createIsEmptyMethod(HasherConfig<?> hasherConfig) {
+        final CodeBlock.Builder builder = CodeBlock.builder();
+
+        builder.addStatement("return state == $L", hasherConfig.emptyStateName);
+
         final MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("isStateEmpty")
-                .addModifiers(Modifier.FINAL, Modifier.STATIC)
+                .addModifiers(Modifier.FINAL, Modifier.STATIC, Modifier.PRIVATE)
+                .returns(boolean.class)
+                .addParameter(hasherConfig.stateType, "state")
+                .addCode(builder.build());
+
+        return methodBuilder.build();
+    }
+
+    /**
+     * The isStateDeleted method indicates that the state is deleted, for probe iteration.
+     */
+    private static MethodSpec createIsDeletedMethod(HasherConfig<?> hasherConfig) {
+        final CodeBlock.Builder builder = CodeBlock.builder();
+
+        builder.addStatement("return state == $L", hasherConfig.tombstoneStateName);
+
+        final MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("isStateDeleted")
+                .addModifiers(Modifier.STATIC, Modifier.PRIVATE)
                 .returns(boolean.class)
                 .addParameter(hasherConfig.stateType, "state")
                 .addCode(builder.build());
@@ -1238,10 +1278,20 @@ public class TypedHasherFactory {
             builder.addStatement("$L = $L.getUnsafe($L)", buildSpec.stateValueName,
                     hasherConfig.overflowOrAlternateStateName, tableLocationName);
         } else {
+            if (hasherConfig.supportTombstones) {
+                builder.addStatement("int firstDeletedLocation = -1");
+            }
             builder.beginControlFlow((hasherConfig.openAddressedAlternate ? "MAIN_SEARCH: " : "") + "while (true)");
             builder.addStatement("$T $L = $L.getUnsafe($L)", hasherConfig.stateType, buildSpec.stateValueName,
                     hasherConfig.mainStateName, tableLocationName);
         }
+
+        if (!alternate && hasherConfig.supportTombstones) {
+            builder.beginControlFlow("if (firstDeletedLocation < 0 && isStateDeleted($L))", buildSpec.stateValueName);
+            builder.addStatement("firstDeletedLocation = $L", tableLocationName);
+            builder.endControlFlow();
+        }
+
         builder.beginControlFlow("if (isStateEmpty($L))", buildSpec.stateValueName);
 
         if (hasherConfig.openAddressedAlternate && !alternate && buildSpec.allowAlternates) {
@@ -1250,6 +1300,12 @@ public class TypedHasherFactory {
         }
 
         if (!alternate) {
+            if (hasherConfig.supportTombstones) {
+                // set to the first available location
+                builder.beginControlFlow("if (firstDeletedLocation >= 0)");
+                builder.addStatement("tableLocation = firstDeletedLocation");
+                builder.endControlFlow();
+            }
             builder.addStatement("numEntries++");
             for (int ii = 0; ii < chunkTypes.length; ++ii) {
                 builder.addStatement("mainKeySource$L.set($L, k$L)", ii, tableLocationName, ii);
@@ -1257,8 +1313,12 @@ public class TypedHasherFactory {
             buildSpec.insert.accept(hasherConfig, chunkTypes, builder);
         }
         builder.addStatement("break");
-        builder.nextControlFlow("else if ("
-                + (alternate ? getEqualsStatementAlternate(chunkTypes) : getEqualsStatement(chunkTypes)) + ")");
+        final String keyEqualsExpression = alternate ? getEqualsStatementAlternate(chunkTypes) : getEqualsStatement(chunkTypes);
+        if (hasherConfig.supportTombstones) {
+            builder.nextControlFlow("else if (!isStateDeleted($L) && " + keyEqualsExpression + ")", buildSpec.stateValueName);
+        } else {
+            builder.nextControlFlow("else if (" + keyEqualsExpression + ")");
+        }
         buildSpec.found.accept(hasherConfig, alternate, builder);
         if (alternate) {
             builder.addStatement("break MAIN_SEARCH");
@@ -1343,7 +1403,10 @@ public class TypedHasherFactory {
 
         final String stateValueName ;
         if(ps.stateValueName != null) {
-            stateValueName=ps.stateValueName;
+            stateValueName = ps.stateValueName;
+        }
+        else if (hasherConfig.supportTombstones) {
+            stateValueName = "stateValue";
         }
         else {
             stateValueName = null;
@@ -1355,17 +1418,19 @@ public class TypedHasherFactory {
         final String stateSourceName =
                 alternate ? hasherConfig.overflowOrAlternateStateName : hasherConfig.mainStateName;
         if (stateValueName == null) {
-            builder.beginControlFlow("while ($L.getUnsafe($L) != $L)",
-                    stateSourceName, tableLocationName,
-                    hasherConfig.emptyStateName);
+            builder.beginControlFlow("while (!isStateEmpty($L.getUnsafe($L)))",
+                    stateSourceName, tableLocationName);
         } else {
             builder.beginControlFlow("while (!isStateEmpty($L = $L.getUnsafe($L)))", stateValueName,
-                stateSourceName, tableLocationName,
-                hasherConfig.emptyStateName);
+                stateSourceName, tableLocationName);
         }
 
-        builder.beginControlFlow(
-                "if (" + (alternate ? getEqualsStatementAlternate(chunkTypes) : getEqualsStatement(chunkTypes)) + ")");
+        final String equalsStatement = alternate ? getEqualsStatementAlternate(chunkTypes) : getEqualsStatement(chunkTypes);
+        if (hasherConfig.supportTombstones) {
+            builder.beginControlFlow("if (!isStateDeleted($L) && " + equalsStatement + ")", stateValueName);
+        } else {
+            builder.beginControlFlow("if (" + equalsStatement + ")");
+        }
         ps.found.accept(hasherConfig, alternate, builder);
         if (foundBlockRequired) {
             builder.addStatement("$L = true", foundName);

@@ -60,12 +60,12 @@ final class UpdateByHasherObject extends UpdateByStateManagerTypedBase {
             int tableLocation = firstTableLocation;
             MAIN_SEARCH: while (true) {
                 int rowState = stateSource.getUnsafe(tableLocation);
-                if (rowState == EMPTY_RIGHT_VALUE) {
+                if (isStateEmpty(rowState)) {
                     final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
                     int alternateTableLocation = firstAlternateTableLocation;
                     while (alternateTableLocation < rehashPointer) {
                         rowState = alternateStateSource.getUnsafe(alternateTableLocation);
-                        if (rowState == EMPTY_RIGHT_VALUE) {
+                        if (isStateEmpty(rowState)) {
                             break;
                         } else if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
                             // map the existing bucket to this chunk position;
@@ -108,7 +108,7 @@ final class UpdateByHasherObject extends UpdateByStateManagerTypedBase {
             boolean found = false;
             int tableLocation = firstTableLocation;
             int rowState;
-            while ((rowState = stateSource.getUnsafe(tableLocation)) != EMPTY_RIGHT_VALUE) {
+            while (!isStateEmpty(rowState = stateSource.getUnsafe(tableLocation))) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     // map the existing bucket to this chunk position;
                     outputPositions.set(chunkPosition, rowState);
@@ -123,7 +123,7 @@ final class UpdateByHasherObject extends UpdateByStateManagerTypedBase {
                 boolean alternateFound = false;
                 if (firstAlternateTableLocation < rehashPointer) {
                     int alternateTableLocation = firstAlternateTableLocation;
-                    while ((rowState = alternateStateSource.getUnsafe(alternateTableLocation)) != EMPTY_RIGHT_VALUE) {
+                    while (!isStateEmpty(rowState = alternateStateSource.getUnsafe(alternateTableLocation))) {
                         if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
                             // map the existing bucket (from alternate) to this chunk position;
                             outputPositions.set(chunkPosition, rowState);
@@ -147,16 +147,24 @@ final class UpdateByHasherObject extends UpdateByStateManagerTypedBase {
         return hash;
     }
 
+    private static final boolean isStateAvailable(int state) {
+        return state == EMPTY_RIGHT_VALUE;
+    }
+
+    private static final boolean isStateEmpty(int state) {
+        return state == EMPTY_RIGHT_VALUE;
+    }
+
     private boolean migrateOneLocation(int locationToMigrate,
             WritableIntChunk<RowKeys> outputPositions) {
         final int currentStateValue = alternateStateSource.getUnsafe(locationToMigrate);
-        if (currentStateValue == EMPTY_RIGHT_VALUE) {
+        if (isStateEmpty(currentStateValue)) {
             return false;
         }
         final Object k0 = alternateKeySource0.getUnsafe(locationToMigrate);
         final int hash = hash(k0);
         int destinationTableLocation = hashToTableLocation(hash);
-        while (stateSource.getUnsafe(destinationTableLocation) != EMPTY_RIGHT_VALUE) {
+        while (!isStateEmpty(stateSource.getUnsafe(destinationTableLocation))) {
             destinationTableLocation = nextTableLocation(destinationTableLocation);
         }
         mainKeySource0.set(destinationTableLocation, k0);
@@ -208,7 +216,7 @@ final class UpdateByHasherObject extends UpdateByStateManagerTypedBase {
         stateSource.setArray(destState);
         for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket) {
             final int currentStateValue = originalStateArray[sourceBucket];
-            if (currentStateValue == EMPTY_RIGHT_VALUE) {
+            if (isStateEmpty(currentStateValue)) {
                 continue;
             }
             final Object k0 = originalKeyArray0[sourceBucket];
