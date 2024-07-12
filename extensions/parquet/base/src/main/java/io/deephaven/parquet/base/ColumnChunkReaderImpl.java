@@ -176,21 +176,14 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
 
     @NotNull
     private Dictionary getDictionary(final SeekableChannelContext channelContext) {
-        final long dictionaryPageOffset;
         final ColumnMetaData chunkMeta = columnChunk.getMeta_data();
-        if (chunkMeta.isSetDictionary_page_offset()) {
-            dictionaryPageOffset = chunkMeta.getDictionary_page_offset();
-        } else if ((chunkMeta.isSetEncoding_stats() && (chunkMeta.getEncoding_stats().stream()
-                .anyMatch(pes -> pes.getEncoding() == PLAIN_DICTIONARY
-                        || pes.getEncoding() == RLE_DICTIONARY)))
-                || (chunkMeta.isSetEncodings() && (chunkMeta.getEncodings().stream()
-                        .anyMatch(en -> en == PLAIN_DICTIONARY || en == RLE_DICTIONARY)))) {
-            // Fallback, inspired by
-            // https://stackoverflow.com/questions/55225108/why-is-dictionary-page-offset-0-for-plain-dictionary-encoding
-            dictionaryPageOffset = chunkMeta.getData_page_offset();
-        } else {
-            return NULL_DICTIONARY;
-        }
+        // If the dictionary page offset is set, use it, otherwise inspect the first data page -- it might be the
+        // dictionary page. Fallback, inspired by
+        // https://stackoverflow.com/questions/55225108/why-is-dictionary-page-offset-0-for-plain-dictionary-encoding
+        final long dictionaryPageOffset = chunkMeta.isSetDictionary_page_offset()
+                ? chunkMeta.getDictionary_page_offset()
+                : chunkMeta.getData_page_offset();
+
         return readDictionary(dictionaryPageOffset, channelContext);
     }
 
