@@ -150,8 +150,8 @@ public class DeephavenCompressorAdapterFactory {
             }
             // Note that we don't want the caller to close the decompressed stream because doing so may return the
             // decompressor to the pool.
-            final InputStream buffered = ByteStreams.limit(inputStream, compressedSize);
-            return new InputStreamNoClose(compressionCodec.createInputStream(buffered, decompressor));
+            final InputStream limitedInputStream = ByteStreams.limit(inputStream, compressedSize);
+            return new InputStreamNoClose(compressionCodec.createInputStream(limitedInputStream, decompressor));
         }
 
         @Override

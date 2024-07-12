@@ -9,9 +9,9 @@ import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 
 import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 
 /**
  * This is the default adapter for LZ4 files. It attempts to decompress with LZ4 and falls back to LZ4_RAW on failure.
@@ -60,7 +60,7 @@ class LZ4WithLZ4RawBackupCompressorAdapter extends DeephavenCompressorAdapterFac
             final byte[] decompressedBytes = CompressorAdapter.readNBytes(decompressedInput, uncompressedSize);
             // If we got here, we successfully decompressed with LZ4.
             mode = DecompressionMode.LZ4;
-            return new ByteBufferInputStream(ByteBuffer.wrap(decompressedBytes));
+            return new ByteArrayInputStream(decompressedBytes);
         } catch (final IOException ignored) {
         }
 
