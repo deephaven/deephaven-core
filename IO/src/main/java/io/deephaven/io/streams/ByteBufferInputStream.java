@@ -27,13 +27,6 @@ public class ByteBufferInputStream extends java.io.InputStream implements DataIn
     protected ByteBuffer buf;
 
     /**
-     * The DataOutput interface always writes bytes in big-endian order, while ByteBuffer allows the order to be big- or
-     * little-endian. Set this flag true to assume that the buffer is bid-endian, or false to check the buffer's order
-     * at each write.
-     */
-    // protected static final boolean ASSUME_BIG_ENDIAN = true;
-
-    /**
      * Construct a new stream which reads from a byte buffer/
      */
     public ByteBufferInputStream(ByteBuffer buf) {
