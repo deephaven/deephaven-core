@@ -207,7 +207,9 @@ Notes
 
 # Building the C++ client on Windows 10 / Windows 11
 
-1. Get Deephaven running by following the instructions here:
+1. To run the client tests (last step in this list), we will need a server.
+   Get Deephaven server ready by following the instructions below.
+   Note the server itself is only supported on linux at this time.
 
    https://deephaven.io/core/docs/how-to-guides/launch-build/
 
