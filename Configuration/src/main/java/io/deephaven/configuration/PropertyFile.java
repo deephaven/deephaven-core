@@ -509,13 +509,10 @@ public class PropertyFile {
             default:
                 String[] data = propertyValue.split("[, ]+");
                 Require.neqNull(data, "data");
-                Set<String> set = new LinkedHashSet<String>((data.length + 1) * 4 / 3);
-                for (String elem : data) {
-                    Require.requirement(set.add(elem), "set.add(elem)");
-                }
-                Set<String> result = set;
-                result.remove("");
-                return result;
+                Set<String> set = new LinkedHashSet<>(Arrays.asList(data));
+                Require.eq(set.size(), "set.size()", data.length, "data.length");
+                set.remove("");
+                return set;
         }
     }
 
