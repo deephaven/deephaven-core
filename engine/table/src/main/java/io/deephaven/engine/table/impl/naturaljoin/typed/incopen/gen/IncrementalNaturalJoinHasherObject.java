@@ -599,11 +599,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
         return hash;
     }
 
-    private static final boolean isStateAvailable(long state) {
-        return state == EMPTY_RIGHT_STATE || state == TOMBSTONE_RIGHT_STATE;
-    }
-
-    private static final boolean isStateEmpty(long state) {
+    private static boolean isStateEmpty(long state) {
         return state == EMPTY_RIGHT_STATE;
     }
 
@@ -618,6 +614,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
             return false;
         }
         if (isStateDeleted(currentStateValue)) {
+            alternateEntries--;
             return deletedTrue;
         }
         final Object k0 = alternateKeySource0.getUnsafe(locationToMigrate);
@@ -637,6 +634,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
         modifiedSlotTracker.moveTableLocation(cookie, locationToMigrate, mainInsertMask | destinationTableLocation);;
         alternateRightRowKey.set(locationToMigrate, EMPTY_RIGHT_STATE);
         numEntries++;
+        alternateEntries--;
         return true;
     }
 

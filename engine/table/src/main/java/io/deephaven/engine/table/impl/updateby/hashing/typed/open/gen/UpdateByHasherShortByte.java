@@ -162,11 +162,7 @@ final class UpdateByHasherShortByte extends UpdateByStateManagerTypedBase {
         return hash;
     }
 
-    private static final boolean isStateAvailable(int state) {
-        return state == EMPTY_RIGHT_VALUE;
-    }
-
-    private static final boolean isStateEmpty(int state) {
+    private static boolean isStateEmpty(int state) {
         return state == EMPTY_RIGHT_VALUE;
     }
 
@@ -187,7 +183,6 @@ final class UpdateByHasherShortByte extends UpdateByStateManagerTypedBase {
         mainKeySource1.set(destinationTableLocation, k1);
         stateSource.set(destinationTableLocation, currentStateValue);
         alternateStateSource.set(locationToMigrate, EMPTY_RIGHT_VALUE);
-        numEntries++;
         return true;
     }
 

@@ -158,11 +158,7 @@ final class StaticNaturalJoinHasherDouble extends StaticNaturalJoinStateManagerT
         return hash;
     }
 
-    private static final boolean isStateAvailable(long state) {
-        return state == EMPTY_RIGHT_STATE;
-    }
-
-    private static final boolean isStateEmpty(long state) {
+    private static boolean isStateEmpty(long state) {
         return state == EMPTY_RIGHT_STATE;
     }
 }

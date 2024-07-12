@@ -639,7 +639,6 @@ public class TypedHasherFactory {
         hasherBuilder.addMethod(createHashMethod(chunkTypes));
 
         if (hasherConfig.openAddressed) {
-            hasherBuilder.addMethod(createIsStateAvailableMethod(hasherConfig));
             hasherBuilder.addMethod(createIsEmptyMethod(hasherConfig));
             if (hasherConfig.supportTombstones) {
                 hasherBuilder.addMethod(createIsDeletedMethod(hasherConfig));
@@ -1037,6 +1036,7 @@ public class TypedHasherFactory {
         builder.endControlFlow();
         if (hasherConfig.supportTombstones) {
             builder.beginControlFlow("if (isStateDeleted(currentStateValue))");
+            builder.addStatement("alternateEntries--");
             builder.addStatement("return deletedTrue");
             builder.endControlFlow();
         }
@@ -1099,28 +1099,6 @@ public class TypedHasherFactory {
     }
 
     /**
-     * The isStateAvailable method indicates that the state is available to write a new value to.
-     */
-    @NotNull
-    private static MethodSpec createIsStateAvailableMethod(HasherConfig<?> hasherConfig) {
-        final CodeBlock.Builder builder = CodeBlock.builder();
-
-        if (hasherConfig.supportTombstones) {
-            builder.addStatement("return state == $L || state == $L", hasherConfig.emptyStateName, hasherConfig.tombstoneStateName);
-        } else {
-            builder.addStatement("return state == $L", hasherConfig.emptyStateName);
-        }
-
-        final MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("isStateAvailable")
-                .addModifiers(Modifier.FINAL, Modifier.STATIC, Modifier.PRIVATE)
-                .returns(boolean.class)
-                .addParameter(hasherConfig.stateType, "state")
-                .addCode(builder.build());
-
-        return methodBuilder.build();
-    }
-
-    /**
      * The isStateEmpty method indicates that the state is empty, for probe iteration.
      */
     private static MethodSpec createIsEmptyMethod(HasherConfig<?> hasherConfig) {
@@ -1129,7 +1107,7 @@ public class TypedHasherFactory {
         builder.addStatement("return state == $L", hasherConfig.emptyStateName);
 
         final MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("isStateEmpty")
-                .addModifiers(Modifier.FINAL, Modifier.STATIC, Modifier.PRIVATE)
+                .addModifiers(Modifier.STATIC, Modifier.PRIVATE)
                 .returns(boolean.class)
                 .addParameter(hasherConfig.stateType, "state")
                 .addCode(builder.build());
@@ -1167,7 +1145,11 @@ public class TypedHasherFactory {
         hasherConfig.moveMainAlternate.accept(builder);
         builder.addStatement("$L.set($L, $L)", hasherConfig.overflowOrAlternateStateName, sourceLocation,
                 hasherConfig.emptyStateName);
-        builder.addStatement("numEntries++");
+        // with tombstone support, we must track the entries and the alternateEntriest separately
+        if (hasherConfig.supportTombstones) {
+            builder.addStatement("numEntries++");
+            builder.addStatement("alternateEntries--");
+        }
     }
 
     @NotNull

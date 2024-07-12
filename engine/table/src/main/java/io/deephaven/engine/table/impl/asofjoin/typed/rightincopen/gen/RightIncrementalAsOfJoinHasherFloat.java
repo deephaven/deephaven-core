@@ -224,11 +224,7 @@ final class RightIncrementalAsOfJoinHasherFloat extends RightIncrementalAsOfJoin
         return hash;
     }
 
-    private static final boolean isStateAvailable(byte state) {
-        return state == ENTRY_EMPTY_STATE;
-    }
-
-    private static final boolean isStateEmpty(byte state) {
+    private static boolean isStateEmpty(byte state) {
         return state == ENTRY_EMPTY_STATE;
     }
 
@@ -252,7 +248,6 @@ final class RightIncrementalAsOfJoinHasherFloat extends RightIncrementalAsOfJoin
         final long cookie  = alternateCookieSource.getUnsafe(locationToMigrate);
         migrateCookie(cookie, destinationTableLocation);
         alternateStateSource.set(locationToMigrate, ENTRY_EMPTY_STATE);
-        numEntries++;
         return true;
     }
 

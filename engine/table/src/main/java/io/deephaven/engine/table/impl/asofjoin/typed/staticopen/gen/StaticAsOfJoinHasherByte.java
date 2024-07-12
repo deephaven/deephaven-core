@@ -149,11 +149,7 @@ final class StaticAsOfJoinHasherByte extends StaticAsOfJoinStateManagerTypedBase
         return hash;
     }
 
-    private static final boolean isStateAvailable(Object state) {
-        return state == EMPTY_RIGHT_STATE;
-    }
-
-    private static final boolean isStateEmpty(Object state) {
+    private static boolean isStateEmpty(Object state) {
         return state == EMPTY_RIGHT_STATE;
     }
 

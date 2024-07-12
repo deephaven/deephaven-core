@@ -162,11 +162,7 @@ final class UpdateByHasherLongObject extends UpdateByStateManagerTypedBase {
         return hash;
     }
 
-    private static final boolean isStateAvailable(int state) {
-        return state == EMPTY_RIGHT_VALUE;
-    }
-
-    private static final boolean isStateEmpty(int state) {
+    private static boolean isStateEmpty(int state) {
         return state == EMPTY_RIGHT_VALUE;
     }
 
@@ -188,7 +184,6 @@ final class UpdateByHasherLongObject extends UpdateByStateManagerTypedBase {
         alternateKeySource1.set(locationToMigrate, null);
         stateSource.set(destinationTableLocation, currentStateValue);
         alternateStateSource.set(locationToMigrate, EMPTY_RIGHT_VALUE);
-        numEntries++;
         return true;
     }
 

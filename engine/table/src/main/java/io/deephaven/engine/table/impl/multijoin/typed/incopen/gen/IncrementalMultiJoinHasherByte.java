@@ -264,11 +264,7 @@ final class IncrementalMultiJoinHasherByte extends IncrementalMultiJoinStateMana
         return hash;
     }
 
-    private static final boolean isStateAvailable(int state) {
-        return state == EMPTY_OUTPUT_ROW;
-    }
-
-    private static final boolean isStateEmpty(int state) {
+    private static boolean isStateEmpty(int state) {
         return state == EMPTY_OUTPUT_ROW;
     }
 
@@ -289,7 +285,6 @@ final class IncrementalMultiJoinHasherByte extends IncrementalMultiJoinStateMana
         mainModifiedTrackerCookieSource.set(destinationTableLocation, cookie);
         alternateModifiedTrackerCookieSource.set(locationToMigrate, EMPTY_COOKIE_SLOT);
         alternateSlotToOutputRow.set(locationToMigrate, EMPTY_OUTPUT_ROW);
-        numEntries++;
         return true;
     }
 

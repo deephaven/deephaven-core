@@ -197,11 +197,7 @@ final class RightIncrementalNaturalJoinHasherDouble extends RightIncrementalNatu
         return hash;
     }
 
-    private static final boolean isStateAvailable(RowSet state) {
-        return state == null;
-    }
-
-    private static final boolean isStateEmpty(RowSet state) {
+    private static boolean isStateEmpty(RowSet state) {
         return state == null;
     }
 

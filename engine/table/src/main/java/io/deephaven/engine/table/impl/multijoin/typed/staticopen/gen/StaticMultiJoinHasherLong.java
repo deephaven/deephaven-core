@@ -77,11 +77,7 @@ final class StaticMultiJoinHasherLong extends StaticMultiJoinStateManagerTypedBa
         return hash;
     }
 
-    private static final boolean isStateAvailable(int state) {
-        return state == EMPTY_OUTPUT_ROW;
-    }
-
-    private static final boolean isStateEmpty(int state) {
+    private static boolean isStateEmpty(int state) {
         return state == EMPTY_OUTPUT_ROW;
     }
 

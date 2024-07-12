@@ -46,7 +46,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     // how much of the alternate sources are necessary to rehash?
     protected int rehashPointer = 0;
 
-    // how many entries are taking up slots in the hash table (includes tombstones)
+    // how many entries are taking up slots in the main hash table (includes tombstones)
     protected long numEntries = 0;
     // how many values do we have that are live
     protected long liveEntries = 0;

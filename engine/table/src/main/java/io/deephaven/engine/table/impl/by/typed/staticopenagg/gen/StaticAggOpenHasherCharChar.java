@@ -81,11 +81,7 @@ final class StaticAggOpenHasherCharChar extends StaticChunkedOperatorAggregation
         return hash;
     }
 
-    private static final boolean isStateAvailable(int state) {
-        return state == EMPTY_OUTPUT_POSITION;
-    }
-
-    private static final boolean isStateEmpty(int state) {
+    private static boolean isStateEmpty(int state) {
         return state == EMPTY_OUTPUT_POSITION;
     }
 
