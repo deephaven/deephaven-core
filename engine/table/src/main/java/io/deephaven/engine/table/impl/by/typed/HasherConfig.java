@@ -22,10 +22,12 @@ public class HasherConfig<T> {
     public final String packageMiddle;
     final boolean openAddressed;
     final boolean openAddressedAlternate;
+    final boolean supportTombstones;
     final boolean alwaysMoveMain;
     final String mainStateName;
     final String overflowOrAlternateStateName;
     final String emptyStateName;
+    public final String tombstoneStateName;
     final Class<?> stateType;
     final Consumer<CodeBlock.Builder> moveMainFull;
     final Consumer<CodeBlock.Builder> moveMainAlternate;
@@ -39,12 +41,16 @@ public class HasherConfig<T> {
 
     HasherConfig(Class<T> baseClass, String classPrefix, String packageGroup, String packageMiddle,
             boolean openAddressed,
-            boolean openAddressedAlternate, boolean alwaysMoveMain,
+            boolean openAddressedAlternate,
+            boolean supportTombstones,
+            boolean alwaysMoveMain,
             boolean includeOriginalSources,
             boolean supportRehash,
             String mainStateName,
             String overflowOrAlternateStateName,
-            String emptyStateName, Class<?> stateType,
+            String emptyStateName,
+            String tombstoneStateName,
+            Class<?> stateType,
             Consumer<CodeBlock.Builder> moveMainFull,
             Consumer<CodeBlock.Builder> moveMainAlternate,
             Consumer<CodeBlock.Builder> rehashFullSetup,
@@ -58,12 +64,14 @@ public class HasherConfig<T> {
         this.packageMiddle = packageMiddle;
         this.openAddressed = openAddressed;
         this.openAddressedAlternate = openAddressedAlternate;
+        this.supportTombstones = supportTombstones;
         this.alwaysMoveMain = alwaysMoveMain;
         this.includeOriginalSources = includeOriginalSources;
         this.supportRehash = supportRehash;
         this.mainStateName = mainStateName;
         this.overflowOrAlternateStateName = overflowOrAlternateStateName;
         this.emptyStateName = emptyStateName;
+        this.tombstoneStateName = tombstoneStateName;
         this.stateType = stateType;
         this.moveMainFull = moveMainFull;
         this.moveMainAlternate = moveMainAlternate;
@@ -150,6 +158,7 @@ public class HasherConfig<T> {
         private String packageGroup;
         private String packageMiddle;
         private boolean openAddressed = true;
+        private boolean supportTombstones = false;
         private boolean openAddressedAlternate = true;
         private boolean alwaysMoveMain = false;
         private boolean includeOriginalSources = false;
@@ -157,6 +166,7 @@ public class HasherConfig<T> {
         private String mainStateName;
         private String overflowOrAlternateStateName;
         private String emptyStateName;
+        private String tombstoneStateName;
         private Class<?> stateType;
         private Consumer<CodeBlock.Builder> moveMainAlternate;
         private Consumer<CodeBlock.Builder> moveMainFull;
@@ -198,6 +208,11 @@ public class HasherConfig<T> {
             return this;
         }
 
+        public Builder<T> supportTombstones(boolean supportTombstones) {
+            this.supportTombstones = supportTombstones;
+            return this;
+        }
+
         public Builder<T> alwaysMoveMain(boolean alwaysMoveMain) {
             this.alwaysMoveMain = alwaysMoveMain;
             return this;
@@ -225,6 +240,11 @@ public class HasherConfig<T> {
 
         public Builder<T> emptyStateName(String emptyStateName) {
             this.emptyStateName = emptyStateName;
+            return this;
+        }
+
+        public Builder<T> tombstoneStateName(String tombstoneStateName) {
+            this.tombstoneStateName = tombstoneStateName;
             return this;
         }
 
@@ -280,8 +300,8 @@ public class HasherConfig<T> {
             Assert.neqNull(stateType, "stateType");
 
             return new HasherConfig<>(baseClass, classPrefix, packageGroup, packageMiddle, openAddressed,
-                    openAddressedAlternate, alwaysMoveMain, includeOriginalSources, supportRehash, mainStateName,
-                    overflowOrAlternateStateName, emptyStateName,
+                    openAddressedAlternate, supportTombstones, alwaysMoveMain, includeOriginalSources, supportRehash, mainStateName,
+                    overflowOrAlternateStateName, emptyStateName, tombstoneStateName,
                     stateType, moveMainFull, moveMainAlternate, rehashFullSetup, extraPartialRehashParameters, probes,
                     builds, extraMethods);
         }

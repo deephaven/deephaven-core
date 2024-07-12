@@ -33,6 +33,8 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         implements IncrementalNaturalJoinStateManager, BothIncrementalNaturalJoinStateManager {
 
     public static final long EMPTY_RIGHT_STATE = QueryConstants.NULL_LONG;
+    public static final long TOMBSTONE_RIGHT_STATE = RowSet.NULL_ROW_KEY - 1;
+    public static final long FIRST_DUPLICATE = TOMBSTONE_RIGHT_STATE - 1;
 
     // the number of slots in our table
     protected int tableSize;
@@ -47,7 +49,6 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     protected long numEntries = 0;
 
     // the table will be rehashed to a load factor of targetLoadFactor if our loadFactor exceeds maximumLoadFactor
-    // or if it falls below minimum load factor we will instead contract the table
     private final double maximumLoadFactor;
 
     // the keys for our hash entries
@@ -58,8 +59,10 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     // we use a RowSet.NULL_ROW_KEY for a state that exists, but has no right hand side;
     // the column sources are initialized with NULL_LONG for something that does not exist. When there are multiple
     // right rows, we store a value less than RowSet.NULL_ROW_KEY, which is a position in the rightSideDuplicateRowSets
-    // (-2 maps to 0, -3 to 1, etc.). We must maintain the right side duplicates so that we do not need a rescan;
+    // (-3 maps to 0, -4 to 1, etc.). We must maintain the right side duplicates so that we do not need a rescan;
     // but in the common (as opposed to impending error) case of a single value we do not want to allocate any objects
+    //
+    // The TOMBSTONE_RIGHT_STATE indicates that the row was deleted.
     protected ImmutableLongArraySource mainRightRowKey = new ImmutableLongArraySource();
     protected ImmutableLongArraySource alternateRightRowKey;
 
@@ -337,12 +340,12 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     }
 
     protected long duplicateLocationFromRowKey(long rowKey) {
-        Assert.lt(rowKey, "rowKey", -1L);
-        return -rowKey - 2;
+        Assert.leq(rowKey, "rowKey", FIRST_DUPLICATE);
+        return -rowKey + FIRST_DUPLICATE;
     }
 
     protected long rowKeyFromDuplicateLocation(long duplicateLocation) {
-        return -duplicateLocation - 2;
+        return -duplicateLocation + FIRST_DUPLICATE;
     }
 
     protected long allocateDuplicateLocation() {
@@ -370,7 +373,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         } else {
             rightRowKey = alternateRightRowKey.getUnsafe(slot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
         }
-        if (rightRowKey < RowSet.NULL_ROW_KEY) {
+        if (rightRowKey <= FIRST_DUPLICATE) {
             return DUPLICATE_RIGHT_VALUE;
         }
         return rightRowKey;

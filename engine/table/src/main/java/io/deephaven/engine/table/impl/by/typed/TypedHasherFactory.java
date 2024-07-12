@@ -20,7 +20,6 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MultiJoinModifiedSlotTracker;
 import io.deephaven.engine.table.impl.NaturalJoinModifiedSlotTracker;
-import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.asofjoin.RightIncrementalAsOfJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.asofjoin.StaticAsOfJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.asofjoin.TypedAsOfJoinFactory;
@@ -54,7 +53,7 @@ import java.util.stream.IntStream;
  */
 public class TypedHasherFactory {
     private static final boolean USE_PREGENERATED_HASHERS =
-            Configuration.getInstance().getBooleanWithDefault("TypedHasherFactory.usePregeneratedHashers", true);
+            Configuration.getInstance().getBooleanWithDefault("TypedHasherFactory.usePregeneratedHashers", false);
 
     /**
      * Produce a hasher for the given base class and column sources.
@@ -196,9 +195,11 @@ public class TypedHasherFactory {
             builder.classPrefix("IncrementalNaturalJoinHasher").packageGroup("naturaljoin")
                     .packageMiddle("incopen")
                     .openAddressedAlternate(true)
+                    .supportTombstones(true)
                     .stateType(long.class).mainStateName("mainRightRowKey")
                     .overflowOrAlternateStateName("alternateRightRowKey")
                     .emptyStateName("EMPTY_RIGHT_STATE")
+                    .tombstoneStateName("TOMBSTONE_RIGHT_STATE")
                     .includeOriginalSources(true)
                     .supportRehash(true)
                     .addExtraPartialRehashParameter(modifiedSlotTrackerParam)
@@ -245,7 +246,7 @@ public class TypedHasherFactory {
                     ParameterSpec.builder(TypeName.get(LongArraySource.class), "leftRedirections").build(),
                     ParameterSpec.builder(long.class, "leftRedirectionOffset").build()));
 
-            builder.addProbe(new HasherConfig.ProbeSpec("removeLeft", null, true,
+            builder.addProbe(new HasherConfig.ProbeSpec("removeLeft", "rightState", true,
                     TypedNaturalJoinFactory::incrementalRemoveLeftFound,
                     TypedNaturalJoinFactory::incrementalRemoveLeftMissing));
 
@@ -629,6 +630,9 @@ public class TypedHasherFactory {
             hasherConfig.probes.forEach(
                     ps -> hasherBuilder.addMethod(createProbeMethodForOpenAddressed(hasherConfig, ps, chunkTypes)));
         } else {
+            if (hasherConfig.supportTombstones) {
+                throw new IllegalStateException("Tombstones are only supported with open addressed hash tables.");
+            }
             hasherBuilder.addMethod(createBuildMethodForOverflow(hasherConfig, chunkTypes));
             hasherBuilder.addMethod(createProbeMethodForOverflow(hasherConfig, chunkTypes));
         }
@@ -1218,7 +1222,11 @@ public class TypedHasherFactory {
             builder.addStatement("$T $L = $L.getUnsafe($L)", hasherConfig.stateType, buildSpec.stateValueName,
                     hasherConfig.mainStateName, tableLocationName);
         }
-        builder.beginControlFlow("if ($L == $L)", buildSpec.stateValueName, hasherConfig.emptyStateName);
+        if (hasherConfig.supportTombstones) {
+            builder.beginControlFlow("if ($L == $L || $L == $L)", buildSpec.stateValueName, hasherConfig.emptyStateName, buildSpec.stateValueName, hasherConfig.tombstoneStateName);
+        } else {
+            builder.beginControlFlow("if ($L == $L)", buildSpec.stateValueName, hasherConfig.emptyStateName);
+        }
 
         if (hasherConfig.openAddressedAlternate && !alternate && buildSpec.allowAlternates) {
             // we might need to do an alternative build here
@@ -1317,21 +1325,43 @@ public class TypedHasherFactory {
         }
         builder.addStatement("int $L = $L", tableLocationName, firstTableLocationName);
 
-
-        if (!alternate && ps.stateValueName != null) {
+        final String stateValueName ;
+        if(alternate) {
+            stateValueName=null;
+        }
+        else {
+            if(ps.stateValueName != null) {
+                stateValueName=ps.stateValueName;
+            }
+            else if (hasherConfig.supportTombstones) {
+                stateValueName = "stateValue";
+            }
+            else {
+                stateValueName = null;
+            }
+        }
+        if (stateValueName != null) {
             builder.addStatement("$T $L", hasherConfig.stateType, ps.stateValueName);
         }
 
         final String stateSourceName =
                 alternate ? hasherConfig.overflowOrAlternateStateName : hasherConfig.mainStateName;
-        if (ps.stateValueName == null) {
+        if (stateValueName == null) {
             builder.beginControlFlow("while ($L.getUnsafe($L) != $L)",
                     stateSourceName, tableLocationName,
                     hasherConfig.emptyStateName);
         } else {
-            builder.beginControlFlow("while (($L = $L.getUnsafe($L)) != $L)", ps.stateValueName,
+            if (hasherConfig.supportTombstones) {
+                builder.beginControlFlow("while (($L = $L.getUnsafe($L)) != $L && ($L != $L))", stateValueName,
+                        stateSourceName, tableLocationName,
+                        hasherConfig.emptyStateName,
+                        stateValueName,
+                        hasherConfig.tombstoneStateName);
+            } else {
+                builder.beginControlFlow("while (($L = $L.getUnsafe($L)) != $L)", stateValueName,
                     stateSourceName, tableLocationName,
                     hasherConfig.emptyStateName);
+            }
         }
 
         builder.beginControlFlow(
