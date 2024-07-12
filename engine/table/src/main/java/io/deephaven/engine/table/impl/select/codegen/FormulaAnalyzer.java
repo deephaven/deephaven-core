@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.table.impl.select.codegen;
 
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryLibrary;
 import io.deephaven.engine.table.ColumnDefinition;
@@ -63,9 +62,9 @@ public class FormulaAnalyzer {
         final String cookedFormulaString = queryLanguageResult.getConvertedExpression();
         final String timeInstanceVariables = queryLanguageResult.getTimeConversionResult().getInstanceVariablesString();
         return new Result(returnedType,
-                usedColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
-                usedColumnArrays.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
-                userParams.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
+                usedColumns.toArray(String[]::new),
+                usedColumnArrays.toArray(String[]::new),
+                userParams.toArray(String[]::new),
                 rawFormulaString, cookedFormulaString, timeInstanceVariables,
                 queryLanguageResult.isConstantValueExpression());
     }

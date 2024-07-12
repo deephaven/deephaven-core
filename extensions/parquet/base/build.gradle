@@ -7,6 +7,7 @@ description 'Parquet Base: Libraries for working with Parquet files'
 
 dependencies {
     api project(':util-channel')
+    api project(':codec-api')
 
     implementation libs.parquet.hadoop
 
