@@ -3,13 +3,10 @@
 //
 package io.deephaven.util;
 
-import java.io.PrintStream;
-import java.io.PrintWriter;
 import java.util.List;
 
 /**
- * An exception to use when a series of operations must all be executed, but may all throw exceptions themselves. This
- * allows for retention of all exception data.
+ * Simplified version of MultiException, which doesn't require PrintWriter.
  */
 public class MultiException extends Exception {
 
@@ -27,19 +24,6 @@ public class MultiException extends Exception {
         this.causes = causes == null ? ZERO_LENGTH_THROWABLE_ARRAY : causes;
     }
 
-    /**
-     * If there is a single exception, return that exception; otherwise wrap the causes into a MultiException.
-     *
-     * @param description the description for the MultiException
-     * @param causes the array of causes
-     * @return a MultiException or the single Throwable
-     */
-    public static Throwable maybeWrapInMultiException(String description, Throwable... causes) {
-        if (causes.length == 1) {
-            return causes[0];
-        }
-        return new MultiException(description, causes);
-    }
 
     /**
      * If there is a single exception, return that exception; otherwise wrap the causes into a MultiException.
@@ -55,20 +39,6 @@ public class MultiException extends Exception {
         return new MultiException(description, causes.toArray(ZERO_LENGTH_THROWABLE_ARRAY));
     }
 
-    /**
-     * If there is a single exception, return that exception; otherwise wrap the causes into a MultiException.
-     *
-     * @param description the description for the MultiException
-     * @param causes the array of causes
-     * @return a MultiException or the single Exception
-     */
-    public static Exception maybeWrapInMultiException(String description, Exception... causes) {
-        if (causes.length == 1) {
-            return causes[0];
-        }
-        return new MultiException(description, causes);
-    }
-
     private static Throwable getFirstCause(Throwable[] causes) {
         if (causes == null || causes.length == 0) {
             return null;
@@ -82,24 +52,6 @@ public class MultiException extends Exception {
      */
     public Throwable[] getCauses() {
         return causes;
-    }
-
-    @Override
-    public void printStackTrace(PrintWriter s) {
-        super.printStackTrace(s);
-        for (int i = 0; i < causes.length; i++) {
-            s.println("Cause " + (i + 1) + ":");
-            causes[i].printStackTrace(s);
-        }
-    }
-
-    @Override
-    public void printStackTrace(PrintStream s) {
-        super.printStackTrace(s);
-        for (int i = 0; i < causes.length; i++) {
-            s.println("Cause " + (i + 1) + ":");
-            causes[i].printStackTrace(s);
-        }
     }
 
     @Override
