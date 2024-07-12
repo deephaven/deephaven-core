@@ -1326,21 +1326,16 @@ public class TypedHasherFactory {
         builder.addStatement("int $L = $L", tableLocationName, firstTableLocationName);
 
         final String stateValueName ;
-        if(alternate) {
-            stateValueName=null;
+        if(ps.stateValueName != null) {
+            stateValueName=ps.stateValueName;
+        }
+        else if (hasherConfig.supportTombstones) {
+            stateValueName = "stateValue";
         }
         else {
-            if(ps.stateValueName != null) {
-                stateValueName=ps.stateValueName;
-            }
-            else if (hasherConfig.supportTombstones) {
-                stateValueName = "stateValue";
-            }
-            else {
-                stateValueName = null;
-            }
+            stateValueName = null;
         }
-        if (stateValueName != null) {
+        if (!alternate && stateValueName != null) {
             builder.addStatement("$T $L", hasherConfig.stateType, ps.stateValueName);
         }
 
