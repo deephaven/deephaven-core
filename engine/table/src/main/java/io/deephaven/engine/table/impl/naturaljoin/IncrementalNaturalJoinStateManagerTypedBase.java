@@ -244,17 +244,16 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             }
         }
 
-        int oldTableSize = tableSize;
-        while (rehashRequired(nextChunkSize)) {
-            tableSize *= 2;
+        if (!rehashRequired(nextChunkSize)) {
+            return false;
+        }
 
+        int oldTableSize = tableSize;
+        while (tableNeedsExpansion(nextChunkSize)) {
+            tableSize *= 2;
             if (tableSize < 0 || tableSize > MAX_TABLE_SIZE) {
                 throw new UnsupportedOperationException("Hash table exceeds maximum size!");
             }
-        }
-
-        if (oldTableSize == tableSize) {
-            return false;
         }
 
         // we can't give the caller credit for rehashes with the old table, we need to begin migrating things again
@@ -325,6 +324,10 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
 
     public boolean rehashRequired(int nextChunkSize) {
         return (numEntries + nextChunkSize) > (tableSize * maximumLoadFactor);
+    }
+
+    public boolean tableNeedsExpansion(int nextChunkSize) {
+        return (liveEntries + nextChunkSize) > (tableSize * maximumLoadFactor);
     }
 
     abstract protected void rehashInternalFull(final int oldSize);
