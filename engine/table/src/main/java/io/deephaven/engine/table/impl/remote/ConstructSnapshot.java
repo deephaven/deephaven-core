@@ -97,38 +97,38 @@ public class ConstructSnapshot {
     public interface State {
 
         /**
-         * Test that determines whether the currently-active concurrent snapshot attempt has become inconsistent. Always
+         * Test that determines whether the currently active concurrent snapshot attempt has become inconsistent. Always
          * returns {@code false} if there is no snapshot attempt active, or if there is a locked attempt active
          * (necessarily at lower depth than the lowest concurrent attempt).
          *
-         * @return Whether the clock or sources have changed in such a way as to make the currently-active concurrent
+         * @return Whether the clock or sources have changed in such a way as to make the currently active concurrent
          *         snapshot attempt inconsistent
          */
         boolean concurrentAttemptInconsistent();
 
         /**
-         * Check that fails if the currently-active concurrent snapshot attempt has become inconsistent. source. This is
-         * a no-op if there is no snapshot attempt active, or if there is a locked attempt active (necessarily at lower
-         * depth than the lowest concurrent attempt).
+         * Check that fails if the currently active concurrent snapshot attempt has become inconsistent. This is a no-op
+         * if there is no snapshot attempt active, or if there is a locked attempt active (necessarily at lower depth
+         * than the lowest concurrent attempt).
          *
-         * @throws SnapshotInconsistentException If the currently-active concurrent snapshot attempt has become
+         * @throws SnapshotInconsistentException If the currently active concurrent snapshot attempt has become
          *         inconsistent
          */
         void failIfConcurrentAttemptInconsistent();
 
         /**
          * Wait for a dependency to become satisfied on the current cycle if we're trying to use current values for the
-         * currently-active concurrent snapshot attempt. This is a no-op if there is no snapshot attempt active, or if
+         * currently active concurrent snapshot attempt. This is a no-op if there is no snapshot attempt active, or if
          * there is a locked attempt active (necessarily at lower depth than the lowest concurrent attempt).
          *
-         * @param dependency The dependency, which may be null in order to avoid redundant checks in calling code
+         * @param dependency The dependency, which may be null to avoid redundant checks in calling code
          * @throws SnapshotInconsistentException If we cannot wait for this dependency on the current step because the
          *         step changed
          */
         void maybeWaitForSatisfaction(@Nullable NotificationQueue.Dependency dependency);
 
         /**
-         * Return the currently-active concurrent snapshot attempt's "before" clock value, or zero if there is no
+         * Return the currently active concurrent snapshot attempt's "before" clock value, or zero if there is no
          * concurrent attempt active.
          *
          * @return The concurrent snapshot attempt's "before" clock value, or zero
@@ -435,23 +435,23 @@ public class ConstructSnapshot {
     }
 
     /**
-     * Get the currently-active snapshot state.
+     * Get the currently active snapshot state.
      *
-     * @return the currently-active snapshot state
+     * @return the currently active snapshot state
      */
     public static State state() {
         return StateImpl.get();
     }
 
     /**
-     * Test that determines whether the currently-active concurrent snapshot attempt has become inconsistent. Always
+     * Test that determines whether the currently active concurrent snapshot attempt has become inconsistent. Always
      * returns {@code false} if there is no snapshot attempt active, or if there is a locked attempt active (necessarily
      * at lower depth than the lowest concurrent attempt).
      *
      * <p>
      * Equivalent to {@code state().concurrentAttemptInconsistent()}.
      *
-     * @return Whether the clock or sources have changed in such a way as to make the currently-active concurrent
+     * @return Whether the clock or sources have changed in such a way as to make the currently active concurrent
      *         snapshot attempt inconsistent
      * @see State#concurrentAttemptInconsistent()
      */
@@ -460,14 +460,14 @@ public class ConstructSnapshot {
     }
 
     /**
-     * Check that fails if the currently-active concurrent snapshot attempt has become inconsistent. source. This is a
-     * no-op if there is no snapshot attempt active, or if there is a locked attempt active (necessarily at lower depth
-     * than the lowest concurrent attempt).
+     * Check that fails if the currently active concurrent snapshot attempt has become inconsistent. This is a no-op if
+     * there is no snapshot attempt active, or if there is a locked attempt active (necessarily at lower depth than the
+     * lowest concurrent attempt).
      *
      * <p>
      * Equivalent to {@code state().failIfConcurrentAttemptInconsistent()}.
      *
-     * @throws SnapshotInconsistentException If the currently-active concurrent snapshot attempt has become inconsistent
+     * @throws SnapshotInconsistentException If the currently active concurrent snapshot attempt has become inconsistent
      * @see State#failIfConcurrentAttemptInconsistent()
      */
     public static void failIfConcurrentAttemptInconsistent() {
@@ -476,13 +476,13 @@ public class ConstructSnapshot {
 
     /**
      * Wait for a dependency to become satisfied on the current cycle if we're trying to use current values for the
-     * currently-active concurrent snapshot attempt. This is a no-op if there is no snapshot attempt active, or if there
+     * currently active concurrent snapshot attempt. This is a no-op if there is no snapshot attempt active, or if there
      * is a locked attempt active (necessarily at lower depth than the lowest concurrent attempt).
      *
      * <p>
      * Equivalent to {@code state().maybeWaitForSatisfaction(dependency)}.
      *
-     * @param dependency The dependency, which may be null in order to avoid redundant checks in calling code
+     * @param dependency The dependency, which may be null to avoid redundant checks in calling code
      * @throws SnapshotInconsistentException If we cannot wait for this dependency on the current step because the step
      *         changed
      * @see State#maybeWaitForSatisfaction(Dependency)
@@ -492,7 +492,7 @@ public class ConstructSnapshot {
     }
 
     /**
-     * Return the currently-active concurrent snapshot attempt's "before" clock value, or zero if there is no concurrent
+     * Return the currently active concurrent snapshot attempt's "before" clock value, or zero if there is no concurrent
      * attempt active.
      *
      * <p>
@@ -705,15 +705,15 @@ public class ConstructSnapshot {
                     }
                 }
                 try (final RowSet ignored = keysToSnapshot) {
-                    final boolean ret = snapshotAllTable(usePrev, snapshot, table, logIdentityObject, columnsToSnapshot,
-                            keysToSnapshot);
-                    if (ret) {
+                    final boolean success = snapshotAllTable(usePrev, snapshot, table, logIdentityObject,
+                            columnsToSnapshot, keysToSnapshot);
+                    if (success) {
                         snapshotMsg.setValue(snapshot);
                     } else {
                         snapshot.close();
                     }
-                    return ret;
-                } catch (final Exception e) {
+                    return success;
+                } catch (final Throwable e) {
                     snapshot.close();
                     throw e;
                 }
@@ -1296,6 +1296,10 @@ public class ConstructSnapshot {
                                 .endl();
                     }
                     break;
+                } catch (SnapshotUnsuccessfulException sue) {
+                    // The code below detected a failure despite a consistent state. We should not re-attempt, or
+                    // re-check the consistency ourselves.
+                    throw sue;
                 } catch (Exception e) {
                     functionSuccessful = false;
                     caughtException = e;
@@ -1534,27 +1538,30 @@ public class ConstructSnapshot {
         // Snapshot empty columns serially, and collect indices of non-empty columns
         final int numColumnsToSnapshot =
                 (columnsToSnapshot != null) ? columnsToSnapshot.cardinality() : columnSources.length;
-        final TIntList nonEmptyColumnsIndices = new TIntArrayList(numColumnsToSnapshot);
+        final TIntList nonEmptyColumnIndices = new TIntArrayList(numColumnsToSnapshot);
+        final List<ColumnSource<?>> nonEmptyColumnSources = new ArrayList<>(numColumnsToSnapshot);
         if (!snapshotEmptyColumns(columnSources, columnsToSnapshot, table, logIdentityObject, snapshot,
-                nonEmptyColumnsIndices)) {
+                nonEmptyColumnIndices, nonEmptyColumnSources)) {
             return false;
         }
         boolean canParallelize = false;
-        if (!nonEmptyColumnsIndices.isEmpty()) {
+        final int numNonEmptyColumns = nonEmptyColumnIndices.size();
+        if (numNonEmptyColumns != 0) {
             final ExecutionContext executionContext = ExecutionContext.getContext();
             canParallelize = ENABLE_PARALLEL_SNAPSHOT &&
                     executionContext.getOperationInitializer().canParallelize() &&
-                    nonEmptyColumnsIndices.size() > 1 &&
+                    numNonEmptyColumns > 1 &&
                     (snapshot.rowsIncluded.size() >= MINIMUM_PARALLEL_SNAPSHOT_ROWS ||
-                            !allColumnSourcesInMemory(table, columnSources, nonEmptyColumnsIndices));
+                            !allColumnSourcesInMemory(nonEmptyColumnSources));
             if (canParallelize) {
-                if (!snapshotColumnsParallel(columnSources, nonEmptyColumnsIndices, table, usePrev, executionContext,
+                if (!snapshotColumnsParallel(nonEmptyColumnIndices, nonEmptyColumnSources, usePrev, executionContext,
                         snapshot)) {
                     return false;
                 }
             } else {
                 // Snapshot all non-empty columns serially
-                snapshotColumnsSerial(columnSources, nonEmptyColumnsIndices, table, usePrev, snapshot);
+                snapshotColumnsSerial(nonEmptyColumnIndices, nonEmptyColumnSources, usePrev,
+                        snapshot);
             }
         }
         if (log.isDebugEnabled()) {
@@ -1577,14 +1584,8 @@ public class ConstructSnapshot {
     /**
      * Check if all the required column sources are in memory and should allow efficient access.
      */
-    private static boolean allColumnSourcesInMemory(
-            @NotNull final Table table,
-            @NotNull final String[] columnSources,
-            @NotNull final TIntList columnIndicesToSnapshot) {
-        final int numColumnsToSnapshot = columnIndicesToSnapshot.size();
-        for (int colRank = 0; colRank < numColumnsToSnapshot; ++colRank) {
-            final ColumnSource<?> columnSource =
-                    table.getColumnSource(columnSources[columnIndicesToSnapshot.get(colRank)]);
+    private static boolean allColumnSourcesInMemory(@NotNull final Iterable<ColumnSource<?>> columnSources) {
+        for (final ColumnSource<?> columnSource : columnSources) {
             if (!isColumnSourceInMemory(columnSource)) {
                 return false;
             }
@@ -1607,10 +1608,12 @@ public class ConstructSnapshot {
         } while (true);
     }
 
+    /**
+     * Snapshot the specified columns in parallel.
+     */
     private static boolean snapshotColumnsParallel(
-            final String[] columnSources,
-            @NotNull final TIntList columnIndicesToSnapshot,
-            @NotNull final Table table,
+            @NotNull final TIntList columnIndices,
+            @NotNull final List<ColumnSource<?>> columnSources,
             final boolean usePrev,
             final ExecutionContext executionContext,
             @NotNull final BarrageMessage snapshot) {
@@ -1620,17 +1623,17 @@ public class ConstructSnapshot {
                 executionContext,
                 logOutput -> logOutput.append("snapshotColumnsParallel"),
                 JobScheduler.DEFAULT_CONTEXT_FACTORY,
-                0, columnIndicesToSnapshot.size(),
+                0, columnIndices.size(),
                 (context, colRank, nestedErrorConsumer) -> snapshotColumnsSerial(
-                        columnSources,
-                        new TIntArrayList(new int[] {columnIndicesToSnapshot.get(colRank)}),
-                        table, usePrev, snapshot),
+                        new TIntArrayList(new int[] {columnIndices.get(colRank)}),
+                        columnSources.subList(colRank, colRank + 1),
+                        usePrev, snapshot),
                 () -> waitForParallelSnapshot.complete(null),
                 waitForParallelSnapshot::completeExceptionally);
         try {
             waitForParallelSnapshot.get();
         } catch (final InterruptedException e) {
-            throw new java.util.concurrent.CancellationException("Interrupted during parallel column snapshot");
+            throw new CancellationException("Interrupted during parallel column snapshot");
         } catch (final ExecutionException e) {
             throw new ColumnSnapshotUnsuccessfulException(
                     "Exception occurred during parallel column snapshot", e.getCause());
@@ -1638,28 +1641,9 @@ public class ConstructSnapshot {
         return true;
     }
 
-    private static void snapshotColumnsSerial(
-            final String[] columnSources,
-            @NotNull final TIntList columnIndicesToSnapshot,
-            @NotNull final Table table,
-            final boolean usePrev,
-            @NotNull final BarrageMessage snapshot) {
-        final int numColumnsToSnapshot = columnIndicesToSnapshot.size();
-        final long size = snapshot.rowsIncluded.size();
-        // The caller should handle empty tables
-        Assert.assertion(size > 0, "size > 0");
-        for (int colRank = 0; colRank < numColumnsToSnapshot; ++colRank) {
-            final int colIdx = columnIndicesToSnapshot.get(colRank);
-            final ColumnSource<?> sourceToUse =
-                    ReinterpretUtils.maybeConvertToPrimitive(table.getColumnSource(columnSources[colIdx]));
-            snapshot.addColumnData[colIdx].data =
-                    getSnapshotDataAsChunkList(sourceToUse, snapshot.rowsIncluded, usePrev);
-        }
-    }
-
     /**
      * Allocate add and mod column data for each column, and populate the snapshot data for empty columns. Also, collect
-     * the indices of non-empty columns, so we can populate them later.
+     * the indices and column sources of non-empty columns, for which we will populate snapshot data later.
      * <p>
      * This method is intended to be called from the main thread.
      */
@@ -1669,7 +1653,8 @@ public class ConstructSnapshot {
             @NotNull final Table table,
             @NotNull final Object logIdentityObject,
             @NotNull final BarrageMessage snapshot,
-            @NotNull final TIntCollection nonEmptyColumnsIndices) {
+            @NotNull final TIntCollection nonEmptyColumnsIndices,
+            @NotNull final Collection<ColumnSource<?>> nonEmptyColumnSources) {
         final boolean rowsetIsEmpty = snapshot.rowsIncluded.isEmpty();
         for (int colIdx = 0; colIdx < columnSources.length; ++colIdx) {
             if (concurrentAttemptInconsistent()) {
@@ -1694,6 +1679,7 @@ public class ConstructSnapshot {
                 acd.data = List.of();
             } else {
                 nonEmptyColumnsIndices.add(colIdx);
+                nonEmptyColumnSources.add(sourceToUse);
             }
             acd.type = columnSource.getType();
             acd.componentType = columnSource.getComponentType();
@@ -1760,51 +1746,83 @@ public class ConstructSnapshot {
         }
     }
 
-    private static <T> List<Chunk<Values>> getSnapshotDataAsChunkList(
-            @NotNull final ColumnSource<T> columnSource,
-            @NotNull final RowSet rowSet,
-            final boolean usePrev) {
-        final long size = rowSet.size();
-        if (size == 0) {
-            return List.of();
-        }
-
+    private static void snapshotColumnsSerial(
+            @NotNull final TIntList columnIndices,
+            @NotNull final List<ColumnSource<?>> columnSources,
+            final boolean usePrev,
+            @NotNull final BarrageMessage snapshot) {
+        final RowSet rowSet = snapshot.rowsIncluded;
+        final long numRows = rowSet.size();
+        // The caller should handle empty tables
+        Assert.assertion(numRows > 0, "numRows > 0");
+        final long numCols = columnIndices.size();
         long offset = 0;
-        final ArrayList<Chunk<Values>> result = new ArrayList<>();
-        final int maxChunkSize = (int) Math.min(size, SNAPSHOT_CHUNK_SIZE);
-
-        // we don't use a shared context here because different columns may have different fill sizes
-        try (final ColumnSource.FillContext context = columnSource.makeFillContext(maxChunkSize, null);
+        final int maxChunkSize = (int) Math.min(numRows, SNAPSHOT_CHUNK_SIZE);
+        try (final SharedContext sharedContext = numCols > 1 ? SharedContext.makeSharedContext() : null;
                 final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
             int chunkSize = maxChunkSize;
             while (it.hasMore()) {
                 final RowSequence reducedRowSet = it.getNextRowSequenceWithLength(chunkSize);
-                final ChunkType chunkType = columnSource.getChunkType();
-
-                // create a new chunk
-                WritableChunk<Values> currentChunk = chunkType.makeWritableChunk(chunkSize);
-
-                if (usePrev) {
-                    columnSource.fillPrevChunk(context, currentChunk, reducedRowSet);
-                } else {
-                    columnSource.fillChunk(context, currentChunk, reducedRowSet);
+                if (reducedRowSet.intSize() != chunkSize) {
+                    failIfConcurrentAttemptInconsistent();
+                    final String error = "Rowset did not provide requested number of rows in an otherwise consistent " +
+                            "state, requested = " + chunkSize + ", actual = " + reducedRowSet.size();
+                    log.error().append(error).endl();
+                    throw new SnapshotUnsuccessfulException(error);
                 }
-
-                // add the chunk to the current list
-                result.add(currentChunk);
-
-                // increment the offset for the next chunk (using the actual values written)
-                offset += currentChunk.size();
+                // Populate the snapshot data for each non-empty column for the current chunk of rows
+                for (int colRank = 0; colRank < numCols; ++colRank) {
+                    final int colIdx = columnIndices.get(colRank);
+                    final ColumnSource<?> columnSource = columnSources.get(colRank);
+                    // Populate snapshot data as a list of chunks
+                    if (snapshot.addColumnData[colIdx].data == null) {
+                        snapshot.addColumnData[colIdx].data = new ArrayList<>();
+                    }
+                    snapshot.addColumnData[colIdx].data.add(
+                            getColumnSnapshotChunk(columnSource, sharedContext, reducedRowSet, chunkSize, usePrev));
+                }
+                // increment offset for the next chunk (assuming the number of rows written for all columns is equal)
+                offset += chunkSize;
 
                 // recompute the size of the next chunk
-                if (size - offset > maxChunkSize) {
+                if (numRows - offset > maxChunkSize) {
                     chunkSize = maxChunkSize;
                 } else {
-                    chunkSize = (int) (size - offset);
+                    chunkSize = (int) (numRows - offset);
+                }
+                if (sharedContext != null) {
+                    // a shared context is good for only one chunk of rows
+                    sharedContext.reset();
                 }
             }
         }
-        return result;
+    }
+
+    /**
+     * Get a chunk of data for provided column source and row set.
+     */
+    private static <T> Chunk<Values> getColumnSnapshotChunk(
+            @NotNull final ColumnSource<T> columnSource,
+            @Nullable final SharedContext sharedContext,
+            @NotNull final RowSequence rowSequence,
+            final int chunkSize,
+            final boolean usePrev) {
+        final long size = rowSequence.size();
+        if (size == 0) {
+            return columnSource.getChunkType().makeWritableChunk(0);
+        }
+        try (final ColumnSource.FillContext context = columnSource.makeFillContext(chunkSize, sharedContext)) {
+            final ChunkType chunkType = columnSource.getChunkType();
+
+            // create a new chunk
+            final WritableChunk<Values> currentChunk = chunkType.makeWritableChunk(chunkSize);
+            if (usePrev) {
+                columnSource.fillPrevChunk(context, currentChunk, rowSequence);
+            } else {
+                columnSource.fillChunk(context, currentChunk, rowSequence);
+            }
+            return currentChunk;
+        }
     }
 
     /**
