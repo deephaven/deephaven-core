@@ -35,12 +35,15 @@ public class BaseSeekableChannelContext implements SeekableChannelContext {
     public final <T extends SafeCloseable> T getCachedResource(
             final String key,
             @NotNull final Supplier<T> resourceFactory) {
+        SafeCloseable resource;
         if (resourceCache == EMPTY_CACHE) {
             resourceCache = new HashMap<>(1);
-        }
-        SafeCloseable resource = resourceCache.get(key);
-        if (resource == NULL_SENTINEL) {
-            return null;
+            resource = null;
+        } else {
+            resource = resourceCache.get(key);
+            if (resource == NULL_SENTINEL) {
+                return null;
+            }
         }
         if (resource == null) {
             resourceCache.put(key, (resource = resourceFactory.get()) == null ? NULL_SENTINEL : resource);
