@@ -516,7 +516,7 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
-    public void test_lz4_compressed() {
+    public void testLz4RawCompressed() {
         // Write and read a LZ4 compressed file
         File dest = new File(rootFile + File.separator + "Table.parquet");
         final Table table = getTableFlat(100, false, false);
