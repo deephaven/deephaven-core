@@ -24,6 +24,7 @@ dependencies {
     api project(':engine-api')
     api project(':engine-stringset')
     api project(':engine-table')
+    api project(':codec-api')
 
     implementation project(':extensions-parquet-base')
     Classpaths.inheritParquetHadoop(project)
@@ -34,6 +35,8 @@ dependencies {
     implementation project(':Configuration')
     implementation depCommonsLang3
     implementation project(':Util')
+    implementation project(':codec-builtin')
+    implementation project(':codec-cache')
 
     Classpaths.inheritCommonsText(project, 'implementation')
 
