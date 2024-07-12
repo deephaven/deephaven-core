@@ -22,8 +22,6 @@ dependencies {
     implementation project(':engine-chunk')
     implementation project(':extensions-barrage')
     implementation project(':DataStructures')
-    implementation libs.jetbrains.annotations
-    implementation libs.immutables.value.annotations
     implementation project(':web-shared-beans')
     implementation project(':web-client-backplane')
 

@@ -1,5 +1,4 @@
 <module>
-    <inherits name="org.jetbrains.annotations.Annotations" />
     <source path="" includes="MathUtil.java" />
     <source path="verify" />
 </module>
