@@ -182,6 +182,7 @@ final class UpdateByHasherLongLong extends UpdateByStateManagerTypedBase {
         mainKeySource1.set(destinationTableLocation, k1);
         stateSource.set(destinationTableLocation, currentStateValue);
         alternateStateSource.set(locationToMigrate, EMPTY_RIGHT_VALUE);
+        numEntries++;
         return true;
     }
 
@@ -216,7 +217,7 @@ final class UpdateByHasherLongLong extends UpdateByStateManagerTypedBase {
     @Override
     protected void migrateFront(WritableIntChunk<RowKeys> outputPositions) {
         int location = 0;
-        while (migrateOneLocation(location++, outputPositions));
+        while (migrateOneLocation(location++, outputPositions) && location < alternateTableSize);
     }
 
     @Override

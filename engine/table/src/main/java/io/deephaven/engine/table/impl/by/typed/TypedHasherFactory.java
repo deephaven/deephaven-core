@@ -969,13 +969,13 @@ public class TypedHasherFactory {
         builder.addStatement("int rehashedEntries = 0");
         builder.beginControlFlow("while (rehashPointer > 0 && rehashedEntries < entriesToRehash)");
         final String extraParamNames;
-        if (hasherConfig.extraPartialRehashParameters.size() > 0) {
+        if (!hasherConfig.extraPartialRehashParameters.isEmpty()) {
             extraParamNames = ", " + hasherConfig.extraPartialRehashParameters.stream().map(ps -> ps.name)
                     .collect(Collectors.joining(", "));
         } else {
             extraParamNames = "";
         }
-        builder.beginControlFlow("if (migrateOneLocation(--rehashPointer" + extraParamNames + "))");
+        builder.beginControlFlow("if (migrateOneLocation(--rehashPointer" + (hasherConfig.supportTombstones ? ", false" : "") + extraParamNames + "))");
         builder.addStatement("rehashedEntries++");
         builder.endControlFlow();
         builder.endControlFlow();
@@ -1035,6 +1035,11 @@ public class TypedHasherFactory {
         builder.beginControlFlow("if (isStateEmpty(currentStateValue))");
         builder.addStatement("return false");
         builder.endControlFlow();
+        if (hasherConfig.supportTombstones) {
+            builder.beginControlFlow("if (isStateDeleted(currentStateValue))");
+            builder.addStatement("return deletedTrue");
+            builder.endControlFlow();
+        }
 
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             final Class<?> element = elementType(chunkTypes[ii]);
@@ -1054,8 +1059,13 @@ public class TypedHasherFactory {
         builder.addStatement("return true");
 
         final MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("migrateOneLocation")
-                .returns(boolean.class).addModifiers(Modifier.PRIVATE).addParameter(int.class, "locationToMigrate")
+                .returns(boolean.class).addModifiers(Modifier.PRIVATE)
+                .addParameter(int.class, "locationToMigrate")
                 .addCode(builder.build());
+
+        if (hasherConfig.supportTombstones) {
+            methodBuilder.addParameter(boolean.class, "deletedTrue");
+        }
 
         hasherConfig.extraPartialRehashParameters.forEach(methodBuilder::addParameter);
 
@@ -1076,7 +1086,7 @@ public class TypedHasherFactory {
             extraParamNames = "";
         }
 
-        builder.addStatement("while (migrateOneLocation(location++" + extraParamNames + "))");
+        builder.addStatement("while (migrateOneLocation(location++" + (hasherConfig.supportTombstones ? ", true" : "") + extraParamNames + ") && location < alternateTableSize)");
 
         final MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("migrateFront")
                 .addModifiers(Modifier.PROTECTED)
@@ -1157,6 +1167,7 @@ public class TypedHasherFactory {
         hasherConfig.moveMainAlternate.accept(builder);
         builder.addStatement("$L.set($L, $L)", hasherConfig.overflowOrAlternateStateName, sourceLocation,
                 hasherConfig.emptyStateName);
+        builder.addStatement("numEntries++");
     }
 
     @NotNull
@@ -1304,9 +1315,13 @@ public class TypedHasherFactory {
                 // set to the first available location
                 builder.beginControlFlow("if (firstDeletedLocation >= 0)");
                 builder.addStatement("tableLocation = firstDeletedLocation");
+                builder.nextControlFlow("else");
+                builder.addStatement("numEntries++");
                 builder.endControlFlow();
+                builder.addStatement("liveEntries++");
+            } else {
+                builder.addStatement("numEntries++");
             }
-            builder.addStatement("numEntries++");
             for (int ii = 0; ii < chunkTypes.length; ++ii) {
                 builder.addStatement("mainKeySource$L.set($L, k$L)", ii, tableLocationName, ii);
             }

@@ -176,6 +176,7 @@ final class IncrementalAggOpenHasherFloatDouble extends IncrementalChunkedOperat
         mainOutputPosition.set(destinationTableLocation, currentStateValue);
         outputPositionToHashSlot.set(currentStateValue, mainInsertMask | destinationTableLocation);
         alternateOutputPosition.set(locationToMigrate, EMPTY_OUTPUT_POSITION);
+        numEntries++;
         return true;
     }
 
@@ -209,7 +210,7 @@ final class IncrementalAggOpenHasherFloatDouble extends IncrementalChunkedOperat
     @Override
     protected void migrateFront() {
         int location = 0;
-        while (migrateOneLocation(location++));
+        while (migrateOneLocation(location++) && location < alternateTableSize);
     }
 
     @Override

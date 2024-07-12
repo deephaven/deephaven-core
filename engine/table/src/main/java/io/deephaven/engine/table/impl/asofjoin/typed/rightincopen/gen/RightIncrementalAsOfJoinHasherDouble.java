@@ -252,6 +252,7 @@ final class RightIncrementalAsOfJoinHasherDouble extends RightIncrementalAsOfJoi
         final long cookie  = alternateCookieSource.getUnsafe(locationToMigrate);
         migrateCookie(cookie, destinationTableLocation);
         alternateStateSource.set(locationToMigrate, ENTRY_EMPTY_STATE);
+        numEntries++;
         return true;
     }
 
@@ -282,7 +283,7 @@ final class RightIncrementalAsOfJoinHasherDouble extends RightIncrementalAsOfJoi
     @Override
     protected void migrateFront() {
         int location = 0;
-        while (migrateOneLocation(location++));
+        while (migrateOneLocation(location++) && location < alternateTableSize);
     }
 
     @Override

@@ -289,6 +289,7 @@ final class IncrementalMultiJoinHasherFloat extends IncrementalMultiJoinStateMan
         mainModifiedTrackerCookieSource.set(destinationTableLocation, cookie);
         alternateModifiedTrackerCookieSource.set(locationToMigrate, EMPTY_COOKIE_SLOT);
         alternateSlotToOutputRow.set(locationToMigrate, EMPTY_OUTPUT_ROW);
+        numEntries++;
         return true;
     }
 
@@ -319,7 +320,7 @@ final class IncrementalMultiJoinHasherFloat extends IncrementalMultiJoinStateMan
     @Override
     protected void migrateFront() {
         int location = 0;
-        while (migrateOneLocation(location++));
+        while (migrateOneLocation(location++) && location < alternateTableSize);
     }
 
     @Override

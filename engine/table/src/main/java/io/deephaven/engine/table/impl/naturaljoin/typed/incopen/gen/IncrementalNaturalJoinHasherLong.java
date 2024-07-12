@@ -68,8 +68,10 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                 if (isStateEmpty(rightRowKeyForState)) {
                     if (firstDeletedLocation >= 0) {
                         tableLocation = firstDeletedLocation;
+                    } else {
+                        numEntries++;
                     }
-                    numEntries++;
+                    liveEntries++;
                     mainKeySource0.set(tableLocation, k0);
                     mainLeftRowSet.set(tableLocation, RowSetFactory.fromKeys(rowKeyChunk.get(chunkPosition)));
                     mainRightRowKey.set(tableLocation, RowSet.NULL_ROW_KEY);
@@ -108,8 +110,10 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                 if (isStateEmpty(existingRightRowKey)) {
                     if (firstDeletedLocation >= 0) {
                         tableLocation = firstDeletedLocation;
+                    } else {
+                        numEntries++;
                     }
-                    numEntries++;
+                    liveEntries++;
                     mainKeySource0.set(tableLocation, k0);
                     mainLeftRowSet.set(tableLocation, RowSetFactory.empty());
                     mainRightRowKey.set(tableLocation, rowKeyChunk.get(chunkPosition));
@@ -182,8 +186,10 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                     }
                     if (firstDeletedLocation >= 0) {
                         tableLocation = firstDeletedLocation;
+                    } else {
+                        numEntries++;
                     }
-                    numEntries++;
+                    liveEntries++;
                     mainKeySource0.set(tableLocation, k0);
                     mainLeftRowSet.set(tableLocation, RowSetFactory.empty());
                     mainRightRowKey.set(tableLocation, rowKeyChunk.get(chunkPosition));
@@ -251,8 +257,10 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                     }
                     if (firstDeletedLocation >= 0) {
                         tableLocation = firstDeletedLocation;
+                    } else {
+                        numEntries++;
                     }
-                    numEntries++;
+                    liveEntries++;
                     mainKeySource0.set(tableLocation, k0);
                     mainLeftRowSet.set(tableLocation, RowSetFactory.fromKeys(rowKeyChunk.get(chunkPosition)));
                     mainRightRowKey.set(tableLocation, RowSet.NULL_ROW_KEY);
@@ -304,7 +312,7 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                         final boolean leftEmpty = mainLeftRowSet.getUnsafe(tableLocation).isEmpty();
                         if (leftEmpty) {
                             mainRightRowKey.set(tableLocation, TOMBSTONE_RIGHT_STATE);
-                            numEntries--;
+                            liveEntries--;
                         } else {
                             mainRightRowKey.set(tableLocation, RowSet.NULL_ROW_KEY);
                         }
@@ -339,7 +347,7 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                                 final boolean leftEmpty = alternateLeftRowSet.getUnsafe(alternateTableLocation).isEmpty();
                                 if (leftEmpty) {
                                     alternateRightRowKey.set(alternateTableLocation, TOMBSTONE_RIGHT_STATE);
-                                    numEntries--;
+                                    liveEntries--;
                                 } else {
                                     alternateRightRowKey.set(alternateTableLocation, RowSet.NULL_ROW_KEY);
                                 }
@@ -492,7 +500,7 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                     left.remove(rowKeyChunk.get(chunkPosition));
                     if (left.isEmpty() && rightState == RowSet.NULL_ROW_KEY) {
                         mainRightRowKey.set(tableLocation, TOMBSTONE_RIGHT_STATE);
-                        numEntries--;
+                        liveEntries--;
                     }
                     found = true;
                     break;
@@ -511,7 +519,7 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                             left.remove(rowKeyChunk.get(chunkPosition));
                             if (left.isEmpty() && rightState == RowSet.NULL_ROW_KEY) {
                                 alternateRightRowKey.set(alternateTableLocation, TOMBSTONE_RIGHT_STATE);
-                                numEntries--;
+                                liveEntries--;
                             }
                             alternateFound = true;
                             break;
@@ -601,11 +609,14 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
         return state == TOMBSTONE_RIGHT_STATE;
     }
 
-    private boolean migrateOneLocation(int locationToMigrate,
+    private boolean migrateOneLocation(int locationToMigrate, boolean deletedTrue,
             NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         final long currentStateValue = alternateRightRowKey.getUnsafe(locationToMigrate);
         if (isStateEmpty(currentStateValue)) {
             return false;
+        }
+        if (isStateDeleted(currentStateValue)) {
+            return deletedTrue;
         }
         final long k0 = alternateKeySource0.getUnsafe(locationToMigrate);
         final int hash = hash(k0);
@@ -622,6 +633,7 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
         alternateModifiedTrackerCookieSource.set(locationToMigrate, -1L);
         modifiedSlotTracker.moveTableLocation(cookie, locationToMigrate, mainInsertMask | destinationTableLocation);;
         alternateRightRowKey.set(locationToMigrate, EMPTY_RIGHT_STATE);
+        numEntries++;
         return true;
     }
 
@@ -630,7 +642,7 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
             NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         int rehashedEntries = 0;
         while (rehashPointer > 0 && rehashedEntries < entriesToRehash) {
-            if (migrateOneLocation(--rehashPointer, modifiedSlotTracker)) {
+            if (migrateOneLocation(--rehashPointer, false, modifiedSlotTracker)) {
                 rehashedEntries++;
             }
         }
@@ -653,7 +665,7 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
     @Override
     protected void migrateFront(NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         int location = 0;
-        while (migrateOneLocation(location++, modifiedSlotTracker));
+        while (migrateOneLocation(location++, true, modifiedSlotTracker) && location < alternateTableSize);
     }
 
     @Override

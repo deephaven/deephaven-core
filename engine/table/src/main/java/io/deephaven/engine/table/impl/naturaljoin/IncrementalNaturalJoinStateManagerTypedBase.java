@@ -46,9 +46,12 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     // how much of the alternate sources are necessary to rehash?
     protected int rehashPointer = 0;
 
-    // how many entries are taking up slots in the hash table
+    // how many entries are taking up slots in the hash table (includes tombstones)
     protected long numEntries = 0;
+    // how many values do we have that are live
     protected long liveEntries = 0;
+    // how many entries are in the alternate table (includes tombstones)
+    protected long alternateEntries = 0;
 
     // the table will be rehashed to a load factor of targetLoadFactor if our loadFactor exceeds maximumLoadFactor
     private final double maximumLoadFactor;
@@ -181,6 +184,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
                     migrateFront(modifiedSlotTracker);
                 }
 
+                bc.resetSharedContexts();
                 getKeyChunks(buildSources, bc.getContexts, sourceKeyChunks, chunkOk);
 
                 final long oldEntries = numEntries;
@@ -190,7 +194,6 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
                 // don't penalize this build call with additional rehashing
                 bc.rehashCredits.subtract(Math.toIntExact(entriesAdded));
 
-                bc.resetSharedContexts();
             }
         }
     }
@@ -208,6 +211,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(pc.chunkSize);
 
+                pc.resetSharedContexts();
                 if (usePrev) {
                     getPrevKeyChunks(probeSources, pc.getContexts, sourceKeyChunks, chunkOk);
                 } else {
@@ -215,8 +219,6 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
                 }
 
                 handler.doProbe(chunkOk, sourceKeyChunks);
-
-                pc.resetSharedContexts();
             }
         }
     }
@@ -291,6 +293,8 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     }
 
     protected void newAlternate() {
+        alternateEntries = numEntries;
+        numEntries = 0;
         alternateRightRowKey = mainRightRowKey;
         mainRightRowKey = new ImmutableLongArraySource();
         mainRightRowKey.ensureCapacity(tableSize);
@@ -313,6 +317,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     }
 
     protected void clearAlternate() {
+        alternateEntries = 0;
         for (int ii = 0; ii < mainKeySources.length; ++ii) {
             alternateKeySources[ii] = null;
         }
