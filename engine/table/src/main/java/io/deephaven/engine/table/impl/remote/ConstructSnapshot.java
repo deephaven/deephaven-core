@@ -1537,7 +1537,7 @@ public class ConstructSnapshot {
 
         // Snapshot empty columns serially, and collect indices of non-empty columns
         final int numColumnsToSnapshot =
-                (columnsToSnapshot != null) ? columnsToSnapshot.cardinality() : columnSources.length;
+                columnsToSnapshot != null ? columnsToSnapshot.cardinality() : columnSources.length;
         final TIntList nonEmptyColumnIndices = new TIntArrayList(numColumnsToSnapshot);
         final List<ColumnSource<?>> nonEmptyColumnSources = new ArrayList<>(numColumnsToSnapshot);
         if (!snapshotEmptyColumns(columnSources, columnsToSnapshot, table, logIdentityObject, snapshot,
