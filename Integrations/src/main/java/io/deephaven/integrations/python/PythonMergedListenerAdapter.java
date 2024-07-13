@@ -75,19 +75,21 @@ public class PythonMergedListenerAdapter extends MergedListener {
     }
 
     public void replay() {
-        final RowSet emptyRowSet = RowSetFactory.empty();
-        final RowSetShiftData emptyShift = RowSetShiftData.EMPTY;
-        final ModifiedColumnSet emptyColumnSet = ModifiedColumnSet.EMPTY;
-
-        ArrayList<TableUpdate> updates = new ArrayList<>();
-        for (ListenerRecorder recorder : getRecorders()) {
-            final TableUpdate update =
-                    new TableUpdateImpl(recorder.getParent().getRowSet(), emptyRowSet, emptyRowSet, emptyShift,
-                            emptyColumnSet);
-            updates.add(update);
+        final ArrayList<TableUpdate> updates = new ArrayList<>();
+        try {
+            for (ListenerRecorder recorder : getRecorders()) {
+                final TableUpdate update = new TableUpdateImpl(
+                        recorder.getParent().getRowSet().copy(),
+                        RowSetFactory.empty(),
+                        RowSetFactory.empty(),
+                        RowSetShiftData.EMPTY,
+                        ModifiedColumnSet.EMPTY);
+                updates.add(update);
+            }
+            pyCallable.call("__call__", updates);
+        } finally {
+            updates.forEach(TableUpdate::release);
         }
-
-        pyCallable.call("__call__", updates);
     }
 
     @Override
