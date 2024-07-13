@@ -614,7 +614,7 @@ final class IncrementalNaturalJoinHasherInt extends IncrementalNaturalJoinStateM
         }
         if (isStateDeleted(currentStateValue)) {
             alternateEntries--;
-            Assert.geqZero(alternateEntries, "alternateEntries");
+            alternateRightRowKey.set(locationToMigrate, EMPTY_RIGHT_STATE);
             return deletedTrue;
         }
         final int k0 = alternateKeySource0.getUnsafe(locationToMigrate);
@@ -634,7 +634,6 @@ final class IncrementalNaturalJoinHasherInt extends IncrementalNaturalJoinStateM
         alternateRightRowKey.set(locationToMigrate, EMPTY_RIGHT_STATE);
         numEntries++;
         alternateEntries--;
-        Assert.geqZero(alternateEntries, "alternateEntries");
         return true;
     }
 

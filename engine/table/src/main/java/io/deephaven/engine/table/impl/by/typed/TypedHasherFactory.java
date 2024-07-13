@@ -1038,6 +1038,7 @@ public class TypedHasherFactory {
         if (hasherConfig.supportTombstones) {
             builder.beginControlFlow("if (isStateDeleted(currentStateValue))");
             builder.addStatement("alternateEntries--");
+            builder.addStatement("$L.set(locationToMigrate, $L)", hasherConfig.overflowOrAlternateStateName, hasherConfig.emptyStateName);
             builder.addStatement("return deletedTrue");
             builder.endControlFlow();
         }

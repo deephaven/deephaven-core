@@ -614,6 +614,7 @@ final class IncrementalNaturalJoinHasherDouble extends IncrementalNaturalJoinSta
         }
         if (isStateDeleted(currentStateValue)) {
             alternateEntries--;
+            alternateRightRowKey.set(locationToMigrate, EMPTY_RIGHT_STATE);
             return deletedTrue;
         }
         final double k0 = alternateKeySource0.getUnsafe(locationToMigrate);

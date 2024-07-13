@@ -277,10 +277,10 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
 
     @Test
     public void testIncrementalWithShifts() {
-        final int seedInitial = 1;
+        final int seedInitial = 0;
         final int maxSteps = 10; // if we have more steps, we are more likely to run out of unique key space
 
-        for (int size = 1000; size <= 10_000; size *= 10) {
+        for (int size = 10; size <= 10_000; size *= 10) {
             for (int seed = seedInitial; seed < seedInitial + SEEDCOUNT.applyAsInt(size); ++seed) {
                 System.out.println("Size = " + size + ", seed = " + seed);
                 try (final SafeCloseable ignored = LivenessScopeStack.open()) {

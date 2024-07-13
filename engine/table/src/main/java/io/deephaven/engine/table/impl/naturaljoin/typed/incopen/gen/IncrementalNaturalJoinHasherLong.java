@@ -613,6 +613,7 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
         }
         if (isStateDeleted(currentStateValue)) {
             alternateEntries--;
+            alternateRightRowKey.set(locationToMigrate, EMPTY_RIGHT_STATE);
             return deletedTrue;
         }
         final long k0 = alternateKeySource0.getUnsafe(locationToMigrate);

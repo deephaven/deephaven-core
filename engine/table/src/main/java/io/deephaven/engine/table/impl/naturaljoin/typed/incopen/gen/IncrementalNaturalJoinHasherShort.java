@@ -614,6 +614,7 @@ final class IncrementalNaturalJoinHasherShort extends IncrementalNaturalJoinStat
         }
         if (isStateDeleted(currentStateValue)) {
             alternateEntries--;
+            alternateRightRowKey.set(locationToMigrate, EMPTY_RIGHT_STATE);
             return deletedTrue;
         }
         final short k0 = alternateKeySource0.getUnsafe(locationToMigrate);

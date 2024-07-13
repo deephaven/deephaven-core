@@ -614,6 +614,7 @@ final class IncrementalNaturalJoinHasherFloat extends IncrementalNaturalJoinStat
         }
         if (isStateDeleted(currentStateValue)) {
             alternateEntries--;
+            alternateRightRowKey.set(locationToMigrate, EMPTY_RIGHT_STATE);
             return deletedTrue;
         }
         final float k0 = alternateKeySource0.getUnsafe(locationToMigrate);

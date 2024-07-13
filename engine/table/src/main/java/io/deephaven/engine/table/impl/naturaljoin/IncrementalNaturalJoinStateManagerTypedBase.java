@@ -173,7 +173,6 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             final ColumnSource<?>[] buildSources,
             final TypedHasherUtil.BuildHandler buildHandler,
             final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
-        checkMainEntries();
         try (final RowSequence.Iterator rsIt = buildRows.getRowSequenceIterator()) {
             // noinspection unchecked
             final Chunk<Values>[] sourceKeyChunks = new Chunk[buildSources.length];
@@ -181,32 +180,24 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
                 final int nextChunkSize = chunkOk.intSize();
-                checkMainEntries();
                 while (doRehash(initialBuild, bc.rehashCredits, nextChunkSize, modifiedSlotTracker)) {
-                    checkMainEntries();
-                    checkAlternateEntries();
                     migrateFront(modifiedSlotTracker);
-                    checkMainEntries();
-                    checkAlternateEntries();
                 }
 
                 bc.resetSharedContexts();
                 getKeyChunks(buildSources, bc.getContexts, sourceKeyChunks, chunkOk);
 
                 final long oldEntries = numEntries;
-                checkMainEntries();
                 buildHandler.doBuild(chunkOk, sourceKeyChunks);
-                checkMainEntries();
                 final long entriesAdded = numEntries - oldEntries;
                 // if we actually added anything, then take away from the "equity" we've built up rehashing, otherwise
                 // don't penalize this build call with additional rehashing
                 bc.rehashCredits.subtract(Math.toIntExact(entriesAdded));
-
-                checkMainEntries();
             }
         }
     }
 
+    /*
     void checkAlternateEntries() {
         int expected = 0;
         for (int ii = 0; ii < rehashPointer; ++ii) {
@@ -228,6 +219,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         }
         Assert.eq(expected, "expected", numEntries, "numEtries");
     }
+     */
 
     protected void probeTable(
             final ProbeContext pc,
@@ -279,6 +271,13 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             return false;
         }
 
+        // we need to ditch the alternate table before continuing on a rehash
+        if (rehashPointer > 0) {
+            rehashInternalPartial((int) alternateEntries, modifiedSlotTracker);
+            Assert.eqZero(alternateEntries, "alternateEntries");
+            clearAlternate();
+        }
+
         int oldTableSize = tableSize;
         while (tableNeedsExpansion(nextChunkSize)) {
             tableSize *= 2;
@@ -292,18 +291,12 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             rehashCredits.set(0);
         }
 
-        // we need to ditch the alternate table before continuing on a rehash
-        if (rehashPointer > 0) {
-            rehashInternalPartial((int) alternateEntries, modifiedSlotTracker);
-            Assert.eqZero(alternateEntries, "alternateEntries");
-            clearAlternate();
-        }
-
         if (fullRehash) {
             rehashInternalFull(oldTableSize);
-
             return false;
         }
+
+        Assert.eqZero(rehashPointer, "rehashPointer");
 
         for (int ii = 0; ii < mainKeySources.length; ++ii) {
             alternateKeySources[ii] = mainKeySources[ii];
@@ -322,14 +315,6 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     }
 
     protected void newAlternate() {
-        int expectedEntries = 0;
-        for (int ii = 0; ii < tableSize; ++ii) {
-            final long state = mainRightRowKey.getLong(ii);
-            if (state != EMPTY_RIGHT_STATE) {
-                expectedEntries++;
-            }
-        }
-        Assert.eq(expectedEntries, "expectedEntries", numEntries, "numEntries");
         alternateEntries = numEntries;
         numEntries = 0;
         alternateRightRowKey = mainRightRowKey;
@@ -355,6 +340,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
 
     protected void clearAlternate() {
         alternateEntries = 0;
+        rehashPointer = 0;
         for (int ii = 0; ii < mainKeySources.length; ++ii) {
             alternateKeySources[ii] = null;
         }
