@@ -173,6 +173,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             final ColumnSource<?>[] buildSources,
             final TypedHasherUtil.BuildHandler buildHandler,
             final NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
+        checkMainEntries();
         try (final RowSequence.Iterator rsIt = buildRows.getRowSequenceIterator()) {
             // noinspection unchecked
             final Chunk<Values>[] sourceKeyChunks = new Chunk[buildSources.length];
@@ -180,22 +181,52 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(bc.chunkSize);
                 final int nextChunkSize = chunkOk.intSize();
+                checkMainEntries();
                 while (doRehash(initialBuild, bc.rehashCredits, nextChunkSize, modifiedSlotTracker)) {
+                    checkMainEntries();
+                    checkAlternateEntries();
                     migrateFront(modifiedSlotTracker);
+                    checkMainEntries();
+                    checkAlternateEntries();
                 }
 
                 bc.resetSharedContexts();
                 getKeyChunks(buildSources, bc.getContexts, sourceKeyChunks, chunkOk);
 
                 final long oldEntries = numEntries;
+                checkMainEntries();
                 buildHandler.doBuild(chunkOk, sourceKeyChunks);
+                checkMainEntries();
                 final long entriesAdded = numEntries - oldEntries;
                 // if we actually added anything, then take away from the "equity" we've built up rehashing, otherwise
                 // don't penalize this build call with additional rehashing
                 bc.rehashCredits.subtract(Math.toIntExact(entriesAdded));
 
+                checkMainEntries();
             }
         }
+    }
+
+    void checkAlternateEntries() {
+        int expected = 0;
+        for (int ii = 0; ii < rehashPointer; ++ii) {
+            final long state = alternateRightRowKey.getUnsafe(ii);
+            if (state != EMPTY_RIGHT_STATE) {
+                expected++;
+            }
+        }
+        Assert.eq(expected, "expected", alternateEntries, "alternateEntries");
+    }
+
+    void checkMainEntries() {
+        int expected = 0;
+        for (int ii = 0; ii < tableSize; ++ii) {
+            final long state = mainRightRowKey.getUnsafe(ii);
+            if (state != EMPTY_RIGHT_STATE) {
+                expected++;
+            }
+        }
+        Assert.eq(expected, "expected", numEntries, "numEtries");
     }
 
     protected void probeTable(
@@ -261,19 +292,18 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             rehashCredits.set(0);
         }
 
-        if (fullRehash) {
-            // if we are doing a full rehash, we need to ditch the alternate
-            if (rehashPointer > 0) {
-                rehashInternalPartial((int) numEntries, modifiedSlotTracker);
-                clearAlternate();
-            }
+        // we need to ditch the alternate table before continuing on a rehash
+        if (rehashPointer > 0) {
+            rehashInternalPartial((int) alternateEntries, modifiedSlotTracker);
+            Assert.eqZero(alternateEntries, "alternateEntries");
+            clearAlternate();
+        }
 
+        if (fullRehash) {
             rehashInternalFull(oldTableSize);
 
             return false;
         }
-
-        Assert.eqZero(rehashPointer, "rehashPointer");
 
         for (int ii = 0; ii < mainKeySources.length; ++ii) {
             alternateKeySources[ii] = mainKeySources[ii];
@@ -292,6 +322,14 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     }
 
     protected void newAlternate() {
+        int expectedEntries = 0;
+        for (int ii = 0; ii < tableSize; ++ii) {
+            final long state = mainRightRowKey.getLong(ii);
+            if (state != EMPTY_RIGHT_STATE) {
+                expectedEntries++;
+            }
+        }
+        Assert.eq(expectedEntries, "expectedEntries", numEntries, "numEntries");
         alternateEntries = numEntries;
         numEntries = 0;
         alternateRightRowKey = mainRightRowKey;

@@ -192,6 +192,39 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         }
     }
 
+    public void testNaturalJoinIncrementalLarge() {
+        setExpectError(false);
+
+        final int maxSteps = 25;
+
+        final int[] leftSizes = new int[] {10, 1000};
+        final int[] rightSizes = new int[] {10, 100};
+        for (int leftSize : leftSizes) {
+            for (int rightSize : rightSizes) {
+                for (long seed = 0; seed < 25; seed++) {
+                    System.out.println("leftSize=" + leftSize + ", rightSize=" + rightSize + ", seed=" + seed);
+                    for (JoinIncrement joinIncrement : joinIncrementorsShift) {
+                        testNaturalJoinIncremental(false, false, leftSize, rightSize, false,false, joinIncrement, seed, new MutableInt(maxSteps), new JoinControl() {
+                            @Override
+                            int initialBuildSize() {
+                                return 128;
+                            }
+
+                            @Override
+                            public int rightChunkSize() {
+                                return 32;
+                            }
+
+                            public int leftChunkSize() {
+                                return 32;
+                            }
+                        });
+                    }
+                }
+            }
+        }
+    }
+
     public void testNaturalJoinLeftIncrementalRightStatic() {
         for (JoinIncrement joinIncrement : new JoinIncrement[] {leftStepShift, leftStep}) {
             final int sz = 5;
