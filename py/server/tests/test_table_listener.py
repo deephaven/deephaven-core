@@ -38,7 +38,7 @@ class TableUpdateRecorder:
     def record(self, update: TableUpdate, is_replay: bool):
         if not update:
             return
-        
+
         if self.chunk_size is None:
             self.added.append(update.added())
             self.removed.append(update.removed())

@@ -49,10 +49,6 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
 
     private final UpdateGraph updateGraph;
 
-    protected Iterable<? extends ListenerRecorder> getRecorders() {
-        return recorders;
-    }
-
     private final Iterable<? extends ListenerRecorder> recorders;
     private final Iterable<NotificationQueue.Dependency> dependencies;
     private final String listenerDescription;
@@ -94,6 +90,10 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
     @Override
     public UpdateGraph getUpdateGraph() {
         return updateGraph;
+    }
+
+    protected Iterable<? extends ListenerRecorder> getRecorders() {
+        return recorders;
     }
 
     public final void notifyOnUpstreamError(

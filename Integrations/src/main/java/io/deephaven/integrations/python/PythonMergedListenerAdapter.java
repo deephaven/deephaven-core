@@ -15,6 +15,7 @@ import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jpy.PyObject;
@@ -31,6 +32,7 @@ import java.util.stream.Stream;
  * The Python listener object must be a Python MergedListener instance that provides a "_process" method implementation
  * with no argument.
  */
+@ScriptApi
 public class PythonMergedListenerAdapter extends MergedListener {
     private final PyObject pyCallable;
 

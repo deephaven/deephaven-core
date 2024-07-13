@@ -333,16 +333,10 @@ class TableListenerHandle(JObjectWrapper):
             raise RuntimeError("Attempting to start an already started listener..")
 
         try:
-            def _start():
-                if do_replay:
-                    self.listener_adapter.replay()
-
-                self.t.j_table.addUpdateListener(self.listener_adapter)
-
             if do_replay:
-                _do_locked(self.t, _start, lock_type=replay_lock)
-            else:
-                _start()
+                _do_locked(self.t, self.listener_adapter.replay, lock_type=replay_lock)
+
+            self.t.j_table.addUpdateListener(self.listener_adapter)
         except Exception as e:
             raise DHError(e, "failed to listen to the table changes.") from e
 
@@ -534,18 +528,12 @@ class MergedListenerHandle(JObjectWrapper):
             raise RuntimeError("Attempting to start an already started merged listener..")
 
         try:
-            def _start():
-                if do_replay:
-                    self.merged_listener_adapter.replay()
-
-                with update_graph.auto_locking_ctx(self.tables[0].update_graph):
-                    for lr in self.listener_recorders:
-                        lr.table.j_table.addUpdateListener(lr.j_listener_recorder)
-
             if do_replay:
-                _do_locked(self.tables[0].update_graph, _start, lock_type=replay_lock)
-            else:
-                _start()
+                _do_locked(self.tables[0].update_graph, self.merged_listener_adapter.replay, lock_type=replay_lock)
+
+            with update_graph.auto_locking_ctx(self.tables[0].update_graph):
+                for lr in self.listener_recorders:
+                    lr.table.j_table.addUpdateListener(lr.j_listener_recorder)
 
         except Exception as e:
             raise DHError(e, "failed to listen to the table changes.") from e
