@@ -198,27 +198,13 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     }
 
     /*
-    void checkAlternateEntries() {
-        int expected = 0;
-        for (int ii = 0; ii < rehashPointer; ++ii) {
-            final long state = alternateRightRowKey.getUnsafe(ii);
-            if (state != EMPTY_RIGHT_STATE) {
-                expected++;
-            }
-        }
-        Assert.eq(expected, "expected", alternateEntries, "alternateEntries");
-    }
-
-    void checkMainEntries() {
-        int expected = 0;
-        for (int ii = 0; ii < tableSize; ++ii) {
-            final long state = mainRightRowKey.getUnsafe(ii);
-            if (state != EMPTY_RIGHT_STATE) {
-                expected++;
-            }
-        }
-        Assert.eq(expected, "expected", numEntries, "numEtries");
-    }
+     * void checkAlternateEntries() { int expected = 0; for (int ii = 0; ii < rehashPointer; ++ii) { final long state =
+     * alternateRightRowKey.getUnsafe(ii); if (state != EMPTY_RIGHT_STATE) { expected++; } } Assert.eq(expected,
+     * "expected", alternateEntries, "alternateEntries"); }
+     * 
+     * void checkMainEntries() { int expected = 0; for (int ii = 0; ii < tableSize; ++ii) { final long state =
+     * mainRightRowKey.getUnsafe(ii); if (state != EMPTY_RIGHT_STATE) { expected++; } } Assert.eq(expected, "expected",
+     * numEntries, "numEtries"); }
      */
 
     protected void probeTable(
