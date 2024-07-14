@@ -5,9 +5,10 @@ using System.Text.Unicode;
 
 namespace Deephaven.DeephavenClient.Interop;
 
-internal class LibraryPaths {
-  internal const string Dhcore = "dhcore";
-  internal const string Dhclient = "dhclient";
+public class LibraryPaths {
+  public const string Dhcore = "dhcore";
+  public const string Dhclient = "dhclient";
+  public const string DhEnterprise = "capifornow";
 }
 
 /// <summary>

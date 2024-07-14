@@ -13,4 +13,8 @@
   <ItemGroup>
     <ProjectReference Include="..\DeephavenClient\DeephavenClient.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="NewFolder\" />
+    <Folder Include="viewmodels\" />
+  </ItemGroup>
 </Project>

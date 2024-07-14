@@ -37,7 +37,7 @@ public readonly struct NestedStruct {
 }
 
 public partial class BasicInteropInteractions {
-  [LibraryImport(LibraryPaths.Dhcore, StringMarshalling = StringMarshalling.Utf8)]
+  [LibraryImport(@"C:\Users\kosak\dhinstall2\bin\dhcore.dll", StringMarshalling = StringMarshalling.Utf8)]
   public static partial void deephaven_dhcore_interop_testapi_BasicInteropInteractions_Add(Int32 a, Int32 b, out Int32 result);
 
   [LibraryImport(LibraryPaths.Dhcore, StringMarshalling = StringMarshalling.Utf8)]

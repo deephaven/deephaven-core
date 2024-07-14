@@ -1,5 +1,5 @@
-﻿namespace ExcelAddIn {
-  partial class Form1 {
+﻿namespace Deephaven.DeephavenClient.ExcelAddIn.Views {
+  partial class ConnectionDialog {
     /// <summary>
     /// Required designer variable.
     /// </summary>

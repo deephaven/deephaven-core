@@ -7,4 +7,8 @@
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Folder Include="dh_client\" />
+  </ItemGroup>
+
 </Project>
