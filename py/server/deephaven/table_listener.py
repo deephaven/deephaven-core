@@ -187,42 +187,6 @@ class TableUpdate(JObjectWrapper):
         return list(cols) if cols else []
 
 
-def _do_locked(ug: Union[UpdateGraph, Table], f: Callable, lock_type: Literal["shared","exclusive"] = "shared") -> \
-        None:
-    """Executes a function while holding the UpdateGraph (UG) lock.  Holding the UG lock
-    ensures that the contents of a table will not change during a computation, but holding
-    the lock also prevents table updates from happening.  The lock should be held for as little
-    time as possible.
-
-    Args:
-        ug (Union[UpdateGraph, Table]): The Update Graph (UG) or a table-like object.
-        f (Callable): callable to execute while holding the UG lock, could be function or an object with an 'apply'
-            attribute which is callable
-        lock_type (str): UG lock type, valid values are "exclusive" and "shared".  "exclusive" allows only a single
-            reader or writer to hold the lock.  "shared" allows multiple readers or a single writer to hold the lock.
-    Raises:
-        ValueError
-    """
-    if isinstance(ug, Table):
-        ug = ug.update_graph
-
-    if lock_type == "exclusive":
-        with update_graph.exclusive_lock(ug):
-            f()
-    elif lock_type == "shared":
-        with update_graph.shared_lock(ug):
-            f()
-    else:
-        raise ValueError(f"Unsupported lock type: lock_type={lock_type}")
-
-def _locked(ug: Union[UpdateGraph, Table], lock_type: Literal["shared", "exclusive"] = "shared") -> Generator:
-    if lock_type == "exclusive":
-        return update_graph.exclusive_lock(ug)
-    elif lock_type == "shared":
-        return update_graph.shared_lock(ug)
-    else:
-        raise ValueError(f"Unsupported lock type: lock_type={lock_type}")
-
 class TableListener(ABC):
     """An abstract table listener class that should be subclassed by any user table listener class."""
 
@@ -329,12 +293,11 @@ class TableListenerHandle(JObjectWrapper):
     def j_object(self) -> jpy.JType:
         return self.listener_adapter
 
-    def start(self, do_replay: bool = False, replay_lock: Literal["shared", "exclusive"] = "shared") -> None:
+    def start(self, do_replay: bool = False) -> None:
         """Start the listener by registering it with the table and listening for updates.
 
         Args:
             do_replay (bool): whether to replay the initial snapshot of the table, default is False
-            replay_lock (str): the lock type used during replay, default is 'shared', can also be 'exclusive'.
 
         Raises:
             DHError
@@ -400,7 +363,7 @@ def listen(t: Table, listener: Union[Callable[[TableUpdate, bool], None], TableL
     """
     table_listener_handle = TableListenerHandle(t=t, dependencies=dependencies, listener=listener,
                                                                     description=description)
-    table_listener_handle.start(do_replay=do_replay, replay_lock=replay_lock)
+    table_listener_handle.start(do_replay=do_replay)
     return table_listener_handle
 
 
@@ -531,6 +494,7 @@ class MergedListenerHandle(JObjectWrapper):
             raise RuntimeError("Attempting to start an already started merged listener..")
 
         try:
+            # self.tables[0] is guaranteed to be a refreshing table
             with update_graph.auto_locking_ctx(self.tables[0]):
                 if do_replay:
                     j_replay_updates = self.merged_listener_adapter.currentRowsAsUpdates()
@@ -554,6 +518,7 @@ class MergedListenerHandle(JObjectWrapper):
         if not self.started:
             return
 
+        # self.tables[0] is guaranteed to be a refreshing table
         with update_graph.auto_locking_ctx(self.tables[0]):
             for lr in self.listener_recorders:
                 lr.table.j_table.removeUpdateListener(lr.j_listener_recorder)
