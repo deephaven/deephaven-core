@@ -9,8 +9,6 @@ import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
-import io.deephaven.chunk.WritableLongChunk;
-import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.pools.PoolableChunk;
@@ -24,11 +22,8 @@ import io.deephaven.vector.Vector;
 import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.DataInput;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Iterator;
-import java.util.PrimitiveIterator;
 
 public class VectorChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<ObjectChunk<Vector<?>, Values>> {
     private static final String DEBUG_NAME = "VarListChunkInputStreamGenerator";

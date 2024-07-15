@@ -14,7 +14,6 @@ import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
 import io.deephaven.extensions.barrage.chunk.ChunkReader;
-import io.deephaven.extensions.barrage.chunk.ChunkReaderFactory;
 import io.deephaven.extensions.barrage.chunk.DefaultChunkReadingFactory;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.io.streams.ByteBufferInputStream;
