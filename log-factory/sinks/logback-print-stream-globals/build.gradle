@@ -3,11 +3,8 @@ plugins {
   id 'io.deephaven.project.register'
 }
 
-configurations {
-  compileOnly.extendsFrom fishBase
-}
-
 dependencies {
+  compileOnly project(':Base')
   // consumer still needs to provide dependency
-  Classpaths.inheritLogbackClassic(project, 'compileOnly')
+  compileOnly libs.logback.classic
 }

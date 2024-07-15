@@ -5,10 +5,11 @@ plugins {
 dependencies {
     implementation project(':Base')
     implementation project(':SevenZip')
-    implementation depCommonsCompress
+    implementation libs.commons.compress
     testImplementation project(path: ':Base', configuration: 'tests')
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
-    Classpaths.inheritJMock(project, 'testImplementation')
+    testImplementation libs.junit4
+    testImplementation libs.jmock.junit4
+    testImplementation libs.jmock.imposters
 }
 
 sourceSets {

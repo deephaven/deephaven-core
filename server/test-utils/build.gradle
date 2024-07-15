@@ -13,17 +13,19 @@ dependencies {
     implementation project(':proto:proto-backplane-grpc-flight')
     implementation project(':extensions-barrage')
     implementation project(':test-configs')
-    implementation depCommonsLang3
+    implementation libs.commons.lang3
     api project(':engine-test-utils')
 
-    Classpaths.inheritGrpcPlatform(project, 'api')
-    api 'io.grpc:grpc-testing'
+    api platform(libs.grpc.bom)
+    api libs.grpc.testing
 
-    Classpaths.inheritImmutables(project)
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables.value
 
-    Classpaths.inheritArrow(project, 'flight-core', 'implementation')
+    implementation libs.arrow.flight.core
 
-    Classpaths.inheritDagger(project)
+    implementation libs.dagger
+    annotationProcessor libs.dagger.compiler
 
-    Classpaths.inheritJUnitClassic(project, 'api')
+    api libs.junit4
 }
