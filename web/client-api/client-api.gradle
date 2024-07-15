@@ -24,6 +24,10 @@ dependencies {
     implementation project(':DataStructures')
     implementation project(':web-shared-beans')
     implementation project(':web-client-backplane')
+    implementation libs.jetbrains.annotations
+    implementation variantOf(libs.jetbrains.annotations) { classifier("sources") }
+    implementation libs.immutables.value.annotations
+    implementation variantOf(libs.immutables.value.annotations) { classifier("sources") }
 
     implementation libs.flatbuffers.java
     implementation variantOf(libs.flatbuffers.java) { classifier("sources") }
