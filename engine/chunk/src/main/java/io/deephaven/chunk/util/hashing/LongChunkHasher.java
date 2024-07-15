@@ -12,6 +12,7 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.HashCodes;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.util.compare.LongComparisons;
 import io.deephaven.util.type.TypeUtils;
 
 import static io.deephaven.chunk.util.hashing.ChunkHasher.scrambleHash;
@@ -35,7 +36,7 @@ public class LongChunkHasher implements ChunkHasher {
     }
 
     public static int hashInitialSingle(long value) {
-        return scrambleHash(Long.hashCode(value));
+        return scrambleHash(LongComparisons.hashCode(value));
     }
 
     public static int hashUpdateSingle(int existing, long newValue) {
