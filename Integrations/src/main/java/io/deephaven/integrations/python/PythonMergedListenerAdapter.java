@@ -4,7 +4,6 @@
 package io.deephaven.integrations.python;
 
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ModifiedColumnSet;
@@ -76,22 +75,18 @@ public class PythonMergedListenerAdapter extends MergedListener {
         }
     }
 
-    public void replay() {
+    public ArrayList<TableUpdate> currentRowsAsUpdates() {
         final ArrayList<TableUpdate> updates = new ArrayList<>();
-        try {
-            for (ListenerRecorder recorder : getRecorders()) {
-                final TableUpdate update = new TableUpdateImpl(
-                        recorder.getParent().getRowSet().copy(),
-                        RowSetFactory.empty(),
-                        RowSetFactory.empty(),
-                        RowSetShiftData.EMPTY,
-                        ModifiedColumnSet.EMPTY);
-                updates.add(update);
-            }
-            pyCallable.call("__call__", updates);
-        } finally {
-            updates.forEach(TableUpdate::release);
+        for (ListenerRecorder recorder : getRecorders()) {
+            final TableUpdate update = new TableUpdateImpl(
+                    recorder.getParent().getRowSet().copy(),
+                    RowSetFactory.empty(),
+                    RowSetFactory.empty(),
+                    RowSetShiftData.EMPTY,
+                    ModifiedColumnSet.EMPTY);
+            updates.add(update);
         }
+        return updates;
     }
 
     @Override

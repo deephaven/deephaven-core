@@ -215,6 +215,13 @@ def _do_locked(ug: Union[UpdateGraph, Table], f: Callable, lock_type: Literal["s
     else:
         raise ValueError(f"Unsupported lock type: lock_type={lock_type}")
 
+def _locked(ug: Union[UpdateGraph, Table], lock_type: Literal["shared", "exclusive"] = "shared") -> Generator:
+    if lock_type == "exclusive":
+        return update_graph.exclusive_lock(ug)
+    elif lock_type == "shared":
+        return update_graph.shared_lock(ug)
+    else:
+        raise ValueError(f"Unsupported lock type: lock_type={lock_type}")
 
 class TableListener(ABC):
     """An abstract table listener class that should be subclassed by any user table listener class."""
@@ -298,6 +305,9 @@ class TableListenerHandle(JObjectWrapper):
         Raises:
             DHError
         """
+        if not t.is_refreshing:
+            raise DHError(message="table must be a refreshing table.")
+
         self.t = t
         self.description = description
         self.dependencies = to_sequence(dependencies)
@@ -333,12 +343,13 @@ class TableListenerHandle(JObjectWrapper):
             raise RuntimeError("Attempting to start an already started listener..")
 
         try:
-            if do_replay:
-                _do_locked(self.t, self.listener_adapter.replay, lock_type=replay_lock)
+            with update_graph.auto_locking_ctx(self.t):
+                if do_replay:
+                    self.listener_adapter.replay()
 
-            self.t.j_table.addUpdateListener(self.listener_adapter)
+                self.t.j_table.addUpdateListener(self.listener_adapter)
         except Exception as e:
-            raise DHError(e, "failed to listen to the table changes.") from e
+           raise DHError(e, "failed to listen to the table changes.") from e
 
         self.started = True
 
@@ -347,7 +358,8 @@ class TableListenerHandle(JObjectWrapper):
 
         if not self.started:
             return
-        self.t.j_table.removeUpdateListener(self.listener_adapter)
+        with update_graph.auto_locking_ctx(self.t):
+            self.t.j_table.removeUpdateListener(self.listener_adapter)
         self.started = False
 
 
@@ -503,23 +515,15 @@ class MergedListenerHandle(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "failed to create a merged listener adapter.") from e
 
-    def _process(self, replay_updates: Optional[jpy.JType] = None) -> None:
-        """Process the table updates from the listener recorders.
+    def _process(self) -> None:
+        """Process the table updates from the listener recorders. """
+        self.listener({lr.table: lr.table_update() for lr in self.listener_recorders}, False)
 
-        Args:
-            replay_updates (Optional[jpy.JType]): the replay updates, only provided during replay.
-        """
-        if replay_updates:
-            self.listener({t: TableUpdate(t, tu) for t, tu in zip(self.tables, j_list_to_list(replay_updates))}, True)
-        else:
-            self.listener({lr.table: lr.table_update() for lr in self.listener_recorders}, False)
-
-    def start(self, do_replay: bool = False, replay_lock: Literal["shared", "exclusive"] = "shared") -> None:
+    def start(self, do_replay: bool = False) -> None:
         """Start the listener by registering it with the tables and listening for updates.
 
         Args:
             do_replay (bool): whether to replay the initial snapshots of the tables, default is False
-            replay_lock (str): the lock type used during replay, default is 'shared', can also be 'exclusive'.
 
         Raises:
             DHError
@@ -528,13 +532,18 @@ class MergedListenerHandle(JObjectWrapper):
             raise RuntimeError("Attempting to start an already started merged listener..")
 
         try:
-            if do_replay:
-                _do_locked(self.tables[0].update_graph, self.merged_listener_adapter.replay, lock_type=replay_lock)
+            with update_graph.auto_locking_ctx(self.tables[0]):
+                if do_replay:
+                    j_replay_updates = self.merged_listener_adapter.currentRowsAsUpdates()
+                    replay_updates = {t: TableUpdate(t, tu) for t, tu in zip(self.tables, j_list_to_list(j_replay_updates))}
+                    try:
+                        self.listener(replay_updates, True)
+                    finally:
+                        for replay_update in replay_updates.values():
+                            replay_update.j_object.release()
 
-            with update_graph.auto_locking_ctx(self.tables[0].update_graph):
                 for lr in self.listener_recorders:
                     lr.table.j_table.addUpdateListener(lr.j_listener_recorder)
-
         except Exception as e:
             raise DHError(e, "failed to listen to the table changes.") from e
 
@@ -546,15 +555,15 @@ class MergedListenerHandle(JObjectWrapper):
         if not self.started:
             return
 
-        with update_graph.auto_locking_ctx(self.listener_recorders[0].table.update_graph):
+        with update_graph.auto_locking_ctx(self.tables[0]):
             for lr in self.listener_recorders:
                 lr.table.j_table.removeUpdateListener(lr.j_listener_recorder)
             self.started = False
 
 
 def merged_listen(tables: Sequence[Table], listener: Union[Callable[[Dict[Table, TableUpdate]], None], MergedListener],
-                do_replay: bool = False, replay_lock: Literal["shared", "exclusive"] = "shared",
-                description: str = None, dependencies: Union[Table, Sequence[Table]] = None) -> MergedListenerHandle:
+                do_replay: bool = False, description: str = None, dependencies: Union[Table, Sequence[Table]] = None)\
+        -> MergedListenerHandle:
     """This is a convenience function that creates a MergedListenerHandle object and immediately starts it to
     listen for table updates.
 
@@ -570,7 +579,6 @@ def merged_listen(tables: Sequence[Table], listener: Union[Callable[[Dict[Table,
         description (str, optional): description for the UpdatePerformanceTracker to append to the listener's entry
             description, default is None
         do_replay (bool): whether to replay the initial snapshots of the tables, default is False
-        replay_lock (str): the lock type used during replay, default is 'shared', can also be 'exclusive'
         dependencies (Union[Table, Sequence[Table]]): tables that must be satisfied before the listener's execution.
             A refreshing table is considered to be satisfied if all possible updates to the table have been processed
             in the current update graph cycle. A static table is always considered to be satisfied. If a specified
@@ -585,5 +593,5 @@ def merged_listen(tables: Sequence[Table], listener: Union[Callable[[Dict[Table,
     """
     merged_listener_handle = MergedListenerHandle(tables=tables, listener=listener,
                                                   description=description, dependencies=dependencies)
-    merged_listener_handle.start(do_replay=do_replay, replay_lock=replay_lock)
+    merged_listener_handle.start(do_replay=do_replay)
     return merged_listener_handle
