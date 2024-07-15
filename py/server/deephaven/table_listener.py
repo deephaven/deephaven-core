@@ -326,8 +326,7 @@ class TableListenerHandle(JObjectWrapper):
 
 
 def listen(t: Table, listener: Union[Callable[[TableUpdate, bool], None], TableListener], description: str = None, do_replay: bool = False,
-           replay_lock: Literal["shared", "exclusive"] = "shared", dependencies: Union[Table, Sequence[Table]] = None)\
-        -> TableListenerHandle:
+           dependencies: Union[Table, Sequence[Table]] = None) -> TableListenerHandle:
     """This is a convenience function that creates a TableListenerHandle object and immediately starts it to listen
     for table updates.
 
@@ -342,7 +341,6 @@ def listen(t: Table, listener: Union[Callable[[TableUpdate, bool], None], TableL
         description (str, optional): description for the UpdatePerformanceTracker to append to the listener's entry
             description, default is None
         do_replay (bool): whether to replay the initial snapshot of the table, default is False
-        replay_lock (str): the lock type used during replay, default is 'shared', can also be 'exclusive'
         dependencies (Union[Table, Sequence[Table]]): tables that must be satisfied before the listener's execution.
             A refreshing table is considered to be satisfied if all possible updates to the table have been processed
             in the current update graph cycle. A static table is always considered to be satisfied. If a specified

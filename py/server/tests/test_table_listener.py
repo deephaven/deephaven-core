@@ -297,14 +297,14 @@ class TableListenerTestCase(BaseTestCase):
 
         with self.subTest("do_replay=True, replay_lock='exclusive'"):
             table_update_recorder = TableUpdateRecorder(self.test_table)
-            table_listener_handle.start(do_replay=True, replay_lock="exclusive")
+            table_listener_handle.start(do_replay=True)
             ensure_ugp_cycles(table_update_recorder, cycles=3)
             table_listener_handle.stop()
             self.check_update_recorder(table_update_recorder, has_replay=True, has_added=True, has_removed=True, has_modified=False)
 
         with self.subTest("do_replay=True, replay_lock='shared'"):
             table_update_recorder = TableUpdateRecorder(self.test_table)
-            table_listener_handle.start(do_replay=True, replay_lock="shared") # noqa
+            table_listener_handle.start(do_replay=True) # noqa
             ensure_ugp_cycles(table_update_recorder, cycles=3)
             table_listener_handle.stop()
             self.check_update_recorder(table_update_recorder, has_replay=True, has_added=True, has_removed=True, has_modified=False)
