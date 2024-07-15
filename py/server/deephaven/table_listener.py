@@ -492,7 +492,9 @@ class MergedListenerHandle(JObjectWrapper):
             raise RuntimeError("Attempting to start an already started merged listener..")
 
         try:
-            # self.tables[0] is guaranteed to be a refreshing table
+            # self.tables[0] is guaranteed to be a refreshing table, the lock is needed to add all the listener recorders
+            # on the same update graph cycle and if replay is requested, the initial snapshots of the tables are all
+            # taken on the same update graph cycle as well.
             with update_graph.auto_locking_ctx(self.tables[0]):
                 if do_replay:
                     j_replay_updates = self.merged_listener_adapter.currentRowsAsUpdates()
@@ -516,7 +518,8 @@ class MergedListenerHandle(JObjectWrapper):
         if not self.started:
             return
 
-        # self.tables[0] is guaranteed to be a refreshing table
+        # self.tables[0] is guaranteed to be a refreshing table, the lock is needed to remove all the listener recorders
+        # on the same update graph cycle
         with update_graph.auto_locking_ctx(self.tables[0]):
             for lr in self.listener_recorders:
                 lr.table.j_table.removeUpdateListener(lr.j_listener_recorder)
