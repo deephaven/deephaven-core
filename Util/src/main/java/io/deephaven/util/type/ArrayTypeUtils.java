@@ -972,7 +972,8 @@ public class ArrayTypeUtils {
             if (sourceArray == null) {
                 throw new NullPointerException();
             }
-            RequireBase.requirement(sourceArray instanceof int[], "sourceArray instanceof int[]", sourceArray.getClass(),
+            RequireBase.requirement(sourceArray instanceof int[], "sourceArray instanceof int[]",
+                    sourceArray.getClass(),
                     "sourceArray.getClass()");
             System.arraycopy(sourceArray, 0, array, pos, length);
         }
