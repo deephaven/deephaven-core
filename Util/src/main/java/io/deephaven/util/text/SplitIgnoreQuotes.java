@@ -3,8 +3,6 @@
 //
 package io.deephaven.util.text;
 
-import io.deephaven.datastructures.util.CollectionUtil;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -56,7 +54,7 @@ public class SplitIgnoreQuotes {
         // Check if there is one last value left
         addCurrentValue();
 
-        return values.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        return values.toArray(String[]::new);
     }
 
     private void processQuote(char c) {

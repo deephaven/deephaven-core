@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.table.impl.by;
 
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
@@ -296,7 +295,7 @@ public interface IterativeChunkedAggregationOperator {
     default UnaryOperator<ModifiedColumnSet> initializeRefreshing(@NotNull final QueryTable resultTable,
             @NotNull final LivenessReferent aggregationUpdateListener) {
         final ModifiedColumnSet resultModifiedColumnSet = resultTable
-                .newModifiedColumnSet(getResultColumns().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                .newModifiedColumnSet(getResultColumns().keySet().toArray(String[]::new));
         return upstreamModifiedColumnSet -> resultModifiedColumnSet;
     }
 

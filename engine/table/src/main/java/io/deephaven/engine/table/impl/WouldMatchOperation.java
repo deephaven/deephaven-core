@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.*;
@@ -301,7 +300,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
             this.filter = filter;
             this.name = name;
             this.possibleUpstreamModified =
-                    parent.newModifiedColumnSet(filter.getColumns().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                    parent.newModifiedColumnSet(filter.getColumns().toArray(String[]::new));
         }
 
         @Override

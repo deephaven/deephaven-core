@@ -5,7 +5,6 @@ package io.deephaven.plot;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.agg.Aggregation;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.impl.MemoizedOperationKey;
 import io.deephaven.plot.axisformatters.AxisFormat;
 import io.deephaven.plot.axisformatters.NanosAxisFormat;
@@ -1583,7 +1582,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         final List<String> allCols = new ArrayList<>(byCols);
         allCols.add(x);
         final SwappableTable ht = sds.getSwappableTable(seriesName, chart, tableTransform,
-                allCols.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                allCols.toArray(String[]::new));
         return histPlot(seriesName, ht);
     }
 
@@ -1607,7 +1606,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         final List<String> allCols = new ArrayList<>(byCols);
         allCols.add(x);
         final SwappableTable ht = sds.getSwappableTable(seriesName, chart, tableTransform,
-                allCols.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                allCols.toArray(String[]::new));
         return histPlot(seriesName, ht);
     }
 
@@ -1653,7 +1652,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         }
 
         final Function<Table, Table> tableTransform = (Function<Table, Table> & Serializable) t -> PlotUtils
-                .createCategoryHistogramTable(t, cols.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                .createCategoryHistogramTable(t, cols.toArray(String[]::new));
         final SwappableTable counts = sds.getSwappableTable(seriesName, chart, tableTransform, categories,
                 CategoryDataSeries.CAT_SERIES_ORDER_COLUMN);
         final CategoryDataSeriesSwappablePartitionedTable ds = new CategoryDataSeriesSwappablePartitionedTable(this,
