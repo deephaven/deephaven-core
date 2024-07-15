@@ -56,7 +56,7 @@ import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import java.util.stream.LongStream;
 
-import static io.deephaven.extensions.barrage.chunk.ChunkReaderFactory.typeInfo;
+import static io.deephaven.extensions.barrage.chunk.ChunkReader.typeInfo;
 
 public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
 

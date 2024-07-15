@@ -20,15 +20,15 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.PrimitiveIterator;
 
-import static io.deephaven.extensions.barrage.chunk.ChunkReaderFactory.typeInfo;
+import static io.deephaven.extensions.barrage.chunk.ChunkReader.typeInfo;
 
 public class VectorChunkReader implements ChunkReader {
     private static final String DEBUG_NAME = "VectorChunkReader";
     private final ChunkReader componentReader;
     private final VectorExpansionKernel kernel;
 
-    public VectorChunkReader(final StreamReaderOptions options, final ChunkReaderFactory.TypeInfo typeInfo,
-            ChunkReaderFactory chunkReaderFactory) {
+    public VectorChunkReader(final StreamReaderOptions options, final TypeInfo typeInfo,
+            Factory chunkReaderFactory) {
 
         final Class<?> componentType =
                 VectorExpansionKernel.getComponentType(typeInfo.type(), typeInfo.componentType());

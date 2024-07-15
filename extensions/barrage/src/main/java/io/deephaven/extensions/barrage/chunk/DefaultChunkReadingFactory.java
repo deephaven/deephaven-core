@@ -26,12 +26,12 @@ import static io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator.MS
  * may not round trip flight types correctly, but will round trip Deephaven table definitions and table data. Neither of
  * these is a required/expected property of being a Flight/Barrage/Deephaven client.
  */
-public final class DefaultChunkReadingFactory implements ChunkReaderFactory {
-    public static final ChunkReaderFactory INSTANCE = new DefaultChunkReadingFactory();
+public final class DefaultChunkReadingFactory implements ChunkReader.Factory {
+    public static final ChunkReader.Factory INSTANCE = new DefaultChunkReadingFactory();
 
     @Override
     public ChunkReader getReader(StreamReaderOptions options, int factor,
-            TypeInfo typeInfo) {
+            ChunkReader.TypeInfo typeInfo) {
         // TODO (deephaven-core#5453): pass in ArrowType to enable ser/deser of single java class in multiple formats
         switch (typeInfo.chunkType()) {
             case Boolean:

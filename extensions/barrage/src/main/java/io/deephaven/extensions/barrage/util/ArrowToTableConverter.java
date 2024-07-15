@@ -34,7 +34,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.PrimitiveIterator;
 
-import static io.deephaven.extensions.barrage.chunk.ChunkReaderFactory.typeInfo;
+import static io.deephaven.extensions.barrage.chunk.ChunkReader.typeInfo;
 import static io.deephaven.extensions.barrage.util.BarrageProtoUtil.DEFAULT_SER_OPTIONS;
 
 /**
