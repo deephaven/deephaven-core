@@ -67,7 +67,7 @@ public final class ExceptionMessageUtil {
      * @return new string filled with the character <i>c</i>
      */
     public static String fillChar(char c, int count) {
-        Require.gtZero(count, "count");
+        RequireBase.gtZero(count, "count");
         char[] buffer = new char[count];
         // note: this is faster than System.arraycopy unless count>~100
         for (int nIndex = 0; nIndex < count; nIndex++) {

@@ -3,8 +3,8 @@
 //
 package io.deephaven.util.datastructures;
 
-import io.deephaven.base.verify.Assert;
-import io.deephaven.base.verify.Require;
+import io.deephaven.base.verify.AssertBase;
+import io.deephaven.base.verify.RequireBase;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -55,7 +55,7 @@ public class SegmentedSoftPool<ELEMENT_TYPE> {
     public SegmentedSoftPool(final int segmentCapacity,
             @Nullable final Supplier<ELEMENT_TYPE> creationProcedure,
             @Nullable final Consumer<ELEMENT_TYPE> cleanupProcedure) {
-        this.segmentCapacity = Require.gtZero(segmentCapacity, "segmentCapacity");
+        this.segmentCapacity = RequireBase.gtZero(segmentCapacity, "segmentCapacity");
         this.creationProcedure = creationProcedure;
         this.cleanupProcedure = cleanupProcedure;
     }
@@ -74,7 +74,7 @@ public class SegmentedSoftPool<ELEMENT_TYPE> {
                 if (currentSegment.empty()) {
                     final Segment<ELEMENT_TYPE> previousSegment = currentSegment.getPrev();
                     if (previousSegment != null) {
-                        Assert.assertion(previousSegment.full(), "previousSegment.full()");
+                        AssertBase.assertion(previousSegment.full(), "previousSegment.full()");
                         updateCurrentSegment(currentSegment = previousSegment);
                         return currentSegment.take();
                     }
@@ -94,7 +94,7 @@ public class SegmentedSoftPool<ELEMENT_TYPE> {
      * @param element The element to give to the pool
      */
     public final void give(@NotNull final ELEMENT_TYPE element) {
-        maybeCleanElement(Require.neqNull(element, "element"));
+        maybeCleanElement(RequireBase.neqNull(element, "element"));
         synchronized (this) {
             Segment<ELEMENT_TYPE> currentSegment = getCurrentSegment();
             if (currentSegment == null) {
@@ -105,7 +105,7 @@ public class SegmentedSoftPool<ELEMENT_TYPE> {
                     nextSegment = new Segment<>(segmentCapacity, currentSegment);
                     currentSegment.setNext(nextSegment);
                 } else {
-                    Assert.assertion(nextSegment.empty(), "nextSegment.empty()");
+                    AssertBase.assertion(nextSegment.empty(), "nextSegment.empty()");
                 }
                 updateCurrentSegment(currentSegment = nextSegment);
             }
@@ -255,8 +255,8 @@ public class SegmentedSoftPool<ELEMENT_TYPE> {
          * @param other The new next segment
          */
         private void setNext(@NotNull final Segment<ELEMENT_TYPE> other) {
-            Assert.eqNull(next, "next");
-            next = Require.neqNull(other, "other");
+            AssertBase.eqNull(next, "next");
+            next = RequireBase.neqNull(other, "other");
         }
 
         /**

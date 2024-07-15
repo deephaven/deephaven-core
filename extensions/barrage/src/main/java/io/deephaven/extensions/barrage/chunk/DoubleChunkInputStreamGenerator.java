@@ -9,7 +9,7 @@ package io.deephaven.extensions.barrage.chunk;
 
 import java.util.function.ToDoubleFunction;
 
-import io.deephaven.base.verify.Assert;
+import io.deephaven.base.verify.AssertBase;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
@@ -212,7 +212,7 @@ public class DoubleChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
 
             if (outChunk == null) {
                 // if we're not given an output chunk then we better be writing at the front of the new one
-                Assert.eqZero(outOffset, "outOffset");
+                AssertBase.eqZero(outOffset, "outOffset");
             }
 
             for (int ii = 0; ii < inner.size(); ++ii) {

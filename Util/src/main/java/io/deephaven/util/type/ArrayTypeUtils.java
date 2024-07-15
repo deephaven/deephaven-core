@@ -3,7 +3,7 @@
 //
 package io.deephaven.util.type;
 
-import io.deephaven.base.verify.Require;
+import io.deephaven.base.verify.RequireBase;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
@@ -972,7 +972,7 @@ public class ArrayTypeUtils {
             if (sourceArray == null) {
                 throw new NullPointerException();
             }
-            Require.requirement(sourceArray instanceof int[], "sourceArray instanceof int[]", sourceArray.getClass(),
+            RequireBase.requirement(sourceArray instanceof int[], "sourceArray instanceof int[]", sourceArray.getClass(),
                     "sourceArray.getClass()");
             System.arraycopy(sourceArray, 0, array, pos, length);
         }

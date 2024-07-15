@@ -4,7 +4,7 @@
 package io.deephaven.chunk.util.pools;
 
 import io.deephaven.base.MathUtil;
-import io.deephaven.base.verify.Require;
+import io.deephaven.base.verify.RequireBase;
 import io.deephaven.util.annotations.VisibleForTesting;
 
 /**
@@ -26,7 +26,7 @@ public final class ChunkPoolConstants {
     public static final boolean POOL_WRITABLE_CHUNKS = true;
 
     static int checkCapacityBounds(final int chunkCapacity) {
-        return Require.geqZero(chunkCapacity, "chunkCapacity");
+        return RequireBase.geqZero(chunkCapacity, "chunkCapacity");
     }
 
     /**
