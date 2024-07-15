@@ -13,6 +13,7 @@ dependencies {
     implementation project(':Configuration')
 
     implementation libs.commons.io
+    implementation project(':IO')
 
     implementation libs.guava
 

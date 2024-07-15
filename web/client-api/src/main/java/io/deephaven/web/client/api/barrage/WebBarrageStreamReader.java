@@ -13,7 +13,6 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
 import io.deephaven.extensions.barrage.chunk.ChunkReader;
-import io.deephaven.extensions.barrage.chunk.ChunkReaderFactory;
 import io.deephaven.extensions.barrage.util.FlatBufferIteratorAdapter;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.io.streams.ByteBufferInputStream;
@@ -156,7 +155,7 @@ public class WebBarrageStreamReader {
             for (int i = 0; i < schema.fieldsLength(); i++) {
                 Field field = schema.fields(i);
                 ChunkReader chunkReader = chunkReaderFactory.getReader(options,
-                        ChunkReaderFactory.typeInfo(columnChunkTypes[i], columnTypes[i],
+                        ChunkReader.typeInfo(columnChunkTypes[i], columnTypes[i],
                                 componentTypes[i], field));
                 readers.add(chunkReader);
             }

@@ -19,7 +19,7 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.PrimitiveIterator;
 
-import static io.deephaven.extensions.barrage.chunk.ChunkReaderFactory.typeInfo;
+import static io.deephaven.extensions.barrage.chunk.ChunkReader.typeInfo;
 
 public class VarListChunkReader<T> implements ChunkReader {
     private static final String DEBUG_NAME = "VarListChunkReader";
@@ -27,8 +27,8 @@ public class VarListChunkReader<T> implements ChunkReader {
     private final ArrayExpansionKernel kernel;
     private final ChunkReader componentReader;
 
-    public VarListChunkReader(final StreamReaderOptions options, final ChunkReaderFactory.TypeInfo typeInfo,
-            ChunkReaderFactory chunkReaderFactory) {
+    public VarListChunkReader(final StreamReaderOptions options, final TypeInfo typeInfo,
+            Factory chunkReaderFactory) {
         final Class<?> componentType = typeInfo.type().getComponentType();
         final Class<?> innerComponentType = componentType != null ? componentType.getComponentType() : null;
 

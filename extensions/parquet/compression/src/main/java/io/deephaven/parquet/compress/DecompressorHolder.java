@@ -11,7 +11,7 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 
-class DecompressorHolder implements SafeCloseable {
+public class DecompressorHolder implements SafeCloseable {
     private CompressionCodecName codecName;
     private Decompressor decompressor;
 
@@ -52,6 +52,8 @@ class DecompressorHolder implements SafeCloseable {
     @Override
     public void close() {
         if (decompressor != null) {
+            // No need to reset the decompressor before returning it to the pool; CodecPool.returnDecompressor resets it
+            // internally.
             CodecPool.returnDecompressor(decompressor);
             codecName = null;
             decompressor = null;

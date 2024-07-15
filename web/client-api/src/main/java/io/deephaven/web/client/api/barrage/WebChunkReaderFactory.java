@@ -11,7 +11,6 @@ import io.deephaven.extensions.barrage.chunk.BooleanChunkReader;
 import io.deephaven.extensions.barrage.chunk.ByteChunkReader;
 import io.deephaven.extensions.barrage.chunk.CharChunkReader;
 import io.deephaven.extensions.barrage.chunk.ChunkReader;
-import io.deephaven.extensions.barrage.chunk.ChunkReaderFactory;
 import io.deephaven.extensions.barrage.chunk.DoubleChunkReader;
 import io.deephaven.extensions.barrage.chunk.FloatChunkReader;
 import io.deephaven.extensions.barrage.chunk.IntChunkReader;
@@ -46,9 +45,9 @@ import java.util.Arrays;
  * <p>
  * Includes some specific workarounds to handle nullability that will make more sense for the browser.
  */
-public class WebChunkReaderFactory implements ChunkReaderFactory {
+public class WebChunkReaderFactory implements ChunkReader.Factory {
     @Override
-    public ChunkReader getReader(StreamReaderOptions options, int factor, TypeInfo typeInfo) {
+    public ChunkReader getReader(StreamReaderOptions options, int factor, ChunkReader.TypeInfo typeInfo) {
         switch (typeInfo.arrowField().typeType()) {
             case Type.Int: {
                 Int t = new Int();

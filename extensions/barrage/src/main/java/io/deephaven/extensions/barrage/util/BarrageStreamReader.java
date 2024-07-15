@@ -20,7 +20,6 @@ import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
 import io.deephaven.extensions.barrage.chunk.ChunkReader;
-import io.deephaven.extensions.barrage.chunk.ChunkReaderFactory;
 import io.deephaven.extensions.barrage.chunk.DefaultChunkReadingFactory;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.ChunkType;
@@ -43,7 +42,7 @@ import java.util.List;
 import java.util.PrimitiveIterator;
 import java.util.function.LongConsumer;
 
-import static io.deephaven.extensions.barrage.chunk.ChunkReaderFactory.typeInfo;
+import static io.deephaven.extensions.barrage.chunk.ChunkReader.typeInfo;
 
 public class BarrageStreamReader implements StreamReader {
 
@@ -61,7 +60,7 @@ public class BarrageStreamReader implements StreamReader {
 
     private BarrageMessage msg = null;
 
-    private final ChunkReaderFactory chunkReaderFactory = DefaultChunkReadingFactory.INSTANCE;
+    private final ChunkReader.Factory chunkReaderFactory = DefaultChunkReadingFactory.INSTANCE;
     private final List<ChunkReader> readers = new ArrayList<>();
 
     public BarrageStreamReader(final LongConsumer deserializeTmConsumer) {

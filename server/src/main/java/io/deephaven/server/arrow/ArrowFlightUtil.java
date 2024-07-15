@@ -47,7 +47,6 @@ import io.deephaven.util.SafeCloseable;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flatbuf.MessageHeader;
-import org.apache.arrow.flatbuf.Schema;
 import org.apache.arrow.flight.impl.Flight;
 import org.jetbrains.annotations.NotNull;
 

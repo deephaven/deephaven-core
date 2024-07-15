@@ -4,7 +4,6 @@
 package io.deephaven.extensions.barrage.chunk;
 
 import io.deephaven.chunk.ObjectChunk;
-import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.pools.PoolableChunk;
 import io.deephaven.engine.rowset.RowSet;
@@ -15,14 +14,10 @@ import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.WritableByteChunk;
-import io.deephaven.chunk.WritableLongChunk;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.DataInput;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Iterator;
-import java.util.PrimitiveIterator;
 
 import static io.deephaven.util.QueryConstants.*;
 

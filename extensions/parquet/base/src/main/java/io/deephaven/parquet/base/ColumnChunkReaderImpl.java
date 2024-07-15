@@ -34,6 +34,7 @@ import java.util.NoSuchElementException;
 import java.util.function.Function;
 
 import static io.deephaven.base.FileUtils.convertToURI;
+import static io.deephaven.parquet.base.ColumnPageReaderImpl.getDecompressorHolder;
 import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
 import static org.apache.parquet.format.Encoding.PLAIN_DICTIONARY;
 import static org.apache.parquet.format.Encoding.RLE_DICTIONARY;
@@ -223,8 +224,10 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
                     // Sometimes the size is explicitly empty, just use an empty payload
                     payload = BytesInput.empty();
                 } else {
-                    payload = decompressor.decompress(in, compressedPageSize, pageHeader.getUncompressed_page_size(),
-                            holder.get());
+                    payload = BytesInput.from(
+                            decompressor.decompress(in, compressedPageSize, pageHeader.getUncompressed_page_size(),
+                                    getDecompressorHolder(holder.get())),
+                            pageHeader.getUncompressed_page_size());
                 }
                 final Encoding encoding = Encoding.valueOf(dictHeader.getEncoding().name());
                 final DictionaryPage dictionaryPage = new DictionaryPage(payload, dictHeader.getNum_values(), encoding);
