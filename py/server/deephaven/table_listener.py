@@ -358,8 +358,7 @@ class TableListenerHandle(JObjectWrapper):
 
         if not self.started:
             return
-        with update_graph.auto_locking_ctx(self.t):
-            self.t.j_table.removeUpdateListener(self.listener_adapter)
+        self.t.j_table.removeUpdateListener(self.listener_adapter)
         self.started = False
 
 
