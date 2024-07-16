@@ -366,41 +366,21 @@ public class ReplicateSortKernel {
     }
 
     public static List<String> fixupObjectComparisons(List<String> lines, boolean ascending) {
-        final List<String> ascendingComparision = Arrays.asList(
+        final List<String> ascendingComparison = Arrays.asList(
                 "    // ascending comparison",
                 "    private static int doComparison(Object lhs, Object rhs) {",
-                "       if (lhs == rhs) {",
-                "            return 0;",
-                "        }",
-                "        if (lhs == null) {",
-                "            return -1;",
-                "        }",
-                "        if (rhs == null) {",
-                "            return 1;",
-                "        }",
-                "        //noinspection unchecked,rawtypes",
-                "        return ((Comparable)lhs).compareTo(rhs);",
-                "    }",
-                "");
-        final List<String> descendingComparision = Arrays.asList(
+                "        return ObjectComparisons.compare(lhs, rhs);",
+                "    }");
+        final List<String> descendingComparison = Arrays.asList(
                 "    // descending comparison",
                 "    private static int doComparison(Object lhs, Object rhs) {",
-                "        if (lhs == rhs) {",
-                "            return 0;",
-                "        }",
-                "        if (lhs == null) {",
-                "            return 1;",
-                "        }",
-                "        if (rhs == null) {",
-                "            return -1;",
-                "        }",
-                "        //noinspection unchecked,rawtypes",
-                "        return ((Comparable)rhs).compareTo(lhs);",
+                "        return ObjectComparisons.compare(rhs, lhs);",
                 "    }");
-
-        return addImport(simpleFixup(
-                replaceRegion(lines, "comparison functions", ascending ? ascendingComparision : descendingComparision),
-                "equality function", "lhs == rhs", "Objects.equals(lhs, rhs)"), "import java.util.Objects;");
+        lines = replaceRegion(lines, "comparison functions", ascending ? ascendingComparison : descendingComparison);
+        lines = simpleFixup(
+                lines,
+                "equality function", "lhs == rhs", "Objects.equals(lhs, rhs)");
+        return addImport(lines, "import java.util.Objects;", "import io.deephaven.util.compare.ObjectComparisons;");
     }
 
     public static List<String> invertComparisons(List<String> lines) {
