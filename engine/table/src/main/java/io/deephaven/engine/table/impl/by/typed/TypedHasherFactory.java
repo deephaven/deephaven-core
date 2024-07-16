@@ -929,7 +929,11 @@ public class TypedHasherFactory {
         builder.addStatement("final int firstDestinationTableLocation = hashToTableLocation(hash)");
         builder.addStatement("int destinationTableLocation = firstDestinationTableLocation");
         builder.beginControlFlow("while (true)");
-        builder.beginControlFlow("if (isStateEmpty(destState[destinationTableLocation]))");
+        if (hasherConfig.stateType.isPrimitive()) {
+            builder.beginControlFlow("if (isStateEmpty(destState[destinationTableLocation]))");
+        } else {
+            builder.beginControlFlow("if (isStateEmpty(($T)destState[destinationTableLocation]))", hasherConfig.stateType);
+        }
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             builder.addStatement("destKeyArray$L[destinationTableLocation] = k$L", ii, ii);
         }
@@ -1053,8 +1057,14 @@ public class TypedHasherFactory {
 
         builder.addStatement("int destinationTableLocation = hashToTableLocation(hash)");
 
-        builder.beginControlFlow("while (!isStateEmpty($L.getUnsafe(destinationTableLocation)))",
-                hasherConfig.mainStateName);
+        if (hasherConfig.supportTombstones) {
+            builder.addStatement("$T candidateState", hasherConfig.stateType);
+            builder.beginControlFlow("while (!isStateEmpty(candidateState = $L.getUnsafe(destinationTableLocation)) && !isStateDeleted(candidateState))",
+                    hasherConfig.mainStateName);
+        } else {
+            builder.beginControlFlow("while (!isStateEmpty($L.getUnsafe(destinationTableLocation)))",
+                    hasherConfig.mainStateName);
+        }
         builder.addStatement("destinationTableLocation = nextTableLocation(destinationTableLocation)");
         builder.endControlFlow();
 
