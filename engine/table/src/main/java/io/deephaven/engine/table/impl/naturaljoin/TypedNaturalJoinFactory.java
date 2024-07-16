@@ -21,7 +21,7 @@ public class TypedNaturalJoinFactory {
     public static final String FIRST_DUPLICATE = "FIRST_DUPLICATE";
 
     public static void staticBuildLeftFound(HasherConfig<?> hasherConfig, boolean alternate,
-                                            CodeBlock.Builder builder) {
+            CodeBlock.Builder builder) {
         builder.addStatement("leftHashSlots.set(hashSlotOffset++, tableLocation)");
     }
 
