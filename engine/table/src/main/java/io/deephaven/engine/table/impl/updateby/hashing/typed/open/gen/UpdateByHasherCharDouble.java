@@ -199,8 +199,7 @@ final class UpdateByHasherCharDouble extends UpdateByStateManagerTypedBase {
     }
 
     @Override
-    protected void newAlternate() {
-        super.newAlternate();
+    protected void adviseNewAlternate() {
         this.mainKeySource0 = (ImmutableCharArraySource)super.mainKeySources[0];
         this.alternateKeySource0 = (ImmutableCharArraySource)super.alternateKeySources[0];
         this.mainKeySource1 = (ImmutableDoubleArraySource)super.mainKeySources[1];

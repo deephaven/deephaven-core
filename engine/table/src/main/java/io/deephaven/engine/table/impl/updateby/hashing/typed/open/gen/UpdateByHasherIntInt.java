@@ -195,8 +195,7 @@ final class UpdateByHasherIntInt extends UpdateByStateManagerTypedBase {
     }
 
     @Override
-    protected void newAlternate() {
-        super.newAlternate();
+    protected void adviseNewAlternate() {
         this.mainKeySource0 = (ImmutableIntArraySource)super.mainKeySources[0];
         this.alternateKeySource0 = (ImmutableIntArraySource)super.alternateKeySources[0];
         this.mainKeySource1 = (ImmutableIntArraySource)super.mainKeySources[1];

@@ -442,13 +442,18 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
         if (numEntries == 0) {
             return false;
         }
-        newAlternate();
-        alternateTableSize = oldTableSize;
-        rehashPointer = alternateTableSize;
+        newAlternate(oldTableSize);
+        adviseNewAlternate();
         return true;
     }
 
-    protected void newAlternate() {
+    /**
+     * After creating the new alternate key states, advise the derived classes, so they can cast them to the typed
+     * versions of the column source and adjust the derived class pointers.
+     */
+    protected abstract void adviseNewAlternate();
+
+    protected void newAlternate(int oldTableSize) {
         alternateSlotToOutputRow = slotToOutputRow;
         slotToOutputRow = new ImmutableIntArraySource();
         slotToOutputRow.ensureCapacity(tableSize);
@@ -463,6 +468,8 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
                     alternateKeySources[ii].getType(), alternateKeySources[ii].getComponentType());
             mainKeySources[ii].ensureCapacity(tableSize);
         }
+        alternateTableSize = oldTableSize;
+        rehashPointer = alternateTableSize;
     }
 
     protected void clearAlternate() {

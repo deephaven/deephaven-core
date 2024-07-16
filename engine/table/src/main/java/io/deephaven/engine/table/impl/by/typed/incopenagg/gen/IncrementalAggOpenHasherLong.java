@@ -168,8 +168,7 @@ final class IncrementalAggOpenHasherLong extends IncrementalChunkedOperatorAggre
     }
 
     @Override
-    protected void newAlternate() {
-        super.newAlternate();
+    protected void adviseNewAlternate() {
         this.mainKeySource0 = (ImmutableLongArraySource)super.mainKeySources[0];
         this.alternateKeySource0 = (ImmutableLongArraySource)super.alternateKeySources[0];
     }

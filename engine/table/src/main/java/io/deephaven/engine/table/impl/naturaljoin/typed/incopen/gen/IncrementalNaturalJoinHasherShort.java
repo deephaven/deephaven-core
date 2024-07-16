@@ -651,8 +651,7 @@ final class IncrementalNaturalJoinHasherShort extends IncrementalNaturalJoinStat
     }
 
     @Override
-    protected void newAlternate() {
-        super.newAlternate();
+    protected void adviseNewAlternate() {
         this.mainKeySource0 = (ImmutableShortArraySource)super.mainKeySources[0];
         this.alternateKeySource0 = (ImmutableShortArraySource)super.alternateKeySources[0];
     }

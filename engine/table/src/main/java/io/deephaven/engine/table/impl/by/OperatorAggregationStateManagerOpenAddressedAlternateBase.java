@@ -211,6 +211,9 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
             return false;
         }
 
+        // To combine this logic with the newAlternate function, which would be cleaner then we must combine this class
+        // with the IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.  They are only separate as
+        // an accident of the original open addressed hash table development.
         Assert.eqZero(rehashPointer, "rehashPointer");
 
         for (int ii = 0; ii < mainKeySources.length; ++ii) {
@@ -225,11 +228,18 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
         }
 
         newAlternate();
+        adviseNewAlternate();
 
         return true;
     }
 
     protected abstract void newAlternate();
+
+    /**
+     * After creating the new alternate key states, advise the derived classes, so they can cast them to the typed
+     * versions of the column source and adjust the derived class pointers.
+     */
+    protected abstract void adviseNewAlternate();
 
     protected void clearAlternate() {
         for (int ii = 0; ii < mainKeySources.length; ++ii) {

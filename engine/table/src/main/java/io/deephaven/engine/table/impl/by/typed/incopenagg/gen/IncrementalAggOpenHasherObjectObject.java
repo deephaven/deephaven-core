@@ -182,8 +182,7 @@ final class IncrementalAggOpenHasherObjectObject extends IncrementalChunkedOpera
     }
 
     @Override
-    protected void newAlternate() {
-        super.newAlternate();
+    protected void adviseNewAlternate() {
         this.mainKeySource0 = (ImmutableObjectArraySource)super.mainKeySources[0];
         this.alternateKeySource0 = (ImmutableObjectArraySource)super.alternateKeySources[0];
         this.mainKeySource1 = (ImmutableObjectArraySource)super.mainKeySources[1];

@@ -1000,15 +1000,13 @@ public class TypedHasherFactory {
     private static MethodSpec createNewAlternateMethod(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes) {
         final CodeBlock.Builder builder = CodeBlock.builder();
 
-        builder.addStatement("super.newAlternate()");
-
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             final Class<?> sourceType = flatSourceType(chunkTypes[ii]);
             builder.addStatement("this.mainKeySource$L = ($T)super.mainKeySources[$L]", ii, sourceType, ii);
             builder.addStatement("this.alternateKeySource$L = ($T)super.alternateKeySources[$L]", ii, sourceType, ii);
         }
 
-        return MethodSpec.methodBuilder("newAlternate")
+        return MethodSpec.methodBuilder("adviseNewAlternate")
                 .returns(void.class).addModifiers(Modifier.PROTECTED)
                 .addCode(builder.build())
                 .addAnnotation(Override.class).build();

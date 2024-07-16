@@ -187,8 +187,7 @@ final class IncrementalAggOpenHasherByteChar extends IncrementalChunkedOperatorA
     }
 
     @Override
-    protected void newAlternate() {
-        super.newAlternate();
+    protected void adviseNewAlternate() {
         this.mainKeySource0 = (ImmutableByteArraySource)super.mainKeySources[0];
         this.alternateKeySource0 = (ImmutableByteArraySource)super.alternateKeySources[0];
         this.mainKeySource1 = (ImmutableCharArraySource)super.mainKeySources[1];

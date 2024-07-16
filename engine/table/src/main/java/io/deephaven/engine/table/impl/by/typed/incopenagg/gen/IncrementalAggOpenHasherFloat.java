@@ -168,8 +168,7 @@ final class IncrementalAggOpenHasherFloat extends IncrementalChunkedOperatorAggr
     }
 
     @Override
-    protected void newAlternate() {
-        super.newAlternate();
+    protected void adviseNewAlternate() {
         this.mainKeySource0 = (ImmutableFloatArraySource)super.mainKeySources[0];
         this.alternateKeySource0 = (ImmutableFloatArraySource)super.alternateKeySources[0];
     }

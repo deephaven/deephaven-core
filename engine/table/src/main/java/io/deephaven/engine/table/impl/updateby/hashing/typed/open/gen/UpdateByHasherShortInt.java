@@ -199,8 +199,7 @@ final class UpdateByHasherShortInt extends UpdateByStateManagerTypedBase {
     }
 
     @Override
-    protected void newAlternate() {
-        super.newAlternate();
+    protected void adviseNewAlternate() {
         this.mainKeySource0 = (ImmutableShortArraySource)super.mainKeySources[0];
         this.alternateKeySource0 = (ImmutableShortArraySource)super.alternateKeySources[0];
         this.mainKeySource1 = (ImmutableIntArraySource)super.mainKeySources[1];

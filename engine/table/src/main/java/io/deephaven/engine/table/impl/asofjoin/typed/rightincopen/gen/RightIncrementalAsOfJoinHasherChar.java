@@ -263,8 +263,7 @@ final class RightIncrementalAsOfJoinHasherChar extends RightIncrementalAsOfJoinS
     }
 
     @Override
-    protected void newAlternate() {
-        super.newAlternate();
+    protected void adviseNewAlternate() {
         this.mainKeySource0 = (ImmutableCharArraySource)super.mainKeySources[0];
         this.alternateKeySource0 = (ImmutableCharArraySource)super.alternateKeySources[0];
     }
