@@ -10,8 +10,8 @@ package io.deephaven.datastructures.util;
 @Deprecated(forRemoval = true)
 public class CollectionUtil {
 
-    public static final byte[] ZERO_LENGTH_BYTE_ARRAY = new byte[0];
     public static final short[] ZERO_LENGTH_SHORT_ARRAY = new short[0];
+    public static final byte[] ZERO_LENGTH_BYTE_ARRAY = new byte[0];
     public static final int[] ZERO_LENGTH_INT_ARRAY = new int[0];
     public static final int[][] ZERO_LENGTH_INT_ARRAY_ARRAY = new int[0][];
     public static final long[] ZERO_LENGTH_LONG_ARRAY = new long[0];

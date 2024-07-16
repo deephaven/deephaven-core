@@ -5,7 +5,6 @@ package io.deephaven.util.type;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.io.*;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.math.BigDecimal;
@@ -14,8 +13,6 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import java.lang.reflect.*;
 
 import static io.deephaven.util.QueryConstants.*;
 
@@ -383,6 +380,9 @@ public class TypeUtils {
                 || c == int.class || c == long.class || c == short.class || c == byte.class;
     }
 
+    @interface GwtIncompatible {
+    }
+
     /**
      * Whether the class is an instance of {@link Number}.
      *
@@ -559,245 +559,6 @@ public class TypeUtils {
         return type.equals(double.class) || type.equals(float.class) || isBoxedDouble(type) || isBoxedFloat(type);
     }
 
-    /**
-     * Converts an Object to a String for writing to a workspace. This is meant to be used in conjunction with
-     * {@code TypeUtils.fromString}. Strings, Numbers, and primitives will all convert using {@code Obect.toString}.
-     * Serializable objects will be encoded in base64. All others will return null.
-     *
-     * @param o the object to convert
-     * @return a String representation of the object, null if it cannot be converted
-     * @throws IOException if an IO error occurs during conversion
-     */
-    @GwtIncompatible
-    public static String objectToString(Object o) throws IOException {
-        if (o == null) {
-            return null;
-        }
-
-        final Class<?> type = o.getClass();
-        // isNumeric gets BigInteger and BigDecimal in addition to everything gotten by isConvertibleToPrimitive
-        if (type == String.class || isConvertibleToPrimitive(type) || isNumeric(type)) {
-            return o.toString();
-        } else if (o instanceof Serializable) {
-            return encode64Serializable((Serializable) o);
-        }
-
-        throw new RuntimeException(
-                "Failed to convert object of type " + type.getCanonicalName() + ".  Type not supported");
-    }
-
-    /**
-     * Creates an Object from a String. This is meant to be used in conjunction with {@code TypeUtils.objectToString}
-     * Strings, Numbers, and primitives will all parse using their boxed type parsing methods. Serializable types will
-     * be decoded from base64. Returns null if the String fails to parse.
-     *
-     * @param string the String to parse
-     * @param typeString the Canonical Name of the class type
-     * @return an object parsed from the String
-     * @throws RuntimeException if the string fails to parse
-     * @throws IOException if an IO error occurs during conversion
-     */
-    @GwtIncompatible
-    public static Optional<Object> fromString(String string, String typeString) throws IOException {
-        final Class<?> type;
-        try {
-            type = Class.forName(typeString);
-            return Optional.ofNullable(fromString(string, type));
-        } catch (ClassNotFoundException e) {
-            return Optional.empty();
-        }
-    }
-
-    /**
-     * Creates an Object from a String. This is meant to be used in conjunction with {@code TypeUtils.objectToString}
-     * Strings, Numbers, and primitives will all parse using their boxed type parsing methods. Serializable types will
-     * be decoded from base64. Returns null if the String fails to parse.
-     *
-     * @param string the String to parse
-     * @param type the type of the object
-     * @return an object parsed from the String
-     * @throws RuntimeException if the string fails to parse
-     * @throws IOException if an IO error occurs during conversion
-     */
-    @GwtIncompatible
-    public static Object fromString(String string, Class<?> type) throws IOException {
-        final Class<?> boxedType = getBoxedType(type);
-        try {
-            if (boxedType == String.class) {
-                return string;
-            } else if (boxedType == Boolean.class) {
-                return Boolean.parseBoolean(string);
-            } else if (boxedType == Integer.class) {
-                return Integer.parseInt(string);
-            } else if (boxedType == Double.class) {
-                return Double.parseDouble(string);
-            } else if (boxedType == Short.class) {
-                return Short.parseShort(string);
-            } else if (boxedType == Long.class) {
-                return Long.parseLong(string);
-            } else if (boxedType == Float.class) {
-                return Float.parseFloat(string);
-            } else if (boxedType == BigInteger.class) {
-                return new BigInteger(string);
-            } else if (boxedType == BigDecimal.class) {
-                return new BigDecimal(string);
-            } else if (boxedType == Byte.class) {
-                return Byte.parseByte(string);
-            } else if (boxedType == Character.class) {
-                return string.charAt(0);
-            } else if (Serializable.class.isAssignableFrom(boxedType)) {
-                return decode64Serializable(string);
-            }
-        } catch (IOException ioe) {
-            throw ioe;
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to parse " + string + "into type " + type.getCanonicalName(), e);
-        }
-
-        throw new RuntimeException(
-                "Failed to parse " + string + "into type " + type.getCanonicalName() + ".  Type not supported");
-    }
-
-    /**
-     * Encodes a Serializable Object into base64 String.
-     *
-     * @param serializable the object to encode
-     * @return the base64 encoded string
-     * @throws IOException if the string cannot be encoded
-     */
-    @GwtIncompatible
-    public static String encode64Serializable(Serializable serializable) throws IOException {
-        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                ObjectOutputStream os = new ObjectOutputStream(bos)) {
-            os.writeObject(serializable);
-            return Base64.getEncoder().encodeToString(bos.toByteArray());
-        }
-    }
-
-    /**
-     * Decodes a Serializable Object from a base64 encoded String.
-     *
-     * @param string the base64 encoded String
-     * @return the encoded Object
-     * @throws IOException if the string cannot be decoded
-     * @throws ClassNotFoundException if the Object type is unknown
-     */
-    @GwtIncompatible
-    public static Object decode64Serializable(String string) throws IOException, ClassNotFoundException {
-        try (ObjectInputStream is =
-                new ObjectInputStream(new ByteArrayInputStream(Base64.getDecoder().decode(string)))) {
-            return is.readObject();
-        }
-    }
-
-    /**
-     * Determine the Class from the Type.
-     */
-    @GwtIncompatible
-    public static Class<?> getErasedType(Type paramType) {
-        if (paramType instanceof Class) {
-            return (Class<?>) paramType;
-        } else if (paramType instanceof ParameterizedType) {
-            return (Class<?>) // We are asking the parameterized type for it's raw type, which is always Class
-            ((ParameterizedType) paramType).getRawType();
-        } else if (paramType instanceof WildcardType) {
-            final Type[] upper = ((WildcardType) paramType).getUpperBounds();
-            return getErasedType(upper[0]);
-        } else if (paramType instanceof java.lang.reflect.TypeVariable) {
-            final Type[] bounds = ((TypeVariable<?>) paramType).getBounds();
-            if (bounds.length > 1) {
-                Class<?>[] erasedBounds = new Class[bounds.length];
-                Class<?> weakest = null;
-                for (int i = 0; i < erasedBounds.length; i++) {
-                    erasedBounds[i] = getErasedType(bounds[i]);
-                    if (i == 0) {
-                        weakest = erasedBounds[i];
-                    } else {
-                        weakest = getWeakest(weakest, erasedBounds[i]);
-                    }
-                    // If we are erased to object, stop erasing...
-                    if (weakest == Object.class) {
-                        break;
-                    }
-                }
-                return weakest;
-            }
-            return getErasedType(bounds[0]);
-        } else {
-            throw new UnsupportedOperationException();
-        }
-    }
-
-    @interface GwtIncompatible {
-    }
-
-    /**
-     * Determine the weakest parent of the two provided Classes.
-     *
-     * @param one one class to compare
-     * @param two the other class to compare
-     * @return the weakest parent Class
-     */
-    @GwtIncompatible
-    private static Class<?> getWeakest(Class<?> one, Class<?> two) {
-        if (one.isAssignableFrom(two)) {
-            return one;
-        } else if (two.isAssignableFrom(one)) {
-            return two;
-        }
-        // No luck on quick check... Look in interfaces.
-        Set<Class<?>> oneInterfaces = getFlattenedInterfaces(one);
-        Set<Class<?>> twoInterfaces = getFlattenedInterfaces(two);
-        // Keep only shared interfaces
-        oneInterfaces.retainAll(twoInterfaces);
-        Class<?> strongest = Object.class;
-        for (Class<?> cls : oneInterfaces) {
-            // There is a winning type...
-            if (strongest.isAssignableFrom(cls)) {
-                strongest = cls;
-            } else if (!cls.isAssignableFrom(strongest)) {
-                return Object.class;
-            }
-        }
-        // Will be Object.class if there were no shared interfaces (or shared interfaces were not compatible).
-        return strongest;
-    }
-
-    @GwtIncompatible
-    private static Set<Class<?>> getFlattenedInterfaces(Class<?> cls) {
-        final Set<Class<?>> set = new HashSet<>();
-        while (cls != null && cls != Object.class) {
-            for (Class<?> iface : cls.getInterfaces()) {
-                collectInterfaces(set, iface);
-            }
-            cls = cls.getSuperclass();
-        }
-        return set;
-    }
-
-    @GwtIncompatible
-    private static void collectInterfaces(final Collection<Class<?>> into, final Class<?> cls) {
-        if (into.add(cls)) {
-            for (final Class<?> iface : cls.getInterfaces()) {
-                if (into.add(iface)) {
-                    collectInterfaces(into, iface);
-                }
-            }
-        }
-    }
-
-
-    @GwtIncompatible
-    public static Class<?> classForName(String className) throws ClassNotFoundException {
-        Class<?> result = primitiveClassNameToClass.get(className);
-        if (result == null) {
-            return Class.forName(className);
-        } else {
-            return result;
-        }
-
-    }
-
     public static abstract class TypeBoxer<T> {
         public abstract T get(T result);
     }
@@ -854,7 +615,7 @@ public class TypeUtils {
                 }
             };
         } else {
-            return (TypeBoxer<T>) new TypeBoxer<Object>() {
+            return new TypeBoxer<>() {
                 @Override
                 public Object get(Object result) {
                     return result;

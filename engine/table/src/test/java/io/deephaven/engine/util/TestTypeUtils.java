@@ -7,7 +7,6 @@ import io.deephaven.base.verify.Require;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.ArrayUtils;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Date;
@@ -161,10 +160,5 @@ public class TestTypeUtils extends TestCase {
         assertFalse(io.deephaven.util.type.TypeUtils.isBoxedChar(int.class));
         assertFalse(io.deephaven.util.type.TypeUtils.isBoxedChar(char.class));
         assertTrue(io.deephaven.util.type.TypeUtils.isBoxedChar(Character.class));
-    }
-
-    public void testObjectToString() throws IOException {
-        assertNull(io.deephaven.util.type.TypeUtils.objectToString(null)); // null input
-        assertEquals("STRING", io.deephaven.util.type.TypeUtils.objectToString("STRING")); // non null input
     }
 }
