@@ -273,9 +273,15 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
 
         uploadDirectory(destDir.toPath(), destDirName);
         final URI directoryURI = uri(destDirName);
+        final ParquetInstructions readInstructions = ParquetInstructions.builder()
+                .setSpecialInstructions(s3Instructions(
+                        S3Instructions.builder()
+                                .readTimeout(Duration.ofSeconds(10)))
+                        .build())
+                .build();
         try {
             ParquetTools.readTable(directoryURI.toString(),
-                    ParquetInstructions.EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.METADATA_PARTITIONED));
+                    readInstructions.withLayout(ParquetInstructions.ParquetFileLayout.METADATA_PARTITIONED));
             fail("Expected exception because metadata file is not present");
         } catch (final TableDataException expected) {
             assertTrue(expected.getMessage().contains("metadata"));
