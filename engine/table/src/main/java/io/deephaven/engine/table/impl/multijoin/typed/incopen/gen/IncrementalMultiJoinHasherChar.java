@@ -340,7 +340,7 @@ final class IncrementalMultiJoinHasherChar extends IncrementalMultiJoinStateMana
             final int firstDestinationTableLocation = hashToTableLocation(hash);
             int destinationTableLocation = firstDestinationTableLocation;
             while (true) {
-                if (destState[destinationTableLocation] == EMPTY_OUTPUT_ROW) {
+                if (isStateEmpty(destState[destinationTableLocation])) {
                     destKeyArray0[destinationTableLocation] = k0;
                     destState[destinationTableLocation] = originalStateArray[sourceBucket];
                     destModifiedCookie[destinationTableLocation] = oldModifiedCookie[sourceBucket];

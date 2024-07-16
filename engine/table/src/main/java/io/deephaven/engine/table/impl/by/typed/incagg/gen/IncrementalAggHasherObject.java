@@ -43,7 +43,7 @@ final class IncrementalAggHasherObject extends IncrementalChunkedOperatorAggrega
             final Object k0 = keyChunk0.get(chunkPosition);
             final int hash = hash(k0);
             final int tableLocation = hashToTableLocation(tableHashPivot, hash);
-            if (mainOutputPosition.getUnsafe(tableLocation) == EMPTY_OUTPUT_POSITION) {
+            if (isEmptyState(mainOutputPosition.getUnsafe(tableLocation))) {
                 numEntries++;
                 mainKeySource0.set(tableLocation, k0);
                 handler.doMainInsert(tableLocation, chunkPosition);
@@ -71,7 +71,7 @@ final class IncrementalAggHasherObject extends IncrementalChunkedOperatorAggrega
             final Object k0 = keyChunk0.get(chunkPosition);
             final int hash = hash(k0);
             final int tableLocation = hashToTableLocation(tableHashPivot, hash);
-            if (mainOutputPosition.getUnsafe(tableLocation) == EMPTY_OUTPUT_POSITION) {
+            if (isEmptyState(mainOutputPosition.getUnsafe(tableLocation))) {
                 handler.doMissing(chunkPosition);
             } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                 handler.doMainFound(tableLocation, chunkPosition);
@@ -89,11 +89,15 @@ final class IncrementalAggHasherObject extends IncrementalChunkedOperatorAggrega
         return hash;
     }
 
+    private static boolean isStateEmpty(int state) {
+        return state == EMPTY_OUTPUT_POSITION;
+    }
+
     @Override
     protected void rehashBucket(HashHandler handler, int sourceBucket, int destBucket,
             int bucketsToAdd) {
         final int position = mainOutputPosition.getUnsafe(sourceBucket);
-        if (position == EMPTY_OUTPUT_POSITION) {
+        if (isEmptyState(position)) {
             return;
         }
         int mainInsertLocation = maybeMoveMainBucket(handler, sourceBucket, destBucket, bucketsToAdd);

@@ -226,7 +226,7 @@ final class IncrementalAggOpenHasherObjectObject extends IncrementalChunkedOpera
             final int firstDestinationTableLocation = hashToTableLocation(hash);
             int destinationTableLocation = firstDestinationTableLocation;
             while (true) {
-                if (destState[destinationTableLocation] == EMPTY_OUTPUT_POSITION) {
+                if (isStateEmpty(destState[destinationTableLocation])) {
                     destKeyArray0[destinationTableLocation] = k0;
                     destKeyArray1[destinationTableLocation] = k1;
                     destState[destinationTableLocation] = originalStateArray[sourceBucket];

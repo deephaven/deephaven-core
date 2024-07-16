@@ -205,7 +205,7 @@ final class IncrementalAggOpenHasherFloat extends IncrementalChunkedOperatorAggr
             final int firstDestinationTableLocation = hashToTableLocation(hash);
             int destinationTableLocation = firstDestinationTableLocation;
             while (true) {
-                if (destState[destinationTableLocation] == EMPTY_OUTPUT_POSITION) {
+                if (isStateEmpty(destState[destinationTableLocation])) {
                     destKeyArray0[destinationTableLocation] = k0;
                     destState[destinationTableLocation] = originalStateArray[sourceBucket];
                     outputPositionToHashSlot.set(currentStateValue, mainInsertMask | destinationTableLocation);

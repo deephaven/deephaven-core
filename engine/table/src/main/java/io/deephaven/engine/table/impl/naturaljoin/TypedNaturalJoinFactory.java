@@ -17,8 +17,11 @@ import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
 public class TypedNaturalJoinFactory {
+
+    public static final String FIRST_DUPLICATE = "FIRST_DUPLICATE";
+
     public static void staticBuildLeftFound(HasherConfig<?> hasherConfig, boolean alternate,
-            CodeBlock.Builder builder) {
+                                            CodeBlock.Builder builder) {
         builder.addStatement("leftHashSlots.set(hashSlotOffset++, tableLocation)");
     }
 
@@ -204,7 +207,7 @@ public class TypedNaturalJoinFactory {
         final String tableLocation = getTableLocation(alternate);
         builder.beginControlFlow("if (existingRightRowKey == $T.NULL_ROW_KEY)", RowSet.class);
         builder.addStatement("$LRightRowKey.set($L, rowKeyChunk.get(chunkPosition))", sourceType, tableLocation);
-        builder.nextControlFlow("else if (existingRightRowKey < $T.NULL_ROW_KEY)", RowSet.class);
+        builder.nextControlFlow("else if (existingRightRowKey <= $L)", FIRST_DUPLICATE);
         builder.addStatement("final long duplicateLocation = duplicateLocationFromRowKey(existingRightRowKey)");
         builder.addStatement(
                 "rightSideDuplicateRowSets.getUnsafe(duplicateLocation).insert(rowKeyChunk.get(chunkPosition))");
@@ -229,7 +232,7 @@ public class TypedNaturalJoinFactory {
 
     private static void checkForDuplicateErrorLeftDecorate(CodeBlock.Builder builder, String leftRowKey,
             String rightRowState) {
-        builder.beginControlFlow("if ($L <= $L)", rightRowState, "FIRST_DUPLICATE");
+        builder.beginControlFlow("if ($L <= $L)", rightRowState, FIRST_DUPLICATE);
         builder.addStatement(
                 "throw new IllegalStateException(\"Natural Join found duplicate right key for \" + extractKeyStringFromSourceTable($L))",
                 leftRowKey);
@@ -247,7 +250,7 @@ public class TypedNaturalJoinFactory {
         final String sourceType = alternate ? "alternate" : "main";
         final String tableLocation = alternate ? "alternateTableLocation" : "tableLocation";
 
-        builder.beginControlFlow("if (existingRightRowKey < $T.NULL_ROW_KEY)", RowSet.class);
+        builder.beginControlFlow("if (existingRightRowKey <= $L)", FIRST_DUPLICATE);
         builder.addStatement("final long duplicateLocation = duplicateLocationFromRowKey(existingRightRowKey)");
         builder.addStatement("final $T duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation)",
                 WritableRowSet.class);
@@ -289,7 +292,7 @@ public class TypedNaturalJoinFactory {
         builder.beginControlFlow("if (existingRightRowKey == $T.NULL_ROW_KEY)", RowSet.class);
         builder.addStatement("$LRightRowKey.set($L, rowKeyChunk.get(chunkPosition))", sourceType, tableLocation);
         modifyCookie(builder, sourceType, tableLocation, "FLAG_RIGHT_CHANGE");
-        builder.nextControlFlow("else if (existingRightRowKey < $T.NULL_ROW_KEY)", RowSet.class);
+        builder.nextControlFlow("else if (existingRightRowKey <= $L)", FIRST_DUPLICATE);
         builder.addStatement("final long duplicateLocation = duplicateLocationFromRowKey(existingRightRowKey)");
         builder.addStatement("final $T duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation)",
                 WritableRowSet.class);
@@ -399,7 +402,7 @@ public class TypedNaturalJoinFactory {
         builder.beginControlFlow("if (existingRightRowKey == keyToShift - shiftDelta)");
         builder.addStatement("$LRightRowKey.set($L, keyToShift)", sourceType, tableLocation);
         modifyCookie(builder, sourceType, tableLocation, "FLAG_RIGHT_SHIFT");
-        builder.nextControlFlow("else if (existingRightRowKey < $T.NULL_ROW_KEY)", RowSet.class);
+        builder.nextControlFlow("else if (existingRightRowKey <= $L)", FIRST_DUPLICATE);
         builder.addStatement("final long duplicateLocation = duplicateLocationFromRowKey(existingRightRowKey)");
         builder.beginControlFlow("if (shiftDelta < 0)");
         builder.addStatement("final $T duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation)",

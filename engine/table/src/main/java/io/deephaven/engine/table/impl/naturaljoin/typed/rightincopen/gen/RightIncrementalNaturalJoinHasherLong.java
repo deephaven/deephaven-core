@@ -225,7 +225,7 @@ final class RightIncrementalNaturalJoinHasherLong extends RightIncrementalNatura
             final int firstDestinationTableLocation = hashToTableLocation(hash);
             int destinationTableLocation = firstDestinationTableLocation;
             while (true) {
-                if (destState[destinationTableLocation] == null) {
+                if (isStateEmpty(destState[destinationTableLocation])) {
                     destKeyArray0[destinationTableLocation] = k0;
                     destState[destinationTableLocation] = originalStateArray[sourceBucket];
                     destRightRowKey[destinationTableLocation] = oldRightRowKey[sourceBucket];

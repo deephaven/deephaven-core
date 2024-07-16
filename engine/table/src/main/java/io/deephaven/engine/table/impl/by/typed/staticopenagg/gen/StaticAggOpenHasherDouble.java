@@ -96,7 +96,7 @@ final class StaticAggOpenHasherDouble extends StaticChunkedOperatorAggregationSt
             final int firstDestinationTableLocation = hashToTableLocation(hash);
             int destinationTableLocation = firstDestinationTableLocation;
             while (true) {
-                if (destState[destinationTableLocation] == EMPTY_OUTPUT_POSITION) {
+                if (isStateEmpty(destState[destinationTableLocation])) {
                     destKeyArray0[destinationTableLocation] = k0;
                     destState[destinationTableLocation] = originalStateArray[sourceBucket];
                     if (sourceBucket != destinationTableLocation) {

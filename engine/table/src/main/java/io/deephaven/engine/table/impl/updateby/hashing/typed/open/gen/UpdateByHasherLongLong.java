@@ -238,7 +238,7 @@ final class UpdateByHasherLongLong extends UpdateByStateManagerTypedBase {
             final int firstDestinationTableLocation = hashToTableLocation(hash);
             int destinationTableLocation = firstDestinationTableLocation;
             while (true) {
-                if (destState[destinationTableLocation] == EMPTY_RIGHT_VALUE) {
+                if (isStateEmpty(destState[destinationTableLocation])) {
                     destKeyArray0[destinationTableLocation] = k0;
                     destKeyArray1[destinationTableLocation] = k1;
                     destState[destinationTableLocation] = originalStateArray[sourceBucket];

@@ -46,11 +46,11 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     // how much of the alternate sources are necessary to rehash?
     protected int rehashPointer = 0;
 
-    // how many entries are taking up slots in the main hash table (includes tombstones)
+    /** How many entries are taking up slots in the main hash table (includes tombstones)? */
     protected long numEntries = 0;
-    // how many values do we have that are live
+    /** How many values do we have that are live (in both main and alternate)? */
     protected long liveEntries = 0;
-    // how many entries are in the alternate table (includes tombstones)
+    /** How many entries are in the alternate table (includes tombstones)? */
     protected long alternateEntries = 0;
 
     // the table will be rehashed to a load factor of targetLoadFactor if our loadFactor exceeds maximumLoadFactor
@@ -61,13 +61,17 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     protected final WritableColumnSource[] mainKeySources;
     protected final WritableColumnSource[] alternateKeySources;
 
-    // we use a RowSet.NULL_ROW_KEY for a state that exists, but has no right hand side;
-    // the column sources are initialized with NULL_LONG for something that does not exist. When there are multiple
-    // right rows, we store a value less than RowSet.NULL_ROW_KEY, which is a position in the rightSideDuplicateRowSets
-    // (-3 maps to 0, -4 to 1, etc.). We must maintain the right side duplicates so that we do not need a rescan;
-    // but in the common (as opposed to impending error) case of a single value we do not want to allocate any objects
-    //
-    // The TOMBSTONE_RIGHT_STATE indicates that the row was deleted.
+    /**
+     * <p>
+     * We use a RowSet.NULL_ROW_KEY for a state that exists, but has no right hand side; the column sources are
+     * initialized with NULL_LONG for something that does not exist. When there are multiple right rows, we store a
+     * value less than TOMBSTONE_RIGHT_STATE, which is a position in the rightSideDuplicateRowSets (-3 maps to 0, -4 to
+     * 1, etc.). We must maintain the right side duplicates so that we do not need a rescan; but in the common (as
+     * opposed to impending error) case of a single value we do not want to allocate any objects
+     *
+     * The TOMBSTONE_RIGHT_STATE indicates that the row was deleted.
+     * </p>
+     */
     protected ImmutableLongArraySource mainRightRowKey = new ImmutableLongArraySource();
     protected ImmutableLongArraySource alternateRightRowKey;
 
@@ -196,16 +200,6 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             }
         }
     }
-
-    /*
-     * void checkAlternateEntries() { int expected = 0; for (int ii = 0; ii < rehashPointer; ++ii) { final long state =
-     * alternateRightRowKey.getUnsafe(ii); if (state != EMPTY_RIGHT_STATE) { expected++; } } Assert.eq(expected,
-     * "expected", alternateEntries, "alternateEntries"); }
-     * 
-     * void checkMainEntries() { int expected = 0; for (int ii = 0; ii < tableSize; ++ii) { final long state =
-     * mainRightRowKey.getUnsafe(ii); if (state != EMPTY_RIGHT_STATE) { expected++; } } Assert.eq(expected, "expected",
-     * numEntries, "numEtries"); }
-     */
 
     protected void probeTable(
             final ProbeContext pc,

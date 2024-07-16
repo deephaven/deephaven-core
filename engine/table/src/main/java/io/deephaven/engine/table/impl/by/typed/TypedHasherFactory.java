@@ -638,8 +638,8 @@ public class TypedHasherFactory {
         }
         hasherBuilder.addMethod(createHashMethod(chunkTypes));
 
+        hasherBuilder.addMethod(createIsEmptyMethod(hasherConfig));
         if (hasherConfig.openAddressed) {
-            hasherBuilder.addMethod(createIsEmptyMethod(hasherConfig));
             if (hasherConfig.supportTombstones) {
                 hasherBuilder.addMethod(createIsDeletedMethod(hasherConfig));
             }
@@ -816,7 +816,7 @@ public class TypedHasherFactory {
         final CodeBlock.Builder builder = CodeBlock.builder();
 
         builder.addStatement("final int position = $L.getUnsafe(sourceBucket)", hasherConfig.mainStateName);
-        builder.beginControlFlow("if (position == $L)", hasherConfig.emptyStateName);
+        builder.beginControlFlow("if (isEmptyState(position))");
         builder.addStatement("return");
         builder.endControlFlow();
 
@@ -929,7 +929,7 @@ public class TypedHasherFactory {
         builder.addStatement("final int firstDestinationTableLocation = hashToTableLocation(hash)");
         builder.addStatement("int destinationTableLocation = firstDestinationTableLocation");
         builder.beginControlFlow("while (true)");
-        builder.beginControlFlow("if (destState[destinationTableLocation] == $L)", hasherConfig.emptyStateName);
+        builder.beginControlFlow("if (isStateEmpty(destState[destinationTableLocation]))");
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             builder.addStatement("destKeyArray$L[destinationTableLocation] = k$L", ii, ii);
         }
@@ -1179,8 +1179,7 @@ public class TypedHasherFactory {
         builder.addStatement("final int hash = hash("
                 + IntStream.range(0, chunkTypes.length).mapToObj(x -> "k" + x).collect(Collectors.joining(", ")) + ")");
         builder.addStatement("final int tableLocation = hashToTableLocation(tableHashPivot, hash)");
-        builder.beginControlFlow("if ($L.getUnsafe(tableLocation) == $L)", hasherConfig.mainStateName,
-                hasherConfig.emptyStateName);
+        builder.beginControlFlow("if (isEmptyState($L.getUnsafe(tableLocation)))", hasherConfig.mainStateName);
         builder.addStatement("numEntries++");
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             builder.addStatement("mainKeySource$L.set(tableLocation, k$L)", ii, ii);
@@ -1481,8 +1480,7 @@ public class TypedHasherFactory {
         builder.addStatement("final int hash = hash("
                 + IntStream.range(0, chunkTypes.length).mapToObj(x -> "k" + x).collect(Collectors.joining(", ")) + ")");
         builder.addStatement("final int tableLocation = hashToTableLocation(tableHashPivot, hash)");
-        builder.beginControlFlow("if ($L.getUnsafe(tableLocation) == $L)", hasherConfig.mainStateName,
-                hasherConfig.emptyStateName);
+        builder.beginControlFlow("if (isEmptyState($L.getUnsafe(tableLocation)))", hasherConfig.mainStateName);
         builder.addStatement("handler.doMissing(chunkPosition)");
         builder.nextControlFlow("else if (" + getEqualsStatement(chunkTypes) + ")");
         builder.addStatement("handler.doMainFound(tableLocation, chunkPosition)");
