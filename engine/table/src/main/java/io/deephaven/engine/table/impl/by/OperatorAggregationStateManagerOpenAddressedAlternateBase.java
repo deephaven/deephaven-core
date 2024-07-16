@@ -212,7 +212,7 @@ public abstract class OperatorAggregationStateManagerOpenAddressedAlternateBase
         }
 
         // To combine this logic with the newAlternate function, which would be cleaner then we must combine this class
-        // with the IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.  They are only separate as
+        // with the IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase. They are only separate as
         // an accident of the original open addressed hash table development.
         Assert.eqZero(rehashPointer, "rehashPointer");
 
