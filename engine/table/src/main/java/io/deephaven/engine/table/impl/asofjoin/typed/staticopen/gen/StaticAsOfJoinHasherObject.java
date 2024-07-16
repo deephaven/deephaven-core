@@ -175,7 +175,7 @@ final class StaticAsOfJoinHasherObject extends StaticAsOfJoinStateManagerTypedBa
             final int firstDestinationTableLocation = hashToTableLocation(hash);
             int destinationTableLocation = firstDestinationTableLocation;
             while (true) {
-                if (isStateEmpty(destState[destinationTableLocation])) {
+                if (isStateEmpty((Object)destState[destinationTableLocation])) {
                     destKeyArray0[destinationTableLocation] = k0;
                     destState[destinationTableLocation] = originalStateArray[sourceBucket];
                     destLeftState[destinationTableLocation] = oldLeftState[sourceBucket];

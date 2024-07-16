@@ -816,7 +816,7 @@ public class TypedHasherFactory {
         final CodeBlock.Builder builder = CodeBlock.builder();
 
         builder.addStatement("final int position = $L.getUnsafe(sourceBucket)", hasherConfig.mainStateName);
-        builder.beginControlFlow("if (isEmptyState(position))");
+        builder.beginControlFlow("if (isStateEmpty(position))");
         builder.addStatement("return");
         builder.endControlFlow();
 
@@ -1189,7 +1189,7 @@ public class TypedHasherFactory {
         builder.addStatement("final int hash = hash("
                 + IntStream.range(0, chunkTypes.length).mapToObj(x -> "k" + x).collect(Collectors.joining(", ")) + ")");
         builder.addStatement("final int tableLocation = hashToTableLocation(tableHashPivot, hash)");
-        builder.beginControlFlow("if (isEmptyState($L.getUnsafe(tableLocation)))", hasherConfig.mainStateName);
+        builder.beginControlFlow("if (isStateEmpty($L.getUnsafe(tableLocation)))", hasherConfig.mainStateName);
         builder.addStatement("numEntries++");
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             builder.addStatement("mainKeySource$L.set(tableLocation, k$L)", ii, ii);
@@ -1490,7 +1490,7 @@ public class TypedHasherFactory {
         builder.addStatement("final int hash = hash("
                 + IntStream.range(0, chunkTypes.length).mapToObj(x -> "k" + x).collect(Collectors.joining(", ")) + ")");
         builder.addStatement("final int tableLocation = hashToTableLocation(tableHashPivot, hash)");
-        builder.beginControlFlow("if (isEmptyState($L.getUnsafe(tableLocation)))", hasherConfig.mainStateName);
+        builder.beginControlFlow("if (isStateEmpty($L.getUnsafe(tableLocation)))", hasherConfig.mainStateName);
         builder.addStatement("handler.doMissing(chunkPosition)");
         builder.nextControlFlow("else if (" + getEqualsStatement(chunkTypes) + ")");
         builder.addStatement("handler.doMainFound(tableLocation, chunkPosition)");

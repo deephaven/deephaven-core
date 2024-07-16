@@ -53,7 +53,7 @@ final class IncrementalAggHasherByteByte extends IncrementalChunkedOperatorAggre
             final byte k1 = keyChunk1.get(chunkPosition);
             final int hash = hash(k0, k1);
             final int tableLocation = hashToTableLocation(tableHashPivot, hash);
-            if (isEmptyState(mainOutputPosition.getUnsafe(tableLocation))) {
+            if (isStateEmpty(mainOutputPosition.getUnsafe(tableLocation))) {
                 numEntries++;
                 mainKeySource0.set(tableLocation, k0);
                 mainKeySource1.set(tableLocation, k1);
@@ -85,7 +85,7 @@ final class IncrementalAggHasherByteByte extends IncrementalChunkedOperatorAggre
             final byte k1 = keyChunk1.get(chunkPosition);
             final int hash = hash(k0, k1);
             final int tableLocation = hashToTableLocation(tableHashPivot, hash);
-            if (isEmptyState(mainOutputPosition.getUnsafe(tableLocation))) {
+            if (isStateEmpty(mainOutputPosition.getUnsafe(tableLocation))) {
                 handler.doMissing(chunkPosition);
             } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0) && eq(mainKeySource1.getUnsafe(tableLocation), k1)) {
                 handler.doMainFound(tableLocation, chunkPosition);
@@ -112,7 +112,7 @@ final class IncrementalAggHasherByteByte extends IncrementalChunkedOperatorAggre
     protected void rehashBucket(HashHandler handler, int sourceBucket, int destBucket,
             int bucketsToAdd) {
         final int position = mainOutputPosition.getUnsafe(sourceBucket);
-        if (isEmptyState(position)) {
+        if (isStateEmpty(position)) {
             return;
         }
         int mainInsertLocation = maybeMoveMainBucket(handler, sourceBucket, destBucket, bucketsToAdd);

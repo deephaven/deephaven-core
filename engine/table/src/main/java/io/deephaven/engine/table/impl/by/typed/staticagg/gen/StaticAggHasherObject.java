@@ -43,7 +43,7 @@ final class StaticAggHasherObject extends StaticChunkedOperatorAggregationStateM
             final Object k0 = keyChunk0.get(chunkPosition);
             final int hash = hash(k0);
             final int tableLocation = hashToTableLocation(tableHashPivot, hash);
-            if (isEmptyState(mainOutputPosition.getUnsafe(tableLocation))) {
+            if (isStateEmpty(mainOutputPosition.getUnsafe(tableLocation))) {
                 numEntries++;
                 mainKeySource0.set(tableLocation, k0);
                 handler.doMainInsert(tableLocation, chunkPosition);
@@ -71,7 +71,7 @@ final class StaticAggHasherObject extends StaticChunkedOperatorAggregationStateM
             final Object k0 = keyChunk0.get(chunkPosition);
             final int hash = hash(k0);
             final int tableLocation = hashToTableLocation(tableHashPivot, hash);
-            if (isEmptyState(mainOutputPosition.getUnsafe(tableLocation))) {
+            if (isStateEmpty(mainOutputPosition.getUnsafe(tableLocation))) {
                 handler.doMissing(chunkPosition);
             } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                 handler.doMainFound(tableLocation, chunkPosition);
@@ -97,7 +97,7 @@ final class StaticAggHasherObject extends StaticChunkedOperatorAggregationStateM
     protected void rehashBucket(HashHandler handler, int sourceBucket, int destBucket,
             int bucketsToAdd) {
         final int position = mainOutputPosition.getUnsafe(sourceBucket);
-        if (isEmptyState(position)) {
+        if (isStateEmpty(position)) {
             return;
         }
         int mainInsertLocation = maybeMoveMainBucket(handler, sourceBucket, destBucket, bucketsToAdd);

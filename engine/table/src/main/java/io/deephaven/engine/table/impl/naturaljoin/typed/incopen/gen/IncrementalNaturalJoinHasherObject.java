@@ -621,7 +621,8 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
         final Object k0 = alternateKeySource0.getUnsafe(locationToMigrate);
         final int hash = hash(k0);
         int destinationTableLocation = hashToTableLocation(hash);
-        while (!isStateEmpty(mainRightRowKey.getUnsafe(destinationTableLocation))) {
+        long candidateState;
+        while (!isStateEmpty(candidateState = mainRightRowKey.getUnsafe(destinationTableLocation)) && !isStateDeleted(candidateState)) {
             destinationTableLocation = nextTableLocation(destinationTableLocation);
         }
         mainKeySource0.set(destinationTableLocation, k0);
