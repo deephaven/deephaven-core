@@ -633,7 +633,9 @@ final class IncrementalNaturalJoinHasherFloat extends IncrementalNaturalJoinStat
         alternateModifiedTrackerCookieSource.set(locationToMigrate, -1L);
         modifiedSlotTracker.moveTableLocation(cookie, locationToMigrate, mainInsertMask | destinationTableLocation);;
         alternateRightRowKey.set(locationToMigrate, EMPTY_RIGHT_STATE);
-        numEntries++;
+        if (!isStateDeleted(candidateState)) {
+            numEntries++;
+        }
         alternateEntries--;
         return true;
     }

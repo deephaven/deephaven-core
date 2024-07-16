@@ -1162,7 +1162,9 @@ public class TypedHasherFactory {
                 hasherConfig.emptyStateName);
         // with tombstone support, we must track the entries and the alternateEntriest separately
         if (hasherConfig.supportTombstones) {
+            builder.beginControlFlow("if (!isStateDeleted(candidateState))");
             builder.addStatement("numEntries++");
+            builder.endControlFlow();
             builder.addStatement("alternateEntries--");
         }
     }
