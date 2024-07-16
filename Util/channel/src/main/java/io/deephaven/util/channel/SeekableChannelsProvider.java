@@ -58,6 +58,14 @@ public interface SeekableChannelsProvider extends SafeCloseable {
      */
     boolean isCompatibleWith(@NotNull SeekableChannelContext channelContext);
 
+    /**
+     * Returns true if the given URI exists in the underlying storage.
+     *
+     * @param uri the URI to check
+     * @return true if the URI exists
+     */
+    boolean exists(@NotNull URI uri);
+
     default SeekableByteChannel getReadChannel(@NotNull SeekableChannelContext channelContext, @NotNull String uriStr)
             throws IOException {
         return getReadChannel(channelContext, convertToURI(uriStr, false));

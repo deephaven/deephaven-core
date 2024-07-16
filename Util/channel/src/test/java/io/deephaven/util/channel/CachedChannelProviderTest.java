@@ -208,6 +208,11 @@ public class CachedChannelProviderTest {
         }
 
         @Override
+        public boolean exists(@NotNull URI uri) {
+            throw new UnsupportedOperationException("exists");
+        }
+
+        @Override
         public SeekableByteChannel getReadChannel(@NotNull SeekableChannelContext channelContext,
                 @NotNull String path) {
             return new TestMockChannel(count.getAndIncrement(), path, channelContext);

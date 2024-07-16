@@ -22,6 +22,8 @@ import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.parquet.base.ParquetMetadataFileWriter;
 import io.deephaven.parquet.base.NullParquetMetadataFileWriter;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.channel.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelsProviderLoader;
 import io.deephaven.util.channel.SeekableChannelsProviderPlugin;
 import io.deephaven.vector.*;
 import io.deephaven.engine.table.*;
@@ -37,7 +39,7 @@ import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.parquet.base.ParquetFileReader;
+import io.deephaven.parquet.base.ParquetUtils;
 import io.deephaven.parquet.table.layout.ParquetFlatPartitionedLayout;
 import io.deephaven.parquet.table.layout.ParquetKeyValuePartitionedLayout;
 import io.deephaven.parquet.table.layout.ParquetMetadataFileLayout;
@@ -51,22 +53,14 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URI;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static io.deephaven.base.FileUtils.convertToURI;
 import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
-import static io.deephaven.parquet.base.ParquetUtils.COMMON_METADATA_FILE_URI_SUFFIX;
-import static io.deephaven.parquet.base.ParquetUtils.METADATA_FILE_URI_SUFFIX;
-import static io.deephaven.parquet.base.ParquetUtils.isParquetFile;
 import static io.deephaven.parquet.table.ParquetInstructions.FILE_INDEX_TOKEN;
 import static io.deephaven.parquet.table.ParquetInstructions.PARTITIONS_TOKEN;
 import static io.deephaven.parquet.table.ParquetInstructions.UUID_TOKEN;
@@ -132,7 +126,9 @@ public class ParquetTools {
     public static Table readTable(
             @NotNull final String source,
             @NotNull final ParquetInstructions readInstructions) {
-        final boolean isDirectory = !isParquetFile(source);
+        final boolean isParquetFile = source.endsWith(PARQUET_FILE_EXTENSION);
+        final boolean isMetadataFile = ParquetUtils.isMetadataFile(source);
+        final boolean isDirectory = !isParquetFile && !isMetadataFile;
         final URI sourceURI = convertToURI(source, isDirectory);
         if (readInstructions.getFileLayout().isPresent()) {
             switch (readInstructions.getFileLayout().get()) {
@@ -141,23 +137,18 @@ public class ParquetTools {
                 case FLAT_PARTITIONED:
                     return readFlatPartitionedTable(sourceURI, readInstructions);
                 case KV_PARTITIONED:
-                    return readKeyValuePartitionedTable(sourceURI, readInstructions);
+                    return readKeyValuePartitionedTable(sourceURI, readInstructions, null);
                 case METADATA_PARTITIONED:
-                    return readPartitionedTableWithMetadata(sourceURI, readInstructions);
+                    return readPartitionedTableWithMetadata(sourceURI, readInstructions, null);
             }
         }
-        if (FILE_URI_SCHEME.equals(sourceURI.getScheme())) {
-            return readTableFromFileUri(sourceURI, readInstructions);
-        }
-        if (source.endsWith(METADATA_FILE_URI_SUFFIX) || source.endsWith(COMMON_METADATA_FILE_URI_SUFFIX)) {
-            throw new UnsupportedOperationException("We currently do not support reading parquet metadata files " +
-                    "from non local storage");
-        }
-        if (!isDirectory) {
+        if (isParquetFile) {
             return readSingleFileTable(sourceURI, readInstructions);
         }
-        // Both flat partitioned and key-value partitioned data can be read under key-value partitioned layout
-        return readKeyValuePartitionedTable(sourceURI, readInstructions);
+        if (isMetadataFile) {
+            return readPartitionedTableWithMetadata(sourceURI, readInstructions, null);
+        }
+        return readPartitionedTableDirectory(sourceURI, readInstructions);
     }
 
     /**
@@ -931,82 +922,6 @@ public class ParquetTools {
     }
 
     /**
-     * This method attempts to "do the right thing." It examines the source file URI to determine if it's a single
-     * parquet file, a metadata file, or a directory. If it's a directory, it additionally tries to guess the layout to
-     * use. Unless a metadata file is supplied or discovered in the directory, the highest (by
-     * {@link ParquetTableLocationKey location key} order) location found will be used to infer schema.
-     *
-     * @param source The source URI with {@value ParquetFileReader#FILE_URI_SCHEME} scheme
-     * @param instructions Instructions for reading
-     * @return A {@link Table}
-     */
-    private static Table readTableFromFileUri(
-            @NotNull final URI source,
-            @NotNull final ParquetInstructions instructions) {
-        final Path sourcePath = Path.of(source);
-        if (!Files.exists(sourcePath)) {
-            throw new TableDataException("Source file " + source + " does not exist");
-        }
-        final String sourceFileName = sourcePath.getFileName().toString();
-        final BasicFileAttributes sourceAttr = readAttributes(sourcePath);
-        if (sourceAttr.isRegularFile()) {
-            if (sourceFileName.endsWith(PARQUET_FILE_EXTENSION)) {
-                return readSingleFileTable(source, instructions);
-            }
-            final URI parentDirURI = convertToURI(sourcePath.getParent(), true);
-            if (sourceFileName.equals(METADATA_FILE_NAME)) {
-                return readPartitionedTableWithMetadata(parentDirURI, instructions);
-            }
-            if (sourceFileName.equals(COMMON_METADATA_FILE_NAME)) {
-                return readPartitionedTableWithMetadata(parentDirURI, instructions);
-            }
-            throw new TableDataException(
-                    "Source file " + source + " does not appear to be a parquet file or metadata file");
-        }
-        if (sourceAttr.isDirectory()) {
-            final Path metadataPath = sourcePath.resolve(METADATA_FILE_NAME);
-            if (Files.exists(metadataPath)) {
-                return readPartitionedTableWithMetadata(source, instructions);
-            }
-            final Path firstEntryPath;
-            // Ignore dot files while looking for the first entry
-            try (final DirectoryStream<Path> sourceStream =
-                    Files.newDirectoryStream(sourcePath, ParquetTools::ignoreDotFiles)) {
-                final Iterator<Path> entryIterator = sourceStream.iterator();
-                if (!entryIterator.hasNext()) {
-                    throw new TableDataException("Source directory " + source + " is empty");
-                }
-                firstEntryPath = entryIterator.next();
-            } catch (IOException e) {
-                throw new TableDataException("Error reading source directory " + source, e);
-            }
-            final String firstEntryFileName = firstEntryPath.getFileName().toString();
-            final BasicFileAttributes firstEntryAttr = readAttributes(firstEntryPath);
-            if (firstEntryAttr.isDirectory() && firstEntryFileName.contains("=")) {
-                return readKeyValuePartitionedTable(source, instructions);
-            }
-            if (firstEntryAttr.isRegularFile() && firstEntryFileName.endsWith(PARQUET_FILE_EXTENSION)) {
-                return readFlatPartitionedTable(source, instructions);
-            }
-            throw new TableDataException("No recognized Parquet table layout found in " + source);
-        }
-        throw new TableDataException("Source " + source + " is neither a directory nor a regular file");
-    }
-
-    private static boolean ignoreDotFiles(Path path) {
-        final String filename = path.getFileName().toString();
-        return !filename.isEmpty() && filename.charAt(0) != '.';
-    }
-
-    private static BasicFileAttributes readAttributes(@NotNull final Path path) {
-        try {
-            return Files.readAttributes(path, BasicFileAttributes.class);
-        } catch (IOException e) {
-            throw new TableDataException("Failed to read " + path + " file attributes", e);
-        }
-    }
-
-    /**
      * Reads in a table from a single parquet file using the table definition provided through the
      * {@link ParquetInstructions}.
      *
@@ -1142,26 +1057,43 @@ public class ParquetTools {
                 : KnownLocationKeyFinder.copyFrom(keyFinder, Comparator.naturalOrder());
     }
 
+    private static Table readPartitionedTableDirectory(
+            @NotNull final URI tableRootDirectory,
+            @NotNull final ParquetInstructions readInstructions) {
+        // Check if the directory has a metadata file
+        final URI metadataFileURI = tableRootDirectory.resolve(METADATA_FILE_NAME);
+        final SeekableChannelsProvider channelsProvider =
+                SeekableChannelsProviderLoader.getInstance().fromServiceLoader(tableRootDirectory,
+                        readInstructions.getSpecialInstructions());
+        if (channelsProvider.exists(metadataFileURI)) {
+            return readPartitionedTableWithMetadata(metadataFileURI, readInstructions, channelsProvider);
+        }
+        // Both flat partitioned and key-value partitioned data can be read under key-value partitioned layout
+        return readKeyValuePartitionedTable(tableRootDirectory, readInstructions, channelsProvider);
+    }
+
+    /**
+     * Creates a partitioned table via the metadata parquet files from the root {@code directory}, inferring the table
+     * definition from those files.
+     *
+     * @param sourceURI the path or URI for the directory to search for .parquet files, the
+     *        {@value ParquetUtils#METADATA_FILE_NAME} file or the {@value ParquetUtils#COMMON_METADATA_FILE_NAME} file.
+     *        Note that the {@value ParquetUtils#COMMON_METADATA_FILE_NAME} file must be present in the same directory.
+     * @param readInstructions the instructions for customizations while reading
+     * @param channelsProvider the provider for creating seekable channels. If null, a new provider will be created and
+     *        used for all channels created while reading the table.
+     */
     private static Table readPartitionedTableWithMetadata(
             @NotNull final URI sourceURI,
-            @NotNull final ParquetInstructions readInstructions) {
-        if (!FILE_URI_SCHEME.equals(sourceURI.getScheme())) {
-            throw new UnsupportedOperationException("Reading metadata files from non local storage is not supported");
-        }
+            @NotNull final ParquetInstructions readInstructions,
+            @Nullable final SeekableChannelsProvider channelsProvider) {
         verifyFileLayout(readInstructions, ParquetFileLayout.METADATA_PARTITIONED);
         if (readInstructions.getTableDefinition().isPresent()) {
             throw new UnsupportedOperationException("Detected table definition inside read instructions, reading " +
                     "metadata files with custom table definition is currently not supported");
         }
-        final File sourceFile = new File(sourceURI);
-        final String fileName = sourceFile.getName();
-        final File directory;
-        if (fileName.equals(METADATA_FILE_NAME) || fileName.equals(COMMON_METADATA_FILE_NAME)) {
-            directory = sourceFile.getParentFile();
-        } else {
-            directory = sourceFile;
-        }
-        final ParquetMetadataFileLayout layout = new ParquetMetadataFileLayout(directory, readInstructions);
+        final ParquetMetadataFileLayout layout =
+                ParquetMetadataFileLayout.create(sourceURI, readInstructions, channelsProvider);
         return readTable(layout,
                 ensureTableDefinition(layout.getInstructions(), layout.getTableDefinition(), true));
     }
@@ -1184,22 +1116,25 @@ public class ParquetTools {
      *
      * @param directoryUri the URI for the root directory to search for .parquet files
      * @param readInstructions the instructions for customizations while reading
+     * @param channelsProvider the provider for creating seekable channels. If null, a new provider will be created and
+     *        used for all channels created while reading the table.
      * @return the table
      */
     private static Table readKeyValuePartitionedTable(
             @NotNull final URI directoryUri,
-            @NotNull final ParquetInstructions readInstructions) {
+            @NotNull final ParquetInstructions readInstructions,
+            @Nullable final SeekableChannelsProvider channelsProvider) {
         verifyFileLayout(readInstructions, ParquetFileLayout.KV_PARTITIONED);
         if (readInstructions.getTableDefinition().isEmpty()) {
-            return readTable(new ParquetKeyValuePartitionedLayout(directoryUri,
-                    MAX_PARTITIONING_LEVELS_INFERENCE, readInstructions), readInstructions);
+            return readTable(ParquetKeyValuePartitionedLayout.create(directoryUri,
+                    MAX_PARTITIONING_LEVELS_INFERENCE, readInstructions, channelsProvider), readInstructions);
         }
         final TableDefinition tableDefinition = readInstructions.getTableDefinition().get();
         if (tableDefinition.getColumnStream().noneMatch(ColumnDefinition::isPartitioning)) {
             throw new IllegalArgumentException("No partitioning columns");
         }
-        return readTable(new ParquetKeyValuePartitionedLayout(directoryUri, tableDefinition,
-                readInstructions), readInstructions);
+        return readTable(ParquetKeyValuePartitionedLayout.create(directoryUri, tableDefinition,
+                readInstructions, channelsProvider), readInstructions);
     }
 
     /**

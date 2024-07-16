@@ -34,6 +34,11 @@ public class LocalFSChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
+    public boolean exists(@NotNull final URI uri) {
+        return Files.exists(Path.of(uri));
+    }
+
+    @Override
     public SeekableByteChannel getReadChannel(@Nullable final SeekableChannelContext channelContext,
             @NotNull final URI uri)
             throws IOException {

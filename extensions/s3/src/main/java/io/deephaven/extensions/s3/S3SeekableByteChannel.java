@@ -4,6 +4,7 @@
 package io.deephaven.extensions.s3;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.base.verify.Require;
 import io.deephaven.util.channel.CachedChannelProvider;
 import io.deephaven.util.channel.SeekableChannelContext;
 import org.jetbrains.annotations.NotNull;
@@ -46,7 +47,7 @@ final class S3SeekableByteChannel implements SeekableByteChannel, CachedChannelP
 
     S3SeekableByteChannel(final S3Uri uri, final long size) {
         this.uri = Objects.requireNonNull(uri);
-        this.size = size;
+        this.size = Require.geqZero(size, "size");
         this.position = INIT_POSITION;
     }
 

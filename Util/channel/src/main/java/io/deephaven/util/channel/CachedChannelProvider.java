@@ -88,9 +88,13 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
+    public boolean exists(@NotNull final URI uri) {
+        return wrappedProvider.exists(uri);
+    }
+
+    @Override
     public SeekableByteChannel getReadChannel(@NotNull final SeekableChannelContext channelContext,
-            @NotNull final URI uri)
-            throws IOException {
+            @NotNull final URI uri) throws IOException {
         final String uriString = uri.toString();
         final KeyedObjectHashMap<String, PerPathPool> channelPool = channelPools.get(ChannelType.Read);
         final CachedChannel result = tryGetPooledChannel(uriString, channelPool);
