@@ -125,7 +125,7 @@ import static io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOpera
 import static io.deephaven.engine.table.impl.by.RollupConstants.*;
 import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.util.type.TypeUtils.getBoxedType;
-import static io.deephaven.util.type.TypeUtils.isNumeric;
+import static io.deephaven.util.type.NumericTypeUtils.isNumeric;
 
 /**
  * Conversion tool to generate an {@link AggregationContextFactory} for a collection of {@link Aggregation

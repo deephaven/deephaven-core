@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.preview;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
+import io.deephaven.util.type.NumericTypeUtils;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.select.FunctionalColumn;
@@ -155,7 +156,7 @@ public class ColumnPreviewManager {
         return type.isPrimitive()
                 || io.deephaven.util.type.TypeUtils.isBoxedType(type)
                 || io.deephaven.util.type.TypeUtils.isString(type)
-                || io.deephaven.util.type.TypeUtils.isBigNumeric(type)
+                || NumericTypeUtils.isBigNumeric(type)
                 || TypeUtils.isDateTime(type)
                 || isOnWhiteList(type);
     }

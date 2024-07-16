@@ -7,8 +7,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.*;
@@ -55,6 +53,10 @@ public class TypeUtils {
                 .unmodifiableMap(PRIMITIVE_TYPES.stream().collect(Collectors.toMap(Class::getName, type -> type)));
     }
 
+    /**
+     * Deprecated with no replacement.
+     */
+    @Deprecated
     @Retention(RetentionPolicy.RUNTIME)
     public @interface IsDateTime {
         boolean value() default true;
@@ -381,16 +383,6 @@ public class TypeUtils {
     }
 
     /**
-     * Whether the class is an instance of {@link Number}.
-     *
-     * @param c class
-     * @return true if Number.class is assignable from {@code c}, false otherwise
-     */
-    public static boolean isBoxedNumeric(@NotNull final Class<?> c) {
-        return Number.class.isAssignableFrom(c);
-    }
-
-    /**
      * Whether the class is equal to char.class.
      *
      * @param c class
@@ -491,16 +483,6 @@ public class TypeUtils {
     }
 
     /**
-     * Whether the class is {@link #isPrimitiveNumeric(Class)} or {@link #isBoxedNumeric(Class)}
-     *
-     * @param c class
-     * @return true if {@code c} is numeric, false otherwise
-     */
-    public static boolean isNumeric(@NotNull final Class<?> c) {
-        return isPrimitiveNumeric(c) || isBoxedNumeric(c);
-    }
-
-    /**
      * Whether the class equals char.class or Character.class is assignable from it.
      *
      * @param c class
@@ -511,15 +493,13 @@ public class TypeUtils {
     }
 
     /**
-     * Whether the class is an {@link Instant}, a {@link ZonedDateTime}, or annotated as {@link IsDateTime}.
+     * Whether the class is an {@link Instant} or a {@link ZonedDateTime}.
      *
      * @param type The class.
-     * @return true if the type is a DateTime, {@link java.time.ZonedDateTime} or {@link Instant}.
+     * @return true if the type is a DateTime: {@link java.time.ZonedDateTime} or {@link Instant}.
      */
     public static boolean isDateTime(Class<?> type) {
-        return Instant.class.isAssignableFrom(type)
-                || ZonedDateTime.class.isAssignableFrom(type)
-                || (type.getAnnotation(IsDateTime.class) != null && type.getAnnotation(IsDateTime.class).value());
+        return Instant.class == type || ZonedDateTime.class == type;
     }
 
     /**
@@ -530,16 +510,6 @@ public class TypeUtils {
      */
     public static boolean isString(Class<?> type) {
         return String.class == type;
-    }
-
-    /**
-     * Whether the class is a {@link BigInteger} or {@link BigDecimal}
-     *
-     * @param type the class
-     * @return true if the type is BigInteger or BigDecimal, false otherwise
-     */
-    public static boolean isBigNumeric(Class<?> type) {
-        return BigInteger.class.isAssignableFrom(type) || BigDecimal.class.isAssignableFrom(type);
     }
 
     /**

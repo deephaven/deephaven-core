@@ -22,6 +22,7 @@ import io.deephaven.server.table.stats.ChunkedNumericalStatsKernel;
 import io.deephaven.server.table.stats.ChunkedStatsKernel;
 import io.deephaven.server.table.stats.DateTimeChunkedStats;
 import io.deephaven.server.table.stats.ObjectChunkedStats;
+import io.deephaven.util.type.NumericTypeUtils;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -80,7 +81,7 @@ public class ColumnStatisticsGrpcImpl extends GrpcTableOperation<ColumnStatistic
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT,
                         "DateTime columns must be Instant or ZonedDateTime");
             }
-        } else if (TypeUtils.isNumeric(type)) {
+        } else if (NumericTypeUtils.isNumeric(type)) {
             // Numeric types have a variety of statistics recorded
             statsFunc = ChunkedNumericalStatsKernel.makeChunkedNumericalStats(type);
             columnSource = table.getColumnSource(columnName);
