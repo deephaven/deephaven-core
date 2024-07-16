@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
@@ -740,7 +739,7 @@ class NaturalJoinHelper {
             allRightColumns = result.newModifiedColumnSet(MatchPair.getLeftColumns(columnsToAdd));
 
             leftTransformer = leftTable.newModifiedColumnSetTransformer(result,
-                    leftTable.getColumnSourceMap().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                    leftTable.getColumnSourceMap().keySet().toArray(String[]::new));
             rightTransformer = rightTable.newModifiedColumnSetTransformer(result, columnsToAdd);
             modifiedSlotTracker = new NaturalJoinModifiedSlotTracker();
         }

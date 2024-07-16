@@ -32,6 +32,7 @@ import java.util.NoSuchElementException;
 import java.util.function.Function;
 
 import static io.deephaven.parquet.base.ParquetUtils.resolve;
+import static io.deephaven.parquet.base.ColumnPageReaderImpl.getDecompressorHolder;
 import static org.apache.parquet.format.Encoding.PLAIN_DICTIONARY;
 import static org.apache.parquet.format.Encoding.RLE_DICTIONARY;
 
@@ -171,21 +172,14 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
 
     @NotNull
     private Dictionary getDictionary(final SeekableChannelContext channelContext) {
-        final long dictionaryPageOffset;
         final ColumnMetaData chunkMeta = columnChunk.getMeta_data();
-        if (chunkMeta.isSetDictionary_page_offset()) {
-            dictionaryPageOffset = chunkMeta.getDictionary_page_offset();
-        } else if ((chunkMeta.isSetEncoding_stats() && (chunkMeta.getEncoding_stats().stream()
-                .anyMatch(pes -> pes.getEncoding() == PLAIN_DICTIONARY
-                        || pes.getEncoding() == RLE_DICTIONARY)))
-                || (chunkMeta.isSetEncodings() && (chunkMeta.getEncodings().stream()
-                        .anyMatch(en -> en == PLAIN_DICTIONARY || en == RLE_DICTIONARY)))) {
-            // Fallback, inspired by
-            // https://stackoverflow.com/questions/55225108/why-is-dictionary-page-offset-0-for-plain-dictionary-encoding
-            dictionaryPageOffset = chunkMeta.getData_page_offset();
-        } else {
-            return NULL_DICTIONARY;
-        }
+        // If the dictionary page offset is set, use it, otherwise inspect the first data page -- it might be the
+        // dictionary page. Fallback, inspired by
+        // https://stackoverflow.com/questions/55225108/why-is-dictionary-page-offset-0-for-plain-dictionary-encoding
+        final long dictionaryPageOffset = chunkMeta.isSetDictionary_page_offset()
+                ? chunkMeta.getDictionary_page_offset()
+                : chunkMeta.getData_page_offset();
+
         return readDictionary(dictionaryPageOffset, channelContext);
     }
 
@@ -225,8 +219,10 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
                     // Sometimes the size is explicitly empty, just use an empty payload
                     payload = BytesInput.empty();
                 } else {
-                    payload = decompressor.decompress(in, compressedPageSize, pageHeader.getUncompressed_page_size(),
-                            holder.get());
+                    payload = BytesInput.from(
+                            decompressor.decompress(in, compressedPageSize, pageHeader.getUncompressed_page_size(),
+                                    getDecompressorHolder(holder.get())),
+                            pageHeader.getUncompressed_page_size());
                 }
                 final Encoding encoding = Encoding.valueOf(dictHeader.getEncoding().name());
                 final DictionaryPage dictionaryPage = new DictionaryPage(payload, dictHeader.getNum_values(), encoding);

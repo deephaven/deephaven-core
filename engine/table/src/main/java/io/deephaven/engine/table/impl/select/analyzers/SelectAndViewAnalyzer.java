@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl.select.analyzers;
 
 import io.deephaven.base.Pair;
 import io.deephaven.base.log.LogOutputAppendable;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -546,7 +545,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         // Convert effects type into result type
         final Map<String, String[]> result = new HashMap<>();
         for (Map.Entry<String, List<String>> entry : effects.entrySet()) {
-            final String[] value = entry.getValue().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            final String[] value = entry.getValue().toArray(String[]::new);
             result.put(entry.getKey(), value);
         }
         return result;

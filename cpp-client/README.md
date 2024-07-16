@@ -11,13 +11,26 @@ on them anymore so we do not guarantee they are current for those platforms.
 Instructions for Linux are below. Instructions for Windows are in the section
 that follows.
 
+# Before you build the client
+
+To actually use Deephaven, for example running these examples and unit
+tests, you will eventually need to have a server running. If you have
+an existing server running Deephaven Core, you should be able to
+connect to that. However, if you don't have one, you can follow the
+instructions here: https://deephaven.io/core/docs/how-to-guides/launch-build/.
+
+Note that it is only possible to build a server on Linux. Building a server on
+Windows is not currently supported.
+
+You can build and install client libraries, tests, and examples
+without having a server installed. However you will eventually need to
+connect a server when you want to run them.
+
 # Building the C++ client on Ubuntu 22.04
 
 1. Start with an Ubuntu 22.04 install
 
-2. Get Deephaven running by following the instructions here: https://deephaven.io/core/docs/how-to-guides/launch-build/
-
-3. Get build tools
+2. Get build tools
    ```
    sudo apt update
    sudo apt install curl git g++ cmake make build-essential zlib1g-dev libbz2-dev libssl-dev pkg-config
@@ -25,7 +38,7 @@ that follows.
 
    See the notes at the end of this document if you need the equivalent packages for Fedora.
 
-4. Make a new directory for the Deephaven source code and assign that directory
+3. Make a new directory for the Deephaven source code and assign that directory
    to a temporary shell variable. This will make subsequent build steps easier.
    ```
    export DHSRC=$HOME/src/deephaven
@@ -33,13 +46,13 @@ that follows.
    cd $DHSRC
    ```
 
-5. Clone deephaven-core sources.
+4. Clone deephaven-core sources.
    ```
    cd $DHSRC
    git clone https://github.com/deephaven/deephaven-core.git
    ```
 
-6. Build and install dependencies for Deephaven C++ client.
+5. Build and install dependencies for Deephaven C++ client.
 
    The `build-dependencies.sh` script in this directory downloads,
    builds and installs the dependent libraries
@@ -100,7 +113,7 @@ that follows.
    `CMAKE_PREFIX_PATH`.  This file is intended to be `source`'d
    from a shell where you plan to build the C++ client.
 
-7. Build and install Deephaven C++ client.  Running `build-dependencies.sh` should have
+6. Build and install Deephaven C++ client.  Running `build-dependencies.sh` should have
    created an `env.sh` file that we source below to set relevant environment variables for
    the build.
 
@@ -132,7 +145,7 @@ that follows.
    VERBOSE=1 make -j$NCPUS install 2>&1 | tee make-install.log
    ```
 
-8. Run one Deephaven example which uses the installed client.
+7. Run one Deephaven example which uses the installed client.
    This is a smoke test that the basic functionality
    is working end to end, and the build is properly configured.
    Note this assumes Deephaven server is running (see step 2),
@@ -144,7 +157,7 @@ that follows.
    ./hello_world
    ```
 
-9. (Optional) run the unit tests
+8. (Optional) run the unit tests
    This assumes the build created on step 7 is available in the same directory.
 
     ```
@@ -153,25 +166,25 @@ that follows.
     ./tests
     ```
 
-10. Building in different distributions or with older toolchains.
-    While we don't support other linux distributions or GCC versions earlier
-    than 11, this section provides some notes that may help you
-    in that situation.
+9. Building in different distributions or with older toolchains.
+   While we don't support other linux distributions or GCC versions earlier
+   than 11, this section provides some notes that may help you
+   in that situation.
 
-    * GCC 8 mixed with older versions of GNU as/binutils may fail to compile
-      `roaring.c` with an error similar to:
-      ```
-      /tmp/cczCvQKd.s: Assembler messages:
-      /tmp/cczCvQKd.s:45826: Error: no such instruction: `vpcompressb %zmm0,%zmm1{%k2}'
-      /tmp/cczCvQKd.s:46092: Error: no such instruction: `vpcompressb %zmm0,%zmm1{%k1}'
-      ```
-      In that case, add `-DCMAKE_C_FLAGS=-DCROARING_COMPILER_SUPPORTS_AVX512=0`
-      to the list of arguments to `cmake`.
+   * GCC 8 mixed with older versions of GNU as/binutils may fail to compile
+     `roaring.c` with an error similar to:
+     ```
+     /tmp/cczCvQKd.s: Assembler messages:
+     /tmp/cczCvQKd.s:45826: Error: no such instruction: `vpcompressb %zmm0,%zmm1{%k2}'
+     /tmp/cczCvQKd.s:46092: Error: no such instruction: `vpcompressb %zmm0,%zmm1{%k1}'
+     ```
+     In that case, add `-DCMAKE_C_FLAGS=-DCROARING_COMPILER_SUPPORTS_AVX512=0`
+     to the list of arguments to `cmake`.
 
-    * Some platforms combining old versions of GCC and cmake may fail
-      to set the cmake C++ standard to 17 without explicitly adding
-      `-DCMAKE_CXX_STANDARD=17` to the list of arguments to `cmake`.
-      Note the default mode for C++ is `-std=gnu++17` for GCC 11.
+   * Some platforms combining old versions of GCC and cmake may fail
+     to set the cmake C++ standard to 17 without explicitly adding
+     `-DCMAKE_CXX_STANDARD=17` to the list of arguments to `cmake`.
+     Note the default mode for C++ is `-std=gnu++17` for GCC 11.
 
 Notes
   (1) The standard assumptions for `Debug` and `Release` apply here.
@@ -207,27 +220,23 @@ Notes
 
 # Building the C++ client on Windows 10 / Windows 11
 
-1. Get Deephaven running by following the instructions here:
-
-   https://deephaven.io/core/docs/how-to-guides/launch-build/
-
-2. Install Visual Studio 2022 Community Edition (or Professional, or Enterprise)
+1. Install Visual Studio 2022 Community Edition (or Professional, or Enterprise)
    from here:
 
    https://visualstudio.microsoft.com/downloads/
 
    When the installer runs, select the workload "Desktop development with C++"
 
-3. Use your preferred version of git, or install Git from here:
+2. Use your preferred version of git, or install Git from here:
 
    https://git-scm.com/download/win
 
-4. We will do the actual build process inside a Visual Studio developer
+3. We will do the actual build process inside a Visual Studio developer
    command prompt. Run the developer command prompt by navigating here:
 
    Start -> V -> Visual Studio 2022 -> Developer Command Prompt for VS 2022
 
-5. Make a 'dhsrc' directory that will hold the two repositories: the vcpkg
+4. Make a 'dhsrc' directory that will hold the two repositories: the vcpkg
    package manager and Deephaven Core. Then make a 'dhinstall' directory that
    will hold the libraries and executables that are the result of this
    build process.
@@ -236,7 +245,7 @@ Notes
    mkdir %HOMEDRIVE%%HOMEPATH%\dhinstall
    ```
 
-6. Use git to clone the two repositories mentioned above.
+5. Use git to clone the two repositories mentioned above.
    If you are using Git for Windows, you can run the "Git Bash Shell"
    and type these commands into it:
    ```
@@ -245,7 +254,7 @@ Notes
    git clone https://github.com/deephaven/deephaven-core.git
    ```
 
-7. Come back to the Visual Studio developer command prompt and do the
+6. Come back to the Visual Studio developer command prompt and do the
    one-time installation steps for vcpkg. Do not forget to set VCPKG_ROOT,
    as our build scripts rely on it being set correctly.
    ```
@@ -254,24 +263,24 @@ Notes
    set VCPKG_ROOT=%HOMEDRIVE%%HOMEPATH%\dhsrc\vcpkg
    ```
 
-8. Change to the Deephaven core directory and build/install the dependent
+7. Change to the Deephaven core directory and build/install the dependent
    packages. On my computer this process took about 20 minutes.
    ```
    cd /d %HOMEDRIVE%%HOMEPATH%\dhsrc\deephaven-core\cpp-client\deephaven
    %VCPKG_ROOT%\vcpkg.exe install --triplet x64-windows
     ```
 
-9. Now configure the build for Deephaven Core:
+8. Now configure the build for Deephaven Core:
    ``` 
    cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake -DCMAKE_INSTALL_PREFIX=%HOMEDRIVE%%HOMEPATH%/dhinstall -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo
    ```
    
-10. Finally, build and install Deephaven Core:
-    ```
-    cmake --build build --target install
-    ```
+9. Finally, build and install Deephaven Core:
+   ```
+   cmake --build build --target install
+   ```
 
-11. Run the tests.
+10. Run the tests.
     First, make sure Deephaven is running. If your Deephaven instance
     is running somewhere other than the default location of localhost:10000,
     then set these environment variables appropriately:

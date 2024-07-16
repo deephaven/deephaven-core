@@ -10,7 +10,6 @@ import io.deephaven.api.agg.Count;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.base.FileUtils;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -887,7 +886,7 @@ public class QueryTableAggregationTest {
 
         final Set<String> keyColumnSet = new LinkedHashSet<>(table.getDefinition().getColumnNameSet());
         keyColumnSet.remove("NonKey");
-        final String[] keyColumns = keyColumnSet.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        final String[] keyColumns = keyColumnSet.toArray(String[]::new);
 
         table.lastBy("Date", "Sym");
 
