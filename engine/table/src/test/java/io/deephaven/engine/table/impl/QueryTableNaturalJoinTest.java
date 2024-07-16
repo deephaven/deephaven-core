@@ -7,6 +7,8 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnDefinition;
@@ -1679,12 +1681,32 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 System.out.println(sample);
             }
             updateGraph.runWithinUnitTestCycle(() -> {
-                final WritableRowSet removed = RowSetFactory.fromRange(fstep * 1000, fstep * 1000 + 999);
+                final WritableRowSet removed;
+                if (fstep > 0) {
+                    removed = RowSetFactory.fromRange(fstep * 1000 - 100, fstep * 1000 + 899);
+                } else {
+                    removed = RowSetFactory.fromRange(0, 899);
+                }
                 removeRows(cells, removed);
                 final WritableRowSet added = RowSetFactory.fromRange((fstep + 1) * 1000, (fstep + 1) * 1000 + 999);
                 addToTable(cells, added);
                 cells.notifyListeners(added, removed, RowSetFactory.empty());
             });
+            TestCase.assertEquals(1100, joined.size());
+
+            long currentBucket = (step + 1) * 1000 - 100;
+            try (final CloseablePrimitiveIteratorOfLong bucketIt = joined.longColumnIterator("Bucket");
+                    final CloseablePrimitiveIteratorOfLong leftIt = joined.longColumnIterator("SentinelL");
+                    final CloseablePrimitiveIteratorOfLong rightIt = joined.longColumnIterator("SentinelR")) {
+                while (bucketIt.hasNext()) {
+                    final long bucket = bucketIt.nextLong();
+                    final long lsentinel = leftIt.nextLong();
+                    final long rsentinel = rightIt.nextLong();
+                    TestCase.assertEquals(currentBucket++, bucket);
+                    TestCase.assertEquals(bucket + 1_000_000_000L, lsentinel);
+                    TestCase.assertEquals(bucket + 2_000_000_000L, rsentinel);
+                }
+            }
         }
         System.out.println("Done.");
         System.gc();
