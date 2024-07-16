@@ -58,7 +58,7 @@ public class IntComparisons {
      * @return {@code true} iff {@code lhs} is greater than {@code rhs}
      */
     public static boolean gt(int lhs, int rhs) {
-        return compare(lhs, rhs) > 0;
+        return lhs > rhs;
     }
 
     /**
@@ -69,7 +69,7 @@ public class IntComparisons {
      * @return {@code true} iff {@code lhs} is less than {@code rhs}
      */
     public static boolean lt(int lhs, int rhs) {
-        return compare(lhs, rhs) < 0;
+        return lhs < rhs;
     }
 
     /**
@@ -91,6 +91,6 @@ public class IntComparisons {
      * @return {@code true} iff {@code lhs} is less than or equal to {@code rhs}
      */
     public static boolean leq(int lhs, int rhs) {
-        return compare(lhs, rhs) <= 0;
+        return lhs <= rhs;
     }
 }
