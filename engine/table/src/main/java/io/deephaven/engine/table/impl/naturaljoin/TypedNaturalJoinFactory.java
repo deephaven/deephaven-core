@@ -272,6 +272,9 @@ public class TypedNaturalJoinFactory {
         builder.beginControlFlow("if (leftEmpty)");
         builder.addStatement("$LRightRowKey.set($L, $L)", sourceType, tableLocation, hasherConfig.tombstoneStateName);
         builder.addStatement("liveEntries--");
+        if (alternate) {
+            builder.addStatement("alternateLiveEntries--");
+        }
         builder.nextControlFlow("else");
         builder.addStatement("$LRightRowKey.set($L, $T.NULL_ROW_KEY)", sourceType, tableLocation, RowSet.class);
         builder.endControlFlow();
@@ -372,6 +375,9 @@ public class TypedNaturalJoinFactory {
         // it is actually deleted
         builder.addStatement("$LRightRowKey.set($L, TOMBSTONE_RIGHT_STATE)", sourceType, tableLocation);
         builder.addStatement("liveEntries--");
+        if (alternate) {
+            builder.addStatement("alternateLiveEntries--");
+        }
         builder.endControlFlow();
     }
 

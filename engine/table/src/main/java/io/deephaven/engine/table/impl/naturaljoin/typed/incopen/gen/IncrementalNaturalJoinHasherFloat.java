@@ -411,6 +411,7 @@ final class IncrementalNaturalJoinHasherFloat extends IncrementalNaturalJoinStat
                                     if (leftEmpty) {
                                         alternateRightRowKey.set(alternateTableLocation, TOMBSTONE_RIGHT_STATE);
                                         liveEntries--;
+                                        alternateLiveEntries--;
                                     } else {
                                         alternateRightRowKey.set(alternateTableLocation, RowSet.NULL_ROW_KEY);
                                     }
@@ -619,6 +620,7 @@ final class IncrementalNaturalJoinHasherFloat extends IncrementalNaturalJoinStat
                                 if (left.isEmpty() && rightState == RowSet.NULL_ROW_KEY) {
                                     alternateRightRowKey.set(alternateTableLocation, TOMBSTONE_RIGHT_STATE);
                                     liveEntries--;
+                                    alternateLiveEntries--;
                                 }
                                 alternateFound = true;
                                 break;

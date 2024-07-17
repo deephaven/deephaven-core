@@ -230,19 +230,25 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         }
     }
 
-    /**
+    /*
      // @formatter:off
 
     void checkAlternateEntries() {
         int expected = 0;
+        int expectedLive = 0;
         if (alternateRightRowKey != null) {
             for (int ii = 0; ii < rehashPointer; ++ii) {
-                if (alternateRightRowKey.getUnsafe(ii) != EMPTY_RIGHT_STATE) {
+                long state = alternateRightRowKey.getUnsafe(ii);
+                if (state != EMPTY_RIGHT_STATE) {
+                    if (state != TOMBSTONE_RIGHT_STATE) {
+                        expectedLive++;
+                    }
                     expected++;
                 }
             }
         }
         Assert.eq(alternateEntries, "alternateEntries", expected, "expected");
+        Assert.eq(alternateLiveEntries, "alternateLiveEntries", expectedLive, "expectedLive");
     }
 
     void checkMainEntries() {
@@ -255,7 +261,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         Assert.eq(numEntries, "numEntries", expected, "expected");
     }
      // @formatter:on
-    */
+     */
 
     /**
      * @param fullRehash should we rehash the entire table (if false, we rehash incrementally)
@@ -282,20 +288,8 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             return false;
         }
 
-        // we need to ditch the alternate table before continuing on a rehash
-        if (rehashPointer > 0) {
-            rehashInternalPartial((int) alternateEntries, modifiedSlotTracker);
-            Assert.eqZero(alternateEntries, "alternateEntries");
-            clearAlternate();
-        }
-
         int oldTableSize = tableSize;
-        while (tableNeedsExpansion(nextChunkSize)) {
-            tableSize *= 2;
-            if (tableSize < 0 || tableSize > MAX_TABLE_SIZE) {
-                throw new UnsupportedOperationException("Hash table exceeds maximum size!");
-            }
-        }
+        tableSize = computeTableSize(nextChunkSize);
 
         // we can't give the caller credit for rehashes with the old table, we need to begin migrating things again
         if (rehashCredits.get() > 0) {
@@ -303,9 +297,16 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         }
 
         if (fullRehash) {
+            // we need to ditch the alternate table before continuing on a full rehash
+            if (rehashPointer > 0) {
+                rehashInternalPartial((int) alternateEntries, modifiedSlotTracker);
+                Assert.eqZero(alternateEntries, "alternateEntries");
+                clearAlternate();
+            }
             rehashInternalFull(oldTableSize);
             return false;
         }
+        Assert.eqZero(rehashPointer, "rehashPointer");
 
         setupNewAlternate(oldTableSize);
         adviseNewAlternate();
@@ -370,8 +371,21 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         return (numEntries + nextChunkSize) > (tableSize * maximumLoadFactor);
     }
 
-    public boolean tableNeedsExpansion(int nextChunkSize) {
-        return (liveEntries + nextChunkSize) > (tableSize * maximumLoadFactor);
+    public int computeTableSize(int nextChunkSize) {
+        // TODO: we need to stop giving credits for tombstones for this logic to be correct
+
+        // we use the number of liveEntries multiplied by 2, so that as we rehash we can both consume a slot for the
+        // live entry from the alternate table; and also consume a slot for the new value.  This ensures that we will
+        // burn down our rehash requirements before we need to initiate a new partial rehash.
+        
+        long desiredEntries = liveEntries * 2  + nextChunkSize;
+        long tableSize = Math.max(this.tableSize, (long)(desiredEntries / maximumLoadFactor));
+        long highestOneBit = Long.highestOneBit(tableSize);
+        tableSize = highestOneBit == tableSize ? tableSize : highestOneBit * 2;
+        if (tableSize < 0 || tableSize > MAX_TABLE_SIZE) {
+            throw new UnsupportedOperationException("Hash table exceeds maximum size!");
+        }
+        return Math.toIntExact(tableSize);
     }
 
     abstract protected void rehashInternalFull(final int oldSize);
