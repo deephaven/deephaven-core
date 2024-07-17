@@ -1075,30 +1075,20 @@ public class TypedHasherFactory {
         }
 
         if (!alternate) {
-            if (hasherConfig.supportTombstones) {
-                // set to the first available location
-                builder.beginControlFlow("if (firstDeletedLocation >= 0)");
-                builder.addStatement("tableLocation = firstDeletedLocation");
-                builder.nextControlFlow("else");
-                builder.addStatement("numEntries++");
-                builder.endControlFlow();
-                builder.addStatement("liveEntries++");
-            } else {
-                builder.addStatement("numEntries++");
-            }
-            for (int ii = 0; ii < chunkTypes.length; ++ii) {
-                builder.addStatement("mainKeySource$L.set($L, k$L)", ii, tableLocationName, ii);
-            }
-            buildSpec.insert.accept(hasherConfig, chunkTypes, builder);
+            doInsertion(hasherConfig, buildSpec, chunkTypes, builder, tableLocationName, true);
         }
         builder.addStatement("break");
         final String keyEqualsExpression =
                 alternate ? getEqualsStatementAlternate(chunkTypes) : getEqualsStatement(chunkTypes);
+        builder.nextControlFlow("else if (" + keyEqualsExpression + ")");
         if (hasherConfig.supportTombstones) {
-            builder.nextControlFlow("else if (!isStateDeleted($L) && " + keyEqualsExpression + ")",
-                    buildSpec.stateValueName);
-        } else {
-            builder.nextControlFlow("else if (" + keyEqualsExpression + ")");
+            builder.beginControlFlow("if (isStateDeleted($L))", buildSpec.stateValueName);
+            // we can terminate our probe here, and insert into the firstDeleted location (or here)
+            if (!alternate) {
+                doInsertion(hasherConfig, buildSpec, chunkTypes, builder, tableLocationName, false);
+            }
+            builder.addStatement("break");
+            builder.endControlFlow();
         }
         buildSpec.found.accept(hasherConfig, alternate, builder);
         if (alternate) {
@@ -1116,6 +1106,27 @@ public class TypedHasherFactory {
                 firstTableLocationName, firstTableLocationName);
         builder.endControlFlow();
         builder.endControlFlow();
+    }
+
+    private static void doInsertion(HasherConfig<?> hasherConfig, HasherConfig.BuildSpec buildSpec,
+            ChunkType[] chunkTypes, CodeBlock.Builder builder, String tableLocationName, boolean addEntry) {
+        if (hasherConfig.supportTombstones) {
+            // set to the first available location
+            builder.beginControlFlow("if (firstDeletedLocation >= 0)");
+            builder.addStatement("tableLocation = firstDeletedLocation");
+            if (addEntry) {
+                builder.nextControlFlow("else");
+                builder.addStatement("numEntries++");
+            }
+            builder.endControlFlow();
+            builder.addStatement("liveEntries++");
+        } else {
+            builder.addStatement("numEntries++");
+        }
+        for (int ii = 0; ii < chunkTypes.length; ++ii) {
+            builder.addStatement("mainKeySource$L.set($L, k$L)", ii, tableLocationName, ii);
+        }
+        buildSpec.insert.accept(hasherConfig, chunkTypes, builder);
     }
 
     private static MethodSpec createProbeMethodForOpenAddressed(HasherConfig<?> hasherConfig, HasherConfig.ProbeSpec ps,
