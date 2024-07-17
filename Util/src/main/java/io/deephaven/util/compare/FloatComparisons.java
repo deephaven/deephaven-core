@@ -94,8 +94,7 @@ public class FloatComparisons {
      */
     public static boolean gt(float lhs, float rhs) {
         // return compare(lhs, rhs) > 0;
-        return ((lhs > rhs || rhs == QueryConstants.NULL_FLOAT) && lhs != QueryConstants.NULL_FLOAT)
-                || (Float.isNaN(lhs) && !Float.isNaN(rhs));
+        return !leq(lhs, rhs);
     }
 
     /**
@@ -107,8 +106,7 @@ public class FloatComparisons {
      */
     public static boolean lt(float lhs, float rhs) {
         // return compare(lhs, rhs) < 0;
-        return ((lhs < rhs || lhs == QueryConstants.NULL_FLOAT) && rhs != QueryConstants.NULL_FLOAT)
-                || (!Float.isNaN(lhs) && Float.isNaN(rhs));
+        return !geq(lhs, rhs);
     }
 
     /**

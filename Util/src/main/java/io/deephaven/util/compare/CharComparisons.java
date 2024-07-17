@@ -71,7 +71,8 @@ public class CharComparisons {
      * @return {@code true} iff {@code lhs} is greater than {@code rhs}
      */
     public static boolean gt(char lhs, char rhs) {
-        return compare(lhs, rhs) > 0;
+        // return compare(lhs, rhs) > 0;
+        return !leq(lhs, rhs);
     }
 
     /**
@@ -82,7 +83,8 @@ public class CharComparisons {
      * @return {@code true} iff {@code lhs} is less than {@code rhs}
      */
     public static boolean lt(char lhs, char rhs) {
-        return compare(lhs, rhs) < 0;
+        // return compare(lhs, rhs) < 0;
+        return (lhs < rhs || lhs == QueryConstants.NULL_CHAR) && rhs != QueryConstants.NULL_CHAR;
     }
 
     /**
@@ -93,7 +95,8 @@ public class CharComparisons {
      * @return {@code true} iff {@code lhs} is greater than or equal to {@code rhs}
      */
     public static boolean geq(char lhs, char rhs) {
-        return compare(lhs, rhs) >= 0;
+        // return compare(lhs, rhs) >= 0;
+        return !lt(lhs, rhs);
     }
 
     /**
@@ -104,6 +107,7 @@ public class CharComparisons {
      * @return {@code true} iff {@code lhs} is less than or equal to {@code rhs}
      */
     public static boolean leq(char lhs, char rhs) {
-        return compare(lhs, rhs) <= 0;
+        // return compare(lhs, rhs) <= 0;
+        return (lhs <= rhs && rhs != QueryConstants.NULL_CHAR) || lhs == QueryConstants.NULL_CHAR;
     }
 }

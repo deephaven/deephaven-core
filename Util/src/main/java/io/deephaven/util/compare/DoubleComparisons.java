@@ -94,8 +94,7 @@ public class DoubleComparisons {
      */
     public static boolean gt(double lhs, double rhs) {
         // return compare(lhs, rhs) > 0;
-        return ((lhs > rhs || rhs == QueryConstants.NULL_DOUBLE) && lhs != QueryConstants.NULL_DOUBLE)
-                || (Double.isNaN(lhs) && !Double.isNaN(rhs));
+        return !leq(lhs, rhs);
     }
 
     /**
@@ -107,8 +106,7 @@ public class DoubleComparisons {
      */
     public static boolean lt(double lhs, double rhs) {
         // return compare(lhs, rhs) < 0;
-        return ((lhs < rhs || lhs == QueryConstants.NULL_DOUBLE) && rhs != QueryConstants.NULL_DOUBLE)
-                || (!Double.isNaN(lhs) && Double.isNaN(rhs));
+        return !geq(lhs, rhs);
     }
 
     /**
