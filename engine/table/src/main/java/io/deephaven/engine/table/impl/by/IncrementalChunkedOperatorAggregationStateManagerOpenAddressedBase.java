@@ -117,6 +117,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         this.maximumLoadFactor = maximumLoadFactor;
         mainOutputPosition.ensureCapacity(tableSize);
     }
+
     @Override
     public final int maxTableSize() {
         return Math.toIntExact(MAX_TABLE_SIZE);

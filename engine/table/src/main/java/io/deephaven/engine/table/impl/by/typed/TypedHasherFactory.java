@@ -58,8 +58,8 @@ public class TypedHasherFactory {
      * Produce a hasher for the given base class and column sources.
      *
      * @param <T> the base class
-     * @param baseClass the base class (e.g. {@link IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase} that the
-     *        generated hasher extends from
+     * @param baseClass the base class (e.g. {@link IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase}
+     *        that the generated hasher extends from
      * @param tableKeySources the key sources
      * @param originalKeySources
      * @param tableSize the initial table size
