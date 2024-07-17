@@ -1187,6 +1187,9 @@ public class TypedHasherFactory {
         if (foundBlockRequired) {
             builder.addStatement("boolean $L = false", foundName);
         }
+        if (hasherConfig.supportTombstones && !alternate) {
+            builder.addStatement("boolean searchAlternate = true");
+        }
 
         if (alternate) {
             builder.beginControlFlow("if ($L < rehashPointer)", firstTableLocationName);
@@ -1217,10 +1220,15 @@ public class TypedHasherFactory {
 
         final String equalsStatement =
                 alternate ? getEqualsStatementAlternate(chunkTypes) : getEqualsStatement(chunkTypes);
+        builder.beginControlFlow("if (" + equalsStatement + ")");
         if (hasherConfig.supportTombstones) {
-            builder.beginControlFlow("if (!isStateDeleted($L) && " + equalsStatement + ")", stateValueName);
-        } else {
-            builder.beginControlFlow("if (" + equalsStatement + ")");
+            builder.beginControlFlow("if (isStateDeleted($L))", stateValueName);
+            if (!alternate) {
+                // never going to find it now
+                builder.addStatement("searchAlternate = false");
+            }
+            builder.addStatement("break");
+            builder.endControlFlow();
         }
         ps.found.accept(hasherConfig, alternate, builder);
         if (foundBlockRequired) {
@@ -1238,10 +1246,18 @@ public class TypedHasherFactory {
 
         if (foundBlockRequired) {
             builder.beginControlFlow("if (!$L)", foundName);
+            if (hasherConfig.supportTombstones && !alternate) {
+                builder.beginControlFlow("if (!searchAlternate)");
+                ps.missing.accept(builder);
+                builder.nextControlFlow("else");
+            }
             if (hasherConfig.openAddressedAlternate && !alternate) {
                 doProbeSearch(hasherConfig, ps, chunkTypes, builder, true);
             } else {
                 ps.missing.accept(builder);
+            }
+            if (hasherConfig.supportTombstones && !alternate) {
+                builder.endControlFlow();
             }
             builder.endControlFlow();
         }
