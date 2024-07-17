@@ -639,6 +639,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
             numEntries++;
         }
         alternateEntries--;
+        alternateLiveEntries--;
         return true;
     }
 

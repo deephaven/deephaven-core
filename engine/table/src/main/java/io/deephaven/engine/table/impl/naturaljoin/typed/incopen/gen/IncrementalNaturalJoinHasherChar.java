@@ -637,6 +637,7 @@ final class IncrementalNaturalJoinHasherChar extends IncrementalNaturalJoinState
             numEntries++;
         }
         alternateEntries--;
+        alternateLiveEntries--;
         return true;
     }
 
