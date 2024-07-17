@@ -22,13 +22,13 @@ public class NumericTypeUtils {
     }
 
     /**
-     * Whether the class is {@link TypeUtils#isPrimitiveNumeric(Class)} or {@link #isBoxedNumeric(Class)}
+     * Whether the class is {@link NumericTypeUtils#isPrimitiveNumeric(Class)} or {@link #isBoxedNumeric(Class)}
      *
      * @param c class
      * @return true if {@code c} is numeric, false otherwise
      */
     public static boolean isNumeric(@NotNull final Class<?> c) {
-        return TypeUtils.isPrimitiveNumeric(c) || isBoxedNumeric(c);
+        return isPrimitiveNumeric(c) || isBoxedNumeric(c);
     }
 
     /**
@@ -39,5 +39,16 @@ public class NumericTypeUtils {
      */
     public static boolean isBigNumeric(Class<?> type) {
         return BigInteger.class.isAssignableFrom(type) || BigDecimal.class.isAssignableFrom(type);
+    }
+
+    /**
+     * Whether the class is equal to one of the six numeric primitives: float, double, int, long, short, or byte.
+     *
+     * @param c class
+     * @return true if {@code c} is a numeric primitive, false otherwise
+     */
+    public static boolean isPrimitiveNumeric(@NotNull final Class<?> c) {
+        return c == double.class || c == float.class
+                || c == int.class || c == long.class || c == short.class || c == byte.class;
     }
 }

@@ -372,17 +372,6 @@ public class TypeUtils {
     }
 
     /**
-     * Whether the class is equal to one of the six numeric primitives: float, double, int, long, short, or byte.
-     *
-     * @param c class
-     * @return true if {@code c} is a numeric primitive, false otherwise
-     */
-    public static boolean isPrimitiveNumeric(@NotNull final Class<?> c) {
-        return c == double.class || c == float.class
-                || c == int.class || c == long.class || c == short.class || c == byte.class;
-    }
-
-    /**
      * Whether the class is equal to char.class.
      *
      * @param c class

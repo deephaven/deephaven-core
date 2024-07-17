@@ -419,7 +419,7 @@ public class ArgumentValidations {
     }
 
     /**
-     * Whether the column's data type {@link TypeUtils#isPrimitiveNumeric(Class)}.
+     * Whether the column's data type {@link NumericTypeUtils#isPrimitiveNumeric(Class)}.
      *
      * @param t table
      * @param column column
@@ -428,7 +428,7 @@ public class ArgumentValidations {
      */
     public static boolean isPrimitiveNumeric(final Table t, final String column, final PlotInfo plotInfo) {
         assertNotNull(t, "t", plotInfo);
-        return TypeUtils.isPrimitiveNumeric(getColumnType(t, column, plotInfo));
+        return NumericTypeUtils.isPrimitiveNumeric(getColumnType(t, column, plotInfo));
     }
 
     /**
@@ -583,7 +583,7 @@ public class ArgumentValidations {
 
     /**
      * Requires the column's data type to be a numeric primitive as defined in
-     * {@link TypeUtils#isPrimitiveNumeric(Class)}
+     * {@link NumericTypeUtils#isPrimitiveNumeric(Class)}
      *
      * @throws RuntimeException if the column's data type isn't a numeric primitive
      * @param t table
@@ -598,7 +598,7 @@ public class ArgumentValidations {
 
     /**
      * Requires the column's data type to be a numeric primitive as defined in
-     * {@link TypeUtils#isPrimitiveNumeric(Class)}
+     * {@link NumericTypeUtils#isPrimitiveNumeric(Class)}
      *
      * @throws RuntimeException if the column's data type isn't a numeric primitive
      * @param t table
