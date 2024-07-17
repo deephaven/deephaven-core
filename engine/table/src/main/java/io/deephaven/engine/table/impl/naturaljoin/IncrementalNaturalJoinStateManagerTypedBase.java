@@ -375,11 +375,11 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         // TODO: we need to stop giving credits for tombstones for this logic to be correct
 
         // we use the number of liveEntries multiplied by 2, so that as we rehash we can both consume a slot for the
-        // live entry from the alternate table; and also consume a slot for the new value.  This ensures that we will
+        // live entry from the alternate table; and also consume a slot for the new value. This ensures that we will
         // burn down our rehash requirements before we need to initiate a new partial rehash.
-        
-        long desiredEntries = liveEntries * 2  + nextChunkSize;
-        long tableSize = Math.max(this.tableSize, (long)(desiredEntries / maximumLoadFactor));
+
+        long desiredEntries = liveEntries * 2 + nextChunkSize;
+        long tableSize = Math.max(this.tableSize, (long) (desiredEntries / maximumLoadFactor));
         long highestOneBit = Long.highestOneBit(tableSize);
         tableSize = highestOneBit == tableSize ? tableSize : highestOneBit * 2;
         if (tableSize < 0 || tableSize > MAX_TABLE_SIZE) {
