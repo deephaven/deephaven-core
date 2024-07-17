@@ -190,7 +190,6 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
                     migrateFront(modifiedSlotTracker);
                 }
 
-                bc.resetSharedContexts();
                 getKeyChunks(buildSources, bc.getContexts, sourceKeyChunks, chunkOk);
 
                 final long oldEntries = numEntries;
@@ -199,6 +198,8 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
                 // if we actually added anything, then take away from the "equity" we've built up rehashing, otherwise
                 // don't penalize this build call with additional rehashing
                 bc.rehashCredits.subtract(Math.toIntExact(entriesAdded));
+
+                bc.resetSharedContexts();
             }
         }
     }
@@ -216,7 +217,6 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(pc.chunkSize);
 
-                pc.resetSharedContexts();
                 if (usePrev) {
                     getPrevKeyChunks(probeSources, pc.getContexts, sourceKeyChunks, chunkOk);
                 } else {
@@ -224,6 +224,8 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
                 }
 
                 handler.doProbe(chunkOk, sourceKeyChunks);
+
+                pc.resetSharedContexts();
             }
         }
     }
