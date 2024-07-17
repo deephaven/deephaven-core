@@ -22,8 +22,8 @@ import io.deephaven.server.table.stats.ChunkedNumericalStatsKernel;
 import io.deephaven.server.table.stats.ChunkedStatsKernel;
 import io.deephaven.server.table.stats.DateTimeChunkedStats;
 import io.deephaven.server.table.stats.ObjectChunkedStats;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.type.NumericTypeUtils;
-import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
 
@@ -68,7 +68,7 @@ public class ColumnStatisticsGrpcImpl extends GrpcTableOperation<ColumnStatistic
         // Based on the column type, make a stats function and get a column source
         final ChunkedStatsKernel statsFunc;
         final ColumnSource<?> columnSource;
-        if (TypeUtils.isDateTime(type)) {
+        if (DateTimeUtils.isDateTime(type)) {
             // Instant/ZonedDateTime only look at max/min and count
             statsFunc = new DateTimeChunkedStats();
 

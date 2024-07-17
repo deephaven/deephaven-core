@@ -7,8 +7,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import java.time.Instant;
-import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -479,16 +477,6 @@ public class TypeUtils {
      */
     public static boolean isCharacter(@NotNull final Class<?> c) {
         return isPrimitiveChar(c) || isBoxedChar(c);
-    }
-
-    /**
-     * Whether the class is an {@link Instant} or a {@link ZonedDateTime}.
-     *
-     * @param type The class.
-     * @return true if the type is a DateTime: {@link java.time.ZonedDateTime} or {@link Instant}.
-     */
-    public static boolean isDateTime(Class<?> type) {
-        return Instant.class == type || ZonedDateTime.class == type;
     }
 
     /**
