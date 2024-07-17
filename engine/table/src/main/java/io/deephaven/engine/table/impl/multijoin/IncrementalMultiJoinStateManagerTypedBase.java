@@ -442,7 +442,7 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
         if (numEntries == 0) {
             return false;
         }
-        newAlternate(oldTableSize);
+        setupNewAlternate(oldTableSize);
         adviseNewAlternate();
         return true;
     }
@@ -453,7 +453,7 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
      */
     protected abstract void adviseNewAlternate();
 
-    protected void newAlternate(int oldTableSize) {
+    private void setupNewAlternate(int oldTableSize) {
         alternateSlotToOutputRow = slotToOutputRow;
         slotToOutputRow = new ImmutableIntArraySource();
         slotToOutputRow.ensureCapacity(tableSize);

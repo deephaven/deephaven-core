@@ -187,7 +187,7 @@ public abstract class UpdateByStateManagerTypedBase extends UpdateByStateManager
      */
     protected abstract void adviseNewAlternate();
 
-    protected void newAlternate(int oldTableSize) {
+    private void setupNewAlternate(int oldTableSize) {
         Assert.eqZero(rehashPointer, "rehashPointer");
 
         for (int ii = 0; ii < mainKeySources.length; ++ii) {
@@ -336,7 +336,7 @@ public abstract class UpdateByStateManagerTypedBase extends UpdateByStateManager
         }
 
 
-        newAlternate(oldTableSize);
+        setupNewAlternate(oldTableSize);
         adviseNewAlternate();
 
         return true;

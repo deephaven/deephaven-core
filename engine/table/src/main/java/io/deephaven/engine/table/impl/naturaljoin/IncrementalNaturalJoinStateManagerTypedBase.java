@@ -226,6 +226,9 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         }
     }
 
+    /**
+     // @formatter:off
+
     void checkAlternateEntries() {
         int expected = 0;
         if (alternateRightRowKey != null) {
@@ -247,6 +250,8 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         }
         Assert.eq(numEntries, "numEntries", expected, "expected");
     }
+     // @formatter:on
+    */
 
     /**
      * @param fullRehash should we rehash the entire table (if false, we rehash incrementally)
@@ -263,11 +268,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             }
 
             // before building, we need to do at least as much rehash work as we would do build work
-            checkAlternateEntries();
-            checkMainEntries();
             rehashCredits.add(rehashInternalPartial(requiredRehash, modifiedSlotTracker));
-            checkAlternateEntries();
-            checkMainEntries();
             if (rehashPointer == 0) {
                 clearAlternate();
             }
@@ -279,14 +280,10 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
 
         // we need to ditch the alternate table before continuing on a rehash
         if (rehashPointer > 0) {
-            checkAlternateEntries();
             rehashInternalPartial((int) alternateEntries, modifiedSlotTracker);
             Assert.eqZero(alternateEntries, "alternateEntries");
             clearAlternate();
         }
-
-        checkAlternateEntries();
-        checkMainEntries();
 
         int oldTableSize = tableSize;
         while (tableNeedsExpansion(nextChunkSize)) {
@@ -308,8 +305,6 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
 
         setupNewAlternate(oldTableSize);
         adviseNewAlternate();
-        checkMainEntries();
-        checkAlternateEntries();
 
         return true;
     }
