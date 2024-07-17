@@ -179,14 +179,18 @@ public class DoubleLongMegaMergeKernel {
     }
 
     // region comparison functions
-    private static int doComparison(double lhs, double rhs) {
-        return DoubleComparisons.compare(lhs, rhs);
+    private static boolean lt(double lhs, double rhs) {
+        return DoubleComparisons.lt(lhs, rhs);
     }
-    // endregion comparison functions
+
+    private static boolean leq(double lhs, double rhs) {
+        return DoubleComparisons.leq(lhs, rhs);
+    }
 
     private static boolean geq(double lhs, double rhs) {
-        return doComparison(lhs, rhs) >= 0;
+        return DoubleComparisons.geq(lhs, rhs);
     }
+    // endregion comparison functions
 
     // when we binary search in 1, we must identify a position for search value that is *after* our test values;
     // because the values from run 2 may never be inserted before an equal value from run 1
@@ -199,13 +203,11 @@ public class DoubleLongMegaMergeKernel {
     }
 
     private static long bound(DoubleArraySource valuesToSort, long lo, long hi, double searchValue,
-            @SuppressWarnings("SameParameterValue") final boolean lower) {
-        final int compareLimit = lower ? -1 : 0; // lt or leq
-
+            @SuppressWarnings("SameParameterValue") final boolean strict) {
         while (lo < hi) {
             final long mid = (lo + hi) >>> 1;
             final double testValue = valuesToSort.getUnsafe(mid);
-            final boolean moveLo = doComparison(testValue, searchValue) <= compareLimit;
+            final boolean moveLo = strict ? lt(testValue, searchValue) : leq(testValue, searchValue);
             if (moveLo) {
                 // For bound, (testValue OP searchValue) means that the result somewhere later than 'mid' [OP=lt or leq]
                 lo = mid + 1;
@@ -225,13 +227,11 @@ public class DoubleLongMegaMergeKernel {
     }
 
     private static int bound(DoubleChunk<?> valuesToSort, int lo, int hi, double searchValue,
-            @SuppressWarnings("SameParameterValue") final boolean lower) {
-        final int compareLimit = lower ? -1 : 0; // lt or leq
-
+            @SuppressWarnings("SameParameterValue") final boolean strict) {
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final double testValue = valuesToSort.get(mid);
-            final boolean moveLo = doComparison(testValue, searchValue) <= compareLimit;
+            final boolean moveLo = strict ? lt(testValue, searchValue) : leq(testValue, searchValue);
             if (moveLo) {
                 // For bound, (testValue OP searchValue) means that the result somewhere later than 'mid' [OP=lt or leq]
                 lo = mid + 1;
