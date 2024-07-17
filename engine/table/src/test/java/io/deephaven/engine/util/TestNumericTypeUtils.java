@@ -13,6 +13,11 @@ public class TestNumericTypeUtils {
 
     @Test
     public void testIsType() {
+        assertFalse(NumericTypeUtils.isPrimitiveNumeric(Instant.class));
+        assertFalse(NumericTypeUtils.isPrimitiveNumeric(Date.class));
+        assertTrue(NumericTypeUtils.isPrimitiveNumeric(int.class));
+        assertFalse(NumericTypeUtils.isPrimitiveNumeric(Double.class));
+
         assertFalse(NumericTypeUtils.isBoxedNumeric(Instant.class));
         assertFalse(NumericTypeUtils.isBoxedNumeric(Date.class));
         assertFalse(NumericTypeUtils.isBoxedNumeric(int.class));
