@@ -338,49 +338,6 @@ public final class Require {
     }
 
     // ################################################################
-    // holdsLock, notHoldsLock
-
-    // ----------------------------------------------------------------
-
-    public static void holdsLock(Object o, String name) {
-        neqNull(o, "o");
-        if (!Thread.holdsLock(o)) {
-            fail("\"" + Thread.currentThread().getName() + "\".holdsLock(" + name + ")");
-        }
-    }
-
-    // ----------------------------------------------------------------
-
-    public static void notHoldsLock(Object o, String name) {
-        neqNull(o, "o");
-        if (Thread.holdsLock(o)) {
-            fail("!\"" + Thread.currentThread().getName() + "\".holdsLock(" + name + ")");
-        }
-    }
-
-
-    // ################################################################
-    // instanceOf, notInstanceOf
-
-    // ----------------------------------------------------------------
-
-    public static <T> void instanceOf(Object o, String name, Class<T> type) {
-        if (!type.isInstance(o)) {
-            fail(name + " instanceof " + type, null == o ? ExceptionMessageUtil.valueAndName(o, name)
-                    : name + " instanceof " + o.getClass() + " (" + ExceptionMessageUtil.valueAndName(o, name) + ")");
-        }
-    }
-
-    // ----------------------------------------------------------------
-
-    public static <T> void notInstanceOf(Object o, String name, Class<T> type) {
-        if (type.isInstance(o)) {
-            fail("!(" + name + " instanceof " + type + ")",
-                    name + " instanceof " + o.getClass() + " (" + ExceptionMessageUtil.valueAndName(o, name) + ")");
-        }
-    }
-
-    // ################################################################
     // eq (primitiveValue == primitiveValue)
 
     // ----------------------------------------------------------------
