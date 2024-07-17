@@ -4,9 +4,7 @@
 package io.deephaven.engine.table.impl.select.analyzers;
 
 import io.deephaven.base.log.LogOutput;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.liveness.LivenessNode;
-import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.ColumnSource;
@@ -46,7 +44,7 @@ public class BaseLayer extends SelectAndViewAnalyzer {
 
     @Override
     void populateModifiedColumnSetRecurse(ModifiedColumnSet mcsBuilder, Set<String> remainingDepsToSatisfy) {
-        mcsBuilder.setAll(remainingDepsToSatisfy.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+        mcsBuilder.setAll(remainingDepsToSatisfy.toArray(String[]::new));
     }
 
     @Override

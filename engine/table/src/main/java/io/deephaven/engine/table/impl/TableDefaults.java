@@ -9,7 +9,6 @@ import io.deephaven.api.Pair;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.snapshot.SnapshotWhenOptions;
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.RollupTable;
 import io.deephaven.engine.table.impl.select.SelectColumn;
@@ -62,9 +61,9 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
         }
         final String[] resultColumnNames = {"Name", "DataType", "ColumnType", "IsPartitioning"};
         final Object[] resultValues = {
-                columnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
-                columnDataTypes.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
-                columnTypes.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
+                columnNames.toArray(String[]::new),
+                columnDataTypes.toArray(String[]::new),
+                columnTypes.toArray(String[]::new),
                 columnPartitioning.toArray(new Boolean[0]),
         };
 
@@ -265,13 +264,13 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     @Override
     @FinalDefault
     default Table headBy(long nRows, Collection<String> groupByColumnNames) {
-        return headBy(nRows, groupByColumnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+        return headBy(nRows, groupByColumnNames.toArray(String[]::new));
     }
 
     @Override
     @FinalDefault
     default Table tailBy(long nRows, Collection<String> groupByColumnNames) {
-        return tailBy(nRows, groupByColumnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+        return tailBy(nRows, groupByColumnNames.toArray(String[]::new));
     }
 
     @Override

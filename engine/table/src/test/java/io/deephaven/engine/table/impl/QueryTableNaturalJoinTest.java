@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.FileUtils;
 import io.deephaven.chunk.ObjectChunk;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
@@ -30,6 +29,7 @@ import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.mutable.MutableInt;
+import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.vector.IntVector;
 import io.deephaven.vector.ObjectVector;
 import junit.framework.TestCase;
@@ -513,7 +513,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals(new int[] {NULL_INT, NULL_INT, NULL_INT}, intColumn(cj6, "RightSentinel"));
 
         final Table left7 = newTable(
-                lC.make("String", CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
+                lC.make("String", ArrayTypeUtils.EMPTY_STRING_ARRAY),
                 intCol("LeftSentinel"));
         final Table right7 = newTable(intCol("RightSentinel", 10, 11));
         final Table cj7 = left7.naturalJoin(right7, "");

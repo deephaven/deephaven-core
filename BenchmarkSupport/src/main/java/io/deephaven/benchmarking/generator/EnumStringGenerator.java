@@ -3,7 +3,6 @@
 //
 package io.deephaven.benchmarking.generator;
 
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.benchmarking.generator.random.ExtendedRandom;
 import org.jetbrains.annotations.NotNull;
 
@@ -50,7 +49,7 @@ public class EnumStringGenerator extends RandomStringGenerator {
             enums.add(super.get());
         }
 
-        enumVals = enums.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        enumVals = enums.toArray(String[]::new);
     }
 
     public String get() {
