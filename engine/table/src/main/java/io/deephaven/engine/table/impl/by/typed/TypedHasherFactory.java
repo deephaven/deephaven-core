@@ -582,7 +582,7 @@ public class TypedHasherFactory {
     public static <T> JavaFile generateHasher(final HasherConfig<T> hasherConfig,
             final ChunkType[] chunkTypes,
             final String className,
-            Optional<Modifier> visibility) {
+            final Optional<Modifier> visibility) {
         final String packageName = packageName(hasherConfig);
         final TypeSpec.Builder hasherBuilder =
                 TypeSpec.classBuilder(className).addModifiers(Modifier.FINAL).superclass(hasherConfig.baseClass);
@@ -798,14 +798,10 @@ public class TypedHasherFactory {
         // ensure the capacity for everything
         builder.addStatement("int rehashedEntries = 0");
         builder.beginControlFlow("while (rehashPointer > 0 && rehashedEntries < entriesToRehash)");
-        final String extraParamNames;
-        if (!hasherConfig.extraPartialRehashParameters.isEmpty()) {
-            extraParamNames = ", " + hasherConfig.extraPartialRehashParameters.stream().map(ps -> ps.name)
-                    .collect(Collectors.joining(", "));
-        } else {
-            extraParamNames = "";
-        }
-        builder.beginControlFlow("if (migrateOneLocation(--rehashPointer" + extraParamNames + "))");
+        final String extraParamNames = getExtraMigrateParams(hasherConfig.extraPartialRehashParameters);
+        final String deletedParam = hasherConfig.supportTombstones ? ", false" : "";
+
+        builder.beginControlFlow("if (migrateOneLocation(--rehashPointer" + deletedParam + extraParamNames + "))");
         builder.addStatement("rehashedEntries++");
         builder.endControlFlow();
         builder.endControlFlow();
@@ -868,7 +864,7 @@ public class TypedHasherFactory {
             builder.addStatement("alternateEntries--");
             builder.addStatement("$L.set(locationToMigrate, $L)", hasherConfig.overflowOrAlternateStateName,
                     hasherConfig.emptyStateName);
-            builder.addStatement("return true");
+            builder.addStatement("return trueOnDeletedEntry");
             builder.endControlFlow();
         }
 
@@ -902,6 +898,10 @@ public class TypedHasherFactory {
                 .addParameter(int.class, "locationToMigrate")
                 .addCode(builder.build());
 
+        if (hasherConfig.supportTombstones) {
+            methodBuilder.addParameter(boolean.class, "trueOnDeletedEntry");
+        }
+
         hasherConfig.extraPartialRehashParameters.forEach(methodBuilder::addParameter);
 
         return methodBuilder.build();
@@ -913,16 +913,13 @@ public class TypedHasherFactory {
 
         builder.addStatement("int location = 0");
 
-        final String extraParamNames;
-        if (!hasherConfig.extraPartialRehashParameters.isEmpty()) {
-            extraParamNames = ", " + hasherConfig.extraPartialRehashParameters.stream().map(ps -> ps.name)
-                    .collect(Collectors.joining(", "));
-        } else {
-            extraParamNames = "";
-        }
+        final String extraParamNames = getExtraMigrateParams(hasherConfig.extraPartialRehashParameters);
+
+        final String deletedParam = hasherConfig.supportTombstones ? ", true" : "";
 
         builder.addStatement(
-                "while (migrateOneLocation(location++" + extraParamNames + ") && location < alternateTableSize)");
+                "while (migrateOneLocation(location++" + deletedParam + extraParamNames
+                        + ") && location < alternateTableSize)");
 
         final MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("migrateFront")
                 .addModifiers(Modifier.PROTECTED)
@@ -932,6 +929,17 @@ public class TypedHasherFactory {
         hasherConfig.extraPartialRehashParameters.forEach(methodBuilder::addParameter);
 
         return methodBuilder.build();
+    }
+
+    private static @NotNull String getExtraMigrateParams(List<ParameterSpec> hasherConfig) {
+        final String extraParamNames;
+        if (!hasherConfig.isEmpty()) {
+            extraParamNames = ", " + hasherConfig.stream().map(ps -> ps.name)
+                    .collect(Collectors.joining(", "));
+        } else {
+            extraParamNames = "";
+        }
+        return extraParamNames;
     }
 
     /**
@@ -1293,13 +1301,6 @@ public class TypedHasherFactory {
     public static String getEqualsStatementAlternate(ChunkType[] chunkTypes) {
         return IntStream.range(0, chunkTypes.length)
                 .mapToObj(x -> "eq(alternateKeySource" + x + ".getUnsafe(alternateTableLocation), k" + x + ")")
-                .collect(Collectors.joining(" && "));
-    }
-
-    @NotNull
-    public static String getEqualsStatementOverflow(ChunkType[] chunkTypes) {
-        return IntStream.range(0, chunkTypes.length)
-                .mapToObj(x -> "eq(overflowKeySource" + x + ".getUnsafe(overflowLocation), k" + x + ")")
                 .collect(Collectors.joining(" && "));
     }
 

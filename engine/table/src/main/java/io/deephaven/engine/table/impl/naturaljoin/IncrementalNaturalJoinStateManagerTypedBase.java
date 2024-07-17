@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.naturaljoin;
 
 import gnu.trove.list.array.TLongArrayList;
+import io.deephaven.base.MathUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.Chunk;
@@ -372,17 +373,14 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     }
 
     public int computeTableSize(int nextChunkSize) {
-        // TODO: we need to stop giving credits for tombstones for this logic to be correct
-
         // we use the number of liveEntries multiplied by 2, so that as we rehash we can both consume a slot for the
         // live entry from the alternate table; and also consume a slot for the new value. This ensures that we will
         // burn down our rehash requirements before we need to initiate a new partial rehash.
 
-        long desiredEntries = liveEntries * 2 + nextChunkSize;
-        long tableSize = Math.max(this.tableSize, (long) (desiredEntries / maximumLoadFactor));
-        long highestOneBit = Long.highestOneBit(tableSize);
-        tableSize = highestOneBit == tableSize ? tableSize : highestOneBit * 2;
-        if (tableSize < 0 || tableSize > MAX_TABLE_SIZE) {
+        final long desiredEntries = Math.max(liveEntries * 2, liveEntries + nextChunkSize);
+        final long tableSize =
+                MathUtil.roundUpPowerOf2(Math.max(this.tableSize, (long) (desiredEntries / maximumLoadFactor)));
+        if (tableSize <= 1 || tableSize > MAX_TABLE_SIZE) {
             throw new UnsupportedOperationException("Hash table exceeds maximum size!");
         }
         return Math.toIntExact(tableSize);
