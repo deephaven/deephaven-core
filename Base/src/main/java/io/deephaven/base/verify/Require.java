@@ -338,55 +338,6 @@ public final class Require {
     }
 
     // ################################################################
-    // holdsLock, notHoldsLock
-
-    // ----------------------------------------------------------------
-
-    @GwtIncompatible
-    public static void holdsLock(Object o, String name) {
-        neqNull(o, "o");
-        if (!Thread.holdsLock(o)) {
-            fail("\"" + Thread.currentThread().getName() + "\".holdsLock(" + name + ")");
-        }
-    }
-
-    // ----------------------------------------------------------------
-
-    @GwtIncompatible
-    public static void notHoldsLock(Object o, String name) {
-        neqNull(o, "o");
-        if (Thread.holdsLock(o)) {
-            fail("!\"" + Thread.currentThread().getName() + "\".holdsLock(" + name + ")");
-        }
-    }
-
-    @interface GwtIncompatible {
-    }
-
-    // ################################################################
-    // instanceOf, notInstanceOf
-
-    // ----------------------------------------------------------------
-
-    @GwtIncompatible
-    public static <T> void instanceOf(Object o, String name, Class<T> type) {
-        if (!type.isInstance(o)) {
-            fail(name + " instanceof " + type, null == o ? ExceptionMessageUtil.valueAndName(o, name)
-                    : name + " instanceof " + o.getClass() + " (" + ExceptionMessageUtil.valueAndName(o, name) + ")");
-        }
-    }
-
-    // ----------------------------------------------------------------
-
-    @GwtIncompatible
-    public static <T> void notInstanceOf(Object o, String name, Class<T> type) {
-        if (type.isInstance(o)) {
-            fail("!(" + name + " instanceof " + type + ")",
-                    name + " instanceof " + o.getClass() + " (" + ExceptionMessageUtil.valueAndName(o, name) + ")");
-        }
-    }
-
-    // ################################################################
     // eq (primitiveValue == primitiveValue)
 
     // ----------------------------------------------------------------

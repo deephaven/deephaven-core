@@ -168,7 +168,7 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     }
 
     private long advanceClock() {
-        Assert.holdsLock(this, "this");
+        Assert.assertion(Thread.holdsLock(this), "Thread.holdsLock(this)");
         final long newClock = ++logicalClock;
         if (newClock > 0) {
             return newClock;

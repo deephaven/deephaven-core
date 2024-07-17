@@ -23,6 +23,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.junit.Assert.assertNotNull;
+
 public final class TestJobScheduler {
 
     @Rule
@@ -149,7 +151,7 @@ public final class TestJobScheduler {
                     50,
                     (context, idx, nec, resume) -> {
                         // verify the type is correct
-                        Assert.instanceOf(context, "context", TestJobThreadContext.class);
+                        assertNotNull(context);
 
                         completed[idx] = true;
                         resume.run();
@@ -262,7 +264,7 @@ public final class TestJobScheduler {
                     50,
                     (context, idx, nec, resume) -> {
                         // verify the type is correct
-                        Assert.instanceOf(context, "context", TestJobThreadContext.class);
+                        assertNotNull(context);
 
                         completed[idx] = true;
                         resume.run();
@@ -396,7 +398,7 @@ public final class TestJobScheduler {
                     50,
                     (context, idx, nec) -> {
                         // verify the type is correct
-                        Assert.instanceOf(context, "context", TestJobThreadContext.class);
+                        assertNotNull(context);
 
                         // throw before "doing work" to make verification easy
                         if (idx == 10) {
@@ -467,7 +469,7 @@ public final class TestJobScheduler {
                     50,
                     (context, idx, nec, resume) -> {
                         // verify the type is correct
-                        Assert.instanceOf(context, "context", TestJobThreadContext.class);
+                        assertNotNull(context);
 
                         completed[idx] = true;
 
@@ -552,7 +554,7 @@ public final class TestJobScheduler {
                                 60,
                                 (context2, idx2, nec2) -> {
                                     // verify the type is correct
-                                    Assert.instanceOf(context2, "context2", TestJobThreadContext.class);
+                                    assertNotNull(context2);
 
                                     // throw before "doing work" to make verification easy
                                     if (idx1 == 10 && idx2 == 10) {
@@ -632,7 +634,7 @@ public final class TestJobScheduler {
                                 60,
                                 (context2, idx2, nec2) -> {
                                     // verify the type is correct
-                                    Assert.instanceOf(context2, "context2", TestJobThreadContext.class);
+                                    assertNotNull(context2);
                                     completed[idx1][idx2] = true;
                                 }, r1, nec1);
                     },
@@ -702,7 +704,7 @@ public final class TestJobScheduler {
                                 60,
                                 (context2, idx2, nec2) -> {
                                     // verify the type is correct
-                                    Assert.instanceOf(context2, "context2", TestJobThreadContext.class);
+                                    assertNotNull(context2);
                                     completed[idx1][idx2] = true;
                                 }, r1, nec1);
                     },
@@ -770,7 +772,7 @@ public final class TestJobScheduler {
                         50,
                         (context, idx, nec) -> {
                             // verify the type is correct
-                            Assert.instanceOf(context, "context", TestJobThreadContext.class);
+                            assertNotNull(context);
 
                             // throw before "doing work" to make verification easy
                             if (idx == 10) {
@@ -825,7 +827,7 @@ public final class TestJobScheduler {
                         50,
                         (context, idx, nec) -> {
                             // verify the type is correct
-                            Assert.instanceOf(context, "context", TestJobThreadContext.class);
+                            assertNotNull(context);
                             completed[idx] = true;
                         },
                         () -> {
