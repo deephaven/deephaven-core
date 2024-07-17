@@ -324,6 +324,11 @@ public class FileUtils {
         if (isDirectory && absPath.charAt(absPath.length() - 1) != URI_SEPARATOR_CHAR) {
             absPath = absPath + URI_SEPARATOR_CHAR;
         }
+        if (absPath.charAt(0) != URI_SEPARATOR_CHAR) {
+            absPath = URI_SEPARATOR_CHAR + absPath;
+            // ^This is especially useful for Windows where the absolute path does not start with a slash.
+            // For example, for absolute path "C:\path\to\file", the URI would be "file:/C:/path/to/file".
+        }
         try {
             return new URI(FILE_URI_SCHEME, null, absPath, null);
         } catch (final URISyntaxException e) {
