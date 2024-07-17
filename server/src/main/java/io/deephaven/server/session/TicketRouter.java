@@ -333,23 +333,29 @@ public class TicketRouter {
     }
 
     private TicketResolver getResolver(final Flight.FlightDescriptor descriptor, final String logId) {
-        if (descriptor.getType() != Flight.FlightDescriptor.DescriptorType.PATH) {
-            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Could not resolve '" + logId + "': flight descriptor is not a path");
-        }
-        if (descriptor.getPathCount() <= 0) {
-            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Could not resolve '" + logId + "': flight descriptor does not have route path");
-        }
+        if (descriptor.getType() == Flight.FlightDescriptor.DescriptorType.PATH) {
+            if (descriptor.getPathCount() <= 0) {
+                throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                        "Could not resolve '" + logId + "': flight descriptor does not have route path");
+            }
 
-        final String route = descriptor.getPath(0);
-        final TicketResolver resolver = descriptorResolverMap.get(route);
-        if (resolver == null) {
-            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Could not resolve '" + logId + "': no resolver for route '" + route + "'");
-        }
+            final String route = descriptor.getPath(0);
+            final TicketResolver resolver = descriptorResolverMap.get(route);
+            if (resolver == null) {
+                throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                        "Could not resolve '" + logId + "': no resolver for route '" + route + "'");
+            }
 
-        return resolver;
+            return resolver;
+        } else {
+            // command resolver - we only have flight-sql for now.
+            final TicketResolver resolver = descriptorResolverMap.get("flight-sql");
+            if (resolver == null) {
+                throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                        "Could not resolve '" + logId + "': no resolver for route 'flight-sql'");
+            }
+            return resolver;
+        }
     }
 
     private static final KeyedIntObjectKey<TicketResolver> RESOLVER_OBJECT_TICKET_ID =
