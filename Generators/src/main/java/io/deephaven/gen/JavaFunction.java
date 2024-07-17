@@ -158,15 +158,14 @@ public class JavaFunction implements Comparable<JavaFunction> {
         }
     }
 
-
     /**
      * Determine the Class from the Type.
      */
-    public static Class<?> getErasedType(Type paramType) {
+    private static Class<?> getErasedType(Type paramType) {
         if (paramType instanceof Class) {
             return (Class<?>) paramType;
         } else if (paramType instanceof ParameterizedType) {
-            return (Class<?>) // We are asking the parameterized type for it's raw type, which is always Class
+            return (Class<?>) // We are asking the parameterized type for its raw type, which is always Class
             ((ParameterizedType) paramType).getRawType();
         } else if (paramType instanceof WildcardType) {
             final Type[] upper = ((WildcardType) paramType).getUpperBounds();

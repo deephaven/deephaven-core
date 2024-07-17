@@ -323,10 +323,6 @@ public class ArrayTypeUtils {
         }
     }
 
-    @interface GwtIncompatible {
-    }
-
-    @GwtIncompatible
     public static boolean equals(Object actualValue, Object expectedValue) {
         if (actualValue instanceof byte[] && expectedValue instanceof byte[]) {
             return Arrays.equals((byte[]) actualValue, (byte[]) expectedValue);
@@ -347,7 +343,6 @@ public class ArrayTypeUtils {
         }
     }
 
-    @GwtIncompatible
     public static String toString(Object actualValue) {
         if (actualValue instanceof byte[]) {
             return Arrays.toString((byte[]) actualValue);

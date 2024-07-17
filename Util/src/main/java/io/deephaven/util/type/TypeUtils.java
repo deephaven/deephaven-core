@@ -7,10 +7,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.time.Instant;
-import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -55,6 +51,10 @@ public class TypeUtils {
                 .unmodifiableMap(PRIMITIVE_TYPES.stream().collect(Collectors.toMap(Class::getName, type -> type)));
     }
 
+    /**
+     * Deprecated with no replacement.
+     */
+    @Deprecated
     @Retention(RetentionPolicy.RUNTIME)
     public @interface IsDateTime {
         boolean value() default true;
@@ -370,31 +370,6 @@ public class TypeUtils {
     }
 
     /**
-     * Whether the class is equal to one of the six numeric primitives: float, double, int, long, short, or byte.
-     *
-     * @param c class
-     * @return true if {@code c} is a numeric primitive, false otherwise
-     */
-    public static boolean isPrimitiveNumeric(@NotNull final Class<?> c) {
-        return c == double.class || c == float.class
-                || c == int.class || c == long.class || c == short.class || c == byte.class;
-    }
-
-    @interface GwtIncompatible {
-    }
-
-    /**
-     * Whether the class is an instance of {@link Number}.
-     *
-     * @param c class
-     * @return true if Number.class is assignable from {@code c}, false otherwise
-     */
-    @GwtIncompatible
-    public static boolean isBoxedNumeric(@NotNull final Class<?> c) {
-        return Number.class.isAssignableFrom(c);
-    }
-
-    /**
      * Whether the class is equal to char.class.
      *
      * @param c class
@@ -495,17 +470,6 @@ public class TypeUtils {
     }
 
     /**
-     * Whether the class is {@link #isPrimitiveNumeric(Class)} or {@link #isBoxedNumeric(Class)}
-     *
-     * @param c class
-     * @return true if {@code c} is numeric, false otherwise
-     */
-    @GwtIncompatible
-    public static boolean isNumeric(@NotNull final Class<?> c) {
-        return isPrimitiveNumeric(c) || isBoxedNumeric(c);
-    }
-
-    /**
      * Whether the class equals char.class or Character.class is assignable from it.
      *
      * @param c class
@@ -516,19 +480,6 @@ public class TypeUtils {
     }
 
     /**
-     * Whether the class is an {@link Instant}, a {@link ZonedDateTime}, or annotated as {@link IsDateTime}.
-     *
-     * @param type The class.
-     * @return true if the type is a DateTime, {@link java.time.ZonedDateTime} or {@link Instant}.
-     */
-    @GwtIncompatible
-    public static boolean isDateTime(Class<?> type) {
-        return Instant.class.isAssignableFrom(type)
-                || ZonedDateTime.class.isAssignableFrom(type)
-                || (type.getAnnotation(IsDateTime.class) != null && type.getAnnotation(IsDateTime.class).value());
-    }
-
-    /**
      * Whether the class is a {@link String}
      *
      * @param type the class
@@ -536,17 +487,6 @@ public class TypeUtils {
      */
     public static boolean isString(Class<?> type) {
         return String.class == type;
-    }
-
-    /**
-     * Whether the class is a {@link BigInteger} or {@link BigDecimal}
-     *
-     * @param type the class
-     * @return true if the type is BigInteger or BigDecimal, false otherwise
-     */
-    @GwtIncompatible
-    public static boolean isBigNumeric(Class<?> type) {
-        return BigInteger.class.isAssignableFrom(type) || BigDecimal.class.isAssignableFrom(type);
     }
 
     /**
