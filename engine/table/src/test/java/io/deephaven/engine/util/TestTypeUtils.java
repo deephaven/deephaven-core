@@ -4,7 +4,6 @@
 package io.deephaven.engine.util;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.util.type.NumericTypeUtils;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -133,16 +132,6 @@ public class TestTypeUtils extends TestCase {
         assertFalse(io.deephaven.util.type.TypeUtils.isPrimitiveNumeric(Date.class));
         assertTrue(io.deephaven.util.type.TypeUtils.isPrimitiveNumeric(int.class));
         assertFalse(io.deephaven.util.type.TypeUtils.isPrimitiveNumeric(Double.class));
-
-        assertFalse(NumericTypeUtils.isBoxedNumeric(Instant.class));
-        assertFalse(NumericTypeUtils.isBoxedNumeric(Date.class));
-        assertFalse(NumericTypeUtils.isBoxedNumeric(int.class));
-        assertTrue(NumericTypeUtils.isBoxedNumeric(Double.class));
-
-        assertFalse(NumericTypeUtils.isNumeric(Instant.class));
-        assertFalse(NumericTypeUtils.isNumeric(Date.class));
-        assertTrue(NumericTypeUtils.isNumeric(int.class));
-        assertTrue(NumericTypeUtils.isNumeric(Double.class));
 
         assertFalse(io.deephaven.util.type.TypeUtils.isCharacter(Instant.class));
         assertFalse(io.deephaven.util.type.TypeUtils.isCharacter(Date.class));
