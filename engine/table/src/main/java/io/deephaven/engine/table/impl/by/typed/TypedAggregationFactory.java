@@ -101,7 +101,7 @@ public class TypedAggregationFactory {
         builder.addStatement("final int $L = $L.getUnsafe($L)", positionValueName,
                 alternate ? hasherConfig.overflowOrAlternateStateName : hasherConfig.mainStateName,
                 tableLocationName);
-        builder.beginControlFlow("if ($L == $L)", positionValueName, hasherConfig.emptyStateName);
+        builder.beginControlFlow("if (isStateEmpty($L))", positionValueName);
 
         if (hasherConfig.openAddressedAlternate && !alternate) {
             findPositionForKeyOpenAddressed(hasherConfig, chunkTypes, builder, true);
