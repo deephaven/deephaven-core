@@ -52,6 +52,8 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     protected long liveEntries = 0;
     /** How many entries are in the alternate table (includes tombstones)? */
     protected long alternateEntries = 0;
+    /** How many of the alternate entries are live? */
+    protected long alternateLiveEntries = 0;
 
     // the table will be rehashed to a load factor of targetLoadFactor if our loadFactor exceeds maximumLoadFactor
     private final double maximumLoadFactor;
@@ -330,6 +332,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         }
 
         alternateEntries = numEntries;
+        alternateLiveEntries = liveEntries;
         numEntries = 0;
         alternateRightRowKey = mainRightRowKey;
         mainRightRowKey = new ImmutableLongArraySource();
@@ -354,6 +357,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
 
     protected void clearAlternate() {
         alternateEntries = 0;
+        alternateLiveEntries = 0;
         rehashPointer = 0;
         for (int ii = 0; ii < mainKeySources.length; ++ii) {
             alternateKeySources[ii] = null;
