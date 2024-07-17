@@ -71,11 +71,7 @@ public class TypedAggregationFactory {
         builder.addStatement("int hash = hash("
                 + IntStream.range(0, chunkTypes.length).mapToObj(x -> "k" + x).collect(Collectors.joining(", ")) + ")");
 
-        if (hasherConfig.openAddressed) {
-            findPositionForKeyOpenAddressed(hasherConfig, chunkTypes, builder, false);
-        } else {
-            findPositionForKeyOverflow(hasherConfig, chunkTypes, builder);
-        }
+        findPositionForKeyOpenAddressed(hasherConfig, chunkTypes, builder, false);
         return builder.build();
     }
 
@@ -123,30 +119,6 @@ public class TypedAggregationFactory {
                 firstLocationName, firstLocationName);
 
         builder.endControlFlow();
-    }
-
-    private static void findPositionForKeyOverflow(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes,
-            MethodSpec.Builder builder) {
-        builder.addStatement("final int tableLocation = hashToTableLocation(tableHashPivot, hash)");
-        builder.addStatement("final int positionValue = $L.getUnsafe(tableLocation)", hasherConfig.mainStateName);
-        builder.beginControlFlow("if (positionValue == $L)", hasherConfig.emptyStateName);
-        builder.addStatement("return -1");
-        builder.endControlFlow();
-
-        builder.beginControlFlow("if (" + TypedHasherFactory.getEqualsStatement(chunkTypes) + ")");
-        builder.addStatement("return positionValue");
-        builder.endControlFlow();
-
-        builder.addStatement("int overflowLocation = mainOverflowLocationSource.getUnsafe(tableLocation)");
-
-        builder.beginControlFlow("while (overflowLocation != QueryConstants.NULL_INT)");
-        builder.beginControlFlow("if (" + TypedHasherFactory.getEqualsStatementOverflow(chunkTypes) + ")");
-        builder.addStatement("return $L.getUnsafe(overflowLocation)", hasherConfig.overflowOrAlternateStateName);
-        builder.endControlFlow();
-
-        builder.addStatement("overflowLocation = overflowOverflowLocationSource.getUnsafe(overflowLocation)");
-        builder.endControlFlow();
-        builder.addStatement("return -1");
     }
 
     private static void unboxKey(MethodSpec.Builder builder, int ii, Class<?> element) {

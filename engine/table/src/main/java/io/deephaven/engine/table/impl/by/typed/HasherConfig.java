@@ -20,7 +20,6 @@ public class HasherConfig<T> {
     public final String classPrefix;
     public final String packageGroup;
     public final String packageMiddle;
-    final boolean openAddressed;
     final boolean openAddressedAlternate;
     final boolean supportTombstones;
     final boolean alwaysMoveMain;
@@ -40,7 +39,6 @@ public class HasherConfig<T> {
     final List<BuildSpec> builds;
 
     HasherConfig(Class<T> baseClass, String classPrefix, String packageGroup, String packageMiddle,
-            boolean openAddressed,
             boolean openAddressedAlternate,
             boolean supportTombstones,
             boolean alwaysMoveMain,
@@ -62,7 +60,6 @@ public class HasherConfig<T> {
         this.classPrefix = classPrefix;
         this.packageGroup = packageGroup;
         this.packageMiddle = packageMiddle;
-        this.openAddressed = openAddressed;
         this.openAddressedAlternate = openAddressedAlternate;
         this.supportTombstones = supportTombstones;
         this.alwaysMoveMain = alwaysMoveMain;
@@ -157,7 +154,6 @@ public class HasherConfig<T> {
         private String classPrefix;
         private String packageGroup;
         private String packageMiddle;
-        private boolean openAddressed = true;
         private boolean supportTombstones = false;
         private boolean openAddressedAlternate = true;
         private boolean alwaysMoveMain = false;
@@ -192,14 +188,6 @@ public class HasherConfig<T> {
 
         public Builder<T> packageMiddle(String packageMiddle) {
             this.packageMiddle = packageMiddle;
-            return this;
-        }
-
-        public Builder<T> openAddressed(boolean openAddressed) {
-            this.openAddressed = openAddressed;
-            if (!openAddressed) {
-                this.openAddressedAlternate = false;
-            }
             return this;
         }
 
@@ -293,13 +281,13 @@ public class HasherConfig<T> {
             Assert.neqNull(packageGroup, "packageGroup");
             Assert.neqNull(packageMiddle, "packageMiddle");
             Assert.neqNull(mainStateName, "mainStateName");
-            if (openAddressedAlternate || !openAddressed) {
+            if (openAddressedAlternate) {
                 Assert.neqNull(overflowOrAlternateStateName, "overflowOrAlternateStateName");
             }
             Assert.neqNull(emptyStateName, "emptyStateName");
             Assert.neqNull(stateType, "stateType");
 
-            return new HasherConfig<>(baseClass, classPrefix, packageGroup, packageMiddle, openAddressed,
+            return new HasherConfig<>(baseClass, classPrefix, packageGroup, packageMiddle,
                     openAddressedAlternate, supportTombstones, alwaysMoveMain, includeOriginalSources, supportRehash,
                     mainStateName,
                     overflowOrAlternateStateName, emptyStateName, tombstoneStateName,
