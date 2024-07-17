@@ -607,7 +607,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
         return state == TOMBSTONE_RIGHT_STATE;
     }
 
-    private boolean migrateOneLocation(int locationToMigrate, boolean deletedTrue,
+    private boolean migrateOneLocation(int locationToMigrate,
             NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         final long currentStateValue = alternateRightRowKey.getUnsafe(locationToMigrate);
         if (isStateEmpty(currentStateValue)) {
@@ -616,7 +616,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
         if (isStateDeleted(currentStateValue)) {
             alternateEntries--;
             alternateRightRowKey.set(locationToMigrate, EMPTY_RIGHT_STATE);
-            return deletedTrue;
+            return true;
         }
         final Object k0 = alternateKeySource0.getUnsafe(locationToMigrate);
         final int hash = hash(k0);
@@ -647,7 +647,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
             NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         int rehashedEntries = 0;
         while (rehashPointer > 0 && rehashedEntries < entriesToRehash) {
-            if (migrateOneLocation(--rehashPointer, false, modifiedSlotTracker)) {
+            if (migrateOneLocation(--rehashPointer, modifiedSlotTracker)) {
                 rehashedEntries++;
             }
         }
@@ -669,7 +669,7 @@ final class IncrementalNaturalJoinHasherObject extends IncrementalNaturalJoinSta
     @Override
     protected void migrateFront(NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         int location = 0;
-        while (migrateOneLocation(location++, true, modifiedSlotTracker) && location < alternateTableSize);
+        while (migrateOneLocation(location++, modifiedSlotTracker) && location < alternateTableSize);
     }
 
     @Override
