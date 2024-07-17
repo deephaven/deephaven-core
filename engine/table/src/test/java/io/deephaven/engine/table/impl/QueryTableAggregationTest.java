@@ -3921,7 +3921,7 @@ public class QueryTableAggregationTest {
             final Table agg = data.selectDistinct("NonExistentCol");
             fail("Should have thrown an exception");
         } catch (Exception ex) {
-            io.deephaven.base.verify.Assert.instanceOf(ex, "ex", IllegalArgumentException.class);
+            assertTrue(ex instanceof IllegalArgumentException);
             io.deephaven.base.verify.Assert.assertion(
                     ex.getMessage().contains("Missing columns: [NonExistentCol]"),
                     "ex.getMessage().contains(\"Missing columns: [NonExistentCol]\")",

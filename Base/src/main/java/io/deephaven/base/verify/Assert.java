@@ -317,48 +317,6 @@ public final class Assert {
     }
 
     // ################################################################
-    // holdsLock, notHoldsLock
-
-    // ----------------------------------------------------------------
-    /** assert (o != null &amp;&amp; (current thread holds o's lock)) */
-    public static void holdsLock(Object o, String name) {
-        neqNull(o, "o");
-        if (!Thread.holdsLock(o)) {
-            fail("\"" + Thread.currentThread().getName() + "\".holdsLock(" + name + ")");
-        }
-    }
-
-    // ----------------------------------------------------------------
-    /** assert (o != null &amp;&amp; !(current thread holds o's lock)) */
-    public static void notHoldsLock(Object o, String name) {
-        neqNull(o, "o");
-        if (Thread.holdsLock(o)) {
-            fail("!\"" + Thread.currentThread().getName() + "\".holdsLock(" + name + ")");
-        }
-    }
-
-    // ################################################################
-    // instanceOf, notInstanceOf
-
-    // ----------------------------------------------------------------
-    /** assert (o instanceof type) */
-    public static void instanceOf(Object o, String name, Class<?> type) {
-        if (!type.isInstance(o)) {
-            fail(name + " instanceof " + type, null == o ? ExceptionMessageUtil.valueAndName(o, name)
-                    : name + " instanceof " + o.getClass() + " (" + ExceptionMessageUtil.valueAndName(o, name) + ")");
-        }
-    }
-
-    // ----------------------------------------------------------------
-    /** assert !(o instanceof type) */
-    public static void notInstanceOf(Object o, String name, Class<?> type) {
-        if (type.isInstance(o)) {
-            fail("!(" + name + " instanceof " + type + ")",
-                    name + " instanceof " + o.getClass() + " (" + ExceptionMessageUtil.valueAndName(o, name) + ")");
-        }
-    }
-
-    // ################################################################
     // eq (primitiveValue == primitiveValue)
 
     // ----------------------------------------------------------------

@@ -2005,7 +2005,7 @@ public class AggregationProcessor implements AggregationContextFactory {
     public static AggregationRowLookup getRowLookup(@NotNull final Table aggregationResult) {
         final Object value = aggregationResult.getAttribute(AGGREGATION_ROW_LOOKUP_ATTRIBUTE);
         Assert.neqNull(value, "aggregation result row lookup");
-        Assert.instanceOf(value, "aggregation result row lookup", AggregationRowLookup.class);
+        Assert.assertion(value instanceof AggregationRowLookup, "aggregation result row lookup");
         return (AggregationRowLookup) value;
     }
 }
