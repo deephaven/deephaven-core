@@ -162,7 +162,7 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
     }
 
     protected boolean systemicResult() {
-        return SystemicObjectTracker.isSystemic(result);
+        return result == null ? false : SystemicObjectTracker.isSystemic(result);
     }
 
     @Override
@@ -172,6 +172,9 @@ public abstract class MergedListener extends LivenessArtifact implements Notific
 
     protected void propagateErrorDownstream(
             final boolean fromProcess, @NotNull final Throwable error, @Nullable final TableListener.Entry entry) {
+        if (result == null) {
+            return;
+        }
         if (fromProcess && result.satisfied(getUpdateGraph().clock().currentStep())) {
             // If the result is already satisfied (because it managed to send its notification, or was otherwise
             // satisfied) we should not send our error notification on this cycle.
