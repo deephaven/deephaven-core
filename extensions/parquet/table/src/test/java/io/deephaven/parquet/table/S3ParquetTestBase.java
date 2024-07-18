@@ -136,6 +136,11 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
         final Table fromS3AsKV = ParquetTools.readTable(uri.toString(),
                 readInstructions.withLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED));
         assertTableEquals(expected, fromS3AsKV);
+
+        // Read with definition without layout
+        final Table fromS3AsFlatWithDefinition = ParquetTools.readTable(uri.toString(),
+                readInstructions.withTableDefinition(expected.getDefinition()));
+        assertTableEquals(expected, fromS3AsFlatWithDefinition);
     }
 
     @Test

@@ -126,8 +126,8 @@ public class ParquetTools {
     public static Table readTable(
             @NotNull final String source,
             @NotNull final ParquetInstructions readInstructions) {
-        final boolean isParquetFile = source.endsWith(PARQUET_FILE_EXTENSION);
-        final boolean isMetadataFile = ParquetUtils.isMetadataFile(source);
+        final boolean isParquetFile = ParquetUtils.isParquetFile(source);
+        final boolean isMetadataFile = !isParquetFile && ParquetUtils.isMetadataFile(source);
         final boolean isDirectory = !isParquetFile && !isMetadataFile;
         final URI sourceURI = convertToURI(source, isDirectory);
         if (readInstructions.getFileLayout().isPresent()) {
@@ -1130,9 +1130,6 @@ public class ParquetTools {
                     MAX_PARTITIONING_LEVELS_INFERENCE, readInstructions, channelsProvider), readInstructions);
         }
         final TableDefinition tableDefinition = readInstructions.getTableDefinition().get();
-        if (tableDefinition.getColumnStream().noneMatch(ColumnDefinition::isPartitioning)) {
-            throw new IllegalArgumentException("No partitioning columns");
-        }
         return readTable(ParquetKeyValuePartitionedLayout.create(directoryUri, tableDefinition,
                 readInstructions, channelsProvider), readInstructions);
     }

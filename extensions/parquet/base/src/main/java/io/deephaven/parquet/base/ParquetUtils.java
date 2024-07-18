@@ -50,15 +50,25 @@ public final class ParquetUtils {
     }
 
     /**
+     * This method verifies if the source points to a parquet file. Provided source can be a local file path or a URI.
+     * Also, it can point to a parquet file, metadata file or a directory.
+     */
+    public static boolean isParquetFile(@NotNull final String source) {
+        return source.endsWith(PARQUET_FILE_EXTENSION);
+    }
+
+    /**
      * This method verifies if the source points to a metadata file. Provided source can be a local file path or a URI.
      * Also, it can point to a parquet file, metadata file or a directory.
      */
     public static boolean isMetadataFile(@NotNull final String source) {
-        boolean ret = source.endsWith(METADATA_FILE_URI_SUFFIX) || source.endsWith(COMMON_METADATA_FILE_URI_SUFFIX);
-        if (File.separatorChar != URI_SEPARATOR_CHAR) {
-            ret = ret || source.endsWith(METADATA_FILE_SUFFIX) || source.endsWith(COMMON_METADATA_FILE_SUFFIX);
+        if (source.endsWith(METADATA_FILE_URI_SUFFIX) || source.endsWith(COMMON_METADATA_FILE_URI_SUFFIX)) {
+            return true;
         }
-        return ret;
+        if (File.separatorChar != URI_SEPARATOR_CHAR) {
+            return source.endsWith(METADATA_FILE_SUFFIX) || source.endsWith(COMMON_METADATA_FILE_SUFFIX);
+        }
+        return false;
     }
 
     /**

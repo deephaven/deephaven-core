@@ -54,6 +54,7 @@ import static io.deephaven.extensions.s3.S3SeekableChannelProviderPlugin.S3_URI_
 final class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
     private static final int MAX_KEYS_PER_BATCH = 1000;
+    private static final int UNKNOWN_SIZE = -1;
 
     private static final Logger log = LoggerFactory.getLogger(S3SeekableChannelProvider.class);
 
@@ -81,7 +82,7 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
     @Override
     public boolean exists(@NotNull final URI uri) {
-        if (getCachedSize(uri) >= 0) {
+        if (getCachedSize(uri) != UNKNOWN_SIZE) {
             return true;
         }
         final S3Uri s3Uri = s3AsyncClient.utilities().parseUri(uri);
@@ -101,7 +102,7 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
         final S3Uri s3Uri = s3AsyncClient.utilities().parseUri(uri);
         // context is unused here, will be set before reading from the channel
         final long cachedSize = getCachedSize(uri);
-        if (cachedSize >= 0) {
+        if (cachedSize != UNKNOWN_SIZE) {
             return new S3SeekableByteChannel(s3Uri, cachedSize);
         }
         return new S3SeekableByteChannel(s3Uri);
@@ -261,12 +262,12 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
      */
     long fetchFileSize(@NotNull final S3Uri s3Uri) throws IOException {
         final long cachedSize = getCachedSize(s3Uri.uri());
-        if (cachedSize >= 0) {
+        if (cachedSize != UNKNOWN_SIZE) {
             return cachedSize;
         }
         // Fetch the size of the file using a blocking HEAD request, and store it in the cache for future use
         if (log.isDebugEnabled()) {
-            log.debug().append("Head: ").endl();
+            log.debug().append("Head: ").append(s3Uri.toString()).endl();
         }
         final HeadObjectResponse headObjectResponse;
         try {
@@ -285,7 +286,7 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     }
 
     /**
-     * Get the cached size for the given URI, or -1 if the size is not cached.
+     * Get the cached size for the given URI, or {@value UNKNOWN_SIZE} if the size is not cached.
      */
     private long getCachedSize(final URI uri) {
         final Map<URI, FileSizeInfo> fileSizeCache = fileSizeCacheRef.get();
@@ -295,13 +296,16 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
                 return sizeInfo.size;
             }
         }
-        return -1;
+        return UNKNOWN_SIZE;
     }
 
     /**
      * Cache the file size for the given URI.
      */
     private void updateFileSizeCache(@NotNull final URI uri, final long size) {
+        if (size < 0) {
+            throw new IllegalArgumentException("Invalid file size: " + size + " for URI " + uri);
+        }
         final Map<URI, FileSizeInfo> fileSizeCache = getFileSizeCache();
         fileSizeCache.compute(uri, (key, existingInfo) -> {
             if (existingInfo == null) {

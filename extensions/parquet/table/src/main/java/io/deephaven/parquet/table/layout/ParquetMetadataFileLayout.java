@@ -90,7 +90,7 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
             @Nullable SeekableChannelsProvider channelsProvider) {
         final String path = source.getRawPath();
         final boolean isMetadataFile = path.endsWith(METADATA_FILE_URI_SUFFIX);
-        final boolean isCommonMetadataFile = path.endsWith(COMMON_METADATA_FILE_URI_SUFFIX);
+        final boolean isCommonMetadataFile = !isMetadataFile && path.endsWith(COMMON_METADATA_FILE_URI_SUFFIX);
         final boolean isDirectory = !isMetadataFile && !isCommonMetadataFile;
         final URI directory = isDirectory ? source : source.resolve(".");
         final URI metadataFileURI = isMetadataFile ? source : directory.resolve(METADATA_FILE_NAME);
