@@ -283,6 +283,7 @@ mention the version explicitly. These files are listed below:
 #
 gradle.properties
 R/rdeephaven/DESCRIPTION
+cpp-client/deephaven/CMakeLists.txt
 ```
 
 This leaves the files "ready" for the next regular release, and also ensures any build done from
