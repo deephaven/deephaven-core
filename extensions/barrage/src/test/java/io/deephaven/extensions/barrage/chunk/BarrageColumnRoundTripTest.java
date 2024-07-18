@@ -26,7 +26,6 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.WritableShortChunk;
 import io.deephaven.extensions.barrage.util.ExposedByteArrayOutputStream;
-import io.deephaven.extensions.barrage.util.BarrageProtoUtil;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.proto.flight.util.SchemaHelper;
