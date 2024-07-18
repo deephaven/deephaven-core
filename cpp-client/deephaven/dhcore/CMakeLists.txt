@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 # for CMAKE_INSTALL_{dir}
 include(GNUInstallDirs)
 
-find_package(Immer REQUIRED)
+find_package(Immer CONFIG REQUIRED)
 
 set(ALL_FILES
     src/types.cc
@@ -142,5 +142,5 @@ foreach (whichlib dhcore dhcore_static)
   target_include_directories(${whichlib} PRIVATE flatbuf)
   target_include_directories(${whichlib} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/public>)
 
-  target_link_libraries(${whichlib} PUBLIC immer)
+  target_link_libraries(${whichlib} PRIVATE immer)
 endforeach()
