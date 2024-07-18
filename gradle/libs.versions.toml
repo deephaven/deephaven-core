@@ -29,7 +29,7 @@ flatbuffers = "1.12.0"
 freemarker = "2.3.31"
 google-findbugs = "3.0.2"
 google-java-allocation-instrumenter = "3.3.0"
-groovy = "3.0.21"
+groovy = "3.0.22"
 # Only bump this in concert with boringssl
 grpc = "1.58.0"
 guava = "33.2.0-jre"
