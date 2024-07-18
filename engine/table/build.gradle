@@ -21,6 +21,7 @@ dependencies {
     api project(':deephaven-jpy-ext')
     api project(':hotspot')
     api project(':IO')
+    api project(':codec-api')
 
     implementation project(':DHProcess')
     implementation project(':engine-function')
@@ -28,6 +29,8 @@ dependencies {
     implementation project(':Configuration')
     implementation project(':log-factory')
     implementation project(':Stats')
+    implementation project(':codec-builtin')
+    implementation project(':codec-cache')
 
     implementation 'com.github.f4b6a3:uuid-creator:5.2.0'
     // TODO(deephaven-core#3204): t-digest 3.3 appears to have higher errors than 3.2
