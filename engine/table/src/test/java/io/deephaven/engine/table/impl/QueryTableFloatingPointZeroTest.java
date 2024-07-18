@@ -54,6 +54,8 @@ public class QueryTableFloatingPointZeroTest {
     public void testFloatJoinKey() {
         final Table t1 = newTable(floatCol("KeyNeg", -0.0f), floatCol("Neg", -0.0f));
         final Table t2 = newTable(floatCol("KeyPos", 0.0f), floatCol("Pos", 0.0f));
+        final Table ajT1 = newTable(intCol("KeyA", 0), floatCol("KeyNeg", -0.0f), floatCol("Neg", -0.0f));
+        final Table ajT2 = newTable(intCol("KeyA", 0), floatCol("KeyPos", 0.0f), floatCol("Pos", 0.0f));
         for (Table out : Arrays.asList(
                 t1.naturalJoin(t2, "KeyNeg=KeyPos"),
                 t2.naturalJoin(t1, "KeyPos=KeyNeg"),
@@ -61,8 +63,10 @@ public class QueryTableFloatingPointZeroTest {
                 t2.exactJoin(t1, "KeyPos=KeyNeg"),
                 t1.join(t2, "KeyNeg=KeyPos"),
                 t2.join(t1, "KeyPos=KeyNeg"),
-                t1.aj(t2, "KeyNeg>=KeyPos"),
-                t2.aj(t1, "KeyPos>=KeyNeg"))) {
+                ajT1.aj(ajT2, "KeyA,KeyNeg>=KeyPos"),
+                ajT2.aj(ajT1, "KeyA,KeyPos>=KeyNeg"),
+                ajT1.aj(ajT2, "KeyNeg=KeyPos,KeyA"),
+                ajT2.aj(ajT1, "KeyPos=KeyNeg,KeyA"))) {
             final long key = oneKey(out);
             floatToBitsEquals(out, "KeyNeg", key, -0.0f);
             floatToBitsEquals(out, "KeyPos", key, 0.0f);
@@ -75,6 +79,8 @@ public class QueryTableFloatingPointZeroTest {
     public void testDoubleJoinKey() {
         final Table t1 = newTable(doubleCol("KeyNeg", -0.0), doubleCol("Neg", -0.0));
         final Table t2 = newTable(doubleCol("KeyPos", 0.0), doubleCol("Pos", 0.0));
+        final Table ajT1 = newTable(intCol("KeyA", 0), doubleCol("KeyNeg", -0.0), doubleCol("Neg", -0.0));
+        final Table ajT2 = newTable(intCol("KeyA", 0), doubleCol("KeyPos", 0.0), doubleCol("Pos", 0.0));
         for (Table out : Arrays.asList(
                 t1.naturalJoin(t2, "KeyNeg=KeyPos"),
                 t2.naturalJoin(t1, "KeyPos=KeyNeg"),
@@ -82,8 +88,10 @@ public class QueryTableFloatingPointZeroTest {
                 t2.exactJoin(t1, "KeyPos=KeyNeg"),
                 t1.join(t2, "KeyNeg=KeyPos"),
                 t2.join(t1, "KeyPos=KeyNeg"),
-                t1.aj(t2, "KeyNeg>=KeyPos"),
-                t2.aj(t1, "KeyPos>=KeyNeg"))) {
+                ajT1.aj(ajT2, "KeyA,KeyNeg>=KeyPos"),
+                ajT2.aj(ajT1, "KeyA,KeyPos>=KeyNeg"),
+                ajT1.aj(ajT2, "KeyNeg=KeyPos,KeyA"),
+                ajT2.aj(ajT1, "KeyPos=KeyNeg,KeyA"))) {
             final long key = oneKey(out);
             doubleToBitsEquals(out, "KeyNeg", key, -0.0);
             doubleToBitsEquals(out, "KeyPos", key, 0.0);
@@ -96,6 +104,10 @@ public class QueryTableFloatingPointZeroTest {
     public void testFloatJoinMultiKey() {
         final Table t1 = newTable(intCol("Key1", 0), floatCol("KeyNeg", -0.0f), floatCol("Neg", -0.0f));
         final Table t2 = newTable(intCol("Key1", 0), floatCol("KeyPos", 0.0f), floatCol("Pos", 0.0f));
+        final Table ajT1 =
+                newTable(intCol("KeyA", 0), intCol("Key1", 0), floatCol("KeyNeg", -0.0f), floatCol("Neg", -0.0f));
+        final Table ajT2 =
+                newTable(intCol("KeyA", 0), intCol("Key1", 0), floatCol("KeyPos", 0.0f), floatCol("Pos", 0.0f));
         for (Table out : Arrays.asList(
                 t1.naturalJoin(t2, "Key1,KeyNeg=KeyPos"),
                 t2.naturalJoin(t1, "Key1,KeyPos=KeyNeg"),
@@ -103,16 +115,22 @@ public class QueryTableFloatingPointZeroTest {
                 t2.exactJoin(t1, "Key1,KeyPos=KeyNeg"),
                 t1.join(t2, "Key1,KeyNeg=KeyPos"),
                 t2.join(t1, "Key1,KeyPos=KeyNeg"),
-                t1.aj(t2, "Key1,KeyNeg>=KeyPos"),
-                t2.aj(t1, "Key1,KeyPos>=KeyNeg"),
+
                 t1.naturalJoin(t2, "KeyNeg=KeyPos,Key1"),
                 t2.naturalJoin(t1, "KeyPos=KeyNeg,Key1"),
                 t1.exactJoin(t2, "KeyNeg=KeyPos,Key1"),
                 t2.exactJoin(t1, "KeyPos=KeyNeg,Key1"),
                 t1.join(t2, "KeyNeg=KeyPos,Key1"),
                 t2.join(t1, "KeyPos=KeyNeg,Key1"),
-                t1.aj(t2, "KeyNeg=KeyPos,Key1"),
-                t2.aj(t1, "KeyPos=KeyNeg,Key1"))) {
+
+                ajT1.aj(ajT2, "KeyA,Key1,KeyNeg>=KeyPos"),
+                ajT2.aj(ajT1, "KeyA,Key1,KeyPos>=KeyNeg"),
+
+                ajT1.aj(ajT2, "KeyA,KeyNeg=KeyPos,Key1"),
+                ajT2.aj(ajT1, "KeyA,KeyPos=KeyNeg,Key1"),
+
+                ajT1.aj(ajT2, "KeyNeg=KeyPos,KeyA,Key1"),
+                ajT2.aj(ajT1, "KeyPos=KeyNeg,KeyA,Key1"))) {
             final long key = oneKey(out);
             floatToBitsEquals(out, "KeyNeg", key, -0.0f);
             floatToBitsEquals(out, "KeyPos", key, 0.0f);
@@ -125,6 +143,11 @@ public class QueryTableFloatingPointZeroTest {
     public void testDoubleJoinMultiKey() {
         final Table t1 = newTable(intCol("Key1", 0), doubleCol("KeyNeg", -0.0), doubleCol("Neg", -0.0));
         final Table t2 = newTable(intCol("Key1", 0), doubleCol("KeyPos", 0.0), doubleCol("Pos", 0.0));
+        final Table ajT1 =
+                newTable(intCol("KeyA", 0), intCol("Key1", 0), doubleCol("KeyNeg", -0.0), doubleCol("Neg", -0.0));
+        final Table ajT2 =
+                newTable(intCol("KeyA", 0), intCol("Key1", 0), doubleCol("KeyPos", 0.0), doubleCol("Pos", 0.0));
+
         for (Table out : Arrays.asList(
                 t1.naturalJoin(t2, "Key1,KeyNeg=KeyPos"),
                 t2.naturalJoin(t1, "Key1,KeyPos=KeyNeg"),
@@ -132,16 +155,22 @@ public class QueryTableFloatingPointZeroTest {
                 t2.exactJoin(t1, "Key1,KeyPos=KeyNeg"),
                 t1.join(t2, "Key1,KeyNeg=KeyPos"),
                 t2.join(t1, "Key1,KeyPos=KeyNeg"),
-                t1.aj(t2, "Key1,KeyNeg>=KeyPos"),
-                t2.aj(t1, "Key1,KeyPos>=KeyNeg"),
+
                 t1.naturalJoin(t2, "KeyNeg=KeyPos,Key1"),
                 t2.naturalJoin(t1, "KeyPos=KeyNeg,Key1"),
                 t1.exactJoin(t2, "KeyNeg=KeyPos,Key1"),
                 t2.exactJoin(t1, "KeyPos=KeyNeg,Key1"),
                 t1.join(t2, "KeyNeg=KeyPos,Key1"),
                 t2.join(t1, "KeyPos=KeyNeg,Key1"),
-                t1.aj(t2, "KeyNeg=KeyPos,Key1"),
-                t2.aj(t1, "KeyPos=KeyNeg,Key1"))) {
+
+                ajT1.aj(ajT2, "KeyA,Key1,KeyNeg>=KeyPos"),
+                ajT2.aj(ajT1, "KeyA,Key1,KeyPos>=KeyNeg"),
+
+                ajT1.aj(ajT2, "KeyA,KeyNeg=KeyPos,Key1"),
+                ajT2.aj(ajT1, "KeyA,KeyPos=KeyNeg,Key1"),
+
+                ajT1.aj(ajT2, "KeyNeg=KeyPos,KeyA,Key1"),
+                ajT2.aj(ajT1, "KeyPos=KeyNeg,KeyA,Key1"))) {
             final long key = oneKey(out);
             doubleToBitsEquals(out, "KeyNeg", key, -0.0);
             doubleToBitsEquals(out, "KeyPos", key, 0.0);
@@ -152,65 +181,61 @@ public class QueryTableFloatingPointZeroTest {
 
     @Test
     public void testFloatMultiJoin() {
+        // Note: table equals check doesn't account for -0.0 v 0.0, so explicitly testing that as well
+        final Table expected = newTable(
+                floatCol("Key", 0.0f),
+                intCol("S1", 1),
+                intCol("S2", 2),
+                intCol("S3", 3));
         // preserves Key from first table
         {
             final Table t1 = newTable(floatCol("Key", -0.0f), intCol("S1", 1));
             final Table t2 = newTable(floatCol("Key", 0.0f), intCol("S2", 2));
             final Table t3 = newTable(floatCol("Key", -0.0f), intCol("S3", 3));
-            final Table out = MultiJoinFactory.of("Key", t1, t2, t3).table();
-            final long key = oneKey(out);
-            floatToBitsEquals(out, "Key", key, -0.0f);
+            final Table actual = MultiJoinFactory.of("Key", t1, t2, t3).table();
+            final long key = oneKey(actual);
+            floatToBitsEquals(actual, "Key", key, -0.0f);
+            assertTableEquals(expected, actual);
         }
         {
             final Table t1 = newTable(floatCol("Key", 0.0f), intCol("S1", 1));
             final Table t2 = newTable(floatCol("Key", 0.0f), intCol("S2", 2));
             final Table t3 = newTable(floatCol("Key", -0.0f), intCol("S3", 3));
-            final Table out = MultiJoinFactory.of("Key", t1, t2, t3).table();
-            final long key = oneKey(out);
-            floatToBitsEquals(out, "Key", key, 0.0f);
+            final Table actual = MultiJoinFactory.of("Key", t1, t2, t3).table();
+            final long key = oneKey(actual);
+            floatToBitsEquals(actual, "Key", key, 0.0f);
+            assertTableEquals(expected, actual);
         }
     }
 
     @Test
     public void testDoubleMultiJoin() {
+        // Note: table equals check doesn't account for -0.0 v 0.0, so explicitly testing that as well
+        final Table expected = newTable(
+                doubleCol("Key", 0.0),
+                intCol("S1", 1),
+                intCol("S2", 2),
+                intCol("S3", 3));
         // preserves Key from first table
         {
             final Table t1 = newTable(doubleCol("Key", -0.0), intCol("S1", 1));
             final Table t2 = newTable(doubleCol("Key", 0.0), intCol("S2", 2));
             final Table t3 = newTable(doubleCol("Key", -0.0), intCol("S3", 3));
-            final Table out = MultiJoinFactory.of("Key", t1, t2, t3).table();
-            final long key = oneKey(out);
-            doubleToBitsEquals(out, "Key", key, -0.0);
+            final Table actual = MultiJoinFactory.of("Key", t1, t2, t3).table();
+            final long key = oneKey(actual);
+            doubleToBitsEquals(actual, "Key", key, -0.0);
+            assertTableEquals(expected, actual);
         }
         {
             final Table t1 = newTable(doubleCol("Key", 0.0), intCol("S1", 1));
             final Table t2 = newTable(doubleCol("Key", 0.0), intCol("S2", 2));
             final Table t3 = newTable(doubleCol("Key", -0.0), intCol("S3", 3));
-            final Table out = MultiJoinFactory.of("Key", t1, t2, t3).table();
-            final long key = oneKey(out);
-            doubleToBitsEquals(out, "Key", key, 0.0);
+            final Table actual = MultiJoinFactory.of("Key", t1, t2, t3).table();
+            final long key = oneKey(actual);
+            doubleToBitsEquals(actual, "Key", key, 0.0);
+            assertTableEquals(expected, actual);
         }
     }
-
-    // @Test
-    // public void testRangeJoinFloatKey() {
-    //
-    // }
-    //
-    // @Test
-    // public void testRangeJoinDoubleKey() {
-    //
-    // }
-    //
-    // @Test
-    // public void testRangeJoinFloatAggResults() {
-    //
-    // }
-    //
-    // @Test
-    // public void testRangeJoinDoubleAggResults() {
-    //
-    // }
 
     @Test
     public void testFloatAggKey() {
@@ -237,6 +262,46 @@ public class QueryTableFloatingPointZeroTest {
             final Table xy = newTable(doubleCol("X", 0.0, -0.0), intCol("Y", 0, 1));
             final Table grouped = xy.groupBy("X");
             doubleToBitsEquals(grouped, "X", oneKey(grouped), 0.0);
+        }
+    }
+
+    @Test
+    public void testFloatDoubleAggKey() {
+        {
+            final Table xyz = newTable(
+                    floatCol("X", -0.0f, 0.0f),
+                    doubleCol("Y", -0.0, 0.0),
+                    intCol("Z", 0, 1));
+            final Table grouped = xyz.groupBy("X", "Y");
+            floatToBitsEquals(grouped, "X", oneKey(grouped), -0.0f);
+            doubleToBitsEquals(grouped, "Y", oneKey(grouped), -0.0);
+        }
+        {
+            final Table xyz = newTable(
+                    floatCol("X", -0.0f, 0.0f),
+                    doubleCol("Y", -0.0, 0.0),
+                    intCol("Z", 0, 1));
+            final Table grouped = xyz.groupBy("Y", "X");
+            floatToBitsEquals(grouped, "X", oneKey(grouped), -0.0f);
+            doubleToBitsEquals(grouped, "Y", oneKey(grouped), -0.0);
+        }
+        {
+            final Table xyz = newTable(
+                    floatCol("X", -0.0f, 0.0f),
+                    doubleCol("Y", 0.0, -0.0),
+                    intCol("Z", 0, 1));
+            final Table grouped = xyz.groupBy("X", "Y");
+            floatToBitsEquals(grouped, "X", oneKey(grouped), -0.0f);
+            doubleToBitsEquals(grouped, "Y", oneKey(grouped), 0.0);
+        }
+        {
+            final Table xyz = newTable(
+                    floatCol("X", -0.0f, 0.0f),
+                    doubleCol("Y", 0.0, -0.0),
+                    intCol("Z", 0, 1));
+            final Table grouped = xyz.groupBy("Y", "X");
+            floatToBitsEquals(grouped, "X", oneKey(grouped), -0.0f);
+            doubleToBitsEquals(grouped, "Y", oneKey(grouped), 0.0);
         }
     }
 
