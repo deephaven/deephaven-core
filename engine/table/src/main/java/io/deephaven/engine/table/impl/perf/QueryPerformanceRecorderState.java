@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl.perf;
 
 import io.deephaven.chunk.util.pools.ChunkPoolInstrumentation;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.updategraph.UpdateGraphLock;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
@@ -66,7 +65,7 @@ public abstract class QueryPerformanceRecorderState {
             throw new UncheckedIOException("Error reading file " + propVal, e);
         }
 
-        PACKAGE_FILTERS = filters.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        PACKAGE_FILTERS = filters.toArray(String[]::new);
     }
 
     private QueryPerformanceRecorderState() {

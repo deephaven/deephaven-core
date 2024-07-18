@@ -142,8 +142,8 @@ public class TestThreadSafeLenientFixedSizePool extends TestCase {
         // too small
         try {
             new ThreadSafeLenientFixedSizePool<Object>(6, m_mockObjectFactory, m_mockClearingProcedure);
-        } catch (RequirementFailure requirementFailure) {
-            assertTrue(requirementFailure.isThisStackFrameCulprit(0));
+            fail("expected to throw");
+        } catch (RequirementFailure expected) {
         }
 
         // minimum size
@@ -156,15 +156,15 @@ public class TestThreadSafeLenientFixedSizePool extends TestCase {
         // no factory
         try {
             ThreadSafeLenientFixedSizePool.FACTORY.create(OBJECTS.length, null, m_mockClearingProcedure);
-        } catch (RequirementFailure requirementFailure) {
-            assertTrue(requirementFailure.isThisStackFrameCulprit(0));
+            fail("expected to throw");
+        } catch (RequirementFailure expected) {
         }
 
         // too small
         try {
             ThreadSafeLenientFixedSizePool.FACTORY.create(6, m_mockObjectFactory, m_mockClearingProcedure);
-        } catch (RequirementFailure requirementFailure) {
-            assertTrue(requirementFailure.isThisStackFrameCulprit(0));
+            fail("expected to throw");
+        } catch (RequirementFailure expected) {
         }
 
         // minimum size

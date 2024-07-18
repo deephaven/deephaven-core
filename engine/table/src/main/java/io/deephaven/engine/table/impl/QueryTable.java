@@ -19,7 +19,6 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.exceptions.TableInitializationException;
@@ -70,6 +69,7 @@ import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.annotations.TestUseOnly;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.mutable.MutableInt;
+import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.vector.Vector;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -89,7 +89,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY;
 import static io.deephaven.engine.table.impl.MatchPair.matchString;
 import static io.deephaven.engine.table.impl.partitioned.PartitionedTableCreatorImpl.CONSTITUENT;
 import static java.lang.Boolean.TRUE;
@@ -1195,7 +1194,7 @@ public class QueryTable extends BaseTable<QueryTable> {
             if (dataIndexer != null
                     && !(filter instanceof ReindexingFilter)
                     && filter.isSimpleFilter()
-                    && DataIndexer.hasDataIndex(this, filter.getColumns().toArray(ZERO_LENGTH_STRING_ARRAY))) {
+                    && DataIndexer.hasDataIndex(this, filter.getColumns().toArray(String[]::new))) {
                 priorityFilterIndexes.set(fi);
             }
         }
@@ -2335,7 +2334,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     final Table naturalJoinResult = naturalJoinImpl(rightGrouped, columnsToMatch,
                             columnsToAddAfterRename.toArray(MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY));
                     final QueryTable ungroupedResult = (QueryTable) naturalJoinResult
-                            .ungroup(columnsToUngroupBy.toArray(ZERO_LENGTH_STRING_ARRAY));
+                            .ungroup(columnsToUngroupBy.toArray(String[]::new));
 
                     maybeCopyColumnDescriptions(ungroupedResult, rightTable, columnsToMatch, realColumnsToAdd);
 
@@ -3441,7 +3440,7 @@ public class QueryTable extends BaseTable<QueryTable> {
     public QueryTable getSubTable(@NotNull final TrackingRowSet rowSet) {
         final UpdateGraph updateGraph = getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            return getSubTable(rowSet, null, null, CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
+            return getSubTable(rowSet, null, null, ArrayTypeUtils.EMPTY_OBJECT_ARRAY);
         }
     }
 

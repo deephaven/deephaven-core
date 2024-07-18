@@ -9,6 +9,10 @@ updates:
     labels:
       - "NoDocumentationNeeded"
       - "NoReleaseNotesNeeded"
+      - "version-bump"
+    assignees:
+      - "devinrsmith"
+      - "stanbrub"
   - package-ecosystem: "gradle"
     directory: "/"
     schedule:
@@ -18,3 +22,7 @@ updates:
     labels:
       - "NoDocumentationNeeded"
       - "NoReleaseNotesNeeded"
+      - "version-bump"
+    assignees:
+      - "devinrsmith"
+      - "rcaudy"

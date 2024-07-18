@@ -7,7 +7,7 @@ description = 'The Deephaven URI library'
 
 dependencies {
     compileOnly project(':util-immutables')
-    annotationProcessor libs.immutables
+    annotationProcessor libs.immutables.value
 
     testImplementation platform(libs.junit.bom)
     testImplementation libs.junit.jupiter

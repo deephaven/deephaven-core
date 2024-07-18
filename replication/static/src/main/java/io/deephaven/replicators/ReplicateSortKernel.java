@@ -46,9 +46,9 @@ public class ReplicateSortKernel {
         fixupObjectRuns(objectRunPath);
 
         charToAllButBoolean(TASK,
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/partition/CharPartitionKernel.java");
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/sort/partition/CharPartitionKernel.java");
         final String objectPartitionPath = charToObject(TASK,
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/partition/CharPartitionKernel.java");
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/sort/partition/CharPartitionKernel.java");
         fixupObjectPartition(objectPartitionPath);
 
         charToAllButBoolean(TASK,
