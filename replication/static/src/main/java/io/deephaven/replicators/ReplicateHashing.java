@@ -137,9 +137,13 @@ public class ReplicateHashing {
         Assert.eqTrue(objectChunkEqualsFileName.renameTo(objectChunkIdentifyEqualsFileName),
                 "objectChunkEqualsFileName.renameTo(objectChunkIdentifyEqualsFileName)");
 
-        final List<String> lines = FileUtils.readLines(objectChunkIdentifyEqualsFileName, Charset.defaultCharset());
-        FileUtils.writeLines(objectChunkIdentifyEqualsFileName, simpleFixup(fixupChunkAttributes(lines),
-                "name", "ObjectChunkEquals", "ObjectChunkIdentityEquals"));
+        List<String> lines = FileUtils.readLines(objectChunkIdentifyEqualsFileName, Charset.defaultCharset());
+        lines = fixupChunkAttributes(lines);
+        lines = simpleFixup(lines,
+                "name", "ObjectChunkEquals", "ObjectChunkIdentityEquals");
+        lines = simpleFixup(lines,
+                "eq", "ObjectComparisons\\.eq\\(lhs, rhs\\)", "lhs == rhs");
+        FileUtils.writeLines(objectChunkIdentifyEqualsFileName, lines);
     }
 
     private static void fixupObjectChunkDeepEquals(String objectPath) throws IOException {

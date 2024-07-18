@@ -251,7 +251,7 @@ public class ObjectChunkIdentityEquals implements ChunkEquals {
 
     // region eq
     static private boolean eq(Object lhs, Object rhs) {
-        return ObjectComparisons.eq(lhs, rhs);
+        return lhs == rhs;
     }
     // endregion eq
 
