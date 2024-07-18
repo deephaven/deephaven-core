@@ -124,6 +124,10 @@ jmh {
     jmhVersion = libs.versions.jmh.get()
 }
 
+jmhJar {
+    zip64 = true
+}
+
 // No need to assemble the jar by default on build
 // assemble.dependsOn(jmhJar)
 check.dependsOn(jmhClasses)
