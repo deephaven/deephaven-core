@@ -26,6 +26,7 @@ import org.junit.experimental.categories.Category;
 import java.util.Arrays;
 import java.util.List;
 
+import static io.deephaven.engine.testutil.TstUtils.assertEquals;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.doubleCol;
 import static io.deephaven.engine.util.TableTools.floatCol;
@@ -578,13 +579,8 @@ public class QueryTableFloatingPointZeroTest {
     }
 
     private static long oneKey(Table table) {
-        final long key;
-        try (final RowSet.Iterator iterator = table.getRowSet().iterator()) {
-            TestCase.assertTrue(iterator.hasNext());
-            key = iterator.nextLong();
-            TestCase.assertFalse(iterator.hasNext());
-        }
-        return key;
+        TestCase.assertEquals(1, table.size());
+        return table.getRowSet().firstRowKey();
     }
 
     private static void floatToBitsEquals(Table table, String column, long key, float expectedExact) {
