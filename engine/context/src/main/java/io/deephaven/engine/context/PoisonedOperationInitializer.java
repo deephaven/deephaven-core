@@ -30,9 +30,4 @@ public class PoisonedOperationInitializer implements OperationInitializer {
     public int parallelismFactor() {
         return fail();
     }
-
-    @Override
-    public void shutdownNow() {
-        fail();
-    }
 }

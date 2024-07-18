@@ -6,11 +6,12 @@ package io.deephaven.server.runner.updategraph;
 import dagger.Module;
 import dagger.Provides;
 import io.deephaven.engine.table.impl.OperationInitializationThreadPool;
-import io.deephaven.engine.table.impl.EgressInitializationThreadPool;
+import io.deephaven.engine.table.impl.ForkJoinPoolOperationInitializer;
 import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.util.thread.ThreadInitializationFactory;
+
 import javax.inject.Named;
 import javax.inject.Singleton;
 
@@ -42,9 +43,8 @@ public class UpdateGraphModule {
 
     @Provides
     @Singleton
-    @Named(OperationInitializer.EGRESS_NAME)
-    public static OperationInitializer provideEgressOperationInitializer(
-            final ThreadInitializationFactory factory) {
-        return new EgressInitializationThreadPool(factory);
+    @Named(OperationInitializer.FORK_JOIN_NAME)
+    public static OperationInitializer provideForkJoinPoolOperationInitializer() {
+        return ForkJoinPoolOperationInitializer.fromCommonPool();
     }
 }

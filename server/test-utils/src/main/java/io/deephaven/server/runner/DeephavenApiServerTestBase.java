@@ -9,7 +9,6 @@ import io.deephaven.client.ClientDefaultsModule;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.io.logger.LogBuffer;
@@ -89,14 +88,6 @@ public abstract class DeephavenApiServerTestBase {
     public final GrpcCleanupRule grpcCleanup = new GrpcCleanupRule();
 
     @Inject
-    @Named(OperationInitializer.EGRESS_NAME)
-    OperationInitializer egressOperationInitializer;
-
-    @Inject
-    @Named(OperationInitializer.DEFAULT_NAME)
-    OperationInitializer defaultOperationInitializer;
-
-    @Inject
     ExecutionContext executionContext;
     private SafeCloseable executionContextCloseable;
 
@@ -172,8 +163,7 @@ public abstract class DeephavenApiServerTestBase {
             updateGraph.resetForUnitTests(true);
         }
         executionContextCloseable.close();
-        egressOperationInitializer.shutdownNow();
-        defaultOperationInitializer.shutdownNow();
+
         scheduler.shutdown();
     }
 

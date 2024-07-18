@@ -1765,10 +1765,10 @@ public class ConstructSnapshot {
                 final RowSequence reducedRowSet = it.getNextRowSequenceWithLength(chunkSize);
                 if (reducedRowSet.intSize() != chunkSize) {
                     failIfConcurrentAttemptInconsistent();
-                    final String error = "Rowset did not provide requested number of rows in an otherwise consistent " +
-                            "state, requested = " + chunkSize + ", actual = " + reducedRowSet.size();
-                    log.error().append(error).endl();
-                    throw new SnapshotUnsuccessfulException(error);
+                    throw new SnapshotUnsuccessfulException(String.format(
+                            "Rowset did not provide requested number of rows in an otherwise consistent state, " +
+                                    "requested = %d, actual = %d",
+                            chunkSize, reducedRowSet.size()));
                 }
                 // Populate the snapshot data for each non-empty column for the current chunk of rows
                 for (int colRank = 0; colRank < numCols; ++colRank) {

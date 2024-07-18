@@ -14,7 +14,6 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.exceptions.UpdateGraphConflictException;
@@ -37,6 +36,7 @@ import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.LogicalClock;
+import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.UpdateGraphLock;
 import io.deephaven.engine.util.TableTools;
@@ -2708,21 +2708,28 @@ public class QueryTableTest extends QueryTableTestBase {
                 ColumnVectors.ofObject(t1, "Y", String.class).toArray());
     }
 
-    private static final class CustomOperationInitializationThreadPool extends EgressInitializationThreadPool {
+    private static final class CustomOperationInitializationThreadPool implements OperationInitializer {
         private final AtomicBoolean isUsed = new AtomicBoolean(false);
+        OperationInitializer delegate = ForkJoinPoolOperationInitializer.fromCommonPool();
 
-        public CustomOperationInitializationThreadPool() {
-            super(ThreadInitializationFactory.NO_OP);
-        }
-
-        public boolean isUsed() {
-            return isUsed.get();
+        @Override
+        public boolean canParallelize() {
+            return delegate.canParallelize();
         }
 
         @Override
         public Future<?> submit(final Runnable runnable) {
             isUsed.set(true);
-            return super.submit(runnable);
+            return delegate.submit(runnable);
+        }
+
+        @Override
+        public int parallelismFactor() {
+            return delegate.parallelismFactor();
+        }
+
+        public boolean isUsed() {
+            return isUsed.get();
         }
 
         public void reset() {

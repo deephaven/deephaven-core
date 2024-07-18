@@ -129,7 +129,7 @@ public class BarrageMessageProducer extends LivenessArtifact
                 final Scheduler scheduler,
                 final SessionService.ErrorTransformer errorTransformer,
                 final BarrageStreamGenerator.Factory streamGeneratorFactory,
-                @Named(OperationInitializer.EGRESS_NAME) final OperationInitializer operationInitializer,
+                @Named(OperationInitializer.FORK_JOIN_NAME) final OperationInitializer operationInitializer,
                 @Assisted final BaseTable<?> parent,
                 @Assisted final long updateIntervalMs) {
             this(scheduler, errorTransformer, streamGeneratorFactory, operationInitializer, parent, updateIntervalMs,

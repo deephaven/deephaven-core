@@ -234,9 +234,6 @@ public abstract class FlightMessageRoundTripTest {
         TestAuthorizationProvider authorizationProvider();
 
         Registration.Callback registration();
-
-        @Named(OperationInitializer.EGRESS_NAME)
-        OperationInitializer egressOperationInitializer();
     }
 
     private LogBuffer logBuffer;
@@ -340,7 +337,6 @@ public abstract class FlightMessageRoundTripTest {
             server = null;
         }
 
-        component.egressOperationInitializer().shutdownNow();
         LogBufferGlobal.clear(logBuffer);
     }
 

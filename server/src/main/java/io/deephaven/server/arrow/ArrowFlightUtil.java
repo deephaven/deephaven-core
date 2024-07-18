@@ -400,7 +400,7 @@ public class ArrowFlightUtil {
                 final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> subscriptionOptAdapter,
                 final BarrageMessageProducer.Adapter<BarrageSnapshotRequest, BarrageSnapshotOptions> snapshotOptAdapter,
                 final SessionService.ErrorTransformer errorTransformer,
-                @Named(OperationInitializer.EGRESS_NAME) final OperationInitializer operationInitializer,
+                @Named(OperationInitializer.FORK_JOIN_NAME) final OperationInitializer operationInitializer,
                 @Assisted final SessionState session,
                 @Assisted final StreamObserver<InputStream> responseObserver) {
 
