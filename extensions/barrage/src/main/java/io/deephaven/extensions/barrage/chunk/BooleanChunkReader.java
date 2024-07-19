@@ -138,4 +138,14 @@ public class BooleanChunkReader implements ChunkReader {
             chunk.fillWithNullValue(offset + ei, pendingSkips);
         }
     }
+
+    /**
+     * Returns the number of longs needed to represent a single bit per element.
+     *
+     * @param numElements the number of rows
+     * @return number of longs needed to represent numElements bits rounded up to the nearest long
+     */
+    private static int getNumLongsForBitPackOfSize(final int numElements) {
+        return ((numElements + 63) / 64);
+    }
 }
