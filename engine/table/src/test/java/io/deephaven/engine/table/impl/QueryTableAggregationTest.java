@@ -3976,7 +3976,7 @@ public class QueryTableAggregationTest {
                     t4.updateView("Date=`2021-07-21`", "Num=400")).moveColumnsUp("Date", "Num");
 
             final Table loaded = ParquetTools.readTable(
-                    new ParquetKeyValuePartitionedLayout(testRootFile.toURI(), 2, ParquetInstructions.EMPTY),
+                    ParquetKeyValuePartitionedLayout.create(testRootFile.toURI(), 2, ParquetInstructions.EMPTY, null),
                     ParquetInstructions.EMPTY);
 
             // verify the sources are identical

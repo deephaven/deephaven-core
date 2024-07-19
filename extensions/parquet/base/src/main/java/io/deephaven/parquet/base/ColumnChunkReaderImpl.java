@@ -10,7 +10,6 @@ import io.deephaven.parquet.compress.CompressorAdapter;
 import io.deephaven.parquet.compress.DeephavenCompressorAdapterFactory;
 import io.deephaven.util.channel.SeekableChannelContext.ContextHolder;
 import io.deephaven.util.datastructures.SoftCachingFunction;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.column.ColumnDescriptor;
 import org.apache.parquet.column.Dictionary;
@@ -28,14 +27,12 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.function.Function;
 
-import static io.deephaven.base.FileUtils.convertToURI;
+import static io.deephaven.parquet.base.ParquetUtils.resolve;
 import static io.deephaven.parquet.base.ColumnPageReaderImpl.getDecompressorHolder;
-import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
 import static org.apache.parquet.format.Encoding.PLAIN_DICTIONARY;
 import static org.apache.parquet.format.Encoding.RLE_DICTIONARY;
 
@@ -83,12 +80,10 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
         this.dictionarySupplier = new SoftCachingFunction<>(this::getDictionary);
         this.numRows = numRows;
         this.version = version;
-        if (columnChunk.isSetFile_path() && FILE_URI_SCHEME.equals(rootURI.getScheme())) {
-            final String relativePath = FilenameUtils.separatorsToSystem(columnChunk.getFile_path());
-            this.columnChunkURI = convertToURI(Path.of(rootURI).resolve(relativePath), false);
+        if (columnChunk.isSetFile_path()) {
+            columnChunkURI = resolve(rootURI, columnChunk.getFile_path());
         } else {
-            // TODO(deephaven-core#5066): Add support for reading metadata files from non-file URIs
-            this.columnChunkURI = rootURI;
+            columnChunkURI = rootURI;
         }
         // Construct the reader object but don't read the offset index yet
         this.offsetIndexReader = (columnChunk.isSetOffset_index_offset())
