@@ -92,8 +92,6 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         rowStyleColumn = state.getRowFormatColumn() == null ? TableData.NO_ROW_FORMAT_COLUMN
                 : state.getRowFormatColumn().getIndex();
 
-
-
         // Once the state is running, set up the actual subscription
         state.onRunning(s -> {
             if (status != Status.STARTING) {
@@ -123,7 +121,6 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
             sendFirstSubscriptionRequest();
         }, () -> {
             // TODO fail
-
         });
 
     }

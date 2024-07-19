@@ -390,15 +390,6 @@ public class TableViewportSubscription extends AbstractTableSubscription {
             BarrageSnapshotRequest.addReverseViewport(metadata, false);
             metadata.finish(BarrageSnapshotRequest.endBarrageSnapshotRequest(metadata));
 
-            // final FlatBufferBuilder wrapper = new FlatBufferBuilder();
-            // final int innerOffset = wrapper.createByteVector(metadata.dataBuffer());
-            // wrapper.finish(BarrageMessageWrapper.createBarrageMessageWrapper(
-            // wrapper,
-            // BarrageUtil.FLATBUFFER_MAGIC,
-            // BarrageMessageType.BarrageSnapshotRequest,
-            // innerOffset));
-
-
             payload.setAppMetadata(WebBarrageUtils.wrapMessage(metadata, BarrageMessageType.BarrageSnapshotRequest));
             doExchange.onEnd(status -> {
                 if (status.isOk()) {

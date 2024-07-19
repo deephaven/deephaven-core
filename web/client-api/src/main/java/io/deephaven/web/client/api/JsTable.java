@@ -79,7 +79,6 @@ import jsinterop.base.JsPropertyMap;
 import java.util.*;
 import java.util.stream.Stream;
 
-import static io.deephaven.web.client.api.subscription.ViewportData.NO_ROW_FORMAT_COLUMN;
 import static io.deephaven.web.client.fu.LazyPromise.logError;
 
 /**
@@ -726,18 +725,6 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         }
     }
 
-    // private void setInternalViewport(double firstRow, double lastRow, Column[] columns) {
-    // if (firstRow > lastRow) {
-    // throw new IllegalArgumentException(firstRow + " > " + lastRow);
-    // }
-    // if (firstRow < 0) {
-    // throw new IllegalArgumentException(firstRow + " < " + 0);
-    // }
-    // currentViewportData = null;
-    // // we must wait for the latest stack entry that can add columns (so we get an appropriate BitSet)
-    // state().setDesiredViewport(this, (long) firstRow, (long) lastRow, columns);
-    // }
-
     /**
      * Gets the currently visible viewport. If the current set of operations has not yet resulted in data, it will not
      * resolve until that data is ready. If this table is closed before the promise resolves, it will be rejected - to
@@ -754,20 +741,6 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         }
         return subscription.getInternalViewportData();
     }
-
-    // public Promise<TableData> getInternalViewportData() {
-    // final LazyPromise<TableData> promise = new LazyPromise<>();
-    // final ClientTableState active = state();
-    // active.onRunning(state -> {
-    // if (currentViewportData == null) {
-    // // no viewport data received yet; let's set up a one-shot UPDATED event listener
-    // addEventListenerOneShot(EVENT_UPDATED, ignored -> promise.succeed(currentViewportData));
-    // } else {
-    // promise.succeed(currentViewportData);
-    // }
-    // }, promise::fail, () -> promise.fail("Table closed before viewport data was read"));
-    // return promise.asPromise(MAX_BATCH_TIME);
-    // }
 
     /**
      * Overload for java (since js just omits the optional var)
@@ -792,15 +765,6 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     public TableSubscription subscribe(JsArray<Column> columns, @JsOptional Double updateIntervalMs) {
         return new TableSubscription(columns, this, updateIntervalMs);
     }
-
-    // private void internalSubscribe(JsArray<Column> columns, TableSubscription sub) {
-    // if (columns == null) {
-    // columns = getColumns();
-    // }
-    // this.nonViewportSub = sub;
-    //
-    // state().subscribe(this, Js.uncheckedCast(columns));
-    // }
 
     /**
      * a new table containing the distinct tuples of values from the given columns that are present in the original
@@ -1541,205 +1505,6 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }
 
-    // private final class Debounce {
-    // private final ClientTableState state;
-    // private final TableTicket handle;
-    // private final SnapshotType type;
-    // private final RangeSet includedRows;
-    // private final BitSet columns;
-    // private final Object[] dataColumns;
-    // private final double timestamp;
-    // private final long maxRows;
-    //
-    // public Debounce(
-    // TableTicket table,
-    // SnapshotType snapshotType,
-    // RangeSet includedRows,
-    // BitSet columns,
-    // Object[] dataColumns,
-    // long maxRows) {
-    // this.handle = table;
-    // this.type = snapshotType;
-    // this.includedRows = includedRows;
-    // this.columns = columns;
-    // this.dataColumns = dataColumns;
-    // this.state = currentState;
-    // this.maxRows = maxRows;
-    // timestamp = System.currentTimeMillis();
-    // }
-    //
-    // public boolean isEqual(Debounce o) {
-    // if (type == o.type) {
-    // // this is intentionally weird. We only want to debounce when one instance is column snapshot and the
-    // // other is row snapshot,
-    // // so we consider two events of the same type to be incompatible with debouncing.
-    // return false;
-    // }
-    // if (handle != o.handle) {
-    // assert !handle.equals(o.handle);
-    // return false;
-    // }
-    // if (state != o.state) {
-    // assert state.getHandle() != o.state.getHandle();
-    // return false;
-    // }
-    // if (!includedRows.equals(o.includedRows)) {
-    // return false;
-    // }
-    // if (!columns.equals(o.columns)) {
-    // return false;
-    // }
-    // if (maxRows != o.maxRows) {
-    // return false;
-    // }
-    // assert Arrays.deepEquals(dataColumns, o.dataColumns) : "Debounce is broken, remove it.";
-    // return true;
-    // }
-    // }
-
-    // private Debounce debounce;
-
-    // private void handleSnapshot(TableTicket table, SnapshotType snapshotType, RangeSet includedRows,
-    // Object[] dataColumns, BitSet columns, long maxRows) {
-    // assert table.equals(state().getHandle()) : "Table received incorrect snapshot";
-    // // if the type is initial_snapshot, we've already recorded the size, so only watch for the other two updates.
-    // // note that this will sometimes result in multiple updates on startup, so we do this ugly debounce-dance.
-    // // When IDS-2113 is fixed, we can likely remove this code.
-    // JsLog.debug("Received snapshot for ", table, snapshotType, includedRows, dataColumns, columns);
-    // Debounce operation = new Debounce(table, snapshotType, includedRows, columns, dataColumns, maxRows);
-    // if (debounce == null) {
-    // debounce = operation;
-    // DomGlobal.setTimeout(ignored -> processSnapshot(), DEBOUNCE_TIME);
-    // } else if (debounce.isEqual(operation)) {
-    // // If we think the problem is fixed, we can put `assert false` here for a while before deleting Debounce
-    // // class
-    // JsLog.debug("Eating duplicated operation", debounce, operation);
-    // } else {
-    // processSnapshot();
-    // debounce = operation;
-    // DomGlobal.setTimeout(ignored -> processSnapshot(), DEBOUNCE_TIME);
-    // }
-    // }
-
-    // private void handleSnapshot(TableTicket handle, TableSnapshot snapshot) {
-    // if (!handle.equals(state().getHandle())) {
-    // return;
-    // }
-    // Viewport viewport = getBinding().getSubscription();
-    // if (viewport == null || viewport.getRows() == null || viewport.getRows().size() == 0) {
-    // // check out if we have a non-viewport sub attached
-    // if (nonViewportSub != null) {
-    // nonViewportSub.handleSnapshot(snapshot);
-    // }
-    // return;
-    // }
-    //
-    // RangeSet viewportRows = viewport.getRows();
-    // JsLog.debug("handleSnapshot on " + viewportRows, handle, snapshot, viewport);
-    //
-    // RangeSet includedRows = snapshot.getIncludedRows();
-    // ColumnData[] dataColumns = snapshot.getDataColumns();
-    // JsArray[] remappedData = new JsArray[dataColumns.length];
-    // // remap dataColumns to the expected range for that table's viewport
-    // long lastRow = -1;
-    // for (int col = viewport.getColumns().nextSetBit(0); col >= 0; col = viewport.getColumns().nextSetBit(col + 1)) {
-    // ColumnData dataColumn = dataColumns[col];
-    // if (dataColumn == null) {
-    // // skip this, at least one column requested by that table isn't present, waiting on a later update
-    // // TODO when IDS-2138 is fixed stop throwing this data away
-    // return;
-    // }
-    // Object columnData = dataColumn.getData();
-    //
-    // final ColumnDefinition def = state().getTableDef().getColumns()[col];
-    // remappedData[col] = JsData.newArray(def.getType());
-    //
-    // PrimitiveIterator.OfLong viewportIterator = viewportRows.indexIterator();
-    // PrimitiveIterator.OfLong includedRowsIterator = includedRows.indexIterator();
-    // int dataIndex = 0;
-    // while (viewportIterator.hasNext()) {
-    // long viewportIndex = viewportIterator.nextLong();
-    // if (viewportIndex >= snapshot.getTableSize()) {
-    // // reached or passed the end of the table, we'll still make a snapshot
-    // break;
-    // }
-    // if (!includedRowsIterator.hasNext()) {
-    // // we've reached the end, the viewport apparently goes past the end of what the server sent,
-    // // so there is another snapshot on its way
-    // // TODO when IDS-2138 is fixed stop throwing this data away
-    // return;
-    // }
-    //
-    // long possibleMatch = includedRowsIterator.nextLong();
-    // while (includedRowsIterator.hasNext() && possibleMatch < viewportIndex) {
-    // dataIndex++;// skip, still seeking to the next item
-    //
-    // possibleMatch = includedRowsIterator.nextLong();
-    // }
-    // if (!includedRowsIterator.hasNext() && possibleMatch < viewportIndex) {
-    // // we didn't find any items which match, just give up
-    // return;
-    // }
-    //
-    // if (possibleMatch > viewportIndex) {
-    // // if we hit a gap (more data coming, doesn't match viewport), skip the
-    // // rest of this table entirely, a later update will get us caught up
-    // return;
-    // }
-    // Object data = Js.<JsArray<Object>>uncheckedCast(columnData).getAt(dataIndex);
-    // remappedData[col].push(data);
-    // dataIndex++;// increment for the next row
-    //
-    // // Track how many rows were actually present, allowing the snapshot to stop before the viewport's end
-    // lastRow = Math.max(lastRow, possibleMatch);
-    // }
-    // }
-    //
-    // // TODO correct this - assumes max one range per table viewport, and nothing skipped
-    // RangeSet actualViewport =
-    // lastRow == -1 ? RangeSet.empty() : RangeSet.ofRange(viewportRows.indexIterator().nextLong(), lastRow);
-    //
-    // handleSnapshot(handle, snapshot.getSnapshotType(), actualViewport, remappedData, viewport.getColumns(),
-    // viewportRows.size());
-    // }
-
-    // @JsIgnore
-    // public void processSnapshot() {
-    // try {
-    // if (debounce == null) {
-    // JsLog.debug("Skipping snapshot b/c debounce is null");
-    // return;
-    // }
-    // if (debounce.state != currentState) {
-    // JsLog.debug("Skipping snapshot because state has changed ", debounce.state, " != ", currentState);
-    // return;
-    // }
-    // if (isClosed()) {
-    // JsLog.debug("Skipping snapshot because table is closed", this);
-    // return;
-    // }
-    // JsArray<Column> viewportColumns =
-    // getColumns().filter((item, index, all) -> debounce.columns.get(item.getIndex()));
-    // ViewportData data = new ViewportData(debounce.includedRows, debounce.dataColumns, viewportColumns,
-    // currentState.getRowFormatColumn() == null ? NO_ROW_FORMAT_COLUMN
-    // : currentState.getRowFormatColumn().getIndex(),
-    // debounce.maxRows);
-    // this.currentViewportData = data;
-    // CustomEventInit<TableData> updatedEvent = CustomEventInit.create();
-    // updatedEvent.setDetail(data);
-    // fireEvent(EVENT_UPDATED, updatedEvent);
-    //
-    // // also fire rowadded events - TODO also fire some kind of remove event for now-missing rows?
-    // for (int i = 0; i < data.getRows().length; i++) {
-    // CustomEventInit<JsPropertyMap<?>> addedEvent = CustomEventInit.create();
-    // addedEvent.setDetail(wrap(data.getRows().getAt(i), i));
-    // fireEvent(EVENT_ROWADDED, addedEvent);
-    // }
-    // } finally {
-    // debounce = null;
-    // }
-    // }
-
     /**
      * True if this table has been closed.
      * 
@@ -1784,55 +1549,6 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         return JsPropertyMap.of("row", at, "index", (double) index);
     }
 
-    // private void handleDelta(ClientTableState current, DeltaUpdates updates) {
-    // // TODO remove this, should route this through the subscription and fire here
-    // current.onRunning(s -> {
-    // if (current != state()) {
-    // return;
-    // }
-    // if (nonViewportSub != null) {
-    // nonViewportSub.handleDelta(updates);
-    // return;
-    // }
-    // final ViewportData vpd = currentViewportData;
-    // if (vpd == null) {
-    // // if the current viewport data is null, we're waiting on an initial snapshot to arrive for a different
-    // // part of the viewport
-    // JsLog.debug("Received delta while waiting for reinitialization");
-    // return;
-    // }
-    // MergeResults mergeResults = vpd.merge(updates);
-    // if (mergeResults.added.size() == 0 && mergeResults.modified.size() == 0
-    // && mergeResults.removed.size() == 0) {
-    // return;
-    // }
-    // CustomEventInit<TableData> event = CustomEventInit.create();
-    // event.setDetail(vpd);
-    // // user might call setViewport, and wind up nulling our currentViewportData
-    // fireEvent(EVENT_UPDATED, event);
-    //
-    // // fire rowadded/rowupdated/rowremoved
-    // // TODO when we keep more rows loaded than the user is aware of, check if a given row is actually in the
-    // // viewport
-    // // here
-    // for (Integer index : mergeResults.added) {
-    // CustomEventInit<JsPropertyMap<?>> addedEvent = CustomEventInit.create();
-    // addedEvent.setDetail(wrap(vpd.getRows().getAt(index), index));
-    // fireEvent(EVENT_ROWADDED, addedEvent);
-    // }
-    // for (Integer index : mergeResults.modified) {
-    // CustomEventInit<JsPropertyMap<?>> addedEvent = CustomEventInit.create();
-    // addedEvent.setDetail(wrap(vpd.getRows().getAt(index), index));
-    // fireEvent(EVENT_ROWUPDATED, addedEvent);
-    // }
-    // for (Integer index : mergeResults.removed) {
-    // CustomEventInit<JsPropertyMap<?>> addedEvent = CustomEventInit.create();
-    // addedEvent.setDetail(wrap(vpd.getRows().getAt(index), index));
-    // fireEvent(EVENT_ROWREMOVED, addedEvent);
-    // }
-    // }, JsRunnable.doNothing());
-    // }
-
     @Override
     public TableTicket getHandle() {
         return state().getHandle();
@@ -1866,62 +1582,6 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     public WorkerConnection getConnection() {
         return workerConnection;
     }
-
-    // public void refreshViewport(ClientTableState state, Viewport vp) {
-    // assert state() == state : "Called refreshViewport with wrong state (" + state + " instead of " + state() + ")";
-    // assert state.getResolution() == ClientTableState.ResolutionState.RUNNING
-    // : "Do not call refreshViewport for a state that is not running! (" + state + ")";
-    //
-    // currentViewportData = null; // ignore any deltas for past viewports
-    // workerConnection.scheduleCheck(state);
-    // // now that we've made sure the server knows, if we already know that the viewport is beyond what exists, we
-    // // can go ahead and fire an update event. We're in the onResolved call, so we know the handle has resolved
-    // // and if size is not -1, then we've already at least gotten the initial snapshot (otherwise, that snapshot
-    // // will be here soon, and will fire its own event)
-    // if (state.getSize() != ClientTableState.SIZE_UNINITIALIZED && state.getSize() <= vp.getRows().getFirstRow()) {
-    // JsLog.debug("Preparing to send a 'fake' update event since " + state.getSize() + "<="
-    // + vp.getRows().getFirstRow(), state);
-    // LazyPromise.runLater(() -> {
-    // if (state != state()) {
-    // return;
-    // }
-    //
-    // // get the column expected to be in the snapshot
-    // JsArray<Column> columns = null;// Js.uncheckedCast(getBinding().getColumns());
-    // Column[] allColumns = state.getColumns();
-    // if (columns == null) {
-    // columns = Js.uncheckedCast(allColumns);
-    // }
-    // // build an array of empty column data for this snapshot
-    // Object[] dataColumns = new Object[allColumns.length];
-    //
-    // for (int i = 0; i < columns.length; i++) {
-    // Column c = columns.getAt(i);
-    // dataColumns[c.getIndex()] = JsData.newArray(c.getType());
-    // if (c.getFormatStringColumnIndex() != null) {
-    // dataColumns[c.getFormatStringColumnIndex()] = JsData.newArray("java.lang.String");
-    // }
-    // if (c.getStyleColumnIndex() != null) {
-    // dataColumns[c.getStyleColumnIndex()] = JsData.newArray("long");
-    // }
-    // }
-    // if (currentState.getRowFormatColumn() != null) {
-    // dataColumns[currentState.getRowFormatColumn().getIndex()] = JsData.newArray("long");
-    // }
-    //
-    // ViewportData data = new ViewportData(RangeSet.empty(), dataColumns, columns,
-    // currentState.getRowFormatColumn() == null ? NO_ROW_FORMAT_COLUMN
-    // : currentState.getRowFormatColumn().getIndex(),
-    // 0);
-    // this.currentViewportData = data;
-    // CustomEventInit updatedEvent = CustomEventInit.create();
-    // updatedEvent.setDetail(data);
-    // JsLog.debug("Sending 'fake' update event since " + state.getSize() + "<=" + vp.getRows().getFirstRow(),
-    // vp, state);
-    // fireEvent(EVENT_UPDATED, updatedEvent);
-    // });
-    // }
-    // }
 
     public boolean isActive(ClientTableState state) {
         return currentState == state;
@@ -2102,7 +1762,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
     @Override
     public void maybeReviveSubscription() {
-        // getBinding().maybeReviveSubscription();
+//         getBinding().maybeReviveSubscription();
     }
 
 }
