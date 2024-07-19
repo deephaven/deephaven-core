@@ -33,8 +33,8 @@ public class ChunkListInputStreamGenerator implements SafeCloseable {
             rowOffset += valuesChunk.size();
         }
         this.generators = Arrays.asList(generators);
-        emptyGenerator = factory.makeInputStreamGenerator(chunkType, type, componentType,
-                chunkType.getEmptyChunk(), 0);
+        emptyGenerator = factory.makeInputStreamGenerator(
+                chunkType, type, componentType, chunkType.getEmptyChunk(), 0);
     }
 
     public List<ChunkInputStreamGenerator> generators() {

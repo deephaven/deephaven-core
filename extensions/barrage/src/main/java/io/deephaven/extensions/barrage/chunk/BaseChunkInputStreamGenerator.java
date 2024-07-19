@@ -11,7 +11,6 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.util.pools.PoolableChunk;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;

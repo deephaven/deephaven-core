@@ -29,7 +29,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
     interface Factory {
         /**
          * Returns an instance capable of writing the given chunk
-         * 
+         *
          * @param chunkType the type of the chunk to be written
          * @param type the Java type of the column being written
          * @param componentType the Java type of data in an array/vector, or null if irrelevant
