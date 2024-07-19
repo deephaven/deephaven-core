@@ -10,16 +10,5 @@
         <exclude name="VectorChunkReader.java" />
         <exclude name="DefaultChunkReadingFactory.java" />
         <exclude name="DefaultChunkInputStreamGeneratorFactory.java" />
-        <exclude name="VarListChunkInputStreamGenerator.java" />
-        <exclude name="VarBinaryChunkInputStreamGenerator.java" />
-        <exclude name="BaseChunkInputStreamGenerator.java" />
-        <exclude name="BooleanChunkInputStreamGenerator.java" />
-        <exclude name="ByteChunkInputStreamGenerator.java" />
-        <exclude name="CharChunkInputStreamGenerator.java" />
-        <exclude name="IntChunkInputStreamGenerator.java" />
-        <exclude name="ShortChunkInputStreamGenerator.java" />
-        <exclude name="LongChunkInputStreamGenerator.java" />
-        <exclude name="DoubleChunkInputStreamGenerator.java" />
-        <exclude name="FloatChunkInputStreamGenerator.java" />
     </source>
 </module>

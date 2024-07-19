@@ -247,7 +247,7 @@ public class WebChunkReaderFactory implements ChunkReader.Factory {
 
         final int numValidityWords = (numElements + 63) / 64;
         try (final WritableLongChunk<Values> isValid = WritableLongChunk.makeWritableChunk(numValidityWords);
-             final WritableIntChunk<Values> offsets = WritableIntChunk.makeWritableChunk(numElements + 1)) {
+                final WritableIntChunk<Values> offsets = WritableIntChunk.makeWritableChunk(numElements + 1)) {
             // Read validity buffer:
             int jj = 0;
             for (; jj < Math.min(numValidityWords, validityBuffer / 8); ++jj) {
