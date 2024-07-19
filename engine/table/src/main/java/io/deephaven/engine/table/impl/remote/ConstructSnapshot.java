@@ -28,6 +28,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.engine.liveness.LivenessScope;
@@ -1755,10 +1756,12 @@ public class ConstructSnapshot {
         final long numRows = rowSet.size();
         // The caller should handle empty tables
         Assert.assertion(numRows > 0, "numRows > 0");
-        final long numCols = columnIndices.size();
+        final int numCols = columnIndices.size();
         long offset = 0;
         final int maxChunkSize = (int) Math.min(numRows, SNAPSHOT_CHUNK_SIZE);
+        final ColumnSource.FillContext[] fillContexts = new ColumnSource.FillContext[numCols];
         try (final SharedContext sharedContext = numCols > 1 ? SharedContext.makeSharedContext() : null;
+                final SafeCloseableArray<ColumnSource.FillContext> ignored = new SafeCloseableArray<>(fillContexts);
                 final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
             int chunkSize = maxChunkSize;
             while (it.hasMore()) {
@@ -1770,16 +1773,20 @@ public class ConstructSnapshot {
                                     "requested = %d, actual = %d",
                             chunkSize, reducedRowSet.size()));
                 }
-                // Populate the snapshot data for each non-empty column for the current chunk of rows
+                // Populate the snapshot data for each column for the current chunk of rows
                 for (int colRank = 0; colRank < numCols; ++colRank) {
                     final int colIdx = columnIndices.get(colRank);
                     final ColumnSource<?> columnSource = columnSources.get(colRank);
+                    if (fillContexts[colRank] == null) {
+                        fillContexts[colRank] = columnSource.makeFillContext(maxChunkSize, sharedContext);
+                    }
+                    final ColumnSource.FillContext fillContext = fillContexts[colRank];
                     // Populate snapshot data as a list of chunks
                     if (snapshot.addColumnData[colIdx].data == null) {
                         snapshot.addColumnData[colIdx].data = new ArrayList<>();
                     }
                     snapshot.addColumnData[colIdx].data.add(
-                            getColumnSnapshotChunk(columnSource, sharedContext, reducedRowSet, chunkSize, usePrev));
+                            getColumnSnapshotChunk(columnSource, fillContext, reducedRowSet, chunkSize, usePrev));
                 }
                 // increment offset for the next chunk (assuming the number of rows written for all columns is equal)
                 offset += chunkSize;
@@ -1803,7 +1810,7 @@ public class ConstructSnapshot {
      */
     private static <T> Chunk<Values> getColumnSnapshotChunk(
             @NotNull final ColumnSource<T> columnSource,
-            @Nullable final SharedContext sharedContext,
+            @NotNull final ColumnSource.FillContext fillContext,
             @NotNull final RowSequence rowSequence,
             final int chunkSize,
             final boolean usePrev) {
@@ -1811,18 +1818,16 @@ public class ConstructSnapshot {
         if (size == 0) {
             return columnSource.getChunkType().makeWritableChunk(0);
         }
-        try (final ColumnSource.FillContext context = columnSource.makeFillContext(chunkSize, sharedContext)) {
-            final ChunkType chunkType = columnSource.getChunkType();
+        final ChunkType chunkType = columnSource.getChunkType();
 
-            // create a new chunk
-            final WritableChunk<Values> currentChunk = chunkType.makeWritableChunk(chunkSize);
-            if (usePrev) {
-                columnSource.fillPrevChunk(context, currentChunk, rowSequence);
-            } else {
-                columnSource.fillChunk(context, currentChunk, rowSequence);
-            }
-            return currentChunk;
+        // create a new chunk
+        final WritableChunk<Values> currentChunk = chunkType.makeWritableChunk(chunkSize);
+        if (usePrev) {
+            columnSource.fillPrevChunk(fillContext, currentChunk, rowSequence);
+        } else {
+            columnSource.fillChunk(fillContext, currentChunk, rowSequence);
         }
+        return currentChunk;
     }
 
     /**
