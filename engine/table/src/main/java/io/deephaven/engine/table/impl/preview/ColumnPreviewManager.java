@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl.preview;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
-import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.type.NumericTypeUtils;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.impl.BaseTable;
@@ -15,6 +14,8 @@ import io.deephaven.engine.table.impl.select.SelectColumn;
 import org.apache.commons.lang3.StringUtils;
 import org.jpy.PyListWrapper;
 
+import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -157,7 +158,7 @@ public class ColumnPreviewManager {
                 || io.deephaven.util.type.TypeUtils.isBoxedType(type)
                 || io.deephaven.util.type.TypeUtils.isString(type)
                 || NumericTypeUtils.isBigNumeric(type)
-                || DateTimeUtils.isDateTime(type)
+                || Instant.class == type || ZonedDateTime.class == type
                 || isOnWhiteList(type);
     }
 

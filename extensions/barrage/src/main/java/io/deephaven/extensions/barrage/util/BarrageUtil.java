@@ -41,7 +41,6 @@ import io.deephaven.engine.util.ColumnFormatting;
 import io.deephaven.engine.util.input.InputTableUpdater;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
-import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.Vector;
 import io.grpc.stub.StreamObserver;
@@ -683,7 +682,7 @@ public class BarrageUtil {
 
     private static boolean isTypeNativelySupported(final Class<?> typ) {
         if (typ.isPrimitive() || TypeUtils.isBoxedType(typ) || supportedTypes.contains(typ)
-                || Vector.class.isAssignableFrom(typ) || DateTimeUtils.isDateTime(typ)) {
+                || Vector.class.isAssignableFrom(typ) || Instant.class == typ || ZonedDateTime.class == typ) {
             return true;
         }
         if (typ.isArray()) {

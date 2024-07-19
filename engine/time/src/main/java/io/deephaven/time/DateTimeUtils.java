@@ -201,16 +201,6 @@ public class DateTimeUtils {
      */
     public static final double YEARS_PER_NANO_AVG = 1. / (double) YEAR_AVG;
 
-    /**
-     * Whether the class is an {@link Instant} or a {@link ZonedDateTime}.
-     *
-     * @param type The class.
-     * @return true if the type is a DateTime: {@link ZonedDateTime} or {@link Instant}.
-     */
-    public static boolean isDateTime(Class<?> type) {
-        return Instant.class == type || ZonedDateTime.class == type;
-    }
-
     // endregion
 
     // region Overflow / Underflow
