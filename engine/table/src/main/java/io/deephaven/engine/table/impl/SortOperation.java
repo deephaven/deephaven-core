@@ -362,7 +362,6 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             Assert.neqNull(value, "sort result reverse lookup");
         }
         if (value != null) {
-            Assert.assertion(value instanceof LongUnaryOperator, "sort result reverse lookup");
             return (LongUnaryOperator) value;
         }
         final RowRedirection sortRedirection = getRowRedirection(sortResult);
