@@ -681,9 +681,8 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
         data.copyFromChunk(srcData, 0, 0, srcData.size());
 
         try (SafeCloseable ignored = data;
-                ChunkInputStreamGenerator generator =
-                        DefaultChunkInputStreamGeneratorFactory.INSTANCE.makeInputStreamGenerator(
-                                chunkType, type, type.getComponentType(), srcData, 0)) {
+                ChunkInputStreamGenerator generator = DefaultChunkInputStreamGeneratorFactory.INSTANCE
+                        .makeInputStreamGenerator(chunkType, type, type.getComponentType(), srcData, 0)) {
             // full sub logic
             try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos =
                     new BarrageProtoUtil.ExposedByteArrayOutputStream();
