@@ -4,5 +4,22 @@
     <inherits name="io.grpc.Grpc" />
     <source path="" includes="BarrageSnapshotOptions.java,BarrageSubscriptionOptions.java,ColumnConversionMode.java,ImmutableBarrageSnapshotOptions.java,ImmutableBarrageSubscriptionOptions.java,DrainableByteArrayInputStream.java" />
     <source path="util" includes="StreamReaderOptions.java,FlatBufferIteratorAdapter.java,DefensiveDrainable.java,DefensiveCapture.java,ExposedByteArrayOutputStream.java" />
-    <source path="chunk" excludes="vector/*,VectorChunkInputStreamGenerator.java,VectorChunkReader.java,DefaultChunkReadingFactory.java,VarListChunkInputStreamGenerator.java"/>
+    <source path="chunk">
+        <exclude name="vector/*" />
+        <exclude name="VectorChunkInputStreamGenerator.java" />
+        <exclude name="VectorChunkReader.java" />
+        <exclude name="DefaultChunkReadingFactory.java" />
+        <exclude name="DefaultChunkInputStreamGeneratorFactory.java" />
+        <exclude name="VarListChunkInputStreamGenerator.java" />
+        <exclude name="VarBinaryChunkInputStreamGenerator.java" />
+        <exclude name="BaseChunkInputStreamGenerator.java" />
+        <exclude name="BooleanChunkInputStreamGenerator.java" />
+        <exclude name="ByteChunkInputStreamGenerator.java" />
+        <exclude name="CharChunkInputStreamGenerator.java" />
+        <exclude name="IntChunkInputStreamGenerator.java" />
+        <exclude name="ShortChunkInputStreamGenerator.java" />
+        <exclude name="LongChunkInputStreamGenerator.java" />
+        <exclude name="DoubleChunkInputStreamGenerator.java" />
+        <exclude name="FloatChunkInputStreamGenerator.java" />
+    </source>
 </module>
