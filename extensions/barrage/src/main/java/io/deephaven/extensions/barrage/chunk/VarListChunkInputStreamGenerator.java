@@ -3,7 +3,6 @@
 //
 package io.deephaven.extensions.barrage.chunk;
 
-import com.google.common.annotations.GwtIncompatible;
 import com.google.common.io.LittleEndianDataOutputStream;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.chunk.attributes.ChunkPositions;
@@ -61,7 +60,6 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
     }
 
     @Override
-    @GwtIncompatible
     public void close() {
         if (REFERENCE_COUNT_UPDATER.decrementAndGet(this) == 0) {
             if (chunk instanceof PoolableChunk) {

@@ -3,7 +3,6 @@
 //
 package io.deephaven.extensions.barrage.chunk;
 
-import com.google.common.annotations.GwtIncompatible;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
@@ -25,7 +24,6 @@ public abstract class BaseChunkInputStreamGenerator<T extends Chunk<Values>> imp
     // Field updater for refCount, so we can avoid creating an {@link java.util.concurrent.atomic.AtomicInteger} for
     // each instance.
     @SuppressWarnings("rawtypes")
-    @GwtIncompatible
     protected static final AtomicIntegerFieldUpdater<BaseChunkInputStreamGenerator> REFERENCE_COUNT_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(BaseChunkInputStreamGenerator.class, "refCount");
 
