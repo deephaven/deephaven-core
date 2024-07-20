@@ -309,9 +309,7 @@ final class IncrementalNaturalJoinHasherChar extends IncrementalNaturalJoinState
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     if (isStateDeleted(rightRowKeyForState)) {
-                        if (firstDeletedLocation >= 0) {
-                            tableLocation = firstDeletedLocation;
-                        }
+                        tableLocation = firstDeletedLocation;
                         liveEntries++;
                         mainKeySource0.set(tableLocation, k0);
                         mainLeftRowSet.set(tableLocation, RowSetFactory.fromKeys(rowKeyChunk.get(chunkPosition)));
