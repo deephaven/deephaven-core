@@ -60,18 +60,10 @@ final class IncrementalNaturalJoinHasherInt extends IncrementalNaturalJoinStateM
             final int hash = hash(k0);
             final int firstTableLocation = hashToTableLocation(hash);
             int tableLocation = firstTableLocation;
-            int firstDeletedLocation = -1;
             MAIN_SEARCH: while (true) {
                 long rightRowKeyForState = mainRightRowKey.getUnsafe(tableLocation);
-                if (firstDeletedLocation < 0 && isStateDeleted(rightRowKeyForState)) {
-                    firstDeletedLocation = tableLocation;
-                }
                 if (isStateEmpty(rightRowKeyForState)) {
-                    if (firstDeletedLocation >= 0) {
-                        tableLocation = firstDeletedLocation;
-                    } else {
-                        numEntries++;
-                    }
+                    numEntries++;
                     liveEntries++;
                     mainKeySource0.set(tableLocation, k0);
                     mainLeftRowSet.set(tableLocation, RowSetFactory.fromKeys(rowKeyChunk.get(chunkPosition)));
@@ -79,17 +71,6 @@ final class IncrementalNaturalJoinHasherInt extends IncrementalNaturalJoinStateM
                     mainModifiedTrackerCookieSource.set(tableLocation, -1L);
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    if (isStateDeleted(rightRowKeyForState)) {
-                        if (firstDeletedLocation >= 0) {
-                            tableLocation = firstDeletedLocation;
-                        }
-                        liveEntries++;
-                        mainKeySource0.set(tableLocation, k0);
-                        mainLeftRowSet.set(tableLocation, RowSetFactory.fromKeys(rowKeyChunk.get(chunkPosition)));
-                        mainRightRowKey.set(tableLocation, RowSet.NULL_ROW_KEY);
-                        mainModifiedTrackerCookieSource.set(tableLocation, -1L);
-                        break;
-                    }
                     if (rightRowKeyForState <= FIRST_DUPLICATE) {
                         throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)));
                     }
@@ -113,18 +94,10 @@ final class IncrementalNaturalJoinHasherInt extends IncrementalNaturalJoinStateM
             final int hash = hash(k0);
             final int firstTableLocation = hashToTableLocation(hash);
             int tableLocation = firstTableLocation;
-            int firstDeletedLocation = -1;
             MAIN_SEARCH: while (true) {
                 long existingRightRowKey = mainRightRowKey.getUnsafe(tableLocation);
-                if (firstDeletedLocation < 0 && isStateDeleted(existingRightRowKey)) {
-                    firstDeletedLocation = tableLocation;
-                }
                 if (isStateEmpty(existingRightRowKey)) {
-                    if (firstDeletedLocation >= 0) {
-                        tableLocation = firstDeletedLocation;
-                    } else {
-                        numEntries++;
-                    }
+                    numEntries++;
                     liveEntries++;
                     mainKeySource0.set(tableLocation, k0);
                     mainLeftRowSet.set(tableLocation, RowSetFactory.empty());
@@ -132,17 +105,6 @@ final class IncrementalNaturalJoinHasherInt extends IncrementalNaturalJoinStateM
                     mainModifiedTrackerCookieSource.set(tableLocation, -1L);
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    if (isStateDeleted(existingRightRowKey)) {
-                        if (firstDeletedLocation >= 0) {
-                            tableLocation = firstDeletedLocation;
-                        }
-                        liveEntries++;
-                        mainKeySource0.set(tableLocation, k0);
-                        mainLeftRowSet.set(tableLocation, RowSetFactory.empty());
-                        mainRightRowKey.set(tableLocation, rowKeyChunk.get(chunkPosition));
-                        mainModifiedTrackerCookieSource.set(tableLocation, -1L);
-                        break;
-                    }
                     if (existingRightRowKey == RowSet.NULL_ROW_KEY) {
                         mainRightRowKey.set(tableLocation, rowKeyChunk.get(chunkPosition));
                     } else if (existingRightRowKey <= FIRST_DUPLICATE) {
@@ -223,9 +185,7 @@ final class IncrementalNaturalJoinHasherInt extends IncrementalNaturalJoinStateM
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     if (isStateDeleted(existingRightRowKey)) {
-                        if (firstDeletedLocation >= 0) {
-                            tableLocation = firstDeletedLocation;
-                        }
+                        tableLocation = firstDeletedLocation;
                         liveEntries++;
                         mainKeySource0.set(tableLocation, k0);
                         mainLeftRowSet.set(tableLocation, RowSetFactory.empty());
@@ -309,9 +269,7 @@ final class IncrementalNaturalJoinHasherInt extends IncrementalNaturalJoinStateM
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     if (isStateDeleted(rightRowKeyForState)) {
-                        if (firstDeletedLocation >= 0) {
-                            tableLocation = firstDeletedLocation;
-                        }
+                        tableLocation = firstDeletedLocation;
                         liveEntries++;
                         mainKeySource0.set(tableLocation, k0);
                         mainLeftRowSet.set(tableLocation, RowSetFactory.fromKeys(rowKeyChunk.get(chunkPosition)));

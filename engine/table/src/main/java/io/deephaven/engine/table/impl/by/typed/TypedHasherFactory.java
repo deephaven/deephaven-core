@@ -85,7 +85,7 @@ public class TypedHasherFactory {
             builder.moveMainFull(TypedAggregationFactory::staticAggMoveMain);
             builder.addBuild(
                     new HasherConfig.BuildSpec("build", "outputPosition", false, true,
-                            TypedAggregationFactory::buildFound,
+                            true, TypedAggregationFactory::buildFound,
                             TypedAggregationFactory::buildInsert));
         } else if (baseClass.equals(IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class)) {
             configureAggregation(builder);
@@ -99,7 +99,7 @@ public class TypedHasherFactory {
                     TypedAggregationFactory::probeFound, TypedAggregationFactory::probeMissing));
 
             builder.addBuild(new HasherConfig.BuildSpec("build", "outputPosition", false, true,
-                    TypedAggregationFactory::buildFound, TypedAggregationFactory::buildInsertIncremental));
+                    true, TypedAggregationFactory::buildFound, TypedAggregationFactory::buildInsertIncremental));
         } else if (baseClass.equals(StaticNaturalJoinStateManagerTypedBase.class)) {
             builder.classPrefix("StaticNaturalJoinHasher").packageGroup("naturaljoin").packageMiddle("staticopen")
                     .openAddressedAlternate(false)
@@ -109,7 +109,7 @@ public class TypedHasherFactory {
                     .supportRehash(false);
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromLeftSide", "rightSideSentinel",
-                    false, true, TypedNaturalJoinFactory::staticBuildLeftFound,
+                    false, true, true, TypedNaturalJoinFactory::staticBuildLeftFound,
                     TypedNaturalJoinFactory::staticBuildLeftInsert,
                     ParameterSpec.builder(TypeName.get(IntegerArraySource.class), "leftHashSlots").build(),
                     ParameterSpec.builder(long.class, "hashSlotOffset").build()));
@@ -121,7 +121,7 @@ public class TypedHasherFactory {
                     ParameterSpec.builder(long.class, "redirectionOffset").build()));
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromRightSide", "rightSideSentinel",
-                    true, true, TypedNaturalJoinFactory::staticBuildRightFound,
+                    true, true, true, TypedNaturalJoinFactory::staticBuildRightFound,
                     TypedNaturalJoinFactory::staticBuildRightInsert));
 
             builder.addProbe(new HasherConfig.ProbeSpec("decorateWithRightSide", "existingStateValue",
@@ -141,7 +141,7 @@ public class TypedHasherFactory {
                     .rehashFullSetup(TypedNaturalJoinFactory::rightIncrementalRehashSetup);
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromLeftSide", "leftRowSetForState",
-                    true, true, TypedNaturalJoinFactory::rightIncrementalBuildLeftFound,
+                    true, true, true, TypedNaturalJoinFactory::rightIncrementalBuildLeftFound,
                     TypedNaturalJoinFactory::rightIncrementalBuildLeftInsert));
 
             builder.addProbe(new HasherConfig.ProbeSpec("addRightSide", null, true,
@@ -194,13 +194,12 @@ public class TypedHasherFactory {
                     .rehashFullSetup(TypedNaturalJoinFactory::incrementalRehashSetup);
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromLeftSide", "rightRowKeyForState",
-                    true, false, TypedNaturalJoinFactory::incrementalBuildLeftFound,
+                    true, false, false, TypedNaturalJoinFactory::incrementalBuildLeftFound,
                     TypedNaturalJoinFactory::incrementalBuildLeftInsert));
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromRightSide", "existingRightRowKey", true,
-                    false, TypedNaturalJoinFactory::incrementalRightFound,
+                    false, false, TypedNaturalJoinFactory::incrementalRightFound,
                     TypedNaturalJoinFactory::incrementalRightInsert));
-
 
             builder.addProbe(new HasherConfig.ProbeSpec("removeRight", "existingRightRowKey", true,
                     TypedNaturalJoinFactory::incrementalRemoveRightFound,
@@ -208,7 +207,7 @@ public class TypedHasherFactory {
                     modifiedSlotTrackerParam));
 
             builder.addBuild(new HasherConfig.BuildSpec("addRightSide", "existingRightRowKey", true,
-                    true, TypedNaturalJoinFactory::incrementalRightFoundUpdate,
+                    true, true, TypedNaturalJoinFactory::incrementalRightFoundUpdate,
                     TypedNaturalJoinFactory::incrementalRightInsertUpdate,
                     modifiedSlotTrackerParam));
 
@@ -226,7 +225,7 @@ public class TypedHasherFactory {
                     modifiedSlotTrackerParam, probeContextParam));
 
             builder.addBuild(new HasherConfig.BuildSpec("addLeftSide", "rightRowKeyForState", true,
-                    true, TypedNaturalJoinFactory::incrementalLeftFoundUpdate,
+                    true, true, TypedNaturalJoinFactory::incrementalLeftFoundUpdate,
                     TypedNaturalJoinFactory::incrementalLeftInsertUpdate,
                     ParameterSpec.builder(TypeName.get(LongArraySource.class), "leftRedirections").build(),
                     ParameterSpec.builder(long.class, "leftRedirectionOffset").build()));
@@ -252,7 +251,7 @@ public class TypedHasherFactory {
                     .rehashFullSetup(TypedAsOfJoinFactory::staticRehashSetup);
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromLeftSide", "rightSideSentinel",
-                    true, true, TypedAsOfJoinFactory::staticBuildLeftFound,
+                    true, true, true, TypedAsOfJoinFactory::staticBuildLeftFound,
                     TypedAsOfJoinFactory::staticBuildLeftInsert));
 
             builder.addProbe(new HasherConfig.ProbeSpec("decorateLeftSide", null, true,
@@ -262,7 +261,7 @@ public class TypedHasherFactory {
                     ParameterSpec.builder(RowSetBuilderRandom.class, "foundBuilder").build()));
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromRightSide", "rightSideSentinel",
-                    true, true, TypedAsOfJoinFactory::staticBuildRightFound,
+                    true, true, true, TypedAsOfJoinFactory::staticBuildRightFound,
                     TypedAsOfJoinFactory::staticBuildRightInsert));
 
             builder.addProbe(new HasherConfig.ProbeSpec("decorateWithRightSide", null,
@@ -286,11 +285,11 @@ public class TypedHasherFactory {
                     .rehashFullSetup(TypedAsOfJoinFactory::rightIncrementalRehashSetup);
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromLeftSide", "rowState",
-                    true, true, TypedAsOfJoinFactory::rightIncrementalBuildLeftFound,
+                    true, true, true, TypedAsOfJoinFactory::rightIncrementalBuildLeftFound,
                     TypedAsOfJoinFactory::rightIncrementalBuildLeftInsert, sequentialBuilders));
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromRightSide", "rowState", true,
-                    true, TypedAsOfJoinFactory::rightIncrementalRightFound,
+                    true, true, TypedAsOfJoinFactory::rightIncrementalRightFound,
                     TypedAsOfJoinFactory::rightIncrementalRightInsert, sequentialBuilders));
 
             builder.addProbe(new HasherConfig.ProbeSpec("probeRightSide", "rowState",
@@ -319,7 +318,7 @@ public class TypedHasherFactory {
                     .rehashFullSetup(TypedUpdateByFactory::incrementalRehashSetup);
 
             builder.addBuild(new HasherConfig.BuildSpec("buildHashTable", "rowState",
-                    true, true, TypedUpdateByFactory::incrementalBuildLeftFound,
+                    true, true, true, TypedUpdateByFactory::incrementalBuildLeftFound,
                     TypedUpdateByFactory::incrementalBuildLeftInsert, outputPositionOffset, outputPositions));
 
             builder.addProbe(new HasherConfig.ProbeSpec("probeHashTable", "rowState",
@@ -338,7 +337,7 @@ public class TypedHasherFactory {
 
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromTable", "slotValue",
-                    true, true, TypedMultiJoinFactory::staticBuildLeftFound,
+                    true, true, true, TypedMultiJoinFactory::staticBuildLeftFound,
                     TypedMultiJoinFactory::staticBuildLeftInsert,
                     ParameterSpec.builder(TypeName.get(LongArraySource.class), "tableRedirSource").build(),
                     ParameterSpec.builder(long.class, "tableNumber").build()));
@@ -367,7 +366,7 @@ public class TypedHasherFactory {
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromTable", "slotValue",
                     true, true,
-                    TypedMultiJoinFactory::incrementalBuildLeftFound,
+                    true, TypedMultiJoinFactory::incrementalBuildLeftFound,
                     TypedMultiJoinFactory::incrementalBuildLeftInsert,
                     tableRedirSourceParam,
                     tableNumberParam,
@@ -1061,7 +1060,7 @@ public class TypedHasherFactory {
             builder.addStatement("$L = $L.getUnsafe($L)", buildSpec.stateValueName,
                     hasherConfig.overflowOrAlternateStateName, tableLocationName);
         } else {
-            if (hasherConfig.supportTombstones) {
+            if (hasherConfig.supportTombstones && buildSpec.checkDeletions) {
                 builder.addStatement("int firstDeletedLocation = -1");
             }
             builder.beginControlFlow((hasherConfig.openAddressedAlternate ? "MAIN_SEARCH: " : "") + "while (true)");
@@ -1069,7 +1068,7 @@ public class TypedHasherFactory {
                     hasherConfig.mainStateName, tableLocationName);
         }
 
-        if (!alternate && hasherConfig.supportTombstones) {
+        if (!alternate && hasherConfig.supportTombstones && buildSpec.checkDeletions) {
             builder.beginControlFlow("if (firstDeletedLocation < 0 && isStateDeleted($L))", buildSpec.stateValueName);
             builder.addStatement("firstDeletedLocation = $L", tableLocationName);
             builder.endControlFlow();
@@ -1089,7 +1088,7 @@ public class TypedHasherFactory {
         final String keyEqualsExpression =
                 alternate ? getEqualsStatementAlternate(chunkTypes) : getEqualsStatement(chunkTypes);
         builder.nextControlFlow("else if (" + keyEqualsExpression + ")");
-        if (hasherConfig.supportTombstones) {
+        if (hasherConfig.supportTombstones && buildSpec.checkDeletions) {
             builder.beginControlFlow("if (isStateDeleted($L))", buildSpec.stateValueName);
             // we can terminate our probe here, and insert into the firstDeleted location (or here)
             if (!alternate) {
@@ -1116,21 +1115,45 @@ public class TypedHasherFactory {
         builder.endControlFlow();
     }
 
-    private static void doInsertion(HasherConfig<?> hasherConfig, HasherConfig.BuildSpec buildSpec,
-            ChunkType[] chunkTypes, CodeBlock.Builder builder, String tableLocationName, boolean addEntry) {
+    /**
+     * @param hasherConfig the hasher spec
+     * @param buildSpec the spec for the specific builder
+     * @param chunkTypes the types of our chunks
+     * @param builder the method builder we are adding to
+     * @param tableLocationName the name of the table location
+     * @param checkForDeletedLocation true if we need to check the firstDeletedLocation variable, false if are sure that
+     *        it is set and we do not need to check it
+     */
+    private static void doInsertion(HasherConfig<?> hasherConfig,
+            HasherConfig.BuildSpec buildSpec,
+            ChunkType[] chunkTypes,
+            CodeBlock.Builder builder,
+            String tableLocationName,
+            boolean checkForDeletedLocation) {
         if (hasherConfig.supportTombstones) {
             // set to the first available location
-            builder.beginControlFlow("if (firstDeletedLocation >= 0)");
-            builder.addStatement("tableLocation = firstDeletedLocation");
-            if (addEntry) {
-                builder.nextControlFlow("else");
+            if (buildSpec.checkDeletions) {
+                if (checkForDeletedLocation) {
+                    builder.beginControlFlow("if (firstDeletedLocation >= 0)");
+                }
+                builder.addStatement("tableLocation = firstDeletedLocation");
+                if (checkForDeletedLocation) {
+                    builder.nextControlFlow("else");
+                    builder.addStatement("numEntries++");
+                    builder.endControlFlow();
+                }
+            } else {
                 builder.addStatement("numEntries++");
             }
-            builder.endControlFlow();
             builder.addStatement("liveEntries++");
         } else {
             builder.addStatement("numEntries++");
         }
+        doInsertCommon(hasherConfig, buildSpec, chunkTypes, builder, tableLocationName);
+    }
+
+    private static void doInsertCommon(HasherConfig<?> hasherConfig, HasherConfig.BuildSpec buildSpec,
+            ChunkType[] chunkTypes, CodeBlock.Builder builder, String tableLocationName) {
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             builder.addStatement("mainKeySource$L.set($L, k$L)", ii, tableLocationName, ii);
         }

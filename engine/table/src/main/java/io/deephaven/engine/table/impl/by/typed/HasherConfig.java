@@ -118,31 +118,43 @@ public class HasherConfig<T> {
         final String name;
         final String stateValueName;
         final boolean requiresRowKeyChunk;
+        /**
+         * In cases where we know that a partial rehash cannot be occurring; we can simplify the generated code by not
+         * checking for the alternate table.
+         */
         final boolean allowAlternates;
+        /**
+         * In cases where we know that an entry cannot possibly be deleted; we can simplify the generated code by not
+         * checking for tombstones.
+         */
+        final boolean checkDeletions;
         final FoundMethodBuilder found;
         final MethodBuilderWithChunkTypes insert;
         final ParameterSpec[] params;
 
         public BuildSpec(String name, String stateValueName, boolean requiresRowKeyChunk,
-                boolean allowAlternates, FoundMethodBuilder found,
+                boolean allowAlternates, boolean checkDeletions, FoundMethodBuilder found,
                 MethodBuilder insert, ParameterSpec... params) {
             // Convert the MethodBuilder to MethodBuilderWithChunkTypes.
             this(name,
                     stateValueName,
                     requiresRowKeyChunk,
                     allowAlternates,
+                    checkDeletions,
                     found,
                     (config, chunkTypes, builder) -> insert.accept(config, builder),
                     params);
         }
 
         public BuildSpec(String name, String stateValueName, boolean requiresRowKeyChunk,
-                boolean allowAlternates, FoundMethodBuilder found,
-                MethodBuilderWithChunkTypes insert, ParameterSpec... params) {
+                boolean allowAlternates, boolean checkDeletions, FoundMethodBuilder found,
+                MethodBuilderWithChunkTypes insert,
+                ParameterSpec... params) {
             this.name = name;
             this.stateValueName = stateValueName;
             this.requiresRowKeyChunk = requiresRowKeyChunk;
             this.allowAlternates = allowAlternates;
+            this.checkDeletions = checkDeletions;
             this.found = found;
             this.insert = insert;
             this.params = params;
