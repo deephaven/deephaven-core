@@ -231,8 +231,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         }
     }
 
-    /*
-     // @formatter:off
+    /* @formatter:off
 
     void checkAlternateEntries() {
         int expected = 0;
@@ -261,8 +260,8 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         }
         Assert.eq(numEntries, "numEntries", expected, "expected");
     }
-     // @formatter:on
-     */
+
+    @formatter:on */
 
     /**
      * @param fullRehash should we rehash the entire table (if false, we rehash incrementally)
