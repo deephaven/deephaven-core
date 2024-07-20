@@ -20,6 +20,7 @@ import io.deephaven.engine.table.impl.sources.immutable.ImmutableIntArraySource;
 import io.deephaven.engine.table.impl.util.IntColumnSourceWritableRowRedirection;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil;
+import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil.BuildOrProbeContext.ProbeContext;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
@@ -125,7 +126,7 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
 
     protected abstract void build(RowSequence rowSequence, Chunk<Values>[] sourceKeyChunks);
 
-    public static class BuildContext extends TypedHasherUtil.BuildOrProbeContext {
+    public static class BuildContext extends BuildOrProbeContext {
         private BuildContext(ColumnSource<?>[] buildSources, int chunkSize) {
             super(buildSources, chunkSize);
         }

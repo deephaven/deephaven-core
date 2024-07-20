@@ -60,10 +60,6 @@ public class ChunkedOperatorAggregationHelper {
             Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.skipRunFind", false);
     static final boolean HASHED_RUN_FIND =
             Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.hashedRunFind", true);
-    static boolean USE_OPEN_ADDRESSED_STATE_MANAGER =
-            Configuration.getInstance().getBooleanWithDefault(
-                    "ChunkedOperatorAggregationHelper.useOpenAddressedStateManager",
-                    true);
 
     public static QueryTable aggregation(
             @NotNull final AggregationContextFactory aggregationContextFactory,
