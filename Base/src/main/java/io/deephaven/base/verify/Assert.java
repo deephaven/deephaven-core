@@ -23,12 +23,6 @@ import java.util.function.Consumer;
  * <li>void valuesNeverOccur(value0, name0, value1, name1, ... )
  * </ul>
  * <ul>
- * <li>void holdsLock/notHoldsLock(Object, String name)
- * </ul>
- * <ul>
- * <li>void instanceOf/notInstanceOf(Object, String name, Class type[, int numCallsBelowRequirer])
- * </ul>
- * <ul>
  * <li>void eq/neq(boolean/char/byte/short/int/long/float/double, String name0,
  * boolean/char/byte/short/int/long/float/double[, String name1])
  * <li>void lt/leq/gt/geq(char/byte/short/int/long/float/double, String name0, char/byte/short/int/long/float/double[,

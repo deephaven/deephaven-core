@@ -1670,9 +1670,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             if (isNonequalOpOverload && printer.hasStringBuilder()) {
                 // sanity checks -- the inner expression *must* be a BinaryExpr (for ==), and it must be replaced in
                 // this UnaryExpr with a MethodCallExpr (for "eq()" or possibly "isNull()").
-                Object o = n.getExpression();
-                Assert.assertion(o instanceof MethodCallExpr, "n.getExpression()");
-                final MethodCallExpr methodCall = (MethodCallExpr) o;
+                final MethodCallExpr methodCall = (MethodCallExpr) n.getExpression();
                 final String methodName = methodCall.getNameAsString();
                 if (!"eq".equals(methodName) && !"isNull".equals(methodName)) {
                     throw new IllegalStateException(

@@ -695,7 +695,7 @@ public class BarrageMessageProducer extends LivenessArtifact
     }
 
     private void enqueueUpdate(final TableUpdate upstream) {
-        Assert.assertion(Thread.holdsLock(this), "Thread.holdsLock(this)");
+        Assert.assertion(Thread.holdsLock(this), "enqueueUpdate must hold lock!");
 
         final WritableRowSet addsToRecord;
         final RowSet modsToRecord;
@@ -2110,7 +2110,7 @@ public class BarrageMessageProducer extends LivenessArtifact
     }
 
     private void promoteSnapshotToActive() {
-        Assert.assertion(Thread.holdsLock(this), "Thread.holdsLock(this)");
+        Assert.assertion(Thread.holdsLock(this), "promoteSnapshotToActive must hold lock!");
 
         if (activeViewport != null) {
             activeViewport.close();
