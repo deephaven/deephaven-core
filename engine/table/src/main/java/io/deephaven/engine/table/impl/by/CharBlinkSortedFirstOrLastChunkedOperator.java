@@ -109,13 +109,10 @@ public class CharBlinkSortedFirstOrLastChunkedOperator extends CopyingPermutedBl
         for (int ii = newDestination ? 1 : 0; ii < length; ++ii) {
             final int chunkPos = start + ii;
             final char value = values.get(chunkPos);
-            final int comparison = CharComparisons.compare(value, bestValue);
-            // @formatter:off
             // No need to compare relative row keys. A stream's logical row set is always monotonically increasing.
-            final boolean better =
-                    ( isFirst && comparison <  0) ||
-                    (!isFirst && comparison >= 0)  ;
-            // @formatter:on
+            final boolean better = isFirst
+                    ? CharComparisons.lt(value, bestValue)
+                    : CharComparisons.geq(value, bestValue);
             if (better) {
                 bestChunkPos = chunkPos;
                 bestValue = value;
