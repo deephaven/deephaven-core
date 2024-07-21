@@ -369,7 +369,6 @@ final class IncrementalNaturalJoinHasherByte extends IncrementalNaturalJoinState
                                     if (leftEmpty) {
                                         alternateRightRowKey.set(alternateTableLocation, TOMBSTONE_RIGHT_STATE);
                                         liveEntries--;
-                                        alternateLiveEntries--;
                                     } else {
                                         alternateRightRowKey.set(alternateTableLocation, RowSet.NULL_ROW_KEY);
                                     }
@@ -578,7 +577,6 @@ final class IncrementalNaturalJoinHasherByte extends IncrementalNaturalJoinState
                                 if (left.isEmpty() && rightState == RowSet.NULL_ROW_KEY) {
                                     alternateRightRowKey.set(alternateTableLocation, TOMBSTONE_RIGHT_STATE);
                                     liveEntries--;
-                                    alternateLiveEntries--;
                                 }
                                 alternateFound = true;
                                 break;
@@ -708,7 +706,6 @@ final class IncrementalNaturalJoinHasherByte extends IncrementalNaturalJoinState
             numEntries++;
         }
         alternateEntries--;
-        alternateLiveEntries--;
         return true;
     }
 

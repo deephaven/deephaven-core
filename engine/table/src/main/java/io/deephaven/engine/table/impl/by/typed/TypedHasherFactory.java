@@ -994,7 +994,6 @@ public class TypedHasherFactory {
             builder.addStatement("numEntries++");
             builder.endControlFlow();
             builder.addStatement("alternateEntries--");
-            builder.addStatement("alternateLiveEntries--");
         }
     }
 
