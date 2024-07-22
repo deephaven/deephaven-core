@@ -107,7 +107,6 @@ public class ExternalizableRowSetUtils {
                         consecutiveBytes++;
                     } else {
                         consecutiveBytes = 0;
-                        shortCount += consecutiveBytes;
                         shortCount++;
                     }
                     if (consecutiveBytes > 3) {
