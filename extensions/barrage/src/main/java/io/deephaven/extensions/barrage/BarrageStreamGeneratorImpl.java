@@ -26,7 +26,7 @@ import io.deephaven.engine.rowset.impl.ExternalizableRowSetUtils;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
 import io.deephaven.extensions.barrage.chunk.SingleElementListHeaderInputStreamGenerator;
-import io.deephaven.extensions.barrage.util.BarrageProtoUtil.ExposedByteArrayOutputStream;
+import io.deephaven.extensions.barrage.util.ExposedByteArrayOutputStream;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.DefensiveDrainable;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
