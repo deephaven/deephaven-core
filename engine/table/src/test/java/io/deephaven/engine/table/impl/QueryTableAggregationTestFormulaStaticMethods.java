@@ -509,40 +509,40 @@ public class QueryTableAggregationTestFormulaStaticMethods {
     }
 
     public static double minDouble(DoubleVector values) {
-        if (values.size() == 0) {
+        if (values.isEmpty()) {
             return QueryConstants.NULL_DOUBLE;
         }
         double min = 0;
         int count = 0;
         for (int ii = 0; ii < values.size(); ++ii) {
             final double v = values.get(ii);
-            if (v != QueryConstants.NULL_DOUBLE) { // TODO: the existing aggregator doesn't handle this &&
-                                                   // !Double.isNaN(v)) {
-                if (count++ == 0) {
-                    min = v;
-                } else if (DoubleComparisons.lt(v, min)) {
-                    min = v;
-                }
+            if (v == QueryConstants.NULL_DOUBLE || Double.isNaN(v)) {
+                continue;
+            }
+            if (count++ == 0) {
+                min = v;
+            } else if (DoubleComparisons.lt(v, min)) {
+                min = v;
             }
         }
         return count == 0 ? QueryConstants.NULL_DOUBLE : min;
     }
 
     public static double maxDouble(DoubleVector values) {
-        if (values.size() == 0) {
+        if (values.isEmpty()) {
             return QueryConstants.NULL_DOUBLE;
         }
         double min = 0;
         int count = 0;
         for (int ii = 0; ii < values.size(); ++ii) {
             final double v = values.get(ii);
-            if (v != QueryConstants.NULL_DOUBLE) { // TODO: the existing aggregator doesn't handle this &&
-                                                   // !Double.isNaN(v)) {
-                if (count++ == 0) {
-                    min = v;
-                } else if (DoubleComparisons.gt(v, min)) {
-                    min = v;
-                }
+            if (v == QueryConstants.NULL_DOUBLE || Double.isNaN(v)) {
+                continue;
+            }
+            if (count++ == 0) {
+                min = v;
+            } else if (DoubleComparisons.gt(v, min)) {
+                min = v;
             }
         }
         return count == 0 ? QueryConstants.NULL_DOUBLE : min;

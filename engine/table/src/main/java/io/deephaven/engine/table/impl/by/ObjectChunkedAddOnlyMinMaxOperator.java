@@ -21,7 +21,7 @@ import java.util.Collections;
 import java.util.Map;
 
 /**
- * Iterative average operator.
+ * Iterative add only min max operator.
  */
 class ObjectChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationOperator {
     private final ObjectArraySource resultColumn;
@@ -42,46 +42,48 @@ class ObjectChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationO
         // endregion resultColumn initialization
     }
 
-    private Object min(ObjectChunk<Object, ?> values, MutableInt chunkNonNull, int chunkStart, int chunkEnd) {
-        int nonNull = 0;
+    private static Object min(ObjectChunk<Object, ?> values, MutableInt chunkNonNullNan, int chunkStart, int chunkEnd) {
+        int nonNullNan = 0;
         Object value = null;
         for (int ii = chunkStart; ii < chunkEnd; ++ii) {
             final Object candidate = values.get(ii);
-            if (candidate != null) {
-                if (nonNull++ == 0) {
-                    value = candidate;
-                } else if (ObjectComparisons.lt(candidate, value)) {
-                    value = candidate;
-                }
+            if (MinMaxHelper.isNullOrNan(candidate)) {
+                continue;
+            }
+            if (nonNullNan++ == 0) {
+                value = candidate;
+            } else if (ObjectComparisons.lt(candidate, value)) {
+                value = candidate;
             }
         }
-        chunkNonNull.set(nonNull);
+        chunkNonNullNan.set(nonNullNan);
         return value;
     }
 
-    private Object max(ObjectChunk<Object, ?> values, MutableInt chunkNonNull, int chunkStart, int chunkEnd) {
-        int nonNull = 0;
+    private static Object max(ObjectChunk<Object, ?> values, MutableInt chunkNonNullNan, int chunkStart, int chunkEnd) {
+        int nonNullNan = 0;
         Object value = null;
         for (int ii = chunkStart; ii < chunkEnd; ++ii) {
             final Object candidate = values.get(ii);
-            if (candidate != null) {
-                if (nonNull++ == 0) {
-                    value = candidate;
-                } else if (ObjectComparisons.gt(candidate, value)) {
-                    value = candidate;
-                }
+            if (MinMaxHelper.isNullOrNan(candidate)) {
+                continue;
+            }
+            if (nonNullNan++ == 0) {
+                value = candidate;
+            } else if (ObjectComparisons.gt(candidate, value)) {
+                value = candidate;
             }
         }
-        chunkNonNull.set(nonNull);
+        chunkNonNullNan.set(nonNullNan);
         return value;
     }
 
-    private Object min(Object a, Object b) {
-        return ObjectComparisons.lt(a, b) ? a : b;
+    private static Object min(Object a, Object b) {
+        return ObjectComparisons.leq(a, b) ? a : b;
     }
 
-    private Object max(Object a, Object b) {
-        return ObjectComparisons.gt(a, b) ? a : b;
+    private static Object max(Object a, Object b) {
+        return ObjectComparisons.geq(a, b) ? a : b;
     }
 
     @Override
@@ -135,22 +137,22 @@ class ObjectChunkedAddOnlyMinMaxOperator implements IterativeChunkedAggregationO
         if (chunkSize == 0) {
             return false;
         }
-        final MutableInt chunkNonNull = new MutableInt(0);
+        final MutableInt chunkNonNullNan = new MutableInt(0);
         final int chunkEnd = chunkStart + chunkSize;
-        final Object chunkValue = minimum ? min(values, chunkNonNull, chunkStart, chunkEnd)
-                : max(values, chunkNonNull, chunkStart, chunkEnd);
-        if (chunkNonNull.get() == 0) {
+        final Object chunkValue = minimum ? min(values, chunkNonNullNan, chunkStart, chunkEnd)
+                : max(values, chunkNonNullNan, chunkStart, chunkEnd);
+        if (chunkNonNullNan.get() == 0) {
             return false;
         }
 
         final Object result;
         final Object oldValue = resultColumn.getUnsafe(destination);
-        if (oldValue == null) {
-            // we exclude nulls from the min/max calculation, therefore if the value in our min/max is null we know
-            // that it is in fact empty and we should use the value from the chunk
+        if (MinMaxHelper.isNullOrNan(oldValue)) {
+            // we exclude nulls (and NaNs) from the min/max calculation, therefore if the value in our min/max is null
+            // or NaN we know that it is in fact empty and we should use the value from the chunk
             result = chunkValue;
         } else {
-            result = minimum ? min(chunkValue, oldValue) : max(chunkValue, oldValue);
+            result = minimum ? min(oldValue, chunkValue) : max(oldValue, chunkValue);
         }
         if (!ObjectComparisons.eq(result, oldValue)) {
             resultColumn.set(destination, result);
