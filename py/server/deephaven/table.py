@@ -696,63 +696,6 @@ class Table(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "table to_string failed") from e
 
-    def diff(self, table: Table, max_lines: int = 1, floating_inexact: bool = False,
-             floating_fraction: bool = False, ignore_column_order: bool = False) -> str:
-        """Returns the differences between this table and the provided table as a string.
-
-        This method starts by comparing the table sizes, and then the schema of the two tables, such as the number of
-        columns, column names, column types, column orders. If the schemas are different, the comparison stops and
-        the differences are returned. If the schemas are the same, the method proceeds to compare the data in the
-        tables. The method compares the data in the tables column by column and only records the first difference
-        found in each column.
-
-        Note, inexact comparison of floating numbers may sometimes be desirable due to their inherent imprecision.
-        When that is the case, the floating_inexact flag should be set to True and the absolute value of the
-        difference between two floating numbers will be compared against a threshold. The threshold is set to 0.0001
-        for Doubles and 0.005 for Floats. Only differences that are greater than the threshold are recorded. The
-        floating_fraction flag can be set to True to compare the fractional difference between two floating numbers
-        against the threshold. The fractional difference is calculated as the absolute difference divided by the
-        smaller one between the absolute values of the two numbers.
-
-        Args:
-            table (Table): the table to compare against
-            max_lines (int): the maximum number of different lines to return, default is 1
-            floating_inexact (bool): whether to compare floating types inexactly based on thresholds, default is False
-            floating_fraction (bool): when floating_inexact is True, whether to use the fractional difference
-                between two floating numbers to compare against the thresholds, default is False. When set to True,
-                the floating_inexact must be set to True as well.
-            ignore_column_order (bool): whether columns that exist in both table but in different orders are not
-                treated as differences, default is False
-
-        Returns:
-            string
-
-        Raises:
-            DHError
-        """
-        try:
-            diff_items = []
-            if floating_fraction and not floating_inexact:
-                raise ValueError("floating_fraction requires floating_inexact to be True.")
-            if max_lines < 1:
-                raise ValueError("max_lines must be greater than 0.")
-
-            if floating_inexact:
-                diff_items.append(_JDiffItems.DoublesExact)
-            if floating_fraction:
-                diff_items.append(_JDiffItems.DoubleFraction)
-            if ignore_column_order:
-                diff_items.append(_JDiffItems.ColumnsOrder)
-
-            with auto_locking_ctx(self, table):
-                if diff_items:
-                    j_diff_items = _JEnumSet.of(*diff_items)
-                    return _JTableTools.diff(self.j_table, table.j_table, max_lines, j_diff_items)
-                else:
-                    return _JTableTools.diff(self.j_table, table.j_table, max_lines)
-        except Exception as e:
-            raise DHError(e, "table diff failed") from e
-
     def coalesce(self) -> Table:
         """Returns a coalesced child table."""
         return Table(j_table=self.j_table.coalesce())
@@ -3824,3 +3767,66 @@ def multi_join(input: Union[Table, Sequence[Table], MultiJoinInput, Sequence[Mul
             table() method.
     """
     return MultiJoinTable(input, on)
+
+
+# region utility functions
+def table_diff(t1: Table, t2: Table, max_lines: int = 1, floating_inexact: bool = False,
+               floating_fraction: bool = False, ignore_column_order: bool = False) -> str:
+    """Returns the differences between this table and the provided table as a string. If the two tables are the same,
+    an empty string is returned. The differences are returned in a human-readable format.
+
+    This method starts by comparing the table sizes, and then the schema of the two tables, such as the number of
+    columns, column names, column types, column orders. If the schemas are different, the comparison stops and
+    the differences are returned. If the schemas are the same, the method proceeds to compare the data in the
+    tables. The method compares the data in the tables column by column (not row by row) and only records the first
+    difference found in each column.
+
+    Note, inexact comparison of floating numbers may sometimes be desirable due to their inherent imprecision.
+    When that is the case, the floating_inexact flag should be set to True and the absolute value of the
+    difference between two floating numbers will be compared against a threshold. The threshold is set to 0.0001
+    for Doubles and 0.005 for Floats. Only differences that are greater than the threshold are recorded. The
+    floating_fraction flag can be set to True to compare the fractional difference between two floating numbers
+    against the threshold. The fractional difference is calculated as the absolute difference divided by the
+    smaller one between the absolute values of the two numbers.
+
+    Args:
+        t1 (Table): the table to compare
+        t2 (Table): the table to compare against
+        max_lines (int): the maximum number of different lines to return, default is 1
+        floating_inexact (bool): whether to compare floating types inexactly based on thresholds, default is False
+        floating_fraction (bool): when floating_inexact is True, whether to use the fractional difference
+            between two floating numbers to compare against the thresholds, default is False. When set to True,
+            the floating_inexact must be set to True as well.
+        ignore_column_order (bool): whether columns that exist in both tables but in different orders are not
+            treated as differences, default is False
+
+    Returns:
+        string
+
+    Raises:
+        DHError
+    """
+    try:
+        diff_items = []
+        if floating_fraction and not floating_inexact:
+            raise ValueError("floating_fraction requires floating_inexact to be True.")
+        if max_lines < 1:
+            raise ValueError("max_lines must be greater than 0.")
+
+        if floating_inexact:
+            diff_items.append(_JDiffItems.DoublesExact)
+        if floating_fraction:
+            diff_items.append(_JDiffItems.DoubleFraction)
+        if ignore_column_order:
+            diff_items.append(_JDiffItems.ColumnsOrder)
+
+        with auto_locking_ctx(t1, t2):
+            if diff_items:
+                j_diff_items = _JEnumSet.of(*diff_items)
+                return _JTableTools.diff(t1.j_table, t2.j_table, max_lines, j_diff_items)
+            else:
+                return _JTableTools.diff(t1.j_table, t2.j_table, max_lines)
+    except Exception as e:
+        raise DHError(e, "table diff failed") from e
+
+# endregion
