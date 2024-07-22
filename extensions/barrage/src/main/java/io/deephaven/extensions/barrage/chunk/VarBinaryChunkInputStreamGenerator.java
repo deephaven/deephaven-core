@@ -273,11 +273,11 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             // payload
             final MutableLong numPayloadBytes = new MutableLong();
             subset.forAllRowKeyRanges((s, e) -> {
-                numPayloadBytes.addAndGet(byteStorage.getPayloadSize((int) s, (int) e));
+                numPayloadBytes.add(byteStorage.getPayloadSize((int) s, (int) e));
             });
             final long payloadExtended = numPayloadBytes.get() & REMAINDER_MOD_8_MASK;
             if (payloadExtended > 0) {
-                numPayloadBytes.addAndGet(8 - payloadExtended);
+                numPayloadBytes.add(8 - payloadExtended);
             }
             listener.noteLogicalBuffer(numPayloadBytes.get());
         }
@@ -287,21 +287,21 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             if (cachedSize == -1) {
                 MutableLong totalCachedSize = new MutableLong(0L);
                 if (sendValidityBuffer()) {
-                    totalCachedSize.addAndGet(getValidityMapSerializationSizeFor(subset.intSize(DEBUG_NAME)));
+                    totalCachedSize.add(getValidityMapSerializationSizeFor(subset.intSize(DEBUG_NAME)));
                 }
 
                 // there are n+1 offsets; it is not assumed first offset is zero
                 if (!subset.isEmpty() && subset.size() == byteStorage.offsets.size() - 1) {
-                    totalCachedSize.addAndGet(byteStorage.offsets.size() * (long) Integer.BYTES);
-                    totalCachedSize.addAndGet(byteStorage.size());
+                    totalCachedSize.add(byteStorage.offsets.size() * (long) Integer.BYTES);
+                    totalCachedSize.add(byteStorage.size());
                 } else {
-                    totalCachedSize.addAndGet(subset.isEmpty() ? 0 : Integer.BYTES); // account for the n+1 offset
+                    totalCachedSize.add(subset.isEmpty() ? 0 : Integer.BYTES); // account for the n+1 offset
                     subset.forAllRowKeyRanges((s, e) -> {
                         // account for offsets
-                        totalCachedSize.addAndGet((e - s + 1) * Integer.BYTES);
+                        totalCachedSize.add((e - s + 1) * Integer.BYTES);
 
                         // account for payload
-                        totalCachedSize.addAndGet(byteStorage.getPayloadSize((int) s, (int) e));
+                        totalCachedSize.add(byteStorage.getPayloadSize((int) s, (int) e));
                     });
                 }
 

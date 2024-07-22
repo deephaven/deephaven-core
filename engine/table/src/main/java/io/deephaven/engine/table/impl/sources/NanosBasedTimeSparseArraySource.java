@@ -15,8 +15,8 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.WritableSourceWithPrepareForParallelPopulation;
-import io.deephaven.engine.table.impl.util.RowSetShiftCallback;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
+import io.deephaven.engine.rowset.RowSetShiftCallback;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;

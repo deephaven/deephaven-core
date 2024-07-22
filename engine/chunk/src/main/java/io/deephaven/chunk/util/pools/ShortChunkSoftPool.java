@@ -111,7 +111,6 @@ public final class ShortChunkSoftPool implements ShortChunkPool {
             // noinspection unchecked
             return ChunkPoolReleaseTracking.onTake(result);
         }
-        // noinspection
         return ChunkPoolReleaseTracking.onTake(WritableShortChunk.makeWritableChunkForPool(capacity));
     }
 

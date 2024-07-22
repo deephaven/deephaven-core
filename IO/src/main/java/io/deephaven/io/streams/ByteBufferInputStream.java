@@ -6,7 +6,6 @@ package io.deephaven.io.streams;
 import java.io.DataInput;
 import java.io.EOFException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UTFDataFormatException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
@@ -22,7 +21,7 @@ import org.jetbrains.annotations.NotNull;
  * <p>
  * Endianness is determined by the provided buffer itself.
  */
-public class ByteBufferInputStream extends InputStream implements DataInput {
+public class ByteBufferInputStream extends java.io.InputStream implements DataInput {
 
     /** the buffer from which we read */
     protected ByteBuffer buf;

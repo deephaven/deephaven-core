@@ -41,7 +41,6 @@ import io.deephaven.engine.util.ColumnFormatting;
 import io.deephaven.engine.util.input.InputTableUpdater;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
-import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.Vector;
 import io.grpc.stub.StreamObserver;
@@ -511,10 +510,6 @@ public class BarrageUtil {
             return tableDef.getColumnStream()
                     .map(ColumnDefinition::getComponentType).toArray(Class[]::new);
         }
-
-        // public Field[] fields() {
-        // return
-        // }
     }
 
     private static void setConversionFactor(

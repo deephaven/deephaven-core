@@ -17,7 +17,7 @@ import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
-import io.deephaven.engine.table.impl.util.RowSetShiftCallback;
+import io.deephaven.engine.rowset.RowSetShiftCallback;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
 import io.deephaven.vector.*;
