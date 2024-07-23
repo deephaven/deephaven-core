@@ -36,7 +36,8 @@ or an [R Data Frame](https://stat.ethz.ch/R-manual/R-devel/library/base/html/dat
 
 Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be built from source.
 
-0. We need a working installation of R on the machine where the R client will be built.
+0. We need a working installation of R on the machine where the R client will be built,
+   plus the necessary dependencies for building and creating vignettes.
    The R client requires R 4.1.2 or newer; you can install R from the standard packages
    made available by Ubuntu 22.04.  If you want a newer R version or if you are running in
    Ubuntu 20.04, you should install R from CRAN:
@@ -51,10 +52,16 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
        sudo tee -a /etc/apt/sources.list.d/r-project.list
 
    # update the apt package list
-   $ apt update
+   $ apt -y update
 
    # install R
-   $ sudo apt install r-base r-recommended
+   $ sudo apt -y install r-base r-recommended
+   ```
+
+   Independently of R itself, install the OS packages required for building vignettes: `libxml2-dev` and `pandoc`
+   ```
+   # required during the build for vignettes
+   $ sudo apt -y install libxml2-dev pandoc 
    ```
 
 1. Build the cpp-client (and any dependent libraries) according to the instructions in
