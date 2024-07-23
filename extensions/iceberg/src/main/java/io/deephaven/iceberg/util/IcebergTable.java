@@ -3,58 +3,33 @@
 //
 package io.deephaven.iceberg.util;
 
-import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.PartitionAwareSourceTable;
-import io.deephaven.engine.table.impl.SourceTableComponentFactory;
-import io.deephaven.engine.table.impl.locations.TableKey;
-import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
-import io.deephaven.iceberg.layout.IcebergRefreshingTableLocationProvider;
-import io.deephaven.iceberg.location.IcebergTableLocationKey;
+import io.deephaven.engine.table.Table;
 import org.apache.iceberg.Snapshot;
-import org.apache.iceberg.catalog.TableIdentifier;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-/**
- * Table wrapper for refreshing Iceberg tables.
- */
-public class IcebergTable extends PartitionAwareSourceTable {
+public interface IcebergTable extends Table {
     /**
-     * Location discovery.
+     * Update the table with the latest snapshot from the catalog.
      */
-    final IcebergRefreshingTableLocationProvider<TableKey, IcebergTableLocationKey> locationProvider;
+    @SuppressWarnings("unused")
+    void update();
 
     /**
+     * Update the table with a specific snapshot from the catalog. If the {@code snapshotId} is not found in the list of
+     * snapshots for the table, an {@link IllegalArgumentException} is thrown. The input snapshot must also be newer
+     * (higher in sequence number) than the current snapshot or an {@link IllegalArgumentException} is thrown.
      *
-     *
-     * @param tableDefinition A TableDefinition
-     * @param description A human-readable description for this table
-     * @param componentFactory A component factory for creating column source managers
-     * @param locationProvider A TableLocationProvider, for use in discovering the locations that compose this table
-     * @param updateSourceRegistrar Callback for registering live tables for refreshes, null if this table is not live
+     * @param snapshotId The identifier of the snapshot to use when updating the table.
      */
-    IcebergTable(
-            @NotNull TableDefinition tableDefinition,
-            @NotNull String description,
-            @NotNull SourceTableComponentFactory componentFactory,
-            @NotNull IcebergRefreshingTableLocationProvider<TableKey, IcebergTableLocationKey> locationProvider,
-            @Nullable UpdateSourceRegistrar updateSourceRegistrar) {
-        super(tableDefinition, description, componentFactory, locationProvider, updateSourceRegistrar);
-        this.locationProvider = locationProvider;
-    }
-
     @SuppressWarnings("unused")
-    public void update() {
-        locationProvider.update();
-    }
+    void update(final long snapshotId);
 
+    /**
+     * Update the table with a specific snapshot from the catalog. The input snapshot must be newer (higher in sequence
+     * number) than the current snapshot or an {@link IllegalArgumentException} is thrown.
+     *
+     * @param snapshot The snapshot to use when updating the table.
+     */
     @SuppressWarnings("unused")
-    public void update(final long snapshotId) {
-        locationProvider.update(snapshotId);
-    }
-
-    @SuppressWarnings("unused")
-    public void update(final @NotNull Snapshot snapshot) {
-        locationProvider.update(snapshot);
-    }
+    void update(final @NotNull Snapshot snapshot);
 }

@@ -26,25 +26,41 @@ public interface TableLocationProvider extends NamedImplementation {
      */
     interface Listener extends BasicTableDataListener {
 
-        void beginTransaction();
+        /**
+         * Begin a transaction that collects location key additions and removals to be processed atomically.
+         *
+         * @param token A token to identify the transaction.
+         */
+        void beginTransaction(final Object token);
 
-        void endTransaction();
+        /**
+         * End the transaction and process the location changes.
+         *
+         * @param token A token to identify the transaction.
+         */
+        void endTransaction(final Object token);
 
         /**
          * Notify the listener of a {@link TableLocationKey} encountered while initiating or maintaining the location
          * subscription. This should occur at most once per location, but the order of delivery is <i>not</i>
          * guaranteed.
          *
-         * @param tableLocationKey The new table location key
+         * @param tableLocationKey The new table location key.
+         * @param transactionToken The token identifying the transaction.
          */
-        void handleTableLocationKeyAdded(@NotNull ImmutableTableLocationKey tableLocationKey);
+        void handleTableLocationKeyAdded(
+                @NotNull final ImmutableTableLocationKey tableLocationKey,
+                final Object transactionToken);
 
         /**
          * Notify the listener of a {@link TableLocationKey} that has been removed.
          *
-         * @param tableLocationKey The table location key that was removed
+         * @param tableLocationKey The table location key that was removed.
+         * @param transactionToken The token identifying the transaction.
          */
-        void handleTableLocationKeyRemoved(@NotNull ImmutableTableLocationKey tableLocationKey);
+        void handleTableLocationKeyRemoved(
+                @NotNull final ImmutableTableLocationKey tableLocationKey,
+                final Object transactionToken);
     }
 
     /**
@@ -90,7 +106,7 @@ public interface TableLocationProvider extends NamedImplementation {
      * that {@link #refresh()} or {@link #subscribe(Listener)} has been called prior to calls to the various table
      * location fetch methods.
      *
-     * @return this, to allow method chaining
+     * @return this, to allow method chaining.
      */
     TableLocationProvider ensureInitialized();
 
@@ -99,7 +115,7 @@ public interface TableLocationProvider extends NamedImplementation {
      * size - that is, they may not "exist" for application purposes. {@link #getTableLocation(TableLocationKey)} is
      * guaranteed to succeed for all results.
      *
-     * @return A collection of keys for locations available from this provider
+     * @return A collection of keys for locations available from this provider.
      */
     @NotNull
     Collection<ImmutableTableLocationKey> getTableLocationKeys();
@@ -107,13 +123,13 @@ public interface TableLocationProvider extends NamedImplementation {
     /**
      * Check if this provider knows the supplied location key.
      *
-     * @param tableLocationKey The key to test for
-     * @return Whether the key is known to this provider
+     * @param tableLocationKey The key to test.
+     * @return Whether the key is known to this provider.
      */
     boolean hasTableLocationKey(@NotNull final TableLocationKey tableLocationKey);
 
     /**
-     * @param tableLocationKey A {@link TableLocationKey} specifying the location to get
+     * @param tableLocationKey A {@link TableLocationKey} specifying the location to get.
      * @return The {@link TableLocation} matching the given key
      */
     @NotNull
@@ -126,8 +142,8 @@ public interface TableLocationProvider extends NamedImplementation {
     }
 
     /**
-     * @param tableLocationKey A {@link TableLocationKey} specifying the location to get
-     * @return The {@link TableLocation} matching the given key if present, else null
+     * @param tableLocationKey A {@link TableLocationKey} specifying the location to get.
+     * @return The {@link TableLocation} matching the given key if present, else null.
      */
     @Nullable
     TableLocation getTableLocationIfPresent(@NotNull TableLocationKey tableLocationKey);

@@ -4,7 +4,6 @@
 package io.deephaven.iceberg.layout;
 
 import io.deephaven.engine.table.impl.locations.*;
-import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocationProvider;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationFactory;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
@@ -29,15 +28,10 @@ import java.util.Set;
  * </p>
  */
 public class IcebergRefreshingTableLocationProvider<TK extends TableKey, TLK extends TableLocationKey>
-        extends AbstractTableLocationProvider {
+        extends IcebergTableLocationProviderBase<TK, TLK> {
 
     private static final String IMPLEMENTATION_NAME = IcebergRefreshingTableLocationProvider.class.getSimpleName();
 
-    private final IcebergBaseLayout locationKeyFinder;
-    private final TableLocationFactory<TK, TLK> locationFactory;
-    private final TableDataRefreshService refreshService;
-    private final IcebergCatalogAdapter adapter;
-    private final TableIdentifier tableIdentifier;
     private final boolean autoRefresh;
 
     private TableDataRefreshService.CancellableSubscriptionToken subscriptionToken;
@@ -50,12 +44,7 @@ public class IcebergRefreshingTableLocationProvider<TK extends TableKey, TLK ext
             @NotNull final IcebergCatalogAdapter adapter,
             @NotNull final TableIdentifier tableIdentifier,
             final boolean autoRefresh) {
-        super(tableKey, refreshService != null);
-        this.locationKeyFinder = locationKeyFinder;
-        this.locationFactory = locationFactory;
-        this.refreshService = refreshService;
-        this.adapter = adapter;
-        this.tableIdentifier = tableIdentifier;
+        super(tableKey, locationKeyFinder, locationFactory, refreshService, adapter, tableIdentifier);
         this.autoRefresh = autoRefresh;
     }
 
@@ -79,19 +68,12 @@ public class IcebergRefreshingTableLocationProvider<TK extends TableKey, TLK ext
         refreshSnapshot();
     }
 
-    /**
-     * Update the table location provider with the latest snapshot from the catalog.
-     */
+    @Override
     public synchronized void update() {
         update(adapter.getCurrentSnapshot(tableIdentifier));
     }
 
-    /**
-     * Update the table location provider with a specific snapshot from the catalog. If the {@code snapshotId} is not
-     * found in the list of snapshots for the table, an {@link IllegalArgumentException} is thrown. The input snapshot
-     * must also be newer (higher in sequence number) than the current snapshot or an {@link IllegalArgumentException}
-     * is thrown.
-     */
+    @Override
     public synchronized void update(final long snapshotId) {
         final List<Snapshot> snapshots = adapter.listSnapshots(tableIdentifier);
 
@@ -107,12 +89,7 @@ public class IcebergRefreshingTableLocationProvider<TK extends TableKey, TLK ext
         update(snapshot);
     }
 
-    /**
-     * Update the table location provider with a specific snapshot from the catalog. The input snapshot must be newer
-     * (higher in sequence number) than the current snapshot or an {@link IllegalArgumentException} is thrown.
-     * 
-     * @param snapshot
-     */
+    @Override
     public synchronized void update(final Snapshot snapshot) {
         // Verify that the input snapshot is newer (higher in sequence number) than the current snapshot.
         if (snapshot.sequenceNumber() <= locationKeyFinder.snapshot.sequenceNumber()) {
@@ -134,41 +111,11 @@ public class IcebergRefreshingTableLocationProvider<TK extends TableKey, TLK ext
         beginTransaction();
         final Set<ImmutableTableLocationKey> missedKeys = new HashSet<>(getTableLocationKeys());
         locationKeyFinder.findKeys(tableLocationKey -> {
-            // noinspection SuspiciousMethodCalls
             missedKeys.remove(tableLocationKey);
             handleTableLocationKey(tableLocationKey);
         });
         missedKeys.forEach(this::handleTableLocationKeyRemoved);
         endTransaction();
         setInitialized();
-    }
-
-    @Override
-    @NotNull
-    protected TableLocation makeTableLocation(@NotNull final TableLocationKey locationKey) {
-        // noinspection unchecked
-        return locationFactory.makeLocation((TK) getKey(), (TLK) locationKey, refreshService);
-    }
-
-    // ------------------------------------------------------------------------------------------------------------------
-    // SubscriptionAggregator implementation
-    // ------------------------------------------------------------------------------------------------------------------
-
-    @Override
-    protected final void activateUnderlyingDataSource() {
-        subscriptionToken = refreshService.scheduleTableLocationProviderRefresh(this);
-    }
-
-    @Override
-    protected final void deactivateUnderlyingDataSource() {
-        if (subscriptionToken != null) {
-            subscriptionToken.cancel();
-            subscriptionToken = null;
-        }
-    }
-
-    @Override
-    protected final <T> boolean matchSubscriptionToken(final T token) {
-        return token == subscriptionToken;
     }
 }

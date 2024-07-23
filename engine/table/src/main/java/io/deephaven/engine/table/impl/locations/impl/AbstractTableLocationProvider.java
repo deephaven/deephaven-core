@@ -84,9 +84,9 @@ public abstract class AbstractTableLocationProvider
 
     @Override
     protected final void deliverInitialSnapshot(@NotNull final TableLocationProvider.Listener listener) {
-        listener.beginTransaction();
-        unmodifiableTableLocationKeys.forEach(listener::handleTableLocationKeyAdded);
-        listener.endTransaction();
+        listener.beginTransaction(this);
+        unmodifiableTableLocationKeys.forEach(tlk -> listener.handleTableLocationKeyAdded(tlk, this));
+        listener.endTransaction(this);
     }
 
     /**
@@ -112,8 +112,10 @@ public abstract class AbstractTableLocationProvider
             visitLocationKey(locationKey);
             if (locationCreatedRecorder) {
                 verifyPartitionKeys(locationKey);
-                if (subscriptions.deliverNotification(Listener::handleTableLocationKeyAdded, toKeyImmutable(result),
-                        true)) {
+                if (subscriptions.deliverNotification(
+                        (listener, tlk) -> listener.handleTableLocationKeyAdded(tlk,
+                                AbstractTableLocationProvider.this),
+                        toKeyImmutable(result), true)) {
                     onEmpty();
                 }
             }
@@ -122,13 +124,13 @@ public abstract class AbstractTableLocationProvider
 
     protected final void beginTransaction() {
         if (subscriptions != null) {
-            subscriptions.deliverNotification(Listener::beginTransaction, true);
+            subscriptions.deliverNotification(listener -> listener.beginTransaction(this), true);
         }
     }
 
     protected final void endTransaction() {
         if (subscriptions != null) {
-            subscriptions.deliverNotification(Listener::endTransaction, true);
+            subscriptions.deliverNotification(listener -> listener.endTransaction(this), true);
         }
     }
 
@@ -237,8 +239,8 @@ public abstract class AbstractTableLocationProvider
     /**
      * Remove a {@link TableLocationKey} and its corresponding {@link TableLocation} (if it was created). All
      * subscribers to this TableLocationProvider will be
-     * {@link TableLocationProvider.Listener#handleTableLocationKeyRemoved(ImmutableTableLocationKey) notified}. If the
-     * TableLocation was created, all of its subscribers will additionally be
+     * {@link TableLocationProvider.Listener#handleTableLocationKeyRemoved(ImmutableTableLocationKey, Object)}
+     * notified}. If the TableLocation was created, all of its subscribers will additionally be
      * {@link TableLocation.Listener#handleUpdate() notified} that it no longer exists. This TableLocationProvider will
      * continue to update other locations and will no longer provide or request information about the removed location.
      *
@@ -279,7 +281,8 @@ public abstract class AbstractTableLocationProvider
     protected void handleTableLocationKeyRemoved(@NotNull final ImmutableTableLocationKey locationKey) {
         if (supportsSubscriptions()) {
             synchronized (subscriptions) {
-                if (subscriptions.deliverNotification(Listener::handleTableLocationKeyRemoved, locationKey, true)) {
+                if (subscriptions.deliverNotification(
+                        (listener, tlk) -> listener.handleTableLocationKeyRemoved(tlk, this), locationKey, true)) {
                     onEmpty();
                 }
             }

@@ -6,23 +6,17 @@ package io.deephaven.iceberg.util;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.PartitionAwareSourceTable;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableKey;
-import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocationProvider;
 import io.deephaven.engine.table.impl.locations.impl.KnownLocationKeyFinder;
-import io.deephaven.engine.table.impl.locations.impl.PollingTableLocationProvider;
 import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
 import io.deephaven.engine.table.impl.locations.util.ExecutorTableDataRefreshService;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
-import io.deephaven.iceberg.layout.IcebergBaseLayout;
-import io.deephaven.iceberg.layout.IcebergFlatLayout;
-import io.deephaven.iceberg.layout.IcebergKeyValuePartitionedLayout;
-import io.deephaven.iceberg.layout.IcebergRefreshingTableLocationProvider;
+import io.deephaven.iceberg.layout.*;
 import io.deephaven.iceberg.location.IcebergTableLocationFactory;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import org.apache.iceberg.PartitionField;
@@ -354,11 +348,18 @@ public class IcebergCatalogAdapter {
         return listSnapshotsAsTable(TableIdentifier.parse(tableIdentifier));
     }
 
-    Snapshot getSnapshot(@NotNull final TableIdentifier tableIdentifier, final long snapshotId) {
+    /**
+     * Retrieve a specific {@link Snapshot snapshot} of an Iceberg table.
+     *
+     * @param tableIdentifier The identifier of the table from which to load the snapshot.
+     * @param snapshotId The identifier of the snapshot to load.
+     *
+     * @return An Optional<Snapshot> containing the requested snapshot if it exists.
+     */
+    Optional<Snapshot> getSnapshot(@NotNull final TableIdentifier tableIdentifier, final long snapshotId) {
         return listSnapshots(tableIdentifier).stream()
                 .filter(snapshot -> snapshot.snapshotId() == snapshotId)
-                .findFirst()
-                .orElse(null);
+                .findFirst();
     }
 
     /**
@@ -380,7 +381,7 @@ public class IcebergCatalogAdapter {
      * @return The loaded table
      */
     @SuppressWarnings("unused")
-    public Table readTable(
+    public IcebergTable readTable(
             @NotNull final TableIdentifier tableIdentifier,
             @Nullable final IcebergInstructions instructions) {
         return readTableInternal(tableIdentifier, null, instructions);
@@ -394,7 +395,7 @@ public class IcebergCatalogAdapter {
      * @return The loaded table
      */
     @SuppressWarnings("unused")
-    public Table readTable(
+    public IcebergTable readTable(
             @NotNull final String tableIdentifier,
             @Nullable final IcebergInstructions instructions) {
         return readTable(TableIdentifier.parse(tableIdentifier), instructions);
@@ -409,16 +410,15 @@ public class IcebergCatalogAdapter {
      * @return The loaded table
      */
     @SuppressWarnings("unused")
-    public Table readTable(
+    public IcebergTable readTable(
             @NotNull final TableIdentifier tableIdentifier,
             final long tableSnapshotId,
             @Nullable final IcebergInstructions instructions) {
 
         // Find the snapshot with the given snapshot id
-        final Snapshot tableSnapshot = getSnapshot(tableIdentifier, tableSnapshotId);
-        if (tableSnapshot == null) {
-            throw new IllegalArgumentException("Snapshot with id " + tableSnapshotId + " not found");
-        }
+        final Snapshot tableSnapshot =
+                getSnapshot(tableIdentifier, tableSnapshotId).orElseThrow(() -> new IllegalArgumentException(
+                        "Snapshot with id " + tableSnapshotId + " not found for table " + tableIdentifier));
 
         return readTableInternal(tableIdentifier, tableSnapshot, instructions);
     }
@@ -432,7 +432,7 @@ public class IcebergCatalogAdapter {
      * @return The loaded table
      */
     @SuppressWarnings("unused")
-    public Table readTable(
+    public IcebergTable readTable(
             @NotNull final String tableIdentifier,
             final long tableSnapshotId,
             @Nullable final IcebergInstructions instructions) {
@@ -448,14 +448,14 @@ public class IcebergCatalogAdapter {
      * @return The loaded table
      */
     @SuppressWarnings("unused")
-    public Table readTable(
+    public IcebergTable readTable(
             @NotNull final TableIdentifier tableIdentifier,
             @NotNull final Snapshot tableSnapshot,
             @Nullable final IcebergInstructions instructions) {
         return readTableInternal(tableIdentifier, tableSnapshot, instructions);
     }
 
-    private Table readTableInternal(
+    private IcebergTable readTableInternal(
             @NotNull final TableIdentifier tableIdentifier,
             @Nullable final Snapshot tableSnapshot,
             @Nullable final IcebergInstructions instructions) {
@@ -506,7 +506,6 @@ public class IcebergCatalogAdapter {
             tableDef = icebergTableDef;
         }
 
-        final String description;
         final IcebergBaseLayout keyFinder;
 
         if (partitionSpec.isUnpartitioned()) {
@@ -519,27 +518,25 @@ public class IcebergCatalogAdapter {
         }
 
         if (instructions.refreshing() == IcebergInstructions.IcebergRefreshing.STATIC) {
-            description = "Read static iceberg table with " + keyFinder;
+            final IcebergTableLocationProviderBase<TableKey, IcebergTableLocationKey> locationProvider =
+                    new IcebergStaticTableLocationProvider<>(
+                            StandaloneTableKey.getInstance(),
+                            keyFinder,
+                            new IcebergTableLocationFactory(),
+                            this,
+                            tableIdentifier);
 
-            final AbstractTableLocationProvider locationProvider = new PollingTableLocationProvider<>(
-                    StandaloneTableKey.getInstance(),
-                    toKnownKeys(keyFinder),
-                    new IcebergTableLocationFactory(),
-                    null);
-
-            return new PartitionAwareSourceTable(
+            return new IcebergTableStatic(
                     tableDef,
-                    description,
+                    tableIdentifier.toString(),
                     RegionedTableComponentFactoryImpl.INSTANCE,
-                    locationProvider,
-                    null);
+                    locationProvider);
         }
 
         final UpdateSourceRegistrar updateSourceRegistrar;
         final IcebergRefreshingTableLocationProvider<TableKey, IcebergTableLocationKey> locationProvider;
 
         if (instructions.refreshing() == IcebergInstructions.IcebergRefreshing.MANUAL_REFRESHING) {
-            description = "Read manual refreshing iceberg table with " + keyFinder;
             updateSourceRegistrar = ExecutionContext.getContext().getUpdateGraph();
 
             locationProvider = new IcebergRefreshingTableLocationProvider<>(
@@ -551,7 +548,6 @@ public class IcebergCatalogAdapter {
                     tableIdentifier,
                     false);
         } else {
-            description = "Read automatic refreshing iceberg table with " + keyFinder;
             updateSourceRegistrar = ExecutionContext.getContext().getUpdateGraph();
 
             final TableDataRefreshService refreshService =
@@ -567,9 +563,9 @@ public class IcebergCatalogAdapter {
                     true);
         }
 
-        return new IcebergTable(
+        return new IcebergTableRefreshing(
                 tableDef,
-                description,
+                tableIdentifier.toString(),
                 RegionedTableComponentFactoryImpl.INSTANCE,
                 locationProvider,
                 updateSourceRegistrar);

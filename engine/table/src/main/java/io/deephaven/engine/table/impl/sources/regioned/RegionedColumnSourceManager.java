@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.*;
@@ -18,6 +19,7 @@ import io.deephaven.engine.table.impl.locations.impl.TableLocationUpdateSubscrip
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.util.DelayedErrorNotifier;
+import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
@@ -220,7 +222,12 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
         } else if (includedLocation != null) {
             orderedIncludedTableLocations.remove(includedLocation);
             removedTableLocations.add(includedLocation);
-            // includedLocation.invalidate();
+
+            final UpdateCommitter<?> committer = new UpdateCommitter<>(this,
+                    ExecutionContext.getContext().getUpdateGraph(),
+                    (ignored) -> includedLocation.invalidate());
+
+            committer.maybeActivate();
             return true;
         }
 
@@ -233,8 +240,10 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
 
         // Do our first pass over the locations to include as many as possible and build the initial row set
         // noinspection resource
-        final TableUpdate update = update(true);
+        final TableUpdateImpl update = update(true);
         final TrackingWritableRowSet initialRowSet = update.added().writableCast().toTracking();
+        update.added = null;
+        update.release();
 
         // Add single-column data indexes for all partitioning columns, whether refreshing or not
         columnDefinitions.stream().filter(ColumnDefinition::isPartitioning).forEach(cd -> {
@@ -295,7 +304,7 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
         }
     }
 
-    private TableUpdate update(final boolean initializing) {
+    private TableUpdateImpl update(final boolean initializing) {
         final RowSetBuilderSequential addedRowSetBuilder = RowSetFactory.builderSequential();
         final RowSetBuilderSequential removedRowSetBuilder = RowSetFactory.builderSequential();
 
@@ -305,9 +314,7 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
         removedTableLocations.sort(Comparator.comparingInt(e -> e.regionIndex));
         for (final IncludedTableLocationEntry removedLocation : removedTableLocations) {
             final long regionFirstKey = RegionedColumnSource.getFirstRowKey(removedLocation.regionIndex);
-            removedLocation.location.getRowSet()
-                    .forAllRowKeyRanges((subRegionFirstKey, subRegionLastKey) -> removedRowSetBuilder
-                            .appendRange(regionFirstKey + subRegionFirstKey, regionFirstKey + subRegionLastKey));
+            removedRowSetBuilder.appendRowSequenceWithOffset(removedLocation.location.getRowSet(), regionFirstKey);
             removedRegionBuilder.appendKey(removedLocation.regionIndex);
         }
         removedTableLocations.clear();
