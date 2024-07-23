@@ -8,17 +8,25 @@ import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocationProvid
 import io.deephaven.engine.table.impl.locations.impl.TableLocationFactory;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
+import io.deephaven.iceberg.util.IcebergCatalogAdapter;
 import org.apache.iceberg.Snapshot;
+import org.apache.iceberg.catalog.TableIdentifier;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
- * Polling-driven {@link TableLocationProvider} implementation that delegates {@link TableLocationKey location key}
+ * <p>
+ * Refreshing {@link TableLocationProvider} implementation that delegates {@link TableLocationKey location key}
  * discovery to a {@link TableLocationKeyFinder} and {@link TableLocation location} creation to a
  * {@link TableLocationFactory}.
+ * </p>
+ * <p>
+ * Supports both automatic and manual refreshing cases, distinguished by the {@code autoRefresh} parameter.
+ * </p>
  */
 public class IcebergRefreshingTableLocationProvider<TK extends TableKey, TLK extends TableLocationKey>
         extends AbstractTableLocationProvider {
@@ -28,17 +36,27 @@ public class IcebergRefreshingTableLocationProvider<TK extends TableKey, TLK ext
     private final IcebergBaseLayout locationKeyFinder;
     private final TableLocationFactory<TK, TLK> locationFactory;
     private final TableDataRefreshService refreshService;
+    private final IcebergCatalogAdapter adapter;
+    private final TableIdentifier tableIdentifier;
+    private final boolean autoRefresh;
 
     private TableDataRefreshService.CancellableSubscriptionToken subscriptionToken;
 
-    public IcebergRefreshingTableLocationProvider(@NotNull final TK tableKey,
+    public IcebergRefreshingTableLocationProvider(
+            @NotNull final TK tableKey,
             @NotNull final IcebergBaseLayout locationKeyFinder,
             @NotNull final TableLocationFactory<TK, TLK> locationFactory,
-            @Nullable final TableDataRefreshService refreshService) {
+            @Nullable final TableDataRefreshService refreshService,
+            @NotNull final IcebergCatalogAdapter adapter,
+            @NotNull final TableIdentifier tableIdentifier,
+            final boolean autoRefresh) {
         super(tableKey, refreshService != null);
         this.locationKeyFinder = locationKeyFinder;
         this.locationFactory = locationFactory;
         this.refreshService = refreshService;
+        this.adapter = adapter;
+        this.tableIdentifier = tableIdentifier;
+        this.autoRefresh = autoRefresh;
     }
 
     // ------------------------------------------------------------------------------------------------------------------
@@ -50,12 +68,69 @@ public class IcebergRefreshingTableLocationProvider<TK extends TableKey, TLK ext
         return IMPLEMENTATION_NAME;
     }
 
-    // The simplest way to support "push" of new data availability is to provide a callback to the user that just calls
-    // `refresh`, which would need to become synchronized. Alternatively, we could make an Iceberg-specific aTLP
-    // implementation that exposes a more specific callback, e.g. with a snapshot ID, as well as the option to disable
-    // polling. We do need a mechanism to avoid going backwards, probably.
     @Override
-    public void refresh() {
+    public synchronized void refresh() {
+        if (autoRefresh) {
+            final Snapshot latestSnapshot = adapter.getCurrentSnapshot(tableIdentifier);
+            if (latestSnapshot.sequenceNumber() > locationKeyFinder.snapshot.sequenceNumber()) {
+                locationKeyFinder.snapshot = latestSnapshot;
+            }
+        }
+        refreshSnapshot();
+    }
+
+    /**
+     * Update the table location provider with the latest snapshot from the catalog.
+     */
+    public synchronized void update() {
+        update(adapter.getCurrentSnapshot(tableIdentifier));
+    }
+
+    /**
+     * Update the table location provider with a specific snapshot from the catalog. If the {@code snapshotId} is not
+     * found in the list of snapshots for the table, an {@link IllegalArgumentException} is thrown. The input snapshot
+     * must also be newer (higher in sequence number) than the current snapshot or an {@link IllegalArgumentException}
+     * is thrown.
+     */
+    public synchronized void update(final long snapshotId) {
+        final List<Snapshot> snapshots = adapter.listSnapshots(tableIdentifier);
+
+        final Snapshot snapshot = snapshots.stream()
+                .filter(s -> s.snapshotId() == snapshotId).findFirst()
+                .orElse(null);
+
+        if (snapshot == null) {
+            throw new IllegalArgumentException(
+                    "Snapshot " + snapshotId + " was not found in the list of snapshots for table " + tableIdentifier
+                            + ". Snapshots: " + snapshots);
+        }
+        update(snapshot);
+    }
+
+    /**
+     * Update the table location provider with a specific snapshot from the catalog. The input snapshot must be newer
+     * (higher in sequence number) than the current snapshot or an {@link IllegalArgumentException} is thrown.
+     * 
+     * @param snapshot
+     */
+    public synchronized void update(final Snapshot snapshot) {
+        // Verify that the input snapshot is newer (higher in sequence number) than the current snapshot.
+        if (snapshot.sequenceNumber() <= locationKeyFinder.snapshot.sequenceNumber()) {
+            throw new IllegalArgumentException(
+                    "Snapshot sequence number " + snapshot.sequenceNumber()
+                            + " is older than the current snapshot sequence number "
+                            + locationKeyFinder.snapshot.sequenceNumber() + " for table " + tableIdentifier);
+        }
+        // Update the snapshot.
+        locationKeyFinder.snapshot = snapshot;
+        refreshSnapshot();
+    }
+
+    /**
+     * Refresh the table location provider with the latest snapshot from the catalog. This method will identify new
+     * locations and removed locations.
+     */
+    private void refreshSnapshot() {
         beginTransaction();
         final Set<ImmutableTableLocationKey> missedKeys = new HashSet<>(getTableLocationKeys());
         locationKeyFinder.findKeys(tableLocationKey -> {
@@ -66,14 +141,6 @@ public class IcebergRefreshingTableLocationProvider<TK extends TableKey, TLK ext
         missedKeys.forEach(this::handleTableLocationKeyRemoved);
         endTransaction();
         setInitialized();
-    }
-
-
-    public void update(final Snapshot snapshot) {
-        // Update the snapshot to the new one
-        locationKeyFinder.snapshot = snapshot;
-        // Call the refresh
-        refresh();
     }
 
     @Override

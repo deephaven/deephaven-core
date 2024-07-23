@@ -24,6 +24,7 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -71,7 +72,16 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
     private final KeyedObjectHashMap<ImmutableTableLocationKey, IncludedTableLocationEntry> includedTableLocations =
             new KeyedObjectHashMap<>(INCLUDED_TABLE_LOCATION_ENTRY_KEY);
 
+    /**
+     * List of locations that were removed this cycle. Will be cleared after each update.
+     */
     private final List<IncludedTableLocationEntry> removedTableLocations = new ArrayList<>();
+
+    /**
+     * The next region index to assign to a location. We increment for each new location and will not reuse indices from
+     * regions that were removed.
+     */
+    private final MutableInt nextRegionIndex = new MutableInt(0);
 
     /**
      * Table locations that provide the regions backing our column sources, in insertion order.
@@ -208,6 +218,7 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
                 log.debug().append("EMPTY_LOCATION_REMOVED:").append(locationKey.toString()).endl();
             }
         } else if (includedLocation != null) {
+            orderedIncludedTableLocations.remove(includedLocation);
             removedTableLocations.add(includedLocation);
             // includedLocation.invalidate();
             return true;
@@ -288,6 +299,8 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
         final RowSetBuilderSequential addedRowSetBuilder = RowSetFactory.builderSequential();
         final RowSetBuilderSequential removedRowSetBuilder = RowSetFactory.builderSequential();
 
+        final RowSetBuilderSequential removedRegionBuilder = RowSetFactory.builderSequential();
+
         // Sort the removed locations by region index, so that we can process them in order.
         removedTableLocations.sort(Comparator.comparingInt(e -> e.regionIndex));
         for (final IncludedTableLocationEntry removedLocation : removedTableLocations) {
@@ -295,6 +308,7 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
             removedLocation.location.getRowSet()
                     .forAllRowKeyRanges((subRegionFirstKey, subRegionLastKey) -> removedRowSetBuilder
                             .appendRange(regionFirstKey + subRegionFirstKey, regionFirstKey + subRegionLastKey));
+            removedRegionBuilder.appendKey(removedLocation.regionIndex);
         }
         removedTableLocations.clear();
 
@@ -333,6 +347,8 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
             }
         }
 
+        final RowSetBuilderSequential addedRegionBuilder = RowSetFactory.builderSequential();
+
         final int previousNumRegions = includedTableLocations.size();
         final int newNumRegions = previousNumRegions + (entriesToInclude == null ? 0 : entriesToInclude.size());
         if (entriesToInclude != null) {
@@ -356,11 +372,13 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
                 // @formatter:on
                 locationSource.set(entry.regionIndex, entry.location);
                 rowSetSource.set(entry.regionIndex, entry.location.getRowSet());
+                addedRegionBuilder.appendKey(entry.regionIndex);
             }
         }
+        final RowSet addedRegions = addedRegionBuilder.build();
 
-        if (previousNumRegions != newNumRegions) {
-            includedLocationsTable.getRowSet().writableCast().insertRange(previousNumRegions, newNumRegions - 1);
+        if (addedRegions.isNonempty()) {
+            includedLocationsTable.getRowSet().writableCast().insert(addedRegions);
         }
 
         if (initializing) {
@@ -374,14 +392,16 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
             }
         } else {
             final RowSet modifiedRegions = modifiedRegionBuilder.build();
-            if (previousNumRegions == newNumRegions && modifiedRegions.isEmpty()) {
+            final RowSet removedRegions = removedRegionBuilder.build();
+            if (addedRegions.isEmpty() && modifiedRegions.isEmpty() && removedRegions.isEmpty()) {
+                addedRegions.close();
                 modifiedRegions.close();
+                removedRegions.close();
             } else {
+                includedLocationsTable.getRowSet().writableCast().remove(removedRegions);
                 final TableUpdate update = new TableUpdateImpl(
-                        previousNumRegions == newNumRegions
-                                ? RowSetFactory.empty()
-                                : RowSetFactory.fromRange(previousNumRegions, newNumRegions - 1),
-                        RowSetFactory.empty(),
+                        addedRegions,
+                        removedRegions,
                         modifiedRegions,
                         RowSetShiftData.EMPTY,
                         modifiedRegions.isNonempty() ? rowSetModifiedColumnSet : ModifiedColumnSet.EMPTY);
@@ -488,7 +508,7 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
         private final TableLocation location;
         private final TableLocationUpdateSubscriptionBuffer subscriptionBuffer;
 
-        private final int regionIndex = includedTableLocations.size();
+        private final int regionIndex = nextRegionIndex.getAndIncrement();
         private final List<ColumnLocationState<?>> columnLocationStates = new ArrayList<>();
 
         /**

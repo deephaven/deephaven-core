@@ -14,6 +14,7 @@ import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocationProvid
 import io.deephaven.engine.table.impl.locations.impl.KnownLocationKeyFinder;
 import io.deephaven.engine.table.impl.locations.impl.PollingTableLocationProvider;
 import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
+import io.deephaven.engine.table.impl.locations.util.ExecutorTableDataRefreshService;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
@@ -361,6 +362,17 @@ public class IcebergCatalogAdapter {
     }
 
     /**
+     * Get the current {@link Snapshot snapshot} of a given Iceberg table.
+     *
+     * @param tableIdentifier The identifier of the table.
+     * @return The current snapshot of the table.
+     */
+    public Snapshot getCurrentSnapshot(@NotNull final TableIdentifier tableIdentifier) {
+        final List<Snapshot> snapshots = listSnapshots(tableIdentifier);
+        return snapshots.get(snapshots.size() - 1);
+    }
+
+    /**
      * Read the latest static snapshot of an Iceberg table from the Iceberg catalog.
      *
      * @param tableIdentifier The table identifier to load
@@ -496,8 +508,6 @@ public class IcebergCatalogAdapter {
 
         final String description;
         final IcebergBaseLayout keyFinder;
-        final TableDataRefreshService refreshService;
-        final UpdateSourceRegistrar updateSourceRegistrar;
 
         if (partitionSpec.isUnpartitioned()) {
             // Create the flat layout location key finder
@@ -510,11 +520,10 @@ public class IcebergCatalogAdapter {
 
         if (instructions.refreshing() == IcebergInstructions.IcebergRefreshing.STATIC) {
             description = "Read static iceberg table with " + keyFinder;
-            updateSourceRegistrar = null;
 
             final AbstractTableLocationProvider locationProvider = new PollingTableLocationProvider<>(
                     StandaloneTableKey.getInstance(),
-                    keyFinder,
+                    toKnownKeys(keyFinder),
                     new IcebergTableLocationFactory(),
                     null);
 
@@ -523,30 +532,47 @@ public class IcebergCatalogAdapter {
                     description,
                     RegionedTableComponentFactoryImpl.INSTANCE,
                     locationProvider,
-                    updateSourceRegistrar);
-        } else if (instructions.refreshing() == IcebergInstructions.IcebergRefreshing.MANUAL_REFRESHING) {
-            description = "Read refreshing iceberg table with " + keyFinder;
-            updateSourceRegistrar = ExecutionContext.getContext().getUpdateGraph();
-
-            final IcebergRefreshingTableLocationProvider<TableKey, IcebergTableLocationKey> locationProvider =
-                    new IcebergRefreshingTableLocationProvider<>(
-                            StandaloneTableKey.getInstance(),
-                            keyFinder,
-                            new IcebergTableLocationFactory(),
-                            TableDataRefreshService.getSharedRefreshService());
-
-            return new IcebergTable(
-                    tableIdentifier,
-                    this,
-                    tableDef,
-                    description,
-                    RegionedTableComponentFactoryImpl.INSTANCE,
-                    locationProvider,
-                    updateSourceRegistrar);
-        } else {
-            throw new UnsupportedOperationException("Unsupported refreshing mode: " + instructions.refreshing());
+                    null);
         }
 
+        final UpdateSourceRegistrar updateSourceRegistrar;
+        final IcebergRefreshingTableLocationProvider<TableKey, IcebergTableLocationKey> locationProvider;
+
+        if (instructions.refreshing() == IcebergInstructions.IcebergRefreshing.MANUAL_REFRESHING) {
+            description = "Read manual refreshing iceberg table with " + keyFinder;
+            updateSourceRegistrar = ExecutionContext.getContext().getUpdateGraph();
+
+            locationProvider = new IcebergRefreshingTableLocationProvider<>(
+                    StandaloneTableKey.getInstance(),
+                    keyFinder,
+                    new IcebergTableLocationFactory(),
+                    TableDataRefreshService.getSharedRefreshService(),
+                    this,
+                    tableIdentifier,
+                    false);
+        } else {
+            description = "Read automatic refreshing iceberg table with " + keyFinder;
+            updateSourceRegistrar = ExecutionContext.getContext().getUpdateGraph();
+
+            final TableDataRefreshService refreshService =
+                    new ExecutorTableDataRefreshService("Local", instructions.autoRefreshMs(), 30_000L, 10);
+
+            locationProvider = new IcebergRefreshingTableLocationProvider<>(
+                    StandaloneTableKey.getInstance(),
+                    keyFinder,
+                    new IcebergTableLocationFactory(),
+                    refreshService,
+                    this,
+                    tableIdentifier,
+                    true);
+        }
+
+        return new IcebergTable(
+                tableDef,
+                description,
+                RegionedTableComponentFactoryImpl.INSTANCE,
+                locationProvider,
+                updateSourceRegistrar);
     }
 
     private static KnownLocationKeyFinder<IcebergTableLocationKey> toKnownKeys(
@@ -561,4 +587,13 @@ public class IcebergCatalogAdapter {
     public Catalog catalog() {
         return catalog;
     }
+
+    /**
+     * Returns the underlying Iceberg {@link FileIO fileIO} used by this adapter.
+     */
+    @SuppressWarnings("unused")
+    public FileIO fileIO() {
+        return fileIO;
+    }
+
 }
