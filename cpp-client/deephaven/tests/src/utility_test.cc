@@ -5,6 +5,7 @@
 #include "deephaven/dhcore/utility/utility.h"
 
 using deephaven::dhcore::utility::Base64Encode;
+using deephaven::dhcore::utility::Basename;
 using deephaven::dhcore::utility::EpochMillisToStr;
 using deephaven::dhcore::utility::ObjectId;
 
@@ -27,5 +28,17 @@ TEST_CASE("ObjectId", "[utility]") {
   uintptr_t p = 0xdeadbeef;
   auto id = ObjectId("hello", reinterpret_cast<void *>(p));
   CHECK(id == "hello(0xdeadbeef)");
+}
+
+TEST_CASE("Basename", "[utility]") {
+#ifdef __linux__
+  CHECK("file.txt" == Basename("/home/kosak/file.txt"));
+  CHECK(Basename("/home/kosak/").empty());
+#endif
+
+#ifdef _WIN32
+  CHECK("file.txt" == Basename(R"(C:\Users\kosak\file.txt)"));
+  CHECK(Basename(R"(C:\Users\kosak\)").empty());
+#endif
 }
 }  // namespace deephaven::client::tests
