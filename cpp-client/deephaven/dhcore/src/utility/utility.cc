@@ -145,7 +145,7 @@ TimePointToStr(
   return EpochMillisToStr(TimePointToEpochMillis(time_point));
 }
 
-std::string GetFilename(std::string_view path) {
+std::string Basename(std::string_view path) {
   return std::filesystem::path(path).filename().string();
 }
 

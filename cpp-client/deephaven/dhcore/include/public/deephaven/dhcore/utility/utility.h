@@ -188,14 +188,14 @@ TimePointToStr(
     std::chrono::time_point<std::chrono::system_clock> time_point);
 
 /**
- * This is a method that simply invokes std::filesystem::path(path).filename().string();
+ * This is a method that simply invokes std::filesystem::path(path).filename().string().
  * We put it here because it is sometimes useful, to provide functionality
  * similar to the POSIX basename() call. We deliberately do not inline it
  * because is generates a surprising amount of code.
  * @param path The path
- * @return The filename of the path, as returned by std::filesystem::path(path).filename().string()
+ * @return The basename of the path, as returned by std::filesystem::path(path).filename().string()
  */
-std::string GetFilename(std::string_view path);
+std::string Basename(std::string_view path);
 
 template <class T> [[nodiscard]] std::string
 TypeName(const T& t) {
