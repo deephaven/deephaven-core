@@ -85,9 +85,7 @@ public class ParquetTools {
 
     /**
      * Reads in a table from a single parquet file, metadata file, or directory with recognized layout. The source
-     * provided can be a local file path or a URI to be resolved via the provided
-     * {@link SeekableChannelsProviderPlugin}.
-     *
+     * provided can be a local file path or a URI to be resolved.
      * <p>
      * This method attempts to "do the right thing." It examines the source to determine if it's a single parquet file,
      * a metadata file, or a directory. If it's a directory, it additionally tries to guess the layout to use. Unless a
@@ -106,8 +104,7 @@ public class ParquetTools {
 
     /**
      * Reads in a table from a single parquet file, metadata file, or directory with recognized layout. The source
-     * provided can be a local file path or a URI to be resolved via the provided
-     * {@link SeekableChannelsProviderPlugin}.
+     * provided can be a local file path or a URI to be resolved.
      *
      * <p>
      * If the {@link ParquetFileLayout} is not provided in the {@link ParquetInstructions instructions}, this method

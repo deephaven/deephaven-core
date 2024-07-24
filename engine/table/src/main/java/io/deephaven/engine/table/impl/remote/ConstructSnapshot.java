@@ -14,6 +14,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.exceptions.ColumnSnapshotUnsuccessfulException;
 import io.deephaven.engine.exceptions.SnapshotUnsuccessfulException;
+import io.deephaven.engine.table.impl.ForkJoinPoolOperationInitializer;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.updategraph.*;
@@ -678,10 +679,11 @@ public class ConstructSnapshot {
             @Nullable final RowSequence positionsToSnapshot,
             @Nullable final RowSequence reversePositionsToSnapshot,
             @NotNull final SnapshotControl control) {
-
         final UpdateGraph updateGraph = table.getUpdateGraph();
         final MutableObject<BarrageMessage> snapshotMsg = new MutableObject<>();
-        try (final SafeCloseable ignored1 = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
+        // Use Fork-Join thread pool for parallel snapshotting
+        try (final SafeCloseable ignored1 = ExecutionContext.getContext().withUpdateGraph(updateGraph)
+                .withOperationInitializer(ForkJoinPoolOperationInitializer.fromCommonPool()).open()) {
             final SnapshotFunction doSnapshot = (usePrev, beforeClockValue) -> {
                 final BarrageMessage snapshot = new BarrageMessage();
                 snapshot.isSnapshot = true;
@@ -1763,6 +1765,9 @@ public class ConstructSnapshot {
         try (final SharedContext sharedContext = numCols > 1 ? SharedContext.makeSharedContext() : null;
                 final SafeCloseableArray<ColumnSource.FillContext> ignored = new SafeCloseableArray<>(fillContexts);
                 final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
+            for (int colRank = 0; colRank < numCols; ++colRank) {
+                fillContexts[colRank] = columnSources.get(colRank).makeFillContext(maxChunkSize, sharedContext);
+            }
             int chunkSize = maxChunkSize;
             while (it.hasMore()) {
                 final RowSequence reducedRowSet = it.getNextRowSequenceWithLength(chunkSize);
@@ -1777,9 +1782,6 @@ public class ConstructSnapshot {
                 for (int colRank = 0; colRank < numCols; ++colRank) {
                     final int colIdx = columnIndices.get(colRank);
                     final ColumnSource<?> columnSource = columnSources.get(colRank);
-                    if (fillContexts[colRank] == null) {
-                        fillContexts[colRank] = columnSource.makeFillContext(maxChunkSize, sharedContext);
-                    }
                     final ColumnSource.FillContext fillContext = fillContexts[colRank];
                     // Populate snapshot data as a list of chunks
                     if (snapshot.addColumnData[colIdx].data == null) {

@@ -13,7 +13,6 @@ import io.deephaven.auth.BasicAuthMarshaller;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.util.EngineMetrics;
-import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.extensions.barrage.BarrageStreamGenerator;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.internal.log.LoggerFactory;
@@ -34,7 +33,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.InputStream;
 import java.util.Map;
@@ -53,7 +51,6 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
     private final ArrowFlightUtil.DoExchangeMarshaller.Factory doExchangeFactory;
 
     private final Map<String, AuthenticationRequestHandler> authRequestHandlers;
-    private final OperationInitializer operationInitializer;
 
     @Inject
     public FlightServiceGrpcImpl(
@@ -63,8 +60,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             final SessionService.ErrorTransformer errorTransformer,
             final TicketRouter ticketRouter,
             final ArrowFlightUtil.DoExchangeMarshaller.Factory doExchangeFactory,
-            final Map<String, AuthenticationRequestHandler> authRequestHandlers,
-            @Named(OperationInitializer.FORK_JOIN_NAME) final OperationInitializer operationInitializer) {
+            Map<String, AuthenticationRequestHandler> authRequestHandlers) {
         this.executorService = executorService;
         this.streamGeneratorFactory = streamGeneratorFactory;
         this.sessionService = sessionService;
@@ -72,7 +68,6 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
         this.ticketRouter = ticketRouter;
         this.doExchangeFactory = doExchangeFactory;
         this.authRequestHandlers = authRequestHandlers;
-        this.operationInitializer = operationInitializer;
     }
 
     @Override
@@ -275,9 +270,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             final Flight.Ticket request,
             final StreamObserver<InputStream> responseObserver) {
         ArrowFlightUtil.DoGetCustom(
-                streamGeneratorFactory, sessionService.getCurrentSession(), ticketRouter, request,
-                operationInitializer, responseObserver);
-
+                streamGeneratorFactory, sessionService.getCurrentSession(), ticketRouter, request, responseObserver);
     }
 
     /**

@@ -22,7 +22,6 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
-import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
@@ -51,7 +50,6 @@ import org.apache.arrow.flatbuf.MessageHeader;
 import org.apache.arrow.flight.impl.Flight;
 import org.jetbrains.annotations.NotNull;
 
-import javax.inject.Named;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
@@ -103,7 +101,6 @@ public class ArrowFlightUtil {
             final SessionState session,
             final TicketRouter ticketRouter,
             final Flight.Ticket request,
-            final OperationInitializer operationInitializer,
             final StreamObserver<InputStream> observer) {
 
         final String ticketLogName = ticketRouter.getLogNameFor(request, "table");
@@ -146,15 +143,9 @@ public class ArrowFlightUtil {
                                 fbb -> BarrageUtil.makeTableSchemaPayload(fbb, DEFAULT_SNAPSHOT_DESER_OPTIONS,
                                         table.getDefinition(), table.getAttributes(), table.isFlat())));
 
-                        final ExecutionContext executionContext = ExecutionContext.newBuilder()
-                                .setOperationInitializer(operationInitializer)
-                                .markSystemic()
-                                .build();
-                        try (final SafeCloseable ignored1 = executionContext.open()) {
-                            // shared code between `DoGet` and `BarrageSnapshotRequest`
-                            BarrageUtil.createAndSendSnapshot(streamGeneratorFactory, table, null, null, false,
-                                    DEFAULT_SNAPSHOT_DESER_OPTIONS, listener, metrics);
-                        }
+                        // shared code between `DoGet` and `BarrageSnapshotRequest`
+                        BarrageUtil.createAndSendSnapshot(streamGeneratorFactory, table, null, null, false,
+                                DEFAULT_SNAPSHOT_DESER_OPTIONS, listener, metrics);
 
                         listener.onCompleted();
                     });
@@ -379,7 +370,6 @@ public class ArrowFlightUtil {
         private final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> subscriptionOptAdapter;
         private final BarrageMessageProducer.Adapter<BarrageSnapshotRequest, BarrageSnapshotOptions> snapshotOptAdapter;
         private final SessionService.ErrorTransformer errorTransformer;
-        private final OperationInitializer operationInitializer;
 
         /**
          * Interface for the individual handlers for the DoExchange.
@@ -399,7 +389,6 @@ public class ArrowFlightUtil {
                 final BarrageMessageProducer.Adapter<BarrageSubscriptionRequest, BarrageSubscriptionOptions> subscriptionOptAdapter,
                 final BarrageMessageProducer.Adapter<BarrageSnapshotRequest, BarrageSnapshotOptions> snapshotOptAdapter,
                 final SessionService.ErrorTransformer errorTransformer,
-                @Named(OperationInitializer.FORK_JOIN_NAME) final OperationInitializer operationInitializer,
                 @Assisted final SessionState session,
                 @Assisted final StreamObserver<InputStream> responseObserver) {
 
@@ -413,7 +402,6 @@ public class ArrowFlightUtil {
             this.session = session;
             this.listener = new MessageViewAdapter(responseObserver);
             this.errorTransformer = errorTransformer;
-            this.operationInitializer = operationInitializer;
 
             this.session.addOnCloseCallback(this);
             if (responseObserver instanceof ServerCallStreamObserver) {
@@ -594,17 +582,10 @@ public class ArrowFlightUtil {
 
                                     final boolean reverseViewport = snapshotRequest.reverseViewport();
 
-                                    final ExecutionContext executionContext = ExecutionContext.newBuilder()
-                                            .setOperationInitializer(operationInitializer)
-                                            .markSystemic()
-                                            .build();
-                                    try (final SafeCloseable ignored1 = executionContext.open()) {
-                                        // leverage common code for `DoGet` and `BarrageSnapshotOptions`
-                                        BarrageUtil.createAndSendSnapshot(streamGeneratorFactory, table, columns,
-                                                viewport,
-                                                reverseViewport, snapshotOptAdapter.adapt(snapshotRequest), listener,
-                                                metrics);
-                                    }
+                                    // leverage common code for `DoGet` and `BarrageSnapshotOptions`
+                                    BarrageUtil.createAndSendSnapshot(streamGeneratorFactory, table, columns, viewport,
+                                            reverseViewport, snapshotOptAdapter.adapt(snapshotRequest), listener,
+                                            metrics);
                                     HalfClosedState newState = halfClosedState.updateAndGet(current -> {
                                         switch (current) {
                                             case DONT_CLOSE:

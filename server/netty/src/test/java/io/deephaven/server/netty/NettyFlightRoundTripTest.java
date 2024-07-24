@@ -6,12 +6,9 @@ package io.deephaven.server.netty;
 import dagger.Component;
 import dagger.Module;
 import dagger.Provides;
-import io.deephaven.engine.table.impl.ForkJoinPoolOperationInitializer;
-import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.server.runner.ExecutionContextUnitTestModule;
 import io.deephaven.server.test.FlightMessageRoundTripTest;
 
-import javax.inject.Named;
 import javax.inject.Singleton;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
@@ -26,13 +23,6 @@ public class NettyFlightRoundTripTest extends FlightMessageRoundTripTest {
                     .port(0)
                     .tokenExpire(Duration.of(5, ChronoUnit.MINUTES))
                     .build();
-        }
-
-        @Provides
-        @Singleton
-        @Named(OperationInitializer.FORK_JOIN_NAME)
-        static OperationInitializer provideForkJoinPoolOperationInitializer() {
-            return ForkJoinPoolOperationInitializer.fromCommonPool();
         }
     }
 

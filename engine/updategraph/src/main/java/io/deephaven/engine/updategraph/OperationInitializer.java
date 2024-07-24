@@ -10,10 +10,6 @@ import java.util.concurrent.Future;
  * Provides guidance for initialization operations on how they can parallelize.
  */
 public interface OperationInitializer {
-
-    String DEFAULT_NAME = "OPERATION_INITIALIZER";
-    String FORK_JOIN_NAME = "FORK_JOIN_POOL_OPERATION_INITIALIZER";
-
     OperationInitializer NON_PARALLELIZABLE = new OperationInitializer() {
         @Override
         public boolean canParallelize() {

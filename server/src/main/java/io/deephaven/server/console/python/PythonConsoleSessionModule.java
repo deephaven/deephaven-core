@@ -34,7 +34,7 @@ public class PythonConsoleSessionModule {
     PythonDeephavenSession bindPythonSession(
             @Named(PeriodicUpdateGraph.DEFAULT_UPDATE_GRAPH_NAME) final UpdateGraph updateGraph,
             final ThreadInitializationFactory threadInitializationFactory,
-            @Named(OperationInitializer.DEFAULT_NAME) final OperationInitializer operationInitializer,
+            final OperationInitializer operationInitializer,
             final ObjectTypeLookup lookup,
             final ScriptSession.Listener listener,
             final PythonEvaluatorJpy pythonEvaluator,
