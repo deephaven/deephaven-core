@@ -188,7 +188,7 @@ TimePointToStr(
     std::chrono::time_point<std::chrono::system_clock> time_point);
 
 /**
- * This is a method that simply invokes std::filesystem::path(path).filename();
+ * This is a method that simply invokes std::filesystem::path(path).filename().string();
  * We put it here because it is sometimes useful, to provide functionality
  * similar to the POSIX basename() call. We deliberately do not inline it
  * because is generates a surprising amount of code.
