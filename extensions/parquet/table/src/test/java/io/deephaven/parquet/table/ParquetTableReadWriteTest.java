@@ -622,8 +622,6 @@ public final class ParquetTableReadWriteTest {
         assertTableEquals(table, fromDiskWithMetadata);
         fromDiskWithCommonMetadata = readTable(commonMetadataFile.getPath(), readInstructions);
         assertTableEquals(table, fromDiskWithCommonMetadata);
-
-
     }
 
     @Test
@@ -1144,10 +1142,24 @@ public final class ParquetTableReadWriteTest {
         assertTableEquals(inputData.sort("symbol", "epic_collection_id"),
                 fromDisk.sort("symbol", "epic_collection_id"));
 
-        final File commonMetadata = new File(parentDir, "_common_metadata");
-        final Table fromDiskWithMetadata = readTable(commonMetadata.getPath());
+        final Table fromDiskMetadataPartitioned =
+                readTable(parentDir.getPath(),
+                        EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.METADATA_PARTITIONED));
+        for (final String col : partitioningCols) {
+            assertTrue(fromDiskMetadataPartitioned.getDefinition().getColumn(col).isPartitioning());
+        }
+        assertTableEquals(inputData.sort("symbol", "epic_collection_id"),
+                fromDiskMetadataPartitioned.sort("symbol", "epic_collection_id"));
+
+        final File metadata = new File(parentDir, "_metadata");
+        final Table fromDiskWithMetadata = readTable(metadata.getPath());
         assertTableEquals(inputData.sort("symbol", "epic_collection_id"),
                 fromDiskWithMetadata.sort("symbol", "epic_collection_id"));
+
+        final File commonMetadata = new File(parentDir, "_common_metadata");
+        final Table fromDiskWithCommonMetadata = readTable(commonMetadata.getPath());
+        assertTableEquals(inputData.sort("symbol", "epic_collection_id"),
+                fromDiskWithCommonMetadata.sort("symbol", "epic_collection_id"));
     }
 
     @Test
@@ -1193,13 +1205,15 @@ public final class ParquetTableReadWriteTest {
                 .build();
         writeKeyValuePartitionedTable(inputData, parentDir.getPath(), writeInstructions);
 
-        // Verify that we can read the partition values, but types like LocalDate or LocalTime will be read as strings
-        // Therefore, we cannot compare the tables directly
-        readTable(parentDir.getPath(), EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED)).select();
+        // Verify that we can read the partition values, but types like LocalDate or LocalTime will be read as strings,
+        // and byte, short will be read as integers. Therefore, we cannot compare the tables directly
+        final Table fromDiskPartitioned = readTable(parentDir.getPath(),
+                EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED));
+        assertNotEquals(fromDiskPartitioned.getDefinition(), inputData.getDefinition());
 
-        // Reading with metadata file should deduce the correct type, so we can compare the tables
-        final File commonMetadata = new File(parentDir, "_common_metadata");
-        final Table fromDiskWithMetadata = readTable(commonMetadata.getPath());
+        // Reading the directory directly should correctly detect the metadata files and deduce the correct types
+        final Table fromDiskWithMetadata = readTable(parentDir.getPath());
+        assertEquals(fromDiskWithMetadata.getDefinition(), inputData.getDefinition());
         final String[] partitioningColumns = definition.getPartitioningColumns().stream()
                 .map(ColumnDefinition::getName).toArray(String[]::new);
         assertTableEquals(inputData.sort(partitioningColumns), fromDiskWithMetadata.sort(partitioningColumns));

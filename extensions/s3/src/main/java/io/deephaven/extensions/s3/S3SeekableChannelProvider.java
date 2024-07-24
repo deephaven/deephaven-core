@@ -16,8 +16,11 @@ import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.S3Uri;
+import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -51,6 +54,7 @@ import static io.deephaven.extensions.s3.S3SeekableChannelProviderPlugin.S3_URI_
 final class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
     private static final int MAX_KEYS_PER_BATCH = 1000;
+    private static final int UNKNOWN_SIZE = -1;
 
     private static final Logger log = LoggerFactory.getLogger(S3SeekableChannelProvider.class);
 
@@ -77,13 +81,29 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
+    public boolean exists(@NotNull final URI uri) {
+        if (getCachedSize(uri) != UNKNOWN_SIZE) {
+            return true;
+        }
+        final S3Uri s3Uri = s3AsyncClient.utilities().parseUri(uri);
+        try {
+            fetchFileSize(s3Uri);
+        } catch (final NoSuchKeyException e) {
+            return false;
+        } catch (final IOException e) {
+            throw new UncheckedDeephavenException("Error fetching file size for URI " + uri, e);
+        }
+        return true;
+    }
+
+    @Override
     public SeekableByteChannel getReadChannel(@NotNull final SeekableChannelContext channelContext,
             @NotNull final URI uri) {
         final S3Uri s3Uri = s3AsyncClient.utilities().parseUri(uri);
         // context is unused here, will be set before reading from the channel
-        final Map<URI, FileSizeInfo> fileSizeCache = fileSizeCacheRef.get();
-        if (fileSizeCache != null && fileSizeCache.containsKey(uri)) {
-            return new S3SeekableByteChannel(s3Uri, fileSizeCache.get(uri).size);
+        final long cachedSize = getCachedSize(uri);
+        if (cachedSize != UNKNOWN_SIZE) {
+            return new S3SeekableByteChannel(s3Uri, cachedSize);
         }
         return new S3SeekableByteChannel(s3Uri);
     }
@@ -235,9 +255,57 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     }
 
     /**
+     * Fetch the size of the file at the given S3 URI.
+     *
+     * @throws NoSuchKeyException if the file does not exist
+     * @throws IOException if there is an error fetching the file size
+     */
+    long fetchFileSize(@NotNull final S3Uri s3Uri) throws IOException {
+        final long cachedSize = getCachedSize(s3Uri.uri());
+        if (cachedSize != UNKNOWN_SIZE) {
+            return cachedSize;
+        }
+        // Fetch the size of the file using a blocking HEAD request, and store it in the cache for future use
+        if (log.isDebugEnabled()) {
+            log.debug().append("Head: ").append(s3Uri.toString()).endl();
+        }
+        final HeadObjectResponse headObjectResponse;
+        try {
+            headObjectResponse = s3AsyncClient
+                    .headObject(HeadObjectRequest.builder()
+                            .bucket(s3Uri.bucket().orElseThrow())
+                            .key(s3Uri.key().orElseThrow())
+                            .build())
+                    .get(s3Instructions.readTimeout().toNanos(), TimeUnit.NANOSECONDS);
+        } catch (final InterruptedException | ExecutionException | TimeoutException | CancellationException e) {
+            throw handleS3Exception(e, String.format("fetching HEAD for file %s", s3Uri), s3Instructions);
+        }
+        final long fileSize = headObjectResponse.contentLength();
+        updateFileSizeCache(s3Uri.uri(), fileSize);
+        return fileSize;
+    }
+
+    /**
+     * Get the cached size for the given URI, or {@value UNKNOWN_SIZE} if the size is not cached.
+     */
+    private long getCachedSize(final URI uri) {
+        final Map<URI, FileSizeInfo> fileSizeCache = fileSizeCacheRef.get();
+        if (fileSizeCache != null) {
+            final FileSizeInfo sizeInfo = fileSizeCache.get(uri);
+            if (sizeInfo != null) {
+                return sizeInfo.size;
+            }
+        }
+        return UNKNOWN_SIZE;
+    }
+
+    /**
      * Cache the file size for the given URI.
      */
-    void updateFileSizeCache(@NotNull final URI uri, final long size) {
+    private void updateFileSizeCache(@NotNull final URI uri, final long size) {
+        if (size < 0) {
+            throw new IllegalArgumentException("Invalid file size: " + size + " for URI " + uri);
+        }
         final Map<URI, FileSizeInfo> fileSizeCache = getFileSizeCache();
         fileSizeCache.compute(uri, (key, existingInfo) -> {
             if (existingInfo == null) {

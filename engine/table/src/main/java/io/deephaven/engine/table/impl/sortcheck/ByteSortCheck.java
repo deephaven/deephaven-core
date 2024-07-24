@@ -36,12 +36,8 @@ public class ByteSortCheck implements SortCheck {
     }
 
     // region comparison functions
-    private static int doComparison(byte lhs, byte rhs) {
-        return ByteComparisons.compare(lhs, rhs);
+    private static boolean leq(byte lhs, byte rhs) {
+        return ByteComparisons.leq(lhs, rhs);
     }
     // endregion comparison functions
-
-    private static boolean leq(byte lhs, byte rhs) {
-        return doComparison(lhs, rhs) <= 0;
-    }
 }

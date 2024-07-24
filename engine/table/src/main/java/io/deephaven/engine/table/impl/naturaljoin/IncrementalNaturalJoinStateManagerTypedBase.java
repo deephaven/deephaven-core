@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.naturaljoin;
 
 import gnu.trove.list.array.TLongArrayList;
+import io.deephaven.base.MathUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.Chunk;
@@ -33,6 +34,8 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         implements IncrementalNaturalJoinStateManager, BothIncrementalNaturalJoinStateManager {
 
     public static final long EMPTY_RIGHT_STATE = QueryConstants.NULL_LONG;
+    public static final long TOMBSTONE_RIGHT_STATE = RowSet.NULL_ROW_KEY - 1;
+    public static final long FIRST_DUPLICATE = TOMBSTONE_RIGHT_STATE - 1;
 
     // the number of slots in our table
     protected int tableSize;
@@ -44,10 +47,14 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     // how much of the alternate sources are necessary to rehash?
     protected int rehashPointer = 0;
 
+    /** How many entries are taking up slots in the main hash table (includes tombstones)? */
     protected long numEntries = 0;
+    /** How many values do we have that are live (in both main and alternate)? */
+    protected long liveEntries = 0;
+    /** How many entries are in the alternate table (includes tombstones)? */
+    protected long alternateEntries = 0;
 
     // the table will be rehashed to a load factor of targetLoadFactor if our loadFactor exceeds maximumLoadFactor
-    // or if it falls below minimum load factor we will instead contract the table
     private final double maximumLoadFactor;
 
     // the keys for our hash entries
@@ -55,11 +62,17 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     protected final WritableColumnSource[] mainKeySources;
     protected final WritableColumnSource[] alternateKeySources;
 
-    // we use a RowSet.NULL_ROW_KEY for a state that exists, but has no right hand side;
-    // the column sources are initialized with NULL_LONG for something that does not exist. When there are multiple
-    // right rows, we store a value less than RowSet.NULL_ROW_KEY, which is a position in the rightSideDuplicateRowSets
-    // (-2 maps to 0, -3 to 1, etc.). We must maintain the right side duplicates so that we do not need a rescan;
-    // but in the common (as opposed to impending error) case of a single value we do not want to allocate any objects
+    /**
+     * <p>
+     * We use a RowSet.NULL_ROW_KEY for a state that exists, but has no right hand side; the column sources are
+     * initialized with NULL_LONG for something that does not exist. When there are multiple right rows, we store a
+     * value less than TOMBSTONE_RIGHT_STATE, which is a position in the rightSideDuplicateRowSets (-3 maps to 0, -4 to
+     * 1, etc.). We must maintain the right side duplicates so that we do not need a rescan; but in the common (as
+     * opposed to impending error) case of a single value we do not want to allocate any objects
+     *
+     * The TOMBSTONE_RIGHT_STATE indicates that the row was deleted.
+     * </p>
+     */
     protected ImmutableLongArraySource mainRightRowKey = new ImmutableLongArraySource();
     protected ImmutableLongArraySource alternateRightRowKey;
 
@@ -216,6 +229,37 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         }
     }
 
+    /* @formatter:off
+
+    void checkAlternateEntries() {
+        int expected = 0;
+        int expectedLive = 0;
+        if (alternateRightRowKey != null) {
+            for (int ii = 0; ii < rehashPointer; ++ii) {
+                long state = alternateRightRowKey.getUnsafe(ii);
+                if (state != EMPTY_RIGHT_STATE) {
+                    if (state != TOMBSTONE_RIGHT_STATE) {
+                        expectedLive++;
+                    }
+                    expected++;
+                }
+            }
+        }
+        Assert.eq(alternateEntries, "alternateEntries", expected, "expected");
+    }
+
+    void checkMainEntries() {
+        int expected = 0;
+        for (int ii = 0; ii < tableSize; ++ii) {
+            if (mainRightRowKey.getUnsafe(ii) != EMPTY_RIGHT_STATE) {
+                expected++;
+            }
+        }
+        Assert.eq(numEntries, "numEntries", expected, "expected");
+    }
+
+    @formatter:on */
+
     /**
      * @param fullRehash should we rehash the entire table (if false, we rehash incrementally)
      * @param rehashCredits the number of entries this operation has rehashed (input/output)
@@ -237,18 +281,12 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             }
         }
 
-        int oldTableSize = tableSize;
-        while (rehashRequired(nextChunkSize)) {
-            tableSize *= 2;
-
-            if (tableSize < 0 || tableSize > MAX_TABLE_SIZE) {
-                throw new UnsupportedOperationException("Hash table exceeds maximum size!");
-            }
-        }
-
-        if (oldTableSize == tableSize) {
+        if (!rehashRequired(nextChunkSize)) {
             return false;
         }
+
+        int oldTableSize = tableSize;
+        tableSize = computeTableSize(nextChunkSize);
 
         // we can't give the caller credit for rehashes with the old table, we need to begin migrating things again
         if (rehashCredits.get() > 0) {
@@ -256,17 +294,30 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         }
 
         if (fullRehash) {
-            // if we are doing a full rehash, we need to ditch the alternate
+            // we need to ditch the alternate table before continuing on a full rehash
             if (rehashPointer > 0) {
-                rehashInternalPartial((int) numEntries, modifiedSlotTracker);
+                rehashInternalPartial((int) alternateEntries, modifiedSlotTracker);
+                Assert.eqZero(alternateEntries, "alternateEntries");
                 clearAlternate();
             }
-
             rehashInternalFull(oldTableSize);
-
             return false;
         }
+        Assert.eqZero(rehashPointer, "rehashPointer");
 
+        setupNewAlternate(oldTableSize);
+        adviseNewAlternate();
+
+        return true;
+    }
+
+    /**
+     * After creating the new alternate key states, advise the derived classes, so they can cast them to the typed
+     * versions of the column source and adjust the derived class pointers.
+     */
+    protected abstract void adviseNewAlternate();
+
+    private void setupNewAlternate(int oldTableSize) {
         Assert.eqZero(rehashPointer, "rehashPointer");
 
         for (int ii = 0; ii < mainKeySources.length; ++ii) {
@@ -280,12 +331,8 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
             rehashPointer = alternateTableSize;
         }
 
-        newAlternate();
-
-        return true;
-    }
-
-    protected void newAlternate() {
+        alternateEntries = numEntries;
+        numEntries = 0;
         alternateRightRowKey = mainRightRowKey;
         mainRightRowKey = new ImmutableLongArraySource();
         mainRightRowKey.ensureCapacity(tableSize);
@@ -308,6 +355,8 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     }
 
     protected void clearAlternate() {
+        alternateEntries = 0;
+        rehashPointer = 0;
         for (int ii = 0; ii < mainKeySources.length; ++ii) {
             alternateKeySources[ii] = null;
         }
@@ -315,6 +364,20 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
 
     public boolean rehashRequired(int nextChunkSize) {
         return (numEntries + nextChunkSize) > (tableSize * maximumLoadFactor);
+    }
+
+    public int computeTableSize(int nextChunkSize) {
+        // we use the number of liveEntries multiplied by 2, so that as we rehash we can both consume a slot for the
+        // live entry from the alternate table; and also consume a slot for the new value. This ensures that we will
+        // burn down our rehash requirements before we need to initiate a new partial rehash.
+
+        final long desiredEntries = Math.max(liveEntries * 2, liveEntries + nextChunkSize);
+        final long tableSize =
+                MathUtil.roundUpPowerOf2(Math.max(this.tableSize, (long) (desiredEntries / maximumLoadFactor)));
+        if (tableSize <= 1 || tableSize > MAX_TABLE_SIZE) {
+            throw new UnsupportedOperationException("Hash table exceeds maximum size!");
+        }
+        return Math.toIntExact(tableSize);
     }
 
     abstract protected void rehashInternalFull(final int oldSize);
@@ -337,12 +400,12 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
     }
 
     protected long duplicateLocationFromRowKey(long rowKey) {
-        Assert.lt(rowKey, "rowKey", -1L);
-        return -rowKey - 2;
+        Assert.leq(rowKey, "rowKey", FIRST_DUPLICATE);
+        return -rowKey + FIRST_DUPLICATE;
     }
 
     protected long rowKeyFromDuplicateLocation(long duplicateLocation) {
-        return -duplicateLocation - 2;
+        return -duplicateLocation + FIRST_DUPLICATE;
     }
 
     protected long allocateDuplicateLocation() {
@@ -370,7 +433,7 @@ public abstract class IncrementalNaturalJoinStateManagerTypedBase extends Static
         } else {
             rightRowKey = alternateRightRowKey.getUnsafe(slot & AlternatingColumnSource.ALTERNATE_INNER_MASK);
         }
-        if (rightRowKey < RowSet.NULL_ROW_KEY) {
+        if (rightRowKey <= FIRST_DUPLICATE) {
             return DUPLICATE_RIGHT_VALUE;
         }
         return rightRowKey;

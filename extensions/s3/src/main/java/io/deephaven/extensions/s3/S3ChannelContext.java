@@ -10,15 +10,13 @@ import io.deephaven.util.channel.BaseSeekableChannelContext;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.S3Uri;
-import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
-import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -184,6 +182,9 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
             return new IOException(String.format("Thread interrupted while %s", operationDescription), e);
         }
         if (e instanceof ExecutionException) {
+            if (e.getCause() instanceof NoSuchKeyException) {
+                throw (NoSuchKeyException) e.getCause();
+            }
             return new IOException(String.format("Execution exception occurred while %s", operationDescription), e);
         }
         if (e instanceof TimeoutException) {
@@ -201,25 +202,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
         if (size != UNINITIALIZED_SIZE) {
             return;
         }
-        if (log.isDebugEnabled()) {
-            log.debug().append("Head: ").append(ctxStr()).endl();
-        }
-        // Fetch the size of the file on the first read using a blocking HEAD request, and store it in the context
-        // for future use
-        final HeadObjectResponse headObjectResponse;
-        try {
-            headObjectResponse = client
-                    .headObject(HeadObjectRequest.builder()
-                            .bucket(uri.bucket().orElseThrow())
-                            .key(uri.key().orElseThrow())
-                            .build())
-                    .get(instructions.readTimeout().toNanos(), TimeUnit.NANOSECONDS);
-        } catch (final InterruptedException | ExecutionException | TimeoutException | CancellationException e) {
-            throw handleS3Exception(e, String.format("fetching HEAD for file %s, %s", uri, ctxStr()), instructions);
-        }
-        final long fileSize = headObjectResponse.contentLength();
-        setSize(fileSize);
-        provider.updateFileSizeCache(uri.uri(), fileSize);
+        setSize(provider.fetchFileSize(uri));
     }
 
     private void setSize(final long size) {

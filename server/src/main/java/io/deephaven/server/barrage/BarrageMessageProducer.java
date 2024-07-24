@@ -704,7 +704,7 @@ public class BarrageMessageProducer extends LivenessArtifact
     }
 
     private void enqueueUpdate(final TableUpdate upstream) {
-        Assert.holdsLock(this, "enqueueUpdate must hold lock!");
+        Assert.assertion(Thread.holdsLock(this), "enqueueUpdate must hold lock!");
 
         final WritableRowSet addsToRecord;
         final RowSet modsToRecord;
@@ -961,7 +961,7 @@ public class BarrageMessageProducer extends LivenessArtifact
     }
 
     private void schedulePropagation() {
-        Assert.holdsLock(this, "schedulePropagation must hold lock!");
+        Assert.assertion(Thread.holdsLock(this), "schedulePropagation must hold lock!");
 
         // copy lastUpdateTime so we are not duped by the re-read
         final long localLastUpdateTime = lastUpdateTime;
@@ -1642,7 +1642,7 @@ public class BarrageMessageProducer extends LivenessArtifact
     }
 
     private BarrageMessage aggregateUpdatesInRange(final int startDelta, final int endDelta) {
-        Assert.holdsLock(this, "propagateUpdatesInRange must hold lock!");
+        Assert.assertion(Thread.holdsLock(this), "propagateUpdatesInRange must hold lock!");
 
         final boolean singleDelta = endDelta - startDelta == 1;
         final BarrageMessage downstream = new BarrageMessage();
@@ -2127,7 +2127,7 @@ public class BarrageMessageProducer extends LivenessArtifact
     }
 
     private void promoteSnapshotToActive() {
-        Assert.holdsLock(this, "promoteSnapshotToActive must hold lock!");
+        Assert.assertion(Thread.holdsLock(this), "promoteSnapshotToActive must hold lock!");
 
         if (activeViewport != null) {
             activeViewport.close();

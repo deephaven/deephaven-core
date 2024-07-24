@@ -7,13 +7,13 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.s3.S3Instructions;
 import io.deephaven.extensions.s3.testlib.S3SeekableChannelTestSetup;
 import io.deephaven.test.types.OutOfBandTest;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -32,6 +32,7 @@ import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.util.TableTools.merge;
 import static io.deephaven.parquet.table.ParquetTools.writeKeyValuePartitionedTable;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 @Category(OutOfBandTest.class)
 abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
@@ -135,6 +136,11 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
         final Table fromS3AsKV = ParquetTools.readTable(uri.toString(),
                 readInstructions.withLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED));
         assertTableEquals(expected, fromS3AsKV);
+
+        // Read with definition without layout
+        final Table fromS3AsFlatWithDefinition = ParquetTools.readTable(uri.toString(),
+                readInstructions.withTableDefinition(expected.getDefinition()));
+        assertTableEquals(expected, fromS3AsFlatWithDefinition);
     }
 
     @Test
@@ -167,9 +173,25 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
                 .setTableDefinition(definition)
                 .build();
         final Table fromS3 = ParquetTools.readTable(uri.toString(), readInstructions);
-        assertTrue(fromS3.getDefinition().getColumn("PC1").isPartitioning());
-        assertTrue(fromS3.getDefinition().getColumn("PC2").isPartitioning());
-        assertTableEquals(table.sort("PC1", "PC2"), fromS3);
+        final Table fromDisk = ParquetTools.readTable(destDir.getPath());
+        readPartitionedParquetTestHelper(fromDisk, fromS3);
+
+        // Failure cases for missing metadata files
+        try {
+            ParquetTools.readTable(uri.toString(),
+                    readInstructions.withTableDefinitionAndLayout(null,
+                            ParquetInstructions.ParquetFileLayout.METADATA_PARTITIONED));
+            fail("Expected exception because metadata file is not present");
+        } catch (final TableDataException expected) {
+            assertTrue(expected.getMessage().contains("metadata"));
+        }
+        final URI metadataFileURI = uri(destDirName + "/_metadata");
+        try {
+            ParquetTools.readTable(metadataFileURI.toString(), readInstructions.withTableDefinition(null));
+            fail("Expected exception because metadata file is not present");
+        } catch (final TableDataException expected) {
+            assertTrue(expected.getMessage().contains("metadata"));
+        }
     }
 
     @Test
@@ -196,25 +218,78 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
         assertTrue(new File(destDir, "_metadata").exists());
         assertTrue(new File(destDir, "_common_metadata").exists());
         uploadDirectory(destDir.toPath(), destDirName);
-        final URI metadataFileURI = uri(destDirName + "/_metadata");
         final ParquetInstructions readInstructions = ParquetInstructions.builder()
                 .setSpecialInstructions(s3Instructions(
                         S3Instructions.builder()
                                 .readTimeout(Duration.ofSeconds(10)))
                         .build())
-                .setTableDefinition(definition)
                 .build();
-        try {
-            ParquetTools.readTable(metadataFileURI.toString(), readInstructions);
-            Assert.fail("Exception expected for unsupported metadata file read from S3");
-        } catch (UnsupportedOperationException e) {
-        }
         final URI directoryURI = uri(destDirName);
+        final Table fromS3MetadataPartitioned = ParquetTools.readTable(directoryURI.toString(),
+                readInstructions.withLayout(ParquetInstructions.ParquetFileLayout.METADATA_PARTITIONED));
+        final Table fromDiskMetadataPartitioned = ParquetTools.readTable(destDir.getPath(),
+                ParquetInstructions.EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.METADATA_PARTITIONED));
+        readPartitionedParquetTestHelper(fromDiskMetadataPartitioned, fromS3MetadataPartitioned);
+
+        final URI metadataFileURI = uri(destDirName + "/_metadata");
+        final Table fromS3WithMetadata = ParquetTools.readTable(metadataFileURI.toString(), readInstructions);
+        final Table fromDiskWithMetadata = ParquetTools.readTable(new File(destDir, "_metadata").getPath());
+        readPartitionedParquetTestHelper(fromDiskWithMetadata, fromS3WithMetadata);
+
+        final URI commonMetadataFileURI = uri(destDirName + "/_common_metadata");
+        final Table fromS3WithCommonMetadata =
+                ParquetTools.readTable(commonMetadataFileURI.toString(), readInstructions);
+        final Table fromDiskWithCommonMetadata =
+                ParquetTools.readTable(new File(destDir, "_common_metadata").getPath());
+        readPartitionedParquetTestHelper(fromDiskWithCommonMetadata, fromS3WithCommonMetadata);
+    }
+
+    private static void readPartitionedParquetTestHelper(final Table expected, final Table fromS3) {
+        assertTrue(fromS3.getDefinition().getColumn("PC1").isPartitioning());
+        assertTrue(fromS3.getDefinition().getColumn("PC2").isPartitioning());
+        assertTableEquals(expected, fromS3);
+    }
+
+    @Test
+    public void readMetadataPartitionedParquetWithMissingMetadataFile()
+            throws ExecutionException, InterruptedException, TimeoutException, IOException {
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofInt("PC1").withPartitioning(),
+                ColumnDefinition.ofInt("PC2").withPartitioning(),
+                ColumnDefinition.ofInt("someIntColumn"),
+                ColumnDefinition.ofString("someStringColumn"));
+        final Table table = ((QueryTable) TableTools.emptyTable(500_000)
+                .updateView("PC1 = (int)(ii%3)",
+                        "PC2 = (int)(ii%2)",
+                        "someIntColumn = (int) i",
+                        "someStringColumn = String.valueOf(i)"))
+                .withDefinitionUnsafe(definition);
+        final String destDirName = "metadataPartitionedDataDir";
+        final File destDir = new File(folder.newFolder(), destDirName);
+        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
+                .setBaseNameForPartitionedParquetData("data")
+                .setGenerateMetadataFiles(true)
+                .build();
+        writeKeyValuePartitionedTable(table, destDir.getPath(), writeInstructions);
+
+        // Delete the metadata file before uploading
+        final File metadataFile = new File(destDir, "_metadata");
+        metadataFile.delete();
+
+        uploadDirectory(destDir.toPath(), destDirName);
+        final URI directoryURI = uri(destDirName);
+        final ParquetInstructions readInstructions = ParquetInstructions.builder()
+                .setSpecialInstructions(s3Instructions(
+                        S3Instructions.builder()
+                                .readTimeout(Duration.ofSeconds(10)))
+                        .build())
+                .build();
         try {
             ParquetTools.readTable(directoryURI.toString(),
                     readInstructions.withLayout(ParquetInstructions.ParquetFileLayout.METADATA_PARTITIONED));
-            Assert.fail("Exception expected for unsupported metadata file read from S3");
-        } catch (UnsupportedOperationException e) {
+            fail("Expected exception because metadata file is not present");
+        } catch (final TableDataException expected) {
+            assertTrue(expected.getMessage().contains("metadata"));
         }
     }
 }

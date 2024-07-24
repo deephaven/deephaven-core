@@ -3,6 +3,7 @@
  */
 #include "deephaven/dhcore/utility/utility.h"
 
+#include <filesystem>
 #include <ostream>
 #include <string>
 #include <vector>
@@ -142,6 +143,10 @@ std::string
 TimePointToStr(
     const std::chrono::time_point<std::chrono::system_clock> time_point) {
   return EpochMillisToStr(TimePointToEpochMillis(time_point));
+}
+
+std::string Basename(std::string_view path) {
+  return std::filesystem::path(path).filename().string();
 }
 
 #ifdef __GNUG__

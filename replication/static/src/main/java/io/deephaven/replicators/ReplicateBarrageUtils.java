@@ -26,6 +26,9 @@ public class ReplicateBarrageUtils {
         fixupChunkInputStreamGen(CHUNK_PACKAGE + "/DoubleChunkInputStreamGenerator.java", "Double");
 
         ReplicatePrimitiveCode.charToAllButBoolean("replicateBarrageUtils",
+                CHUNK_PACKAGE + "/CharChunkReader.java");
+
+        ReplicatePrimitiveCode.charToAllButBoolean("replicateBarrageUtils",
                 CHUNK_PACKAGE + "/array/CharArrayExpansionKernel.java");
 
         ReplicatePrimitiveCode.charToAllButBoolean("replicateBarrageUtils",

@@ -8,6 +8,7 @@
 package io.deephaven.engine.table.impl.by.ssmpercentile;
 
 import java.util.Objects;
+import io.deephaven.util.compare.ObjectComparisons;
 
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.Values;
@@ -108,7 +109,7 @@ public class ObjectPercentileTypeHelper implements SsmChunkedPercentileOperator.
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final Object testValue = valuesToSearch.get(mid);
-            final boolean moveHi = gt(testValue, searchValue);
+            final boolean moveHi = ObjectComparisons.gt(testValue, searchValue);
             if (moveHi) {
                 hi = mid;
             } else {
@@ -117,13 +118,5 @@ public class ObjectPercentileTypeHelper implements SsmChunkedPercentileOperator.
         }
 
         return hi;
-    }
-
-    private static int doComparison(Object lhs, Object rhs) {
-        return ObjectComparisons.compare(lhs, rhs);
-    }
-
-    private static boolean gt(Object lhs, Object rhs) {
-        return doComparison(lhs, rhs) > 0;
     }
 }
