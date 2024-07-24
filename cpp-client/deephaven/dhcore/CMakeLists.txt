@@ -31,6 +31,7 @@ set(ALL_FILES
     src/ticking/ticking.cc
     src/utility/cython_support.cc
     src/utility/utility.cc
+    src/utility/utility_platform_specific.cc
 
     include/private/deephaven/dhcore/ticking/immer_table_state.h
     include/private/deephaven/dhcore/ticking/index_decoder.h

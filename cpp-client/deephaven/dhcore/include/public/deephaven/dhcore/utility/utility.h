@@ -197,6 +197,12 @@ TimePointToStr(
  */
 std::string Basename(std::string_view path);
 
+/**
+ * Returns the current thread ID as a string.
+ * @return The current thread ID as a string.
+ */
+[[nodiscard]] std::string GetTidAsString();
+
 template <class T> [[nodiscard]] std::string
 TypeName(const T& t) {
   return demangle(typeid(t).name());
