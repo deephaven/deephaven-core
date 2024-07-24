@@ -193,7 +193,7 @@ TimePointToStr(
  * similar to the POSIX basename() call. We deliberately do not inline it
  * because is generates a surprising amount of code.
  * @param path The path
- * @return The filename of the path, as returned by std::filesystem::path(path).filename()
+ * @return The filename of the path, as returned by std::filesystem::path(path).filename().string()
  */
 std::string GetFilename(std::string_view path);
 
