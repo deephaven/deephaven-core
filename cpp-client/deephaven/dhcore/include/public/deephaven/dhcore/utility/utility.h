@@ -217,6 +217,18 @@ std::string Basename(std::string_view path);
  */
 [[nodiscard]] std::optional<std::string> GetEnv(const std::string& envname);
 
+/**
+ * Enables or disables echo for stdin.
+ * @param enable true to enable, false to disable
+ */
+void SetStdinEcho(bool enable);
+
+/**
+ * Reads a password from stdin up to pressing 'Enter', without echoing the characters typed.
+ * @return the password read
+ */
+std::string ReadPasswordFromStdinNoEcho();
+
 template <class T> [[nodiscard]] std::string
 TypeName(const T& t) {
   return demangle(typeid(t).name());

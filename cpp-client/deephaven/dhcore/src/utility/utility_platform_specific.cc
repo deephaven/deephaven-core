@@ -8,6 +8,7 @@
 
 #if defined(__unix__)
 #include <netdb.h>
+#include <termios.h>
 #include <unistd.h>
 #include <sys/syscall.h>
 #include <sys/socket.h>
@@ -17,6 +18,7 @@
 #endif
 
 namespace deephaven::dhcore::utility {
+
 std::string GetTidAsString() {
 #if defined(__linux__)
   const pid_t tid = syscall(__NR_gettid);  // this is more portable than gettid().
@@ -89,4 +91,32 @@ std::optional<std::string> GetEnv(const std::string& envname) {
 #error "Unsupported configuration"
 #endif
 }
+
+// https://stackoverflow.com/questions/1413445/reading-a-password-from-stdcin
+void SetStdinEcho(const bool enable) {
+#if defined(__unix__)
+  struct termios tty;
+  tcgetattr(STDIN_FILENO, &tty);
+  if( !enable )
+    tty.c_lflag &= ~ECHO;
+  else
+    tty.c_lflag |= ECHO;
+
+  (void) tcsetattr(STDIN_FILENO, TCSANOW, &tty);
+#elif defined(_WIN32)
+  HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
+  DWORD mode;
+  GetConsoleMode(hStdin, &mode);
+
+  if( !enable )
+    mode &= ~ENABLE_ECHO_INPUT;
+  else
+    mode |= ENABLE_ECHO_INPUT;
+
+  SetConsoleMode(hStdin, mode );
+#else
+#error "Unsupported configuration"
+#endif
+}    
+
 }  // namespace deephaven::dhcore::utility
