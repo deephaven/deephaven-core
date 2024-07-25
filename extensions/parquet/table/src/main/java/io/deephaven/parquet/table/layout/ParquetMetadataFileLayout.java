@@ -9,6 +9,7 @@ import io.deephaven.base.Pair;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.util.PartitionParser;
+import io.deephaven.parquet.table.DeferredSpecialInstructions;
 import io.deephaven.parquet.table.ParquetSchemaReader;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
@@ -75,15 +76,31 @@ public class ParquetMetadataFileLayout implements TableLocationKeyFinder<Parquet
     private final List<ParquetTableLocationKey> keys;
     private final SeekableChannelsProvider channelsProvider;
 
-    public ParquetMetadataFileLayout(@NotNull final File directory) {
-        this(directory, ParquetInstructions.EMPTY);
-    }
-
-    public ParquetMetadataFileLayout(
-            @NotNull final File directory,
-            @NotNull final ParquetInstructions inputInstructions) {
-        this(new File(directory, METADATA_FILE_NAME), new File(directory, COMMON_METADATA_FILE_NAME),
-                inputInstructions);
+    /**
+     * Create a new {@link ParquetMetadataFileLayout} for the given {@code source} and {@code inputInstructions}.
+     *
+     * @param source The source URI for the metadata file or directory containing the metadata file.
+     * @param inputInstructions The instructions for customizations while reading.
+     * @param channelsProvider The provider for seekable channels. If {@code null}, a new provider will be created and
+     *        used for all location keys.
+     */
+    public static ParquetMetadataFileLayout create(
+            @NotNull final URI source,
+            @NotNull final ParquetInstructions inputInstructions,
+            @Nullable SeekableChannelsProvider channelsProvider) {
+        final String path = source.getRawPath();
+        final boolean isMetadataFile = path.endsWith(METADATA_FILE_URI_SUFFIX);
+        final boolean isCommonMetadataFile = !isMetadataFile && path.endsWith(COMMON_METADATA_FILE_URI_SUFFIX);
+        final boolean isDirectory = !isMetadataFile && !isCommonMetadataFile;
+        final URI directory = isDirectory ? source : source.resolve(".");
+        final URI metadataFileURI = isMetadataFile ? source : directory.resolve(METADATA_FILE_NAME);
+        final URI commonMetadataFileURI = isCommonMetadataFile ? source : directory.resolve(COMMON_METADATA_FILE_NAME);
+        if (channelsProvider == null) {
+            channelsProvider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(source,
+                    DeferredSpecialInstructions.resolve(source, inputInstructions.getSpecialInstructions()));
+        }
+        return new ParquetMetadataFileLayout(directory, metadataFileURI, commonMetadataFileURI, inputInstructions,
+                channelsProvider);
     }
 
     public ParquetMetadataFileLayout(

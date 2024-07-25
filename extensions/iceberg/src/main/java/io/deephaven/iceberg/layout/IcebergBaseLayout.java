@@ -10,6 +10,7 @@ import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.iceberg.location.IcebergTableParquetLocationKey;
 import io.deephaven.iceberg.util.IcebergInstructions;
+import io.deephaven.parquet.table.DeferredSpecialInstructions;
 import io.deephaven.parquet.table.ParquetInstructions;
 import org.apache.iceberg.*;
 import org.apache.iceberg.io.FileIO;
@@ -80,7 +81,13 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
                 }
 
                 // Add the data instructions.
-                instructions.dataInstructions().ifPresent(builder::setSpecialInstructions);
+                instructions.dataInstructions().ifPresentOrElse(builder::setSpecialInstructions, () -> {
+                    builder.setSpecialInstructions((DeferredSpecialInstructions<?>) uri -> {
+                        // Feed uri + properties to a service-loaded factory to get the instructions.
+                        // Build in iceberg-s3 module.
+                        return null;
+                    });
+                });
 
                 parquetInstructions = builder.build();
             }
