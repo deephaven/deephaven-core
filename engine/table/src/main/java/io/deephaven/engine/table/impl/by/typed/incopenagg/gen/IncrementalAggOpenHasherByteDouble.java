@@ -102,6 +102,39 @@ final class IncrementalAggOpenHasherByteDouble extends IncrementalChunkedOperato
         }
     }
 
+    protected void buildInitial(RowSequence rowSequence, Chunk[] sourceKeyChunks) {
+        Assert.eqZero(rehashPointer, "rehashPointer");
+        final ByteChunk<Values> keyChunk0 = sourceKeyChunks[0].asByteChunk();
+        final DoubleChunk<Values> keyChunk1 = sourceKeyChunks[1].asDoubleChunk();
+        final int chunkSize = keyChunk0.size();
+        for (int chunkPosition = 0; chunkPosition < chunkSize; ++chunkPosition) {
+            final byte k0 = keyChunk0.get(chunkPosition);
+            final double k1 = keyChunk1.get(chunkPosition);
+            final int hash = hash(k0, k1);
+            final int firstTableLocation = hashToTableLocation(hash);
+            int tableLocation = firstTableLocation;
+            MAIN_SEARCH: while (true) {
+                int outputPosition = mainOutputPosition.getUnsafe(tableLocation);
+                if (isStateEmpty(outputPosition)) {
+                    numEntries++;
+                    mainKeySource0.set(tableLocation, k0);
+                    mainKeySource1.set(tableLocation, k1);
+                    outputPosition = nextOutputPosition.getAndIncrement();
+                    outputPositions.set(chunkPosition, outputPosition);
+                    mainOutputPosition.set(tableLocation, outputPosition);
+                    outputPositionToHashSlot.set(outputPosition, mainInsertMask | tableLocation);
+                    break;
+                } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0) && eq(mainKeySource1.getUnsafe(tableLocation), k1)) {
+                    outputPositions.set(chunkPosition, outputPosition);
+                    break;
+                } else {
+                    tableLocation = nextTableLocation(tableLocation);
+                    Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
+                }
+            }
+        }
+    }
+
     protected void probe(RowSequence rowSequence, Chunk[] sourceKeyChunks) {
         final ByteChunk<Values> keyChunk0 = sourceKeyChunks[0].asByteChunk();
         final DoubleChunk<Values> keyChunk1 = sourceKeyChunks[1].asDoubleChunk();

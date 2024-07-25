@@ -126,6 +126,8 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
 
     protected abstract void build(RowSequence rowSequence, Chunk<Values>[] sourceKeyChunks);
 
+    protected abstract void buildInitial(RowSequence rowSequence, Chunk<Values>[] sourceKeyChunks);
+
     public static class BuildContext extends BuildOrProbeContext {
         private BuildContext(ColumnSource<?>[] buildSources, int chunkSize) {
             super(buildSources, chunkSize);
@@ -355,7 +357,11 @@ public abstract class IncrementalChunkedOperatorAggregationStateManagerOpenAddre
         }
         this.nextOutputPosition = nextOutputPosition;
         this.outputPositions = outputPositions;
-        buildTable((BuildContext) bc, rowSequence, sources, this::build);
+        if (fullRehash) {
+            buildTable((BuildContext) bc, rowSequence, sources, this::buildInitial);
+        } else {
+            buildTable((BuildContext) bc, rowSequence, sources, this::build);
+        }
         this.outputPositions = null;
         this.nextOutputPosition = null;
     }
