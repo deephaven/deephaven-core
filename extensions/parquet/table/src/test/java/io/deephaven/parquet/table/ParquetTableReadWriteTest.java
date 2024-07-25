@@ -432,7 +432,7 @@ public final class ParquetTableReadWriteTest {
                 StandaloneTableKey.getInstance(),
                 new ParquetTableLocationKey(
                         convertToURI(new File(rootFile,
-                                ParquetTools.getRelativeIndexFilePath(dest, "someString")), false),
+                                ParquetTools.getRelativeIndexFilePath(dest.getName(), "someString")), false),
                         0, Map.of(), EMPTY),
                 EMPTY);
         assertEquals(index1Location.getSortedColumns(), List.of(SortColumn.asc(ColumnName.of("someString"))));
@@ -443,7 +443,7 @@ public final class ParquetTableReadWriteTest {
                 StandaloneTableKey.getInstance(),
                 new ParquetTableLocationKey(
                         convertToURI(new File(rootFile,
-                                ParquetTools.getRelativeIndexFilePath(dest, "someInt", "someString")), false),
+                                ParquetTools.getRelativeIndexFilePath(dest.getName(), "someInt", "someString")), false),
                         0, Map.of(), EMPTY),
                 EMPTY);
         assertEquals(index2Location.getSortedColumns(), List.of(
@@ -1114,6 +1114,12 @@ public final class ParquetTableReadWriteTest {
 
     @Test
     public void someMoreKeyValuePartitionedTestsWithComplexKeys() {
+        // Verify complex keys both with and without data index
+        someMoreKeyValuePartitionedTestsWithComplexKeysHelper(true);
+        someMoreKeyValuePartitionedTestsWithComplexKeysHelper(false);
+    }
+
+    private void someMoreKeyValuePartitionedTestsWithComplexKeysHelper(final boolean addDataIndex) {
         final TableDefinition definition = TableDefinition.of(
                 ColumnDefinition.ofString("symbol").withPartitioning(),
                 ColumnDefinition.ofString("epic_collection_id"),
@@ -1126,16 +1132,32 @@ public final class ParquetTableReadWriteTest {
                         "I = ii"))
                 .withDefinitionUnsafe(definition);
 
-        final File parentDir = new File(rootFile, "someTest");
-        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
-                .setGenerateMetadataFiles(true)
-                .build();
+        final File parentDir = new File(rootFile, "someMoreKeyValuePartitionedTestsWithComplexKeys");
+        if (parentDir.exists()) {
+            FileUtils.deleteRecursively(parentDir);
+        }
+        final ParquetInstructions writeInstructions;
+        if (addDataIndex) {
+            writeInstructions = ParquetInstructions.builder()
+                    .setGenerateMetadataFiles(true)
+                    .addIndexColumns("I", "epic_request_id")
+                    .build();
+        } else {
+            writeInstructions = ParquetInstructions.builder()
+                    .setGenerateMetadataFiles(true)
+                    .build();
+        }
         final String[] partitioningCols = new String[] {"symbol", "epic_collection_id", "epic_request_id"};
         final PartitionedTable partitionedTable = inputData.partitionBy(partitioningCols);
         writeKeyValuePartitionedTable(partitionedTable, parentDir.getPath(), writeInstructions);
 
         final Table fromDisk =
                 readTable(parentDir.getPath(), EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED));
+        if (addDataIndex) {
+            // Verify if index present on columns "I, epic_request_id"
+            verifyIndexingInfoExists(fromDisk, "I", "epic_request_id");
+        }
+
         for (final String col : partitioningCols) {
             assertTrue(fromDisk.getDefinition().getColumn(col).isPartitioning());
         }

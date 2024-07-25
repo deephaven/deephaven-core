@@ -40,8 +40,7 @@ public class LocalFSChannelProvider implements SeekableChannelsProvider {
 
     @Override
     public SeekableByteChannel getReadChannel(@Nullable final SeekableChannelContext channelContext,
-            @NotNull final URI uri)
-            throws IOException {
+            @NotNull final URI uri) throws IOException {
         // context is unused here
         return FileChannel.open(Path.of(uri), StandardOpenOption.READ);
     }
@@ -54,8 +53,8 @@ public class LocalFSChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public SeekableByteChannel getWriteChannel(@NotNull final Path filePath, final boolean append) throws IOException {
-        final FileChannel result = FileChannel.open(filePath,
+    public SeekableByteChannel getWriteChannel(@NotNull final URI uri, final boolean append) throws IOException {
+        final FileChannel result = FileChannel.open(Path.of(uri),
                 StandardOpenOption.WRITE,
                 StandardOpenOption.CREATE,
                 append ? StandardOpenOption.APPEND : StandardOpenOption.TRUNCATE_EXISTING);

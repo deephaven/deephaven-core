@@ -130,7 +130,7 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public SeekableByteChannel getWriteChannel(@NotNull final Path path, final boolean append) {
+    public SeekableByteChannel getWriteChannel(@NotNull final URI uri, final boolean append) {
         throw new UnsupportedOperationException("Writing to S3 is currently unsupported");
     }
 

@@ -73,11 +73,12 @@ final class TrackedSeekableChannelsProvider implements SeekableChannelsProvider 
     }
 
     @Override
-    public SeekableByteChannel getWriteChannel(@NotNull final Path filePath, final boolean append)
+    public SeekableByteChannel getWriteChannel(@NotNull final URI uri, final boolean append)
             throws IOException {
         // NB: I'm not sure this is actually the intended behavior; the "truncate-once" is per-handle, not per file.
+        Assert.assertion(FILE_URI_SCHEME.equals(uri.getScheme()), "Expected a file uri, got " + uri);
         return new TrackedSeekableByteChannel(append ? fileHandleFactory.writeAppendCreateHandleCreator
-                : new TruncateOnceFileCreator(fileHandleFactory), filePath.toFile());
+                : new TruncateOnceFileCreator(fileHandleFactory), new File(uri));
     }
 
     @Override

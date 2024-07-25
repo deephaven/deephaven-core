@@ -92,11 +92,11 @@ public interface SeekableChannelsProvider extends SafeCloseable {
      */
     InputStream getInputStream(SeekableByteChannel channel, int sizeHint) throws IOException;
 
-    default SeekableByteChannel getWriteChannel(@NotNull final String path, final boolean append) throws IOException {
-        return getWriteChannel(Paths.get(path), append);
+    default SeekableByteChannel getWriteChannel(@NotNull final String uriStr, final boolean append) throws IOException {
+        return getWriteChannel(convertToURI(uriStr, false), append);
     }
 
-    SeekableByteChannel getWriteChannel(@NotNull Path path, boolean append) throws IOException;
+    SeekableByteChannel getWriteChannel(@NotNull URI uri, boolean append) throws IOException;
 
     /**
      * Returns a stream of URIs, the elements of which are the entries in the directory. The listing is non-recursive.
