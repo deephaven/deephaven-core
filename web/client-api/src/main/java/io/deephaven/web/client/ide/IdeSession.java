@@ -26,6 +26,11 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.VersionedTextDocumentIdentifier;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.console_pb.changedocumentrequest.TextDocumentContentChangeEvent;
+import elemental2.core.TypedArray;
+import elemental2.core.Uint8Array;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.session_pb.ExportRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.session_pb.PublishRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.*;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.api.console.JsCommandResult;
@@ -49,6 +54,7 @@ import jsinterop.base.Js;
 import jsinterop.base.JsArrayLike;
 import jsinterop.base.JsPropertyMap;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -190,6 +196,76 @@ public class IdeSession extends HasEventHandling {
                 .grpcUnaryPromise(c -> connection.consoleServiceClient().bindTableToVariable(bindRequest,
                         connection.metadata(), c::apply))
                 .then(ignore -> Promise.resolve((Void) null));
+    }
+
+    public Promise<IdeConnection.SharedExportBytesUnion> shareObject(ServerObject object, IdeConnection.SharedExportBytesUnion sharedTicketBytes) {
+        PublishRequest request = new PublishRequest();
+        request.setSourceId(object.typedTicket().getTicket());
+
+        Ticket ticket = sharedTicketFromStringOrBytes(sharedTicketBytes);
+        request.setResultId(ticket);
+
+        return Callbacks.grpcUnaryPromise(c -> {
+            connection.sessionServiceClient().publishFromTicket(request, connection.metadata(), c::apply);
+        }).then(ignore -> Promise.resolve(sharedTicketBytes));
+    }
+
+    private static Ticket sharedTicketFromStringOrBytes(IdeConnection.SharedExportBytesUnion sharedTicketBytes) {
+        Ticket ticket = new Ticket();
+        final int length;
+        final TypedArray.SetArrayUnionType array;
+        if (sharedTicketBytes.isString()) {
+            byte[] arr = sharedTicketBytes.toString().getBytes(StandardCharsets.UTF_8);
+            length = arr.length;
+            array = TypedArray.SetArrayUnionType.of(arr);
+        } else {
+            Uint8Array bytes = (Uint8Array) sharedTicketBytes;
+            length = bytes.length;
+            array = TypedArray.SetArrayUnionType.of(bytes);
+        }
+        Uint8Array bytesWithPrefix = new Uint8Array(length + 2);
+        bytesWithPrefix.setAt(0, (double) 'h');
+        bytesWithPrefix.setAt(1, (double) '/');
+        bytesWithPrefix.set(array, 2);
+        ticket.setTicket(bytesWithPrefix);
+        return ticket;
+    }
+
+    public Promise<?> getSharedObject(IdeConnection.SharedExportBytesUnion sharedExportBytes, String type) {
+        if (type.equalsIgnoreCase(JsVariableType.TABLE)) {
+            return connection.newState((callback, newState, metadata) -> {
+                        Ticket ticket = newState.getHandle().makeTicket();
+
+                        ExportRequest request = new ExportRequest();
+                        request.setSourceId(sharedTicketFromStringOrBytes(sharedExportBytes));
+                        request.setResultId(ticket);
+
+                        Callbacks.grpcUnaryPromise(c -> {
+                            connection.sessionServiceClient().exportFromTicket(request, connection.metadata(), c::apply);
+                        }).then(ignore -> {
+                            connection.tableServiceClient().getExportedTableCreationResponse(ticket, connection.metadata(), callback::apply);
+                            return null;
+                        }, err -> {
+                            callback.apply(err, null);
+                            return null;
+                        });
+
+                    }, "getSharedObject")
+                    .refetch(this, connection.metadata())
+                    .then(state -> Promise.resolve(new JsTable(connection, state)));
+        }
+
+        TypedTicket result = new TypedTicket();
+        result.setTicket(connection.getConfig().newTicket());
+        result.setType(type);
+
+        ExportRequest request = new ExportRequest();
+        request.setSourceId(sharedTicketFromStringOrBytes(sharedExportBytes));
+        request.setResultId(result.getTicket());
+
+        return Callbacks.grpcUnaryPromise(c -> {
+            connection.sessionServiceClient().exportFromTicket(request, connection.metadata(), c::apply);
+        }).then(ignore -> connection.getObject(result));
     }
 
     public JsRunnable subscribeToFieldUpdates(JsConsumer<JsVariableChanges> callback) {
