@@ -23,6 +23,7 @@ static_assert(FMT_VERSION >= 100000);
 namespace deephaven::dhcore::utility {
 
 namespace {
+
 const char kEncodeLookup[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 const char kPadCharacter = '=';
 }  // namespace
@@ -167,4 +168,13 @@ std::string demangle(const char* name) {
 std::string ObjectId(const std::string &class_short_name, void *this_ptr) {
   return fmt::format("{}({})", class_short_name, this_ptr);
 }
+
+std::string ReadPasswordFromStdinNoEcho() {
+  SetStdinEcho(false);
+  std::string password;
+  std::cin >> password;
+  SetStdinEcho(true);
+  return password;
+}
+
 }  // namespace deephaven::dhcore::utility
