@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <string>
 #include <thread>
 #include <typeinfo>
@@ -202,6 +203,19 @@ std::string Basename(std::string_view path);
  * @return The current thread ID as a string.
  */
 [[nodiscard]] std::string GetTidAsString();
+
+/**
+ * Gets the hostname.
+ * @return The hostname.
+ */
+[[nodiscard]] std::string GetHostname();
+
+/**
+ * Gets a value from the environment.
+ * @param envname the key
+ * @return If found, an optional set to the value. Otherwise (if not found), an empty optional.
+ */
+[[nodiscard]] std::optional<std::string> GetEnv(const std::string& envname);
 
 template <class T> [[nodiscard]] std::string
 TypeName(const T& t) {
