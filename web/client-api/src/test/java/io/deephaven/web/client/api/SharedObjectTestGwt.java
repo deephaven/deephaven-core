@@ -12,17 +12,20 @@ public class SharedObjectTestGwt extends AbstractAsyncGwtTestCase {
     private final TableSourceBuilder tables = new TableSourceBuilder()
             .script("from deephaven import empty_table")
             .script("t1 = empty_table(1).update('A=1')")
-            .script("t2 = empty_table(1).update('A=2')");
+            .script("t2 = empty_table(1).update('A=2')")
+            .script("t3 = empty_table(1).update('A=3')");
     private final TableSourceBuilder nothing = new TableSourceBuilder();
     public void testSharedTicket() {
         connect(tables).then(client1 -> {
             return connect(nothing).then(client2 -> {
                 delayTestFinish(220000);
-                return Promise.all(
+                return
                         // use the ascii `1` as our shared id
-                        assertCanFetchAndShare(client1, client2, "t1", "1", 1),
+                        assertCanFetchAndShare(client1, client2, "t1", "1", 1)
+                                .then(ignore1 ->
                         // make sure we don't just test for prefixes, add a bad prefix
-                        assertCanFetchAndShare(client1, client2, "t2", "h/1", 2),
+                        assertCanFetchAndShare(client1, client2, "t2", "h/1", 2))
+                                        .then(ignore ->
                         // try an empty shared ticket, this should fail
                         assertCanFetchAndShare(client1, client2, "t3", "", 3)
                 ).then(ignore -> Promise.all(
