@@ -1,6 +1,7 @@
 #
 # Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
+import random
 import unittest
 from types import SimpleNamespace
 from typing import List, Any
@@ -13,6 +14,7 @@ from deephaven.execution_context import make_user_exec_ctx, get_exec_ctx
 from deephaven.html import to_html
 from deephaven.jcompat import j_hashmap
 from deephaven.pandas import to_pandas
+from deephaven.stream.table_publisher import table_publisher
 from deephaven.table import Table, SearchDisplayMode
 from tests.testbase import BaseTestCase, table_equals
 
@@ -550,6 +552,15 @@ class TableTestCase(BaseTestCase):
         self.wait_ticking_table_update(snapshot_hist, row_count=1, timeout=5)
         self.assertEqual(1 + len(self.test_table.columns), len(snapshot_hist.columns))
         self.assertEqual(self.test_table.size, snapshot_hist.size)
+
+        with self.assertRaises(DHError) as cm:
+            def gen_label() -> str:
+                return random.choice(["Denver", "New York", "Chicago", "Boise"])
+
+            preds, preds_publisher = table_publisher("AIOutput", {"Timestamp": dtypes.Instant, "Label": dtypes.string,
+                                                                  "Pred": dtypes.float64})
+            preds.snapshot_when(trigger_table=preds, stamp_cols=[], history=True)
+        self.assertIn("must be append-only", cm.exception.root_cause)
 
     def test_agg_all_by(self):
         test_table = empty_table(10)

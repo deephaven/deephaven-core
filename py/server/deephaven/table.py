@@ -737,7 +737,7 @@ class Table(JObjectWrapper):
             history (bool): Whether the resulting table should keep history, default is False. A history table appends a
                 full snapshot of this table and the "stamp key" as opposed to updating existing rows. The history flag
                 is currently incompatible with initial and incremental: when history is True, incremental and initial
-                must be False.
+                must be False. Note that the trigger_table must be append-only when history is set to True.
 
         Returns:
             a new table
@@ -745,6 +745,9 @@ class Table(JObjectWrapper):
         Raises:
             DHError
         """
+        if history and not trigger_table.attributes().get(_JTable.APPEND_ONLY_TABLE_ATTRIBUTE, False):
+            raise DHError(message="The trigger table must be append-only when history is set to True.")
+
         try:
             options = _JSnapshotWhenOptions.of(initial, incremental, history, to_sequence(stamp_cols))
             with auto_locking_ctx(self, trigger_table):
