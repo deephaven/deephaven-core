@@ -64,6 +64,8 @@ if (!hasProperty('excludeJson')) {
     }
 }
 
+// When you add a new dependency here, be sure to include it in server-netty-app and py-embedded-server
+
 def authHandlers = []
 def authConfigs = ['AuthHandlers']
 if (hasProperty('anonymous')) {
