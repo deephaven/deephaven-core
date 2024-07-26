@@ -9,6 +9,7 @@ import elemental2.core.JsArray;
 import elemental2.core.JsObject;
 import elemental2.core.JsSet;
 import elemental2.core.JsWeakMap;
+import elemental2.core.TypedArray;
 import elemental2.core.Uint8Array;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.Promise;
@@ -38,6 +39,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.object_p
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.partitionedtable_pb_service.PartitionedTableServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.session_pb.ExportRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.session_pb.ExportResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.session_pb.PublishRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.session_pb.ReleaseRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.session_pb.TerminationNotificationRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven_core.proto.session_pb_service.SessionServiceClient;
@@ -78,6 +80,7 @@ import io.deephaven.web.client.api.widget.plot.JsFigure;
 import io.deephaven.web.client.fu.JsItr;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
+import io.deephaven.web.client.ide.SharedExportBytesUnion;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.client.state.HasTableBinding;
 import io.deephaven.web.client.state.TableReviver;
@@ -98,6 +101,7 @@ import org.apache.arrow.flatbuf.RecordBatch;
 import org.apache.arrow.flatbuf.Schema;
 
 import javax.annotation.Nullable;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -774,7 +778,79 @@ public class WorkerConnection {
         }
     }
 
-    @JsMethod
+    public Promise<SharedExportBytesUnion> shareObject(ServerObject object, SharedExportBytesUnion sharedTicketBytes) {
+        if (object.getConnection() != this) {
+            return Promise.reject("Cannot share an object that comes from another server instance");
+        }
+        PublishRequest request = new PublishRequest();
+        request.setSourceId(object.typedTicket().getTicket());
+
+        Ticket ticket = sharedTicketFromStringOrBytes(sharedTicketBytes);
+        request.setResultId(ticket);
+
+        return Callbacks.grpcUnaryPromise(c -> {
+            sessionServiceClient().publishFromTicket(request, metadata(), c::apply);
+        }).then(ignore -> Promise.resolve(sharedTicketBytes));
+    }
+
+    private static Ticket sharedTicketFromStringOrBytes(SharedExportBytesUnion sharedTicketBytes) {
+        Ticket ticket = new Ticket();
+        final int length;
+        final TypedArray.SetArrayUnionType array;
+        if (sharedTicketBytes.isString()) {
+            byte[] arr = sharedTicketBytes.toString().getBytes(StandardCharsets.UTF_8);
+            length = arr.length;
+            array = TypedArray.SetArrayUnionType.of(arr);
+        } else {
+            Uint8Array bytes = (Uint8Array) sharedTicketBytes;
+            length = bytes.length;
+            array = TypedArray.SetArrayUnionType.of(bytes);
+        }
+        Uint8Array bytesWithPrefix = new Uint8Array(length + 2);
+        bytesWithPrefix.setAt(0, (double) 'h');
+        bytesWithPrefix.setAt(1, (double) '/');
+        bytesWithPrefix.set(array, 2);
+        ticket.setTicket(bytesWithPrefix);
+        return ticket;
+    }
+
+    public Promise<?> getSharedObject(SharedExportBytesUnion sharedExportBytes, String type) {
+        if (type.equalsIgnoreCase(JsVariableType.TABLE)) {
+            return newState((callback, newState, metadata) -> {
+                Ticket ticket = newState.getHandle().makeTicket();
+
+                ExportRequest request = new ExportRequest();
+                request.setSourceId(sharedTicketFromStringOrBytes(sharedExportBytes));
+                request.setResultId(ticket);
+
+                Callbacks.grpcUnaryPromise(c -> {
+                    sessionServiceClient().exportFromTicket(request, metadata(), c::apply);
+                }).then(ignore -> {
+                    tableServiceClient().getExportedTableCreationResponse(ticket, metadata(), callback::apply);
+                    return null;
+                }, err -> {
+                    callback.apply(err, null);
+                    return null;
+                });
+
+            }, "getSharedObject")
+                    .refetch(null, metadata())
+                    .then(state -> Promise.resolve(new JsTable(this, state)));
+        }
+
+        TypedTicket result = new TypedTicket();
+        result.setTicket(getConfig().newTicket());
+        result.setType(type);
+
+        ExportRequest request = new ExportRequest();
+        request.setSourceId(sharedTicketFromStringOrBytes(sharedExportBytes));
+        request.setResultId(result.getTicket());
+
+        return Callbacks.grpcUnaryPromise(c -> {
+            sessionServiceClient().exportFromTicket(request, metadata(), c::apply);
+        }).then(ignore -> getObject(result));
+    }
+
     @SuppressWarnings("ConstantConditions")
     public JsRunnable subscribeToFieldUpdates(JsConsumer<JsVariableChanges> callback) {
         fieldUpdatesCallback.add(callback);

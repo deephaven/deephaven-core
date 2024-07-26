@@ -293,6 +293,12 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                 .then(cts -> Promise.resolve(new JsTable(connection, cts))));
     }
 
+    @JsIgnore
+    @Override
+    public WorkerConnection getConnection() {
+        return connection;
+    }
+
     private TicketAndPromise<?> prepareFilter() {
         if (filteredTable != null) {
             return filteredTable;
