@@ -3770,6 +3770,7 @@ def multi_join(input: Union[Table, Sequence[Table], MultiJoinInput, Sequence[Mul
 
 
 # region utility functions
+
 def table_diff(t1: Table, t2: Table, max_lines: int = 1, floating_inexact: bool = False,
                floating_fraction: bool = False, ignore_column_order: bool = False) -> str:
     """Returns the differences between this table and the provided table as a string. If the two tables are the same,
@@ -3787,7 +3788,7 @@ def table_diff(t1: Table, t2: Table, max_lines: int = 1, floating_inexact: bool 
     for Doubles and 0.005 for Floats. Only differences that are greater than the threshold are recorded. The
     floating_fraction flag can be set to True to compare the fractional difference between two floating numbers
     against the threshold. The fractional difference is calculated as the absolute difference divided by the
-    smaller one between the absolute values of the two numbers.
+    smaller of the absolute values of the two numbers.
 
     Args:
         t1 (Table): the table to compare
@@ -3797,8 +3798,8 @@ def table_diff(t1: Table, t2: Table, max_lines: int = 1, floating_inexact: bool 
         floating_fraction (bool): when floating_inexact is True, whether to use the fractional difference
             between two floating numbers to compare against the thresholds, default is False. When set to True,
             the floating_inexact must be set to True as well.
-        ignore_column_order (bool): whether columns that exist in both tables but in different orders are not
-            treated as differences, default is False
+        ignore_column_order (bool): whether columns that exist in both tables but in different orders are
+            treated as differences.  False indicates that column order matters (default), and True indicates that column order does not matter.
 
     Returns:
         string
