@@ -58,6 +58,12 @@ if (!hasProperty('excludeS3')) {
     }
 }
 
+if (!hasProperty('excludeJson')) {
+    dependencies {
+        runtimeOnly project(':extensions-json-jackson')
+    }
+}
+
 def authHandlers = []
 def authConfigs = ['AuthHandlers']
 if (hasProperty('anonymous')) {
