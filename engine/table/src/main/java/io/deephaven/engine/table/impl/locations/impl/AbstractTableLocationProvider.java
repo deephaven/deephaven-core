@@ -16,7 +16,7 @@ import java.util.*;
  * Partial {@link TableLocationProvider} implementation for standalone use or as part of a {@link TableDataService}.
  * <p>
  * Presents an interface similar to {@link TableLocationProvider.Listener} for subclasses to use when communicating with
- * the parent; see {@link #handleTableLocationKey(TableLocationKey)}.
+ * the parent; see {@link #handleTableLocationKeyAdded(TableLocationKey)}.
  * <p>
  * Note that subclasses are responsible for determining when it's appropriate to call {@link #setInitialized()} and/or
  * override {@link #doInitialization()}.
@@ -84,18 +84,32 @@ public abstract class AbstractTableLocationProvider
 
     @Override
     protected final void deliverInitialSnapshot(@NotNull final TableLocationProvider.Listener listener) {
-        listener.beginTransaction(this);
-        unmodifiableTableLocationKeys.forEach(tlk -> listener.handleTableLocationKeyAdded(tlk, this));
-        listener.endTransaction(this);
+        listener.beginTransaction();
+        unmodifiableTableLocationKeys.forEach(listener::handleTableLocationKeyAdded);
+        listener.endTransaction();
+    }
+
+    /**
+     * Deliver a possibly-new key. This method passes {@code this} as the transaction token.
+     *
+     * @param locationKey The new key
+     * @apiNote This method is intended to be used by subclasses or by tightly-coupled discovery tools.
+     */
+    protected final void handleTableLocationKeyAdded(
+            @NotNull final TableLocationKey locationKey) {
+        handleTableLocationKeyAdded(locationKey, this);
     }
 
     /**
      * Deliver a possibly-new key.
      *
      * @param locationKey The new key
+     * @param transactionToken The token identifying the transaction
      * @apiNote This method is intended to be used by subclasses or by tightly-coupled discovery tools.
      */
-    protected final void handleTableLocationKey(@NotNull final TableLocationKey locationKey) {
+    protected final void handleTableLocationKeyAdded(
+            @NotNull final TableLocationKey locationKey,
+            @Nullable final Object transactionToken) {
         if (!supportsSubscriptions()) {
             tableLocations.putIfAbsent(locationKey, TableLocationKey::makeImmutable);
             visitLocationKey(toKeyImmutable(locationKey));
@@ -113,30 +127,57 @@ public abstract class AbstractTableLocationProvider
             if (locationCreatedRecorder) {
                 verifyPartitionKeys(locationKey);
                 if (subscriptions.deliverNotification(
-                        (listener, tlk) -> listener.handleTableLocationKeyAdded(tlk,
-                                AbstractTableLocationProvider.this),
-                        toKeyImmutable(result), true)) {
+                        Listener::handleTableLocationKeyAdded,
+                        toKeyImmutable(result),
+                        transactionToken,
+                        true)) {
                     onEmpty();
                 }
             }
         }
     }
 
+    /**
+     * Internal method to begin an atomic transaction of location adds and removes. This method passes {@code this} as
+     * the transaction token.
+     */
     protected final void beginTransaction() {
-        if (subscriptions != null) {
-            subscriptions.deliverNotification(listener -> listener.beginTransaction(this), true);
-        }
+        beginTransaction(this);
     }
 
-    protected final void endTransaction() {
+    /**
+     * Internal method to begin an atomic transaction of location adds and removes.
+     *
+     * @param token A token to identify the transaction
+     */
+    protected final void beginTransaction(@NotNull final Object token) {
         if (subscriptions != null) {
-            subscriptions.deliverNotification(listener -> listener.endTransaction(this), true);
+            subscriptions.deliverNotification(Listener::beginTransaction, token, true);
         }
     }
 
     /**
-     * Called <i>after</i> a table location has been visited by {@link #handleTableLocationKey(TableLocationKey)}, but
-     * before notifications have been delivered to any subscriptions, if applicable. The default implementation does
+     * Internal method to end an atomic transaction of location adds and removes. This method passes {@code this} as the
+     * transaction token.
+     */
+    protected final void endTransaction() {
+        endTransaction(this);
+    }
+
+    /**
+     * Internal method to end an atomic transaction of location adds and removes.
+     *
+     * @param token A token to identify the transaction
+     */
+    protected final void endTransaction(@NotNull final Object token) {
+        if (subscriptions != null) {
+            subscriptions.deliverNotification(Listener::endTransaction, token, true);
+        }
+    }
+
+    /**
+     * Called <i>after</i> a table location has been visited by {@link #handleTableLocationKeyAdded(TableLocationKey)},
+     * but before notifications have been delivered to any subscriptions, if applicable. The default implementation does
      * nothing, and may be overridden to implement additional features.
      *
      * @param locationKey The {@link TableLocationKey} that was visited.
@@ -274,15 +315,32 @@ public abstract class AbstractTableLocationProvider
     }
 
     /**
+     * Notify subscribers that {@code locationKey} was removed. This method passes {@code this} as the transaction
+     * token.
+     *
+     * @param locationKey the TableLocation that was removed
+     */
+    protected final void handleTableLocationKeyRemoved(
+            @NotNull final ImmutableTableLocationKey locationKey) {
+        handleTableLocationKeyRemoved(locationKey, this);
+    }
+
+    /**
      * Notify subscribers that {@code locationKey} was removed.
      * 
      * @param locationKey the TableLocation that was removed
+     * @param transactionToken The token identifying the transaction
      */
-    protected void handleTableLocationKeyRemoved(@NotNull final ImmutableTableLocationKey locationKey) {
+    protected void handleTableLocationKeyRemoved(
+            @NotNull final ImmutableTableLocationKey locationKey,
+            @Nullable final Object transactionToken) {
         if (supportsSubscriptions()) {
             synchronized (subscriptions) {
                 if (subscriptions.deliverNotification(
-                        (listener, tlk) -> listener.handleTableLocationKeyRemoved(tlk, this), locationKey, true)) {
+                        Listener::handleTableLocationKeyRemoved,
+                        locationKey,
+                        transactionToken,
+                        true)) {
                     onEmpty();
                 }
             }

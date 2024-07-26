@@ -43,7 +43,7 @@ public final class TableBackedTableLocationProvider extends AbstractTableLocatio
                         .withAttributes(Map.of(LOCATION_ID_ATTR, nextId.getAndIncrement())))
                 .peek(table -> Assert.assertion(table.isAppendOnly(), "table is append only"))
                 .map(TableBackedTableLocationKey::new)
-                .forEach(this::handleTableLocationKey);
+                .forEach(this::handleTableLocationKeyAdded);
     }
 
     public synchronized void addPending(@NotNull final Table toAdd) {

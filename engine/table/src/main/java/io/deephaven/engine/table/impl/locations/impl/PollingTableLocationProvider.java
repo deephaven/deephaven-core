@@ -57,7 +57,7 @@ public class PollingTableLocationProvider<TK extends TableKey, TLK extends Table
         locationKeyFinder.findKeys(tableLocationKey -> {
             // noinspection SuspiciousMethodCalls
             missedKeys.remove(tableLocationKey);
-            handleTableLocationKey(tableLocationKey);
+            handleTableLocationKeyAdded(tableLocationKey);
         });
         missedKeys.forEach(this::handleTableLocationKeyRemoved);
         endTransaction();

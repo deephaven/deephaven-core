@@ -31,14 +31,29 @@ public interface TableLocationProvider extends NamedImplementation {
          *
          * @param token A token to identify the transaction.
          */
-        void beginTransaction(final Object token);
+        void beginTransaction(@NotNull Object token);
+
+        /**
+         * Begin a transaction that collects location key additions and removals to be processed atomically. Uses
+         * {@code this} as the token.
+         */
+        default void beginTransaction() {
+            beginTransaction(this);
+        }
 
         /**
          * End the transaction and process the location changes.
          *
          * @param token A token to identify the transaction.
          */
-        void endTransaction(final Object token);
+        void endTransaction(@NotNull Object token);
+
+        /**
+         * End the transaction and process the location changes. Uses {@code this} as the token.
+         */
+        default void endTransaction() {
+            endTransaction(this);
+        }
 
         /**
          * Notify the listener of a {@link TableLocationKey} encountered while initiating or maintaining the location
@@ -49,8 +64,19 @@ public interface TableLocationProvider extends NamedImplementation {
          * @param transactionToken The token identifying the transaction.
          */
         void handleTableLocationKeyAdded(
-                @NotNull final ImmutableTableLocationKey tableLocationKey,
-                final Object transactionToken);
+                @NotNull ImmutableTableLocationKey tableLocationKey,
+                @Nullable Object transactionToken);
+
+        /**
+         * Notify the listener of a {@link TableLocationKey} encountered while initiating or maintaining the location
+         * subscription. This should occur at most once per location, but the order of delivery is <i>not</i>
+         * guaranteed. Uses {@code this} as the token.
+         *
+         * @param tableLocationKey The new table location key.
+         */
+        default void handleTableLocationKeyAdded(@NotNull ImmutableTableLocationKey tableLocationKey) {
+            handleTableLocationKeyAdded(tableLocationKey, this);
+        }
 
         /**
          * Notify the listener of a {@link TableLocationKey} that has been removed.
@@ -59,8 +85,17 @@ public interface TableLocationProvider extends NamedImplementation {
          * @param transactionToken The token identifying the transaction.
          */
         void handleTableLocationKeyRemoved(
-                @NotNull final ImmutableTableLocationKey tableLocationKey,
-                final Object transactionToken);
+                @NotNull ImmutableTableLocationKey tableLocationKey,
+                @Nullable Object transactionToken);
+
+        /**
+         * Notify the listener of a {@link TableLocationKey} that has been removed. Uses {@code this} as the token.
+         *
+         * @param tableLocationKey The table location key that was removed.
+         */
+        default void handleTableLocationKeyRemoved(@NotNull ImmutableTableLocationKey tableLocationKey) {
+            handleTableLocationKeyRemoved(tableLocationKey, this);
+        }
     }
 
     /**
@@ -126,7 +161,7 @@ public interface TableLocationProvider extends NamedImplementation {
      * @param tableLocationKey The key to test.
      * @return Whether the key is known to this provider.
      */
-    boolean hasTableLocationKey(@NotNull final TableLocationKey tableLocationKey);
+    boolean hasTableLocationKey(@NotNull TableLocationKey tableLocationKey);
 
     /**
      * @param tableLocationKey A {@link TableLocationKey} specifying the location to get.

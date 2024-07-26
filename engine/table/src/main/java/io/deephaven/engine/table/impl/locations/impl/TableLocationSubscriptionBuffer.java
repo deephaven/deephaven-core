@@ -8,6 +8,7 @@ import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocationProvider;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
@@ -121,7 +122,7 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
     // ------------------------------------------------------------------------------------------------------------------
 
     @Override
-    public void beginTransaction(final Object token) {
+    public void beginTransaction(@NotNull final Object token) {
         synchronized (updateLock) {
             // Assert that we can start a new transaction with this token.
             Require.eqFalse(transactionTokens.contains(token), "transactionTokens.contains(token)");
@@ -137,7 +138,7 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
     }
 
     @Override
-    public void endTransaction(final Object token) {
+    public void endTransaction(@NotNull final Object token) {
         synchronized (updateLock) {
             // Assert that this transaction is open.
             Require.eqTrue(transactionTokens.contains(token), "transactionTokens.contains(token)");
@@ -179,18 +180,31 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
     @Override
     public void handleTableLocationKeyAdded(
             @NotNull final ImmutableTableLocationKey tableLocationKey,
-            final Object transactionToken) {
+            @Nullable Object transactionToken) {
         synchronized (updateLock) {
+            if (transactionToken == null) {
+                // If we're not in a transaction, modify the pending locations directly.
+                if (pendingLocationsRemoved.remove(tableLocationKey)) {
+                    return;
+                }
+                pendingLocationsAdded.add(tableLocationKey);
+                return;
+            }
+
             if (accumulatedLocationsAdded.get(transactionToken) == EMPTY_TABLE_LOCATION_KEYS) {
                 accumulatedLocationsAdded.put(transactionToken, new HashSet<>());
             }
             final Set<ImmutableTableLocationKey> locationsAdded = accumulatedLocationsAdded.get(transactionToken);
-            final Set<ImmutableTableLocationKey> locationsRemoved = accumulatedLocationsRemoved.get(transactionToken);
 
-            // A single transaction should never add and remove the same location,
-            Require.eqFalse(locationsRemoved.contains(tableLocationKey),
-                    "locationsRemoved.contains(tableLocationKey)");
-
+            // When adding a location in a transaction, check for logical consistency.
+            // 1. If the location was already added in this transaction, we have a problem. A transaction should not
+            // add the same location twice.
+            // 2. If the location was already removed in this transaction, we have a `replace` operation which is not a
+            // logical error (although it may not be supported by all consumers).
+            if (accumulatedLocationsAdded.containsKey(tableLocationKey)) {
+                throw new IllegalStateException("TableLocationKey " + tableLocationKey
+                        + " was added twice in the same transaction.");
+            }
             locationsAdded.add(tableLocationKey);
         }
     }
@@ -200,16 +214,33 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
             @NotNull final ImmutableTableLocationKey tableLocationKey,
             final Object transactionToken) {
         synchronized (updateLock) {
+            if (transactionToken == null) {
+                // If we're not in a transaction, modify the pending locations directly.
+                if (pendingLocationsRemoved.remove(tableLocationKey)) {
+                    return;
+                }
+                pendingLocationsAdded.add(tableLocationKey);
+                return;
+            }
+
             if (accumulatedLocationsRemoved.get(transactionToken) == EMPTY_TABLE_LOCATION_KEYS) {
                 accumulatedLocationsRemoved.put(transactionToken, new HashSet<>());
             }
             final Set<ImmutableTableLocationKey> locationsAdded = accumulatedLocationsAdded.get(transactionToken);
             final Set<ImmutableTableLocationKey> locationsRemoved = accumulatedLocationsRemoved.get(transactionToken);
 
-            // A single transaction should never add and remove the same location,
-            Require.eqFalse(locationsAdded.contains(tableLocationKey),
-                    "locationsAdded.contains(tableLocationKey)");
-
+            // When removing a location in a transaction, check for logical consistency.
+            // 1. If the location was already removed in this transaction, we have a problem. A transaction should not
+            // remove the same location twice.
+            // 2. If the location was already added in this transaction, we have a problem. A transaction should not
+            // add then remove the same location.
+            if (accumulatedLocationsRemoved.containsKey(tableLocationKey)) {
+                throw new IllegalStateException("TableLocationKey " + tableLocationKey
+                        + " was removed twice in the same transaction.");
+            } else if (accumulatedLocationsAdded.containsKey(tableLocationKey)) {
+                throw new IllegalStateException("TableLocationKey " + tableLocationKey
+                        + " was removed after being added in the same transaction.");
+            }
             locationsRemoved.add(tableLocationKey);
         }
     }

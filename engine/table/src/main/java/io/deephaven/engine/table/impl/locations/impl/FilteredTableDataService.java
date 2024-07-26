@@ -157,7 +157,7 @@ public class FilteredTableDataService extends AbstractTableDataService {
         }
 
         @Override
-        public void beginTransaction(final Object token) {
+        public void beginTransaction(@NotNull final Object token) {
             // Delegate to the wrapped listener.
             final TableLocationProvider.Listener outputListener = getWrapped();
             if (outputListener != null) {
@@ -166,7 +166,7 @@ public class FilteredTableDataService extends AbstractTableDataService {
         }
 
         @Override
-        public void endTransaction(final Object token) {
+        public void endTransaction(@NotNull final Object token) {
             // Delegate to the wrapped listener.
             final TableLocationProvider.Listener outputListener = getWrapped();
             if (outputListener != null) {
@@ -177,7 +177,7 @@ public class FilteredTableDataService extends AbstractTableDataService {
         @Override
         public void handleTableLocationKeyAdded(
                 @NotNull final ImmutableTableLocationKey tableLocationKey,
-                final Object transactionToken) {
+                @Nullable final Object transactionToken) {
             final TableLocationProvider.Listener outputListener = getWrapped();
             // We can't try to clean up null listeners here, the underlying implementation may not allow concurrent
             // unsubscribe operations.
@@ -189,7 +189,7 @@ public class FilteredTableDataService extends AbstractTableDataService {
         @Override
         public void handleTableLocationKeyRemoved(
                 @NotNull final ImmutableTableLocationKey tableLocationKey,
-                final Object transactionToken) {
+                @Nullable final Object transactionToken) {
             final TableLocationProvider.Listener outputListener = getWrapped();
             if (outputListener != null && locationKeyFilter.accept(tableLocationKey)) {
                 outputListener.handleTableLocationKeyRemoved(tableLocationKey, transactionToken);

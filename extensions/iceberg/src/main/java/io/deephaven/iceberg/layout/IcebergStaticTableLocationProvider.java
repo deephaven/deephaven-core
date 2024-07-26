@@ -43,7 +43,7 @@ public class IcebergStaticTableLocationProvider<TK extends TableKey, TLK extends
     @Override
     public void refresh() {
         beginTransaction();
-        locationKeyFinder.findKeys(this::handleTableLocationKey);
+        locationKeyFinder.findKeys(this::handleTableLocationKeyAdded);
         endTransaction();
         setInitialized();
     }
