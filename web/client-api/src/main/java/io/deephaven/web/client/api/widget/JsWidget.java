@@ -118,6 +118,11 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
         this.exportedObjects = new JsArray<>();
     }
 
+    @Override
+    public WorkerConnection getConnection() {
+        return connection;
+    }
+
     private void closeStream() {
         if (messageStream != null) {
             messageStream.end();

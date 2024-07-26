@@ -7,16 +7,11 @@ import com.google.gwt.user.client.Timer;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
 import elemental2.core.JsSet;
-import elemental2.core.TypedArray;
-import elemental2.core.Uint8Array;
 import elemental2.dom.CustomEventInit;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ExportRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.PublishRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.*;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.changedocumentrequest.TextDocumentContentChangeEvent;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.*;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.api.console.JsCommandResult;
@@ -39,7 +34,6 @@ import jsinterop.base.Js;
 import jsinterop.base.JsArrayLike;
 import jsinterop.base.JsPropertyMap;
 
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -189,74 +183,43 @@ public class IdeSession extends HasEventHandling {
                 .then(ignore -> Promise.resolve((Void) null));
     }
 
-    public Promise<IdeConnection.SharedExportBytesUnion> shareObject(ServerObject object, IdeConnection.SharedExportBytesUnion sharedTicketBytes) {
-        PublishRequest request = new PublishRequest();
-        request.setSourceId(object.typedTicket().getTicket());
-
-        Ticket ticket = sharedTicketFromStringOrBytes(sharedTicketBytes);
-        request.setResultId(ticket);
-
-        return Callbacks.grpcUnaryPromise(c -> {
-            connection.sessionServiceClient().publishFromTicket(request, connection.metadata(), c::apply);
-        }).then(ignore -> Promise.resolve(sharedTicketBytes));
+    /**
+     * Makes the {@code object} available to another user or another client on this same server which knows the value of
+     * the {@code sharedTicketBytes}. Use that sharedTicketBytes value like a one-time use password - any other client
+     * which knows this value can read the same object.
+     * <p>
+     * Shared objects will remain available using the sharedTicketBytes until the client that first shared them
+     * releases/closes their copy of the object. Whatever side-channel is used to share the bytes, be sure to wait until
+     * the remote end has signaled that it has successfully fetched the object before releasing it from this client.
+     * <p>
+     * Be sure to use an unpredictable value for the shared ticket bytes, like a UUID or other large, random value to
+     * prevent accidental access by other clients.
+     *
+     * @param object the object to share with another client/user
+     * @param sharedTicketBytes the value which another client/user must know to obtain the object. It may be a unicode
+     *        string (will be encoded as utf8 bytes), or a {@link elemental2.core.Uint8Array} value.
+     * @return A promise that will resolve to the value passed as sharedTicketBytes when the object is ready to be read
+     *         by another client, or will reject if an error occurs.
+     */
+    public Promise<SharedExportBytesUnion> shareObject(ServerObject.Union object,
+            SharedExportBytesUnion sharedTicketBytes) {
+        return connection.shareObject(object.asServerObject(), sharedTicketBytes);
     }
 
-    private static Ticket sharedTicketFromStringOrBytes(IdeConnection.SharedExportBytesUnion sharedTicketBytes) {
-        Ticket ticket = new Ticket();
-        final int length;
-        final TypedArray.SetArrayUnionType array;
-        if (sharedTicketBytes.isString()) {
-            byte[] arr = sharedTicketBytes.toString().getBytes(StandardCharsets.UTF_8);
-            length = arr.length;
-            array = TypedArray.SetArrayUnionType.of(arr);
-        } else {
-            Uint8Array bytes = (Uint8Array) sharedTicketBytes;
-            length = bytes.length;
-            array = TypedArray.SetArrayUnionType.of(bytes);
-        }
-        Uint8Array bytesWithPrefix = new Uint8Array(length + 2);
-        bytesWithPrefix.setAt(0, (double) 'h');
-        bytesWithPrefix.setAt(1, (double) '/');
-        bytesWithPrefix.set(array, 2);
-        ticket.setTicket(bytesWithPrefix);
-        return ticket;
-    }
-
-    public Promise<?> getSharedObject(IdeConnection.SharedExportBytesUnion sharedExportBytes, String type) {
-        if (type.equalsIgnoreCase(JsVariableType.TABLE)) {
-            return connection.newState((callback, newState, metadata) -> {
-                        Ticket ticket = newState.getHandle().makeTicket();
-
-                        ExportRequest request = new ExportRequest();
-                        request.setSourceId(sharedTicketFromStringOrBytes(sharedExportBytes));
-                        request.setResultId(ticket);
-
-                        Callbacks.grpcUnaryPromise(c -> {
-                            connection.sessionServiceClient().exportFromTicket(request, connection.metadata(), c::apply);
-                        }).then(ignore -> {
-                            connection.tableServiceClient().getExportedTableCreationResponse(ticket, connection.metadata(), callback::apply);
-                            return null;
-                        }, err -> {
-                            callback.apply(err, null);
-                            return null;
-                        });
-
-                    }, "getSharedObject")
-                    .refetch(this, connection.metadata())
-                    .then(state -> Promise.resolve(new JsTable(connection, state)));
-        }
-
-        TypedTicket result = new TypedTicket();
-        result.setTicket(connection.getConfig().newTicket());
-        result.setType(type);
-
-        ExportRequest request = new ExportRequest();
-        request.setSourceId(sharedTicketFromStringOrBytes(sharedExportBytes));
-        request.setResultId(result.getTicket());
-
-        return Callbacks.grpcUnaryPromise(c -> {
-            connection.sessionServiceClient().exportFromTicket(request, connection.metadata(), c::apply);
-        }).then(ignore -> connection.getObject(result));
+    /**
+     * Reads an object shared by another client to this server with the {@code sharedTicketBytes}. Until the other
+     * client releases this object (or their session ends), the object will be available on the server.
+     * <p>
+     * The type of the object must be passed so that the object can be read from the server correct - the other client
+     * should provide this information.
+     *
+     * @param sharedTicketBytes the value provided by another client/user to obtain the object. It may be a unicode
+     *        string (will be encoded as utf8 bytes), or a {@link elemental2.core.Uint8Array} value.
+     * @param type The type of the object, so it can be correctly read from the server
+     * @return A promise that will resolve to the shared object, or will reject with an error if it cannot be read.
+     */
+    public Promise<?> getSharedObject(SharedExportBytesUnion sharedTicketBytes, String type) {
+        return connection.getSharedObject(sharedTicketBytes, type);
     }
 
     public JsRunnable subscribeToFieldUpdates(JsConsumer<JsVariableChanges> callback) {

@@ -8,7 +8,6 @@ import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.core.JsString;
 import elemental2.dom.CustomEvent;
-import elemental2.dom.Event;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.console.JsVariableType;
@@ -62,6 +61,11 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
         this.wrappedTable = wrappedTable;
         this.directive = directive;
         this.groupBy = Js.uncheckedCast(groupBy.slice());
+    }
+
+    @Override
+    public WorkerConnection getConnection() {
+        return wrappedTable.getConnection();
     }
 
     public void refreshViewport() {
