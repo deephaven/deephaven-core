@@ -15,24 +15,25 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Table wrapper for refreshing Iceberg tables.
+ * Table implementation for static and refreshing Iceberg tables.
  */
-public class IcebergTableRefreshing extends PartitionAwareSourceTable implements IcebergTable {
+public class IcebergTableImpl extends PartitionAwareSourceTable implements IcebergTable {
     /**
      * Location discovery.
      */
     final IcebergTableLocationProviderBase<TableKey, IcebergTableLocationKey> locationProvider;
 
     /**
+     * Create an instance of the class with the provided parameters.
      *
-     *
-     * @param tableDefinition A TableDefinition
+     * @param tableDefinition The {@link TableDefinition} describing the table schema
      * @param description A human-readable description for this table
      * @param componentFactory A component factory for creating column source managers
-     * @param locationProvider A TableLocationProvider, for use in discovering the locations that compose this table
+     * @param locationProvider A {@link io.deephaven.engine.table.impl.locations.TableLocationProvider}, for use in
+     *        discovering the locations that compose this table
      * @param updateSourceRegistrar Callback for registering live tables for refreshes, null if this table is not live
      */
-    IcebergTableRefreshing(
+    IcebergTableImpl(
             @NotNull TableDefinition tableDefinition,
             @NotNull String description,
             @NotNull SourceTableComponentFactory componentFactory,

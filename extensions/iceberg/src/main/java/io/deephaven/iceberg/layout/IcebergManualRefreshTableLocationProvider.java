@@ -6,12 +6,10 @@ package io.deephaven.iceberg.layout;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationFactory;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
-import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import io.deephaven.iceberg.util.IcebergCatalogAdapter;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.HashSet;
 import java.util.List;
@@ -19,33 +17,23 @@ import java.util.Set;
 
 /**
  * <p>
- * Refreshing {@link TableLocationProvider} implementation that delegates {@link TableLocationKey location key}
+ * Manually refreshing {@link TableLocationProvider} implementation that delegates {@link TableLocationKey location key}
  * discovery to a {@link TableLocationKeyFinder} and {@link TableLocation location} creation to a
  * {@link TableLocationFactory}.
  * </p>
- * <p>
- * Supports both automatic and manual refreshing cases, distinguished by the {@code autoRefresh} parameter.
- * </p>
  */
-public class IcebergRefreshingTableLocationProvider<TK extends TableKey, TLK extends TableLocationKey>
+public class IcebergManualRefreshTableLocationProvider<TK extends TableKey, TLK extends TableLocationKey>
         extends IcebergTableLocationProviderBase<TK, TLK> {
 
-    private static final String IMPLEMENTATION_NAME = IcebergRefreshingTableLocationProvider.class.getSimpleName();
+    private static final String IMPLEMENTATION_NAME = IcebergManualRefreshTableLocationProvider.class.getSimpleName();
 
-    private final boolean autoRefresh;
-
-    private TableDataRefreshService.CancellableSubscriptionToken subscriptionToken;
-
-    public IcebergRefreshingTableLocationProvider(
+    public IcebergManualRefreshTableLocationProvider(
             @NotNull final TK tableKey,
             @NotNull final IcebergBaseLayout locationKeyFinder,
             @NotNull final TableLocationFactory<TK, TLK> locationFactory,
-            @Nullable final TableDataRefreshService refreshService,
             @NotNull final IcebergCatalogAdapter adapter,
-            @NotNull final TableIdentifier tableIdentifier,
-            final boolean autoRefresh) {
-        super(tableKey, locationKeyFinder, locationFactory, refreshService, adapter, tableIdentifier);
-        this.autoRefresh = autoRefresh;
+            @NotNull final TableIdentifier tableIdentifier) {
+        super(tableKey, locationKeyFinder, locationFactory, null, true, adapter, tableIdentifier);
     }
 
     // ------------------------------------------------------------------------------------------------------------------
@@ -59,13 +47,8 @@ public class IcebergRefreshingTableLocationProvider<TK extends TableKey, TLK ext
 
     @Override
     public synchronized void refresh() {
-        if (autoRefresh) {
-            final Snapshot latestSnapshot = adapter.getCurrentSnapshot(tableIdentifier);
-            if (latestSnapshot.sequenceNumber() > locationKeyFinder.snapshot.sequenceNumber()) {
-                locationKeyFinder.snapshot = latestSnapshot;
-            }
-        }
-        refreshSnapshot();
+        // There should be no refresh service for this provider.
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -95,7 +78,7 @@ public class IcebergRefreshingTableLocationProvider<TK extends TableKey, TLK ext
         if (snapshot.sequenceNumber() <= locationKeyFinder.snapshot.sequenceNumber()) {
             throw new IllegalArgumentException(
                     "Snapshot sequence number " + snapshot.sequenceNumber()
-                            + " is older than the current snapshot sequence number "
+                            + " must be higher than the current snapshot sequence number "
                             + locationKeyFinder.snapshot.sequenceNumber() + " for table " + tableIdentifier);
         }
         // Update the snapshot.
@@ -117,5 +100,25 @@ public class IcebergRefreshingTableLocationProvider<TK extends TableKey, TLK ext
         missedKeys.forEach(this::handleTableLocationKeyRemoved);
         endTransaction();
         setInitialized();
+    }
+
+    // ------------------------------------------------------------------------------------------------------------------
+    // SubscriptionAggregator implementation
+    // ------------------------------------------------------------------------------------------------------------------
+
+    @Override
+    protected void activateUnderlyingDataSource() {
+        refreshSnapshot();
+        activationSuccessful(this);
+    }
+
+    @Override
+    protected void deactivateUnderlyingDataSource() {
+        // NOP for manually refreshing Iceberg table location provider.
+    }
+
+    @Override
+    protected <T> boolean matchSubscriptionToken(T token) {
+        return token == this;
     }
 }

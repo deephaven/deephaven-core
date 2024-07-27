@@ -115,7 +115,9 @@ public class CompositeTableDataService extends AbstractTableDataService {
                     p.subscribe(listener);
                 } else {
                     p.refresh();
-                    p.getTableLocationKeys().forEach(tlk -> listener.handleTableLocationKeyAdded(tlk, this));
+                    listener.beginTransaction(p);
+                    p.getTableLocationKeys().forEach(tlk -> listener.handleTableLocationKeyAdded(tlk, p));
+                    listener.endTransaction(p);
                 }
             });
         }

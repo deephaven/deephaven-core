@@ -22,26 +22,21 @@ public abstract class IcebergTableLocationProviderBase<TK extends TableKey, TLK 
     final IcebergCatalogAdapter adapter;
     final TableIdentifier tableIdentifier;
 
-    private TableDataRefreshService.CancellableSubscriptionToken subscriptionToken;
-
     public IcebergTableLocationProviderBase(
             @NotNull final TK tableKey,
             @NotNull final IcebergBaseLayout locationKeyFinder,
             @NotNull final TableLocationFactory<TK, TLK> locationFactory,
             @Nullable final TableDataRefreshService refreshService,
-            @NotNull final IcebergCatalogAdapter adapter,
+            final boolean isRefreshing,
+            @Nullable final IcebergCatalogAdapter adapter,
             @NotNull final TableIdentifier tableIdentifier) {
-        super(tableKey, refreshService != null);
+        super(tableKey, isRefreshing);
         this.locationKeyFinder = locationKeyFinder;
         this.locationFactory = locationFactory;
         this.refreshService = refreshService;
         this.adapter = adapter;
         this.tableIdentifier = tableIdentifier;
     }
-
-    // ------------------------------------------------------------------------------------------------------------------
-    // AbstractTableLocationProvider implementation
-    // ------------------------------------------------------------------------------------------------------------------
 
     /**
      * Update the table location provider with the latest snapshot from the catalog.
@@ -71,27 +66,5 @@ public abstract class IcebergTableLocationProviderBase<TK extends TableKey, TLK 
     protected TableLocation makeTableLocation(@NotNull final TableLocationKey locationKey) {
         // noinspection unchecked
         return locationFactory.makeLocation((TK) getKey(), (TLK) locationKey, refreshService);
-    }
-
-    // ------------------------------------------------------------------------------------------------------------------
-    // SubscriptionAggregator implementation
-    // ------------------------------------------------------------------------------------------------------------------
-
-    @Override
-    protected final void activateUnderlyingDataSource() {
-        subscriptionToken = refreshService.scheduleTableLocationProviderRefresh(this);
-    }
-
-    @Override
-    protected final void deactivateUnderlyingDataSource() {
-        if (subscriptionToken != null) {
-            subscriptionToken.cancel();
-            subscriptionToken = null;
-        }
-    }
-
-    @Override
-    protected final <T> boolean matchSubscriptionToken(final T token) {
-        return token == subscriptionToken;
     }
 }

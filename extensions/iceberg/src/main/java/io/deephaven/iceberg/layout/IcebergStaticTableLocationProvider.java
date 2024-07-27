@@ -6,7 +6,6 @@ package io.deephaven.iceberg.layout;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationFactory;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
-import io.deephaven.iceberg.util.IcebergCatalogAdapter;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.jetbrains.annotations.NotNull;
@@ -26,9 +25,8 @@ public class IcebergStaticTableLocationProvider<TK extends TableKey, TLK extends
             @NotNull final TK tableKey,
             @NotNull final IcebergBaseLayout locationKeyFinder,
             @NotNull final TableLocationFactory<TK, TLK> locationFactory,
-            @NotNull final IcebergCatalogAdapter adapter,
             @NotNull final TableIdentifier tableIdentifier) {
-        super(tableKey, locationKeyFinder, locationFactory, null, adapter, tableIdentifier);
+        super(tableKey, locationKeyFinder, locationFactory, null, false, null, tableIdentifier);
     }
 
     // ------------------------------------------------------------------------------------------------------------------
@@ -61,5 +59,26 @@ public class IcebergStaticTableLocationProvider<TK extends TableKey, TLK extends
     @Override
     public void update(Snapshot snapshot) {
         throw new IllegalStateException("A static table location provider cannot be updated");
+    }
+
+    // ------------------------------------------------------------------------------------------------------------------
+    // SubscriptionAggregator implementation
+    // ------------------------------------------------------------------------------------------------------------------
+
+    @Override
+    protected void activateUnderlyingDataSource() {
+        throw new IllegalStateException(
+                "activateUnderlyingDataSource() called on a static Iceberg table location provider");
+    }
+
+    @Override
+    protected void deactivateUnderlyingDataSource() {
+        throw new IllegalStateException(
+                "deactivateUnderlyingDataSource() called on a static Iceberg table location provider");
+    }
+
+    @Override
+    protected <T> boolean matchSubscriptionToken(final T token) {
+        return false;
     }
 }

@@ -19,7 +19,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * {@link TableDataRefreshService} implementation that uses a {@link ScheduledThreadPoolExecutor}.
@@ -76,7 +75,8 @@ public class ExecutorTableDataRefreshService implements TableDataRefreshService 
 
         private volatile boolean firstInvocation = true;
 
-        private ScheduledSubscriptionTask(@NotNull final TYPE subscriptionAggregator,
+        private ScheduledSubscriptionTask(
+                @NotNull final TYPE subscriptionAggregator,
                 final long refreshIntervalMillis) {
             this.subscriptionAggregator = subscriptionAggregator;
             future = scheduler.scheduleAtFixedRate(this::doRefresh, 0, refreshIntervalMillis, TimeUnit.MILLISECONDS);
@@ -110,10 +110,19 @@ public class ExecutorTableDataRefreshService implements TableDataRefreshService 
     private class ScheduledTableLocationProviderRefresh
             extends ScheduledSubscriptionTask<AbstractTableLocationProvider> {
 
-        private ScheduledTableLocationProviderRefresh(@NotNull AbstractTableLocationProvider tableLocationProvider) {
+        private ScheduledTableLocationProviderRefresh(
+                @NotNull final AbstractTableLocationProvider tableLocationProvider) {
             super(tableLocationProvider, tableLocationProviderRefreshIntervalMillis);
             providerSubscriptions.increment(1);
         }
+
+        private ScheduledTableLocationProviderRefresh(
+                @NotNull final AbstractTableLocationProvider tableLocationProvider,
+                final long refreshIntervalMillis) {
+            super(tableLocationProvider, refreshIntervalMillis);
+            providerSubscriptions.increment(1);
+        }
+
 
         @Override
         protected void refresh() {
@@ -154,6 +163,13 @@ public class ExecutorTableDataRefreshService implements TableDataRefreshService 
     public CancellableSubscriptionToken scheduleTableLocationProviderRefresh(
             @NotNull final AbstractTableLocationProvider tableLocationProvider) {
         return new ScheduledTableLocationProviderRefresh(tableLocationProvider);
+    }
+
+    @Override
+    public CancellableSubscriptionToken scheduleTableLocationProviderRefresh(
+            @NotNull final AbstractTableLocationProvider tableLocationProvider,
+            final long refreshIntervalMillis) {
+        return new ScheduledTableLocationProviderRefresh(tableLocationProvider, refreshIntervalMillis);
     }
 
     @Override

@@ -26,7 +26,7 @@ public abstract class IcebergInstructions {
     public static final IcebergInstructions DEFAULT = builder().build();
 
     @SuppressWarnings("unused")
-    public enum IcebergRefreshing {
+    public enum IcebergUpdateMode {
         STATIC, AUTO_REFRESHING, MANUAL_REFRESHING
     }
 
@@ -52,16 +52,16 @@ public abstract class IcebergInstructions {
     public abstract Map<String, String> columnRenames();
 
     /**
-     * The {@link IcebergRefreshing} mode to use when reading the Iceberg data files. Default is
-     * {@link IcebergRefreshing#STATIC}.
+     * The {@link IcebergUpdateMode} mode to use when reading the Iceberg data files. Default is
+     * {@link IcebergUpdateMode#STATIC}.
      */
     @Value.Default
-    public IcebergRefreshing refreshing() {
-        return IcebergRefreshing.STATIC;
+    public IcebergUpdateMode updateMode() {
+        return IcebergUpdateMode.STATIC;
     }
 
     /**
-     * When {@link #refreshing()} is set to {@code IcebergRefreshing.AUTO_REFRESHING}, specifies the number of
+     * When {@link #updateMode()} is set to {@code IcebergUpdateMode.AUTO_REFRESHING}, specifies the number of
      * milliseconds to wait before refreshing the Iceberg data files. Default is 60_000 milliseconds.
      */
     @Value.Default
@@ -83,7 +83,12 @@ public abstract class IcebergInstructions {
         Builder putAllColumnRenames(Map<String, ? extends String> entries);
 
         @SuppressWarnings("unused")
-        Builder refreshing(IcebergRefreshing refreshing);
+        Builder updateMode(IcebergUpdateMode refreshing);
+
+        @SuppressWarnings("unused")
+        default Builder updateMode(IcebergUpdateMode updateMode, long autoRefreshMs) {
+            return this.updateMode(updateMode).autoRefreshMs(autoRefreshMs);
+        }
 
         @SuppressWarnings("unused")
         Builder autoRefreshMs(long autoRefreshMs);

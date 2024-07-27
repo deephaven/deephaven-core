@@ -41,6 +41,17 @@ public interface TableDataRefreshService {
             @NotNull AbstractTableLocationProvider tableLocationProvider);
 
     /**
+     * Schedule run for an AbstractTableLocationProvider.
+     *
+     * @param tableLocationProvider The table location provider
+     * @param refreshIntervalMs The interval in milliseconds between refreshes
+     * @return A subscription token to be used for matching, which also supports cancellation
+     */
+    CancellableSubscriptionToken scheduleTableLocationProviderRefresh(
+            @NotNull AbstractTableLocationProvider tableLocationProvider,
+            long refreshIntervalMs);
+
+    /**
      * Schedule run for an AbstractTableLocation.
      *
      * @param tableLocation The table location
@@ -123,6 +134,13 @@ public interface TableDataRefreshService {
         @Override
         public CancellableSubscriptionToken scheduleTableLocationProviderRefresh(
                 @NotNull final AbstractTableLocationProvider tableLocationProvider) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public CancellableSubscriptionToken scheduleTableLocationProviderRefresh(
+                @NotNull final AbstractTableLocationProvider tableLocationProvider,
+                final long refreshIntervalMs) {
             throw new UnsupportedOperationException();
         }
 
