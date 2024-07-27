@@ -192,8 +192,9 @@ public class CachedChannelProviderTest {
 
         private final class TestChannelContext implements SeekableChannelContext {
             @Override
-            public @Nullable SafeCloseable apply(Supplier<SafeCloseable> resourceFactory) {
-                throw new UnsupportedOperationException("apply");
+            @Nullable
+            public <T extends SafeCloseable> T getCachedResource(final String key, final Supplier<T> resourceFactory) {
+                throw new UnsupportedOperationException("getCachedResource");
             }
         }
 
@@ -205,6 +206,11 @@ public class CachedChannelProviderTest {
         @Override
         public boolean isCompatibleWith(@NotNull SeekableChannelContext channelContext) {
             return channelContext == SeekableChannelContext.NULL;
+        }
+
+        @Override
+        public boolean exists(@NotNull URI uri) {
+            throw new UnsupportedOperationException("exists");
         }
 
         @Override

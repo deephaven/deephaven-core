@@ -5,7 +5,6 @@ package io.deephaven.engine.util;
 
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.*;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -28,6 +27,7 @@ import io.deephaven.engine.updategraph.LogicalClockImpl;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.vector.IntVector;
 import junit.framework.TestCase;
 import org.junit.Assert;
@@ -68,8 +68,8 @@ public class TestTableTools {
         table2 = testRefreshingTable(TstUtils.i(1, 3, 5, 10, 20, 30, 31, 32, 33).toTracking(),
                 col("StringKeys1", "key1", "key1", "key1", "key1", "key2", "key2", "key2", "key2", "key2"),
                 col("GroupedInts1", 1, 1, 2, 2, 2, 3, 3, 3, 3));
-        emptyTable = testRefreshingTable(col("StringKeys", (Object) CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
-                col("GroupedInts", (Object) CollectionUtil.ZERO_LENGTH_BYTE_ARRAY));
+        emptyTable = testRefreshingTable(col("StringKeys", (Object) ArrayTypeUtils.EMPTY_STRING_ARRAY),
+                col("GroupedInts", (Object) ArrayTypeUtils.EMPTY_BYTE_ARRAY));
     }
 
     @Test

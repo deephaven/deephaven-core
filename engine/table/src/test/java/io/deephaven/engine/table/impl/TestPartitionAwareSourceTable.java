@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
@@ -27,6 +26,7 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.qst.column.Column;
+import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.vector.ObjectVector;
 import org.jetbrains.annotations.NotNull;
 import org.jmock.api.Invocation;
@@ -697,7 +697,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
             }
         });
         assertRowSetEquals(expectedRowSet, SUT.where(INTEGER_COLUMN_DEFINITION.getName() + ">0")
-                .where(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getRowSet());
+                .where(ArrayTypeUtils.EMPTY_STRING_ARRAY).getRowSet());
         assertIsSatisfied();
     }
 

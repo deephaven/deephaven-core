@@ -10,9 +10,10 @@ configurations {
 dependencies {
     implementation project(':server-jetty')
 
-    Classpaths.inheritDagger(project)
+    implementation libs.dagger
+    annotationProcessor libs.dagger.compiler
 
-    Classpaths.inheritGrpcPlatform(project)
+    implementation platform(libs.grpc.bom)
 
     implementation project(':grpc-java:grpc-servlet-jakarta')
     implementation project(':grpc-java:grpc-servlet-websocket-jakarta')
@@ -20,10 +21,14 @@ dependencies {
     runtimeOnly project(':log-to-slf4j')
     runtimeOnly project(':logback-print-stream-globals')
     runtimeOnly project(':logback-logbuffer')
-    Classpaths.inheritLogbackClassic(project)
+    runtimeOnly libs.logback.classic
 
     if (!hasProperty('excludeHotspotImpl')) {
         runtimeOnly project(':hotspot-impl')
+    }
+
+    if (!hasProperty('excludeClockImpl')) {
+        runtimeOnly project(':clock-impl')
     }
 
     if (!hasProperty('excludeSql')) {
@@ -33,6 +38,12 @@ dependencies {
     if (!hasProperty('excludeS3')) {
         runtimeOnly project(':extensions-s3')
         runtimeOnly project(':extensions-iceberg-s3')
+    }
+
+    if (!hasProperty('excludeJson')) {
+        dependencies {
+            runtimeOnly project(':extensions-json-jackson')
+        }
     }
 }
 

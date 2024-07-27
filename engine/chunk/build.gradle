@@ -7,12 +7,13 @@ description 'Engine Chunks: Array-like data structures for dense, efficient data
 
 dependencies {
     api project(':Util')
+    api project(':codec-api:')
     implementation project(':Base')
 
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    testImplementation libs.junit4
 
-    testRuntimeOnly project(':log-to-slf4j'),
-            project(path: ':configs'),
-            project(path: ':test-configs')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly project(':log-to-slf4j')
+    testRuntimeOnly project(path: ':configs')
+    testRuntimeOnly project(path: ':test-configs')
+    testRuntimeOnly libs.slf4j.simple
 }

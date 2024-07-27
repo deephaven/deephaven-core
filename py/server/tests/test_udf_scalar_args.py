@@ -609,9 +609,9 @@ def test_udf(x: {np_type}) -> bool:
         dv = 0.05
         with warnings.catch_warnings(record=True) as w:
             t = empty_table(10).update("X = f(dv, dv)")
-            self.assertEqual(w[-1].category, UserWarning)
-            self.assertRegex(str(w[-1].message), "numpy scalar type.*is used")
-            self.assertEqual(10, t.to_string().count("true"))
+        self.assertEqual(w[-1].category, UserWarning)
+        self.assertRegex(str(w[-1].message), "numpy scalar type.*is used")
+        self.assertEqual(10, t.to_string().count("true"))
 
 
 if __name__ == "__main__":

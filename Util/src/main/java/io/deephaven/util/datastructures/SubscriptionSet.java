@@ -55,7 +55,7 @@ public class SubscriptionSet<LISTENER_TYPE> {
          * Activate this subscription entry. Must hold the lock on the enclosing subscription set.
          */
         public void activate() {
-            Assert.holdsLock(SubscriptionSet.this, "SubscriptionSet.this");
+            Assert.assertion(Thread.holdsLock(SubscriptionSet.this), "Thread.holdsLock(SubscriptionSet.this)");
             active = true;
         }
     }

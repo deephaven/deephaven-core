@@ -20,12 +20,13 @@ public class HasherConfig<T> {
     public final String classPrefix;
     public final String packageGroup;
     public final String packageMiddle;
-    final boolean openAddressed;
     final boolean openAddressedAlternate;
+    final boolean supportTombstones;
     final boolean alwaysMoveMain;
     final String mainStateName;
     final String overflowOrAlternateStateName;
     final String emptyStateName;
+    public final String tombstoneStateName;
     final Class<?> stateType;
     final Consumer<CodeBlock.Builder> moveMainFull;
     final Consumer<CodeBlock.Builder> moveMainAlternate;
@@ -38,13 +39,16 @@ public class HasherConfig<T> {
     final List<BuildSpec> builds;
 
     HasherConfig(Class<T> baseClass, String classPrefix, String packageGroup, String packageMiddle,
-            boolean openAddressed,
-            boolean openAddressedAlternate, boolean alwaysMoveMain,
+            boolean openAddressedAlternate,
+            boolean supportTombstones,
+            boolean alwaysMoveMain,
             boolean includeOriginalSources,
             boolean supportRehash,
             String mainStateName,
             String overflowOrAlternateStateName,
-            String emptyStateName, Class<?> stateType,
+            String emptyStateName,
+            String tombstoneStateName,
+            Class<?> stateType,
             Consumer<CodeBlock.Builder> moveMainFull,
             Consumer<CodeBlock.Builder> moveMainAlternate,
             Consumer<CodeBlock.Builder> rehashFullSetup,
@@ -56,14 +60,15 @@ public class HasherConfig<T> {
         this.classPrefix = classPrefix;
         this.packageGroup = packageGroup;
         this.packageMiddle = packageMiddle;
-        this.openAddressed = openAddressed;
         this.openAddressedAlternate = openAddressedAlternate;
+        this.supportTombstones = supportTombstones;
         this.alwaysMoveMain = alwaysMoveMain;
         this.includeOriginalSources = includeOriginalSources;
         this.supportRehash = supportRehash;
         this.mainStateName = mainStateName;
         this.overflowOrAlternateStateName = overflowOrAlternateStateName;
         this.emptyStateName = emptyStateName;
+        this.tombstoneStateName = tombstoneStateName;
         this.stateType = stateType;
         this.moveMainFull = moveMainFull;
         this.moveMainAlternate = moveMainAlternate;
@@ -113,31 +118,43 @@ public class HasherConfig<T> {
         final String name;
         final String stateValueName;
         final boolean requiresRowKeyChunk;
+        /**
+         * In cases where we know that a partial rehash cannot be occurring; we can simplify the generated code by not
+         * checking for the alternate table.
+         */
         final boolean allowAlternates;
+        /**
+         * In cases where we know that an entry cannot possibly be deleted; we can simplify the generated code by not
+         * checking for tombstones.
+         */
+        final boolean checkDeletions;
         final FoundMethodBuilder found;
         final MethodBuilderWithChunkTypes insert;
         final ParameterSpec[] params;
 
         public BuildSpec(String name, String stateValueName, boolean requiresRowKeyChunk,
-                boolean allowAlternates, FoundMethodBuilder found,
+                boolean allowAlternates, boolean checkDeletions, FoundMethodBuilder found,
                 MethodBuilder insert, ParameterSpec... params) {
             // Convert the MethodBuilder to MethodBuilderWithChunkTypes.
             this(name,
                     stateValueName,
                     requiresRowKeyChunk,
                     allowAlternates,
+                    checkDeletions,
                     found,
                     (config, chunkTypes, builder) -> insert.accept(config, builder),
                     params);
         }
 
         public BuildSpec(String name, String stateValueName, boolean requiresRowKeyChunk,
-                boolean allowAlternates, FoundMethodBuilder found,
-                MethodBuilderWithChunkTypes insert, ParameterSpec... params) {
+                boolean allowAlternates, boolean checkDeletions, FoundMethodBuilder found,
+                MethodBuilderWithChunkTypes insert,
+                ParameterSpec... params) {
             this.name = name;
             this.stateValueName = stateValueName;
             this.requiresRowKeyChunk = requiresRowKeyChunk;
             this.allowAlternates = allowAlternates;
+            this.checkDeletions = checkDeletions;
             this.found = found;
             this.insert = insert;
             this.params = params;
@@ -149,7 +166,7 @@ public class HasherConfig<T> {
         private String classPrefix;
         private String packageGroup;
         private String packageMiddle;
-        private boolean openAddressed = true;
+        private boolean supportTombstones = false;
         private boolean openAddressedAlternate = true;
         private boolean alwaysMoveMain = false;
         private boolean includeOriginalSources = false;
@@ -157,6 +174,7 @@ public class HasherConfig<T> {
         private String mainStateName;
         private String overflowOrAlternateStateName;
         private String emptyStateName;
+        private String tombstoneStateName;
         private Class<?> stateType;
         private Consumer<CodeBlock.Builder> moveMainAlternate;
         private Consumer<CodeBlock.Builder> moveMainFull;
@@ -185,16 +203,13 @@ public class HasherConfig<T> {
             return this;
         }
 
-        public Builder<T> openAddressed(boolean openAddressed) {
-            this.openAddressed = openAddressed;
-            if (!openAddressed) {
-                this.openAddressedAlternate = false;
-            }
+        public Builder<T> openAddressedAlternate(boolean openAddressedAlternate) {
+            this.openAddressedAlternate = openAddressedAlternate;
             return this;
         }
 
-        public Builder<T> openAddressedAlternate(boolean openAddressedAlternate) {
-            this.openAddressedAlternate = openAddressedAlternate;
+        public Builder<T> supportTombstones(boolean supportTombstones) {
+            this.supportTombstones = supportTombstones;
             return this;
         }
 
@@ -225,6 +240,11 @@ public class HasherConfig<T> {
 
         public Builder<T> emptyStateName(String emptyStateName) {
             this.emptyStateName = emptyStateName;
+            return this;
+        }
+
+        public Builder<T> tombstoneStateName(String tombstoneStateName) {
+            this.tombstoneStateName = tombstoneStateName;
             return this;
         }
 
@@ -273,15 +293,16 @@ public class HasherConfig<T> {
             Assert.neqNull(packageGroup, "packageGroup");
             Assert.neqNull(packageMiddle, "packageMiddle");
             Assert.neqNull(mainStateName, "mainStateName");
-            if (openAddressedAlternate || !openAddressed) {
+            if (openAddressedAlternate) {
                 Assert.neqNull(overflowOrAlternateStateName, "overflowOrAlternateStateName");
             }
             Assert.neqNull(emptyStateName, "emptyStateName");
             Assert.neqNull(stateType, "stateType");
 
-            return new HasherConfig<>(baseClass, classPrefix, packageGroup, packageMiddle, openAddressed,
-                    openAddressedAlternate, alwaysMoveMain, includeOriginalSources, supportRehash, mainStateName,
-                    overflowOrAlternateStateName, emptyStateName,
+            return new HasherConfig<>(baseClass, classPrefix, packageGroup, packageMiddle,
+                    openAddressedAlternate, supportTombstones, alwaysMoveMain, includeOriginalSources, supportRehash,
+                    mainStateName,
+                    overflowOrAlternateStateName, emptyStateName, tombstoneStateName,
                     stateType, moveMainFull, moveMainAlternate, rehashFullSetup, extraPartialRehashParameters, probes,
                     builds, extraMethods);
         }

@@ -3,7 +3,6 @@
 //
 package io.deephaven.plot;
 
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.liveness.DelegatingLivenessNode;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessNode;
@@ -68,6 +67,6 @@ public class FigureWidget extends FigureImpl
 
     @ScriptApi
     public void setValidGroups(final Collection<String> validGroups) {
-        setValidGroups(validGroups.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+        setValidGroups(validGroups.toArray(String[]::new));
     }
 }
