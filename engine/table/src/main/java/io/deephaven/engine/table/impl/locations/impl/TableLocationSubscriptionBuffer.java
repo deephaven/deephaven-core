@@ -3,6 +3,7 @@
 //
 package io.deephaven.engine.table.impl.locations.impl;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.table.impl.locations.TableDataException;
@@ -125,11 +126,13 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
     @Override
     public void beginTransaction(@NotNull final Object token) {
         synchronized (updateLock) {
-            // Assert that we can start a new transaction with this token.
-            Require.eqFalse(transactionTokens.contains(token), "transactionTokens.contains(token)");
-            Require.eqFalse(accumulatedLocationsAdded.containsKey(token),
+            // Verify that we can start a new transaction with this token.
+            if (transactionTokens.contains(token)) {
+                throw new IllegalStateException("A transaction with token " + token + " is currently open.");
+            }
+            Assert.eqFalse(accumulatedLocationsAdded.containsKey(token),
                     "accumulatedLocationsAdded.containsKey(token)");
-            Require.eqFalse(accumulatedLocationsRemoved.containsKey(token),
+            Assert.eqFalse(accumulatedLocationsRemoved.containsKey(token),
                     "accumulatedLocationsRemoved.containsKey(token)");
 
             transactionTokens.add(token);
@@ -141,11 +144,13 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
     @Override
     public void endTransaction(@NotNull final Object token) {
         synchronized (updateLock) {
-            // Assert that this transaction is open.
-            Require.eqTrue(transactionTokens.contains(token), "transactionTokens.contains(token)");
+            // Verify that this transaction is open.
+            if (!transactionTokens.remove(token)) {
+                throw new IllegalStateException("No transaction with token " + token + " is currently open.");
+            }
 
-            final Set<ImmutableTableLocationKey> tokenLocationsAdded = accumulatedLocationsAdded.get(token);
-            final Set<ImmutableTableLocationKey> tokenLocationsRemoved = accumulatedLocationsRemoved.get(token);
+            final Set<ImmutableTableLocationKey> tokenLocationsAdded = accumulatedLocationsAdded.remove(token);
+            final Set<ImmutableTableLocationKey> tokenLocationsRemoved = accumulatedLocationsRemoved.remove(token);
 
             if (tokenLocationsRemoved != EMPTY_TABLE_LOCATION_KEYS) {
                 for (final ImmutableTableLocationKey tableLocationKey : tokenLocationsRemoved) {
@@ -181,11 +186,6 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
                     pendingLocationsAdded.add(tableLocationKey);
                 }
             }
-
-            // Clear all the storage for this transaction.
-            transactionTokens.remove(token);
-            accumulatedLocationsAdded.remove(token);
-            accumulatedLocationsRemoved.remove(token);
         }
     }
 

@@ -121,6 +121,9 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
     @ReferentialIntegrity
     private Runnable delayedErrorReference;
 
+    final List<IncludedTableLocationEntry> invalidatedLocations;
+    final UpdateCommitter<?> invalidateCommitter;
+
     /**
      * Construct a column manager with the specified component factory and definitions.
      *
@@ -179,6 +182,14 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
                 rowSetModifiedColumnSet = null;
             }
         }
+
+        invalidatedLocations = new ArrayList<>();
+        invalidateCommitter = new UpdateCommitter<>(this,
+                ExecutionContext.getContext().getUpdateGraph(),
+                (ignored) -> {
+                    invalidatedLocations.forEach(IncludedTableLocationEntry::invalidate);
+                    invalidatedLocations.clear();
+                });
     }
 
     @Override
@@ -223,11 +234,9 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
             orderedIncludedTableLocations.remove(includedLocation);
             removedTableLocations.add(includedLocation);
 
-            final UpdateCommitter<?> committer = new UpdateCommitter<>(this,
-                    ExecutionContext.getContext().getUpdateGraph(),
-                    (ignored) -> includedLocation.invalidate());
-
-            committer.maybeActivate();
+            // Mark this location for invalidation.
+            invalidatedLocations.add(includedLocation);
+            invalidateCommitter.maybeActivate();
             return true;
         }
 
@@ -356,13 +365,13 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
 
         final RowSetBuilderSequential addedRegionBuilder = RowSetFactory.builderSequential();
 
-        final int previousNumRegions = includedTableLocations.size();
-        final int newNumRegions = previousNumRegions + (entriesToInclude == null ? 0 : entriesToInclude.size());
+        final int prevMaxIndex = nextRegionIndex.get();
+        final int maxIndex = nextRegionIndex.get() + (entriesToInclude == null ? 0 : entriesToInclude.size());
         if (entriesToInclude != null) {
             partitioningColumnValueSources.values().forEach(
-                    (final WritableColumnSource<?> wcs) -> wcs.ensureCapacity(newNumRegions));
-            locationSource.ensureCapacity(newNumRegions);
-            rowSetSource.ensureCapacity(newNumRegions);
+                    (final WritableColumnSource<?> wcs) -> wcs.ensureCapacity(maxIndex));
+            locationSource.ensureCapacity(maxIndex);
+            rowSetSource.ensureCapacity(maxIndex);
 
             for (final EmptyTableLocationEntry entryToInclude : entriesToInclude) {
                 final IncludedTableLocationEntry entry = new IncludedTableLocationEntry(entryToInclude);
@@ -389,7 +398,7 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
         }
 
         if (initializing) {
-            Assert.eqZero(previousNumRegions, "previousNumRegions");
+            Assert.eqZero(prevMaxIndex, "previousNumRegions");
             if (isRefreshing) {
                 rowSetSource.startTrackingPrevValues();
                 includedLocationsTable.getRowSet().writableCast().initializePreviousValue();
@@ -401,9 +410,7 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
             final RowSet modifiedRegions = modifiedRegionBuilder.build();
             final RowSet removedRegions = removedRegionBuilder.build();
             if (addedRegions.isEmpty() && modifiedRegions.isEmpty() && removedRegions.isEmpty()) {
-                addedRegions.close();
-                modifiedRegions.close();
-                removedRegions.close();
+                SafeCloseable.closeAll(addedRegions, modifiedRegions, removedRegions);
             } else {
                 includedLocationsTable.getRowSet().writableCast().remove(removedRegions);
                 final TableUpdate update = new TableUpdateImpl(

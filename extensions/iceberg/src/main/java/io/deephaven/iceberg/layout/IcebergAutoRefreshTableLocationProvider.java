@@ -66,17 +66,17 @@ public class IcebergAutoRefreshTableLocationProvider<TK extends TableKey, TLK ex
 
     @Override
     public void update() {
-        throw new IllegalStateException("An automatically refreshing Iceberg table cannot be updated manually");
+        throw new IllegalStateException("An automatically refreshing Iceberg table cannot be manually updated");
     }
 
     @Override
     public void update(long snapshotId) {
-        throw new IllegalStateException("An automatically refreshing Iceberg table cannot be updated");
+        throw new IllegalStateException("An automatically refreshing Iceberg table cannot be manually updated");
     }
 
     @Override
     public void update(Snapshot snapshot) {
-        throw new IllegalStateException("An automatically refreshing Iceberg table cannot be updated");
+        throw new IllegalStateException("An automatically refreshing Iceberg table cannot be manually updated");
     }
 
     /**

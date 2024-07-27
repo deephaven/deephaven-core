@@ -56,10 +56,14 @@ public interface TableLocationProvider extends NamedImplementation {
         }
 
         /**
+         * <p>
          * Notify the listener of a {@link TableLocationKey} encountered while initiating or maintaining the location
          * subscription. This should occur at most once per location, but the order of delivery is <i>not</i>
          * guaranteed.
-         *
+         * </p>
+         * <p>
+         * If transactionToken is {@code null}, the key will be added to the pending additions immediately.
+         * </p>
          * @param tableLocationKey The new table location key.
          * @param transactionToken The token identifying the transaction.
          */
@@ -79,7 +83,12 @@ public interface TableLocationProvider extends NamedImplementation {
         }
 
         /**
+         * <p>
          * Notify the listener of a {@link TableLocationKey} that has been removed.
+         * </p>
+         * <p>
+         * If transactionToken is {@code null}, the key will be added to the pending removals immediately.
+         * </p>
          *
          * @param tableLocationKey The table location key that was removed.
          * @param transactionToken The token identifying the transaction.
@@ -93,6 +102,7 @@ public interface TableLocationProvider extends NamedImplementation {
          *
          * @param tableLocationKey The table location key that was removed.
          */
+        @SuppressWarnings("unused")
         default void handleTableLocationKeyRemoved(@NotNull ImmutableTableLocationKey tableLocationKey) {
             handleTableLocationKeyRemoved(tableLocationKey, this);
         }
