@@ -1127,7 +1127,7 @@ class TableTestCase(BaseTestCase):
         with self.subTest("diff"):
             t1 = empty_table(10).update(["A = i", "B = i", "C = i"])
             t2 = empty_table(10).update(["A = i", "B = i % 2 == 0? i: i + 1", "C = i % 2 == 0? i + 1: i"])
-            d = table_diff(t1, t2, max_lines=10).split("\n")
+            d = table_diff(t1, t2, max_diffs=10).split("\n")
             self.assertEqual(len(d), 3)
             self.assertIn("row 1", d[0])
             self.assertIn("row 0", d[1])
@@ -1138,53 +1138,48 @@ class TableTestCase(BaseTestCase):
         with self.subTest("diff - ignore column order"):
             t1 = empty_table(10).update(["A = i", "B = i + 1"])
             t2 = empty_table(10).update(["B = i + 1", "A = i"])
-            d = table_diff(t1, t2, max_lines=10).split("\n")
+            d = table_diff(t1, t2, max_diffs=10).split("\n")
             self.assertEqual(len(d), 3)
 
             t1 = empty_table(10).update(["A = i", "B = i"])
             t2 = empty_table(10).update(["B = i", "A = i"])
-            d = table_diff(t1, t2, max_lines=10, ignore_column_order=True)
+            d = table_diff(t1, t2, max_diffs=10, ignore_column_order=True)
             self.assertEqual(d, "")
 
-        with self.subTest("diff - floating_inexact-double"):
+        with self.subTest("diff - floating_comparison = 'absolute' - double"):
             t1 = empty_table(10).update(["A = i", "B = i + 1.0"])
             t2 = empty_table(10).update(["A = i", "B = i + 1.00001"])
-            d = table_diff(t1, t2, max_lines=10, floating_inexact=False).split("\n")
+            d = table_diff(t1, t2, max_diffs=10, floating_comparison='exact').split("\n")
             self.assertEqual(len(d), 2)
 
             t1 = empty_table(10).update(["A = i", "B = i + 1.0"])
             t2 = empty_table(10).update(["A = i", "B = i + 1.00001"])
-            d = table_diff(t1, t2, max_lines=10, floating_inexact=True)
+            d = table_diff(t1, t2, max_diffs=10, floating_comparison='absolute')
             self.assertEqual(d, "")
 
-        with self.subTest("diff - floating_inexact-float"):
+        with self.subTest("diff - floating_comparison = 'absolute'-float"):
             t1 = empty_table(10).update(["A = i", "B = (float)(i + 1.0)"])
             t2 = empty_table(10).update(["A = i", "B = (float)(i + 1.005)"])
-            d = table_diff(t1, t2, max_lines=10, floating_inexact=False).split("\n")
+            d = table_diff(t1, t2, max_diffs=10, floating_comparison='exact').split("\n")
             self.assertEqual(len(d), 2)
 
             t1 = empty_table(10).update(["A = i", "B = (float)(i + 1.0)"])
             # 1.005 would cause the difference to be greater than 0.005, something like 0.00500001144
             t2 = empty_table(10).update(["A = i", "B = (float)(i + 1.004999)"])
-            d = table_diff(t1, t2, max_lines=10, floating_inexact=True)
+            d = table_diff(t1, t2, max_diffs=10, floating_comparison='absolute')
             self.assertEqual(d, "")
 
-        with self.subTest("diff - floating_fraction-double"):
+        with self.subTest("diff - floating_comparison='relative'-double"):
             t1 = empty_table(10).update(["A = i", "B = i + 1.0"])
             t2 = empty_table(10).update(["A = i", "B = i + 1.00001"])
-            with self.assertRaises(DHError):
-                d = table_diff(t1, t2, max_lines=10, floating_inexact=False, floating_fraction=True).split("\n")
-
-            t1 = empty_table(10).update(["A = i", "B = i + 1.0"])
-            t2 = empty_table(10).update(["A = i", "B = i + 1.00001"])
-            d = table_diff(t1, t2, max_lines=10, floating_inexact=True, floating_fraction=True)
+            d = table_diff(t1, t2, max_diffs=10, floating_comparison='relative')
             self.assertEqual(d, "")
 
-        with self.subTest("diff - floating_fraction-float"):
+        with self.subTest("diff - floating_comparison='relative'-float"):
             t1 = empty_table(10).update(["A = i", "B = (float)(i + 1.0)"])
             t2 = empty_table(10).update(["A = i", "B = (float)(i + 1.005)"])
-            d = table_diff(t1, t2, max_lines=10, floating_inexact=True, floating_fraction=True)
-            self.assertEqual(d, "")
+            d = table_diff(t1, t2, max_diffs=10, floating_comparison='relative')
+            self.assertFalse(d)
 
 
 if __name__ == "__main__":
