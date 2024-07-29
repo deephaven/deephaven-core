@@ -3,6 +3,12 @@
 //
 package io.deephaven.extensions.s3;
 
+import edu.colorado.cires.cmg.s3out.AwsS3ClientMultipartUpload;
+import edu.colorado.cires.cmg.s3out.ContentTypeResolver;
+import edu.colorado.cires.cmg.s3out.MultipartUploadRequest;
+import edu.colorado.cires.cmg.s3out.NoContentTypeResolver;
+import edu.colorado.cires.cmg.s3out.S3ClientMultipartUpload;
+import edu.colorado.cires.cmg.s3out.S3OutputStream;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
@@ -15,6 +21,7 @@ import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
+import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3Uri;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
@@ -24,11 +31,11 @@ import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.ref.SoftReference;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -55,11 +62,16 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
     private static final int MAX_KEYS_PER_BATCH = 1000;
     private static final int UNKNOWN_SIZE = -1;
+    private static final ContentTypeResolver NO_CONTENT_TYPE_RESOLVER = new NoContentTypeResolver();
 
     private static final Logger log = LoggerFactory.getLogger(S3SeekableChannelProvider.class);
 
     private final S3AsyncClient s3AsyncClient;
     private final S3Instructions s3Instructions;
+
+    // Initialized lazily when needed
+    private S3ClientMultipartUpload s3MultipartUploader;
+    private S3Client s3Client;
 
     /**
      * A shared cache for S3 requests. This cache is shared across all S3 channels created by this provider.
@@ -74,7 +86,7 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     private volatile SoftReference<Map<URI, FileSizeInfo>> fileSizeCacheRef;
 
     S3SeekableChannelProvider(@NotNull final S3Instructions s3Instructions) {
-        this.s3AsyncClient = S3AsyncClientFactory.getAsyncClient(s3Instructions);
+        this.s3AsyncClient = S3ClientFactory.getAsyncClient(s3Instructions);
         this.s3Instructions = s3Instructions;
         this.sharedCache = new S3RequestCache(s3Instructions.fragmentSize());
         this.fileSizeCacheRef = new SoftReference<>(new KeyedObjectHashMap<>(FileSizeInfo.URI_MATCH_KEY));
@@ -131,7 +143,35 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
     @Override
     public SeekableByteChannel getWriteChannel(@NotNull final URI uri, final boolean append) {
-        throw new UnsupportedOperationException("Writing to S3 is currently unsupported");
+        throw new UnsupportedOperationException("Creating write channels for S3 is currently unsupported, use " +
+                "getOutputStream instead");
+    }
+
+    @Override
+    public OutputStream getOutputStream(@NotNull final URI uri, final boolean append, final int bufferSizeHint) {
+        // S3OutputStream internally splits data into parts, so no need to re-buffer
+        // TODO Use bufferSizeHint as part size
+        if (append) {
+            throw new UnsupportedOperationException("Appending to S3 is currently unsupported");
+        }
+        if (s3Client == null) {
+            s3Client = S3ClientFactory.getClient(s3Instructions);
+            s3MultipartUploader = AwsS3ClientMultipartUpload.builder()
+                    .s3(s3Client)
+                    .contentTypeResolver(NO_CONTENT_TYPE_RESOLVER)
+                    .build();
+        }
+        final S3Uri s3Uri = s3Client.utilities().parseUri(uri);
+        return S3OutputStream.builder()
+                .s3(s3MultipartUploader)
+                .uploadRequest(MultipartUploadRequest.builder()
+                        .bucket(s3Uri.bucket().orElseThrow())
+                        .key(s3Uri.key().orElseThrow())
+                        .build())
+                .partSizeMib(5) // Can tweak this for performance
+                .uploadQueueSize(1)
+                .autoComplete(true) // Do better handling of errors
+                .build();
     }
 
     @Override

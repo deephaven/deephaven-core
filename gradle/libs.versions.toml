@@ -4,6 +4,7 @@ arrow = "13.0.0"
 autoservice = "1.1.1"
 avro = "1.11.3"
 awssdk = "2.24.5"
+s3-outputstream="1.1.2"
 # See dependency matrix for particular gRPC versions at https://github.com/grpc/grpc-java/blob/master/SECURITY.md#netty
 boringssl = "2.0.61.Final"
 calcite = "1.37.0"
@@ -109,6 +110,8 @@ awssdk-glue = { module = "software.amazon.awssdk:glue" }
 awssdk-s3 = { module = "software.amazon.awssdk:s3" }
 awssdk-s3-transfer-manager = { module = "software.amazon.awssdk:s3-transfer-manager" }
 awssdk-sts = { module = "software.amazon.awssdk:sts" }
+
+aws-s3-outputstream = { module = "io.github.ci-cmg:aws-s3-outputstream", version.ref = "s3-outputstream" }
 
 boringssl = { module = "io.netty:netty-tcnative-boringssl-static", version.ref = "boringssl" }
 

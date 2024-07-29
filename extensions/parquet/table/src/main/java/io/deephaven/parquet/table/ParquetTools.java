@@ -739,7 +739,8 @@ public class ParquetTools {
                 throw new IllegalArgumentException("Metadata root directory must be set when writing metadata files");
             }
             metadataFileWriter =
-                    new ParquetMetadataFileWriterImpl(metadataRootDir, destinations, partitioningColumnsSchema);
+                    new ParquetMetadataFileWriterImpl(metadataRootDir, destinations, partitioningColumnsSchema,
+                            writeInstructions);
         } else {
             metadataFileWriter = NullParquetMetadataFileWriter.INSTANCE;
         }

@@ -405,7 +405,8 @@ public class ParquetTableWriter {
         final Map<String, String> extraMetaData = new HashMap<>(tableMeta);
         extraMetaData.put(METADATA_KEY, tableInfoBuilder.build().serializeToJSON());
         return new ParquetFileWriter(dest, destForMetadata,
-                SeekableChannelsProviderLoader.getInstance().fromServiceLoader(dest, null),
+                SeekableChannelsProviderLoader.getInstance().fromServiceLoader(dest,
+                        writeInstructions.getSpecialInstructions()),
                 writeInstructions.getTargetPageSize(), new HeapByteBufferAllocator(), mappedSchema.getParquetSchema(),
                 writeInstructions.getCompressionCodecName(), extraMetaData, metadataFileWriter);
     }

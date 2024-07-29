@@ -6,12 +6,13 @@ package io.deephaven.util.channel;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
+import java.nio.channels.Channels;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.stream.Stream;
 
 import static io.deephaven.base.FileUtils.convertToURI;
@@ -97,6 +98,20 @@ public interface SeekableChannelsProvider extends SafeCloseable {
     }
 
     SeekableByteChannel getWriteChannel(@NotNull URI uri, boolean append) throws IOException;
+
+    /**
+     * Creates an {@link OutputStream} to write to the given URI. The caller is responsible for closing the stream.
+     *
+     * @param uri the URI to write to
+     * @param append whether to append to the file if it already exists
+     * @param bufferSizeHint the number of bytes the caller expects to buffer before flushing
+     * @return the output stream
+     * @throws IOException if an IO exception occurs
+     */
+    default OutputStream getOutputStream(@NotNull final URI uri, boolean append, int bufferSizeHint)
+            throws IOException {
+        return new BufferedOutputStream(Channels.newOutputStream(getWriteChannel(uri, append)), bufferSizeHint);
+    }
 
     /**
      * Returns a stream of URIs, the elements of which are the entries in the directory. The listing is non-recursive.

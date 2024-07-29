@@ -66,18 +66,36 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
     public final void readSingleParquetFile()
             throws IOException, ExecutionException, InterruptedException, TimeoutException {
         final Table table = getTable(500_000);
-        final File dest = new File(folder.newFolder(), "table.parquet");
-        ParquetTools.writeTable(table, dest.getAbsolutePath());
-        putObject("table.parquet", AsyncRequestBody.fromFile(dest));
-
         final URI uri = uri("table.parquet");
-        final ParquetInstructions readInstructions = ParquetInstructions.builder()
+        final ParquetInstructions instructions = ParquetInstructions.builder()
                 .setSpecialInstructions(s3Instructions(
                         S3Instructions.builder()
                                 .readTimeout(Duration.ofSeconds(10)))
                         .build())
                 .build();
-        final Table fromS3 = ParquetTools.readTable(uri.toString(), readInstructions);
+
+        // Write the table to S3 using the test async client
+        final File dest = new File(folder.newFolder(), "table.parquet");
+        ParquetTools.writeTable(table, dest.getAbsolutePath());
+        putObject("table.parquet", AsyncRequestBody.fromFile(dest));
+        final Table fromS3 = ParquetTools.readTable(uri.toString(), instructions);
+        assertTableEquals(table, fromS3);
+    }
+
+    @Test
+    public final void readWriteSingleParquetFile() {
+        final Table table = getTable(500_000);
+        final URI uri = uri("table.parquet");
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .setSpecialInstructions(s3Instructions(
+                        S3Instructions.builder()
+                                .readTimeout(Duration.ofSeconds(10)))
+                        .build())
+                .build();
+
+        // Write the table to S3 using ParquetTools write API
+        ParquetTools.writeTable(table, uri.toString(), instructions);
+        final Table fromS3 = ParquetTools.readTable(uri.toString(), instructions);
         assertTableEquals(table, fromS3);
     }
 
@@ -192,6 +210,33 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
         } catch (final TableDataException expected) {
             assertTrue(expected.getMessage().contains("metadata"));
         }
+    }
+
+    @Test
+    public void readWriteKeyValuePartitionedParquetData() throws IOException {
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofInt("PC1").withPartitioning(),
+                ColumnDefinition.ofInt("PC2").withPartitioning(),
+                ColumnDefinition.ofInt("someIntColumn"),
+                ColumnDefinition.ofString("someStringColumn"));
+        final Table table = ((QueryTable) TableTools.emptyTable(500_000)
+                .updateView("PC1 = (int)(ii%3)",
+                        "PC2 = (int)(ii%2)",
+                        "someIntColumn = (int) i",
+                        "someStringColumn = String.valueOf(i)"))
+                .withDefinitionUnsafe(definition);
+        final URI uri = uri("keyValuePartitionedDataDir");
+        final ParquetInstructions instructions = ParquetInstructions.builder()
+                .setSpecialInstructions(s3Instructions(
+                        S3Instructions.builder()
+                                .readTimeout(Duration.ofSeconds(10)))
+                        .build())
+                .setTableDefinition(definition)
+                .setBaseNameForPartitionedParquetData("data")
+                .build();
+        writeKeyValuePartitionedTable(table, uri.toString(), instructions);
+        final Table fromS3 = ParquetTools.readTable(uri.toString(), instructions);
+        assertTableEquals(table.sort("PC1", "PC2"), fromS3.sort("PC1", "PC2"));
     }
 
     @Test

@@ -7,11 +7,11 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.parquet.base.ParquetFileWriter;
 import io.deephaven.parquet.base.ParquetMetadataFileWriter;
 import io.deephaven.parquet.base.ParquetUtils;
-import io.deephaven.parquet.base.PositionedBufferedOutputStream;
 import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderLoader;
+import org.apache.commons.io.output.CountingOutputStream;
 import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.hadoop.metadata.FileMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
@@ -30,6 +30,7 @@ import java.util.Map;
 
 import static io.deephaven.parquet.base.ParquetUtils.MAGIC;
 import static io.deephaven.parquet.base.ParquetUtils.METADATA_KEY;
+import static io.deephaven.parquet.base.ParquetUtils.PARQUET_OUTPUT_BUFFER_SIZE;
 import static io.deephaven.parquet.base.ParquetUtils.getPerFileMetadataKey;
 
 /**
@@ -77,7 +78,8 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
     ParquetMetadataFileWriterImpl(
             @NotNull final URI metadataRootDir,
             @NotNull final URI[] destinations,
-            @Nullable final MessageType partitioningColumnsSchema) {
+            @Nullable final MessageType partitioningColumnsSchema,
+            @NotNull final ParquetInstructions writeInstructions) {
         if (destinations.length == 0) {
             throw new IllegalArgumentException("No destinations provided");
         }
@@ -90,7 +92,8 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
             }
         }
         this.parquetFileMetadataList = new ArrayList<>(destinations.length);
-        this.channelsProvider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(metadataRootDir, null);
+        this.channelsProvider = SeekableChannelsProviderLoader.getInstance().fromServiceLoader(metadataRootDir,
+                writeInstructions.getSpecialInstructions());
         this.partitioningColumnsSchema = partitioningColumnsSchema;
 
         this.mergedSchema = null;
@@ -252,9 +255,8 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
     }
 
     private void writeMetadataFile(final ParquetMetadata metadataFooter, final URI dest) throws IOException {
-        final PositionedBufferedOutputStream metadataOutputStream =
-                new PositionedBufferedOutputStream(channelsProvider.getWriteChannel(dest, false),
-                        ParquetUtils.PARQUET_OUTPUT_BUFFER_SIZE);
+        final CountingOutputStream metadataOutputStream =
+                new CountingOutputStream(channelsProvider.getOutputStream(dest, false, PARQUET_OUTPUT_BUFFER_SIZE));
         metadataOutputStream.write(MAGIC);
         ParquetFileWriter.serializeFooter(metadataFooter, metadataOutputStream);
         metadataOutputStream.close();
