@@ -550,7 +550,8 @@ public class IcebergCatalogAdapter {
                     userInstructions);
         }
 
-        if (instructions.updateMode() == IcebergInstructions.IcebergUpdateMode.STATIC) {
+        if (instructions == null
+                || instructions.updateMode().updateType() == IcebergUpdateMode.IcebergUpdateType.STATIC) {
             final IcebergTableLocationProviderBase<TableKey, IcebergTableLocationKey> locationProvider =
                     new IcebergStaticTableLocationProvider<>(
                             StandaloneTableKey.getInstance(),
@@ -569,7 +570,7 @@ public class IcebergCatalogAdapter {
         final UpdateSourceRegistrar updateSourceRegistrar = ExecutionContext.getContext().getUpdateGraph();
         final IcebergTableLocationProviderBase<TableKey, IcebergTableLocationKey> locationProvider;
 
-        if (instructions.updateMode() == IcebergInstructions.IcebergUpdateMode.MANUAL_REFRESHING) {
+        if (instructions.updateMode().updateType() == IcebergUpdateMode.IcebergUpdateType.MANUAL_REFRESHING) {
             locationProvider = new IcebergManualRefreshTableLocationProvider<>(
                     StandaloneTableKey.getInstance(),
                     keyFinder,
@@ -582,7 +583,7 @@ public class IcebergCatalogAdapter {
                     keyFinder,
                     new IcebergTableLocationFactory(),
                     TableDataRefreshService.getSharedRefreshService(),
-                    instructions.autoRefreshMs(),
+                    instructions.updateMode().autoRefreshMs(),
                     this,
                     tableIdentifier);
         }

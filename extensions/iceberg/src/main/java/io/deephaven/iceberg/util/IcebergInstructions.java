@@ -25,11 +25,6 @@ public abstract class IcebergInstructions {
     @SuppressWarnings("unused")
     public static final IcebergInstructions DEFAULT = builder().build();
 
-    @SuppressWarnings("unused")
-    public enum IcebergUpdateMode {
-        STATIC, AUTO_REFRESHING, MANUAL_REFRESHING
-    }
-
     public static Builder builder() {
         return ImmutableIcebergInstructions.builder();
     }
@@ -60,15 +55,6 @@ public abstract class IcebergInstructions {
         return IcebergUpdateMode.STATIC;
     }
 
-    /**
-     * When {@link #updateMode()} is set to {@code IcebergUpdateMode.AUTO_REFRESHING}, specifies the number of
-     * milliseconds to wait before refreshing the Iceberg data files. Default is 60_000 milliseconds.
-     */
-    @Value.Default
-    public long autoRefreshMs() {
-        return 60_000L; // 60 second default
-    }
-
     public interface Builder {
         @SuppressWarnings("unused")
         Builder tableDefinition(TableDefinition tableDefinition);
@@ -84,14 +70,6 @@ public abstract class IcebergInstructions {
 
         @SuppressWarnings("unused")
         Builder updateMode(IcebergUpdateMode refreshing);
-
-        @SuppressWarnings("unused")
-        default Builder updateMode(IcebergUpdateMode updateMode, long autoRefreshMs) {
-            return this.updateMode(updateMode).autoRefreshMs(autoRefreshMs);
-        }
-
-        @SuppressWarnings("unused")
-        Builder autoRefreshMs(long autoRefreshMs);
 
         IcebergInstructions build();
     }

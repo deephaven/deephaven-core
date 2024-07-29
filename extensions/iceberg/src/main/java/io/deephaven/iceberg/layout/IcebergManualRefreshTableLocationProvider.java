@@ -77,9 +77,9 @@ public class IcebergManualRefreshTableLocationProvider<TK extends TableKey, TLK 
         // Verify that the input snapshot is newer (higher in sequence number) than the current snapshot.
         if (snapshot.sequenceNumber() <= locationKeyFinder.snapshot.sequenceNumber()) {
             throw new IllegalArgumentException(
-                    "Snapshot sequence number " + snapshot.sequenceNumber()
-                            + " must be higher than the current snapshot sequence number "
-                            + locationKeyFinder.snapshot.sequenceNumber() + " for table " + tableIdentifier);
+                    "Update snapshot sequence number (" + snapshot.sequenceNumber()
+                            + ") must be higher than the current snapshot sequence number ("
+                            + locationKeyFinder.snapshot.sequenceNumber() + ") for table " + tableIdentifier);
         }
         // Update the snapshot.
         locationKeyFinder.snapshot = snapshot;

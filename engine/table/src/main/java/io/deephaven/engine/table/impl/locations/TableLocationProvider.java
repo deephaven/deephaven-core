@@ -64,6 +64,7 @@ public interface TableLocationProvider extends NamedImplementation {
          * <p>
          * If transactionToken is {@code null}, the key will be added to the pending additions immediately.
          * </p>
+         * 
          * @param tableLocationKey The new table location key.
          * @param transactionToken The token identifying the transaction.
          */
