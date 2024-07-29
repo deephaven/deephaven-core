@@ -2,6 +2,7 @@
 # Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
 """ This module adds Iceberg table support into Deephaven. """
+from __future__ import annotations
 from typing import List, Optional, Union, Dict, Sequence
 
 import jpy
@@ -17,7 +18,9 @@ from deephaven.jcompat import j_table_definition
 from deephaven.table import Table
 
 _JIcebergInstructions = jpy.get_type("io.deephaven.iceberg.util.IcebergInstructions")
+_JIcebergUpdateMode = jpy.get_type("io.deephaven.iceberg.util.IcebergUpdateMode")
 _JIcebergCatalogAdapter = jpy.get_type("io.deephaven.iceberg.util.IcebergCatalogAdapter")
+_JIcebergTable = jpy.get_type("io.deephaven.iceberg.util.IcebergTable")
 
 # IcebergToolsS3 is an optional library
 try:
@@ -28,6 +31,39 @@ except Exception:
 _JNamespace = jpy.get_type("org.apache.iceberg.catalog.Namespace")
 _JTableIdentifier = jpy.get_type("org.apache.iceberg.catalog.TableIdentifier")
 _JSnapshot = jpy.get_type("org.apache.iceberg.Snapshot")
+
+
+class IcebergUpdateMode(JObjectWrapper):
+    """
+    This class specifies the update mode for the Iceberg table to be loaded into Deephaven. The modes are:
+
+    - `STATIC`: The table is loaded once and does not change
+    - `MANUAL_REFRESHING`: The table can be manually refreshed by the user.
+    - `AUTO_REFRESHING`: The table will be automatically refreshed at a specified interval (use
+            `auto_refreshing(auto_refresh_ms: int)` to specify an interval rather than use the system default
+            of 60 seconds).
+    """
+    j_object_type = _JIcebergUpdateMode
+
+    def __init__(self, mode: _JIcebergUpdateMode):
+        self._j_object = mode
+
+    @classmethod
+    def auto_refreshing(cls, auto_refresh_ms: int) -> IcebergUpdateMode:
+        """
+        Creates an IcebergUpdateMode with auto-refreshing mode enabled using the provided refresh interval.
+
+        :param auto_refresh_ms (int): the refresh interval in milliseconds.
+        """
+        return IcebergUpdateMode(_JIcebergUpdateMode.autoRefreshing(auto_refresh_ms))
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self._j_object
+
+IcebergUpdateMode.STATIC=IcebergUpdateMode(_JIcebergUpdateMode.STATIC)
+IcebergUpdateMode.MANUAL_REFRESHING=IcebergUpdateMode(_JIcebergUpdateMode.MANUAL_REFRESHING)
+IcebergUpdateMode.AUTO_REFRESHING=IcebergUpdateMode(_JIcebergUpdateMode.AUTO_REFRESHING)
 
 
 class IcebergInstructions(JObjectWrapper):
@@ -41,7 +77,8 @@ class IcebergInstructions(JObjectWrapper):
     def __init__(self,
                  table_definition: Optional[Union[Dict[str, DType], List[Column]]] = None,
                  data_instructions: Optional[s3.S3Instructions] = None,
-                 column_renames: Optional[Dict[str, str]] = None):
+                 column_renames: Optional[Dict[str, str]] = None,
+                 update_mode: Optional[IcebergUpdateMode] = None):
         """
         Initializes the instructions using the provided parameters.
 
@@ -53,6 +90,8 @@ class IcebergInstructions(JObjectWrapper):
                 reading files from a non-local file system, like S3.
             column_renames (Optional[Dict[str, str]]): A dictionary of old to new column names that will be renamed in
                 the output table.
+            update_mode (Optional[IcebergUpdateMode]): The update mode for the table. If omitted, the default update
+                mode of `IcebergUpdateMode.STATIC` is used.
 
         Raises:
             DHError: If unable to build the instructions object.
@@ -71,6 +110,9 @@ class IcebergInstructions(JObjectWrapper):
                 for old_name, new_name in column_renames.items():
                     builder.putColumnRenames(old_name, new_name)
 
+            if update_mode is not None:
+                builder.updateMode(update_mode.j_object)
+
             self._j_object = builder.build()
         except Exception as e:
             raise DHError(e, "Failed to build Iceberg instructions") from e
@@ -78,6 +120,36 @@ class IcebergInstructions(JObjectWrapper):
     @property
     def j_object(self) -> jpy.JType:
         return self._j_object
+
+
+class IcebergTable(Table):
+    """
+    IcebergTable is a subclass of Table that allows the users to dynamically update the table with new snapshots from
+    the Iceberg catalog.
+    """
+    j_object_type = _JIcebergTable
+
+    def __init__(self, j_table: jpy.JType):
+        super().__init__(j_table)
+
+    def update(self, snapshot_id:Optional[int] = None):
+        """
+        Updates the table with a specific snapshot. If no snapshot is provided, the most recent snapshot is used.
+
+        NOTE: this method is only valid when the table is in `MANUAL_REFRESHING` mode. `STATIC` and `AUTO_REFRESHING`
+        Iceberg tables cannot be updated manually and will throw an exception if this method is called.
+
+        Args:
+            snapshot_id (Optional[int]): the snapshot id to update to; if omitted the most recent snapshot will be used.
+        """
+        if snapshot_id is not None:
+            self.j_object.update(snapshot_id)
+            return
+        self.j_object.update()
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_table
 
 
 class IcebergCatalogAdapter(JObjectWrapper):
@@ -135,7 +207,7 @@ class IcebergCatalogAdapter(JObjectWrapper):
 
         return self.j_object.listSnapshotsAsTable(table_identifier)
 
-    def read_table(self, table_identifier: str, instructions: Optional[IcebergInstructions] = None, snapshot_id: Optional[int] = None) -> Table:
+    def read_table(self, table_identifier: str, instructions: Optional[IcebergInstructions] = None, snapshot_id: Optional[int] = None) -> IcebergTable:
         """
         Reads the table from the catalog using the provided instructions. Optionally, a snapshot id can be provided to
         read a specific snapshot of the table.
@@ -157,8 +229,8 @@ class IcebergCatalogAdapter(JObjectWrapper):
             instructions_object = _JIcebergInstructions.DEFAULT
 
         if snapshot_id is not None:
-            return Table(self.j_object.readTable(table_identifier, snapshot_id, instructions_object))
-        return Table(self.j_object.readTable(table_identifier, instructions_object))
+            return IcebergTable(self.j_object.readTable(table_identifier, snapshot_id, instructions_object))
+        return IcebergTable(self.j_object.readTable(table_identifier, instructions_object))
 
     @property
     def j_object(self) -> jpy.JType:

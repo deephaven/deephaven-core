@@ -9,14 +9,15 @@ import org.immutables.value.Value;
 @Value.Immutable
 @BuildableStyle
 public abstract class IcebergUpdateMode {
-    public static final IcebergUpdateMode STATIC = builder()
-            .updateType(IcebergUpdateType.STATIC).build();
+    private static final long REFRESH_INTERVAL_MS = 60_000L;
+
+    public static final IcebergUpdateMode STATIC = builder().updateType(IcebergUpdateType.STATIC).build();
     @SuppressWarnings("unused")
-    public static final IcebergUpdateMode AUTO_REFRESHING = builder()
-            .updateType(IcebergUpdateType.AUTO_REFRESHING).build();
+    public static final IcebergUpdateMode AUTO_REFRESHING =
+            builder().updateType(IcebergUpdateType.AUTO_REFRESHING).build();
     @SuppressWarnings("unused")
-    public static final IcebergUpdateMode MANUAL_REFRESHING = builder()
-            .updateType(IcebergUpdateType.MANUAL_REFRESHING).build();
+    public static final IcebergUpdateMode MANUAL_REFRESHING =
+            builder().updateType(IcebergUpdateType.MANUAL_REFRESHING).build();
 
     public enum IcebergUpdateType {
         STATIC, AUTO_REFRESHING, MANUAL_REFRESHING
@@ -41,7 +42,7 @@ public abstract class IcebergUpdateMode {
 
     @Value.Default
     public long autoRefreshMs() {
-        return 60_000L;
+        return REFRESH_INTERVAL_MS;
     }
 
     public interface Builder {
