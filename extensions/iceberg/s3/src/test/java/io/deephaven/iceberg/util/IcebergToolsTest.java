@@ -168,7 +168,7 @@ public abstract class IcebergToolsTest {
         Table table = adapter.listSnapshotsAsTable(tableIdentifier);
         Assert.eq(table.size(), "table.size()", 4, "4 snapshots for sales/sales_multi");
         Assert.eqTrue(table.getColumnSource("Id").getType().equals(long.class), "id column type");
-        Assert.eqTrue(table.getColumnSource("TimestampMs").getType().equals(long.class), "timestamp_ms column type");
+        Assert.eqTrue(table.getColumnSource("Timestamp").getType().equals(Instant.class), "timestamp column type");
         Assert.eqTrue(table.getColumnSource("Operation").getType().equals(String.class), "operation column type");
         Assert.eqTrue(table.getColumnSource("Summary").getType().equals(Map.class), "summary column type");
         Assert.eqTrue(table.getColumnSource("SnapshotObject").getType().equals(Snapshot.class),
