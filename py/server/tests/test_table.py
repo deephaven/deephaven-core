@@ -553,14 +553,12 @@ class TableTestCase(BaseTestCase):
         self.assertEqual(1 + len(self.test_table.columns), len(snapshot_hist.columns))
         self.assertEqual(self.test_table.size, snapshot_hist.size)
 
-        with self.assertRaises(DHError) as cm:
-            def gen_label() -> str:
-                return random.choice(["Denver", "New York", "Chicago", "Boise"])
-
-            preds, preds_publisher = table_publisher("AIOutput", {"Timestamp": dtypes.Instant, "Label": dtypes.string,
-                                                                  "Pred": dtypes.float64})
-            preds.snapshot_when(trigger_table=preds, stamp_cols=[], history=True)
-        self.assertIn("must be append-only", cm.exception.root_cause)
+        t = time_table("PT0.1S").update("X = i % 2 == 0 ? i : i - 1").sort("X").tail(10)
+        with update_graph.shared_lock(t):
+            snapshot_hist = self.test_table.snapshot_when(t, history=True)
+            self.assertFalse(snapshot_hist.j_table.isFailed())
+        self.wait_ticking_table_update(t, row_count=10, timeout=2)
+        self.assertTrue(snapshot_hist.j_table.isFailed())
 
     def test_agg_all_by(self):
         test_table = empty_table(10)
