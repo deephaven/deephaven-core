@@ -525,19 +525,19 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
 
         // Refresh them
         setSizeExpectations(true, true, 5, 1000);
-        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh()));
+        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh().added()));
         checkIndexes();
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A), SUT.includedLocations());
 
         // Refresh them with no change
         setSizeExpectations(true, true, 5, 1000);
-        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh()));
+        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh().added()));
         checkIndexes();
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A), SUT.includedLocations());
 
         // Refresh them with a change for the subscription-supporting one
         setSizeExpectations(true, true, 5, 1001);
-        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh()));
+        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh().added()));
         checkIndexes();
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A), SUT.includedLocations());
 
@@ -568,26 +568,26 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
 
         // Test run with new locations included
         setSizeExpectations(true, true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, NULL_SIZE);
-        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh()));
+        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh().added()));
         checkIndexes();
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B), SUT.includedLocations());
 
         // Test no-op run
         setSizeExpectations(true, true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, NULL_SIZE);
-        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh()));
+        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh().added()));
         checkIndexes();
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B), SUT.includedLocations());
 
         // Test run with a location updated from null to not
         setSizeExpectations(true, true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, 2);
-        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh()));
+        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh().added()));
         checkIndexes();
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B),
                 SUT.includedLocations());
 
         // Test run with a location updated
         setSizeExpectations(true, true, 5, REGION_CAPACITY_IN_ELEMENTS, 5003, 10000002);
-        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh()));
+        updateGraph.runWithinUnitTestCycle(() -> captureIndexes(SUT.refresh().added()));
         checkIndexes();
         assertEquals(Arrays.asList(tableLocation0A, tableLocation1A, tableLocation0B, tableLocation1B),
                 SUT.includedLocations());

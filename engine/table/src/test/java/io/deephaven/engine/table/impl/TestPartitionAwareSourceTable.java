@@ -6,9 +6,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
 import io.deephaven.engine.table.vectors.ColumnVectors;
@@ -24,7 +22,6 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
-import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.qst.column.Column;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.vector.ObjectVector;
@@ -250,7 +247,9 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                     @Override
                     public Object invoke(Invocation invocation) {
                         subscriptionBuffer = (TableLocationSubscriptionBuffer) invocation.getParameter(0);
+                        subscriptionBuffer.beginTransaction();
                         Arrays.stream(tableLocationKeys).forEach(subscriptionBuffer::handleTableLocationKeyAdded);
+                        subscriptionBuffer.endTransaction();
                         return null;
                     }
                 });
@@ -320,7 +319,8 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         checking(new Expectations() {
             {
                 oneOf(columnSourceManager).refresh();
-                will(returnValue(toAdd.copy()));
+                will(returnValue(new TableUpdateImpl(toAdd.copy(), RowSetFactory.empty(), RowSetFactory.empty(),
+                        RowSetShiftData.EMPTY, ModifiedColumnSet.ALL)));
                 checking(new Expectations() {
                     {
                         oneOf(listener).getNotification(with(any(TableUpdateImpl.class)));
@@ -360,7 +360,9 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         checking(new Expectations() {
             {
                 oneOf(columnSourceManager).refresh();
-                will(returnValue(RowSetFactory.empty()));
+                will(returnValue(
+                        new TableUpdateImpl(RowSetFactory.empty(), RowSetFactory.empty(), RowSetFactory.empty(),
+                                RowSetShiftData.EMPTY, ModifiedColumnSet.ALL)));
             }
         });
 
@@ -407,7 +409,9 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
 
     private void doAddLocationsRefreshCheck(final ImmutableTableLocationKey[] tableLocationKeys,
             final Set<TableLocation> expectPassFilters) {
+        subscriptionBuffer.beginTransaction();
         Arrays.stream(tableLocationKeys).forEach(subscriptionBuffer::handleTableLocationKeyAdded);
+        subscriptionBuffer.endTransaction();
 
         expectPassFilters.forEach(tl -> checking(new Expectations() {
             {
