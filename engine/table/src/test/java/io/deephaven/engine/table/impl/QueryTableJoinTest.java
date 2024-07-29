@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.vectors.ColumnVectors;
@@ -14,6 +13,7 @@ import io.deephaven.engine.testutil.generator.SortedIntGenerator;
 import io.deephaven.engine.testutil.generator.UnsortedInstantGenerator;
 import io.deephaven.time.DateTimeFormatter;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.vector.IntVector;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.DoubleVector;
@@ -33,7 +33,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.printTableUpdates;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.testutil.TstUtils.*;
@@ -622,9 +621,9 @@ public class QueryTableJoinTest {
                 col("LSentinel", "a", "b", "c", "d"));
 
         final QueryTable right = TstUtils.testRefreshingTable(i().toTracking(),
-                col("Group", ZERO_LENGTH_STRING_ARRAY),
+                col("Group", ArrayTypeUtils.EMPTY_STRING_ARRAY),
                 intCol("RInt"),
-                col("RSentinel", ZERO_LENGTH_STRING_ARRAY));
+                col("RSentinel", ArrayTypeUtils.EMPTY_STRING_ARRAY));
 
         System.out.println("Left:");
         TableTools.show(left);

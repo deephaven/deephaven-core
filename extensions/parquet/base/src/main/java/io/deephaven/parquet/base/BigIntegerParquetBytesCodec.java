@@ -3,8 +3,8 @@
 //
 package io.deephaven.parquet.base;
 
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.util.codec.ObjectCodec;
+import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,7 +30,7 @@ public class BigIntegerParquetBytesCodec implements ObjectCodec<BigInteger> {
                 nullBytes[i] = (byte) 0xff;
             }
         } else {
-            nullBytes = CollectionUtil.ZERO_LENGTH_BYTE_ARRAY;
+            nullBytes = ArrayTypeUtils.EMPTY_BYTE_ARRAY;
         }
     }
 

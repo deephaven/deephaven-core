@@ -27,6 +27,10 @@ dependencies {
         runtimeOnly project(':hotspot-impl')
     }
 
+    if (!hasProperty('excludeClockImpl')) {
+        runtimeOnly project(':clock-impl')
+    }
+
     if (!hasProperty('excludeSql')) {
         runtimeOnly project(':engine-sql')
     }
@@ -34,6 +38,12 @@ dependencies {
     if (!hasProperty('excludeS3')) {
         runtimeOnly project(':extensions-s3')
         runtimeOnly project(':extensions-iceberg-s3')
+    }
+
+    if (!hasProperty('excludeJson')) {
+        dependencies {
+            runtimeOnly project(':extensions-json-jackson')
+        }
     }
 }
 

@@ -9,13 +9,6 @@ description = 'The Deephaven SQL parser'
 dependencies {
     api project(':qst')
     implementation libs.calcite.core
-    constraints {
-        // This constraint can be removed once calcite-core has next release and we can
-        // pick up the fixed dependency transitively.
-        implementation('com.jayway.jsonpath:json-path:2.9.0') {
-            because 'json-path Out-of-bounds Write vulnerability, CVE-2023-51074'
-        }
-    }
 
     compileOnly project(':util-immutables')
     annotationProcessor libs.immutables.value

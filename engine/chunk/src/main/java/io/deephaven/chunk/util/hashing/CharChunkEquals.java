@@ -6,6 +6,7 @@ package io.deephaven.chunk.util.hashing;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.util.compare.CharComparisons;
 
 // region name
 public class CharChunkEquals implements ChunkEquals {
@@ -246,7 +247,7 @@ public class CharChunkEquals implements ChunkEquals {
 
     // region eq
     static private boolean eq(char lhs, char rhs) {
-        return lhs == rhs;
+        return CharComparisons.eq(lhs, rhs);
     }
     // endregion eq
 

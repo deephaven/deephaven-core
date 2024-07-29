@@ -10,7 +10,6 @@ import io.deephaven.api.agg.Count;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.base.FileUtils;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -887,7 +886,7 @@ public class QueryTableAggregationTest {
 
         final Set<String> keyColumnSet = new LinkedHashSet<>(table.getDefinition().getColumnNameSet());
         keyColumnSet.remove("NonKey");
-        final String[] keyColumns = keyColumnSet.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        final String[] keyColumns = keyColumnSet.toArray(String[]::new);
 
         table.lastBy("Date", "Sym");
 
@@ -3922,7 +3921,7 @@ public class QueryTableAggregationTest {
             final Table agg = data.selectDistinct("NonExistentCol");
             fail("Should have thrown an exception");
         } catch (Exception ex) {
-            io.deephaven.base.verify.Assert.instanceOf(ex, "ex", IllegalArgumentException.class);
+            assertTrue(ex instanceof IllegalArgumentException);
             io.deephaven.base.verify.Assert.assertion(
                     ex.getMessage().contains("Missing columns: [NonExistentCol]"),
                     "ex.getMessage().contains(\"Missing columns: [NonExistentCol]\")",
@@ -3977,7 +3976,7 @@ public class QueryTableAggregationTest {
                     t4.updateView("Date=`2021-07-21`", "Num=400")).moveColumnsUp("Date", "Num");
 
             final Table loaded = ParquetTools.readTable(
-                    new ParquetKeyValuePartitionedLayout(testRootFile.toURI(), 2, ParquetInstructions.EMPTY),
+                    ParquetKeyValuePartitionedLayout.create(testRootFile.toURI(), 2, ParquetInstructions.EMPTY, null),
                     ParquetInstructions.EMPTY);
 
             // verify the sources are identical

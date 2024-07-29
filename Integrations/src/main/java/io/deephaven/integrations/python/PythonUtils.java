@@ -23,6 +23,18 @@ class PythonUtils {
         return pyCallable(pyObject, "on_update");
     }
 
+    /**
+     * Gets the python function that should be called by a merged listener. The input can be either (1) a callable or
+     * (2) an object which provides an "_process" method.
+     *
+     * @param pyObject python listener object. This should either be a callable or an object which provides an
+     *        "_process" method.
+     * @return python function that should be called by a merged listener.
+     * @throws IllegalArgumentException python listener object is not a valid listener.
+     */
+    static PyObject pyMergeListenerFunc(final PyObject pyObject) {
+        return pyCallable(pyObject, "_process");
+    }
 
     /**
      * Creates a callable PyObject, either using method.apply() or __call__(), if the pyObjectIn has such methods

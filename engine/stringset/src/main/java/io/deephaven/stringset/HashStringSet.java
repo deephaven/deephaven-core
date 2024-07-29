@@ -3,7 +3,6 @@
 //
 package io.deephaven.stringset;
 
-import io.deephaven.datastructures.util.CollectionUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
@@ -74,7 +73,7 @@ public class HashStringSet implements StringSet, Serializable {
 
     @Override
     public String[] values() {
-        return innerSet.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        return innerSet.toArray(String[]::new);
     }
 
     @Override

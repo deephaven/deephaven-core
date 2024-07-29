@@ -88,9 +88,13 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
+    public boolean exists(@NotNull final URI uri) {
+        return wrappedProvider.exists(uri);
+    }
+
+    @Override
     public SeekableByteChannel getReadChannel(@NotNull final SeekableChannelContext channelContext,
-            @NotNull final URI uri)
-            throws IOException {
+            @NotNull final URI uri) throws IOException {
         final String uriString = uri.toString();
         final KeyedObjectHashMap<String, PerPathPool> channelPool = channelPools.get(ChannelType.Read);
         final CachedChannel result = tryGetPooledChannel(uriString, channelPool);
@@ -168,7 +172,7 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     }
 
     private long advanceClock() {
-        Assert.holdsLock(this, "this");
+        Assert.assertion(Thread.holdsLock(this), "Thread.holdsLock(this)");
         final long newClock = ++logicalClock;
         if (newClock > 0) {
             return newClock;

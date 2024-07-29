@@ -6,7 +6,9 @@ package io.deephaven.parquet.table;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.s3.Credentials;
 import io.deephaven.extensions.s3.S3Instructions;
 import io.deephaven.test.types.OutOfBandTest;
@@ -17,6 +19,8 @@ import org.junit.experimental.categories.Category;
 
 import java.time.Duration;
 
+import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
+import static io.deephaven.parquet.table.ParquetTools.readTable;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -85,5 +89,40 @@ public class S3ParquetRemoteTest {
         final Table table = ParquetTools.readTable("s3://ookla-open-data/parquet/performance/type=mobile/year=2023",
                 readInstructions).head(10).select();
         assertEquals(2, table.numColumns());
+    }
+
+    @Test
+    public void readMetadataPartitionedParquetFromS3() {
+        Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_REMOTE_S3_TESTING);
+        final TableDefinition definition = TableDefinition.of(
+                ColumnDefinition.ofInt("PC1").withPartitioning(),
+                ColumnDefinition.ofInt("PC2").withPartitioning(),
+                ColumnDefinition.ofLong("I"));
+        final Table source = ((QueryTable) TableTools.emptyTable(1_000_000)
+                .updateView("PC1 = (int)(ii%3)",
+                        "PC2 = (int)(ii%2)",
+                        "I = ii"))
+                .withDefinitionUnsafe(definition);
+
+        final S3Instructions s3Instructions = S3Instructions.builder()
+                .regionName("us-east-1")
+                .build();
+        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
+                .setSpecialInstructions(s3Instructions)
+                .setFileLayout(ParquetInstructions.ParquetFileLayout.METADATA_PARTITIONED)
+                .build();
+        final Table fromS3Partitioned = readTable("s3://dh-s3-parquet-test1/keyValuePartitionedWithMetadataTest/",
+                readInstructions);
+        assertTableEquals(source.sort("PC1", "PC2"), fromS3Partitioned.sort("PC1", "PC2"));
+
+        final Table fromDiskWithMetadata =
+                readTable("s3://dh-s3-parquet-test1/keyValuePartitionedWithMetadataTest/_metadata",
+                        readInstructions);
+        assertTableEquals(source.sort("PC1", "PC2"), fromDiskWithMetadata.sort("PC1", "PC2"));
+
+        final Table fromDiskWithCommonMetadata =
+                readTable("s3://dh-s3-parquet-test1/keyValuePartitionedWithMetadataTest/_common_metadata",
+                        readInstructions);
+        assertTableEquals(source.sort("PC1", "PC2"), fromDiskWithCommonMetadata.sort("PC1", "PC2"));
     }
 }

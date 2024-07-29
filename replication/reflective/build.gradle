@@ -19,6 +19,9 @@ dependencies {
     runtimeOnly libs.slf4j.simple
 
     implementation libs.arrow.vector
+
+    // needed at compile + runtime due to our use of code-generation at runtime
+    implementation libs.jetbrains.annotations
 }
 
 task replicateAll {

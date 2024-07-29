@@ -171,7 +171,7 @@ abstract class BaseArrayBackedInputTable extends UpdatableTable {
         String error;
 
         private PendingChange(@NotNull Table table, boolean delete) {
-            Assert.holdsLock(pendingChanges, "pendingChanges");
+            Assert.assertion(Thread.holdsLock(pendingChanges), "Thread.holdsLock(pendingChanges)");
             Assert.neqNull(table, "table");
             this.table = table;
             this.delete = delete;

@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 # for CMAKE_INSTALL_{dir}
 include(GNUInstallDirs)
 
-find_package(Immer REQUIRED)
+find_package(Immer CONFIG REQUIRED)
 
 set(ALL_FILES
     src/types.cc
@@ -31,6 +31,7 @@ set(ALL_FILES
     src/ticking/ticking.cc
     src/utility/cython_support.cc
     src/utility/utility.cc
+    src/utility/utility_platform_specific.cc
 
     include/private/deephaven/dhcore/ticking/immer_table_state.h
     include/private/deephaven/dhcore/ticking/index_decoder.h
@@ -133,6 +134,7 @@ foreach (whichlib dhcore dhcore_static)
     target_compile_options(${whichlib} PRIVATE /W3 /bigobj)
 
     target_compile_definitions(${whichlib} PRIVATE _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
+    target_link_libraries(${whichlib} PRIVATE ws2_32)
   endif()
 
   target_include_directories(${whichlib} PRIVATE include/private)
@@ -142,5 +144,5 @@ foreach (whichlib dhcore dhcore_static)
   target_include_directories(${whichlib} PRIVATE flatbuf)
   target_include_directories(${whichlib} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/public>)
 
-  target_link_libraries(${whichlib} PUBLIC immer)
+  target_link_libraries(${whichlib} PRIVATE immer)
 endforeach()

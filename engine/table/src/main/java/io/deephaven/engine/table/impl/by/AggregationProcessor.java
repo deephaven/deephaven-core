@@ -99,6 +99,7 @@ import io.deephaven.engine.table.impl.util.freezeby.FreezeByCountOperator;
 import io.deephaven.engine.table.impl.util.freezeby.FreezeByOperator;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.annotations.FinalDefault;
+import io.deephaven.util.type.ArrayTypeUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -118,16 +119,13 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_DOUBLE_ARRAY;
-import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY;
-import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY_ARRAY;
 import static io.deephaven.engine.table.ChunkSource.WithPrev.ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY;
 import static io.deephaven.engine.table.Table.AGGREGATION_ROW_LOOKUP_ATTRIBUTE;
 import static io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator.ZERO_LENGTH_ITERATIVE_CHUNKED_AGGREGATION_OPERATOR_ARRAY;
 import static io.deephaven.engine.table.impl.by.RollupConstants.*;
 import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.util.type.TypeUtils.getBoxedType;
-import static io.deephaven.util.type.TypeUtils.isNumeric;
+import static io.deephaven.util.type.NumericTypeUtils.isNumeric;
 
 /**
  * Conversion tool to generate an {@link AggregationContextFactory} for a collection of {@link Aggregation
@@ -411,7 +409,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         // -------------------------------------------------------------------------------------------------------------
 
         void addNoInputOperator(@NotNull final IterativeChunkedAggregationOperator operator) {
-            addOperator(operator, null, ZERO_LENGTH_STRING_ARRAY);
+            addOperator(operator, null, ArrayTypeUtils.EMPTY_STRING_ARRAY);
         }
 
         @SafeVarargs
@@ -815,7 +813,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         public void visit(@NotNull final AggSpecTDigest tDigest) {
             addBasicOperators((t, n) -> new TDigestPercentileOperator(t,
                     tDigest.compression().orElse(TDigestPercentileOperator.COMPRESSION_DEFAULT), n,
-                    ZERO_LENGTH_DOUBLE_ARRAY, ZERO_LENGTH_STRING_ARRAY));
+                    ArrayTypeUtils.EMPTY_DOUBLE_ARRAY, ArrayTypeUtils.EMPTY_STRING_ARRAY));
         }
 
         @Override
@@ -1405,7 +1403,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         return new AggregationContext(
                 new IterativeChunkedAggregationOperator[] {
                         new UniqueRowKeyChunkedOperator(TreeConstants.SOURCE_ROW_LOOKUP_ROW_KEY_COLUMN.name())},
-                new String[][] {ZERO_LENGTH_STRING_ARRAY},
+                new String[][] {ArrayTypeUtils.EMPTY_STRING_ARRAY},
                 new ChunkSource.WithPrev[] {null},
                 new AggregationContextTransformer[] {new RowLookupAttributeSetter()});
     }
@@ -1415,13 +1413,13 @@ public class AggregationProcessor implements AggregationContextFactory {
             // noinspection unchecked
             return new AggregationContext(
                     new IterativeChunkedAggregationOperator[] {new CountAggregationOperator(null)},
-                    new String[][] {ZERO_LENGTH_STRING_ARRAY},
+                    new String[][] {ArrayTypeUtils.EMPTY_STRING_ARRAY},
                     new ChunkSource.WithPrev[] {null});
         }
         // noinspection unchecked
         return new AggregationContext(
                 ZERO_LENGTH_ITERATIVE_CHUNKED_AGGREGATION_OPERATOR_ARRAY,
-                ZERO_LENGTH_STRING_ARRAY_ARRAY,
+                ArrayTypeUtils.EMPTY_STRING_ARRAY_ARRAY,
                 ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY);
     }
 
@@ -1436,7 +1434,7 @@ public class AggregationProcessor implements AggregationContextFactory {
                             new GroupByChunkedOperator(inputQueryTable, true, EXPOSED_GROUP_ROW_SETS.name()),
                             new CountAggregationOperator(null)
                     },
-                    new String[][] {ZERO_LENGTH_STRING_ARRAY, ZERO_LENGTH_STRING_ARRAY},
+                    new String[][] {ArrayTypeUtils.EMPTY_STRING_ARRAY, ArrayTypeUtils.EMPTY_STRING_ARRAY},
                     new ChunkSource.WithPrev[] {null, null},
                     new AggregationContextTransformer[] {new RowLookupAttributeSetter()});
         }
@@ -1445,7 +1443,7 @@ public class AggregationProcessor implements AggregationContextFactory {
                 new IterativeChunkedAggregationOperator[] {
                         new GroupByChunkedOperator(inputQueryTable, true, EXPOSED_GROUP_ROW_SETS.name())
                 },
-                new String[][] {ZERO_LENGTH_STRING_ARRAY},
+                new String[][] {ArrayTypeUtils.EMPTY_STRING_ARRAY},
                 new ChunkSource.WithPrev[] {null},
                 new AggregationContextTransformer[] {new RowLookupAttributeSetter()});
     }
@@ -2007,7 +2005,6 @@ public class AggregationProcessor implements AggregationContextFactory {
     public static AggregationRowLookup getRowLookup(@NotNull final Table aggregationResult) {
         final Object value = aggregationResult.getAttribute(AGGREGATION_ROW_LOOKUP_ATTRIBUTE);
         Assert.neqNull(value, "aggregation result row lookup");
-        Assert.instanceOf(value, "aggregation result row lookup", AggregationRowLookup.class);
         return (AggregationRowLookup) value;
     }
 }

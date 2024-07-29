@@ -422,7 +422,7 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
     }
 
     private void scheduleImmediately(final long currentTimeNanos) {
-        Assert.holdsLock(schedulingLock, "schedulingLock");
+        Assert.assertion(Thread.holdsLock(schedulingLock), "Thread.holdsLock(schedulingLock)");
         if (!snapshotPending || currentTimeNanos < scheduledTimeNanos) {
             snapshotPending = true;
             scheduledTimeNanos = currentTimeNanos;
@@ -431,7 +431,7 @@ public class HierarchicalTableViewSubscription extends LivenessArtifact {
     }
 
     private void scheduleAtInterval(final long currentTimeNanos) {
-        Assert.holdsLock(schedulingLock, "schedulingLock");
+        Assert.assertion(Thread.holdsLock(schedulingLock), "Thread.holdsLock(schedulingLock)");
         final long targetTimeNanos = lastSnapshotTimeNanos + intervalDurationNanos;
         final long delayNanos = targetTimeNanos - currentTimeNanos;
         if (delayNanos < 0) {
