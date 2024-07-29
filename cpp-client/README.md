@@ -120,16 +120,14 @@ connect a server when you want to run them.
    ```
    source $DHCPP/env.sh
    cd $DHSRC/deephaven-core/cpp-client/deephaven/
-   mkdir build && cd build
-   cmake \
+   cmake -S . -B build \
        -DCMAKE_INSTALL_LIBDIR=lib \
        -DCMAKE_CXX_STANDARD=17 \
        -DCMAKE_INSTALL_PREFIX=${DHCPP} \
        -DCMAKE_BUILD_TYPE=RelWithDebInfo \
        -DBUILD_SHARED_LIBS=ON \
-       .. \
      && \
-       make -j$NCPUS install
+   VERBOSE=1 cmake --build build --target install -- -j$NCPUS
    ```
 
    If you need `make` to generate detailed output of the commands it is running
