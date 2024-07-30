@@ -1,7 +1,7 @@
 plugins {
     id 'java-library'
     id 'io.deephaven.project.register'
-    id 'io.deephaven.optional-dependencies'
+    id 'io.deephaven.optional-server-dependencies'
 }
 
 configurations {
@@ -24,7 +24,7 @@ dependencies {
     runtimeOnly project(':logback-logbuffer')
     runtimeOnly libs.logback.classic
 
-    // Note: add optional runtime dependencies to io.deephaven.optional-dependencies plugin in buildSrc
+    // Note: add optional server dependencies to io.deephaven.optional-server-dependencies plugin in buildSrc
 }
 
 // making a dir here isn't optimal, but without it we need to make py-embedded-server be a java and a python

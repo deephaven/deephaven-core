@@ -1,7 +1,7 @@
 plugins {
     id 'application'
     id 'io.deephaven.project.register'
-    id 'io.deephaven.optional-dependencies'
+    id 'io.deephaven.optional-server-dependencies'
 }
 
 configurations {
@@ -40,7 +40,7 @@ if (!hasProperty('excludeClockImpl')) {
     extraJvmArgs += ['--add-exports', 'java.base/jdk.internal.misc=ALL-UNNAMED']
 }
 
-// Note: add optional runtime dependencies to io.deephaven.optional-dependencies plugin in buildSrc
+// Note: add optional server dependencies to io.deephaven.optional-server-dependencies plugin in buildSrc
 
 def authHandlers = []
 def authConfigs = ['AuthHandlers']
