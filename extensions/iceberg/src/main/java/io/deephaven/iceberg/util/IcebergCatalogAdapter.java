@@ -15,7 +15,6 @@ import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
-import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.iceberg.layout.IcebergFlatLayout;
@@ -312,8 +311,8 @@ public class IcebergCatalogAdapter {
         columnSourceMap.put("Id", InMemoryColumnSource.getImmutableMemoryColumnSource(idArr, long.class, null));
 
         final long[] timestampArr = new long[(int) size];
-        columnSourceMap.put("Timestamp", ReinterpretUtils.longToInstantSource(
-                InMemoryColumnSource.getImmutableMemoryColumnSource(timestampArr, long.class, null)));
+        columnSourceMap.put("Timestamp",
+                InMemoryColumnSource.getImmutableMemoryColumnSource(timestampArr, Instant.class, null));
 
         final String[] operatorArr = new String[(int) size];
         columnSourceMap.put("Operation",
