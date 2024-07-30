@@ -12,6 +12,7 @@ import org.apache.iceberg.io.FileIO;
 import org.jetbrains.annotations.NotNull;
 
 import java.net.URI;
+import java.util.Map;
 
 /**
  * Iceberg {@link TableLocationKeyFinder location finder} for tables without partitions that will discover data files
@@ -30,8 +31,9 @@ public final class IcebergFlatLayout extends IcebergBaseLayout {
             @NotNull final Table table,
             @NotNull final Snapshot tableSnapshot,
             @NotNull final FileIO fileIO,
-            @NotNull final IcebergInstructions instructions) {
-        super(tableDef, table, tableSnapshot, fileIO, instructions);
+            @NotNull final IcebergInstructions instructions,
+            @NotNull final Map<String, String> properties) {
+        super(tableDef, table, tableSnapshot, fileIO, instructions, properties);
     }
 
     @Override

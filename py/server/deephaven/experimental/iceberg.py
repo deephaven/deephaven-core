@@ -253,12 +253,12 @@ def adapter_aws_glue(
 
 
 def adapter(
-        properties: Dict[str, str],
-        name: Optional[str] = None
+        name: Optional[str] = None,
+        properties: Optional[Dict[str, str]] = None
 ) -> IcebergCatalogAdapter:
     """
-    Create an Iceberg catalog adapter for an Iceberg catalog created from configuration properties. These properties
-    map to the Iceberg catalog Java API properties and are used to create the catalog and file IO implementations.
+    Create an Iceberg catalog adapter from configuration properties. These properties map to the Iceberg catalog Java
+    API properties and are used to select the catalog and file IO implementations.
 
     The minimal set of properties required to create an Iceberg catalog are the following:
     - `catalog-impl` or `type` - the Java catalog implementation to use. When providing `catalog-impl`, the
@@ -270,7 +270,7 @@ def adapter(
             and `org.apache.iceberg.hadoop.HadoopFileIO`
 
     Other common properties include:
-    - `warehouse` - the location of the data warehouse.
+    - `warehouse` - the root path of the data warehouse.
     - `client.region` - the region of the AWS client.
     - `s3.access-key-id` - the S3 access key for reading files.
     - `s3.secret-access-key` - the S3 secret access key for reading files.
@@ -278,9 +278,9 @@ def adapter(
 
     Example usage #1 - REST catalog with an S3 backend (using MinIO):
     ```
-    from deephaven.experimental import s3, iceberg
+    from deephaven.experimental import iceberg
 
-    properties = {
+    adapter = iceberg.adapter_generic(name="generic-adapter", {
         "type" : "rest",
         "uri" : "http://rest:8181",
         "io-impl" : "org.apache.iceberg.aws.s3.S3FileIO",
@@ -288,30 +288,25 @@ def adapter(
         "s3.access-key-id" : "admin",
         "s3.secret-access-key" : "password",
         "s3.endpoint" : "http://minio:9000"
-    }
-
-    adapter = iceberg.adapter_generic(name="generic-adapter", properties=properties);
+    })
     ```
 
     Example usage #2 - AWS Glue catalog:
     ```
-    from deephaven.experimental import s3, iceberg
+    from deephaven.experimental import iceberg
 
     ## Note: region and credential information are loaded by the catalog from the environment
-    properties = {
-        "catalog-impl" : "org.apache.iceberg.aws.glue.GlueCatalog",
+    adapter = iceberg.adapter_generic(name="generic-adapter", {
+        "type" : "glue",
         "uri" : "s3://lab-warehouse/sales",
-        "warehouse" : "s3://lab-warehouse/sales",
         "io-impl" : "org.apache.iceberg.aws.s3.S3FileIO"
-    }
-
-    adapter = iceberg.adapter_generic(name="generic-adapter", properties=properties);
+    });
     ```
 
     Args:
-        properties (Dict[str, str]): the location of the warehouse.
         name (Optional[str]): a descriptive name of the catalog; if omitted the catalog name is inferred from the
             catalog URI property.
+        properties (Optional[Dict[str, str]]): the location of the warehouse.
 
     Returns:
         IcebergCatalogAdapter: the catalog adapter for the provided AWS Glue catalog.
@@ -324,7 +319,7 @@ def adapter(
         return IcebergCatalogAdapter(
             _JIcebergTools.createAdapter(
                 name,
-                j_hashmap(properties)))
+                j_hashmap(properties if properties is not None else {})))
     except Exception as e:
         raise DHError(e, "Failed to build Iceberg Catalog Adapter") from e
 

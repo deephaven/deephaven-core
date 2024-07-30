@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
  * a {@link Snapshot}
  */
 public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
-    private class ColumnData {
+    private static class ColumnData {
         final String name;
         final Class<?> type;
         final int index;
@@ -52,8 +52,9 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
             @NotNull final org.apache.iceberg.Snapshot tableSnapshot,
             @NotNull final FileIO fileIO,
             @NotNull final PartitionSpec partitionSpec,
-            @NotNull final IcebergInstructions instructions) {
-        super(tableDef, table, tableSnapshot, fileIO, instructions);
+            @NotNull final IcebergInstructions instructions,
+            @NotNull final Map<String, String> properties) {
+        super(tableDef, table, tableSnapshot, fileIO, instructions, properties);
 
         // We can assume due to upstream validation that there are no duplicate names (after renaming) that are included
         // in the output definition, so we can ignore duplicates.
