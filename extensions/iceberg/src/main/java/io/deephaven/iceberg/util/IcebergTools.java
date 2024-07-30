@@ -3,9 +3,11 @@
 //
 package io.deephaven.iceberg.util;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.iceberg.CatalogProperties;
 import org.apache.iceberg.CatalogUtil;
 import org.apache.iceberg.catalog.Catalog;
+import org.apache.iceberg.hadoop.HadoopFileIO;
 import org.apache.iceberg.io.FileIO;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -60,6 +62,7 @@ public abstract class IcebergTools {
      * @param properties the map containing the Iceberg catalog properties to use
      * @return the Iceberg catalog adapter
      */
+    @SuppressWarnings("unused")
     public static IcebergCatalogAdapter createAdapter(
             @Nullable final String name,
             @NotNull final Map<String, String> properties) {
@@ -80,13 +83,17 @@ public abstract class IcebergTools {
 
         final String catalogUri = properties.get(CatalogProperties.URI);
         final String catalogName = name != null ? name : "IcebergCatalog-" + catalogUri;
+        final String fileIOImpl = properties.get(CatalogProperties.FILE_IO_IMPL);
+
+        final Configuration hadoopConf = HadoopFileIO.class.getName().equals(fileIOImpl)
+                ? new Configuration()
+                : null;
 
         // Create the Iceberg catalog from the properties.
-        final Catalog catalog = CatalogUtil.buildIcebergCatalog(catalogName, properties, null);
+        final Catalog catalog = CatalogUtil.buildIcebergCatalog(catalogName, properties, hadoopConf);
 
         // Create the file IO implementation from the provided File IO property.
-        final String fileIOImpl = properties.get(CatalogProperties.FILE_IO_IMPL);
-        final FileIO fileIO = CatalogUtil.loadFileIO(fileIOImpl, properties, null);
+        final FileIO fileIO = CatalogUtil.loadFileIO(fileIOImpl, properties, hadoopConf);
 
         return new IcebergCatalogAdapter(catalog, fileIO, properties);
     }
