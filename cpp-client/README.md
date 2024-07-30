@@ -253,32 +253,37 @@ Notes
    ```
 
 6. Come back to the Visual Studio developer command prompt and do the
-   one-time installation steps for vcpkg. Do not forget to set VCPKG_ROOT,
-   as our build scripts rely on it being set correctly.
+   one-time installation steps for vcpkg.
    ```
    cd /d %HOMEDRIVE%%HOMEPATH%\dhsrc\vcpkg
    .\bootstrap-vcpkg.bat
+   ```
+
+7. Set VCPKG_ROOT. Note that steps 8 and 9 both rely on it being set correctly.
+   If you come back to these instructions at a future date, make sure that VCPKG_ROOT
+   is set before re-running those steps.
+   ```
    set VCPKG_ROOT=%HOMEDRIVE%%HOMEPATH%\dhsrc\vcpkg
    ```
 
-7. Change to the Deephaven core directory and build/install the dependent
+8. Change to the Deephaven core directory and build/install the dependent
    packages. On my computer this process took about 20 minutes.
    ```
    cd /d %HOMEDRIVE%%HOMEPATH%\dhsrc\deephaven-core\cpp-client\deephaven
    %VCPKG_ROOT%\vcpkg.exe install --triplet x64-windows
     ```
 
-8. Now configure the build for Deephaven Core:
+9. Now configure the build for Deephaven Core:
    ``` 
    cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake -DCMAKE_INSTALL_PREFIX=%HOMEDRIVE%%HOMEPATH%/dhinstall -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo
    ```
    
-9. Finally, build and install Deephaven Core:
+10. Finally, build and install Deephaven Core:
    ```
    cmake --build build --target install
    ```
 
-10. Run the tests.
+11. Run the tests.
     First, make sure Deephaven is running. If your Deephaven instance
     is running somewhere other than the default location of localhost:10000,
     then set these environment variables appropriately:
