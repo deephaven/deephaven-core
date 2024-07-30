@@ -220,6 +220,7 @@ public class IcebergCatalogAdapter {
      *
      * @return A {@link Table table} of all namespaces.
      */
+    @SuppressWarnings("unused")
     public Table listNamespacesAsTable(@NotNull final String... namespace) {
         return listNamespacesAsTable(Namespace.of(namespace));
     }
@@ -291,7 +292,7 @@ public class IcebergCatalogAdapter {
 
     /**
      * List all {@link Snapshot snapshots} of a given Iceberg table as a Deephaven {@link Table table}. The resulting
-     * table will be static and contain contains the following columns:
+     * table will be static and contain the following columns:
      * <ul>
      * <li>Id: the snapshot identifier (can be used for updating the table or loading a specific snapshot).</li>
      * <li>TimestampMs: the timestamp of the snapshot.</li>
