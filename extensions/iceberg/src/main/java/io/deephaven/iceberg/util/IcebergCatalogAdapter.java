@@ -291,8 +291,15 @@ public class IcebergCatalogAdapter {
 
     /**
      * List all {@link Snapshot snapshots} of a given Iceberg table as a Deephaven {@link Table table}. The resulting
-     * table will be static and contain the same information as {@link #listSnapshots(TableIdentifier)}.
-     *
+     * table will be static and contain contains the following columns:
+     * <ul>
+     * <li>Id: the snapshot identifier (can be used for updating the table or loading a specific snapshot).</li>
+     * <li>TimestampMs: the timestamp of the snapshot.</li>
+     * <li>Operation: the data operation that created this snapshot.</li>
+     * <li>Summary: additional information about the snapshot from the Iceberg metadata.</li>
+     * <li>SnapshotObject: a Java object containing the Iceberg API snapshot.</li>
+     * </ul>
+     * 
      * @param tableIdentifier The identifier of the table from which to gather snapshots.
      * @return A list of all tables in the given namespace.
      */

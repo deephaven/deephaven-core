@@ -141,11 +141,18 @@ class IcebergTable(Table):
 
         Args:
             snapshot_id (Optional[int]): the snapshot id to update to; if omitted the most recent snapshot will be used.
+
+        Raises:
+            DHError: If unable to update the Iceberg table.
+
         """
-        if snapshot_id is not None:
-            self.j_object.update(snapshot_id)
-            return
-        self.j_object.update()
+        try:
+            if snapshot_id is not None:
+                self.j_object.update(snapshot_id)
+                return
+            self.j_object.update()
+        except Exception as e:
+            raise DHError(e, "Failed to update Iceberg table") from e
 
     @property
     def j_object(self) -> jpy.JType:
@@ -196,7 +203,13 @@ class IcebergCatalogAdapter(JObjectWrapper):
 
     def snapshots(self, table_identifier: str) -> Table:
         """
-        Returns information on the snapshots of the specified table as a Deephaven table.
+        Returns information on the snapshots of the specified table as a Deephaven table. The table contains the
+        following columns:
+        - `Id`: the snapshot identifier (can be used for updating the table or loading a specific snapshot).
+        - `TimestampMs`: the timestamp of the snapshot.
+        - `Operation`: the data operation that created this snapshot.
+        - `Summary`: additional information about this snapshot from the Iceberg metadata.
+        - `SnapshotObject`: a Java object containing the Iceberg API snapshot.
 
         Args:
             table_identifier (str): the table from which to list snapshots.
