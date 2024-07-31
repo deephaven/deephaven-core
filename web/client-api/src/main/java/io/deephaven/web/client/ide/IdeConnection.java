@@ -161,7 +161,7 @@ public class IdeConnection extends QueryConnectable<IdeConnection> {
      * the remote end has signaled that it has successfully fetched the object before releasing it from this client.
      * <p>
      * Be sure to use an unpredictable value for the shared ticket bytes, like a UUID or other large, random value to
-     * prevent accidental access by other clients.
+     * prevent access by unauthorized clients.
      *
      * @param object the object to share with another client/user
      * @param sharedTicketBytes the value which another client/user must know to obtain the object. It may be a unicode
