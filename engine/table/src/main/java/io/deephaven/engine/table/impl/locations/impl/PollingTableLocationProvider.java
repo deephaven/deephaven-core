@@ -52,7 +52,6 @@ public class PollingTableLocationProvider<TK extends TableKey, TLK extends Table
     // polling. We do need a mechanism to avoid going backwards, probably.
     @Override
     public void refresh() {
-        beginTransaction();
         final Set<ImmutableTableLocationKey> missedKeys = new HashSet<>(getTableLocationKeys());
         locationKeyFinder.findKeys(tableLocationKey -> {
             // noinspection SuspiciousMethodCalls
@@ -60,7 +59,6 @@ public class PollingTableLocationProvider<TK extends TableKey, TLK extends Table
             handleTableLocationKeyAdded(tableLocationKey);
         });
         missedKeys.forEach(this::handleTableLocationKeyRemoved);
-        endTransaction();
         setInitialized();
     }
 

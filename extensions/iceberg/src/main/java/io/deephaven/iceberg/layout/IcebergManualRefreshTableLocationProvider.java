@@ -91,14 +91,14 @@ public class IcebergManualRefreshTableLocationProvider<TK extends TableKey, TLK 
      * locations and removed locations.
      */
     private void refreshSnapshot() {
-        beginTransaction();
+        beginTransaction(this);
         final Set<ImmutableTableLocationKey> missedKeys = new HashSet<>(getTableLocationKeys());
-        locationKeyFinder.findKeys(tableLocationKey -> {
-            missedKeys.remove(tableLocationKey);
-            handleTableLocationKeyAdded(tableLocationKey);
+        locationKeyFinder.findKeys(tlk -> {
+            missedKeys.remove(tlk);
+            handleTableLocationKeyAdded(tlk, this);
         });
-        missedKeys.forEach(this::handleTableLocationKeyRemoved);
-        endTransaction();
+        missedKeys.forEach(tlk -> handleTableLocationKeyRemoved(tlk, this));
+        endTransaction(this);
         setInitialized();
     }
 

@@ -3,8 +3,11 @@
 //
 package io.deephaven.engine.table.impl.locations.impl;
 
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.locations.*;
+import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSourceManager;
+import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import org.jetbrains.annotations.NotNull;
@@ -43,6 +46,9 @@ public abstract class AbstractTableLocationProvider
             (Collection<ImmutableTableLocationKey>) (Collection<? extends TableLocationKey>) Collections
                     .unmodifiableCollection(tableLocations.keySet());
 
+    final List<AbstractTableLocation> locationsToClear;
+    final UpdateCommitter<?> locationClearCommitter;
+
     private volatile boolean initialized;
 
     private List<String> partitionKeys;
@@ -58,6 +64,18 @@ public abstract class AbstractTableLocationProvider
         super(supportsSubscriptions);
         this.tableKey = tableKey.makeImmutable();
         this.partitionKeys = null;
+
+        locationsToClear = new ArrayList<>();
+        locationClearCommitter = new UpdateCommitter<>(this,
+                ExecutionContext.getContext().getUpdateGraph(),
+                (ignored) -> {
+                    locationsToClear.forEach(location -> {
+                        location.handleUpdate(null, System.currentTimeMillis());
+                        location.clearColumnLocations();
+
+                    });
+                    locationsToClear.clear();
+                });
     }
 
     /**
@@ -85,6 +103,10 @@ public abstract class AbstractTableLocationProvider
     @Override
     protected final void deliverInitialSnapshot(@NotNull final TableLocationProvider.Listener listener) {
         unmodifiableTableLocationKeys.forEach(listener::handleTableLocationKeyAdded);
+    }
+
+    protected final void handleTableLocationKeyAdded(@NotNull final TableLocationKey locationKey) {
+        handleTableLocationKeyAdded(locationKey, null);
     }
 
     /**
@@ -125,14 +147,6 @@ public abstract class AbstractTableLocationProvider
     }
 
     /**
-     * Internal method to begin an atomic transaction of location adds and removes. This method passes {@code this} as
-     * the transaction token.
-     */
-    protected final void beginTransaction() {
-        beginTransaction(this);
-    }
-
-    /**
      * Internal method to begin an atomic transaction of location adds and removes.
      *
      * @param token A token to identify the transaction
@@ -141,14 +155,6 @@ public abstract class AbstractTableLocationProvider
         if (subscriptions != null) {
             subscriptions.deliverNotification(Listener::beginTransaction, token, true);
         }
-    }
-
-    /**
-     * Internal method to end an atomic transaction of location adds and removes. This method passes {@code this} as the
-     * transaction token.
-     */
-    protected final void endTransaction() {
-        endTransaction(this);
     }
 
     /**
@@ -293,6 +299,10 @@ public abstract class AbstractTableLocationProvider
         handleTableLocationKeyRemoved(locationKey, null);
     }
 
+    protected final void handleTableLocationKeyRemoved(@NotNull final TableLocationKey locationKey) {
+        handleTableLocationKeyRemoved(locationKey, null);
+    }
+
     /**
      * Handle a removal, optionally as part of a transaction. Notify subscribers that {@code locationKey} was removed if
      * necessary. See {@link #removeTableLocationKey(TableLocationKey)} for additional discussions of semantics.
@@ -323,11 +333,10 @@ public abstract class AbstractTableLocationProvider
         }
     }
 
-    private static void maybeClearLocationForRemoval(@Nullable final Object removedLocation) {
+    private void maybeClearLocationForRemoval(@Nullable final Object removedLocation) {
         if (removedLocation instanceof AbstractTableLocation) {
-            final AbstractTableLocation abstractLocation = (AbstractTableLocation) removedLocation;
-            abstractLocation.handleUpdate(null, System.currentTimeMillis());
-            abstractLocation.clearColumnLocations();
+            locationsToClear.add((AbstractTableLocation) removedLocation);
+            locationClearCommitter.maybeActivate();
         }
     }
 

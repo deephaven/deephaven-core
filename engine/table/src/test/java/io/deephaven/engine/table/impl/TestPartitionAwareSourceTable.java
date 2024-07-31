@@ -247,9 +247,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                     @Override
                     public Object invoke(Invocation invocation) {
                         subscriptionBuffer = (TableLocationSubscriptionBuffer) invocation.getParameter(0);
-                        subscriptionBuffer.beginTransaction();
                         Arrays.stream(tableLocationKeys).forEach(subscriptionBuffer::handleTableLocationKeyAdded);
-                        subscriptionBuffer.endTransaction();
                         return null;
                     }
                 });
@@ -409,9 +407,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
 
     private void doAddLocationsRefreshCheck(final ImmutableTableLocationKey[] tableLocationKeys,
             final Set<TableLocation> expectPassFilters) {
-        subscriptionBuffer.beginTransaction();
         Arrays.stream(tableLocationKeys).forEach(subscriptionBuffer::handleTableLocationKeyAdded);
-        subscriptionBuffer.endTransaction();
 
         expectPassFilters.forEach(tl -> checking(new Expectations() {
             {

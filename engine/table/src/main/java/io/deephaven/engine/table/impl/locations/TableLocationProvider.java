@@ -34,26 +34,11 @@ public interface TableLocationProvider extends NamedImplementation {
         void beginTransaction(@NotNull Object token);
 
         /**
-         * Begin a transaction that collects location key additions and removals to be processed atomically. Uses
-         * {@code this} as the token.
-         */
-        default void beginTransaction() {
-            beginTransaction(this);
-        }
-
-        /**
          * End the transaction and process the location changes.
          *
          * @param token A token to identify the transaction.
          */
         void endTransaction(@NotNull Object token);
-
-        /**
-         * End the transaction and process the location changes. Uses {@code this} as the token.
-         */
-        default void endTransaction() {
-            endTransaction(this);
-        }
 
         /**
          * <p>
