@@ -163,9 +163,10 @@ public abstract class AbstractTableLocationProvider
     }
 
     /**
-     * Called <i>after</i> a table location has been visited by {@link #handleTableLocationKeyAdded(TableLocationKey, Object)},
-     * but before notifications have been delivered to any subscriptions, if applicable. The default implementation does
-     * nothing, and may be overridden to implement additional features.
+     * Called <i>after</i> a table location has been visited by
+     * {@link #handleTableLocationKeyAdded(TableLocationKey, Object)}, but before notifications have been delivered to
+     * any subscriptions, if applicable. The default implementation does nothing, and may be overridden to implement
+     * additional features.
      *
      * @param locationKey The {@link TableLocationKey} that was visited.
      */
@@ -289,37 +290,44 @@ public abstract class AbstractTableLocationProvider
      * @param locationKey The {@link TableLocationKey} to remove
      */
     public void removeTableLocationKey(@NotNull final TableLocationKey locationKey) {
-        final Object removedLocation = tableLocations.remove(locationKey);
-
-        if (removedLocation != null) {
-            handleTableLocationKeyRemoved(locationKey.makeImmutable());
-            if (removedLocation instanceof AbstractTableLocation) {
-                final AbstractTableLocation abstractLocation = (AbstractTableLocation) removedLocation;
-                abstractLocation.handleUpdate(null, System.currentTimeMillis());
-                abstractLocation.clearColumnLocations();
-            }
-        }
+        handleTableLocationKeyRemoved(locationKey, null);
     }
 
     /**
-     * Notify subscribers that {@code locationKey} was removed.
+     * Handle a removal, optionally as part of a transaction. Notify subscribers that {@code locationKey} was removed if
+     * necessary. See {@link #removeTableLocationKey(TableLocationKey)} for additional discussions of semantics.
      * 
      * @param locationKey the TableLocation that was removed
      * @param transactionToken The token identifying the transaction
      */
     protected void handleTableLocationKeyRemoved(
-            @NotNull final ImmutableTableLocationKey locationKey,
+            @NotNull final TableLocationKey locationKey,
             @Nullable final Object transactionToken) {
-        if (supportsSubscriptions()) {
-            synchronized (subscriptions) {
+        if (!supportsSubscriptions()) {
+            maybeClearLocationForRemoval(tableLocations.remove(locationKey));
+            return;
+        }
+
+        synchronized (subscriptions) {
+            final Object removedLocation = tableLocations.remove(locationKey);
+            if (removedLocation != null) {
+                maybeClearLocationForRemoval(removedLocation);
                 if (subscriptions.deliverNotification(
                         Listener::handleTableLocationKeyRemoved,
-                        locationKey,
+                        locationKey.makeImmutable(),
                         transactionToken,
                         true)) {
                     onEmpty();
                 }
             }
+        }
+    }
+
+    private static void maybeClearLocationForRemoval(@Nullable final Object removedLocation) {
+        if (removedLocation instanceof AbstractTableLocation) {
+            final AbstractTableLocation abstractLocation = (AbstractTableLocation) removedLocation;
+            abstractLocation.handleUpdate(null, System.currentTimeMillis());
+            abstractLocation.clearColumnLocations();
         }
     }
 
