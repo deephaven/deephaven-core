@@ -302,11 +302,12 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
             }
         }
 
+        //@formatter:off
         final Collection<EmptyTableLocationEntry> entriesToInclude = StreamSupport.stream(Spliterators.spliterator(
                                 emptyTableLocations.iterator(),
                                 emptyTableLocations.size(),
                                 Spliterator.IMMUTABLE | Spliterator.DISTINCT | Spliterator.NONNULL),
-                        true)
+                        true) //@formatter:on
                 .peek(EmptyTableLocationEntry::refresh)
                 .filter((final EmptyTableLocationEntry emptyEntry) -> {
                     final RowSet locationRowSet = emptyEntry.location.getRowSet();
@@ -383,9 +384,10 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
 
     @Override
     public final synchronized Collection<TableLocation> allLocations() {
+        //@formatter:off
         return Stream.concat(
-                orderedIncludedTableLocations.stream().map(e -> e.location),
-                emptyTableLocations.values().stream().sorted().map(e -> e.location))
+                        orderedIncludedTableLocations.stream().map(e -> e.location),
+                        emptyTableLocations.values().stream().sorted().map(e -> e.location)) //@formatter:on
                 .collect(Collectors.toCollection(ArrayList::new));
     }
 
@@ -518,7 +520,9 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
             rowSetAtLastUpdate = initialRowSet;
         }
 
-        /** Returns {@code true} if there were changes to the row set for this location. */
+        /**
+         * Returns {@code true} if there were changes to the row set for this location.
+         */
         private boolean pollUpdates(final RowSetBuilderSequential addedRowSetBuilder) {
             Assert.neqNull(subscriptionBuffer, "subscriptionBuffer"); // Effectively, this is asserting "isRefreshing".
             try {
@@ -611,7 +615,8 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
         protected final RegionedColumnSource<T> source;
         protected final ColumnLocation location;
 
-        private ColumnLocationState(ColumnDefinition<T> definition,
+        private ColumnLocationState(
+                ColumnDefinition<T> definition,
                 RegionedColumnSource<T> source,
                 ColumnLocation location) {
             this.definition = definition;
