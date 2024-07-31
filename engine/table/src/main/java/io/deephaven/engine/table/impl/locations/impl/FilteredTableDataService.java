@@ -157,20 +157,42 @@ public class FilteredTableDataService extends AbstractTableDataService {
         }
 
         @Override
-        public void handleTableLocationKey(@NotNull final ImmutableTableLocationKey tableLocationKey) {
+        public void beginTransaction(@NotNull final Object token) {
+            // Delegate to the wrapped listener.
             final TableLocationProvider.Listener outputListener = getWrapped();
-            // We can't try to clean up null listeners here, the underlying implementation may not allow concurrent
-            // unsubscribe operations.
-            if (outputListener != null && locationKeyFilter.accept(tableLocationKey)) {
-                outputListener.handleTableLocationKey(tableLocationKey);
+            if (outputListener != null) {
+                outputListener.beginTransaction(token);
             }
         }
 
         @Override
-        public void handleTableLocationKeyRemoved(@NotNull final ImmutableTableLocationKey tableLocationKey) {
+        public void endTransaction(@NotNull final Object token) {
+            // Delegate to the wrapped listener.
+            final TableLocationProvider.Listener outputListener = getWrapped();
+            if (outputListener != null) {
+                outputListener.endTransaction(token);
+            }
+        }
+
+        @Override
+        public void handleTableLocationKeyAdded(
+                @NotNull final ImmutableTableLocationKey tableLocationKey,
+                @Nullable final Object transactionToken) {
+            final TableLocationProvider.Listener outputListener = getWrapped();
+            // We can't try to clean up null listeners here, the underlying implementation may not allow concurrent
+            // unsubscribe operations.
+            if (outputListener != null && locationKeyFilter.accept(tableLocationKey)) {
+                outputListener.handleTableLocationKeyAdded(tableLocationKey, transactionToken);
+            }
+        }
+
+        @Override
+        public void handleTableLocationKeyRemoved(
+                @NotNull final ImmutableTableLocationKey tableLocationKey,
+                @Nullable final Object transactionToken) {
             final TableLocationProvider.Listener outputListener = getWrapped();
             if (outputListener != null && locationKeyFilter.accept(tableLocationKey)) {
-                outputListener.handleTableLocationKeyRemoved(tableLocationKey);
+                outputListener.handleTableLocationKeyRemoved(tableLocationKey, transactionToken);
             }
         }
 

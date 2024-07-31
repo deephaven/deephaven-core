@@ -7,18 +7,15 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
-import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocationProvider;
-import io.deephaven.engine.table.impl.locations.TableLocationRemovedException;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationSubscriptionBuffer;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.apache.commons.lang3.mutable.Mutable;
@@ -106,7 +103,6 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         }
 
         setRefreshing(isRefreshing);
-        setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, Boolean.TRUE);
     }
 
     /**
@@ -219,10 +215,6 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
             final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate = locationBuffer.processPending();
             final ImmutableTableLocationKey[] removedKeys =
                     maybeRemoveLocations(locationUpdate.getPendingRemovedLocationKeys());
-            if (removedKeys.length > 0) {
-                throw new TableLocationRemovedException("Source table does not support removed locations",
-                        removedKeys);
-            }
             maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
 
             // This class previously had functionality to notify "location listeners", but it was never used.
@@ -232,13 +224,16 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                 return;
             }
 
-            final RowSet added = columnSourceManager.refresh();
-            if (added.isEmpty()) {
+            final TableUpdate update = columnSourceManager.refresh();
+            if (update.empty()) {
+                update.release();
                 return;
             }
 
-            rowSet.insert(added);
-            notifyListeners(added, RowSetFactory.empty(), RowSetFactory.empty());
+            Assert.eqTrue(update.shifted().empty(), "update.shifted().empty()");
+            rowSet.remove(update.removed());
+            rowSet.insert(update.added());
+            notifyListeners(update);
         }
 
         @Override

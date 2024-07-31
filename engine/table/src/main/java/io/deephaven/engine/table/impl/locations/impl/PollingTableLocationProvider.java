@@ -3,13 +3,13 @@
 //
 package io.deephaven.engine.table.impl.locations.impl;
 
-import io.deephaven.engine.table.impl.locations.TableKey;
-import io.deephaven.engine.table.impl.locations.TableLocation;
-import io.deephaven.engine.table.impl.locations.TableLocationKey;
-import io.deephaven.engine.table.impl.locations.TableLocationProvider;
+import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Polling-driven {@link TableLocationProvider} implementation that delegates {@link TableLocationKey location key}
@@ -46,9 +46,21 @@ public class PollingTableLocationProvider<TK extends TableKey, TLK extends Table
         return IMPLEMENTATION_NAME;
     }
 
+    // The simplest way to support "push" of new data availability is to provide a callback to the user that just calls
+    // `refresh`, which would need to become synchronized. Alternatively, we could make an Iceberg-specific aTLP
+    // implementation that exposes a more specific callback, e.g. with a snapshot ID, as well as the option to disable
+    // polling. We do need a mechanism to avoid going backwards, probably.
     @Override
     public void refresh() {
-        locationKeyFinder.findKeys(this::handleTableLocationKey);
+        beginTransaction();
+        final Set<ImmutableTableLocationKey> missedKeys = new HashSet<>(getTableLocationKeys());
+        locationKeyFinder.findKeys(tableLocationKey -> {
+            // noinspection SuspiciousMethodCalls
+            missedKeys.remove(tableLocationKey);
+            handleTableLocationKeyAdded(tableLocationKey);
+        });
+        missedKeys.forEach(this::handleTableLocationKeyRemoved);
+        endTransaction();
         setInitialized();
     }
 

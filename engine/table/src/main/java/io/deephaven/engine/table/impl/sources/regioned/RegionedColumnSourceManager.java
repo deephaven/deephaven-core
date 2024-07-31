@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.*;
@@ -18,12 +19,14 @@ import io.deephaven.engine.table.impl.locations.impl.TableLocationUpdateSubscrip
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.util.DelayedErrorNotifier;
+import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -72,6 +75,17 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
             new KeyedObjectHashMap<>(INCLUDED_TABLE_LOCATION_ENTRY_KEY);
 
     /**
+     * List of locations that were removed this cycle. Will be cleared after each update.
+     */
+    private final List<IncludedTableLocationEntry> removedTableLocations = new ArrayList<>();
+
+    /**
+     * The next region index to assign to a location. We increment for each new location and will not reuse indices from
+     * regions that were removed.
+     */
+    private final MutableInt nextRegionIndex = new MutableInt(0);
+
+    /**
      * Table locations that provide the regions backing our column sources, in insertion order.
      */
     private final List<IncludedTableLocationEntry> orderedIncludedTableLocations = new ArrayList<>();
@@ -106,6 +120,9 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
     @SuppressWarnings("unused")
     @ReferentialIntegrity
     private Runnable delayedErrorReference;
+
+    final List<IncludedTableLocationEntry> invalidatedLocations;
+    final UpdateCommitter<?> invalidateCommitter;
 
     /**
      * Construct a column manager with the specified component factory and definitions.
@@ -165,6 +182,14 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
                 rowSetModifiedColumnSet = null;
             }
         }
+
+        invalidatedLocations = new ArrayList<>();
+        invalidateCommitter = new UpdateCommitter<>(this,
+                ExecutionContext.getContext().getUpdateGraph(),
+                (ignored) -> {
+                    invalidatedLocations.forEach(IncludedTableLocationEntry::invalidate);
+                    invalidatedLocations.clear();
+                });
     }
 
     @Override
@@ -206,7 +231,12 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
                 log.debug().append("EMPTY_LOCATION_REMOVED:").append(locationKey.toString()).endl();
             }
         } else if (includedLocation != null) {
-            includedLocation.invalidate();
+            orderedIncludedTableLocations.remove(includedLocation);
+            removedTableLocations.add(includedLocation);
+
+            // Mark this location for invalidation.
+            invalidatedLocations.add(includedLocation);
+            invalidateCommitter.maybeActivate();
             return true;
         }
 
@@ -219,7 +249,10 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
 
         // Do our first pass over the locations to include as many as possible and build the initial row set
         // noinspection resource
-        final TrackingWritableRowSet initialRowSet = update(true).toTracking();
+        final TableUpdateImpl update = update(true);
+        final TrackingWritableRowSet initialRowSet = update.added().writableCast().toTracking();
+        update.added = null;
+        update.release();
 
         // Add single-column data indexes for all partitioning columns, whether refreshing or not
         columnDefinitions.stream().filter(ColumnDefinition::isPartitioning).forEach(cd -> {
@@ -261,7 +294,7 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
     }
 
     @Override
-    public synchronized WritableRowSet refresh() {
+    public synchronized TableUpdate refresh() {
         if (!isRefreshing) {
             throw new UnsupportedOperationException("Cannot refresh a static table");
         }
@@ -280,8 +313,20 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
         }
     }
 
-    private WritableRowSet update(final boolean initializing) {
+    private TableUpdateImpl update(final boolean initializing) {
         final RowSetBuilderSequential addedRowSetBuilder = RowSetFactory.builderSequential();
+        final RowSetBuilderSequential removedRowSetBuilder = RowSetFactory.builderSequential();
+
+        final RowSetBuilderSequential removedRegionBuilder = RowSetFactory.builderSequential();
+
+        // Sort the removed locations by region index, so that we can process them in order.
+        removedTableLocations.sort(Comparator.comparingInt(e -> e.regionIndex));
+        for (final IncludedTableLocationEntry removedLocation : removedTableLocations) {
+            final long regionFirstKey = RegionedColumnSource.getFirstRowKey(removedLocation.regionIndex);
+            removedRowSetBuilder.appendRowSequenceWithOffset(removedLocation.location.getRowSet(), regionFirstKey);
+            removedRegionBuilder.appendKey(removedLocation.regionIndex);
+        }
+        removedTableLocations.clear();
 
         final RowSetBuilderSequential modifiedRegionBuilder = initializing ? null : RowSetFactory.builderSequential();
 
@@ -318,13 +363,15 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
             }
         }
 
-        final int previousNumRegions = includedTableLocations.size();
-        final int newNumRegions = previousNumRegions + (entriesToInclude == null ? 0 : entriesToInclude.size());
+        final RowSetBuilderSequential addedRegionBuilder = RowSetFactory.builderSequential();
+
+        final int prevMaxIndex = nextRegionIndex.get();
+        final int maxIndex = nextRegionIndex.get() + (entriesToInclude == null ? 0 : entriesToInclude.size());
         if (entriesToInclude != null) {
             partitioningColumnValueSources.values().forEach(
-                    (final WritableColumnSource<?> wcs) -> wcs.ensureCapacity(newNumRegions));
-            locationSource.ensureCapacity(newNumRegions);
-            rowSetSource.ensureCapacity(newNumRegions);
+                    (final WritableColumnSource<?> wcs) -> wcs.ensureCapacity(maxIndex));
+            locationSource.ensureCapacity(maxIndex);
+            rowSetSource.ensureCapacity(maxIndex);
 
             for (final EmptyTableLocationEntry entryToInclude : entriesToInclude) {
                 final IncludedTableLocationEntry entry = new IncludedTableLocationEntry(entryToInclude);
@@ -341,15 +388,17 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
                 // @formatter:on
                 locationSource.set(entry.regionIndex, entry.location);
                 rowSetSource.set(entry.regionIndex, entry.location.getRowSet());
+                addedRegionBuilder.appendKey(entry.regionIndex);
             }
         }
+        final RowSet addedRegions = addedRegionBuilder.build();
 
-        if (previousNumRegions != newNumRegions) {
-            includedLocationsTable.getRowSet().writableCast().insertRange(previousNumRegions, newNumRegions - 1);
+        if (addedRegions.isNonempty()) {
+            includedLocationsTable.getRowSet().writableCast().insert(addedRegions);
         }
 
         if (initializing) {
-            Assert.eqZero(previousNumRegions, "previousNumRegions");
+            Assert.eqZero(prevMaxIndex, "previousNumRegions");
             if (isRefreshing) {
                 rowSetSource.startTrackingPrevValues();
                 includedLocationsTable.getRowSet().writableCast().initializePreviousValue();
@@ -359,21 +408,22 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
             }
         } else {
             final RowSet modifiedRegions = modifiedRegionBuilder.build();
-            if (previousNumRegions == newNumRegions && modifiedRegions.isEmpty()) {
-                modifiedRegions.close();
+            final RowSet removedRegions = removedRegionBuilder.build();
+            if (addedRegions.isEmpty() && modifiedRegions.isEmpty() && removedRegions.isEmpty()) {
+                SafeCloseable.closeAll(addedRegions, modifiedRegions, removedRegions);
             } else {
+                includedLocationsTable.getRowSet().writableCast().remove(removedRegions);
                 final TableUpdate update = new TableUpdateImpl(
-                        previousNumRegions == newNumRegions
-                                ? RowSetFactory.empty()
-                                : RowSetFactory.fromRange(previousNumRegions, newNumRegions - 1),
-                        RowSetFactory.empty(),
+                        addedRegions,
+                        removedRegions,
                         modifiedRegions,
                         RowSetShiftData.EMPTY,
                         modifiedRegions.isNonempty() ? rowSetModifiedColumnSet : ModifiedColumnSet.EMPTY);
                 includedLocationsTable.notifyListeners(update);
             }
         }
-        return addedRowSetBuilder.build();
+        return new TableUpdateImpl(addedRowSetBuilder.build(), removedRowSetBuilder.build(), RowSetFactory.empty(),
+                RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
     }
 
     @Override
@@ -472,7 +522,7 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
         private final TableLocation location;
         private final TableLocationUpdateSubscriptionBuffer subscriptionBuffer;
 
-        private final int regionIndex = includedTableLocations.size();
+        private final int regionIndex = nextRegionIndex.getAndIncrement();
         private final List<ColumnLocationState<?>> columnLocationStates = new ArrayList<>();
 
         /**
