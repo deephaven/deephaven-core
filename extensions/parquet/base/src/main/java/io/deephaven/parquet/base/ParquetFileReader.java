@@ -302,7 +302,7 @@ public class ParquetFileReader {
 
             if (schemaElement.isSetConverted_type()) {
                 final LogicalTypeAnnotation originalType = getLogicalTypeAnnotation(
-                        schemaElement.converted_type, schemaElement.logicalType, schemaElement);
+                        schemaElement.converted_type, schemaElement);
                 final LogicalTypeAnnotation newOriginalType = schemaElement.isSetLogicalType()
                         && getLogicalTypeAnnotation(schemaElement.logicalType) != null
                                 ? getLogicalTypeAnnotation(schemaElement.logicalType)
@@ -405,8 +405,9 @@ public class ParquetFileReader {
         return org.apache.parquet.schema.ColumnOrder.undefined();
     }
 
-    private static LogicalTypeAnnotation getLogicalTypeAnnotation(final ConvertedType convertedType,
-            final LogicalType logicalType, final SchemaElement schemaElement) throws ParquetFileReaderException {
+    private static LogicalTypeAnnotation getLogicalTypeAnnotation(
+            final ConvertedType convertedType,
+            final SchemaElement schemaElement) throws ParquetFileReaderException {
         switch (convertedType) {
             case UTF8:
                 return LogicalTypeAnnotation.stringType();
@@ -430,12 +431,13 @@ public class ParquetFileReader {
             case TIME_MICROS:
                 return LogicalTypeAnnotation.timeType(true, LogicalTypeAnnotation.TimeUnit.MICROS);
             case TIMESTAMP_MILLIS:
-                // Converted type doesn't have isAdjustedToUTC parameter, so use the information from logical type
-                return LogicalTypeAnnotation.timestampType(isAdjustedToUTC(logicalType),
-                        LogicalTypeAnnotation.TimeUnit.MILLIS);
+                // TIMESTAMP_MILLIS is always adjusted to UTC
+                // ref: https://github.com/apache/parquet-format/blob/master/LogicalTypes.md
+                return LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.MILLIS);
             case TIMESTAMP_MICROS:
-                return LogicalTypeAnnotation.timestampType(isAdjustedToUTC(logicalType),
-                        LogicalTypeAnnotation.TimeUnit.MICROS);
+                // TIMESTAMP_MICROS is always adjusted to UTC
+                // ref: https://github.com/apache/parquet-format/blob/master/LogicalTypes.md
+                return LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.MICROS);
             case INTERVAL:
                 return LogicalTypeAnnotation.IntervalLogicalTypeAnnotation.getInstance();
             case INT_8:
