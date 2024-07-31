@@ -11,6 +11,7 @@ import org.apache.parquet.format.ColumnOrder;
 import org.apache.parquet.format.Type;
 import org.apache.parquet.schema.*;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -296,18 +297,18 @@ public class ParquetFileReader {
                         columnOrders, columnCount);
             }
 
+            final LogicalTypeAnnotation logicalType;
             if (schemaElement.isSetLogicalType()) {
-                ((Types.Builder) childBuilder).as(getLogicalTypeAnnotation(schemaElement.logicalType));
+                logicalType = getLogicalTypeAnnotation(schemaElement.logicalType);
+                ((Types.Builder) childBuilder).as(logicalType);
+            } else {
+                logicalType = null;
             }
 
             if (schemaElement.isSetConverted_type()) {
                 final LogicalTypeAnnotation originalType = getLogicalTypeAnnotation(
                         schemaElement.converted_type, schemaElement);
-                final LogicalTypeAnnotation newOriginalType = schemaElement.isSetLogicalType()
-                        && getLogicalTypeAnnotation(schemaElement.logicalType) != null
-                                ? getLogicalTypeAnnotation(schemaElement.logicalType)
-                                : null;
-                if (!originalType.equals(newOriginalType)) {
+                if (!originalType.equals(logicalType)) {
                     ((Types.Builder) childBuilder).as(originalType);
                 }
             }
@@ -335,7 +336,9 @@ public class ParquetFileReader {
         }
     }
 
-    static LogicalTypeAnnotation getLogicalTypeAnnotation(LogicalType type) throws ParquetFileReaderException {
+    @Nullable
+    private static LogicalTypeAnnotation getLogicalTypeAnnotation(@NotNull final LogicalType type)
+            throws ParquetFileReaderException {
         switch (type.getSetField()) {
             case MAP:
                 return LogicalTypeAnnotation.mapType();
