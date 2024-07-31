@@ -1762,7 +1762,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
     @Override
     public void maybeReviveSubscription() {
-//         getBinding().maybeReviveSubscription();
+        // getBinding().maybeReviveSubscription();
     }
 
 }
