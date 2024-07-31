@@ -80,7 +80,7 @@ public class ObjectArrayExpansionKernel implements ArrayExpansionKernel {
         int lenRead = 0;
         for (int i = 0; i < itemsInBatch; ++i) {
             final int rowLen = perElementLengthDest.get(i + 1) - perElementLengthDest.get(i);
-            final Object[] row = new Object[rowLen];
+            final Object[] row = (Object[]) ArrayReflectUtil.newInstance(componentType, rowLen);
             if (rowLen != 0) {
                 typedSource.copyToArray(lenRead, row, 0, rowLen);
                 lenRead += rowLen;
