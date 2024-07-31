@@ -1,0 +1,17 @@
+﻿<wpf:ResourceDictionary xml:space="preserve" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:s="clr-namespace:System;assembly=mscorlib" xmlns:ss="urn:shemas-jetbrains-com:settings-storage-xaml" xmlns:wpf="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
+	<s:String x:Key="/Default/Environment/UnitTesting/UnitTestSessionStore/Sessions/=355855d1_002Dccc1_002D49c1_002D97ce_002Dec4208bb3a62/@EntryIndexedValue">&lt;SessionState ContinuousTestingMode="0" IsActive="True" Name="TestAdd" xmlns="urn:schemas-jetbrains-com:jetbrains-ut-session"&gt;&#xD;
+  &lt;TestAncestor&gt;&#xD;
+    &lt;TestId&gt;xUnit::3C5EE5FF-3DB8-42FF-B8CA-675F63929F51::net7.0::Deephaven.DhClientTests.BasicInteropTest.TestAdd&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::3C5EE5FF-3DB8-42FF-B8CA-675F63929F51::net7.0::Deephaven.DhClientTests.BasicInteropTest.TestConcat&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::3C5EE5FF-3DB8-42FF-B8CA-675F63929F51::net7.0::Deephaven.DhClientTests.BasicInteropTest.TestArrayRunningSum&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::3C5EE5FF-3DB8-42FF-B8CA-675F63929F51::net7.0::Deephaven.DhClientTests.BasicInteropTest.TestArrayElementConcat&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::3C5EE5FF-3DB8-42FF-B8CA-675F63929F51::net7.0::Deephaven.DhClientTests.BasicInteropTest.TestBasicStruct&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::3C5EE5FF-3DB8-42FF-B8CA-675F63929F51::net7.0::Deephaven.DhClientTests.SelectTest.TestSupportAllTypes&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::3C5EE5FF-3DB8-42FF-B8CA-675F63929F51::net7.0::Deephaven.DhClientTests.SelectTest.TestSimpleWhere&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::3C5EE5FF-3DB8-42FF-B8CA-675F63929F51::net7.0::Deephaven.DhClientTests.SelectTest.TestSelectAFewColumns&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::3C5EE5FF-3DB8-42FF-B8CA-675F63929F51::net7.0::Deephaven.DhClientTests.UngroupTest.UngroupColumns&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::3C5EE5FF-3DB8-42FF-B8CA-675F63929F51::net7.0::Deephaven.DhClientTests.TickingTest.AllEventuallyGreaterThan10&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::3C5EE5FF-3DB8-42FF-B8CA-675F63929F51::net7.0::Deephaven.DhClientTests.TickingTest.AllDataEventuallyPresent&lt;/TestId&gt;&#xD;
+    &lt;TestId&gt;xUnit::3C5EE5FF-3DB8-42FF-B8CA-675F63929F51::net7.0::Deephaven.DhClientTests.TickingTest.wtf&lt;/TestId&gt;&#xD;
+  &lt;/TestAncestor&gt;&#xD;
+&lt;/SessionState&gt;</s:String></wpf:ResourceDictionary>

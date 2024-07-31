@@ -4,17 +4,18 @@
 
 import time
 import unittest
-from typing import List, Union
+from typing import List, Union, Optional, Dict
 
 import numpy
 import jpy
 
-from deephaven import time_table, new_table, input_table, DHError
+from deephaven import time_table, new_table, input_table, DHError, empty_table
 from deephaven.column import bool_col, string_col
 from deephaven.experimental import time_window
 from deephaven.jcompat import to_sequence
 from deephaven.table import Table
-from deephaven.table_listener import listen, TableListener, TableListenerHandle
+from deephaven.table_listener import listen, TableListener, TableListenerHandle, MergedListener, TableUpdate, \
+    MergedListenerHandle, merged_listen
 from deephaven.execution_context import get_exec_ctx
 from deephaven.update_graph import exclusive_lock
 from tests.testbase import BaseTestCase
@@ -22,7 +23,7 @@ from tests.testbase import BaseTestCase
 _JColumnVectors = jpy.get_type("io.deephaven.engine.table.vectors.ColumnVectors")
 
 class TableUpdateRecorder:
-    def __init__(self, table: Table, chunk_size: int = None, cols: Union[str, List[str]] = None):
+    def __init__(self, table: Optional[Table] = None, chunk_size: int = None, cols: Union[str, List[str]] = None):
         self.table = table
         self.chunk_size = chunk_size
         self.cols = cols
@@ -34,7 +35,10 @@ class TableUpdateRecorder:
         self.replays = []
         self.modified_columns_list = []
 
-    def record(self, update, is_replay):
+    def record(self, update: TableUpdate, is_replay: bool):
+        if not update:
+            return
+
         if self.chunk_size is None:
             self.added.append(update.added())
             self.removed.append(update.removed())
@@ -293,14 +297,14 @@ class TableListenerTestCase(BaseTestCase):
 
         with self.subTest("do_replay=True, replay_lock='exclusive'"):
             table_update_recorder = TableUpdateRecorder(self.test_table)
-            table_listener_handle.start(do_replay=True, replay_lock="exclusive")
+            table_listener_handle.start(do_replay=True)
             ensure_ugp_cycles(table_update_recorder, cycles=3)
             table_listener_handle.stop()
             self.check_update_recorder(table_update_recorder, has_replay=True, has_added=True, has_removed=True, has_modified=False)
 
         with self.subTest("do_replay=True, replay_lock='shared'"):
             table_update_recorder = TableUpdateRecorder(self.test_table)
-            table_listener_handle.start(do_replay=True, replay_lock="shared") # noqa
+            table_listener_handle.start(do_replay=True) # noqa
             ensure_ugp_cycles(table_update_recorder, cycles=3)
             table_listener_handle.stop()
             self.check_update_recorder(table_update_recorder, has_replay=True, has_added=True, has_removed=True, has_modified=False)
@@ -326,6 +330,153 @@ class TableListenerTestCase(BaseTestCase):
 
         with self.assertRaises(DHError):
             table_listener_handle = TableListenerHandle(self.test_table, listener_func, dependencies=dep_table)
+
+    def test_merged_listener_obj(self):
+        t1 = time_table("PT1s").update(["X=i % 11"])
+        t2 = time_table("PT2s").update(["Y=i % 8"])
+        t3 = time_table("PT3s").update(["Z=i % 5"])
+
+        class TestMergedListener(MergedListener):
+            def on_update(self, updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
+                for update in updates.values():
+                    tur.record(update, is_replay)
+
+        tml = TestMergedListener()
+        with self.subTest("Direct Handle"):
+            tur = TableUpdateRecorder()
+            mlh = MergedListenerHandle([t1, t2, t3], tml)
+            mlh.start()
+            ensure_ugp_cycles(tur, cycles=3)
+            mlh.stop()
+            mlh.start()
+            ensure_ugp_cycles(tur, cycles=6)
+            mlh.stop()
+            self.assertGreaterEqual(len(tur.replays), 6)
+
+        with self.subTest("Convenience function"):
+            tur = TableUpdateRecorder()
+            mlh = merged_listen([t1, t2, t3], tml)
+            ensure_ugp_cycles(tur, cycles=3)
+            mlh.stop()
+            mlh.start()
+            ensure_ugp_cycles(tur, cycles=6)
+            mlh.stop()
+            self.assertGreaterEqual(len(tur.replays), 6)
+
+    def test_merged_listener_func(self):
+        t1 = time_table("PT1s").update(["X=i % 11"])
+        t2 = time_table("PT2s").update(["Y=i % 8"])
+        t3 = time_table("PT3s").update(["Z=i % 5"])
+
+        def test_ml_func(updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
+            if updates[t1] or updates[t3]:
+                tur.record(updates[t1], is_replay)
+
+        with self.subTest("Direct Handle"):
+            tur = TableUpdateRecorder()
+            mlh = MergedListenerHandle([t1, t2, t3], test_ml_func)
+            mlh.start()
+            ensure_ugp_cycles(tur, cycles=3)
+            mlh.stop()
+            mlh.start()
+            ensure_ugp_cycles(tur, cycles=6)
+            mlh.stop()
+            self.assertGreaterEqual(len(tur.replays), 6)
+
+        with self.subTest("Convenience function"):
+            tur = TableUpdateRecorder()
+            mlh = merged_listen([t1, t2, t3], test_ml_func)
+            ensure_ugp_cycles(tur, cycles=3)
+            mlh.stop()
+            mlh.start()
+            ensure_ugp_cycles(tur, cycles=6)
+            mlh.stop()
+            self.assertGreaterEqual(len(tur.replays), 6)
+
+    def test_merged_listener_with_deps(self):
+        t1 = time_table("PT1s").update(["X=i % 11"])
+        t2 = time_table("PT2s").update(["Y=i % 8"])
+        t3 = time_table("PT3s").update(["Z=i % 5"])
+
+        dep_table = time_table("PT00:00:05").update("X = i % 11")
+        ec = get_exec_ctx()
+
+        tur = TableUpdateRecorder()
+        j_arrays = []
+        class TestMergedListener(MergedListener):
+            def on_update(self, updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
+                if updates[t1] and updates[t2]:
+                    tur.record(updates[t2], is_replay)
+
+                with ec:
+                    t = dep_table.view(["Y = i % 8"])
+                    j_arrays.append(_JColumnVectors.of(t.j_table, "Y").copyToArray())
+
+        tml = TestMergedListener()
+        mlh = MergedListenerHandle(tables=[t1, t2, t3], listener=tml, dependencies=dep_table)
+        mlh.start()
+        ensure_ugp_cycles(tur, cycles=3)
+        mlh.stop()
+        mlh.start()
+        ensure_ugp_cycles(tur, cycles=6)
+        mlh.stop()
+        self.assertGreaterEqual(len(tur.replays), 6)
+        self.assertTrue(len(j_arrays) > 0 and all([len(ja) > 0 for ja in j_arrays]))
+
+    def test_merged_listener_error(self):
+        t1 = time_table("PT1s").update(["X=i % 11"])
+
+        def test_ml_func(updates: Dict[Table, TableUpdate]) -> None:
+            pass
+
+        with self.assertRaises(DHError) as cm:
+            mlh = MergedListenerHandle([t1], test_ml_func)
+        self.assertIn("at least 2 refreshing tables", str(cm.exception))
+
+        et = empty_table(1)
+        with self.assertRaises(DHError) as cm:
+            mlh = merged_listen([t1, et], test_ml_func)
+        self.assertIn("must be a refreshing table", str(cm.exception))
+
+    def test_merged_listener_replay(self):
+        t1 = time_table("PT1s").update(["X=i % 11"])
+        t2 = time_table("PT2s").update(["Y=i % 8"])
+        t3 = time_table("PT3s").update(["Z=i % 5"])
+
+        class TestMergedListener(MergedListener):
+            def on_update(self, updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
+                for update in updates.values():
+                    tur.record(update, is_replay)
+
+        tml = TestMergedListener()
+        t1.await_update()
+        t2.await_update()
+        t3.await_update()
+        with self.subTest("MergedListener - replay"):
+            tur = TableUpdateRecorder()
+            mlh = merged_listen([t1, t2, t3], tml, do_replay=True)
+            ensure_ugp_cycles(tur, cycles=3)
+            mlh.stop()
+            mlh.start(do_replay=True)
+            ensure_ugp_cycles(tur, cycles=6)
+            mlh.stop()
+            self.assertGreaterEqual(len(tur.replays), 6)
+            self.assertEqual(tur.replays.count(True), 2 * 3)
+
+        def test_ml_func(updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
+            tur.record(updates[t3], is_replay)
+
+        with self.subTest("Direct Handle - replay"):
+            tur = TableUpdateRecorder()
+            mlh = MergedListenerHandle([t1, t2, t3], test_ml_func)
+            mlh.start(do_replay=True)
+            ensure_ugp_cycles(tur, cycles=3)
+            mlh.stop()
+            mlh.start(do_replay=True)
+            ensure_ugp_cycles(tur, cycles=6)
+            mlh.stop()
+            self.assertGreaterEqual(len(tur.replays), 6)
+            self.assertEqual(tur.replays.count(True), 2)
 
 
 if __name__ == "__main__":

@@ -8,7 +8,6 @@ import io.deephaven.util.QueryConstants;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.ArrayUtils;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Date;
@@ -131,21 +130,6 @@ public class TestTypeUtils extends TestCase {
     }
 
     public void testIsType() {
-        assertFalse(io.deephaven.util.type.TypeUtils.isPrimitiveNumeric(Instant.class));
-        assertFalse(io.deephaven.util.type.TypeUtils.isPrimitiveNumeric(Date.class));
-        assertTrue(io.deephaven.util.type.TypeUtils.isPrimitiveNumeric(int.class));
-        assertFalse(io.deephaven.util.type.TypeUtils.isPrimitiveNumeric(Double.class));
-
-        assertFalse(io.deephaven.util.type.TypeUtils.isBoxedNumeric(Instant.class));
-        assertFalse(io.deephaven.util.type.TypeUtils.isBoxedNumeric(Date.class));
-        assertFalse(io.deephaven.util.type.TypeUtils.isBoxedNumeric(int.class));
-        assertTrue(io.deephaven.util.type.TypeUtils.isBoxedNumeric(Double.class));
-
-        assertFalse(io.deephaven.util.type.TypeUtils.isNumeric(Instant.class));
-        assertFalse(io.deephaven.util.type.TypeUtils.isNumeric(Date.class));
-        assertTrue(io.deephaven.util.type.TypeUtils.isNumeric(int.class));
-        assertTrue(io.deephaven.util.type.TypeUtils.isNumeric(Double.class));
-
         assertFalse(io.deephaven.util.type.TypeUtils.isCharacter(Instant.class));
         assertFalse(io.deephaven.util.type.TypeUtils.isCharacter(Date.class));
         assertFalse(io.deephaven.util.type.TypeUtils.isCharacter(int.class));
@@ -163,11 +147,6 @@ public class TestTypeUtils extends TestCase {
         assertFalse(io.deephaven.util.type.TypeUtils.isBoxedChar(int.class));
         assertFalse(io.deephaven.util.type.TypeUtils.isBoxedChar(char.class));
         assertTrue(io.deephaven.util.type.TypeUtils.isBoxedChar(Character.class));
-    }
-
-    public void testObjectToString() throws IOException {
-        assertNull(io.deephaven.util.type.TypeUtils.objectToString(null)); // null input
-        assertEquals("STRING", io.deephaven.util.type.TypeUtils.objectToString("STRING")); // non null input
     }
 
     public void testBoxing() {

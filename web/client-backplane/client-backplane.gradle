@@ -3,7 +3,11 @@ plugins {
 }
 
 GwtTools.gwtLib project
-Classpaths.inheritJsInterop(project, 'base', 'implementation')
-Classpaths.inheritJsInterop(project, 'jsinterop-annotations', 'compileOnly')
-Classpaths.inheritElemental(project, 'elemental2-core', 'implementation')
-Classpaths.inheritElemental(project, 'elemental2-promise', 'implementation')
+
+dependencies {
+    implementation libs.jsinterop.base
+    compileOnly libs.jsinterop.annotations
+
+    implementation libs.elemental.core
+    implementation libs.elemental.promise
+}

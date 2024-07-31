@@ -5,7 +5,7 @@ package io.deephaven.replicators;
 
 import java.io.IOException;
 
-import static io.deephaven.replication.ReplicatePrimitiveCode.intToAllButBoolean;
+import static io.deephaven.replication.ReplicatePrimitiveCode.intToAllButBooleanAndLong;
 import static io.deephaven.replication.ReplicatePrimitiveCode.replaceAll;
 
 /**
@@ -19,29 +19,23 @@ public class ReplicateToPage {
             "extensions/parquet/table/src/main/java/io/deephaven/parquet/table/pagestore/topage/";
 
     private static final String TO_INT_PAGE_PATH = TO_PAGE_DIR + "ToIntPage.java";
-    private static final String TO_LOCAL_DATE_PAGE_PATH = TO_PAGE_DIR + "ToLocalDatePage.java";
+    private static final String TO_LOCAL_DATE_TIME_PAGE_PATH = TO_PAGE_DIR + "ToLocalDateTimePage.java";
     private static final String TO_BIG_INTEGER_PAGE_PATH = TO_PAGE_DIR + "ToBigIntegerPage.java";
 
     public static void main(String... args) throws IOException {
-        intToAllButBoolean(TASK, TO_INT_PAGE_PATH, "interface");
+        intToAllButBooleanAndLong(TASK, TO_INT_PAGE_PATH, "interface");
 
-        // LocalDate -> LocalDateTime
+        // LocalDateTime -> LocalTime
         String[][] pairs = new String[][] {
-                {"LocalDate", "LocalDateTime"}
+                {"LocalDateTime", "LocalTime"}
         };
-        replaceAll(TASK, TO_LOCAL_DATE_PAGE_PATH, null, NO_EXCEPTIONS, pairs);
-
-        // LocalDate -> LocalTime
-        pairs = new String[][] {
-                {"LocalDate", "LocalTime"}
-        };
-        replaceAll(TASK, TO_LOCAL_DATE_PAGE_PATH, null, NO_EXCEPTIONS, pairs);
+        replaceAll(TASK, TO_LOCAL_DATE_TIME_PAGE_PATH, null, NO_EXCEPTIONS, pairs);
 
         // BigInteger -> BigDecimal
         pairs = new String[][] {
+                {"BigIntegerMaterializer", "BigDecimalFromBytesMaterializer"},
                 {"BigInteger", "BigDecimal"}
         };
         replaceAll(TASK, TO_BIG_INTEGER_PAGE_PATH, null, NO_EXCEPTIONS, pairs);
-
     }
 }

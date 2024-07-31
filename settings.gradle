@@ -271,8 +271,8 @@ project(':extensions-s3').projectDir = file('extensions/s3')
 include(':extensions-iceberg')
 project(':extensions-iceberg').projectDir = file('extensions/iceberg')
 
-include(':extensions-iceberg:s3')
-project(':extensions-iceberg:s3').projectDir = file('extensions/iceberg/s3')
+include(':extensions-iceberg-s3')
+project(':extensions-iceberg-s3').projectDir = file('extensions/iceberg/s3')
 
 include(':extensions-json')
 project(':extensions-json').projectDir = file('extensions/json')
@@ -415,6 +415,13 @@ include ':clock'
 include ':clock-impl'
 
 include ':sql'
+
+include(':codec-api')
+project(':codec-api').projectDir = file('codec/api')
+include(':codec-builtin')
+project(':codec-builtin').projectDir = file('codec/builtin')
+include(':codec-cache')
+project(':codec-cache').projectDir = file('codec/cache')
 
 file("${rootDir}/docker/registry").list().each { name ->
     if (file("${rootDir}/docker/registry/${name}/build.gradle").exists()) {

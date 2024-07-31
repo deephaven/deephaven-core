@@ -12,7 +12,7 @@ import java.time.LocalDate;
 
 public class LocalDateMaterializer extends ObjectMaterializerBase<LocalDate> implements PageMaterializer {
 
-    public static final PageMaterializerFactory Factory = new PageMaterializerFactory() {
+    public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
             return new LocalDateMaterializer(dataReader, (LocalDate) nullValue, numValues);

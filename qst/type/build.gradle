@@ -6,11 +6,13 @@ plugins {
 description = 'The Deephaven QST Types'
 
 dependencies {
-    Classpaths.inheritImmutables(project)
-    Classpaths.inheritJUnitPlatform(project)
-    Classpaths.inheritAssertJ(project)
-    testImplementation 'org.junit.jupiter:junit-jupiter'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables.value
+
+    testImplementation libs.assertj
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly libs.junit.platform.launcher
 }
 
 test {

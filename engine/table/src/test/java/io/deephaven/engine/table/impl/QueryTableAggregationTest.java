@@ -10,7 +10,6 @@ import io.deephaven.api.agg.Count;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.base.FileUtils;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -887,7 +886,7 @@ public class QueryTableAggregationTest {
 
         final Set<String> keyColumnSet = new LinkedHashSet<>(table.getDefinition().getColumnNameSet());
         keyColumnSet.remove("NonKey");
-        final String[] keyColumns = keyColumnSet.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        final String[] keyColumns = keyColumnSet.toArray(String[]::new);
 
         table.lastBy("Date", "Sym");
 
@@ -2246,6 +2245,40 @@ public class QueryTableAggregationTest {
             RefreshingTableTestCase.simulateShiftAwareStep(size, random, queryTable, columnInfo, en);
         }
 
+    }
+
+    @Test
+    public void testWeightedSumByLong() {
+        final QueryTable table = testRefreshingTable(i(2, 4, 6).toTracking(),
+                col("Long1", 2L, 4L, 6L), col("Long2", 1L, 2L, 3L));
+        final Table result = table.wsumBy("Long2");
+        TableTools.show(result);
+        TestCase.assertEquals(1, result.size());
+        long result_wsum = result.getColumnSource("Long1", long.class).getLong(result.getRowSet().firstRowKey());
+        long wsum = 2 + 8 + 18;
+        TestCase.assertEquals(wsum, result_wsum);
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            addToTable(table, i(8), col("Long1", (long) Integer.MAX_VALUE), col("Long2", 7L));
+            table.notifyListeners(i(8), i(), i());
+        });
+        show(result);
+        result_wsum = result.getColumnSource("Long1", long.class).getLong(result.getRowSet().firstRowKey());
+        wsum = wsum + (7L * (long) Integer.MAX_VALUE);
+        TestCase.assertEquals(wsum, result_wsum);
+    }
+
+    @Test
+    public void testId5522() {
+        final QueryTable table = testRefreshingTable(i(2, 4, 6).toTracking(),
+                col("Long1", 10L, 20L, 30L), col("Long2", 1L, NULL_LONG, 1L));
+        final Table result = table.wsumBy("Long2");
+        TableTools.show(result);
+        TestCase.assertEquals(1, result.size());
+        long result_wsum = result.getColumnSource("Long1", long.class).getLong(result.getRowSet().firstRowKey());
+        long wsum = 10 + 30;
+        TestCase.assertEquals(wsum, result_wsum);
     }
 
     @Test
@@ -3888,7 +3921,7 @@ public class QueryTableAggregationTest {
             final Table agg = data.selectDistinct("NonExistentCol");
             fail("Should have thrown an exception");
         } catch (Exception ex) {
-            io.deephaven.base.verify.Assert.instanceOf(ex, "ex", IllegalArgumentException.class);
+            assertTrue(ex instanceof IllegalArgumentException);
             io.deephaven.base.verify.Assert.assertion(
                     ex.getMessage().contains("Missing columns: [NonExistentCol]"),
                     "ex.getMessage().contains(\"Missing columns: [NonExistentCol]\")",
@@ -3943,7 +3976,7 @@ public class QueryTableAggregationTest {
                     t4.updateView("Date=`2021-07-21`", "Num=400")).moveColumnsUp("Date", "Num");
 
             final Table loaded = ParquetTools.readTable(
-                    new ParquetKeyValuePartitionedLayout(testRootFile.toURI(), 2, ParquetInstructions.EMPTY),
+                    ParquetKeyValuePartitionedLayout.create(testRootFile.toURI(), 2, ParquetInstructions.EMPTY, null),
                     ParquetInstructions.EMPTY);
 
             // verify the sources are identical

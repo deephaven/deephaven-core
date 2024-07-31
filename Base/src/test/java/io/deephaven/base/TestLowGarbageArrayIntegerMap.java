@@ -59,8 +59,7 @@ public class TestLowGarbageArrayIntegerMap extends TestCase {
         try {
             integerToStringMap.put(-1, "negative one");
             fail("expected bad index to fail");
-        } catch (RequirementFailure requirementFailure) {
-            assertTrue(requirementFailure.isThisStackFrameCulprit(-1));
+        } catch (RequirementFailure expected) {
         }
 
         try {

@@ -12,7 +12,6 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.AssertionFailure;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.exceptions.UpdateGraphConflictException;
@@ -46,6 +45,7 @@ import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.locks.AwareFunctionalLock;
+import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.vector.*;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -436,11 +436,11 @@ public class QueryTableTest extends QueryTableTestBase {
 
         Table table = newTable(3, Arrays.asList("String", "Int"),
                 Arrays.asList(TableTools.objColSource("c", "e", "g"), TableTools.colSource(2, 4, 6)));
-        assertEquals(2, table.view(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).numColumns());
+        assertEquals(2, table.view(ArrayTypeUtils.EMPTY_STRING_ARRAY).numColumns());
         assertEquals(table.getDefinition().getColumns().get(0).getName(),
-                table.view(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getDefinition().getColumns().get(0).getName());
+                table.view(ArrayTypeUtils.EMPTY_STRING_ARRAY).getDefinition().getColumns().get(0).getName());
         assertEquals(table.getDefinition().getColumns().get(1).getName(),
-                table.view(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getDefinition().getColumns().get(1).getName());
+                table.view(ArrayTypeUtils.EMPTY_STRING_ARRAY).getDefinition().getColumns().get(1).getName());
 
         assertEquals(2, table.view("String", "Int").numColumns());
         assertEquals(table.getDefinition().getColumns().get(0).getName(),
@@ -594,22 +594,22 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table table = newTable(3,
                 Arrays.asList("String", "Int", "Double"),
                 Arrays.asList(TableTools.objColSource("c", "e", "g"), colSource(2, 4, 6), colSource(1.0, 2.0, 3.0)));
-        assertEquals(3, table.renameColumns(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getColumnSources().size());
+        assertEquals(3, table.renameColumns(ArrayTypeUtils.EMPTY_STRING_ARRAY).getColumnSources().size());
         final Collection<? extends ColumnSource<?>> columnSources = table.getColumnSources();
         final ColumnSource<?>[] columns = columnSources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
         final Collection<? extends ColumnSource<?>> renamedColumnSources =
-                table.renameColumns(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getColumnSources();
+                table.renameColumns(ArrayTypeUtils.EMPTY_STRING_ARRAY).getColumnSources();
         final ColumnSource<?>[] renamedColumns =
                 renamedColumnSources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
         assertSame(columns[0], renamedColumns[0]);
         assertSame(columns[1], renamedColumns[1]);
         assertSame(columns[2], renamedColumns[2]);
         assertSame(table.getColumnSource("String"),
-                table.renameColumns(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getColumnSource("String"));
+                table.renameColumns(ArrayTypeUtils.EMPTY_STRING_ARRAY).getColumnSource("String"));
         assertSame(table.getColumnSource("Int"),
-                table.renameColumns(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getColumnSource("Int"));
+                table.renameColumns(ArrayTypeUtils.EMPTY_STRING_ARRAY).getColumnSource("Int"));
         assertSame(table.getColumnSource("Double"),
-                table.renameColumns(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getColumnSource("Double"));
+                table.renameColumns(ArrayTypeUtils.EMPTY_STRING_ARRAY).getColumnSource("Double"));
 
         assertEquals(3, table.renameColumns("NewInt=Int").numColumns());
         assertEquals(table.getColumnSources().toArray()[0],
@@ -2631,7 +2631,7 @@ public class QueryTableTest extends QueryTableTestBase {
     public void testUngroupingAgnostic() {
         int[][] data1 = new int[][] {new int[] {4, 5, 6}, new int[0], new int[] {7, 8}};
         Table table = testRefreshingTable(col("X", 1, 2, 3),
-                col("Y", new String[] {"a", "b", "c"}, CollectionUtil.ZERO_LENGTH_STRING_ARRAY,
+                col("Y", new String[] {"a", "b", "c"}, ArrayTypeUtils.EMPTY_STRING_ARRAY,
                         new String[] {"d", "e"}),
                 col("Z", data1));
 
@@ -2654,7 +2654,7 @@ public class QueryTableTest extends QueryTableTestBase {
         int[][] data = new int[][] {new int[] {4, 5, 6}, new int[0], new int[] {7, 8}};
         table = testRefreshingTable(col("X", 1, 2, 3),
                 col("Y", new String[] {"a", "b", "c"}, new String[] {"d", "e"},
-                        CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
+                        ArrayTypeUtils.EMPTY_STRING_ARRAY),
                 col("Z", data));
         try {
             table.ungroup();
@@ -2881,7 +2881,7 @@ public class QueryTableTest extends QueryTableTestBase {
                         new DateGenerator(format.parse("2011-02-02"), format.parse("2011-02-03")),
                         new SetGenerator<>("a", "b"),
                         new SetGenerator<>(10, 20, 30),
-                        new SetGenerator<>(CollectionUtil.ZERO_LENGTH_STRING_ARRAY, new String[] {"a", "b"},
+                        new SetGenerator<>(ArrayTypeUtils.EMPTY_STRING_ARRAY, new String[] {"a", "b"},
                                 new String[] {"a", "b", "c"})));
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {

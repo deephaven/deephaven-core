@@ -8,17 +8,20 @@ description 'Reflective Replicators: Source code generators and replicators with
 dependencies {
     implementation project(':replication-util')
     implementation project(':engine-table')
-    implementation 'com.squareup:javapoet:1.13.0'
-    implementation depTrove3
-    implementation depCommonsIo
-    implementation depCommonsLang3
+    implementation libs.squareup.javapoet
+    implementation libs.trove
+    implementation libs.commons.io
+    implementation libs.commons.lang3
 
     runtimeOnly project(':log-to-slf4j')
     runtimeOnly project(path: ':configs')
     runtimeOnly project(path: ':test-configs')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'runtimeOnly')
+    runtimeOnly libs.slf4j.simple
 
-    Classpaths.inheritArrow(project, 'arrow-vector', 'implementation')
+    implementation libs.arrow.vector
+
+    // needed at compile + runtime due to our use of code-generation at runtime
+    implementation libs.jetbrains.annotations
 }
 
 task replicateAll {

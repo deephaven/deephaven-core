@@ -9,8 +9,8 @@ dependencies {
     implementation project(':Util')
     implementation project(':Base')
     implementation project(':replication-util')
-    implementation depTrove3
-    implementation depCommonsIo
+    implementation libs.trove
+    implementation libs.commons.io
 }
 
 // These replicators do not require any manual fix-up and may be run without supervision

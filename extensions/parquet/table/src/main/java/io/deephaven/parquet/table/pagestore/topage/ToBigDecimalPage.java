@@ -9,7 +9,8 @@ package io.deephaven.parquet.table.pagestore.topage;
 
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Any;
-import io.deephaven.parquet.base.BigDecimalParquetBytesCodec;
+import io.deephaven.parquet.base.PageMaterializerFactory;
+import io.deephaven.parquet.base.materializers.BigDecimalFromBytesMaterializer;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.codec.ObjectCodec;
 import org.apache.parquet.column.Dictionary;
@@ -20,7 +21,7 @@ import java.util.function.Function;
 
 public class ToBigDecimalPage<ATTR extends Any> implements ToPage<ATTR, BigDecimal[]> {
 
-    private static final ToBigDecimalPage<? extends Any> INSTANCE = new ToBigDecimalPage<>();
+    private final PageMaterializerFactory pageMaterializerFactory;
 
     public static <ATTR extends Any> ToPage<ATTR, BigDecimal[]> create(
             final Class<?> nativeType,
@@ -28,8 +29,7 @@ public class ToBigDecimalPage<ATTR extends Any> implements ToPage<ATTR, BigDecim
             final Function<SeekableChannelContext, Dictionary> dictionarySupplier) {
         if (nativeType == null || BigDecimal.class.equals(nativeType)) {
             if (dictionarySupplier == null) {
-                // noinspection unchecked
-                return (ToPage<ATTR, BigDecimal[]>) INSTANCE;
+                return new ToBigDecimalPage<>(codec);
             }
             // Note that dictionary supplier is never null, even if it points to a NULL_DICTIONARY.
             // So we always use the following dictionary version of ToPage but internally, we check if the dictionary is
@@ -37,18 +37,18 @@ public class ToBigDecimalPage<ATTR extends Any> implements ToPage<ATTR, BigDecim
             return new ToPageWithDictionary<>(
                     BigDecimal.class,
                     new ChunkDictionary<>(
-                            (dictionary, key) -> {
-                                final byte[] bytes = dictionary.decodeToBinary(key).getBytes();
-                                return codec.decode(bytes, 0, bytes.length);
-                            },
+                            (dictionary, key) -> codec.decode(dictionary.decodeToBinary(key).toByteBuffer()),
                             dictionarySupplier),
-                    INSTANCE::convertResult);
+                    (final Object result) -> (BigDecimal[]) result,
+                    new BigDecimalFromBytesMaterializer.Factory(codec));
         }
         throw new IllegalArgumentException(
                 "The native type for a BigDecimal column is " + nativeType.getCanonicalName());
     }
 
-    private ToBigDecimalPage() {}
+    private ToBigDecimalPage(@NotNull final ObjectCodec<BigDecimal> codec) {
+        pageMaterializerFactory = new BigDecimalFromBytesMaterializer.Factory(codec);
+    }
 
     @Override
     @NotNull
@@ -60,5 +60,11 @@ public class ToBigDecimalPage<ATTR extends Any> implements ToPage<ATTR, BigDecim
     @NotNull
     public final ChunkType getChunkType() {
         return ChunkType.Object;
+    }
+
+    @Override
+    @NotNull
+    public final PageMaterializerFactory getPageMaterializerFactory() {
+        return pageMaterializerFactory;
     }
 }

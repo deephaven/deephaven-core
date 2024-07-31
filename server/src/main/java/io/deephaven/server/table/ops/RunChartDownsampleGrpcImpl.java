@@ -6,7 +6,6 @@ package io.deephaven.server.table.ops;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.clientsupport.plotdownsampling.RunChartDownsample;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest;
@@ -41,6 +40,6 @@ public class RunChartDownsampleGrpcImpl extends GrpcTableOperation<RunChartDowns
                 request.getPixelCount(),
                 zoomRange,
                 request.getXColumnName(),
-                request.getYColumnNamesList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
+                request.getYColumnNamesList().toArray(String[]::new)));
     }
 }

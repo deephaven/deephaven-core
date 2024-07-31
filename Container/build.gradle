@@ -4,7 +4,7 @@ plugins {
 }
 
 dependencies {
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    testImplementation libs.junit4
 }
 
 spotless {

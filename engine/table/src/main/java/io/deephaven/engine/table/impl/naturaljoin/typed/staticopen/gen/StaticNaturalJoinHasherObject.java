@@ -52,7 +52,7 @@ final class StaticNaturalJoinHasherObject extends StaticNaturalJoinStateManagerT
             int tableLocation = firstTableLocation;
             while (true) {
                 long rightSideSentinel = mainRightRowKey.getUnsafe(tableLocation);
-                if (rightSideSentinel == EMPTY_RIGHT_STATE) {
+                if (isStateEmpty(rightSideSentinel)) {
                     numEntries++;
                     mainKeySource0.set(tableLocation, k0);
                     mainRightRowKey.set(tableLocation, NO_RIGHT_STATE_VALUE);
@@ -80,7 +80,7 @@ final class StaticNaturalJoinHasherObject extends StaticNaturalJoinStateManagerT
             int tableLocation = firstTableLocation;
             while (true) {
                 long rightSideSentinel = mainRightRowKey.getUnsafe(tableLocation);
-                if (rightSideSentinel == EMPTY_RIGHT_STATE) {
+                if (isStateEmpty(rightSideSentinel)) {
                     numEntries++;
                     mainKeySource0.set(tableLocation, k0);
                     final long rightRowKeyToInsert = rowKeyChunk.get(chunkPosition);
@@ -108,7 +108,7 @@ final class StaticNaturalJoinHasherObject extends StaticNaturalJoinStateManagerT
             boolean found = false;
             int tableLocation = firstTableLocation;
             long rightRowKey;
-            while ((rightRowKey = mainRightRowKey.getUnsafe(tableLocation)) != EMPTY_RIGHT_STATE) {
+            while (!isStateEmpty(rightRowKey = mainRightRowKey.getUnsafe(tableLocation))) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     if (rightRowKey == DUPLICATE_RIGHT_STATE) {
                         final LongChunk<OrderedRowKeys> rowKeyChunk = rowSequence.asRowKeyChunk();
@@ -137,7 +137,7 @@ final class StaticNaturalJoinHasherObject extends StaticNaturalJoinStateManagerT
             final int firstTableLocation = hashToTableLocation(hash);
             int tableLocation = firstTableLocation;
             long existingStateValue;
-            while ((existingStateValue = mainRightRowKey.getUnsafe(tableLocation)) != EMPTY_RIGHT_STATE) {
+            while (!isStateEmpty(existingStateValue = mainRightRowKey.getUnsafe(tableLocation))) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     if (existingStateValue != NO_RIGHT_STATE_VALUE) {
                         mainRightRowKey.set(tableLocation, DUPLICATE_RIGHT_STATE);
@@ -157,5 +157,9 @@ final class StaticNaturalJoinHasherObject extends StaticNaturalJoinStateManagerT
     private static int hash(Object k0) {
         int hash = ObjectChunkHasher.hashInitialSingle(k0);
         return hash;
+    }
+
+    private static boolean isStateEmpty(long state) {
+        return state == EMPTY_RIGHT_STATE;
     }
 }

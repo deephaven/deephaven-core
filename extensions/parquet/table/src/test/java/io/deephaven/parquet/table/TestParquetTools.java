@@ -20,6 +20,7 @@ import io.deephaven.parquet.base.InvalidParquetFileException;
 import io.deephaven.parquet.table.layout.ParquetKeyValuePartitionedLayout;
 import io.deephaven.stringset.HashStringSet;
 import io.deephaven.stringset.StringSet;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.vector.*;
 import junit.framework.TestCase;
 import org.junit.*;
@@ -28,6 +29,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Proxy;
 import java.nio.file.Files;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -39,7 +41,9 @@ import java.util.stream.LongStream;
 import static io.deephaven.engine.testutil.TstUtils.assertTableEquals;
 import static io.deephaven.engine.testutil.TstUtils.tableRangesAreEqual;
 import static io.deephaven.engine.util.TableTools.*;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Tests for {@link ParquetTools}.
@@ -349,7 +353,7 @@ public class TestParquetTools {
         final TableDefinition partitionedDefinition = TableDefinition.of(allColumns);
 
         final Table result = ParquetTools.readTable(
-                new ParquetKeyValuePartitionedLayout(testRootFile.toURI(), 2, ParquetInstructions.EMPTY),
+                ParquetKeyValuePartitionedLayout.create(testRootFile.toURI(), 2, ParquetInstructions.EMPTY, null),
                 ParquetInstructions.EMPTY);
         TestCase.assertEquals(partitionedDefinition, result.getDefinition());
         final Table expected = TableTools.merge(
@@ -527,6 +531,8 @@ public class TestParquetTools {
         assertTableEquals(transform.apply(source), transform.apply(readBack));
     }
 
+    // This method is used in a formula. Do not remove
+    @SuppressWarnings("unused")
     public static DoubleVector generateDoubles(int howMany) {
         final double[] yarr = new double[howMany];
         for (int ii = 0; ii < howMany; ii++) {
@@ -535,6 +541,8 @@ public class TestParquetTools {
         return new DoubleVectorDirect(yarr);
     }
 
+    // This method is used in a formula. Do not remove
+    @SuppressWarnings("unused")
     public static FloatVector generateFloats(int howMany) {
         final float[] yarr = new float[howMany];
         for (int ii = 0; ii < howMany; ii++) {
@@ -543,11 +551,33 @@ public class TestParquetTools {
         return new FloatVectorDirect(yarr);
     }
 
+    // This method is used in a formula. Do not remove
+    @SuppressWarnings("unused")
     public static ObjectVector<String> makeSillyStringArray(int howMany) {
         final String[] fireTruck = new String[howMany];
         for (int ii = 0; ii < howMany; ii++) {
             fireTruck[ii] = String.format("%04d", ii);
         }
         return new ObjectVectorDirect<>(fireTruck);
+    }
+
+    /**
+     * This test checks that we can read old parquet files that don't properly have dictionary page offset set, and also
+     * that we can read int96 columns with null values.
+     */
+    @Test
+    public void testNoDictionaryOffset() {
+        final Table withNullsAndMissingOffsets =
+                ParquetTools.readTable(TestParquetTools.class.getResource("/dictOffset/dh17395.parquet").getFile());
+        final Table clean = ParquetTools
+                .readTable(TestParquetTools.class.getResource("/dictOffset/dh17395_clean.parquet").getFile());
+
+        assertEquals("D2442F78-AEFB-49F7-85A0-00506BBE74D4",
+                withNullsAndMissingOffsets.getColumnSource("LISTID").get(0));
+        assertNull(withNullsAndMissingOffsets.getColumnSource("TIMESTAMP").get(0));
+        assertNull(withNullsAndMissingOffsets.getColumnSource("SETTLEMENT_DATE").get(0));
+        assertEquals(1698672050703000000L,
+                DateTimeUtils.epochNanos((Instant) withNullsAndMissingOffsets.getColumnSource("CREATE_DATE").get(0)));
+        assertTableEquals(withNullsAndMissingOffsets, clean);
     }
 }

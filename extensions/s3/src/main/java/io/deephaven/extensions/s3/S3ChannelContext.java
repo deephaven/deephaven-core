@@ -8,19 +8,15 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.BaseSeekableChannelContext;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.S3Uri;
-import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
-import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -32,7 +28,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
     static final long UNINITIALIZED_SIZE = -1;
     private static final long UNINITIALIZED_NUM_FRAGMENTS = -1;
 
-    final S3SeekableChannelProvider provider;
+    private final S3SeekableChannelProvider provider;
     final S3AsyncClient client;
     final S3Instructions instructions;
 
@@ -47,12 +43,6 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
      * shared across multiple contexts and be accessed concurrently.
      */
     final S3RequestCache sharedCache;
-
-    /**
-     * Used to cache recently fetched fragments as well as the ownership token for the request. This cache is local to
-     * the context and is used to keep the requests alive as long as the context is alive.
-     */
-    private final S3Request.AcquiredRequest[] localCache;
 
     /**
      * The size of the object in bytes, stored in context to avoid fetching multiple times
@@ -72,7 +62,6 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
         this.provider = Objects.requireNonNull(provider);
         this.client = Objects.requireNonNull(client);
         this.instructions = Objects.requireNonNull(instructions);
-        this.localCache = new S3Request.AcquiredRequest[instructions.maxCacheSize()];
         this.sharedCache = sharedCache;
         if (sharedCache.getFragmentSize() != instructions.fragmentSize()) {
             throw new IllegalArgumentException("Fragment size mismatch between shared cache and instructions, "
@@ -121,32 +110,31 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
             final int impliedReadAhead = (int) (lastFragmentIx - firstFragmentIx);
             final int desiredReadAhead = instructions.readAheadCount();
             final long totalRemainingFragments = numFragments - firstFragmentIx - 1;
-            final int maxReadAhead = instructions.maxCacheSize() - 1;
-            readAhead = Math.min(
-                    Math.max(impliedReadAhead, desiredReadAhead),
-                    (int) Math.min(maxReadAhead, totalRemainingFragments));
+            readAhead = Math.min(Math.max(impliedReadAhead, desiredReadAhead), totalRemainingFragments);
         }
-        final S3Request firstRequest = getOrCreateRequest(firstFragmentIx);
-        for (int i = 0; i < readAhead; ++i) {
-            getOrCreateRequest(firstFragmentIx + i + 1);
+        int filled;
+        {
+            // Hold a reference to the first request to ensure it is not evicted from the cache
+            final S3Request.Acquired acquiredRequest = getOrCreateRequest(firstFragmentIx);
+            for (int i = 0; i < readAhead; ++i) {
+                // Do not hold references to the read-ahead requests
+                getOrCreateRequest(firstFragmentIx + i + 1);
+            }
+            // blocking
+            filled = acquiredRequest.fill(position, dest);
         }
-        // blocking
-        int filled = firstRequest.fill(position, dest);
         for (int i = 0; dest.hasRemaining(); ++i) {
-            // Since we have already created requests for read ahead fragments, we can retrieve them from the local
-            // cache
-            final S3Request request = getRequestFromLocalCache(firstFragmentIx + i + 1);
-            if (request == null || !request.isDone()) {
+            final S3Request.Acquired readAheadRequest = sharedCache.getRequest(uri, firstFragmentIx + i + 1);
+            if (readAheadRequest == null || !readAheadRequest.isDone()) {
                 break;
             }
             // non-blocking since we know isDone
-            filled += request.fill(position + filled, dest);
+            filled += readAheadRequest.fill(position + filled, dest);
         }
         return filled;
     }
 
     private void reset() {
-        releaseOutstanding();
         // Reset the internal state
         uri = null;
         size = UNINITIALIZED_SIZE;
@@ -162,49 +150,16 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
         if (log.isDebugEnabled()) {
             log.debug().append("Closing context: ").append(ctxStr()).endl();
         }
-        releaseOutstanding();
-    }
-
-    /**
-     * Release all outstanding requests associated with this context. Eventually, the request will be canceled when the
-     * objects are garbage collected.
-     */
-    private void releaseOutstanding() {
-        Arrays.fill(localCache, null);
     }
 
     // --------------------------------------------------------------------------------------------------
 
-    @Nullable
-    private S3Request getRequestFromLocalCache(final long fragmentIndex) {
-        return getRequestFromLocalCache(fragmentIndex, cacheIndex(fragmentIndex));
-    }
-
-    @Nullable
-    private S3Request getRequestFromLocalCache(final long fragmentIndex, final int cacheIdx) {
-        if (localCache[cacheIdx] != null && localCache[cacheIdx].request.isFragment(fragmentIndex)) {
-            return localCache[cacheIdx].request;
-        }
-        return null;
-    }
-
     @NotNull
-    private S3Request getOrCreateRequest(final long fragmentIndex) {
-        final int cacheIdx = cacheIndex(fragmentIndex);
-        final S3Request locallyCached = getRequestFromLocalCache(fragmentIndex, cacheIdx);
-        if (locallyCached != null) {
-            return locallyCached;
-        }
-        final S3Request.AcquiredRequest sharedCacheRequest = sharedCache.getOrCreateRequest(uri, fragmentIndex, this);
-        // Cache the request and the ownership token locally
-        localCache[cacheIdx] = sharedCacheRequest;
+    private S3Request.Acquired getOrCreateRequest(final long fragmentIndex) {
+        final S3Request.Acquired cachedRequest = sharedCache.getOrCreateRequest(uri, fragmentIndex, this);
         // Send the request, if not sent already. The following method is idempotent, so we always call it.
-        sharedCacheRequest.request.sendRequest();
-        return sharedCacheRequest.request;
-    }
-
-    private int cacheIndex(final long fragmentIndex) {
-        return (int) (fragmentIndex % instructions.maxCacheSize());
+        cachedRequest.send();
+        return cachedRequest;
     }
 
     private long fragmentIndex(final long pos) {
@@ -227,6 +182,9 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
             return new IOException(String.format("Thread interrupted while %s", operationDescription), e);
         }
         if (e instanceof ExecutionException) {
+            if (e.getCause() instanceof NoSuchKeyException) {
+                throw (NoSuchKeyException) e.getCause();
+            }
             return new IOException(String.format("Execution exception occurred while %s", operationDescription), e);
         }
         if (e instanceof TimeoutException) {
@@ -244,25 +202,7 @@ final class S3ChannelContext extends BaseSeekableChannelContext implements Seeka
         if (size != UNINITIALIZED_SIZE) {
             return;
         }
-        if (log.isDebugEnabled()) {
-            log.debug().append("Head: ").append(ctxStr()).endl();
-        }
-        // Fetch the size of the file on the first read using a blocking HEAD request, and store it in the context
-        // for future use
-        final HeadObjectResponse headObjectResponse;
-        try {
-            headObjectResponse = client
-                    .headObject(HeadObjectRequest.builder()
-                            .bucket(uri.bucket().orElseThrow())
-                            .key(uri.key().orElseThrow())
-                            .build())
-                    .get(instructions.readTimeout().toNanos(), TimeUnit.NANOSECONDS);
-        } catch (final InterruptedException | ExecutionException | TimeoutException | CancellationException e) {
-            throw handleS3Exception(e, String.format("fetching HEAD for file %s, %s", uri, ctxStr()), instructions);
-        }
-        final long fileSize = headObjectResponse.contentLength();
-        setSize(fileSize);
-        provider.updateFileSizeCache(uri.uri(), fileSize);
+        setSize(provider.fetchFileSize(uri));
     }
 
     private void setSize(final long size) {

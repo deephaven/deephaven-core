@@ -214,7 +214,7 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
             @Override
             void outputField(final int ii, final ObjectNode node, final IntChunk<Values> inputChunk) {
                 final int raw = inputChunk.get(ii);
-                if (raw == QueryConstants.NULL_SHORT) {
+                if (raw == QueryConstants.NULL_INT) {
                     if (outputNulls) {
                         node.putNull(childNodeFieldName);
                     }

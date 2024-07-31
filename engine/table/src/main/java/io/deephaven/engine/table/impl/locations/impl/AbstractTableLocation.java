@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl.locations.impl;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.BasicDataIndex;
 import io.deephaven.engine.table.impl.util.FieldUtils;
 import io.deephaven.engine.util.string.StringUtils;
@@ -197,7 +196,7 @@ public abstract class AbstractTableLocation
                 if (localReference != null && (localIndex = localReference.get()) != null) {
                     return localIndex;
                 }
-                localIndex = loadDataIndex(columns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                localIndex = loadDataIndex(columns.toArray(String[]::new));
                 indexReference = localIndex == null ? NO_INDEX_SENTINEL : new SoftReference<>(localIndex);
                 return localIndex;
             }

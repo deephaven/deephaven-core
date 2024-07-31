@@ -6,14 +6,15 @@ plugins {
 description = 'The Deephaven URI library'
 
 dependencies {
-    Classpaths.inheritImmutables(project)
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables.value
 
-    Classpaths.inheritJUnitPlatform(project)
-    testImplementation 'org.junit.jupiter:junit-jupiter'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly libs.junit.jupiter.engine
+    testRuntimeOnly libs.junit.platform.launcher
 
-    Classpaths.inheritAssertJ(project)
+    testImplementation libs.assertj
 }
 
 test {

@@ -11,10 +11,11 @@ import contextlib
 import inspect
 from enum import Enum
 from enum import auto
-from typing import Any, Optional, Callable, Dict
+from typing import Any, Optional, Callable, Dict, Generator, Tuple
 from typing import Sequence, List, Union, Protocol
 
 import jpy
+import numpy as np
 
 from deephaven import DHError
 from deephaven import dtypes
@@ -510,6 +511,117 @@ class Table(JObjectWrapper):
     @property
     def j_object(self) -> jpy.JType:
         return self.j_table
+
+    def iter_dict(self, cols: Optional[Union[str, Sequence[str]]] = None, *, chunk_size: int = 2048) \
+            -> Generator[Dict[str, Any], None, None]:
+        """ Returns a generator that reads one row at a time from the table into a dictionary. The dictionary is a map
+        of column names to scalar values of the column data type.
+
+        If the table is refreshing and no update graph locks are currently being held, the generator will try to acquire
+        the shared lock of the update graph before reading the table data. This provides a consistent view of the data.
+        The side effect of this is that the table will not be able to refresh while the table is being iterated on.
+        Additionally, the generator internally maintains a fill context. The auto acquired shared lock and the fill
+        context will be released after the generator is destroyed. That can happen implicitly when the generator
+        is used in a for-loop. When the generator is not used in a for-loop, to prevent resource leaks, it must be closed
+        after use by either (1) setting it to None, (2) using the del statement, or (3) calling the close() method on it.
+
+        Args:
+            cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
+            chunk_size (int): The number of rows to read at a time internally to reduce the number of Java/Python boundary
+                crossings. Default is 2048.
+
+        Returns:
+            A generator that yields a dictionary of column names to scalar values.
+
+        Raises:
+            ValueError
+        """
+        from deephaven._table_reader import _table_reader_row_dict # to prevent circular import
+        return _table_reader_row_dict(self, cols, chunk_size=chunk_size)
+
+    def iter_tuple(self, cols: Optional[Union[str, Sequence[str]]] = None, *, tuple_name: str = 'Deephaven',
+                   chunk_size: int = 2048) -> Generator[Tuple[Any, ...], None, None]:
+        """ Returns a generator that reads one row at a time from the table into a named tuple. The named tuple is made
+        up of fields with their names being the column names and their values being of the column data types.
+
+        If the table is refreshing and no update graph locks are currently being held, the generator will try to acquire
+        the shared lock of the update graph before reading the table data. This provides a consistent view of the data.
+        The side effect of this is that the table will not be able to refresh while the table is being iterated on.
+        Additionally, the generator internally maintains a fill context. The auto acquired shared lock and the fill
+        context will be released after the generator is destroyed. That can happen implicitly when the generator
+        is used in a for-loop. When the generator is not used in a for-loop, to prevent resource leaks, it must be closed
+        after use by either (1) setting it to None, (2) using the del statement, or (3) calling the close() method on it.
+
+        Args:
+            cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read. Default is None.
+            tuple_name (str): The name of the named tuple. Default is 'Deephaven'.
+            chunk_size (int): The number of rows to read at a time internally to reduce the number of Java/Python boundary
+                crossings. Default is 2048.
+
+        Returns:
+            A generator that yields a named tuple for each row in the table
+
+        Raises:
+            ValueError
+        """
+        from deephaven._table_reader import _table_reader_row_tuple # to prevent circular import
+        return _table_reader_row_tuple(self, cols, tuple_name = tuple_name, chunk_size = chunk_size)
+
+    def iter_chunk_dict(self, cols: Optional[Union[str, Sequence[str]]] = None, chunk_size: int = 2048) \
+            -> Generator[Dict[str, np.ndarray], None, None]:
+        """ Returns a generator that reads one chunk of rows at a time from the table into a dictionary. The dictionary
+        is a map of column names to numpy arrays of the column data type.
+
+        If the table is refreshing and no update graph locks are currently being held, the generator will try to acquire
+        the shared lock of the update graph before reading the table data. This provides a consistent view of the data.
+        The side effect of this is that the table will not be able to refresh while the table is being iterated on.
+        Additionally, the generator internally maintains a fill context. The auto acquired shared lock and the fill
+        context will be released after the generator is destroyed. That can happen implicitly when the generator
+        is used in a for-loop. When the generator is not used in a for-loop, to prevent resource leaks, it must be closed
+        after use by either (1) setting it to None, (2) using the del statement, or (3) calling the close() method on it.
+
+        Args:
+            cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
+            chunk_size (int): The number of rows to read at a time. Default is 2048.
+
+        Returns:
+            A generator that yields a dictionary of column names to numpy arrays.
+
+        Raises
+            ValueError
+        """
+        from deephaven._table_reader import _table_reader_chunk_dict  # to prevent circular import
+
+        return _table_reader_chunk_dict(self, cols=cols, row_set=self.j_table.getRowSet(), chunk_size=chunk_size,
+                                        prev=False)
+
+    def iter_chunk_tuple(self, cols: Optional[Union[str, Sequence[str]]] = None, tuple_name: str = 'Deephaven',
+                         chunk_size: int = 2048,)-> Generator[Tuple[np.ndarray, ...], None, None]:
+        """ Returns a generator that reads one chunk of rows at a time from the table into a named tuple. The named
+        tuple is made up of fields with their names being the column names and their values being numpy arrays of the
+        column data types.
+
+        If the table is refreshing and no update graph locks are currently being held, the generator will try to acquire
+        the shared lock of the update graph before reading the table data. This provides a consistent view of the data.
+        The side effect of this is that the table will not be able to refresh while the table is being iterated on.
+        Additionally, the generator internally maintains a fill context. The auto acquired shared lock and the fill
+        context will be released after the generator is destroyed. That can happen implicitly when the generator
+        is used in a for-loop. When the generator is not used in a for-loop, to prevent resource leaks, it must be closed
+        after use by either (1) setting it to None, (2) using the del statement, or (3) calling the close() method on it.
+
+        Args:
+            cols (Optional[Union[str, Sequence[str]]]): The columns to read. If None, all columns are read.
+            tuple_name (str): The name of the named tuple. Default is 'Deephaven'.
+            chunk_size (int): The number of rows to read at a time. Default is 2048.
+
+        Returns:
+            A generator that yields a named tuple for each row in the table.
+
+        Raises:
+            ValueError
+        """
+        from deephaven._table_reader import _table_reader_chunk_tuple  # to prevent circular import
+        return _table_reader_chunk_tuple(self, cols=cols, tuple_name=tuple_name, chunk_size=chunk_size)
 
     def has_columns(self, cols: Union[str, Sequence[str]]):
         """Whether this table contains a column for each of the provided names, return False if any of the columns is
@@ -1110,9 +1222,12 @@ class Table(JObjectWrapper):
             order_by = to_sequence(order_by)
             if not order:
                 order = (SortDirection.ASCENDING,) * len(order_by)
-            order = to_sequence(order)
-            if len(order_by) != len(order):
-                raise DHError(message="The number of sort columns must be the same as the number of sort directions.")
+            else:
+                order = to_sequence(order)
+                if any([o not in (SortDirection.ASCENDING, SortDirection.DESCENDING) for o in order]):
+                    raise DHError(message="The sort direction must be either 'ASCENDING' or 'DESCENDING'.")
+                if len(order_by) != len(order):
+                    raise DHError(message="The number of sort columns must be the same as the number of sort directions.")
 
             sort_columns = [_sort_column(col, dir_) for col, dir_ in zip(order_by, order)]
             j_sc_list = j_array_list(sort_columns)
@@ -2016,6 +2131,9 @@ class Table(JObjectWrapper):
             DHError
         """
         try:
+            if not isinstance(drop_keys, bool):
+                raise DHError(message="drop_keys must be a boolean value.")
+
             by = to_sequence(by)
             return PartitionedTable(j_partitioned_table=self.j_table.partitionBy(drop_keys, *by))
         except Exception as e:
@@ -2745,12 +2863,14 @@ class PartitionedTableProxy(JObjectWrapper):
             DHError
         """
         try:
-            order_by = to_sequence(order_by)
             if not order:
                 order = (SortDirection.ASCENDING,) * len(order_by)
-            order = to_sequence(order)
-            if len(order_by) != len(order):
-                raise ValueError("The number of sort columns must be the same as the number of sort directions.")
+            else:
+                order = to_sequence(order)
+                if any([o not in (SortDirection.ASCENDING, SortDirection.DESCENDING) for o in order]):
+                    raise DHError(message="The sort direction must be either 'ASCENDING' or 'DESCENDING'.")
+                if len(order_by) != len(order):
+                    raise DHError(message="The number of sort columns must be the same as the number of sort directions.")
 
             sort_columns = [_sort_column(col, dir_) for col, dir_ in zip(order_by, order)]
             j_sc_list = j_array_list(sort_columns)

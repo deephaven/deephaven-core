@@ -53,7 +53,7 @@ final class RightIncrementalNaturalJoinHasherShort extends RightIncrementalNatur
             int tableLocation = firstTableLocation;
             while (true) {
                 RowSet leftRowSetForState = leftRowSet.getUnsafe(tableLocation);
-                if (leftRowSetForState == null) {
+                if (isStateEmpty(leftRowSetForState)) {
                     numEntries++;
                     mainKeySource0.set(tableLocation, k0);
                     final long leftRowKey = rowKeyChunk.get(chunkPosition);
@@ -82,7 +82,7 @@ final class RightIncrementalNaturalJoinHasherShort extends RightIncrementalNatur
             final int hash = hash(k0);
             final int firstTableLocation = hashToTableLocation(hash);
             int tableLocation = firstTableLocation;
-            while (leftRowSet.getUnsafe(tableLocation) != null) {
+            while (!isStateEmpty(leftRowSet.getUnsafe(tableLocation))) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     final long rightRowKeyForState = rightRowKey.getAndSetUnsafe(tableLocation, rowKeyChunk.get(chunkPosition));
                     if (rightRowKeyForState != RowSet.NULL_ROW_KEY && rightRowKeyForState != QueryConstants.NULL_LONG) {
@@ -107,7 +107,7 @@ final class RightIncrementalNaturalJoinHasherShort extends RightIncrementalNatur
             final int hash = hash(k0);
             final int firstTableLocation = hashToTableLocation(hash);
             int tableLocation = firstTableLocation;
-            while (leftRowSet.getUnsafe(tableLocation) != null) {
+            while (!isStateEmpty(leftRowSet.getUnsafe(tableLocation))) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     final long oldRightRow = rightRowKey.getAndSetUnsafe(tableLocation, RowSet.NULL_ROW_KEY);
                     Assert.eq(oldRightRow, "oldRightRow", rowKeyChunk.get(chunkPosition), "rowKeyChunk.get(chunkPosition)");
@@ -130,7 +130,7 @@ final class RightIncrementalNaturalJoinHasherShort extends RightIncrementalNatur
             final int hash = hash(k0);
             final int firstTableLocation = hashToTableLocation(hash);
             int tableLocation = firstTableLocation;
-            while (leftRowSet.getUnsafe(tableLocation) != null) {
+            while (!isStateEmpty(leftRowSet.getUnsafe(tableLocation))) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     final long oldRightRow = rightRowKey.getAndSetUnsafe(tableLocation, rowKeyChunk.get(chunkPosition));
                     if (oldRightRow != RowSet.NULL_ROW_KEY && oldRightRow != QueryConstants.NULL_LONG) {
@@ -156,7 +156,7 @@ final class RightIncrementalNaturalJoinHasherShort extends RightIncrementalNatur
             final int hash = hash(k0);
             final int firstTableLocation = hashToTableLocation(hash);
             int tableLocation = firstTableLocation;
-            while (leftRowSet.getUnsafe(tableLocation) != null) {
+            while (!isStateEmpty(leftRowSet.getUnsafe(tableLocation))) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     final long oldRightRow = rightRowKey.getUnsafe(tableLocation);
                     Assert.eq(oldRightRow, "oldRightRow", rowKeyChunk.get(chunkPosition), "rowKeyChunk.get(chunkPosition)");
@@ -179,7 +179,7 @@ final class RightIncrementalNaturalJoinHasherShort extends RightIncrementalNatur
             final int hash = hash(k0);
             final int firstTableLocation = hashToTableLocation(hash);
             int tableLocation = firstTableLocation;
-            while (leftRowSet.getUnsafe(tableLocation) != null) {
+            while (!isStateEmpty(leftRowSet.getUnsafe(tableLocation))) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     final long oldRightRow = rightRowKey.getAndSetUnsafe(tableLocation, rowKeyChunk.get(chunkPosition));
                     Assert.eq(oldRightRow + shiftDelta, "oldRightRow + shiftDelta", rowKeyChunk.get(chunkPosition), "rowKeyChunk.get(chunkPosition)");
@@ -195,6 +195,10 @@ final class RightIncrementalNaturalJoinHasherShort extends RightIncrementalNatur
     private static int hash(short k0) {
         int hash = ShortChunkHasher.hashInitialSingle(k0);
         return hash;
+    }
+
+    private static boolean isStateEmpty(RowSet state) {
+        return state == null;
     }
 
     @Override
@@ -214,7 +218,7 @@ final class RightIncrementalNaturalJoinHasherShort extends RightIncrementalNatur
         modifiedTrackerCookieSource.setArray(destModifiedCookie);
         for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket) {
             final RowSet currentStateValue = (RowSet)originalStateArray[sourceBucket];
-            if (currentStateValue == null) {
+            if (isStateEmpty(currentStateValue)) {
                 continue;
             }
             final short k0 = originalKeyArray0[sourceBucket];
@@ -222,7 +226,7 @@ final class RightIncrementalNaturalJoinHasherShort extends RightIncrementalNatur
             final int firstDestinationTableLocation = hashToTableLocation(hash);
             int destinationTableLocation = firstDestinationTableLocation;
             while (true) {
-                if (destState[destinationTableLocation] == null) {
+                if (isStateEmpty((RowSet)destState[destinationTableLocation])) {
                     destKeyArray0[destinationTableLocation] = k0;
                     destState[destinationTableLocation] = originalStateArray[sourceBucket];
                     destRightRowKey[destinationTableLocation] = oldRightRowKey[sourceBucket];

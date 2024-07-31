@@ -47,7 +47,7 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
         columnPageReaders = new ColumnPageReader[INIT_ARRAY_SIZE];
         // TODO(deephaven-core#4836): We probably need a super-interface of Iterator to allow ourselves to set or clear
         // the inner fill context to be used by next.
-        columnPageReaderIterator = columnChunkReader.getPageIterator();
+        columnPageReaderIterator = columnChunkReader.getPageIterator(toPage.getPageMaterializerFactory());
 
         // noinspection unchecked
         pages = (WeakReference<PageCache.IntrusivePage<ATTR>>[]) new WeakReference[INIT_ARRAY_SIZE];

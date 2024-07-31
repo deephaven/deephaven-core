@@ -216,19 +216,6 @@ public class LongArraySource extends ArraySourceHelper<Long, long[]>
         }
     }
 
-    @Override
-    public void shift(long start, long end, long offset) {
-        if (offset > 0) {
-            for (long i = (int) end; i >= start; i--) {
-                set((i + offset), getLong(i));
-            }
-        } else {
-            for (int i = (int) start; i <= end; i++) {
-                set((i + offset), getLong(i));
-            }
-        }
-    }
-
     public void move(long source, long dest, long length) {
         if (prevBlocks != null) {
             throw new UnsupportedOperationException();

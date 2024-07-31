@@ -118,8 +118,8 @@ public abstract class IcebergToolsTest {
 
         final Table table = adapter.listNamespacesAsTable();
         Assert.eq(table.size(), "table.size()", 2, "2 namespace in the catalog");
-        Assert.eqTrue(table.getColumnSource("namespace").getType().equals(String.class), "namespace column type");
-        Assert.eqTrue(table.getColumnSource("namespace_object").getType().equals(Namespace.class),
+        Assert.eqTrue(table.getColumnSource("Namespace").getType().equals(String.class), "namespace column type");
+        Assert.eqTrue(table.getColumnSource("NamespaceObject").getType().equals(Namespace.class),
                 "namespace_object column type");
     }
 
@@ -129,19 +129,24 @@ public abstract class IcebergToolsTest {
 
         final Namespace ns = Namespace.of("sales");
 
-        final Collection<TableIdentifier> tables = adapter.listTables(ns);
-        Assert.eq(tables.size(), "tables.size()", 3, "3 tables in the namespace");
+        Collection<TableIdentifier> tables = adapter.listTables(ns);
+        Assert.eq(tables.size(), "tables.size()", 4, "4 tables in the namespace");
         Assert.eqTrue(tables.contains(TableIdentifier.of(ns, "sales_multi")), "tables.contains(sales_multi)");
         Assert.eqTrue(tables.contains(TableIdentifier.of(ns, "sales_partitioned")),
                 "tables.contains(sales_partitioned)");
         Assert.eqTrue(tables.contains(TableIdentifier.of(ns, "sales_single")), "tables.contains(sales_single)");
+        Assert.eqTrue(tables.contains(TableIdentifier.of(ns, "sales_renamed")), "tables.contains(sales_renamed)");
 
-        final Table table = adapter.listTablesAsTable(ns);
-        Assert.eq(table.size(), "table.size()", 3, "3 tables in the namespace");
-        Assert.eqTrue(table.getColumnSource("namespace").getType().equals(String.class), "namespace column type");
-        Assert.eqTrue(table.getColumnSource("table_name").getType().equals(String.class), "table_name column type");
-        Assert.eqTrue(table.getColumnSource("table_identifier_object").getType().equals(TableIdentifier.class),
+        Table table = adapter.listTablesAsTable(ns);
+        Assert.eq(table.size(), "table.size()", 4, "4 tables in the namespace");
+        Assert.eqTrue(table.getColumnSource("Namespace").getType().equals(String.class), "namespace column type");
+        Assert.eqTrue(table.getColumnSource("TableName").getType().equals(String.class), "table_name column type");
+        Assert.eqTrue(table.getColumnSource("TableIdentifierObject").getType().equals(TableIdentifier.class),
                 "table_identifier_object column type");
+
+        // Test the string versions of the methods
+        table = adapter.listTablesAsTable("sales");
+        Assert.eq(table.size(), "table.size()", 4, "4 tables in the namespace");
     }
 
     @Test
@@ -160,14 +165,18 @@ public abstract class IcebergToolsTest {
         Assert.eqTrue(snapshotIds.contains(3247344357341484163L), "snapshots.contains(3247344357341484163L)");
         Assert.eqTrue(snapshotIds.contains(1792185872197984875L), "snapshots.contains(1792185872197984875L)");
 
-        final Table table = adapter.listSnapshotsAsTable(tableIdentifier);
+        Table table = adapter.listSnapshotsAsTable(tableIdentifier);
         Assert.eq(table.size(), "table.size()", 4, "4 snapshots for sales/sales_multi");
-        Assert.eqTrue(table.getColumnSource("id").getType().equals(long.class), "id column type");
-        Assert.eqTrue(table.getColumnSource("timestamp_ms").getType().equals(long.class), "timestamp_ms column type");
-        Assert.eqTrue(table.getColumnSource("operation").getType().equals(String.class), "operation column type");
-        Assert.eqTrue(table.getColumnSource("summary").getType().equals(Map.class), "summary column type");
-        Assert.eqTrue(table.getColumnSource("snapshot_object").getType().equals(Snapshot.class),
+        Assert.eqTrue(table.getColumnSource("Id").getType().equals(long.class), "id column type");
+        Assert.eqTrue(table.getColumnSource("TimestampMs").getType().equals(long.class), "timestamp_ms column type");
+        Assert.eqTrue(table.getColumnSource("Operation").getType().equals(String.class), "operation column type");
+        Assert.eqTrue(table.getColumnSource("Summary").getType().equals(Map.class), "summary column type");
+        Assert.eqTrue(table.getColumnSource("SnapshotObject").getType().equals(Snapshot.class),
                 "snapshot_object column type");
+
+        // Test the string versions of the methods
+        table = adapter.listSnapshotsAsTable("sales.sales_multi");
+        Assert.eq(table.size(), "table.size()", 4, "4 snapshots for sales/sales_multi");
     }
 
     @Test
@@ -180,7 +189,13 @@ public abstract class IcebergToolsTest {
 
         final Namespace ns = Namespace.of("sales");
         final TableIdentifier tableId = TableIdentifier.of(ns, "sales_partitioned");
-        final io.deephaven.engine.table.Table table = adapter.readTable(tableId, instructions);
+        io.deephaven.engine.table.Table table = adapter.readTable(tableId, instructions);
+
+        // Verify we retrieved all the rows.
+        Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
+
+        // Test the string versions of the methods
+        table = adapter.readTable("sales.sales_partitioned", instructions);
 
         // Verify we retrieved all the rows.
         Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
@@ -196,8 +211,14 @@ public abstract class IcebergToolsTest {
 
         final Namespace ns = Namespace.of("sales");
         final TableIdentifier tableId = TableIdentifier.of(ns, "sales_multi");
-        final io.deephaven.engine.table.Table table = adapter.readTable(tableId, instructions);
+        io.deephaven.engine.table.Table table = adapter.readTable(tableId, instructions);
 
+        Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
+
+        // Test the string versions of the methods
+        table = adapter.readTable("sales.sales_multi", instructions);
+
+        // Verify we retrieved all the rows.
         Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
     }
 
@@ -211,7 +232,13 @@ public abstract class IcebergToolsTest {
 
         final Namespace ns = Namespace.of("sales");
         final TableIdentifier tableId = TableIdentifier.of(ns, "sales_single");
-        final io.deephaven.engine.table.Table table = adapter.readTable(tableId, instructions);
+        io.deephaven.engine.table.Table table = adapter.readTable(tableId, instructions);
+
+        // Verify we retrieved all the rows.
+        Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
+
+        // Test the string versions of the methods
+        table = adapter.readTable("sales.sales_single", instructions);
 
         // Verify we retrieved all the rows.
         Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
@@ -483,8 +510,8 @@ public abstract class IcebergToolsTest {
 
         final IcebergInstructions localInstructions = IcebergInstructions.builder()
                 .dataInstructions(instructions.dataInstructions().get())
-                .putColumnRenames("RegionName", "Region")
-                .putColumnRenames("ItemType", "Item_Type")
+                .putColumnRenames("Region", "RegionName")
+                .putColumnRenames("Item_Type", "ItemType")
                 .build();
 
         final IcebergCatalogAdapter adapter =
@@ -496,6 +523,88 @@ public abstract class IcebergToolsTest {
 
         // Verify we retrieved all the rows.
         Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
+    }
+
+    @Test
+    public void testOpenTableColumnLegalization() throws ExecutionException, InterruptedException, TimeoutException {
+        uploadParquetFiles(new File(IcebergToolsTest.class.getResource("/warehouse/sales/sales_renamed").getPath()),
+                warehousePath);
+
+        final IcebergInstructions localInstructions = IcebergInstructions.builder()
+                .dataInstructions(instructions.dataInstructions().get())
+                .build();
+
+        final IcebergCatalogAdapter adapter =
+                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+
+        final Namespace ns = Namespace.of("sales");
+        final TableIdentifier tableId = TableIdentifier.of(ns, "sales_renamed");
+        final io.deephaven.engine.table.Table table = adapter.readTable(tableId, localInstructions);
+
+        // Verify we retrieved all the rows.
+        Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
+
+        Assert.eqTrue(table.getDefinition().getColumn("Region_Name") != null, "'Region Name' renamed");
+        Assert.eqTrue(table.getDefinition().getColumn("ItemType") != null, "'Item&Type' renamed");
+        Assert.eqTrue(table.getDefinition().getColumn("UnitsSold") != null, "'Units/Sold' renamed");
+        Assert.eqTrue(table.getDefinition().getColumn("Unit_Price") != null, "'Unit Pricee' renamed");
+        Assert.eqTrue(table.getDefinition().getColumn("Order_Date") != null, "'Order Date' renamed");
+    }
+
+    @Test
+    public void testOpenTableColumnLegalizationRename()
+            throws ExecutionException, InterruptedException, TimeoutException {
+        uploadParquetFiles(new File(IcebergToolsTest.class.getResource("/warehouse/sales/sales_renamed").getPath()),
+                warehousePath);
+
+        final IcebergInstructions localInstructions = IcebergInstructions.builder()
+                .dataInstructions(instructions.dataInstructions().get())
+                .putColumnRenames("Item&Type", "Item_Type")
+                .putColumnRenames("Units/Sold", "Units_Sold")
+                .build();
+
+        final IcebergCatalogAdapter adapter =
+                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+
+        final Namespace ns = Namespace.of("sales");
+        final TableIdentifier tableId = TableIdentifier.of(ns, "sales_renamed");
+        final io.deephaven.engine.table.Table table = adapter.readTable(tableId, localInstructions);
+
+        // Verify we retrieved all the rows.
+        Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
+
+        Assert.eqTrue(table.getDefinition().getColumn("Region_Name") != null, "'Region Name' renamed");
+        Assert.eqTrue(table.getDefinition().getColumn("Item_Type") != null, "'Item&Type' renamed");
+        Assert.eqTrue(table.getDefinition().getColumn("Units_Sold") != null, "'Units/Sold' renamed");
+        Assert.eqTrue(table.getDefinition().getColumn("Unit_Price") != null, "'Unit Pricee' renamed");
+        Assert.eqTrue(table.getDefinition().getColumn("Order_Date") != null, "'Order Date' renamed");
+    }
+
+    @Test
+    public void testOpenTableColumnLegalizationPartitionException()
+            throws ExecutionException, InterruptedException, TimeoutException {
+        final TableDefinition tableDef = TableDefinition.of(
+                ColumnDefinition.ofInt("Year").withPartitioning(),
+                ColumnDefinition.ofInt("Month").withPartitioning());
+
+        final IcebergInstructions localInstructions = IcebergInstructions.builder()
+                .tableDefinition(tableDef)
+                .putColumnRenames("Year", "Current Year")
+                .putColumnRenames("Month", "Current Month")
+                .dataInstructions(instructions.dataInstructions().get())
+                .build();
+
+        final IcebergCatalogAdapter adapter =
+                IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+
+        final Namespace ns = Namespace.of("sales");
+        final TableIdentifier tableId = TableIdentifier.of(ns, "sales_partitioned");
+        try {
+            final io.deephaven.engine.table.Table table = adapter.readTable(tableId, localInstructions);
+            Assert.statementNeverExecuted("Expected an exception for missing columns");
+        } catch (final TableDataException e) {
+            Assert.eqTrue(e.getMessage().contains("invalid column name provided"), "Exception message");
+        }
     }
 
     @Test
@@ -563,16 +672,31 @@ public abstract class IcebergToolsTest {
         final List<Snapshot> snapshots = adapter.listSnapshots(tableId);
 
         // Verify we retrieved all the rows.
-        final io.deephaven.engine.table.Table table0 = adapter.readTable(tableId, snapshots.get(0), instructions);
+        io.deephaven.engine.table.Table table0 = adapter.readTable(tableId, snapshots.get(0), instructions);
         Assert.eq(table0.size(), "table0.size()", 18266, "18266 rows in the table");
 
-        final io.deephaven.engine.table.Table table1 = adapter.readTable(tableId, snapshots.get(1), instructions);
+        io.deephaven.engine.table.Table table1 = adapter.readTable(tableId, snapshots.get(1), instructions);
         Assert.eq(table1.size(), "table1.size()", 54373, "54373 rows in the table");
 
-        final io.deephaven.engine.table.Table table2 = adapter.readTable(tableId, snapshots.get(2), instructions);
+        io.deephaven.engine.table.Table table2 = adapter.readTable(tableId, snapshots.get(2), instructions);
         Assert.eq(table2.size(), "table2.size()", 72603, "72603 rows in the table");
 
-        final io.deephaven.engine.table.Table table3 = adapter.readTable(tableId, snapshots.get(3), instructions);
+        io.deephaven.engine.table.Table table3 = adapter.readTable(tableId, snapshots.get(3), instructions);
+        Assert.eq(table3.size(), "table3.size()", 100_000, "100_000 rows in the table");
+
+        // Test the string versions of the methods
+
+        // Verify we retrieved all the rows.
+        table0 = adapter.readTable("sales.sales_multi", snapshots.get(0).snapshotId(), instructions);
+        Assert.eq(table0.size(), "table0.size()", 18266, "18266 rows in the table");
+
+        table1 = adapter.readTable(tableId, snapshots.get(1).snapshotId(), instructions);
+        Assert.eq(table1.size(), "table1.size()", 54373, "54373 rows in the table");
+
+        table2 = adapter.readTable(tableId, snapshots.get(2).snapshotId(), instructions);
+        Assert.eq(table2.size(), "table2.size()", 72603, "72603 rows in the table");
+
+        table3 = adapter.readTable(tableId, snapshots.get(3).snapshotId(), instructions);
         Assert.eq(table3.size(), "table3.size()", 100_000, "100_000 rows in the table");
     }
 
