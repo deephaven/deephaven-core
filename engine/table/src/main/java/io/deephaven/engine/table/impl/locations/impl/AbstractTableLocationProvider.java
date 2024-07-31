@@ -16,7 +16,7 @@ import java.util.*;
  * Partial {@link TableLocationProvider} implementation for standalone use or as part of a {@link TableDataService}.
  * <p>
  * Presents an interface similar to {@link TableLocationProvider.Listener} for subclasses to use when communicating with
- * the parent; see {@link #handleTableLocationKeyAdded(TableLocationKey)}.
+ * the parent; see {@link #handleTableLocationKeyAdded(TableLocationKey, Object).
  * <p>
  * Note that subclasses are responsible for determining when it's appropriate to call {@link #setInitialized()} and/or
  * override {@link #doInitialization()}.
@@ -84,20 +84,7 @@ public abstract class AbstractTableLocationProvider
 
     @Override
     protected final void deliverInitialSnapshot(@NotNull final TableLocationProvider.Listener listener) {
-        listener.beginTransaction();
         unmodifiableTableLocationKeys.forEach(listener::handleTableLocationKeyAdded);
-        listener.endTransaction();
-    }
-
-    /**
-     * Deliver a possibly-new key. This method passes {@code this} as the transaction token.
-     *
-     * @param locationKey The new key
-     * @apiNote This method is intended to be used by subclasses or by tightly-coupled discovery tools.
-     */
-    protected final void handleTableLocationKeyAdded(
-            @NotNull final TableLocationKey locationKey) {
-        handleTableLocationKeyAdded(locationKey, this);
     }
 
     /**
@@ -176,7 +163,7 @@ public abstract class AbstractTableLocationProvider
     }
 
     /**
-     * Called <i>after</i> a table location has been visited by {@link #handleTableLocationKeyAdded(TableLocationKey)},
+     * Called <i>after</i> a table location has been visited by {@link #handleTableLocationKeyAdded(TableLocationKey, Object)},
      * but before notifications have been delivered to any subscriptions, if applicable. The default implementation does
      * nothing, and may be overridden to implement additional features.
      *
@@ -312,17 +299,6 @@ public abstract class AbstractTableLocationProvider
                 abstractLocation.clearColumnLocations();
             }
         }
-    }
-
-    /**
-     * Notify subscribers that {@code locationKey} was removed. This method passes {@code this} as the transaction
-     * token.
-     *
-     * @param locationKey the TableLocation that was removed
-     */
-    protected final void handleTableLocationKeyRemoved(
-            @NotNull final ImmutableTableLocationKey locationKey) {
-        handleTableLocationKeyRemoved(locationKey, this);
     }
 
     /**

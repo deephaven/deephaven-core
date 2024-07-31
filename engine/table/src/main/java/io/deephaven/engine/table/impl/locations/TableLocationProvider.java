@@ -80,7 +80,7 @@ public interface TableLocationProvider extends NamedImplementation {
          * @param tableLocationKey The new table location key.
          */
         default void handleTableLocationKeyAdded(@NotNull ImmutableTableLocationKey tableLocationKey) {
-            handleTableLocationKeyAdded(tableLocationKey, this);
+            handleTableLocationKeyAdded(tableLocationKey, null);
         }
 
         /**
@@ -105,7 +105,7 @@ public interface TableLocationProvider extends NamedImplementation {
          */
         @SuppressWarnings("unused")
         default void handleTableLocationKeyRemoved(@NotNull ImmutableTableLocationKey tableLocationKey) {
-            handleTableLocationKeyRemoved(tableLocationKey, this);
+            handleTableLocationKeyRemoved(tableLocationKey, null);
         }
     }
 
