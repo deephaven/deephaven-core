@@ -107,7 +107,7 @@ public class BytePercentileTypeHelper implements SsmChunkedPercentileOperator.Pe
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final byte testValue = valuesToSearch.get(mid);
-            final boolean moveHi = gt(testValue, searchValue);
+            final boolean moveHi = ByteComparisons.gt(testValue, searchValue);
             if (moveHi) {
                 hi = mid;
             } else {
@@ -116,13 +116,5 @@ public class BytePercentileTypeHelper implements SsmChunkedPercentileOperator.Pe
         }
 
         return hi;
-    }
-
-    private static int doComparison(byte lhs, byte rhs) {
-        return ByteComparisons.compare(lhs, rhs);
-    }
-
-    private static boolean gt(byte lhs, byte rhs) {
-        return doComparison(lhs, rhs) > 0;
     }
 }

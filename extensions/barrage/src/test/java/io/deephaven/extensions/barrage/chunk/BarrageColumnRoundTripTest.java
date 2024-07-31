@@ -25,8 +25,8 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.WritableShortChunk;
-import io.deephaven.extensions.barrage.util.ExposedByteArrayOutputStream;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
+import io.deephaven.extensions.barrage.util.ExposedByteArrayOutputStream;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.proto.flight.util.SchemaHelper;
 import io.deephaven.qst.type.Type;
@@ -684,8 +684,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                 ChunkInputStreamGenerator generator = DefaultChunkInputStreamGeneratorFactory.INSTANCE
                         .makeInputStreamGenerator(chunkType, type, type.getComponentType(), srcData, 0)) {
             // full sub logic
-            try (final ExposedByteArrayOutputStream baos =
-                    new ExposedByteArrayOutputStream();
+            try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
                     final ChunkInputStreamGenerator.DrainableColumn column = generator.getInputStream(options, null)) {
 
 
@@ -705,8 +704,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
             }
 
             // empty subset
-            try (final ExposedByteArrayOutputStream baos =
-                    new ExposedByteArrayOutputStream();
+            try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
                     final ChunkInputStreamGenerator.DrainableColumn column =
                             generator.getInputStream(options, RowSetFactory.empty())) {
 
@@ -732,8 +730,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
                     builder.appendKey(i);
                 }
             }
-            try (final ExposedByteArrayOutputStream baos =
-                    new ExposedByteArrayOutputStream();
+            try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
                     final RowSet subset = builder.build();
                     final ChunkInputStreamGenerator.DrainableColumn column =
                             generator.getInputStream(options, subset)) {
@@ -754,8 +751,7 @@ public class BarrageColumnRoundTripTest extends RefreshingTableTestCase {
             }
 
             // test append to existing chunk logic
-            try (final ExposedByteArrayOutputStream baos =
-                    new ExposedByteArrayOutputStream();
+            try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
                     final ChunkInputStreamGenerator.DrainableColumn column =
                             generator.getInputStream(options, null)) {
 

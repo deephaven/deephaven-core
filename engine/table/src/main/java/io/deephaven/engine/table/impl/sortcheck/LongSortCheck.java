@@ -36,12 +36,8 @@ public class LongSortCheck implements SortCheck {
     }
 
     // region comparison functions
-    private static int doComparison(long lhs, long rhs) {
-        return LongComparisons.compare(lhs, rhs);
+    private static boolean leq(long lhs, long rhs) {
+        return LongComparisons.leq(lhs, rhs);
     }
     // endregion comparison functions
-
-    private static boolean leq(long lhs, long rhs) {
-        return doComparison(lhs, rhs) <= 0;
-    }
 }

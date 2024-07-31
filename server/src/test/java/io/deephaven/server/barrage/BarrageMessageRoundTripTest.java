@@ -32,6 +32,7 @@ import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.extensions.barrage.util.BarrageStreamReader;
 import io.deephaven.extensions.barrage.util.ExposedByteArrayOutputStream;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
+import io.deephaven.extensions.barrage.util.ExposedByteArrayOutputStream;
 import io.deephaven.server.arrow.ArrowModule;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.util.Scheduler;
@@ -40,7 +41,6 @@ import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.mutable.MutableInt;
-import io.grpc.Drainable;
 import io.grpc.stub.StreamObserver;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -1424,9 +1424,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         public void onNext(final BarrageStreamGenerator.MessageView messageView) {
             try {
                 messageView.forEachStream(inputStream -> {
-                    try (final ExposedByteArrayOutputStream baos =
-                            new ExposedByteArrayOutputStream()) {
-                        ((Drainable) inputStream).drainTo(baos);
+                    try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {
+                        inputStream.drainTo(baos);
                         inputStream.close();
                         final BarrageMessage message =
                                 marshaller.parse(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));

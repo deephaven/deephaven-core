@@ -20,8 +20,7 @@ public class UnaryInputStreamMarshaller implements MethodDescriptor.Marshaller<I
 
     @Override
     public InputStream parse(InputStream stream) {
-        try (final ExposedByteArrayOutputStream baos =
-                new ExposedByteArrayOutputStream()) {
+        try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {
             final byte[] buffer = new byte[4096];
             while (stream.available() > 0) {
                 int len = stream.read(buffer);
