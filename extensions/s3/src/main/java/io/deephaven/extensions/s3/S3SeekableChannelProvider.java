@@ -12,6 +12,7 @@ import edu.colorado.cires.cmg.s3out.S3OutputStream;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.configuration.Configuration;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
@@ -28,20 +29,31 @@ import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.transfer.s3.S3TransferManager;
+import software.amazon.awssdk.transfer.s3.model.UploadFileRequest;
 
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.ref.SoftReference;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.channels.WritableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.time.Duration;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -65,6 +77,11 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     private static final ContentTypeResolver NO_CONTENT_TYPE_RESOLVER = new NoContentTypeResolver();
 
     private static final Logger log = LoggerFactory.getLogger(S3SeekableChannelProvider.class);
+
+    private static final int UPLOAD_PART_SIZE_MB =
+            Configuration.getInstance().getIntegerWithDefault("S3.uploadPartSizeMiB", 5);
+    private static final int UPLOAD_QUEUE_SIZE =
+            Configuration.getInstance().getIntegerWithDefault("S3.uploadQueueSize", 1);
 
     private final S3AsyncClient s3AsyncClient;
     private final S3Instructions s3Instructions;
@@ -143,17 +160,22 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
 
     @Override
     public SeekableByteChannel getWriteChannel(@NotNull final URI uri, final boolean append) {
-        throw new UnsupportedOperationException("Creating write channels for S3 is currently unsupported, use " +
-                "getOutputStream instead");
+        throw new UnsupportedOperationException("Creating seekable write channels for S3 is currently unsupported, " +
+                "use getOutputStream instead");
     }
 
     @Override
-    public OutputStream getOutputStream(@NotNull final URI uri, final boolean append, final int bufferSizeHint) {
-        // S3OutputStream internally splits data into parts, so no need to re-buffer
-        // TODO Use bufferSizeHint as part size
+    public OutputStream getOutputStream(@NotNull final URI uri, final boolean append, final int bufferSizeHint)
+            throws IOException {
         if (append) {
             throw new UnsupportedOperationException("Appending to S3 is currently unsupported");
         }
+        // return getStreamingWriteOutputStream(uri, bufferSizeHint);
+        return getLocalWriteAndPushOutputStream(uri, bufferSizeHint);
+    }
+
+    private OutputStream getStreamingWriteOutputStream(@NotNull final URI uri, final int bufferSizeHint) {
+        // TODO Use bufferSizeHint as part size
         if (s3Client == null) {
             s3Client = S3ClientFactory.getClient(s3Instructions);
             s3MultipartUploader = AwsS3ClientMultipartUpload.builder()
@@ -168,10 +190,73 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
                         .bucket(s3Uri.bucket().orElseThrow())
                         .key(s3Uri.key().orElseThrow())
                         .build())
-                .partSizeMib(5) // Can tweak this for performance
-                .uploadQueueSize(1)
+                .partSizeMib(UPLOAD_PART_SIZE_MB) // TODO Can tweak this for performance
+                .uploadQueueSize(UPLOAD_QUEUE_SIZE)
                 .autoComplete(true) // Do better handling of errors
                 .build();
+    }
+
+    private OutputStream getLocalWriteAndPushOutputStream(@NotNull final URI uri, final int bufferSizeHint)
+            throws IOException {
+        return new BufferedOutputStream(java.nio.channels.Channels.newOutputStream(
+                new S3WritableByteChannel(uri)), bufferSizeHint);
+    }
+
+    private final class S3WritableByteChannel implements WritableByteChannel {
+        private final URI uri;
+        private final SeekableByteChannel channel;
+        private final Path localTempFile;
+
+        private boolean isOpen;
+
+        private S3WritableByteChannel(@NotNull final URI uri) throws IOException {
+            this.uri = uri;
+            this.localTempFile = Files.createTempFile("s3-write", ".tmp");
+            this.channel = Files.newByteChannel(localTempFile, StandardOpenOption.WRITE);
+            this.isOpen = true;
+        }
+
+        @Override
+        public int write(final ByteBuffer src) throws IOException {
+            return channel.write(src);
+        }
+
+        @Override
+        public boolean isOpen() {
+            return isOpen;
+        }
+
+        @Override
+        public void close() throws IOException {
+            if (!isOpen) {
+                throw new IOException("Channel already closed");
+            }
+            channel.close();
+            uploadLocalTempFile();
+            Files.deleteIfExists(localTempFile);
+            isOpen = false;
+        }
+
+        private void uploadLocalTempFile() {
+            final S3Uri s3Uri = s3AsyncClient.utilities().parseUri(uri);
+            try (final S3TransferManager manager = S3TransferManager.builder().s3Client(s3AsyncClient).build()) {
+                final CompletableFuture<?> uploadCompletableFuture = manager.uploadFile(
+                        UploadFileRequest.builder()
+                                .putObjectRequest(PutObjectRequest.builder()
+                                        .bucket(s3Uri.bucket().orElseThrow())
+                                        .key(s3Uri.key().orElseThrow())
+                                        .build())
+                                .source(localTempFile)
+                                .build())
+                        .completionFuture();
+                final long writeNanos = Duration.ofSeconds(60).toNanos();
+                try {
+                    uploadCompletableFuture.get(writeNanos, TimeUnit.NANOSECONDS);
+                } catch (final InterruptedException | ExecutionException | TimeoutException e) {
+                    throw new UncheckedDeephavenException("Failed to upload file to S3 uri " + uri, e);
+                }
+            }
+        }
     }
 
     @Override

@@ -248,7 +248,7 @@ def write(
 
     Args:
         table (Table): the source table
-        path (str): the destination file path; the file name should end in a ".parquet" extension. If the path
+        path (str): the destination file path or URI; the file name should end in a ".parquet" extension. If the path
             includes any non-existing directories, they are created. If there is an error, any intermediate directories
             previously created are removed; note this makes this method unsafe for concurrent use
         table_definition (Optional[Union[Dict[str, DType], List[Column]]): the table definition to use for writing,
@@ -316,8 +316,9 @@ def write_partitioned(
 
     Args:
         table (Table): the source table or partitioned table
-        destination_dir (str): The path to destination root directory in which the partitioned parquet data will be stored
-            in a nested directory structure format. Non-existing directories in the provided path will be created.
+        destination_dir (str): The path or URI to destination root directory in which the partitioned parquet data will
+            be stored in a nested directory structure format. Non-existing directories in the provided path will be
+            created.
         table_definition (Optional[Union[Dict[str, DType], List[Column]]): the table definition to use for writing,
             instead of the definitions implied by the table. Default is None, which means use the column definitions
             implied by the table. This definition can be used to skip some columns or add additional columns with
@@ -394,7 +395,7 @@ def batch_write(
 
     Args:
         tables (List[Table]): the source tables
-        paths (List[str]): the destination paths. Any non-existing directories in the paths provided are
+        paths (List[str]): the destination paths or URIs. Any non-existing directories in the paths provided are
             created. If there is an error, any intermediate directories previously created are removed; note this makes
             this method unsafe for concurrent use
         table_definition (Optional[Union[Dict[str, DType], List[Column]]]): the table definition to use for writing.

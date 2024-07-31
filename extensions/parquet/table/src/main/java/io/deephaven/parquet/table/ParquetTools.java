@@ -447,7 +447,7 @@ public class ParquetTools {
      * while writing, use {@link ParquetInstructions.Builder#addIndexColumns}.
      *
      * @param sourceTable The table to partition and write
-     * @param destinationDir The path to destination root directory to store partitioned data in nested format.
+     * @param destinationDir The path or URI to destination root directory to store partitioned data in nested format.
      *        Non-existing directories are created.
      * @param writeInstructions Write instructions for customizations while writing
      */
@@ -482,7 +482,7 @@ public class ParquetTools {
      * {@link ParquetInstructions.Builder#addIndexColumns}.
      *
      * @param partitionedTable The partitioned table to write
-     * @param destinationDir The path to destination root directory to store partitioned data in nested format.
+     * @param destinationDir The path or URI to destination root directory to store partitioned data in nested format.
      *        Non-existing directories are created.
      * @param writeInstructions Write instructions for customizations while writing
      */
@@ -513,7 +513,7 @@ public class ParquetTools {
      * @param partitionedTable The partitioned table to write
      * @param keyTableDefinition The definition for key columns
      * @param leafDefinition The definition for leaf parquet files to be written
-     * @param destinationRoot The path to destination root directory to store partitioned data in nested format
+     * @param destinationRoot The path or URI to destination root directory to store partitioned data in nested format
      * @param writeInstructions Write instructions for customizations while writing
      * @param indexColumns Collection containing the column names for indexes to persist. The write operation will store
      *        the index info as sidecar tables. This argument is used to narrow the set of indexes to write, or to be
