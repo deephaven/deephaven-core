@@ -26,6 +26,9 @@ dependencies {
     runtimeOnly libs.awssdk.sts
     runtimeOnly libs.awssdk.glue
 
+    compileOnly libs.autoservice
+    annotationProcessor libs.autoservice.compiler
+
     testImplementation libs.testcontainers
     testImplementation libs.testcontainers.junit.jupiter
     testImplementation libs.testcontainers.localstack
