@@ -31,8 +31,7 @@ public abstract class IcebergTools {
      * map to the Iceberg catalog Java API properties and are used to create the catalog and file IO implementations.
      * </p>
      * <p>
-     * This is a wrapper around {@link CatalogUtil#buildIcebergCatalog(String, Map, Object)} and accepts the same
-     * properties. The minimal set of properties required to create an Iceberg catalog are:
+     * The minimal set of properties required to create an Iceberg catalog are:
      * <ul>
      * <li>{@code "catalog-impl"} or {@code "type"} - the Java catalog implementation to use. When providing
      * {@code "catalog-impl"}, the implementing Java class should be provided (e.g.
@@ -68,7 +67,8 @@ public abstract class IcebergTools {
             @NotNull final Map<String, String> properties) {
 
         // Validate the minimum required properties are set.
-        if (!properties.containsKey(CatalogProperties.CATALOG_IMPL) && !properties.containsKey("type")) {
+        if (!properties.containsKey(CatalogProperties.CATALOG_IMPL)
+                && !properties.containsKey(CatalogUtil.ICEBERG_CATALOG_TYPE)) {
             throw new IllegalArgumentException(String.format("Catalog type or implementation property '%s' is required",
                     CatalogProperties.CATALOG_IMPL));
         }
