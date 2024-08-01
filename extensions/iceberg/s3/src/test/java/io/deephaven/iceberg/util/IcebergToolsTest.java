@@ -715,4 +715,143 @@ public abstract class IcebergToolsTest {
         final io.deephaven.engine.table.Table table = adapter.readTable(tableId, instructions);
         Assert.eq(table.size(), "table.size()", 10, "10 rows in the table");
     }
+
+    @Test
+    public void testTableDefinition() throws ExecutionException, InterruptedException, TimeoutException {
+        uploadParquetFiles(new File(IcebergToolsTest.class.getResource("/warehouse/sales/sales_multi").getPath()),
+                warehousePath);
+
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+
+        final Namespace ns = Namespace.of("sales");
+        final TableIdentifier tableId = TableIdentifier.of(ns, "sales_multi");
+        final List<Snapshot> snapshots = adapter.listSnapshots(tableId);
+
+        // Use string and current snapshot
+        TableDefinition tableDef = adapter.getTableDefinition("sales.sales_multi", null);
+        Assert.eq(tableDef.getColumnNames().size(), "tableDef.getColumnNames().size()", 5, "5 columns in the table");
+
+        tableDef.checkHasColumn("Region", String.class);
+        tableDef.checkHasColumn("Item_Type", String.class);
+        tableDef.checkHasColumn("Units_Sold", int.class);
+        tableDef.checkHasColumn("Unit_Price", double.class);
+        tableDef.checkHasColumn("Order_Date", Instant.class);
+
+        // Use TableIdentifier and Snapshot
+        tableDef = adapter.getTableDefinition(tableId, null);
+        Assert.eq(tableDef.getColumnNames().size(), "tableDef.getColumnNames().size()", 5, "5 columns in the table");
+
+        tableDef.checkHasColumn("Region", String.class);
+        tableDef.checkHasColumn("Item_Type", String.class);
+        tableDef.checkHasColumn("Units_Sold", int.class);
+        tableDef.checkHasColumn("Unit_Price", double.class);
+        tableDef.checkHasColumn("Order_Date", Instant.class);
+
+        // Use string and long snapshot ID
+        tableDef = adapter.getTableDefinition("sales.sales_multi", snapshots.get(0).snapshotId(), null);
+        Assert.eq(tableDef.getColumnNames().size(), "tableDef.getColumnNames().size()", 5, "5 columns in the table");
+
+        tableDef.checkHasColumn("Region", String.class);
+        tableDef.checkHasColumn("Item_Type", String.class);
+        tableDef.checkHasColumn("Units_Sold", int.class);
+        tableDef.checkHasColumn("Unit_Price", double.class);
+        tableDef.checkHasColumn("Order_Date", Instant.class);
+
+        // Use TableIdentifier and Snapshot
+        tableDef = adapter.getTableDefinition(tableId, snapshots.get(0), null);
+        Assert.eq(tableDef.getColumnNames().size(), "tableDef.getColumnNames().size()", 5, "5 columns in the table");
+
+        tableDef.checkHasColumn("Region", String.class);
+        tableDef.checkHasColumn("Item_Type", String.class);
+        tableDef.checkHasColumn("Units_Sold", int.class);
+        tableDef.checkHasColumn("Unit_Price", double.class);
+        tableDef.checkHasColumn("Order_Date", Instant.class);
+    }
+
+    @Test
+    public void testTableDefinitionTable() throws ExecutionException, InterruptedException, TimeoutException {
+        uploadParquetFiles(new File(IcebergToolsTest.class.getResource("/warehouse/sales/sales_multi").getPath()),
+                warehousePath);
+
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+
+        final Namespace ns = Namespace.of("sales");
+        final TableIdentifier tableId = TableIdentifier.of(ns, "sales_multi");
+        final List<Snapshot> snapshots = adapter.listSnapshots(tableId);
+
+        // Use string and current snapshot
+        Table tableDefTable = adapter.getTableDefinitionTable("sales.sales_multi", null);
+
+        Assert.eqTrue(tableDefTable.hasColumns("Name", "DataType", "ColumnType", "IsPartitioning"),
+                "tableDefTable columns");
+        Assert.eq(tableDefTable.getRowSet().size(), "tableDefTable.getRowSet().size()", 5, "5 rows in the table");
+
+        // Use TableIdentifier and Snapshot
+        tableDefTable = adapter.getTableDefinitionTable(tableId, null);
+
+        Assert.eqTrue(tableDefTable.hasColumns("Name", "DataType", "ColumnType", "IsPartitioning"),
+                "tableDefTable columns");
+        Assert.eq(tableDefTable.getRowSet().size(), "tableDefTable.getRowSet().size()", 5, "5 rows in the table");
+
+        // Use string and long snapshot ID
+        tableDefTable = adapter.getTableDefinitionTable("sales.sales_multi", snapshots.get(0).snapshotId(), null);
+
+        Assert.eqTrue(tableDefTable.hasColumns("Name", "DataType", "ColumnType", "IsPartitioning"),
+                "tableDefTable columns");
+        Assert.eq(tableDefTable.getRowSet().size(), "tableDefTable.getRowSet().size()", 5, "5 rows in the table");
+
+        // Use TableIdentifier and Snapshot
+        tableDefTable = adapter.getTableDefinitionTable(tableId, snapshots.get(0), null);
+
+        Assert.eqTrue(tableDefTable.hasColumns("Name", "DataType", "ColumnType", "IsPartitioning"),
+                "tableDefTable columns");
+        Assert.eq(tableDefTable.getRowSet().size(), "tableDefTable.getRowSet().size()", 5, "5 rows in the table");
+    }
+
+    @Test
+    public void testTableDefinitionWithInstructions()
+            throws ExecutionException, InterruptedException, TimeoutException {
+        uploadParquetFiles(new File(IcebergToolsTest.class.getResource("/warehouse/sales/sales_multi").getPath()),
+                warehousePath);
+
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+
+        IcebergInstructions localInstructions = IcebergInstructions.builder()
+                .dataInstructions(instructions.dataInstructions().get())
+                .putColumnRenames("Region", "Area")
+                .putColumnRenames("Item_Type", "ItemType")
+                .putColumnRenames("Units_Sold", "UnitsSold")
+                .putColumnRenames("Unit_Price", "UnitPrice")
+                .putColumnRenames("Order_Date", "OrderDate")
+                .build();
+
+        // Use string and current snapshot
+        TableDefinition tableDef = adapter.getTableDefinition("sales.sales_multi", localInstructions);
+        Assert.eq(tableDef.getColumnNames().size(), "tableDef.getColumnNames().size()", 5, "5 columns in the table");
+
+        tableDef.checkHasColumn("Area", String.class);
+        tableDef.checkHasColumn("ItemType", String.class);
+        tableDef.checkHasColumn("UnitsSold", int.class);
+        tableDef.checkHasColumn("UnitPrice", double.class);
+        tableDef.checkHasColumn("OrderDate", Instant.class);
+
+        /////////////////////////////////////////////////////
+
+        final TableDefinition userTableDef = TableDefinition.of(
+                ColumnDefinition.ofLong("Region"),
+                ColumnDefinition.ofString("Item_Type"),
+                ColumnDefinition.fromGenericType("Order_Date", Instant.class));
+
+        localInstructions = IcebergInstructions.builder()
+                .dataInstructions(instructions.dataInstructions().get())
+                .tableDefinition(userTableDef)
+                .build();
+
+        // Use string and current snapshot
+        tableDef = adapter.getTableDefinition("sales.sales_multi", localInstructions);
+        Assert.eq(tableDef.getColumnNames().size(), "tableDef.getColumnNames().size()", 2, "2 columns in the table");
+
+        tableDef.checkHasColumn("Region", String.class);
+        tableDef.checkHasColumn("Item_Type", String.class);
+    }
 }

@@ -422,7 +422,23 @@ public class IcebergCatalogAdapter {
         final TableIdentifier tableId = TableIdentifier.parse(tableIdentifier);
 
         // Load the table from the catalog.
-        return getTableDefinitionInternal(tableId, null, instructions);
+        return getTableDefinition(tableId, instructions);
+    }
+
+    /**
+     * Return {@link TableDefinition table definition} for a given Iceberg table, with optional instructions for
+     * customizations while reading.
+     *
+     * @param tableIdentifier The identifier of the table to load
+     * @param instructions The instructions for customizations while reading
+     * @return The table definition
+     */
+    public TableDefinition getTableDefinition(
+            @NotNull final TableIdentifier tableIdentifier,
+            @Nullable final IcebergInstructions instructions) {
+
+        // Load the table from the catalog.
+        return getTableDefinitionInternal(tableIdentifier, null, instructions);
     }
 
     /**
@@ -447,7 +463,25 @@ public class IcebergCatalogAdapter {
         }
 
         // Load the table from the catalog.
-        return getTableDefinitionInternal(tableId, tableSnapshot, instructions);
+        return getTableDefinition(tableId, tableSnapshot, instructions);
+    }
+
+    /**
+     * Return {@link TableDefinition table definition} for a given Iceberg table and snapshot id, with optional
+     * instructions for customizations while reading.
+     *
+     * @param tableIdentifier The identifier of the table to load
+     * @param tableSnapshot The snapshot to load
+     * @param instructions The instructions for customizations while reading
+     * @return The table definition
+     */
+    public TableDefinition getTableDefinition(
+            @NotNull final TableIdentifier tableIdentifier,
+            @Nullable final Snapshot tableSnapshot,
+            @Nullable final IcebergInstructions instructions) {
+
+        // Load the table from the catalog.
+        return getTableDefinitionInternal(tableIdentifier, tableSnapshot, instructions);
     }
 
     /**
@@ -458,9 +492,24 @@ public class IcebergCatalogAdapter {
      * @param instructions The instructions for customizations while reading
      * @return The table definition as a Deephaven table
      */
-    @SuppressWarnings("unused")
     public Table getTableDefinitionTable(
             @NotNull final String tableIdentifier,
+            @Nullable final IcebergInstructions instructions) {
+        final TableIdentifier tableId = TableIdentifier.parse(tableIdentifier);
+
+        return getTableDefinitionTable(tableId, instructions);
+    }
+
+    /**
+     * Return {@link Table table} containing the {@link TableDefinition definition} of a given Iceberg table, with
+     * optional instructions for customizations while reading.
+     *
+     * @param tableIdentifier The identifier of the table to load
+     * @param instructions The instructions for customizations while reading
+     * @return The table definition as a Deephaven table
+     */
+    public Table getTableDefinitionTable(
+            @NotNull final TableIdentifier tableIdentifier,
             @Nullable final IcebergInstructions instructions) {
         final TableDefinition definition = getTableDefinition(tableIdentifier, instructions);
 
@@ -476,12 +525,37 @@ public class IcebergCatalogAdapter {
      * @param instructions The instructions for customizations while reading
      * @return The table definition as a Deephaven table
      */
-    @SuppressWarnings("unused")
     public Table getTableDefinitionTable(
             @NotNull final String tableIdentifier,
             final long snapshotId,
             @Nullable final IcebergInstructions instructions) {
-        final TableDefinition definition = getTableDefinition(tableIdentifier, snapshotId, instructions);
+        final TableIdentifier tableId = TableIdentifier.parse(tableIdentifier);
+
+        // Find the snapshot with the given snapshot id
+        final Snapshot tableSnapshot = getSnapshot(tableId, snapshotId);
+        if (tableSnapshot == null) {
+            throw new IllegalArgumentException("Snapshot with id " + snapshotId + " not found");
+        }
+
+        return getTableDefinitionTable(tableId, tableSnapshot, instructions);
+    }
+
+    /**
+     * Return {@link Table table} containing the {@link TableDefinition definition} of a given Iceberg table and
+     * snapshot id, with optional instructions for customizations while reading.
+     *
+     * @param tableIdentifier The identifier of the table to load
+     * @param tableSnapshot The snapshot to load
+     * @param instructions The instructions for customizations while reading
+     * @return The table definition as a Deephaven table
+     */
+    public Table getTableDefinitionTable(
+            @NotNull final TableIdentifier tableIdentifier,
+            @Nullable final Snapshot tableSnapshot,
+            @Nullable final IcebergInstructions instructions) {
+
+
+        final TableDefinition definition = getTableDefinition(tableIdentifier, tableSnapshot, instructions);
 
         return TableTools.newTable(definition).meta();
     }
