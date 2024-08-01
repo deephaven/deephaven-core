@@ -770,11 +770,19 @@ public class TableTools {
     }
 
     /**
-     * Creates a metadata Table, as represented by {@code definition}. Consists of a string "Name" column from
-     * {@link ColumnDefinition#getName()}, a string "DataType" column from {@link ColumnDefinition#getDataType()}
-     * ({@link Class#getCanonicalName()} if not null, otherwise {@link Class#getName()}), a string "ColumnType" column
-     * from {@link ColumnDefinition#getColumnType()}, and a Boolean "IsPartitioning" column from
-     * {@link ColumnDefinition#isPartitioning()}.
+     * Creates a metadata {@link Table} representing the columns in {@code definition}. Will include the following
+     * columns:
+     * <dl>
+     * <dt>Name</dt>
+     * <dd>{@link ColumnDefinition#getName()}</dd>
+     * <dt>DataType</dt>
+     * <dd>From {@link ColumnDefinition#getDataType()}, result of {@link Class#getCanonicalName()} if non-{@code null},
+     * else {@link Class#getName()}</dd>
+     * <dt>ColumnType</dt>
+     * <dd>{@code ColumnDefinition#getColumnType()}</dd>
+     * <dt>IsPartitioning</dt>
+     * <dd>{@link ColumnDefinition#isPartitioning()}</dd>
+     * </dl>
      *
      * @param definition the definition
      * @return the metadata Table
