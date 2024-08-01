@@ -12,12 +12,13 @@ from deephaven.column import Column
 from deephaven.dtypes import DType
 from deephaven.experimental import s3
 
-from deephaven.jcompat import j_table_definition
+from deephaven.jcompat import j_table_definition, j_hashmap
 
 from deephaven.table import Table
 
 _JIcebergInstructions = jpy.get_type("io.deephaven.iceberg.util.IcebergInstructions")
 _JIcebergCatalogAdapter = jpy.get_type("io.deephaven.iceberg.util.IcebergCatalogAdapter")
+_JIcebergTools = jpy.get_type("io.deephaven.iceberg.util.IcebergTools")
 
 # IcebergToolsS3 is an optional library
 try:
@@ -247,6 +248,78 @@ def adapter_aws_glue(
                 name,
                 catalog_uri,
                 warehouse_location))
+    except Exception as e:
+        raise DHError(e, "Failed to build Iceberg Catalog Adapter") from e
+
+
+def adapter(
+        name: Optional[str] = None,
+        properties: Optional[Dict[str, str]] = None
+) -> IcebergCatalogAdapter:
+    """
+    Create an Iceberg catalog adapter from configuration properties. These properties map to the Iceberg catalog Java
+    API properties and are used to select the catalog and file IO implementations.
+
+    The minimal set of properties required to create an Iceberg catalog are the following:
+    - `catalog-impl` or `type` - the Java catalog implementation to use. When providing `catalog-impl`, the
+            implementing Java class should be provided (e.g. `org.apache.iceberg.rest.RESTCatalog` or
+            `org.apache.iceberg.aws.glue.GlueCatalog`. Choices for `type` include `hive`, `hadoop`, `rest`, `glue`,
+            `nessie`, `jdbc`.
+    - `uri` - the URI of the catalog
+    - `io-impl` - the Java file IO implementation to use. Common choices are: `org.apache.iceberg.aws.s3.S3FileIO`
+            and `org.apache.iceberg.hadoop.HadoopFileIO`
+
+    Other common properties include:
+    - `warehouse` - the root path of the data warehouse.
+    - `client.region` - the region of the AWS client.
+    - `s3.access-key-id` - the S3 access key for reading files.
+    - `s3.secret-access-key` - the S3 secret access key for reading files.
+    - `s3.endpoint` - the S3 endpoint to connect to.
+
+    Example usage #1 - REST catalog with an S3 backend (using MinIO):
+    ```
+    from deephaven.experimental import iceberg
+
+    adapter = iceberg.adapter_generic(name="generic-adapter", {
+        "type" : "rest",
+        "uri" : "http://rest:8181",
+        "io-impl" : "org.apache.iceberg.aws.s3.S3FileIO",
+        "client.region" : "us-east-1",
+        "s3.access-key-id" : "admin",
+        "s3.secret-access-key" : "password",
+        "s3.endpoint" : "http://minio:9000"
+    })
+    ```
+
+    Example usage #2 - AWS Glue catalog:
+    ```
+    from deephaven.experimental import iceberg
+
+    ## Note: region and credential information are loaded by the catalog from the environment
+    adapter = iceberg.adapter_generic(name="generic-adapter", {
+        "type" : "glue",
+        "uri" : "s3://lab-warehouse/sales",
+        "io-impl" : "org.apache.iceberg.aws.s3.S3FileIO"
+    });
+    ```
+
+    Args:
+        name (Optional[str]): a descriptive name of the catalog; if omitted the catalog name is inferred from the
+            catalog URI property.
+        properties (Optional[Dict[str, str]]): the location of the warehouse.
+
+    Returns:
+        IcebergCatalogAdapter: the catalog adapter for the provided AWS Glue catalog.
+
+    Raises:
+        DHError: If unable to build the catalog adapter.
+    """
+
+    try:
+        return IcebergCatalogAdapter(
+            _JIcebergTools.createAdapter(
+                name,
+                j_hashmap(properties if properties is not None else {})))
     except Exception as e:
         raise DHError(e, "Failed to build Iceberg Catalog Adapter") from e
 

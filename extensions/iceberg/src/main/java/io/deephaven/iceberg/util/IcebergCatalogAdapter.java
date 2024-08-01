@@ -21,6 +21,7 @@ import io.deephaven.iceberg.layout.IcebergFlatLayout;
 import io.deephaven.iceberg.layout.IcebergKeyValuePartitionedLayout;
 import io.deephaven.iceberg.location.IcebergTableLocationFactory;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
+import io.deephaven.util.channel.DataInstructionsProviderLoader;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
@@ -44,6 +45,8 @@ public class IcebergCatalogAdapter {
     private final Catalog catalog;
     private final FileIO fileIO;
 
+    private final DataInstructionsProviderLoader dataInstructionsProvider;
+
     /**
      * Construct an IcebergCatalogAdapter from a catalog and file IO.
      */
@@ -52,6 +55,21 @@ public class IcebergCatalogAdapter {
             @NotNull final FileIO fileIO) {
         this.catalog = catalog;
         this.fileIO = fileIO;
+
+        dataInstructionsProvider = DataInstructionsProviderLoader.getInstance(Map.of());
+    }
+
+    /**
+     * Construct an IcebergCatalogAdapter from a catalog, file IO, and property collection.
+     */
+    IcebergCatalogAdapter(
+            @NotNull final Catalog catalog,
+            @NotNull final FileIO fileIO,
+            @NotNull final Map<String, String> properties) {
+        this.catalog = catalog;
+        this.fileIO = fileIO;
+
+        dataInstructionsProvider = DataInstructionsProviderLoader.getInstance(Map.copyOf(properties));
     }
 
     /**
@@ -354,13 +372,35 @@ public class IcebergCatalogAdapter {
      * Read the latest static snapshot of an Iceberg table from the Iceberg catalog.
      *
      * @param tableIdentifier The table identifier to load
+     * @return The loaded table
+     */
+    @SuppressWarnings("unused")
+    public Table readTable(@NotNull final TableIdentifier tableIdentifier) {
+        return readTableInternal(tableIdentifier, null, null);
+    }
+
+    /**
+     * Read the latest static snapshot of an Iceberg table from the Iceberg catalog.
+     *
+     * @param tableIdentifier The table identifier to load
+     * @return The loaded table
+     */
+    @SuppressWarnings("unused")
+    public Table readTable(@NotNull final String tableIdentifier) {
+        return readTableInternal(TableIdentifier.parse(tableIdentifier), null, null);
+    }
+
+    /**
+     * Read the latest static snapshot of an Iceberg table from the Iceberg catalog.
+     *
+     * @param tableIdentifier The table identifier to load
      * @param instructions The instructions for customizations while reading
      * @return The loaded table
      */
     @SuppressWarnings("unused")
     public Table readTable(
             @NotNull final TableIdentifier tableIdentifier,
-            @Nullable final IcebergInstructions instructions) {
+            @NotNull final IcebergInstructions instructions) {
         return readTableInternal(tableIdentifier, null, instructions);
     }
 
@@ -374,8 +414,45 @@ public class IcebergCatalogAdapter {
     @SuppressWarnings("unused")
     public Table readTable(
             @NotNull final String tableIdentifier,
-            @Nullable final IcebergInstructions instructions) {
+            @NotNull final IcebergInstructions instructions) {
         return readTable(TableIdentifier.parse(tableIdentifier), instructions);
+    }
+
+    /**
+     * Read a static snapshot of an Iceberg table from the Iceberg catalog.
+     *
+     * @param tableIdentifier The table identifier to load
+     * @param tableSnapshotId The snapshot id to load
+     * @return The loaded table
+     */
+    @SuppressWarnings("unused")
+    public Table readTable(@NotNull final TableIdentifier tableIdentifier, final long tableSnapshotId) {
+        // Find the snapshot with the given snapshot id
+        final Snapshot tableSnapshot = listSnapshots(tableIdentifier).stream()
+                .filter(snapshot -> snapshot.snapshotId() == tableSnapshotId)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Snapshot with id " + tableSnapshotId + " not found"));
+
+        return readTableInternal(tableIdentifier, tableSnapshot, null);
+    }
+
+    /**
+     * Read a static snapshot of an Iceberg table from the Iceberg catalog.
+     *
+     * @param tableIdentifier The table identifier to load
+     * @param tableSnapshotId The snapshot id to load
+     * @return The loaded table
+     */
+    @SuppressWarnings("unused")
+    public Table readTable(@NotNull final String tableIdentifier, final long tableSnapshotId) {
+        final TableIdentifier tableId = TableIdentifier.parse(tableIdentifier);
+        // Find the snapshot with the given snapshot id
+        final Snapshot tableSnapshot = listSnapshots(tableId).stream()
+                .filter(snapshot -> snapshot.snapshotId() == tableSnapshotId)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Snapshot with id " + tableSnapshotId + " not found"));
+
+        return readTableInternal(tableId, tableSnapshot, null);
     }
 
     /**
@@ -390,7 +467,7 @@ public class IcebergCatalogAdapter {
     public Table readTable(
             @NotNull final TableIdentifier tableIdentifier,
             final long tableSnapshotId,
-            @Nullable final IcebergInstructions instructions) {
+            @NotNull final IcebergInstructions instructions) {
 
         // Find the snapshot with the given snapshot id
         final Snapshot tableSnapshot = listSnapshots(tableIdentifier).stream()
@@ -413,7 +490,7 @@ public class IcebergCatalogAdapter {
     public Table readTable(
             @NotNull final String tableIdentifier,
             final long tableSnapshotId,
-            @Nullable final IcebergInstructions instructions) {
+            @NotNull final IcebergInstructions instructions) {
         return readTable(TableIdentifier.parse(tableIdentifier), tableSnapshotId, instructions);
     }
 
@@ -429,7 +506,7 @@ public class IcebergCatalogAdapter {
     public Table readTable(
             @NotNull final TableIdentifier tableIdentifier,
             @NotNull final Snapshot tableSnapshot,
-            @Nullable final IcebergInstructions instructions) {
+            @NotNull final IcebergInstructions instructions) {
         return readTableInternal(tableIdentifier, tableSnapshot, instructions);
     }
 
@@ -522,11 +599,12 @@ public class IcebergCatalogAdapter {
 
         if (partitionSpec.isUnpartitioned()) {
             // Create the flat layout location key finder
-            keyFinder = new IcebergFlatLayout(tableDef, table, snapshot, fileIO, userInstructions);
+            keyFinder = new IcebergFlatLayout(tableDef, table, snapshot, fileIO, userInstructions,
+                    dataInstructionsProvider);
         } else {
             // Create the partitioning column location key finder
             keyFinder = new IcebergKeyValuePartitionedLayout(tableDef, table, snapshot, fileIO, partitionSpec,
-                    userInstructions);
+                    userInstructions, dataInstructionsProvider);
         }
 
         refreshService = null;
