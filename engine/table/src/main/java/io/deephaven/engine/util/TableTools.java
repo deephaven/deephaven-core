@@ -13,6 +13,7 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.time.DateTimeUtils;
@@ -766,6 +767,39 @@ public class TableTools {
                 setFlat();
             }
         };
+    }
+
+    /**
+     * Creates a metadata Table, as represented by {@code definition}. Consists of a string "Name" column from
+     * {@link ColumnDefinition#getName()}, a string "DataType" column from {@link ColumnDefinition#getDataType()}
+     * ({@link Class#getCanonicalName()} if not null, otherwise {@link Class#getName()}), a string "ColumnType" column
+     * from {@link ColumnDefinition#getColumnType()}, and a Boolean "IsPartitioning" column from
+     * {@link ColumnDefinition#isPartitioning()}.
+     *
+     * @param definition the definition
+     * @return the metadata Table
+     */
+    public static Table metaTable(TableDefinition definition) {
+        List<String> columnNames = new ArrayList<>();
+        List<String> columnDataTypes = new ArrayList<>();
+        List<String> columnTypes = new ArrayList<>();
+        List<Boolean> columnPartitioning = new ArrayList<>();
+        for (ColumnDefinition<?> cDef : definition.getColumns()) {
+            columnNames.add(cDef.getName());
+            final Class<?> dataType = cDef.getDataType();
+            final String dataTypeName = dataType.getCanonicalName();
+            columnDataTypes.add(dataTypeName == null ? dataType.getName() : dataTypeName);
+            columnTypes.add(cDef.getColumnType().name());
+            columnPartitioning.add(cDef.isPartitioning());
+        }
+        final String[] resultColumnNames = {"Name", "DataType", "ColumnType", "IsPartitioning"};
+        final Object[] resultValues = {
+                columnNames.toArray(String[]::new),
+                columnDataTypes.toArray(String[]::new),
+                columnTypes.toArray(String[]::new),
+                columnPartitioning.toArray(new Boolean[0]),
+        };
+        return new InMemoryTable(resultColumnNames, resultValues);
     }
 
     private static void checkSizes(ColumnHolder<?>[] columnHolders) {
