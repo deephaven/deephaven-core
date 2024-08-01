@@ -17,6 +17,7 @@ import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.iceberg.layout.IcebergFlatLayout;
 import io.deephaven.iceberg.layout.IcebergKeyValuePartitionedLayout;
 import io.deephaven.iceberg.location.IcebergTableLocationFactory;
@@ -353,6 +354,163 @@ public class IcebergCatalogAdapter {
     }
 
     /**
+     * Get a specific {@link Snapshot snapshot} of a given Iceberg table (or null if it does not exist).
+     *
+     * @param tableIdentifier The identifier of the table from which to gather snapshots
+     * @param snapshotId The id of the snapshot to retrieve
+     * @return The snapshot with the given id, or null if it does not exist
+     */
+    private Snapshot getSnapshot(@NotNull final TableIdentifier tableIdentifier, final long snapshotId) {
+        return listSnapshots(tableIdentifier).stream()
+                .filter(snapshot -> snapshot.snapshotId() == snapshotId)
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Get a legalized column rename map from a table schema and user instructions.
+     */
+    private Map<String, String> getRenameColumnMap(
+            @NotNull final org.apache.iceberg.Table table,
+            @NotNull final Schema schema,
+            @NotNull final IcebergInstructions instructions) {
+
+        final Set<String> takenNames = new HashSet<>();
+
+        // Map all the column names in the schema to their legalized names.
+        final Map<String, String> legalizedColumnRenames = new HashMap<>();
+
+        // Validate user-supplied names meet legalization instructions
+        for (final Map.Entry<String, String> entry : instructions.columnRenames().entrySet()) {
+            final String destinationName = entry.getValue();
+            if (!NameValidator.isValidColumnName(destinationName)) {
+                throw new TableDataException(
+                        String.format("%s - invalid column name provided (%s)", table, destinationName));
+            }
+            // Add these renames to the legalized list.
+            legalizedColumnRenames.put(entry.getKey(), destinationName);
+            takenNames.add(destinationName);
+        }
+
+        for (final Types.NestedField field : schema.columns()) {
+            final String name = field.name();
+            // Do we already have a valid rename for this column from the user or a partitioned column?
+            if (!legalizedColumnRenames.containsKey(name)) {
+                final String legalizedName =
+                        NameValidator.legalizeColumnName(name, s -> s.replace(" ", "_"), takenNames);
+                if (!legalizedName.equals(name)) {
+                    legalizedColumnRenames.put(name, legalizedName);
+                    takenNames.add(legalizedName);
+                }
+            }
+        }
+
+        return legalizedColumnRenames;
+    }
+
+    /**
+     * Return {@link TableDefinition table definition} for a given Iceberg table, with optional instructions for
+     * customizations while reading.
+     *
+     * @param tableIdentifier The identifier of the table to load
+     * @param instructions The instructions for customizations while reading
+     * @return The table definition
+     */
+    public TableDefinition getTableDefinition(
+            @NotNull final String tableIdentifier,
+            @Nullable final IcebergInstructions instructions) {
+        final TableIdentifier tableId = TableIdentifier.parse(tableIdentifier);
+
+        // Load the table from the catalog.
+        return getTableDefinitionInternal(tableId, null, instructions);
+    }
+
+    /**
+     * Return {@link TableDefinition table definition} for a given Iceberg table and snapshot id, with optional
+     * instructions for customizations while reading.
+     *
+     * @param tableIdentifier The identifier of the table to load
+     * @param snapshotId The identifier of the snapshot to load
+     * @param instructions The instructions for customizations while reading
+     * @return The table definition
+     */
+    public TableDefinition getTableDefinition(
+            @NotNull final String tableIdentifier,
+            final long snapshotId,
+            @Nullable final IcebergInstructions instructions) {
+        final TableIdentifier tableId = TableIdentifier.parse(tableIdentifier);
+
+        // Find the snapshot with the given snapshot id
+        final Snapshot tableSnapshot = getSnapshot(tableId, snapshotId);
+        if (tableSnapshot == null) {
+            throw new IllegalArgumentException("Snapshot with id " + snapshotId + " not found");
+        }
+
+        // Load the table from the catalog.
+        return getTableDefinitionInternal(tableId, tableSnapshot, instructions);
+    }
+
+    /**
+     * Return {@link Table table} containing the {@link TableDefinition definition} of a given Iceberg table, with
+     * optional instructions for customizations while reading.
+     *
+     * @param tableIdentifier The identifier of the table to load
+     * @param instructions The instructions for customizations while reading
+     * @return The table definition as a Deephaven table
+     */
+    @SuppressWarnings("unused")
+    public Table getTableDefinitionTable(
+            @NotNull final String tableIdentifier,
+            @Nullable final IcebergInstructions instructions) {
+        final TableDefinition definition = getTableDefinition(tableIdentifier, instructions);
+
+        return TableTools.newTable(definition).meta();
+    }
+
+    /**
+     * Return {@link Table table} containing the {@link TableDefinition definition} of a given Iceberg table and
+     * snapshot id, with optional instructions for customizations while reading.
+     *
+     * @param tableIdentifier The identifier of the table to load
+     * @param snapshotId The identifier of the snapshot to load
+     * @param instructions The instructions for customizations while reading
+     * @return The table definition as a Deephaven table
+     */
+    @SuppressWarnings("unused")
+    public Table getTableDefinitionTable(
+            @NotNull final String tableIdentifier,
+            final long snapshotId,
+            @Nullable final IcebergInstructions instructions) {
+        final TableDefinition definition = getTableDefinition(tableIdentifier, snapshotId, instructions);
+
+        return TableTools.newTable(definition).meta();
+    }
+
+    /**
+     * Internal method to create a {@link TableDefinition} from the table schema, snapshot and user instructions.
+     */
+    private TableDefinition getTableDefinitionInternal(
+            @NotNull final TableIdentifier tableIdentifier,
+            @Nullable final Snapshot tableSnapshot,
+            @Nullable final IcebergInstructions instructions) {
+
+        final org.apache.iceberg.Table table = catalog.loadTable(tableIdentifier);
+        if (table == null) {
+            throw new IllegalArgumentException("Table not found: " + tableIdentifier);
+        }
+
+        final Snapshot snapshot = tableSnapshot != null ? tableSnapshot : table.currentSnapshot();
+        final Schema schema = snapshot != null ? table.schemas().get(snapshot.schemaId()) : table.schema();
+
+        final IcebergInstructions userInstructions = instructions == null ? IcebergInstructions.DEFAULT : instructions;
+
+        return fromSchema(schema,
+                table.spec(),
+                userInstructions.tableDefinition().orElse(null),
+                getRenameColumnMap(table, schema, userInstructions));
+    }
+
+    /**
      * Read the latest static snapshot of an Iceberg table from the Iceberg catalog.
      *
      * @param tableIdentifier The table identifier to load
@@ -395,11 +553,10 @@ public class IcebergCatalogAdapter {
             @Nullable final IcebergInstructions instructions) {
 
         // Find the snapshot with the given snapshot id
-        final Snapshot tableSnapshot = listSnapshots(tableIdentifier).stream()
-                .filter(snapshot -> snapshot.snapshotId() == tableSnapshotId)
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Snapshot with id " + tableSnapshotId + " not found"));
-
+        final Snapshot tableSnapshot = getSnapshot(tableIdentifier, tableSnapshotId);
+        if (tableSnapshot == null) {
+            throw new IllegalArgumentException("Snapshot with id " + tableSnapshotId + " not found");
+        }
         return readTableInternal(tableIdentifier, tableSnapshot, instructions);
     }
 
@@ -442,6 +599,9 @@ public class IcebergCatalogAdapter {
 
         // Load the table from the catalog.
         final org.apache.iceberg.Table table = catalog.loadTable(tableIdentifier);
+        if (table == null) {
+            throw new IllegalArgumentException("Table not found: " + tableIdentifier);
+        }
 
         // Do we want the latest or a specific snapshot?
         final Snapshot snapshot = tableSnapshot != null ? tableSnapshot : table.currentSnapshot();
@@ -456,36 +616,8 @@ public class IcebergCatalogAdapter {
         // Get the user supplied table definition.
         final TableDefinition userTableDef = userInstructions.tableDefinition().orElse(null);
 
-        final Set<String> takenNames = new HashSet<>();
-
         // Map all the column names in the schema to their legalized names.
-        final Map<String, String> legalizedColumnRenames = new HashMap<>();
-
-        // Validate user-supplied names meet legalization requirements
-        for (final Map.Entry<String, String> entry : userInstructions.columnRenames().entrySet()) {
-            final String destinationName = entry.getValue();
-            if (!NameValidator.isValidColumnName(destinationName)) {
-                throw new TableDataException(
-                        String.format("%s:%d - invalid column name provided (%s)", table, snapshot.snapshotId(),
-                                destinationName));
-            }
-            // Add these renames to the legalized list.
-            legalizedColumnRenames.put(entry.getKey(), destinationName);
-            takenNames.add(destinationName);
-        }
-
-        for (final Types.NestedField field : schema.columns()) {
-            final String name = field.name();
-            // Do we already have a valid rename for this column from the user or a partitioned column?
-            if (!legalizedColumnRenames.containsKey(name)) {
-                final String legalizedName =
-                        NameValidator.legalizeColumnName(name, s -> s.replace(" ", "_"), takenNames);
-                if (!legalizedName.equals(name)) {
-                    legalizedColumnRenames.put(name, legalizedName);
-                    takenNames.add(legalizedName);
-                }
-            }
-        }
+        final Map<String, String> legalizedColumnRenames = getRenameColumnMap(table, schema, userInstructions);
 
         // Get the table definition from the schema (potentially limited by the user supplied table definition and
         // applying column renames).
