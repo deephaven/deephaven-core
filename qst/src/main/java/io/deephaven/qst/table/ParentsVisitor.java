@@ -302,6 +302,11 @@ public enum ParentsVisitor implements Visitor<Stream<TableSpec>> {
         return single(dropColumnsTable);
     }
 
+    @Override
+    public Stream<TableSpec> visit(MultiJoinTable multiJoinTable) {
+        return multiJoinTable.inputs().stream().map(MultiJoinInput::table);
+    }
+
     private static class Search {
 
         private final Predicate<TableSpec> excludePaths;
