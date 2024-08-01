@@ -7,12 +7,12 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.iceberg.util.IcebergInstructions;
+import io.deephaven.util.channel.DataInstructionsProviderLoader;
 import org.apache.iceberg.*;
 import org.apache.iceberg.io.FileIO;
 import org.jetbrains.annotations.NotNull;
 
 import java.net.URI;
-import java.util.Map;
 
 /**
  * Iceberg {@link TableLocationKeyFinder location finder} for tables without partitions that will discover data files
@@ -32,8 +32,8 @@ public final class IcebergFlatLayout extends IcebergBaseLayout {
             @NotNull final Snapshot tableSnapshot,
             @NotNull final FileIO fileIO,
             @NotNull final IcebergInstructions instructions,
-            @NotNull final Map<String, String> properties) {
-        super(tableDef, table, tableSnapshot, fileIO, instructions, properties);
+            @NotNull final DataInstructionsProviderLoader dataInstructionsProvider) {
+        super(tableDef, table, tableSnapshot, fileIO, instructions, dataInstructionsProvider);
     }
 
     @Override

@@ -23,8 +23,11 @@ public final class S3InstructionsProviderPlugin implements DataInstructionsProvi
 
     @Override
     public Object createInstructions(@NotNull URI uri, @NotNull Map<String, String> properties) {
-        // If the properties contain any of these keys, we can create a useful S3Instructions object.
-        if (properties.containsKey(CLIENT_REGION)
+        // If the URI scheme is "s3" or "s3a" or if the properties contain one of these specific keys, we can create a
+        // useful S3Instructions object.
+        if (uri.getScheme().equals("s3")
+                || uri.getScheme().equals("s3a")
+                || properties.containsKey(CLIENT_REGION)
                 || properties.containsKey(S3_ACCESS_KEY_ID)
                 || properties.containsKey(S3_SECRET_ACCESS_KEY)
                 || properties.containsKey(S3_ENDPOINT)) {

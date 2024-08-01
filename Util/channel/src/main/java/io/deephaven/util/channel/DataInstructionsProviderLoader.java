@@ -14,19 +14,13 @@ import java.util.*;
  */
 public final class DataInstructionsProviderLoader {
     /**
-     * A weakly held cache of {@link DataInstructionsProviderLoader} instances keyed by the property collection.
-     */
-    private static final WeakHashMap<Map<String, String>, DataInstructionsProviderLoader> instances =
-            new WeakHashMap<>();
-
-    /**
      * Get a {@link DataInstructionsProviderLoader} instance for the given property collection.
      *
      * @param properties The property collection.
      * @return A {@link DataInstructionsProviderLoader} instance.
      */
     public static DataInstructionsProviderLoader getInstance(final Map<String, String> properties) {
-        return instances.computeIfAbsent(properties, DataInstructionsProviderLoader::new);
+        return new DataInstructionsProviderLoader(properties);
     }
 
     /**
@@ -40,11 +34,6 @@ public final class DataInstructionsProviderLoader {
     private final List<DataInstructionsProviderPlugin> providers;
 
     /**
-     * A weakly held cache of {@link DataInstructionsProviderPlugin} instances keyed by the URI.
-     */
-    private final WeakHashMap<URI, Object> cache;
-
-    /**
      * Create a new {@link DataInstructionsProviderLoader} instance for the given property collection.
      *
      * @param properties The property collection.
@@ -56,7 +45,6 @@ public final class DataInstructionsProviderLoader {
         for (final DataInstructionsProviderPlugin plugin : ServiceLoader.load(DataInstructionsProviderPlugin.class)) {
             providers.add(plugin);
         }
-        cache = new WeakHashMap<>();
     }
 
     /**
@@ -68,15 +56,13 @@ public final class DataInstructionsProviderLoader {
      * @return A {@link SeekableChannelsProvider} for the given URI.
      */
     public Object fromServiceLoader(@NotNull final URI uri) {
-        return cache.computeIfAbsent(uri, u -> {
-            for (final DataInstructionsProviderPlugin plugin : providers) {
-                final Object pluginInstructions = plugin.createInstructions(uri, properties);
-                if (pluginInstructions != null) {
-                    return pluginInstructions;
-                }
+        for (final DataInstructionsProviderPlugin plugin : providers) {
+            final Object pluginInstructions = plugin.createInstructions(uri, properties);
+            if (pluginInstructions != null) {
+                return pluginInstructions;
             }
-            // No plugin found for this URI and property collection.
-            return null;
-        });
+        }
+        // No plugin found for this URI and property collection.
+        return null;
     }
 }

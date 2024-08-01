@@ -21,6 +21,7 @@ import io.deephaven.iceberg.layout.IcebergFlatLayout;
 import io.deephaven.iceberg.layout.IcebergKeyValuePartitionedLayout;
 import io.deephaven.iceberg.location.IcebergTableLocationFactory;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
+import io.deephaven.util.channel.DataInstructionsProviderLoader;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
@@ -44,7 +45,7 @@ public class IcebergCatalogAdapter {
     private final Catalog catalog;
     private final FileIO fileIO;
 
-    private final Map<String, String> properties;
+    private final DataInstructionsProviderLoader dataInstructionsProvider;
 
     /**
      * Construct an IcebergCatalogAdapter from a catalog and file IO.
@@ -55,8 +56,7 @@ public class IcebergCatalogAdapter {
         this.catalog = catalog;
         this.fileIO = fileIO;
 
-        // Create an empty properties map.
-        this.properties = Map.of();
+        dataInstructionsProvider = DataInstructionsProviderLoader.getInstance(Map.of());
     }
 
     /**
@@ -69,8 +69,7 @@ public class IcebergCatalogAdapter {
         this.catalog = catalog;
         this.fileIO = fileIO;
 
-        // Copy the properties map to ensure immutability.
-        this.properties = Map.copyOf(properties);
+        dataInstructionsProvider = DataInstructionsProviderLoader.getInstance(Map.copyOf(properties));
     }
 
     /**
@@ -600,11 +599,12 @@ public class IcebergCatalogAdapter {
 
         if (partitionSpec.isUnpartitioned()) {
             // Create the flat layout location key finder
-            keyFinder = new IcebergFlatLayout(tableDef, table, snapshot, fileIO, userInstructions, properties);
+            keyFinder = new IcebergFlatLayout(tableDef, table, snapshot, fileIO, userInstructions,
+                    dataInstructionsProvider);
         } else {
             // Create the partitioning column location key finder
             keyFinder = new IcebergKeyValuePartitionedLayout(tableDef, table, snapshot, fileIO, partitionSpec,
-                    userInstructions, properties);
+                    userInstructions, dataInstructionsProvider);
         }
 
         refreshService = null;

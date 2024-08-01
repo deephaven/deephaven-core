@@ -55,9 +55,9 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
     final Map<URI, IcebergTableLocationKey> cache;
 
     /**
-     * A cache of {@link IcebergTableLocationKey IcebergTableLocationKeys} keyed by the URI of the file they represent.
+     * The data instructions provider for creating instructions from URI and user-supplied properties.
      */
-    final Map<String, String> properties;
+    final DataInstructionsProviderLoader dataInstructionsProvider;
 
     /**
      * The {@link ParquetInstructions} object that will be used to read any Parquet data files in this table. Only
@@ -90,8 +90,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
                     builder.setSpecialInstructions(instructions.dataInstructions().get());
                 } else {
                     // Attempt to create data instructions from the properties collection and URI.
-                    final Object dataInstructions =
-                            DataInstructionsProviderLoader.getInstance(properties).fromServiceLoader(fileUri);
+                    final Object dataInstructions = dataInstructionsProvider.fromServiceLoader(fileUri);
                     if (dataInstructions != null) {
                         builder.setSpecialInstructions(dataInstructions);
                     }
@@ -118,13 +117,13 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             @NotNull final Snapshot tableSnapshot,
             @NotNull final FileIO fileIO,
             @NotNull final IcebergInstructions instructions,
-            @NotNull final Map<String, String> properties) {
+            @NotNull final DataInstructionsProviderLoader dataInstructionsProvider) {
         this.tableDef = tableDef;
         this.table = table;
         this.snapshot = tableSnapshot;
         this.fileIO = fileIO;
         this.instructions = instructions;
-        this.properties = properties;
+        this.dataInstructionsProvider = dataInstructionsProvider;
 
         this.cache = new HashMap<>();
     }
