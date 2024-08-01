@@ -36,7 +36,6 @@ import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.updategraph.OperationInitializer;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.UpdateGraphLock;
 import io.deephaven.engine.util.TableTools;
@@ -48,7 +47,6 @@ import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.locks.AwareFunctionalLock;
-import io.deephaven.util.thread.ThreadInitializationFactory;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.vector.*;
 import junit.framework.TestCase;
@@ -66,7 +64,6 @@ import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.*;
@@ -2749,7 +2746,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table ungrouped = t.ungroup();
         try (final BarrageMessage snap =
                 ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) ungrouped)) {
-            testUngroupConstructSnashotBoxedNullAllColumnHelper(snap);
+            testUngroupConstructSnapshotBoxedNullAllColumnHelper(snap);
         }
 
         // Snapshot the second column for last two rows
@@ -2759,23 +2756,23 @@ public class QueryTableTest extends QueryTableTestBase {
         try (final BarrageMessage snap =
                 ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(this, (BaseTable<?>) ungrouped,
                         columnsToSnapshot, rowsToSnapshot, null)) {
-            testUnGroupConstructSnapshotBoxedNullFewColumnsHelper(snap);
+            testUngroupConstructSnapshotBoxedNullFewColumnsHelper(snap);
         }
 
         final Table selected = ungrouped.select(); // Will convert column sources to in memory
         try (final BarrageMessage snap =
                 ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) selected)) {
-            testUngroupConstructSnashotBoxedNullAllColumnHelper(snap);
+            testUngroupConstructSnapshotBoxedNullAllColumnHelper(snap);
         }
 
         try (final BarrageMessage snap =
                 ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(this, (BaseTable<?>) selected,
                         columnsToSnapshot, RowSequenceFactory.forRange(1, 2), null)) {
-            testUnGroupConstructSnapshotBoxedNullFewColumnsHelper(snap);
+            testUngroupConstructSnapshotBoxedNullFewColumnsHelper(snap);
         }
     }
 
-    private static void testUngroupConstructSnashotBoxedNullAllColumnHelper(@NotNull final BarrageMessage snap) {
+    private static void testUngroupConstructSnapshotBoxedNullAllColumnHelper(@NotNull final BarrageMessage snap) {
         assertEquals(snap.rowsAdded, i(0, 1, 2));
         final List<Chunk<Values>> firstColChunk = snap.addColumnData[0].data;
         final int[] firstColExpected = new int[] {QueryConstants.NULL_INT, 2, 3};
@@ -2787,7 +2784,7 @@ public class QueryTableTest extends QueryTableTestBase {
         }
     }
 
-    private static void testUnGroupConstructSnapshotBoxedNullFewColumnsHelper(@NotNull final BarrageMessage snap) {
+    private static void testUngroupConstructSnapshotBoxedNullFewColumnsHelper(@NotNull final BarrageMessage snap) {
         assertEquals(snap.rowsIncluded, i(1, 2));
         assertEquals(snap.addColumnData[1].data.get(0).asIntChunk().get(0), 5);
         assertEquals(snap.addColumnData[1].data.get(0).asIntChunk().get(1), QueryConstants.NULL_INT);
@@ -2801,16 +2798,16 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table ungrouped = t.ungroup();
         try (final BarrageMessage snap =
                 ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) ungrouped)) {
-            testUngroupConstructSnashotSinlgeColumnHelper(snap);
+            testUngroupConstructSnapshotSingleColumnHelper(snap);
         }
 
         final Table selected = ungrouped.select(); // Will convert column sources to in memory
         try (final BarrageMessage snap = ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) selected)) {
-            testUngroupConstructSnashotSinlgeColumnHelper(snap);
+            testUngroupConstructSnapshotSingleColumnHelper(snap);
         }
     }
 
-    private static void testUngroupConstructSnashotSinlgeColumnHelper(@NotNull final BarrageMessage snap) {
+    private static void testUngroupConstructSnapshotSingleColumnHelper(@NotNull final BarrageMessage snap) {
         assertEquals(snap.rowsAdded, i(0, 1, 2));
         final List<Chunk<Values>> firstColChunk = snap.addColumnData[0].data;
         final int[] firstColExpected = new int[] {QueryConstants.NULL_INT, 2, 3};

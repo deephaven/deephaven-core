@@ -682,8 +682,10 @@ public class ConstructSnapshot {
         final UpdateGraph updateGraph = table.getUpdateGraph();
         final MutableObject<BarrageMessage> snapshotMsg = new MutableObject<>();
         // Use Fork-Join thread pool for parallel snapshotting
-        try (final SafeCloseable ignored1 = ExecutionContext.getContext().withUpdateGraph(updateGraph)
-                .withOperationInitializer(ForkJoinPoolOperationInitializer.fromCommonPool()).open()) {
+        try (final SafeCloseable ignored1 = ExecutionContext.getContext()
+                .withUpdateGraph(updateGraph)
+                .withOperationInitializer(ForkJoinPoolOperationInitializer.fromCommonPool())
+                .open()) {
             final SnapshotFunction doSnapshot = (usePrev, beforeClockValue) -> {
                 final BarrageMessage snapshot = new BarrageMessage();
                 snapshot.isSnapshot = true;
@@ -724,9 +726,7 @@ public class ConstructSnapshot {
             final long clockStep =
                     callDataSnapshotFunction(System.identityHashCode(logIdentityObject), control, doSnapshot);
             final BarrageMessage snapshot = snapshotMsg.getValue();
-            snapshot.step = clockStep;
-            snapshot.firstSeq = snapshot.lastSeq = snapshot.step;
-
+            snapshot.step = snapshot.firstSeq = snapshot.lastSeq = clockStep;
             return snapshot;
         }
     }
@@ -1300,8 +1300,8 @@ public class ConstructSnapshot {
                     }
                     break;
                 } catch (SnapshotUnsuccessfulException sue) {
-                    // The code below detected a failure despite a consistent state. We should not re-attempt, or
-                    // re-check the consistency ourselves.
+                    // The snapshot function below detected a failure despite a consistent state. We should not
+                    // re-attempt, or re-check the consistency ourselves.
                     throw sue;
                 } catch (Exception e) {
                     functionSuccessful = false;
@@ -1563,8 +1563,7 @@ public class ConstructSnapshot {
                 }
             } else {
                 // Snapshot all non-empty columns serially
-                snapshotColumnsSerial(nonEmptyColumnIndices, nonEmptyColumnSources, usePrev,
-                        snapshot);
+                snapshotColumnsSerial(nonEmptyColumnIndices, nonEmptyColumnSources, usePrev, snapshot);
             }
         }
         if (log.isDebugEnabled()) {
@@ -1648,7 +1647,7 @@ public class ConstructSnapshot {
      * Allocate add and mod column data for each column, and populate the snapshot data for empty columns. Also, collect
      * the indices and column sources of non-empty columns, for which we will populate snapshot data later.
      * <p>
-     * This method is intended to be called from the main thread.
+     * This method is intended to be called from the thread that initiated the column snapshot.
      */
     private static boolean snapshotEmptyColumns(
             final String[] columnSources,
@@ -1681,6 +1680,7 @@ public class ConstructSnapshot {
             if (columnIsEmpty) {
                 acd.data = List.of();
             } else {
+                acd.data = new ArrayList<>(); // To be populated later
                 nonEmptyColumnsIndices.add(colIdx);
                 nonEmptyColumnSources.add(sourceToUse);
             }
@@ -1759,7 +1759,6 @@ public class ConstructSnapshot {
         // The caller should handle empty tables
         Assert.assertion(numRows > 0, "numRows > 0");
         final int numCols = columnIndices.size();
-        long offset = 0;
         final int maxChunkSize = (int) Math.min(numRows, SNAPSHOT_CHUNK_SIZE);
         final ColumnSource.FillContext[] fillContexts = new ColumnSource.FillContext[numCols];
         try (final SharedContext sharedContext = numCols > 1 ? SharedContext.makeSharedContext() : null;
@@ -1768,68 +1767,27 @@ public class ConstructSnapshot {
             for (int colRank = 0; colRank < numCols; ++colRank) {
                 fillContexts[colRank] = columnSources.get(colRank).makeFillContext(maxChunkSize, sharedContext);
             }
-            int chunkSize = maxChunkSize;
             while (it.hasMore()) {
-                final RowSequence reducedRowSet = it.getNextRowSequenceWithLength(chunkSize);
-                if (reducedRowSet.intSize() != chunkSize) {
-                    failIfConcurrentAttemptInconsistent();
-                    throw new SnapshotUnsuccessfulException(String.format(
-                            "Rowset did not provide requested number of rows in an otherwise consistent state, " +
-                                    "requested = %d, actual = %d",
-                            chunkSize, reducedRowSet.size()));
-                }
+                final RowSequence reducedRowSet = it.getNextRowSequenceWithLength(maxChunkSize);
                 // Populate the snapshot data for each column for the current chunk of rows
                 for (int colRank = 0; colRank < numCols; ++colRank) {
                     final int colIdx = columnIndices.get(colRank);
                     final ColumnSource<?> columnSource = columnSources.get(colRank);
                     final ColumnSource.FillContext fillContext = fillContexts[colRank];
-                    // Populate snapshot data as a list of chunks
-                    if (snapshot.addColumnData[colIdx].data == null) {
-                        snapshot.addColumnData[colIdx].data = new ArrayList<>();
+                    final WritableChunk<Values> currentChunk =
+                            columnSource.getChunkType().makeWritableChunk(reducedRowSet.intSize());
+                    if (usePrev) {
+                        columnSource.fillPrevChunk(fillContext, currentChunk, reducedRowSet);
+                    } else {
+                        columnSource.fillChunk(fillContext, currentChunk, reducedRowSet);
                     }
-                    snapshot.addColumnData[colIdx].data.add(
-                            getColumnSnapshotChunk(columnSource, fillContext, reducedRowSet, chunkSize, usePrev));
-                }
-                // increment offset for the next chunk (assuming the number of rows written for all columns is equal)
-                offset += chunkSize;
-
-                // recompute the size of the next chunk
-                if (numRows - offset > maxChunkSize) {
-                    chunkSize = maxChunkSize;
-                } else {
-                    chunkSize = (int) (numRows - offset);
+                    snapshot.addColumnData[colIdx].data.add(currentChunk);
                 }
                 if (sharedContext != null) {
-                    // a shared context is good for only one chunk of rows
                     sharedContext.reset();
                 }
             }
         }
-    }
-
-    /**
-     * Get a chunk of data for provided column source and row set.
-     */
-    private static <T> Chunk<Values> getColumnSnapshotChunk(
-            @NotNull final ColumnSource<T> columnSource,
-            @NotNull final ColumnSource.FillContext fillContext,
-            @NotNull final RowSequence rowSequence,
-            final int chunkSize,
-            final boolean usePrev) {
-        final long size = rowSequence.size();
-        if (size == 0) {
-            return columnSource.getChunkType().makeWritableChunk(0);
-        }
-        final ChunkType chunkType = columnSource.getChunkType();
-
-        // create a new chunk
-        final WritableChunk<Values> currentChunk = chunkType.makeWritableChunk(chunkSize);
-        if (usePrev) {
-            columnSource.fillPrevChunk(fillContext, currentChunk, rowSequence);
-        } else {
-            columnSource.fillChunk(fillContext, currentChunk, rowSequence);
-        }
-        return currentChunk;
     }
 
     /**

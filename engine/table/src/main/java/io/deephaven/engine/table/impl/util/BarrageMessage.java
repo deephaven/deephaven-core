@@ -12,6 +12,7 @@ import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.util.SafeCloseable;
 
 import java.util.BitSet;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
@@ -94,34 +95,30 @@ public class BarrageMessage implements SafeCloseable {
             rowsRemoved.close();
         }
         if (addColumnData != null) {
-            for (final BarrageMessage.AddColumnData acd : addColumnData) {
-                if (acd == null || acd.data.isEmpty()) {
-                    continue;
+            for (final AddColumnData acd : addColumnData) {
+                if (acd != null) {
+                    closeChunkData(acd.data);
                 }
-
-                for (Chunk<Values> chunk : acd.data) {
-                    if (chunk instanceof PoolableChunk) {
-                        ((PoolableChunk) chunk).close();
-                    }
-                }
-
-                acd.data.clear();
             }
         }
         if (modColumnData != null) {
             for (final ModColumnData mcd : modColumnData) {
-                if (mcd == null || mcd.data.isEmpty()) {
-                    continue;
+                if (mcd != null) {
+                    closeChunkData(mcd.data);
                 }
-
-                for (final Chunk<Values> chunk : mcd.data) {
-                    if (chunk instanceof PoolableChunk) {
-                        ((PoolableChunk) chunk).close();
-                    }
-                }
-
-                mcd.data.clear();
             }
         }
+    }
+
+    private static void closeChunkData(final Collection<Chunk<Values>> data) {
+        if (data.isEmpty()) {
+            return;
+        }
+        for (final Chunk<Values> chunk : data) {
+            if (chunk instanceof PoolableChunk) {
+                ((PoolableChunk) chunk).close();
+            }
+        }
+        data.clear();
     }
 }
