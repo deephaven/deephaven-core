@@ -31,6 +31,7 @@ import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.transfer.s3.S3TransferManager;
+import software.amazon.awssdk.transfer.s3.model.CompletedFileUpload;
 import software.amazon.awssdk.transfer.s3.model.UploadFileRequest;
 
 import java.io.BufferedOutputStream;
@@ -89,6 +90,8 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     // Initialized lazily when needed
     private S3ClientMultipartUpload s3MultipartUploader;
     private S3Client s3Client;
+
+    private S3AsyncClient s3CrtAsyncClient;
 
     /**
      * A shared cache for S3 requests. This cache is shared across all S3 channels created by this provider.
@@ -170,8 +173,8 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
         if (append) {
             throw new UnsupportedOperationException("Appending to S3 is currently unsupported");
         }
-        // return getStreamingWriteOutputStream(uri, bufferSizeHint);
-        return getLocalWriteAndPushOutputStream(uri, bufferSizeHint);
+        return getStreamingWriteOutputStream(uri, bufferSizeHint);
+        // return getLocalWriteAndPushOutputStream(uri, bufferSizeHint);
     }
 
     private OutputStream getStreamingWriteOutputStream(@NotNull final URI uri, final int bufferSizeHint) {
@@ -238,9 +241,12 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
         }
 
         private void uploadLocalTempFile() {
-            final S3Uri s3Uri = s3AsyncClient.utilities().parseUri(uri);
-            try (final S3TransferManager manager = S3TransferManager.builder().s3Client(s3AsyncClient).build()) {
-                final CompletableFuture<?> uploadCompletableFuture = manager.uploadFile(
+            if (s3CrtAsyncClient == null) {
+                s3CrtAsyncClient = S3ClientFactory.getCrtAsyncClient(s3Instructions);
+            }
+            final S3Uri s3Uri = s3CrtAsyncClient.utilities().parseUri(uri);
+            try (final S3TransferManager manager = S3TransferManager.builder().s3Client(s3CrtAsyncClient).build()) {
+                final CompletableFuture<CompletedFileUpload> uploadCompletableFuture = manager.uploadFile(
                         UploadFileRequest.builder()
                                 .putObjectRequest(PutObjectRequest.builder()
                                         .bucket(s3Uri.bucket().orElseThrow())
@@ -249,7 +255,7 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
                                 .source(localTempFile)
                                 .build())
                         .completionFuture();
-                final long writeNanos = Duration.ofSeconds(60).toNanos();
+                final long writeNanos = Duration.ofSeconds(1000).toNanos(); // TODO Check if this works
                 try {
                     uploadCompletableFuture.get(writeNanos, TimeUnit.NANOSECONDS);
                 } catch (final InterruptedException | ExecutionException | TimeoutException e) {

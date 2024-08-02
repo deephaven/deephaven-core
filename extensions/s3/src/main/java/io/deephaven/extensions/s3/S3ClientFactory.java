@@ -18,6 +18,7 @@ import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.S3AsyncClientBuilder;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3ClientBuilder;
+import software.amazon.awssdk.services.s3.S3CrtAsyncClientBuilder;
 import software.amazon.awssdk.utils.ThreadFactoryBuilder;
 
 import java.time.Duration;
@@ -66,6 +67,19 @@ class S3ClientFactory {
         final S3AsyncClient s3AsyncClient = builder.build();
         if (log.isDebugEnabled()) {
             log.debug().append("Building S3AsyncClient with instructions: ").append(instructions).endl();
+        }
+        return s3AsyncClient;
+    }
+
+    static S3AsyncClient getCrtAsyncClient(@NotNull final S3Instructions instructions) {
+        final S3CrtAsyncClientBuilder builder = S3AsyncClient.crtBuilder()
+                .futureCompletionExecutor(ensureAsyncFutureCompletionExecutor())
+                .credentialsProvider(instructions.awsV2CredentialsProvider());
+        instructions.regionName().map(Region::of).ifPresent(builder::region);
+        instructions.endpointOverride().ifPresent(builder::endpointOverride);
+        final S3AsyncClient s3AsyncClient = builder.build();
+        if (log.isDebugEnabled()) {
+            log.debug().append("Building S3CRTAsyncClient with instructions: ").append(instructions).endl();
         }
         return s3AsyncClient;
     }

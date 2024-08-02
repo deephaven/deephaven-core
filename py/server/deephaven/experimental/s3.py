@@ -21,14 +21,14 @@ except Exception:
     _JS3Instructions = None
 
 """
-    This module is useful for reading files stored in S3-compatible APIs.
+    This module is useful for reading from and writing to S3-compatible APIs.
     Importing this module requires the S3 specific deephaven extensions (artifact name deephaven-extensions-s3) to be
     included in the package. This is an opt-out functionality included by default. If not included, importing this
     module will fail to find the java types.
 """
 class S3Instructions(JObjectWrapper):
     """
-    S3Instructions provides specialized instructions for reading from S3-compatible APIs.
+    S3Instructions provides specialized instructions for reading from and writing to S3-compatible APIs.
     """
 
     j_object_type = _JS3Instructions or type(None)

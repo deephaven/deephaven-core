@@ -28,8 +28,8 @@ public abstract class S3Instructions implements LogOutputAppendable {
     private final static int DEFAULT_READ_AHEAD_COUNT = 32;
     private final static int DEFAULT_FRAGMENT_SIZE = 1 << 16; // 64 KiB
     private final static int MIN_FRAGMENT_SIZE = 8 << 10; // 8 KiB
-    private final static Duration DEFAULT_CONNECTION_TIMEOUT = Duration.ofSeconds(2);
-    private final static Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(2);
+    private final static Duration DEFAULT_CONNECTION_TIMEOUT = Duration.ofSeconds(500); // TODO reset these
+    private final static Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(500);
 
     static final S3Instructions DEFAULT = builder().build();
 
