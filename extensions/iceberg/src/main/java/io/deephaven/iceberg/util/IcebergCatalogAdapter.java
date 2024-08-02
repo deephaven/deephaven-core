@@ -43,6 +43,23 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class IcebergCatalogAdapter {
+
+    static final TableDefinition NAMESPACE_DEFINITION = TableDefinition.of(
+            ColumnDefinition.ofString("Namespace"),
+            ColumnDefinition.fromGenericType("NamespaceObject", Namespace.class));
+
+    static final TableDefinition TABLES_DEFINITION = TableDefinition.of(
+            ColumnDefinition.ofString("Namespace"),
+            ColumnDefinition.ofString("TableName"),
+            ColumnDefinition.fromGenericType("TableIdentifierObject", TableIdentifier.class));
+
+    static final TableDefinition SNAPSHOT_DEFINITION = TableDefinition.of(
+            ColumnDefinition.ofLong("Id"),
+            ColumnDefinition.ofTime("Timestamp"),
+            ColumnDefinition.ofString("Operation"),
+            ColumnDefinition.fromGenericType("Summary", Map.class),
+            ColumnDefinition.fromGenericType("SnapshotObject", Snapshot.class));
+
     private final Catalog catalog;
     private final FileIO fileIO;
 
@@ -62,18 +79,18 @@ public class IcebergCatalogAdapter {
      *
      * @param schema The schema of the table.
      * @param partitionSpec The partition specification of the table.
-     * @param tableDefinition The table definition.
+     * @param userTableDef The table definition.
      * @param columnRename The map for renaming columns.
      * @return The generated TableDefinition.
      */
     private static TableDefinition fromSchema(
             @NotNull final Schema schema,
             @NotNull final PartitionSpec partitionSpec,
-            @Nullable final TableDefinition tableDefinition,
+            @Nullable final TableDefinition userTableDef,
             @NotNull final Map<String, String> columnRename) {
 
-        final Set<String> columnNames = tableDefinition != null
-                ? tableDefinition.getColumnNameSet()
+        final Set<String> columnNames = userTableDef != null
+                ? userTableDef.getColumnNameSet()
                 : null;
 
         final Set<String> partitionNames =
@@ -101,7 +118,31 @@ public class IcebergCatalogAdapter {
             columns.add(column);
         }
 
-        return TableDefinition.of(columns);
+        final TableDefinition icebergTableDef = TableDefinition.of(columns);
+        if (userTableDef == null) {
+            return icebergTableDef;
+        }
+
+        // If the user supplied a table definition, make sure it's fully compatible.
+        final TableDefinition tableDef = icebergTableDef.checkCompatibility(userTableDef);
+
+        // Ensure that the user has not marked non-partitioned columns as partitioned.
+        final Set<String> userPartitionColumns = userTableDef.getPartitioningColumns().stream()
+                .map(ColumnDefinition::getName)
+                .collect(Collectors.toSet());
+        final Set<String> partitionColumns = tableDef.getPartitioningColumns().stream()
+                .map(ColumnDefinition::getName)
+                .collect(Collectors.toSet());
+
+        // The working partitioning column set must be a super-set of the user-supplied set.
+        if (!partitionColumns.containsAll(userPartitionColumns)) {
+            final Set<String> invalidColumns = new HashSet<>(userPartitionColumns);
+            invalidColumns.removeAll(partitionColumns);
+
+            throw new TableDataException("The following columns are not partitioned in the Iceberg table: " +
+                    invalidColumns);
+        }
+        return tableDef;
     }
 
     /**
@@ -215,7 +256,7 @@ public class IcebergCatalogAdapter {
         }
 
         // Create and return the table
-        return new QueryTable(RowSetFactory.flat(size).toTracking(), columnSourceMap);
+        return new QueryTable(NAMESPACE_DEFINITION, RowSetFactory.flat(size).toTracking(), columnSourceMap);
     }
 
     /**
@@ -274,7 +315,7 @@ public class IcebergCatalogAdapter {
         }
 
         // Create and return the table
-        return new QueryTable(RowSetFactory.flat(size).toTracking(), columnSourceMap);
+        return new QueryTable(TABLES_DEFINITION, RowSetFactory.flat(size).toTracking(), columnSourceMap);
     }
 
     public Table listTablesAsTable(@NotNull final String... namespace) {
@@ -339,7 +380,7 @@ public class IcebergCatalogAdapter {
         }
 
         // Create and return the table
-        return new QueryTable(RowSetFactory.flat(size).toTracking(), columnSourceMap);
+        return new QueryTable(SNAPSHOT_DEFINITION, RowSetFactory.flat(size).toTracking(), columnSourceMap);
     }
 
     /**
@@ -420,7 +461,6 @@ public class IcebergCatalogAdapter {
             @NotNull final String tableIdentifier,
             @Nullable final IcebergInstructions instructions) {
         final TableIdentifier tableId = TableIdentifier.parse(tableIdentifier);
-
         // Load the table from the catalog.
         return getTableDefinition(tableId, instructions);
     }
@@ -436,7 +476,6 @@ public class IcebergCatalogAdapter {
     public TableDefinition getTableDefinition(
             @NotNull final TableIdentifier tableIdentifier,
             @Nullable final IcebergInstructions instructions) {
-
         // Load the table from the catalog.
         return getTableDefinitionInternal(tableIdentifier, null, instructions);
     }
@@ -479,7 +518,6 @@ public class IcebergCatalogAdapter {
             @NotNull final TableIdentifier tableIdentifier,
             @Nullable final Snapshot tableSnapshot,
             @Nullable final IcebergInstructions instructions) {
-
         // Load the table from the catalog.
         return getTableDefinitionInternal(tableIdentifier, tableSnapshot, instructions);
     }
@@ -496,7 +534,6 @@ public class IcebergCatalogAdapter {
             @NotNull final String tableIdentifier,
             @Nullable final IcebergInstructions instructions) {
         final TableIdentifier tableId = TableIdentifier.parse(tableIdentifier);
-
         return getTableDefinitionTable(tableId, instructions);
     }
 
@@ -512,8 +549,7 @@ public class IcebergCatalogAdapter {
             @NotNull final TableIdentifier tableIdentifier,
             @Nullable final IcebergInstructions instructions) {
         final TableDefinition definition = getTableDefinition(tableIdentifier, instructions);
-
-        return TableTools.newTable(definition).meta();
+        return TableTools.metaTable(definition);
     }
 
     /**
@@ -553,11 +589,8 @@ public class IcebergCatalogAdapter {
             @NotNull final TableIdentifier tableIdentifier,
             @Nullable final Snapshot tableSnapshot,
             @Nullable final IcebergInstructions instructions) {
-
-
         final TableDefinition definition = getTableDefinition(tableIdentifier, tableSnapshot, instructions);
-
-        return TableTools.newTable(definition).meta();
+        return TableTools.metaTable(definition);
     }
 
     /**
@@ -567,7 +600,6 @@ public class IcebergCatalogAdapter {
             @NotNull final TableIdentifier tableIdentifier,
             @Nullable final Snapshot tableSnapshot,
             @Nullable final IcebergInstructions instructions) {
-
         final org.apache.iceberg.Table table = catalog.loadTable(tableIdentifier);
         if (table == null) {
             throw new IllegalArgumentException("Table not found: " + tableIdentifier);
@@ -625,7 +657,6 @@ public class IcebergCatalogAdapter {
             @NotNull final TableIdentifier tableIdentifier,
             final long tableSnapshotId,
             @Nullable final IcebergInstructions instructions) {
-
         // Find the snapshot with the given snapshot id
         final Snapshot tableSnapshot = getSnapshot(tableIdentifier, tableSnapshotId);
         if (tableSnapshot == null) {
@@ -670,7 +701,6 @@ public class IcebergCatalogAdapter {
             @NotNull final TableIdentifier tableIdentifier,
             @Nullable final Snapshot tableSnapshot,
             @Nullable final IcebergInstructions instructions) {
-
         // Load the table from the catalog.
         final org.apache.iceberg.Table table = catalog.loadTable(tableIdentifier);
         if (table == null) {
@@ -695,33 +725,7 @@ public class IcebergCatalogAdapter {
 
         // Get the table definition from the schema (potentially limited by the user supplied table definition and
         // applying column renames).
-        final TableDefinition icebergTableDef = fromSchema(schema, partitionSpec, userTableDef, legalizedColumnRenames);
-
-        // If the user supplied a table definition, make sure it's fully compatible.
-        final TableDefinition tableDef;
-        if (userTableDef != null) {
-            tableDef = icebergTableDef.checkCompatibility(userTableDef);
-
-            // Ensure that the user has not marked non-partitioned columns as partitioned.
-            final Set<String> userPartitionColumns = userTableDef.getPartitioningColumns().stream()
-                    .map(ColumnDefinition::getName)
-                    .collect(Collectors.toSet());
-            final Set<String> partitionColumns = tableDef.getPartitioningColumns().stream()
-                    .map(ColumnDefinition::getName)
-                    .collect(Collectors.toSet());
-
-            // The working partitioning column set must be a super-set of the user-supplied set.
-            if (!partitionColumns.containsAll(userPartitionColumns)) {
-                final Set<String> invalidColumns = new HashSet<>(userPartitionColumns);
-                invalidColumns.removeAll(partitionColumns);
-
-                throw new TableDataException("The following columns are not partitioned in the Iceberg table: " +
-                        invalidColumns);
-            }
-        } else {
-            // Use the snapshot schema as the table definition.
-            tableDef = icebergTableDef;
-        }
+        final TableDefinition tableDef = fromSchema(schema, partitionSpec, userTableDef, legalizedColumnRenames);
 
         final String description;
         final TableLocationKeyFinder<IcebergTableLocationKey> keyFinder;
