@@ -12,6 +12,8 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.AssertionFailure;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.exceptions.UpdateGraphConflictException;
@@ -75,7 +77,7 @@ import static org.junit.Assert.assertArrayEquals;
 /**
  * Test of QueryTable functionality.
  * <p>
- * This test used to be a catch all, but at over 7,000 lines became unwieldy. It is still somewhat of a catch-all, but
+ * This test used to be a catch-all, but at over 7,000 lines became unwieldy. It is still somewhat of a catch-all, but
  * some specific classes of tests have been broken out.
  * <p>
  * See also {@link QueryTableAggregationTest}, {@link QueryTableJoinTest}, {@link QueryTableSelectUpdateTest},
@@ -2703,18 +2705,114 @@ public class QueryTableTest extends QueryTableTestBase {
                 ColumnVectors.ofObject(t1, "Y", String.class).toArray());
     }
 
+    public void testEmptyTableSnapshot() {
+        final Table emptyTableNoColumns = emptyTable(0);
+        final Table emptyTableWithSingleColumn = emptyTable(0).update("X = i");
+        final Table emptyTableWithMultipleColumns = emptyTable(0).update("X = i", "Y = 2*i", "Z = 3*i");
+        try (final BarrageMessage snap =
+                ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) emptyTableNoColumns)) {
+            assertTrue(snap.rowsIncluded.isEmpty());
+            assertTrue(snap.addColumnData.length == 0);
+            assertTrue(snap.modColumnData.length == 0);
+        }
+
+        try (final BarrageMessage snap =
+                ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) emptyTableWithSingleColumn)) {
+            assertTrue(snap.rowsIncluded.isEmpty());
+            assertTrue(snap.addColumnData.length == 1);
+            assertTrue(snap.modColumnData.length == 1);
+            assertTrue(snap.addColumnData[0].data.isEmpty());
+            assertTrue(snap.modColumnData[0].data.isEmpty());
+        }
+
+        try (final BarrageMessage snap =
+                ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) emptyTableWithMultipleColumns)) {
+            assertTrue(snap.rowsIncluded.isEmpty());
+            assertTrue(snap.addColumnData.length == 3);
+            assertTrue(snap.modColumnData.length == 3);
+            assertTrue(snap.addColumnData[0].data.isEmpty());
+            assertTrue(snap.addColumnData[1].data.isEmpty());
+            assertTrue(snap.addColumnData[2].data.isEmpty());
+            assertTrue(snap.modColumnData[0].data.isEmpty());
+            assertTrue(snap.modColumnData[1].data.isEmpty());
+            assertTrue(snap.modColumnData[2].data.isEmpty());
+        }
+    }
+
     public void testUngroupConstructSnapshotOfBoxedNull() {
         final Table t =
                 testRefreshingTable(i(0).toTracking())
                         .update("X = new Integer[]{null, 2, 3}", "Z = new Integer[]{4, 5, null}");
         final Table ungrouped = t.ungroup();
+        try (final BarrageMessage snap =
+                ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) ungrouped)) {
+            testUngroupConstructSnapshotBoxedNullAllColumnHelper(snap);
+        }
 
-        try (final BarrageMessage snap = ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) ungrouped)) {
-            assertEquals(snap.rowsAdded, i(0, 1, 2));
-            assertEquals(snap.addColumnData[0].data.get(0).asIntChunk().get(0),
-                    io.deephaven.util.QueryConstants.NULL_INT);
-            assertEquals(snap.addColumnData[1].data.get(0).asIntChunk().get(2),
-                    io.deephaven.util.QueryConstants.NULL_INT);
+        // Snapshot the second column for last two rows
+        final BitSet columnsToSnapshot = new BitSet(2);
+        columnsToSnapshot.set(1);
+        final RowSequence rowsToSnapshot = RowSequenceFactory.forRange(1, 2);
+        try (final BarrageMessage snap =
+                ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(this, (BaseTable<?>) ungrouped,
+                        columnsToSnapshot, rowsToSnapshot, null)) {
+            testUngroupConstructSnapshotBoxedNullFewColumnsHelper(snap);
+        }
+
+        final Table selected = ungrouped.select(); // Will convert column sources to in memory
+        try (final BarrageMessage snap =
+                ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) selected)) {
+            testUngroupConstructSnapshotBoxedNullAllColumnHelper(snap);
+        }
+
+        try (final BarrageMessage snap =
+                ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(this, (BaseTable<?>) selected,
+                        columnsToSnapshot, RowSequenceFactory.forRange(1, 2), null)) {
+            testUngroupConstructSnapshotBoxedNullFewColumnsHelper(snap);
+        }
+    }
+
+    private static void testUngroupConstructSnapshotBoxedNullAllColumnHelper(@NotNull final BarrageMessage snap) {
+        assertEquals(snap.rowsAdded, i(0, 1, 2));
+        final List<Chunk<Values>> firstColChunk = snap.addColumnData[0].data;
+        final int[] firstColExpected = new int[] {QueryConstants.NULL_INT, 2, 3};
+        final List<Chunk<Values>> secondColChunk = snap.addColumnData[1].data;
+        final int[] secondColExpected = new int[] {4, 5, QueryConstants.NULL_INT};
+        for (int i = 0; i < 3; i++) {
+            assertEquals(firstColChunk.get(0).asIntChunk().get(i), firstColExpected[i]);
+            assertEquals(secondColChunk.get(0).asIntChunk().get(i), secondColExpected[i]);
+        }
+    }
+
+    private static void testUngroupConstructSnapshotBoxedNullFewColumnsHelper(@NotNull final BarrageMessage snap) {
+        assertEquals(snap.rowsIncluded, i(1, 2));
+        assertEquals(snap.addColumnData[1].data.get(0).asIntChunk().get(0), 5);
+        assertEquals(snap.addColumnData[1].data.get(0).asIntChunk().get(1), QueryConstants.NULL_INT);
+    }
+
+
+    public void testUngroupConstructSnapshotSingleColumnTable() {
+        final Table t =
+                testRefreshingTable(i(0).toTracking())
+                        .update("X = new Integer[]{null, 2, 3}");
+        final Table ungrouped = t.ungroup();
+        try (final BarrageMessage snap =
+                ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) ungrouped)) {
+            testUngroupConstructSnapshotSingleColumnHelper(snap);
+        }
+
+        final Table selected = ungrouped.select(); // Will convert column sources to in memory
+        try (final BarrageMessage snap = ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) selected)) {
+            testUngroupConstructSnapshotSingleColumnHelper(snap);
+        }
+    }
+
+    private static void testUngroupConstructSnapshotSingleColumnHelper(@NotNull final BarrageMessage snap) {
+        assertEquals(snap.rowsAdded, i(0, 1, 2));
+        final List<Chunk<Values>> firstColChunk = snap.addColumnData[0].data;
+        final int[] firstColExpected = new int[] {QueryConstants.NULL_INT, 2, 3};
+        for (int i = 0; i < 3; i++) {
+            assertEquals(firstColChunk.get(0).asIntChunk().get(i), firstColExpected[i]);
         }
     }
 

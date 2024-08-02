@@ -252,6 +252,18 @@ public class QueryTable extends BaseTable<QueryTable> {
     static boolean FORCE_PARALLEL_SELECT_AND_UPDATE =
             Configuration.getInstance().getBooleanWithDefault("QueryTable.forceParallelSelectAndUpdate", false);
 
+    /**
+     * You can choose to enable or disable the parallel snapshot.
+     */
+    public static boolean ENABLE_PARALLEL_SNAPSHOT =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.enableParallelSnapshot", true);
+
+    /**
+     * Minimum snapshot "chunk" size for parallel reading of columns, defaults to 1 million.
+     */
+    public static long MINIMUM_PARALLEL_SNAPSHOT_ROWS =
+            Configuration.getInstance().getLongWithDefault("QueryTable.minimumParallelSnapshotRows", 1L << 20);
+
     // Whether we should track the entire RowSet of firstBy and lastBy operations
     @VisibleForTesting
     public static boolean TRACKED_LAST_BY =
