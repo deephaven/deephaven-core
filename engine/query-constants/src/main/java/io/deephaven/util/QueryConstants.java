@@ -3,6 +3,8 @@
 //
 package io.deephaven.util;
 
+import java.lang.Math;
+
 /**
  * Constants for primitive types within the Deephaven engine. These constants include null values, ranges of values,
  * infinite values, and NaN values.

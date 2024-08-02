@@ -107,6 +107,7 @@ public final class CharChunkSoftPool implements CharChunkPool {
             // noinspection unchecked
             return ChunkPoolReleaseTracking.onTake(result);
         }
+        // noinspection unchecked
         return ChunkPoolReleaseTracking.onTake(WritableCharChunk.makeWritableChunkForPool(capacity));
     }
 

@@ -25,7 +25,7 @@ public class FixedWidthChunkInputStreamGenerator {
 
     /**
      * Generic input stream reading from arrow's buffer and convert directly to java type.
-     * <p>
+     *
      * If useDeephavenNulls is enabled, then the conversion method must properly return a null value.
      *
      * @param elementSize the number of bytes per element (element size is fixed)

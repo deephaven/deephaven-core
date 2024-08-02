@@ -22,7 +22,7 @@ public enum ChunkType implements ChunkFactory {
     Long(new LongChunkFactory()),
     Float(new FloatChunkFactory()),
     Double(new DoubleChunkFactory()),
-    Object(new ObjectChunkFactory<>());
+    Object(new ObjectChunkFactory());
 
     // @formatter:on
 
@@ -30,7 +30,7 @@ public enum ChunkType implements ChunkFactory {
             ChunkType.Boolean, ChunkType.Char, ChunkType.Byte, ChunkType.Short, ChunkType.Int,
             ChunkType.Long, ChunkType.Float, ChunkType.Double, ChunkType.Object);
 
-    public static ChunkType fromElementType(Class<?> elementType) {
+    public static ChunkType fromElementType(Class elementType) {
         return fromElementTypeMap.get(elementType);
     }
 

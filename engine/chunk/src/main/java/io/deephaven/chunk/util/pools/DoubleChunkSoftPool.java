@@ -111,6 +111,7 @@ public final class DoubleChunkSoftPool implements DoubleChunkPool {
             // noinspection unchecked
             return ChunkPoolReleaseTracking.onTake(result);
         }
+        // noinspection unchecked
         return ChunkPoolReleaseTracking.onTake(WritableDoubleChunk.makeWritableChunkForPool(capacity));
     }
 

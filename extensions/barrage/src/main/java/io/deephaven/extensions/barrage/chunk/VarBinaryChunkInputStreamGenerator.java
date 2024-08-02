@@ -213,7 +213,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
     }
 
     @Override
-    public void onReferenceCountAtZero() {
+    protected void onReferenceCountAtZero() {
         super.onReferenceCountAtZero();
         if (byteStorage != null) {
             byteStorage.close();
@@ -307,7 +307,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
 
                 if (!subset.isEmpty() && (subset.size() & 0x1) == 0) {
                     // then we must also align offset array
-                    totalCachedSize.addAndGet(Integer.BYTES);
+                    totalCachedSize.add(Integer.BYTES);
                 }
                 cachedSize = LongSizedDataStructure.intSize(DEBUG_NAME, totalCachedSize.get());
             }
@@ -356,7 +356,8 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             final MutableInt logicalSize = new MutableInt();
             subset.forAllRowKeys((idx) -> {
                 try {
-                    logicalSize.addAndGet((int) byteStorage.getPayloadSize((int) idx, (int) idx));
+                    logicalSize.add(LongSizedDataStructure.intSize("int cast",
+                            byteStorage.getPayloadSize((int) idx, (int) idx)));
                     dos.writeInt(logicalSize.get());
                 } catch (final IOException e) {
                     throw new UncheckedDeephavenException("couldn't drain data to OutputStream", e);
@@ -373,7 +374,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             final MutableLong payloadLen = new MutableLong();
             subset.forAllRowKeyRanges((s, e) -> {
                 try {
-                    payloadLen.addAndGet(byteStorage.writePayload(dos, (int) s, (int) e));
+                    payloadLen.add(byteStorage.writePayload(dos, (int) s, (int) e));
                 } catch (final IOException err) {
                     throw new UncheckedDeephavenException("couldn't drain data to OutputStream", err);
                 }

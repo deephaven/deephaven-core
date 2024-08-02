@@ -237,7 +237,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
         for (int idx = 0; idx < polaritySwapSize; ++idx) {
             int start = (idx == 0) ? 0 : polaritySwapIndices.get(idx - 1);
             int end = polaritySwapIndices.get(idx) - 1;
-            final int dir = getShiftDelta(start) > 0 ? -1 : 1;
+            final long dir = getShiftDelta(start) > 0 ? -1 : 1;
             if (dir < 0) {
                 final int tmp = start;
                 start = end;
@@ -261,7 +261,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
         for (int idx = 0; idx < polaritySwapSize; ++idx) {
             int start = (idx == 0) ? 0 : polaritySwapIndices.get(idx - 1);
             int end = polaritySwapIndices.get(idx) - 1;
-            final int dir = getShiftDelta(start) > 0 ? 1 : -1;
+            final long dir = getShiftDelta(start) > 0 ? 1 : -1;
             if (dir < 0) {
                 final int tmp = start;
                 start = end;

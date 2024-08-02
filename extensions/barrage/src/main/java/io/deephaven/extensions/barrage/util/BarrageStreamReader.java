@@ -186,7 +186,7 @@ public class BarrageStreamReader implements StreamReader {
                 }
 
                 if (header.headerType() != org.apache.arrow.flatbuf.MessageHeader.RecordBatch) {
-                    throw new IllegalStateException("Only know how to decode Schema/RecordBatch messages");
+                    throw new IllegalStateException("Only know how to decode Schema/BarrageRecordBatch messages");
                 }
 
                 // throw an error when no app metadata (snapshots now provide by default)

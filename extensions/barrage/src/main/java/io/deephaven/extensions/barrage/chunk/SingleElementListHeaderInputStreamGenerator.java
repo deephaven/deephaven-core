@@ -41,15 +41,10 @@ public class SingleElementListHeaderInputStreamGenerator extends DrainableColumn
         return 0;
     }
 
-    /**
-     * This implementation is unusual in that if called again, it will result in the same data, rather than writing no
-     * data.
-     *
-     * @param outputStream to write to.
-     * @return number of bytes drained
-     */
+    @SuppressWarnings("UnstableApiUsage")
     @Override
     public int drainTo(final OutputStream outputStream) throws IOException {
+        // allow this input stream to be re-read
         final LittleEndianDataOutputStream dos = new LittleEndianDataOutputStream(outputStream);
 
         // write offsets array

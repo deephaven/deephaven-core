@@ -18,7 +18,7 @@ public class DefensiveCapture extends InputStream {
         this.in = Objects.requireNonNull(in);
     }
 
-    private synchronized InputStream delegate() throws IOException {
+    synchronized InputStream delegate() throws IOException {
         if (delegate != null) {
             return delegate;
         }

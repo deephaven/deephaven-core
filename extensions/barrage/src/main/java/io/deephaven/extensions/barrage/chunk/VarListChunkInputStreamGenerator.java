@@ -59,12 +59,11 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
     }
 
     @Override
-    public void onReferenceCountAtZero() {
+    protected void onReferenceCountAtZero() {
         super.onReferenceCountAtZero();
-        if (tryDecrementReferenceCount())
-            if (offsets != null) {
-                offsets.close();
-            }
+        if (offsets != null) {
+            offsets.close();
+        }
         if (innerGenerator != null) {
             innerGenerator.close();
         }

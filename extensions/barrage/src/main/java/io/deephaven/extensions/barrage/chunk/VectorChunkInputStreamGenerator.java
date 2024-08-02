@@ -59,7 +59,7 @@ public class VectorChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
     }
 
     @Override
-    public void onReferenceCountAtZero() {
+    protected void onReferenceCountAtZero() {
         super.onReferenceCountAtZero();
         if (offsets != null) {
             offsets.close();
