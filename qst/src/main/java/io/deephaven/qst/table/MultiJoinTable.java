@@ -10,7 +10,6 @@ import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 @BuildableStyle
@@ -21,15 +20,19 @@ public abstract class MultiJoinTable extends TableBase {
         return ImmutableMultiJoinTable.builder();
     }
 
-    public static MultiJoinTable of(TableSpec... inputs) {
-        return of(inputs, Collections.emptyList());
+    public static MultiJoinTable of(MultiJoinInput<TableSpec>... elements) {
+        return builder().addInputs(elements).build();
     }
 
-    public static MultiJoinTable of(String columnsToMatch, TableSpec... inputs) {
+    public static MultiJoinTable of(Iterable<? extends MultiJoinInput<TableSpec>> elements) {
+        return builder().addAllInputs(elements).build();
+    }
+
+    public static MultiJoinTable from(String columnsToMatch, TableSpec... inputs) {
         return of(inputs, JoinMatch.from(columnsToMatch.split(",")));
     }
 
-    public static MultiJoinTable of(List<String> columnsToMatch, TableSpec... inputs) {
+    public static MultiJoinTable from(Collection<String> columnsToMatch, TableSpec... inputs) {
         return of(inputs, JoinMatch.from(columnsToMatch));
     }
 
