@@ -283,7 +283,6 @@ public class WorkerConnection {
                         ClientTableState[] hasActiveSubs = cache.getAllStates().stream()
                                 .peek(cts -> {
                                     cts.getHandle().setConnected(false);
-                                    // cts.setSubscribed(false);
                                     cts.forActiveLifecycles(item -> {
                                         assert !(item instanceof JsTable) ||
                                                 ((JsTable) item).state() == cts

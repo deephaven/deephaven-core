@@ -1613,7 +1613,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                     TableViewportSubscription existingSubscription = subscriptions.remove(was.getHandle());
                     if (existingSubscription != null
                             && existingSubscription.getStatus() != TableViewportSubscription.Status.DONE) {
-                        // JsLog.debug("closing old viewport", state(), existingSubscription.state());
+                        JsLog.debug("closing old viewport", state(), existingSubscription.state());
                         // with the replacement state successfully running, we can shut down the old viewport (unless
                         // something external retained it)
                         existingSubscription.internalClose();

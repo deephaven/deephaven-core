@@ -186,7 +186,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         return state.makeBitset(Js.uncheckedCast(columns));
     }
 
-    protected ClientTableState state() {
+    public ClientTableState state() {
         return state;
     }
 
