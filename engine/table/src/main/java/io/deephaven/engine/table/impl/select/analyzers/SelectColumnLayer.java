@@ -165,7 +165,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
                         if (canParallelizeThisColumn && jobScheduler.threadCount() > 1 && !hasShifts &&
                                 ((resultTypeIsTableOrRowSet && totalSize > 0)
-                                        || totalSize > QueryTable.MINIMUM_PARALLEL_SELECT_ROWS)) {
+                                        || totalSize >= QueryTable.MINIMUM_PARALLEL_SELECT_ROWS)) {
                             final long divisionSize = resultTypeIsTableOrRowSet ? 1
                                     : Math.max(QueryTable.MINIMUM_PARALLEL_SELECT_ROWS,
                                             (totalSize + jobScheduler.threadCount() - 1) / jobScheduler.threadCount());

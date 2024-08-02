@@ -36,7 +36,7 @@ public class S3ParquetRemoteTest {
     public final EngineCleanup framework = new EngineCleanup();
 
     @Test
-    public void readSampleParquetFilesFromPublicS3() {
+    public void readSampleParquetFilesFromPublicS3Part1() {
         Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_REMOTE_S3_TESTING);
         final S3Instructions s3Instructions = S3Instructions.builder()
                 .regionName("us-east-2")
@@ -69,6 +69,21 @@ public class S3ParquetRemoteTest {
         ParquetTools.readTable(
                 "s3://aws-public-blockchain/v1.0/btc/transactions/date=2023-11-13/part-00000-da3a3c27-700d-496d-9c41-81281388eca8-c000.snappy.parquet",
                 readInstructions).head(10).select();
+    }
+
+    @Test
+    public void readSampleParquetFilesFromPublicS3Part2() {
+        Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_REMOTE_S3_TESTING);
+        final S3Instructions s3Instructions = S3Instructions.builder()
+                .regionName("eu-west-3")
+                .readTimeout(Duration.ofSeconds(60))
+                .credentials(Credentials.anonymous())
+                .build();
+        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
+                .setSpecialInstructions(s3Instructions)
+                .build();
+        readTable("s3://datasets-documentation/pypi/2023/pypi_66_7_29.snappy.parquet", readInstructions)
+                .head(10).select();
     }
 
     @Test

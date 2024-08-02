@@ -22,9 +22,9 @@ import java.util.Arrays;
 import static io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator.MS_PER_DAY;
 
 /**
- * JVM implementation of ChunkReadingFactory, suitable for use in Java clients and servers. This default implementations
- * may not round trip flight types correctly, but will round trip Deephaven table definitions and table data. Neither of
- * these is a required/expected property of being a Flight/Barrage/Deephaven client.
+ * JVM implementation of {@link ChunkReader.Factory}, suitable for use in Java clients and servers. This default
+ * implementation may not round trip flight types in a stable way, but will round trip Deephaven table definitions and
+ * table data. Neither of these is a required/expected property of being a Flight/Barrage/Deephaven client.
  */
 public final class DefaultChunkReadingFactory implements ChunkReader.Factory {
     public static final ChunkReader.Factory INSTANCE = new DefaultChunkReadingFactory();

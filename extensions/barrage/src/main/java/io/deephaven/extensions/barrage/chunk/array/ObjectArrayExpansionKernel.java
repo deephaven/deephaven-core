@@ -13,8 +13,6 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 
-import java.lang.reflect.Array;
-
 public class ObjectArrayExpansionKernel implements ArrayExpansionKernel {
 
     private final Class<?> componentType;
@@ -82,7 +80,7 @@ public class ObjectArrayExpansionKernel implements ArrayExpansionKernel {
         int lenRead = 0;
         for (int i = 0; i < itemsInBatch; ++i) {
             final int rowLen = perElementLengthDest.get(i + 1) - perElementLengthDest.get(i);
-            final Object[] row = (Object[]) Array.newInstance(componentType, rowLen);
+            final Object[] row = (Object[]) ArrayReflectUtil.newInstance(componentType, rowLen);
             if (rowLen != 0) {
                 typedSource.copyToArray(lenRead, row, 0, rowLen);
                 lenRead += rowLen;

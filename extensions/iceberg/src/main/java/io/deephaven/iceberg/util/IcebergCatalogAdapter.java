@@ -21,6 +21,7 @@ import io.deephaven.iceberg.layout.IcebergFlatLayout;
 import io.deephaven.iceberg.layout.IcebergKeyValuePartitionedLayout;
 import io.deephaven.iceberg.location.IcebergTableLocationFactory;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
+import io.deephaven.time.DateTimeUtils;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
@@ -310,8 +311,8 @@ public class IcebergCatalogAdapter {
         columnSourceMap.put("Id", InMemoryColumnSource.getImmutableMemoryColumnSource(idArr, long.class, null));
 
         final long[] timestampArr = new long[(int) size];
-        columnSourceMap.put("TimestampMs",
-                InMemoryColumnSource.getImmutableMemoryColumnSource(timestampArr, long.class, null));
+        columnSourceMap.put("Timestamp",
+                InMemoryColumnSource.getImmutableMemoryColumnSource(timestampArr, Instant.class, null));
 
         final String[] operatorArr = new String[(int) size];
         columnSourceMap.put("Operation",
@@ -329,7 +330,8 @@ public class IcebergCatalogAdapter {
         for (int i = 0; i < size; i++) {
             final Snapshot snapshot = snapshots.get(i);
             idArr[i] = snapshot.snapshotId();
-            timestampArr[i] = snapshot.timestampMillis();
+            // Provided as millis from epoch, convert to nanos
+            timestampArr[i] = DateTimeUtils.millisToNanos(snapshot.timestampMillis());
             operatorArr[i] = snapshot.operation();
             summaryArr[i] = snapshot.summary();
             snapshotArr[i] = snapshot;
