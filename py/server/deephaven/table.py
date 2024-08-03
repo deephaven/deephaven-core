@@ -434,7 +434,7 @@ class TableDefinition(JObjectWrapper,Mapping):
         for j_col in j_cols:
             name = j_col.getName()
             d[name] = Column(
-                name=j_col.getName(),
+                name=name,
                 data_type=dtypes.from_jtype(j_col.getDataType()),
                 component_type=dtypes.from_jtype(j_col.getComponentType()),
                 column_type=ColumnType(j_col.getColumnType()),
