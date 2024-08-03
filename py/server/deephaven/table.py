@@ -14,6 +14,8 @@ from enum import auto
 from typing import Any, Optional, Callable, Dict, Generator, Tuple
 from typing import Sequence, List, Union, Protocol
 
+from collections.abc import Mapping
+
 import jpy
 import numpy as np
 
@@ -405,19 +407,70 @@ def _sort_column(col, dir_):
         _JColumnName.of(col)))
 
 
-def _td_to_columns(table_definition):
-    cols = []
-    j_cols = table_definition.getColumnsArray()
-    for j_col in j_cols:
-        cols.append(
-            Column(
+class TableDefinition(JObjectWrapper,Mapping):
+    """A Deephaven table definition."""
+    j_object_type = _JTableDefinition
+
+    def __init__(self, j_table_definition: jpy.JType):
+        self.j_table_definition = j_table_definition
+        self._d = None
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_table_definition
+
+    @property
+    def table(self) -> Table:
+        """This table definition as a table."""
+        return Table(_JTableTools.metaTable(self.j_table_definition))
+
+    @property
+    def _dict(self) -> Dict[str, Column]:
+        """The column definitions dictionary."""
+        if self._d:
+            return self._d
+        d = {}
+        j_cols = self.j_table_definition.getColumnsArray()
+        for j_col in j_cols:
+            name = j_col.getName()
+            d[name] = Column(
                 name=j_col.getName(),
                 data_type=dtypes.from_jtype(j_col.getDataType()),
                 component_type=dtypes.from_jtype(j_col.getComponentType()),
                 column_type=ColumnType(j_col.getColumnType()),
             )
-        )
-    return cols
+        self._d = d
+        return self._d
+
+    def __getitem__(self, key) -> Column:
+        return self._dict[key]
+
+    def __iter__(self):
+        return iter(self._dict)
+
+    def __len__(self):
+        return len(self._dict)
+
+    def __contains__(self, item):
+        return item in self._dict
+
+    def __eq__(self, other):
+        return JObjectWrapper.__eq__(self, other)
+
+    def __ne__(self, other):
+        return JObjectWrapper.__ne__(self, other)
+
+    def __hash__(self):
+        return JObjectWrapper.__hash__(self)
+
+    def keys(self):
+        return self._dict.keys()
+
+    def items(self):
+        return self._dict.items()
+
+    def values(self):
+        return self._dict.values()
 
 
 class Table(JObjectWrapper):
@@ -433,8 +486,7 @@ class Table(JObjectWrapper):
         self.j_table = jpy.cast(j_table, self.j_object_type)
         if self.j_table is None:
             raise DHError("j_table type is not io.deephaven.engine.table.Table")
-        self._definition = self.j_table.getDefinition()
-        self._schema = None
+        self._definition = TableDefinition(self.j_table.getDefinition())
         self._is_refreshing = None
         self._update_graph = None
         self._is_flat = None
@@ -487,13 +539,14 @@ class Table(JObjectWrapper):
         return self._is_flat
 
     @property
+    def definition(self) -> TableDefinition:
+        """The table definition."""
+        return self._definition
+
+    @property
     def columns(self) -> List[Column]:
         """The column definitions of the table."""
-        if self._schema:
-            return self._schema
-
-        self._schema = _td_to_columns(self._definition)
-        return self._schema
+        return list(self.definition)
 
     @property
     def meta_table(self) -> Table:
@@ -2332,7 +2385,7 @@ class PartitionedTable(JObjectWrapper):
 
     def __init__(self, j_partitioned_table):
         self.j_partitioned_table = j_partitioned_table
-        self._schema = None
+        self._definition = None
         self._table = None
         self._key_columns = None
         self._unique_keys = None
@@ -2480,13 +2533,19 @@ class PartitionedTable(JObjectWrapper):
         return self._constituent_column
 
     @property
+    def constituent_table_definition(self) -> TableDefinition:
+        """The column definitions for constituent tables. All constituent tables in a partitioned table have the
+        same column definitions."""
+        if not self._definition:
+            self._definition = TableDefinition(self.j_partitioned_table.constituentDefinition())
+
+        return self._definition
+
+    @property
     def constituent_table_columns(self) -> List[Column]:
         """The column definitions for constituent tables. All constituent tables in a partitioned table have the
         same column definitions."""
-        if not self._schema:
-            self._schema = _td_to_columns(self.j_partitioned_table.constituentDefinition())
-
-        return self._schema
+        return list(self.constituent_table_definition)
 
     @property
     def constituent_changes_permitted(self) -> bool:
