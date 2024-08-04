@@ -1,8 +1,11 @@
 ﻿using System.Diagnostics;
+using System.Runtime.InteropServices;
 using Deephaven.DeephavenClient.ExcelAddIn.ExcelDna;
 using Deephaven.DeephavenClient.ExcelAddIn.Operations;
 using Deephaven.DeephavenClient.ExcelAddIn.ViewModels;
 using Deephaven.DeephavenClient.ExcelAddIn.Views;
+using Deephaven.DeephavenClient.Interop;
+using Deephaven.DeephavenClient.Interop.TestApi;
 using Deephaven.DheClient.session;
 using ExcelDna.Integration;
 
@@ -64,11 +67,18 @@ public static class DeephavenExcelFunctions {
 
   private static void ZamboniDoit() {
     try {
-      var z = SessionManager.FromUrl("zamboni", "elzambono");
+      BasicInteropInteractions.deephaven_dhcore_interop_testapi_BasicInteropInteractions_Add(99, 11, out var jz);
+      // var z = SessionManager.FromUrl("zamboni", "elzambono");
+      var z = HateLove.kosak_add_test(5, 6);
+      Debug.WriteLine(z);
     } catch (Exception ex) {
       var s = ex.Message;
       Debug.WriteLine(s);
     }
   }
+}
 
+internal partial class HateLove {
+  [LibraryImport(LibraryPaths.DhEnterprise, StringMarshalling = StringMarshalling.Utf8)]
+  public static partial int kosak_add_test(int a, int b);
 }

@@ -8,7 +8,8 @@ namespace Deephaven.DeephavenClient.Interop;
 public class LibraryPaths {
   public const string Dhcore = "dhcore";
   public const string Dhclient = "dhclient";
-  public const string DhEnterprise = "capifornow";
+  // public const string DhEnterprise = @"dhe_client";  // does not work
+  public const string DhEnterprise = @"dhe_client.dll";  // works
 }
 
 /// <summary>
