@@ -68,9 +68,10 @@ public static class DeephavenExcelFunctions {
   private static void ZamboniDoit() {
     try {
       BasicInteropInteractions.deephaven_dhcore_interop_testapi_BasicInteropInteractions_Add(99, 11, out var jz);
-      // var z = SessionManager.FromUrl("zamboni", "elzambono");
       var z = HateLove.kosak_add_test(5, 6);
       Debug.WriteLine(z);
+      var z2 = SessionManager.FromUrl("zamboni", "elzambono");
+      Debug.WriteLine(z2);
     } catch (Exception ex) {
       var s = ex.Message;
       Debug.WriteLine(s);
