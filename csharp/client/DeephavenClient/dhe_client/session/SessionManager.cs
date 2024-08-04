@@ -13,7 +13,7 @@ public class SessionManager : IDisposable {
   internal NativePtr<NativeSessionManager> Self;
 
   public static SessionManager FromUrl(string descriptiveName, string jsonUrl) {
-    NativeSessionManager.deephaven_enterprise_session_SessionManager_FromJson(descriptiveName,
+    NativeSessionManager.deephaven_enterprise_session_SessionManager_FromUrl(descriptiveName,
       jsonUrl, out var sessionResult, out var status);
     status.OkOrThrow();
     return new SessionManager(sessionResult);
@@ -51,6 +51,6 @@ internal partial class NativeSessionManager {
     NativePtr<NativeSessionManager> self);
 
   [LibraryImport(LibraryPaths.DhEnterprise, StringMarshalling = StringMarshalling.Utf8)]
-  public static partial void deephaven_enterprise_session_SessionManager_FromJson(string descriptiveName,
-    string json, out NativePtr<NativeSessionManager> result, out ErrorStatus status);
+  public static partial void deephaven_enterprise_session_SessionManager_FromUrl(string descriptiveName,
+    string jsonUrl, out NativePtr<NativeSessionManager> result, out ErrorStatus status);
 }

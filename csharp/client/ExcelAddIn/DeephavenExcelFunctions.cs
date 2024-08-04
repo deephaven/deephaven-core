@@ -70,8 +70,22 @@ public static class DeephavenExcelFunctions {
       BasicInteropInteractions.deephaven_dhcore_interop_testapi_BasicInteropInteractions_Add(99, 11, out var jz);
       var z = HateLove.kosak_add_test(5, 6);
       Debug.WriteLine(z);
-      var z2 = SessionManager.FromUrl("zamboni", "elzambono");
-      Debug.WriteLine(z2);
+
+      const string jsonUrl = "https://kosak-fancy-1.int.illumon.com:8123/iris/connection.json";
+      using var sm = SessionManager.FromUrl("zamboni", jsonUrl);
+
+      if (!sm.PasswordAuthentication("iris", "iris", "iris")) {
+        throw new Exception("Password authentication failed");
+      }
+
+      var dndClient = sm.ConnectToPqByName("zamboni", false);
+      var pqSerial = dndClient.PqSerial;
+
+      var dndTableManager = dndClient.GetManager();
+
+      using var tableHandle = dndTableManager.FetchTable();
+
+      var stupid = "hello";
     } catch (Exception ex) {
       var s = ex.Message;
       Debug.WriteLine(s);
