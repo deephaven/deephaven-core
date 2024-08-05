@@ -35,7 +35,7 @@ public class Client : IDisposable {
     GC.SuppressFinalize(this);
   }
 
-  private void ReleaseUnmanagedResources() {
+  protected virtual void ReleaseUnmanagedResources() {
     if (!Self.TryRelease(out var old)) {
       return;
     }

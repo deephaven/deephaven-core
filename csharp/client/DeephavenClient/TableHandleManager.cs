@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace Deephaven.DeephavenClient;
 
-public sealed class TableHandleManager : IDisposable {
+public class TableHandleManager : IDisposable {
   internal NativePtr<NativeTableHandleManager> Self;
   private readonly Dictionary<SubscriptionHandle, object> _subscriptions;
 
