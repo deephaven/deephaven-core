@@ -23,6 +23,7 @@ import io.deephaven.iceberg.layout.IcebergKeyValuePartitionedLayout;
 import io.deephaven.iceberg.location.IcebergTableLocationFactory;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
@@ -44,15 +45,18 @@ import java.util.stream.Collectors;
 
 public class IcebergCatalogAdapter {
 
+    @VisibleForTesting
     static final TableDefinition NAMESPACE_DEFINITION = TableDefinition.of(
             ColumnDefinition.ofString("Namespace"),
             ColumnDefinition.fromGenericType("NamespaceObject", Namespace.class));
 
+    @VisibleForTesting
     static final TableDefinition TABLES_DEFINITION = TableDefinition.of(
             ColumnDefinition.ofString("Namespace"),
             ColumnDefinition.ofString("TableName"),
             ColumnDefinition.fromGenericType("TableIdentifierObject", TableIdentifier.class));
 
+    @VisibleForTesting
     static final TableDefinition SNAPSHOT_DEFINITION = TableDefinition.of(
             ColumnDefinition.ofLong("Id"),
             ColumnDefinition.ofTime("Timestamp"),
