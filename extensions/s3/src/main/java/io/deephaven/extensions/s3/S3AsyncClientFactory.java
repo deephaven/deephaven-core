@@ -16,9 +16,6 @@ import software.amazon.awssdk.http.crt.AwsCrtHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.S3AsyncClientBuilder;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.S3ClientBuilder;
-import software.amazon.awssdk.services.s3.S3CrtAsyncClientBuilder;
 import software.amazon.awssdk.utils.ThreadFactoryBuilder;
 
 import java.time.Duration;
@@ -30,14 +27,14 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import static io.deephaven.util.thread.ThreadHelpers.getOrComputeThreadCountProperty;
 
-class S3ClientFactory {
+class S3AsyncClientFactory {
 
     private static final int NUM_FUTURE_COMPLETION_THREADS =
             getOrComputeThreadCountProperty("S3.numFutureCompletionThreads", -1);
     private static final int NUM_SCHEDULED_EXECUTOR_THREADS =
             getOrComputeThreadCountProperty("S3.numScheduledExecutorThreads", 5);
 
-    private static final Logger log = LoggerFactory.getLogger(S3ClientFactory.class);
+    private static final Logger log = LoggerFactory.getLogger(S3AsyncClientFactory.class);
     private static final Map<HttpClientConfig, SdkAsyncHttpClient> httpAsyncClientCache = new ConcurrentHashMap<>();
     private static final Map<HttpClientConfig, SdkHttpClient> httpClientCache = new ConcurrentHashMap<>();
 
@@ -69,44 +66,6 @@ class S3ClientFactory {
             log.debug().append("Building S3AsyncClient with instructions: ").append(instructions).endl();
         }
         return s3AsyncClient;
-    }
-
-    static S3AsyncClient getCrtAsyncClient(@NotNull final S3Instructions instructions) {
-        final S3CrtAsyncClientBuilder builder = S3AsyncClient.crtBuilder()
-                .futureCompletionExecutor(ensureAsyncFutureCompletionExecutor())
-                .credentialsProvider(instructions.awsV2CredentialsProvider());
-        instructions.regionName().map(Region::of).ifPresent(builder::region);
-        instructions.endpointOverride().ifPresent(builder::endpointOverride);
-        final S3AsyncClient s3AsyncClient = builder.build();
-        if (log.isDebugEnabled()) {
-            log.debug().append("Building S3CRTAsyncClient with instructions: ").append(instructions).endl();
-        }
-        return s3AsyncClient;
-    }
-
-    static S3Client getClient(@NotNull final S3Instructions instructions) {
-        // TODO Remove duplication
-        final S3ClientBuilder builder = S3Client.builder()
-                .httpClient(getOrBuildHttpClient(instructions))
-                .overrideConfiguration(ClientOverrideConfiguration.builder()
-                        // If we find that the STANDARD retry policy does not work well in all situations, we might
-                        // try experimenting with ADAPTIVE retry policy, potentially with fast fail.
-                        // .retryPolicy(RetryPolicy.builder(RetryMode.ADAPTIVE).fastFailRateLimiting(true).build())
-                        .retryPolicy(RetryMode.STANDARD)
-                        .apiCallAttemptTimeout(instructions.readTimeout().dividedBy(3))
-                        .apiCallTimeout(instructions.readTimeout())
-                        // Adding a metrics publisher may be useful for debugging, but it's very verbose.
-                        // .addMetricPublisher(LoggingMetricPublisher.create(Level.INFO, Format.PRETTY))
-                        .scheduledExecutorService(ensureScheduledExecutor())
-                        .build())
-                .credentialsProvider(instructions.awsV2CredentialsProvider());
-        instructions.regionName().map(Region::of).ifPresent(builder::region);
-        instructions.endpointOverride().ifPresent(builder::endpointOverride);
-        final S3Client s3Client = builder.build();
-        if (log.isDebugEnabled()) {
-            log.debug().append("Building S3Client with instructions: ").append(instructions).endl();
-        }
-        return s3Client;
     }
 
     private static class HttpClientConfig {
@@ -174,7 +133,7 @@ class S3ClientFactory {
      */
     private static Executor ensureAsyncFutureCompletionExecutor() {
         if (futureCompletionExecutor == null) {
-            synchronized (S3ClientFactory.class) {
+            synchronized (S3AsyncClientFactory.class) {
                 if (futureCompletionExecutor == null) {
                     futureCompletionExecutor = Executors.newFixedThreadPool(NUM_FUTURE_COMPLETION_THREADS,
                             new ThreadFactoryBuilder().threadNamePrefix("s3-async-future-completion").build());
@@ -192,7 +151,7 @@ class S3ClientFactory {
      */
     private static ScheduledExecutorService ensureScheduledExecutor() {
         if (scheduledExecutor == null) {
-            synchronized (S3ClientFactory.class) {
+            synchronized (S3AsyncClientFactory.class) {
                 if (scheduledExecutor == null) {
                     scheduledExecutor = Executors.newScheduledThreadPool(NUM_SCHEDULED_EXECUTOR_THREADS,
                             new ThreadFactoryBuilder().threadNamePrefix("s3-scheduled-executor").build());

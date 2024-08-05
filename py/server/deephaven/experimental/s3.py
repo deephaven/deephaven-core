@@ -45,7 +45,9 @@ class S3Instructions(JObjectWrapper):
                  access_key_id: Optional[str] = None,
                  secret_access_key: Optional[str] = None,
                  anonymous_access: bool = False,
-                 endpoint_override: Optional[str] = None):
+                 endpoint_override: Optional[str] = None,
+                 part_size_mib: Optional[int] = None,
+                 num_concurrent_parts: Optional[int] = None):
 
         """
         Initializes the instructions.
@@ -76,6 +78,11 @@ class S3Instructions(JObjectWrapper):
                 anonymous access. Can't be combined with other credentials. By default, is False.
             endpoint_override (str): the endpoint to connect to. Callers connecting to AWS do not typically need to set
                 this; it is most useful when connecting to non-AWS, S3-compatible APIs.
+            part_size_mib (int): the size of each part (in MiB) to upload when writing to S3, defaults to 5 MiB. The
+                minimum allowed part size is 5 MiB. Setting a higher value may increase throughput, but may also
+                increase memory usage.
+            num_concurrent_parts (int): the maximum number of parts to upload concurrently when writing to S3, defaults
+                to 5. Setting a higher value may increase throughput, but may also increase memory usage.
 
         Raises:
             DHError: If unable to build the instructions object.
@@ -119,6 +126,12 @@ class S3Instructions(JObjectWrapper):
 
             if endpoint_override is not None:
                 builder.endpointOverride(endpoint_override)
+
+            if part_size_mib is not None:
+                builder.partSizeMib(part_size_mib)
+
+            if num_concurrent_parts is not None:
+                builder.numConcurrentParts(num_concurrent_parts)
 
             self._j_object = builder.build()
         except Exception as e:

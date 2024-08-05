@@ -19,8 +19,6 @@ dependencies {
     implementation platform(libs.awssdk.bom)
     implementation libs.awssdk.s3
     implementation libs.awssdk.crt.client
-    implementation libs.aws.s3.outputstream
-    implementation libs.awssdk.s3.transfer.manager
 
     compileOnly libs.jetbrains.annotations
 

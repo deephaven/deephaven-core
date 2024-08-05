@@ -84,11 +84,19 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
 
     @Test
     public final void readWriteSingleParquetFile() {
-        final Table table = getTable(500_000);
+        readWriteSingleParquetFileHelper(5_000);
+        readWriteSingleParquetFileHelper(50_000);
+        readWriteSingleParquetFileHelper(500_000);
+    }
+
+    private void readWriteSingleParquetFileHelper(final int numRows) {
+        final Table table = getTable(numRows);
         final URI uri = uri("table.parquet");
         final ParquetInstructions instructions = ParquetInstructions.builder()
                 .setSpecialInstructions(s3Instructions(
                         S3Instructions.builder()
+                                .partSizeMib(5)
+                                .numConcurrentParts(5)
                                 .readTimeout(Duration.ofSeconds(10)))
                         .build())
                 .build();
@@ -213,7 +221,7 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
     }
 
     @Test
-    public void readWriteKeyValuePartitionedParquetData() throws IOException {
+    public void readWriteKeyValuePartitionedParquetData() {
         final TableDefinition definition = TableDefinition.of(
                 ColumnDefinition.ofInt("PC1").withPartitioning(),
                 ColumnDefinition.ofInt("PC2").withPartitioning(),

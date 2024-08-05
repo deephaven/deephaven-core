@@ -24,12 +24,15 @@ import java.util.Optional;
 @CopyableStyle
 public abstract class S3Instructions implements LogOutputAppendable {
 
-    private final static int DEFAULT_MAX_CONCURRENT_REQUESTS = 256;
-    private final static int DEFAULT_READ_AHEAD_COUNT = 32;
-    private final static int DEFAULT_FRAGMENT_SIZE = 1 << 16; // 64 KiB
-    private final static int MIN_FRAGMENT_SIZE = 8 << 10; // 8 KiB
-    private final static Duration DEFAULT_CONNECTION_TIMEOUT = Duration.ofSeconds(500); // TODO reset these
-    private final static Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(500);
+    private static final int DEFAULT_MAX_CONCURRENT_REQUESTS = 256;
+    private static final int DEFAULT_READ_AHEAD_COUNT = 32;
+    private static final int DEFAULT_FRAGMENT_SIZE = 1 << 16; // 64 KiB
+    private static final int MIN_FRAGMENT_SIZE = 8 << 10; // 8 KiB
+    private static final Duration DEFAULT_CONNECTION_TIMEOUT = Duration.ofSeconds(2);
+    private static final Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(2);
+    private static final int MIN_PART_SIZE_MB = 5; // 5MiB
+    private static final int DEFAULT_PART_SIZE_MB = MIN_PART_SIZE_MB;
+    private static final int NUM_CONCURRENT_PARTS = 5;
 
     static final S3Instructions DEFAULT = builder().build();
 
@@ -99,6 +102,26 @@ public abstract class S3Instructions implements LogOutputAppendable {
         return Credentials.defaultCredentials();
     }
 
+    /**
+     * The size of each part (in MiB) to upload when writing to S3, defaults to {@value #DEFAULT_PART_SIZE_MB} MiB. The
+     * minimum allowed part size is {@value #MIN_PART_SIZE_MB} MiB. Setting a higher value may increase throughput, but
+     * may also increase memory usage.
+     */
+    @Default
+    public int partSizeMib() {
+        return DEFAULT_PART_SIZE_MB; // 5MB
+    }
+
+    /**
+     * The maximum number of parts that can be uploaded concurrently when writing to S3 without blocking. Setting a
+     * higher value may increase throughput, but may also increase memory usage. Defaults to
+     * {@value #NUM_CONCURRENT_PARTS}.
+     */
+    @Default
+    public int numConcurrentParts() {
+        return NUM_CONCURRENT_PARTS;
+    }
+
     @Override
     public LogOutput append(final LogOutput logOutput) {
         return logOutput.append(toString());
@@ -128,6 +151,10 @@ public abstract class S3Instructions implements LogOutputAppendable {
         Builder credentials(Credentials credentials);
 
         Builder endpointOverride(URI endpointOverride);
+
+        Builder partSizeMib(int partSizeMib);
+
+        Builder numConcurrentParts(int numConcurrentParts);
 
         default Builder endpointOverride(String endpointOverride) {
             return endpointOverride(URI.create(endpointOverride));
@@ -171,6 +198,21 @@ public abstract class S3Instructions implements LogOutputAppendable {
         if (!(credentials() instanceof AwsSdkV2Credentials)) {
             throw new IllegalArgumentException(
                     "credentials() must be created via provided io.deephaven.extensions.s3.Credentials methods");
+        }
+    }
+
+    @Check
+    final void boundsCheckPartSize() {
+        if (partSizeMib() < MIN_PART_SIZE_MB) {
+            throw new IllegalArgumentException("partSizeMib(=" + partSizeMib() + ") must be >= " + MIN_PART_SIZE_MB +
+                    " MiB");
+        }
+    }
+
+    @Check
+    final void boundsCheckNumConcurrentParts() {
+        if (numConcurrentParts() < 1) {
+            throw new IllegalArgumentException("numConcurrentParts(=" + numConcurrentParts() + ") must be >= 1");
         }
     }
 
