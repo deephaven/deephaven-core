@@ -1,6 +1,7 @@
 #
 # Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
+import random
 import unittest
 from types import SimpleNamespace
 from typing import List, Any
@@ -13,6 +14,7 @@ from deephaven.execution_context import make_user_exec_ctx, get_exec_ctx
 from deephaven.html import to_html
 from deephaven.jcompat import j_hashmap
 from deephaven.pandas import to_pandas
+from deephaven.stream.table_publisher import table_publisher
 from deephaven.table import Table, SearchDisplayMode
 from tests.testbase import BaseTestCase, table_equals
 
@@ -550,6 +552,13 @@ class TableTestCase(BaseTestCase):
         self.wait_ticking_table_update(snapshot_hist, row_count=1, timeout=5)
         self.assertEqual(1 + len(self.test_table.columns), len(snapshot_hist.columns))
         self.assertEqual(self.test_table.size, snapshot_hist.size)
+
+        t = time_table("PT0.1S").update("X = i % 2 == 0 ? i : i - 1").sort("X").tail(10)
+        with update_graph.shared_lock(t):
+            snapshot_hist = self.test_table.snapshot_when(t, history=True)
+            self.assertFalse(snapshot_hist.j_table.isFailed())
+        self.wait_ticking_table_update(t, row_count=10, timeout=2)
+        self.assertTrue(snapshot_hist.j_table.isFailed())
 
     def test_agg_all_by(self):
         test_table = empty_table(10)
