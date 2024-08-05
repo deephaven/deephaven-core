@@ -90,10 +90,11 @@ public enum TableCreatorImpl implements TableCreator<Table> {
 
     @Override
     public final Table multiJoin(List<io.deephaven.qst.table.MultiJoinInput<Table>> multiJoinInputs) {
-        return MultiJoinFactory.of(multiJoinInputs.stream().map(this::adapt).toArray(MultiJoinInput[]::new)).table();
+        return MultiJoinFactory.of(multiJoinInputs.stream().map(TableCreatorImpl::adapt).toArray(MultiJoinInput[]::new))
+                .table();
     }
 
-    private MultiJoinInput adapt(io.deephaven.qst.table.MultiJoinInput<Table> input) {
+    private static MultiJoinInput adapt(io.deephaven.qst.table.MultiJoinInput<Table> input) {
         return MultiJoinInput.of(input.table(), input.matches(), input.additions());
     }
 

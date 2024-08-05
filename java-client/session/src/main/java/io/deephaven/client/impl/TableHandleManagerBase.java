@@ -57,6 +57,7 @@ abstract class TableHandleManagerBase implements TableHandleManager {
     public final TableHandle multiJoin(List<MultiJoinInput<TableHandle>> multiJoinInputs) {
         MultiJoinTable.Builder builder = MultiJoinTable.builder();
         for (MultiJoinInput<TableHandle> input : multiJoinInputs) {
+            // noinspection resource We're not making new TableHandles here
             builder.addInputs(MultiJoinInput.<TableSpec>builder()
                     .table(input.table().table())
                     .addAllMatches(input.matches())

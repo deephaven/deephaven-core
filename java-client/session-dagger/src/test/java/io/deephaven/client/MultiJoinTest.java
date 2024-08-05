@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class MultiJoinTest extends DeephavenSessionTestBase {
 
     @Test
-    public void muliJoinTableExecute() throws TableHandleException, InterruptedException {
+    public void multiJoinTableExecute() throws TableHandleException, InterruptedException {
         try (final TableHandle handle = session.batch().execute(prototype())) {
             assertThat(handle.isSuccessful()).isTrue();
         }

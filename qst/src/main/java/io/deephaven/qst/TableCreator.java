@@ -8,7 +8,6 @@ import io.deephaven.qst.column.Column;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.InputTable;
 import io.deephaven.qst.table.MultiJoinInput;
-import io.deephaven.qst.table.MultiJoinTable;
 import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TicketTable;

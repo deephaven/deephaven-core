@@ -6,7 +6,6 @@ package io.deephaven.qst.table;
 import io.deephaven.api.TableOperations;
 import io.deephaven.qst.TableCreator;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
