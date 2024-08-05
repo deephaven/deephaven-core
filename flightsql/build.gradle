@@ -8,7 +8,7 @@ description = 'The Deephaven flight SQL library'
 dependencies {
     implementation libs.arrow.flight.sql
     implementation project(path: ':engine-sql')
-
+    implementation project(':extensions-barrage')
 
     testImplementation project(':server')
     testImplementation project(':extensions-csv')

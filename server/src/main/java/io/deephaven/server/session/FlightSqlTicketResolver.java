@@ -4,16 +4,20 @@
 package io.deephaven.server.session;
 
 import com.google.common.collect.MapMaker;
+import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.rpc.Code;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableFactory;
 import io.deephaven.flightsql.DeephavenFlightSqlProducer;
 import io.deephaven.proto.flight.util.FlightExportTicketHelper;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.proto.util.ExportTicketHelper;
+import io.deephaven.qst.column.Column;
 import io.deephaven.server.auth.AuthorizationProvider;
 import org.apache.arrow.flight.FlightRuntimeException;
 import org.apache.arrow.flight.impl.Flight;
+import org.apache.arrow.flight.sql.impl.FlightSql;
 import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
@@ -45,6 +49,7 @@ public class FlightSqlTicketResolver extends TicketResolverBase {
     @Override
     public SessionState.ExportObject<Flight.FlightInfo> flightInfoFor(
             @Nullable final SessionState session, final Flight.FlightDescriptor descriptor, final String logId) {
+
         if (session == null) {
             throw Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, String.format(
                     "Could not resolve '%s': no session to handoff to", logId));
@@ -57,7 +62,6 @@ public class FlightSqlTicketResolver extends TicketResolverBase {
             throw Exceptions.statusRuntimeException(e.status().code(), String.format(
                     "Could not resolve '%s': %s", logId, e.status().description()));
         }
-        table = DeephavenFlightSqlProducer.processCommand(descriptor, logId);
         SessionState.ExportObject export = session.newServerSideExport(table);
         return session.<Flight.FlightInfo>nonExport()
                 .require(export)

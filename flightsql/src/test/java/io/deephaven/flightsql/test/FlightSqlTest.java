@@ -3,6 +3,7 @@
 //
 package io.deephaven.flightsql.test;
 
+import com.google.common.collect.ImmutableList;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoSet;
@@ -17,6 +18,7 @@ import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.NoLanguageDeephavenSession;
 import io.deephaven.engine.util.ScriptSession;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
 import io.deephaven.plugin.Registration;
@@ -38,6 +40,7 @@ import io.grpc.CallOptions;
 import io.grpc.*;
 import org.apache.arrow.flight.*;
 import org.apache.arrow.flight.sql.FlightSqlClient;
+import org.apache.arrow.flight.sql.FlightSqlProducer;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.*;
@@ -47,6 +50,7 @@ import org.apache.arrow.vector.ipc.ReadChannel;
 import org.apache.arrow.vector.ipc.message.MessageSerializer;
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.arrow.vector.util.Text;
+import org.hamcrest.MatcherAssert;
 import org.jetbrains.annotations.Nullable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -59,17 +63,17 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.channels.Channels;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static java.util.Objects.isNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.jupiter.api.Assertions.*;
 
 public abstract class FlightSqlTest {
     @Module(includes = {
@@ -232,6 +236,13 @@ public abstract class FlightSqlTest {
         final Table table = CsvTools.readCsv(
                 "https://media.githubusercontent.com/media/deephaven/examples/main/CryptoCurrencyHistory/CSV/FakeCryptoTrades_20230209.csv");
         ExecutionContext.getContext().getQueryScope().putParam("crypto", table);
+
+        final Table table1 = TableTools.emptyTable(10).updateView("X=i", "Y=2*i");
+        ExecutionContext.getContext().getQueryScope().putParam("Table1", table1);
+
+        final Table table2 = TableTools.emptyTable(10).updateView("X=i", "Y=2*i", "Z=3*i");
+        ExecutionContext.getContext().getQueryScope().putParam("Table2", table2);
+
     }
 
     private static final class TestAuthClientInterceptor implements ClientInterceptor {
@@ -350,6 +361,36 @@ public abstract class FlightSqlTest {
     }
 
     @Test
+    public void testCreateStatementCorrelatedSubqueryResults() {
+        {
+            Exception exception = assertThrows(FlightRuntimeException.class, () -> {
+                try (final FlightStream stream =
+                        flightSqlClient.getStream(
+                                flightSqlClient.execute("SELECT X, Y " +
+                                        "FROM Table1 " +
+                                        "WHERE X IN (SELECT X FROM Table2 WHERE Z > 10)")
+                                        .getEndpoints().get(0).getTicket())) {
+                }
+            });
+            String expectedMessage = "java.lang.UnsupportedOperationException";
+            assertTrue(exception.getMessage().contains(expectedMessage));
+        }
+        {
+            Exception exception = assertThrows(FlightRuntimeException.class, () -> {
+                try (final FlightStream stream =
+                        flightSqlClient.getStream(
+                                flightSqlClient.execute("SELECT X, Y " +
+                                        "FROM Table1 " +
+                                        "WHERE X > (SELECT X FROM Table2 WHERE Y = Table1.Y)")
+                                        .getEndpoints().get(0).getTicket())) {
+                }
+            });
+            String expectedMessage = "java.lang.UnsupportedOperationException";
+            assertTrue(exception.getMessage().contains(expectedMessage));
+        }
+    }
+
+    @Test
     public void testCreateStatementErrors() {
         {
             Exception exception = assertThrows(FlightRuntimeException.class, () -> {
@@ -376,6 +417,146 @@ public abstract class FlightSqlTest {
             });
             String expectedMessage = "SqlParseException";
             assertTrue(exception.getMessage().contains(expectedMessage));
+        }
+    }
+
+    @Test
+    public void testGetCatalogsSchema() {
+        final FlightInfo info = flightSqlClient.getCatalogs();
+        MatcherAssert.assertThat(
+                info.getSchema(), is(FlightSqlProducer.Schemas.GET_CATALOGS_SCHEMA));
+    }
+
+    @Test
+    public void testGetCatalogsResults() throws Exception {
+        try (final FlightStream stream =
+                flightSqlClient.getStream(flightSqlClient.getCatalogs().getEndpoints().get(0).getTicket())) {
+            assertAll(
+                    // () ->
+                    // MatcherAssert.assertThat(
+                    // stream.getSchema(), is(FlightSqlProducer.Schemas.GET_CATALOGS_SCHEMA)),
+                    () -> {
+                        List<List<String>> catalogs = getResults(stream);
+                        MatcherAssert.assertThat(catalogs, is(emptyList()));
+                    });
+        }
+    }
+
+    @Test
+    public void testGetTableTypesSchema() {
+        final FlightInfo info = flightSqlClient.getTableTypes();
+        MatcherAssert.assertThat(
+                info.getSchema(),
+                is(Optional.of(FlightSqlProducer.Schemas.GET_TABLE_TYPES_SCHEMA)));
+    }
+
+    @Test
+    public void testGetTableTypesResult() throws Exception {
+        try (final FlightStream stream =
+                flightSqlClient.getStream(flightSqlClient.getTableTypes().getEndpoints().get(0).getTicket())) {
+            assertAll(
+                    // () -> {
+                    // MatcherAssert.assertThat(
+                    // stream.getSchema(), is(FlightSqlProducer.Schemas.GET_TABLE_TYPES_SCHEMA));
+                    // },
+                    () -> {
+                        final List<List<String>> tableTypes = getResults(stream);
+                        final List<List<String>> expectedTableTypes =
+                                ImmutableList.of(
+                                        // table_type
+                                        // singletonList("SYNONYM"),
+                                        // singletonList("SYSTEM TABLE"),
+                                        singletonList("TABLE")
+                        // singletonList("VIEW"),
+                        );
+                        MatcherAssert.assertThat(tableTypes, is(expectedTableTypes));
+                    });
+        }
+    }
+
+    @Test
+    public void testGetSchemasSchema() {
+        final FlightInfo info = flightSqlClient.getSchemas(null, null);
+        MatcherAssert.assertThat(
+                info.getSchema(), is(Optional.of(FlightSqlProducer.Schemas.GET_SCHEMAS_SCHEMA)));
+    }
+
+    @Test
+    public void testGetSchemasResult() throws Exception {
+        try (final FlightStream stream =
+                flightSqlClient.getStream(flightSqlClient.getSchemas(null, null).getEndpoints().get(0).getTicket())) {
+            assertAll(
+                    // () -> {
+                    // MatcherAssert.assertThat(
+                    // stream.getSchema(), is(FlightSqlProducer.Schemas.GET_SCHEMAS_SCHEMA));
+                    // },
+                    () -> {
+                        final List<List<String>> schemas = getResults(stream);
+                        MatcherAssert.assertThat(schemas, is(emptyList()));
+                    });
+        }
+    }
+
+    @Test
+    public void testGetTablesSchema() {
+        final FlightInfo info = flightSqlClient.getTables(null, null, null, null, true);
+        MatcherAssert.assertThat(
+                info.getSchema(), is(Optional.of(FlightSqlProducer.Schemas.GET_TABLES_SCHEMA)));
+    }
+
+    @Test
+    public void testGetTablesSchemaExcludeSchema() {
+        final FlightInfo info = flightSqlClient.getTables(null, null, null, null, false);
+        MatcherAssert.assertThat(
+                info.getSchema(),
+                is(FlightSqlProducer.Schemas.GET_TABLES_SCHEMA_NO_SCHEMA));
+    }
+
+    @Test
+    public void testGetTablesResultNoSchema() throws Exception {
+        try (final FlightStream stream =
+                flightSqlClient.getStream(
+                        flightSqlClient.getTables(null, null, null, null, false).getEndpoints().get(0).getTicket())) {
+            assertAll(
+                    // () -> {
+                    // MatcherAssert.assertThat(
+                    // stream.getSchema(), is(FlightSqlProducer.Schemas.GET_TABLES_SCHEMA_NO_SCHEMA));
+                    // },
+                    () -> {
+                        final List<List<String>> results = getResults(stream);
+                        final List<List<String>> expectedResults =
+                                ImmutableList.of(
+                                        // catalog_name | schema_name | table_name | table_type | table_schema
+                                        asList(null, null, "int_table", "TABLE"),
+                                        asList(null, null, "crypto", "TABLE"));
+                        MatcherAssert.assertThat(results, is(expectedResults));
+                    });
+        }
+    }
+
+    @Test
+    public void testGetTablesResultFilteredNoSchema() throws Exception {
+        try (final FlightStream stream =
+                flightSqlClient.getStream(
+                        flightSqlClient
+                                .getTables(null, null, null, singletonList("TABLE"), false)
+                                .getEndpoints()
+                                .get(0)
+                                .getTicket())) {
+
+            assertAll(
+                    // () ->
+                    // MatcherAssert.assertThat(
+                    // stream.getSchema(), is(FlightSqlProducer.Schemas.GET_TABLES_SCHEMA_NO_SCHEMA)),
+                    () -> {
+                        final List<List<String>> results = getResults(stream);
+                        final List<List<String>> expectedResults =
+                                ImmutableList.of(
+                                        // catalog_name | schema_name | table_name | table_type | table_schema
+                                        asList(null, null, "int_table", "TABLE"),
+                                        asList(null, null, "crypto", "TABLE"));
+                        MatcherAssert.assertThat(results, is(expectedResults));
+                    });
         }
     }
 
