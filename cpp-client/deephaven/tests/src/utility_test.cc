@@ -7,6 +7,9 @@
 using deephaven::dhcore::utility::Base64Encode;
 using deephaven::dhcore::utility::Basename;
 using deephaven::dhcore::utility::EpochMillisToStr;
+using deephaven::dhcore::utility::GetEnv;
+using deephaven::dhcore::utility::GetTidAsString;
+using deephaven::dhcore::utility::GetHostname;
 using deephaven::dhcore::utility::ObjectId;
 
 namespace deephaven::client::tests {
@@ -40,5 +43,35 @@ TEST_CASE("Basename", "[utility]") {
   CHECK("file.txt" == Basename(R"(C:\Users\kosak\file.txt)"));
   CHECK(Basename(R"(C:\Users\kosak\)").empty());
 #endif
+}
+
+// This isn't much of a test, but if it can compile on all supported
+// platforms (Linux and Windows) then that is at least a sanity check
+// (that the entry point exists). For now we just visually spot-check
+// that ireturns the right value.
+TEST_CASE("ThreadId", "[utility]") {
+  auto tid = GetTidAsString();
+  fmt::println("This should be my thread id: {}", tid);
+}
+
+// This isn't much of a test, but if it can compile on all supported
+// platforms (Linux and Windows) then that is at least a sanity check
+// (that the entry point exists). For now we just visually spot-check
+// that ireturns the right value.
+TEST_CASE("GetHostname", "[utility]") {
+  auto hostname = GetHostname();
+  fmt::println("This should be the hostname: {}", hostname);
+}
+
+// This isn't much of a test, but if it can compile on all supported
+// platforms (Linux and Windows) then that is at least a sanity check
+// (that the entry point exists). For now we just visually spot-check
+// that ireturns the right value.
+TEST_CASE("GetEnv", "[utility]") {
+  auto path = GetEnv("PATH");
+  // Very suspect if neither Windows nor Linux has a PATH set in their
+  // environment.
+  REQUIRE(path.has_value());
+  fmt::println("PATH is: {}", *path);
 }
 }  // namespace deephaven::client::tests

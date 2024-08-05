@@ -4,13 +4,13 @@
 package io.deephaven.extensions.barrage.chunk;
 
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.util.pools.PoolableChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.util.pools.PoolableChunk;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;

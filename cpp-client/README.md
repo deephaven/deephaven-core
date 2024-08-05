@@ -120,16 +120,14 @@ connect a server when you want to run them.
    ```
    source $DHCPP/env.sh
    cd $DHSRC/deephaven-core/cpp-client/deephaven/
-   mkdir build && cd build
-   cmake \
+   cmake -S . -B build \
        -DCMAKE_INSTALL_LIBDIR=lib \
        -DCMAKE_CXX_STANDARD=17 \
        -DCMAKE_INSTALL_PREFIX=${DHCPP} \
        -DCMAKE_BUILD_TYPE=RelWithDebInfo \
        -DBUILD_SHARED_LIBS=ON \
-       .. \
      && \
-       make -j$NCPUS install
+   VERBOSE=1 cmake --build build --target install -- -j$NCPUS
    ```
 
    If you need `make` to generate detailed output of the commands it is running
@@ -239,48 +237,59 @@ Notes
 4. Make a 'dhsrc' directory that will hold the two repositories: the vcpkg
    package manager and Deephaven Core. Then make a 'dhinstall' directory that
    will hold the libraries and executables that are the result of this
-   build process.
+   build process.  You can decide on the locations you want for those directories,
+   the code below creates them under the home directory of the Windows user
+   running the command prompt; change the definitions of the environment variables
+   DHSRC and DHINSTALL if you decide to place them somewhere else.
+   
    ```
-   mkdir %HOMEDRIVE%%HOMEPATH%\dhsrc
-   mkdir %HOMEDRIVE%%HOMEPATH%\dhinstall
+   set DHSRC=%HOMEDRIVE%%HOMEPATH%\dhsrc
+   set DHINSTALL=%HOMEDRIVE%%HOMEPATH%\dhinstall
+   mkdir %DHSRC%
+   mkdir %DHINSTALL%
    ```
 
 5. Use git to clone the two repositories mentioned above.
    If you are using Git for Windows, you can run the "Git Bash Shell"
    and type these commands into it:
    ```
-   cd $HOME/dhsrc
+   cd $HOME/dhsrc  # change if dhsrc on a different location
    git clone https://github.com/microsoft/vcpkg.git
    git clone https://github.com/deephaven/deephaven-core.git
    ```
 
 6. Come back to the Visual Studio developer command prompt and do the
-   one-time installation steps for vcpkg. Do not forget to set VCPKG_ROOT,
-   as our build scripts rely on it being set correctly.
+   one-time installation steps for vcpkg.
    ```
-   cd /d %HOMEDRIVE%%HOMEPATH%\dhsrc\vcpkg
+   cd /d %DHSRC%\vcpkg
    .\bootstrap-vcpkg.bat
-   set VCPKG_ROOT=%HOMEDRIVE%%HOMEPATH%\dhsrc\vcpkg
    ```
 
-7. Change to the Deephaven core directory and build/install the dependent
+7. Set VCPKG_ROOT. Note that steps 8 and 9 both rely on it being set correctly.
+   If you come back to these instructions at a future date, make sure that VCPKG_ROOT
+   is set before re-running those steps.
+   ```
+   set VCPKG_ROOT=%DHSRC%\vcpkg
+   ```
+
+8. Change to the Deephaven core directory and build/install the dependent
    packages. On my computer this process took about 20 minutes.
    ```
-   cd /d %HOMEDRIVE%%HOMEPATH%\dhsrc\deephaven-core\cpp-client\deephaven
+   cd /d %DHSRC%\deephaven-core\cpp-client\deephaven
    %VCPKG_ROOT%\vcpkg.exe install --triplet x64-windows
     ```
 
-8. Now configure the build for Deephaven Core:
+9. Now configure the build for Deephaven Core:
    ``` 
-   cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake -DCMAKE_INSTALL_PREFIX=%HOMEDRIVE%%HOMEPATH%/dhinstall -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo
+   cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake -DCMAKE_INSTALL_PREFIX=%DHINSTALL% -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo
    ```
    
-9. Finally, build and install Deephaven Core:
+10. Finally, build and install Deephaven Core:
    ```
    cmake --build build --target install
    ```
 
-10. Run the tests.
+11. Run the tests.
     First, make sure Deephaven is running. If your Deephaven instance
     is running somewhere other than the default location of localhost:10000,
     then set these environment variables appropriately:
@@ -291,6 +300,6 @@ Notes
 
     then run the tests executable:
     ```
-    cd /d %HOMEDRIVE%%HOMEPATH%\dhinstall\bin
+    cd /d %DHINSTALL%\bin
     .\dhclient_tests.exe
     ```

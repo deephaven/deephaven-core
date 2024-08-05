@@ -31,6 +31,7 @@ set(ALL_FILES
     src/ticking/ticking.cc
     src/utility/cython_support.cc
     src/utility/utility.cc
+    src/utility/utility_platform_specific.cc
 
     include/private/deephaven/dhcore/ticking/immer_table_state.h
     include/private/deephaven/dhcore/ticking/index_decoder.h
@@ -133,6 +134,7 @@ foreach (whichlib dhcore dhcore_static)
     target_compile_options(${whichlib} PRIVATE /W3 /bigobj)
 
     target_compile_definitions(${whichlib} PRIVATE _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
+    target_link_libraries(${whichlib} PRIVATE ws2_32)
   endif()
 
   target_include_directories(${whichlib} PRIVATE include/private)
