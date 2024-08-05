@@ -35,7 +35,6 @@ public static class DeephavenExcelFunctions {
     f.Show();
   }
 
-
   [ExcelCommand(MenuName = "Deephaven", MenuText = "Reconnect")]
   public static void ReconnectToDeephaven() {
     // TODO(kosak): Thread safety for reading ConnectionString?
