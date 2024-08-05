@@ -23,7 +23,7 @@ public class Client : IDisposable {
   }
 
   ~Client() {
-    ReleaseUnmanagedResources();
+    ReleaseUnmanagedResources(true);
   }
 
   public void Close() {
@@ -31,12 +31,15 @@ public class Client : IDisposable {
   }
 
   public void Dispose() {
-    ReleaseUnmanagedResources();
+    ReleaseUnmanagedResources(true);
     GC.SuppressFinalize(this);
   }
 
-  protected virtual void ReleaseUnmanagedResources() {
+  protected virtual void ReleaseUnmanagedResources(bool destructSelf) {
     if (!Self.TryRelease(out var old)) {
+      return;
+    }
+    if (!destructSelf) {
       return;
     }
     NativeClient.deephaven_client_Client_dtor(old);

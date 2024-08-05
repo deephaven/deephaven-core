@@ -13,16 +13,19 @@ public class TableHandleManager : IDisposable {
   }
 
   ~TableHandleManager() {
-    ReleaseUnmanagedResources();
+    ReleaseUnmanagedResources(true);
   }
 
   public void Dispose() {
-    ReleaseUnmanagedResources();
+    ReleaseUnmanagedResources(true);
     GC.SuppressFinalize(this);
   }
 
-  private void ReleaseUnmanagedResources() {
+  protected virtual void ReleaseUnmanagedResources(bool destructSelf) {
     if (!Self.TryRelease(out var old)) {
+      return;
+    }
+    if (!destructSelf) {
       return;
     }
     NativeTableHandleManager.deephaven_client_TableHandleManager_dtor(old);

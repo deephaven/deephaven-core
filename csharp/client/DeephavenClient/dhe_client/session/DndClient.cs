@@ -1,29 +1,30 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Runtime.InteropServices;
 using Deephaven.DeephavenClient;
 using Deephaven.DeephavenClient.Interop;
 
 namespace Deephaven.DheClient.session;
 
-public class DndClient : Client {
+public sealed class DndClient : Client {
   internal new NativePtr<NativeDndClient> Self;
+  public Int64 PqSerial;
 
   internal static DndClient OfNativePtr(NativePtr<NativeDndClient> dndClient) {
-
-    NativeDndClient.deephaven_enterprise_session_NativeDndClient_GetManager(dndClient,
-      out var dndManagerResult, out var status);
-    status.OkOrThrow();
+    NativeDndClient.deephaven_enterprise_session_DndClient_GetManager(dndClient,
+      out var dndManagerResult, out var status1);
+    status1.OkOrThrow();
+    NativeDndClient.deephaven_enterprise_session_DndClient_PqSerial(dndClient,
+      out var pqSerial, out var status2);
+    status2.OkOrThrow();
     var dndManager = new DndTableHandleManager(dndManagerResult);
 
-    return new DndClient(dndClient, dndManager);
+    return new DndClient(dndClient, dndManager, pqSerial);
   }
 
-  private DndClient(NativePtr<NativeDndClient> self, DndTableHandleManager manager)
-    : base(self.UnsafeCast<NativeClient>(self), manager) {
+  private DndClient(NativePtr<NativeDndClient> self, DndTableHandleManager manager,
+    Int64 pqSerial)
+    : base(self.UnsafeCast<NativeClient>(), manager) {
+    Self = self;
+    PqSerial = pqSerial;
   }
 
   protected override void ReleaseUnmanagedResources(bool destructSelf) {

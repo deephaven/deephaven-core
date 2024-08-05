@@ -34,6 +34,10 @@ public struct NativePtr<T> {
     return true;
   }
 
+  public NativePtr<T2> UnsafeCast<T2>() {
+    return new NativePtr<T2>(ptr);
+  }
+
   public readonly bool IsNull => ptr == IntPtr.Zero;
 }
 
