@@ -17,7 +17,7 @@ public class Client : IDisposable {
     return new Client(clientResult, manager);
   }
 
-  private Client(NativePtr<NativeClient> self, TableHandleManager manager) {
+  private protected Client(NativePtr<NativeClient> self, TableHandleManager manager) {
     Self = self;
     Manager = manager;
   }

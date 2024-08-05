@@ -8,7 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="dh_client\" />
+    <Compile Remove="dh_client\**" />
+    <EmbeddedResource Remove="dh_client\**" />
+    <None Remove="dh_client\**" />
   </ItemGroup>
 
 </Project>

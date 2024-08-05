@@ -74,7 +74,7 @@ public static class DeephavenExcelFunctions {
       const string jsonUrl = "https://kosak-fancy-1.int.illumon.com:8123/iris/connection.json";
       using var sm = SessionManager.FromUrl("zamboni", jsonUrl);
 
-      if (!sm.PasswordAuthentication("iris", "iris", "iris")) {
+      if (!sm.PasswordAuthentication("notiris", "notiris", "notiris")) {
         throw new Exception("Password authentication failed");
       }
 
