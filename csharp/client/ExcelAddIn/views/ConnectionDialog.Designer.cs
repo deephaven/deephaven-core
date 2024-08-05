@@ -55,7 +55,7 @@
       connectionStringLabel.TabIndex = 3;
       connectionStringLabel.Text = "Connection String";
       // 
-      // Form1
+      // ConnectionDialog
       // 
       AutoScaleDimensions = new SizeF(10F, 25F);
       AutoScaleMode = AutoScaleMode.Font;
@@ -63,8 +63,8 @@
       Controls.Add(connectionStringLabel);
       Controls.Add(connectionStringText);
       Controls.Add(connectButton);
-      Name = "Form1";
-      Text = "Form1";
+      Name = "ConnectionDialog";
+      Text = "Connect to Deephaven Core";
       Load += Form1_Load;
       ResumeLayout(false);
       PerformLayout();

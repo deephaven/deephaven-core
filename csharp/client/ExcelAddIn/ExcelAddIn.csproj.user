@@ -5,5 +5,8 @@
     <Compile Update="views\ConnectionDialog.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="views\EnterpriseConnectionDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
   </ItemGroup>
 </Project>
