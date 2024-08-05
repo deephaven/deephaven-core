@@ -11,10 +11,6 @@ namespace Deephaven.DeephavenClient.ExcelAddIn.Views {
       this.connectionStringText.DataBindings.Add("Text", vm, "ConnectionString");
     }
 
-    private void Form1_Load(object sender, EventArgs e) {
-
-    }
-
     private void connectButton_Click(object sender, EventArgs e) {
       _onConnect(this, this.connectionStringText.Text.Trim());
     }

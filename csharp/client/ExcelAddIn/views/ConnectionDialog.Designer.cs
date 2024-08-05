@@ -65,7 +65,6 @@
       Controls.Add(connectButton);
       Name = "ConnectionDialog";
       Text = "Connect to Deephaven Core";
-      Load += Form1_Load;
       ResumeLayout(false);
       PerformLayout();
     }

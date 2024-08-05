@@ -55,7 +55,6 @@
       label2.Size = new Size(91, 25);
       label2.TabIndex = 1;
       label2.Text = "Username";
-      label2.Click += label2_Click;
       // 
       // label3
       // 
@@ -90,7 +89,6 @@
       jsonUrlText.Name = "jsonUrlText";
       jsonUrlText.Size = new Size(433, 31);
       jsonUrlText.TabIndex = 5;
-      jsonUrlText.TextChanged += textBox1_TextChanged;
       // 
       // operateAsText
       // 
@@ -112,7 +110,6 @@
       passwordText.Name = "passwordText";
       passwordText.Size = new Size(433, 31);
       passwordText.TabIndex = 8;
-      passwordText.TextChanged += textBox4_TextChanged;
       // 
       // usernameText
       // 

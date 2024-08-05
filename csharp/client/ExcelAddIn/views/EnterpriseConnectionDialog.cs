@@ -4,26 +4,22 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
+using Deephaven.DeephavenClient.ExcelAddIn.ViewModels;
 
 namespace ExcelAddIn.views {
   public partial class EnterpriseConnectionDialog : Form {
-    public EnterpriseConnectionDialog() {
+    private readonly Action<Form, string> _onConnect;
+
+    public EnterpriseConnectionDialog(EnterpriseConnectionDialogViewModel vm,
+      Action<Form, string> onConnect) {
+      _onConnect = onConnect;
       InitializeComponent();
+      jsonUrlText.DataBindings.Add("Text", vm, "JsonUrl");
+     // userIdText.DataBindings.Add("Text", vm, "JsonUrl");
     }
 
-    private void label2_Click(object sender, EventArgs e) {
-
-    }
-
-    private void textBox1_TextChanged(object sender, EventArgs e) {
-
-    }
-
-    private void textBox4_TextChanged(object sender, EventArgs e) {
-
+    private void connectButton_Click(object sender, EventArgs e) {
+      //_onConnect(this, this.connectionStringText.Text.Trim());
     }
   }
 }
