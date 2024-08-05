@@ -7,12 +7,14 @@ using Deephaven.DeephavenClient.ExcelAddIn.Views;
 using Deephaven.DeephavenClient.Interop;
 using Deephaven.DeephavenClient.Interop.TestApi;
 using Deephaven.DheClient.session;
+using ExcelAddIn.views;
 using ExcelDna.Integration;
 
 namespace Deephaven.DeephavenClient.ExcelAddIn;
 
 public static class DeephavenExcelFunctions {
   private static readonly ConnectionDialogViewModel ConnectionDialogViewModel = new ();
+  private static readonly EnterpriseConnectionDialogViewModel EnterpriseConnectionDialogViewModel = new ();
   private static readonly OperationManager OperationManager = new();
 
   [ExcelCommand(MenuName = "Deephaven", MenuText = "Connect to Deephaven")]
@@ -23,6 +25,16 @@ public static class DeephavenExcelFunctions {
     });
     f.Show();
   }
+
+  [ExcelCommand(MenuName = "Deephaven", MenuText = "Connect to Deephaven Enterprise")]
+  public static void ConnectToDeephavenEnterprise() {
+    var f = new EnterpriseConnectionDialog(EnterpriseConnectionDialogViewModel, (self, connectionString) => {
+      OperationManager.Connect(connectionString);
+      self.Close();
+    });
+    f.Show();
+  }
+
 
   [ExcelCommand(MenuName = "Deephaven", MenuText = "Reconnect")]
   public static void ReconnectToDeephaven() {
