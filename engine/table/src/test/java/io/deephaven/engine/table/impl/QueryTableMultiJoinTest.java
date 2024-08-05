@@ -26,6 +26,7 @@ import org.junit.experimental.categories.Category;
 import java.util.*;
 import java.util.function.IntUnaryOperator;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.testutil.junit4.EngineCleanup.printTableUpdates;
@@ -819,6 +820,24 @@ public class QueryTableMultiJoinTest extends QueryTableTestBase {
         Assert.assertEquals(mjiArr[1].columnsToMatch()[1].right().name(), "B");
     }
 
+    @Test
+    public void testRehashWhenEmpty() {
+        final QueryTable t1 = TstUtils.testRefreshingTable(stringCol("Key"), intCol("S1"));
+        final QueryTable t2 = TstUtils.testRefreshingTable(stringCol("Key"), intCol("S2"));
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        final Table result = updateGraph.sharedLock().computeLocked(
+                () -> MultiJoinFactory.of(new String[] {"Key"}, t1, t2).table());
+
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSet additions = RowSetFactory.fromRange(0, 3073);
+            TstUtils.addToTable(t1, additions,
+                    stringCol("Key", IntStream.rangeClosed(0, 3073).mapToObj(Integer::toString).toArray(String[]::new)),
+                    intCol("S1", IntStream.rangeClosed(0, 3073).map(i -> i * 2).toArray()));
+            t1.notifyListeners(additions, RowSetFactory.empty(), RowSetFactory.empty());
+        });
+    }
 
     private Table doIterativeMultiJoin(String[] keyColumns, List<? extends Table> inputTables) {
         final List<Table> keyTables = inputTables.stream()
