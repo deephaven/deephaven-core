@@ -49,4 +49,9 @@ internal partial class NativeDndClient {
   public static partial void deephaven_enterprise_session_DndClient_GetManager(
     NativePtr<NativeDndClient> self,
     out NativePtr<NativeDndTableHandleManager> result, out ErrorStatus status);
+
+  [LibraryImport(LibraryPaths.DhEnterprise, StringMarshalling = StringMarshalling.Utf8)]
+  public static partial void deephaven_enterprise_session_DndClient_PqSerial(
+    NativePtr<NativeDndClient> self,
+    out Int64 result, out ErrorStatus status);
 }

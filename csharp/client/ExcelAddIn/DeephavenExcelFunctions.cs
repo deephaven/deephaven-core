@@ -74,18 +74,18 @@ public static class DeephavenExcelFunctions {
       const string jsonUrl = "https://kosak-fancy-1.int.illumon.com:8123/iris/connection.json";
       using var sm = SessionManager.FromUrl("zamboni", jsonUrl);
 
-      if (!sm.PasswordAuthentication("notiris", "notiris", "notiris")) {
+      if (!sm.PasswordAuthentication("iris", "iris", "iris")) {
         throw new Exception("Password authentication failed");
       }
 
-      var dndClient = sm.ConnectToPqByName("zamboni", false);
+      var dndClient = sm.ConnectToPqByName("zamboni1", false);
       var pqSerial = dndClient.PqSerial;
 
-      var dndTableManager = dndClient.GetManager();
-
-      using var tableHandle = dndTableManager.FetchTable();
+      var dndTableManager = dndClient.Manager;
+      using var tableHandle = dndTableManager.FetchTable("q");
 
       var stupid = "hello";
+      Debug.WriteLine(stupid);
     } catch (Exception ex) {
       var s = ex.Message;
       Debug.WriteLine(s);
