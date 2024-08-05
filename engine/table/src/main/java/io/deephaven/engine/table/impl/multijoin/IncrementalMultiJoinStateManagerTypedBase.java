@@ -437,11 +437,6 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
             return false;
         }
 
-        Assert.eqZero(rehashPointer, "rehashPointer");
-
-        if (numEntries == 0) {
-            return false;
-        }
         setupNewAlternate(oldTableSize);
         adviseNewAlternate();
         return true;
@@ -454,6 +449,8 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
     protected abstract void adviseNewAlternate();
 
     private void setupNewAlternate(int oldTableSize) {
+        Assert.eqZero(rehashPointer, "rehashPointer");
+
         alternateSlotToOutputRow = slotToOutputRow;
         slotToOutputRow = new ImmutableIntArraySource();
         slotToOutputRow.ensureCapacity(tableSize);
@@ -469,7 +466,10 @@ public abstract class IncrementalMultiJoinStateManagerTypedBase implements Multi
             mainKeySources[ii].ensureCapacity(tableSize);
         }
         alternateTableSize = oldTableSize;
-        rehashPointer = alternateTableSize;
+
+        if (numEntries > 0) {
+            rehashPointer = alternateTableSize;
+        }
     }
 
     protected void clearAlternate() {
