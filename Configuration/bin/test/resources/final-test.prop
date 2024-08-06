@@ -1,0 +1,37 @@
+# suppress inspection "Annotator" for whole file
+# suppress inspection "WrongPropertyKeyValueDelimiter" for whole file
+# suppress inspection "UnusedProperty" for whole file
+includetest=foo
+
+# Test that final declarations are identified if something later tries to assign them a value
+[testbatch=final] {
+    final beforetest
+    final finaltest = foo
+    finaltest = bar
+    final aftertest = plugh
+}
+# Test that finalized declarations are identified if something later tries to assign them a value
+[testbatch=finalize] {
+    finalize beforetest
+    finaltest = foo
+    finalize finaltest
+    finaltest = bar
+    aftertest = plugh
+    finalize aftertest
+}
+# Test that final and finalized declarations can mix safely
+[testbatch=finalmixed] {
+    final beforetest
+    finalize beforetest
+    final finaltest = foo
+    finalize finaltest
+    finaltest = bar
+    final aftertest = plugh
+    finalize aftertest
+}
+# Test that including a file honors the 'final' declarations properly, and adds new values
+[testbatch=finalinclude] {
+    includefiles=resources/final-test-include.prop
+    beforetest
+    final finaltest = foo
+}

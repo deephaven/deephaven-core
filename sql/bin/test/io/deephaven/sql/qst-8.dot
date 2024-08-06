@@ -1,0 +1,17 @@
+digraph {
+"op_0" ["label"="ticketTable(scan/authors)"]
+"op_1" ["label"="ticketTable(scan/books)"]
+"op_2" ["label"="view(__p_2_0=Id,__p_2_1=Name)"]
+"op_3" ["label"="view(__p_3_0=Id,__p_3_1=Title,__p_3_2=AuthorId)"]
+"op_4" ["label"="view(__p_0_0=__p_2_1,__p_0_1=(int)1)"]
+"op_5" ["label"="view(__p_0_0=__p_3_1,__p_0_1=(int)2)"]
+"op_6" ["label"="merge()"]
+"op_7" ["label"="view(source=__p_0_1,name=__p_0_0)"]
+"op_2" -> "op_0"
+"op_3" -> "op_1"
+"op_4" -> "op_2"
+"op_5" -> "op_3"
+"op_6" -> "op_4" ["label"="0"]
+"op_6" -> "op_5" ["label"="1"]
+"op_7" -> "op_6"
+}

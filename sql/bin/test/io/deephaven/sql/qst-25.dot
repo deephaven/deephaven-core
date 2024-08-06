@@ -1,0 +1,9 @@
+digraph {
+"op_0" ["label"="ticketTable(scan/my_time)"]
+"op_1" ["label"="view(__p_0_0=Timestamp,__p_0_1=I,__p_0_2=B)"]
+"op_2" ["label"="where((__p_0_1 > (int)5) && (__p_0_1 < (int)10))"]
+"op_3" ["label"="view(Timestamp=__p_0_0,I=__p_0_1,B=__p_0_2)"]
+"op_1" -> "op_0"
+"op_2" -> "op_1"
+"op_3" -> "op_2"
+}

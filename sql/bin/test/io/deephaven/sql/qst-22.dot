@@ -1,0 +1,3 @@
+digraph {
+"op_0" ["label"="newTable(3, TableHeader{headers={EXPR$0=io.deephaven.qst.type.IntType, EXPR$1=io.deephaven.qst.type.StringType, EXPR$2=io.deephaven.qst.type.StringType}})"]
+}

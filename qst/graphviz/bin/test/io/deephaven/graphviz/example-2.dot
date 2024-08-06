@@ -1,0 +1,5 @@
+digraph {
+"op_0" ["label"="empty(1)"]
+"op_1" ["label"="view(I=`some \"\n string stuff👽`)"]
+"op_1" -> "op_0"
+}

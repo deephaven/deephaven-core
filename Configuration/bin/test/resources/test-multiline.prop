@@ -1,0 +1,8 @@
+# Verify that an unescaped backslash is treated as 'continue line'
+foo=abc\
+def\
+ghi
+
+# Verify that escaped backslashes are not treated as 'continue line'
+research.dbCacheDir = C:\\a\\b\\c\\
+research.stockPriceEstimator = C:\\d\\e\\

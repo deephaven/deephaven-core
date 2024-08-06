@@ -1,0 +1,65 @@
+# suppress inspection "UnusedProperty" for whole file
+# suppress inspection "Annotator" for whole file
+# suppress inspection "WrongPropertyKeyValueDelimiter" for whole file
+aval = original
+[process.name=abcd] {
+    [testproperty=A] {
+        final procprop = abcdA
+        aval = 1
+    }
+    [testproperty=B] {
+        final procprop = abcdB
+        aval = 2
+    }
+    procval = abcd
+}
+[process.name=defg] {
+    [testproperty=A] {
+        final procprop = defgA
+        aval = 3
+    }
+    [testproperty=B] {
+        final procprop = defgB
+        aval = 4
+    }
+    procval : defg
+}
+
+[testproperty=A] {
+    [process.name=abcd] {
+        final propproc = Aabcd
+        aval = 5
+    }
+    [process.name=defg] {
+        final propproc = Adefg
+        aval = 6
+    }
+    propval=A
+}
+[testproperty=B] {
+    [process.name=abcd] {
+        final propproc = Babcd
+        aval = 7
+    }
+    [process.name=defg] {
+        final propproc: Bdefg
+        aval = 8
+    }
+    propval:B
+}
+
+multiprop=nothing
+multiprop2=nada
+
+# Check that the comparison does not match if the specified context is a substring of the scope value
+[process.name=abcdf|qa] {
+    multiprop = multi
+}
+# Test that multiple scope elements can be checked at once, with multiple options
+[testproperty=A|B, process.name=abcd] {
+    multiprop2=something
+}
+aval = changed
+finalize aval
+bval=\\abcd
+cval = \u0050
