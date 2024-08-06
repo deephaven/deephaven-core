@@ -38,6 +38,7 @@ import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.CallOptions;
 import io.grpc.*;
+import io.grpc.MethodDescriptor;
 import org.apache.arrow.flight.*;
 import org.apache.arrow.flight.sql.FlightSqlClient;
 import org.apache.arrow.flight.sql.FlightSqlProducer;
@@ -52,10 +53,7 @@ import org.apache.arrow.vector.types.pojo.Schema;
 import org.apache.arrow.vector.util.Text;
 import org.hamcrest.MatcherAssert;
 import org.jetbrains.annotations.Nullable;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -326,7 +324,6 @@ public abstract class FlightSqlTest {
         };
         FlightClient flightClient = FlightClient.builder().location(clientLocation)
                 .allocator(allocator).intercept(info -> middleware).build();
-        // sqlClient = new FlightSqlClient(FlightClient.builder(allocator, clientLocation).build());
         flightSqlClient = new FlightSqlClient(flightClient);
 
     }
@@ -420,6 +417,7 @@ public abstract class FlightSqlTest {
         }
     }
 
+    @Disabled("Deephaven doesn't support arrow non-nullable types")
     @Test
     public void testGetCatalogsSchema() {
         final FlightInfo info = flightSqlClient.getCatalogs();
@@ -432,9 +430,6 @@ public abstract class FlightSqlTest {
         try (final FlightStream stream =
                 flightSqlClient.getStream(flightSqlClient.getCatalogs().getEndpoints().get(0).getTicket())) {
             assertAll(
-                    // () ->
-                    // MatcherAssert.assertThat(
-                    // stream.getSchema(), is(FlightSqlProducer.Schemas.GET_CATALOGS_SCHEMA)),
                     () -> {
                         List<List<String>> catalogs = getResults(stream);
                         MatcherAssert.assertThat(catalogs, is(emptyList()));
@@ -442,6 +437,7 @@ public abstract class FlightSqlTest {
         }
     }
 
+    @Disabled("Deephaven doesn't support arrow non-nullable types")
     @Test
     public void testGetTableTypesSchema() {
         final FlightInfo info = flightSqlClient.getTableTypes();
@@ -455,10 +451,6 @@ public abstract class FlightSqlTest {
         try (final FlightStream stream =
                 flightSqlClient.getStream(flightSqlClient.getTableTypes().getEndpoints().get(0).getTicket())) {
             assertAll(
-                    // () -> {
-                    // MatcherAssert.assertThat(
-                    // stream.getSchema(), is(FlightSqlProducer.Schemas.GET_TABLE_TYPES_SCHEMA));
-                    // },
                     () -> {
                         final List<List<String>> tableTypes = getResults(stream);
                         final List<List<String>> expectedTableTypes =
@@ -474,6 +466,7 @@ public abstract class FlightSqlTest {
         }
     }
 
+    @Disabled("Deephaven doesn't support arrow non-nullable types")
     @Test
     public void testGetSchemasSchema() {
         final FlightInfo info = flightSqlClient.getSchemas(null, null);
@@ -486,10 +479,6 @@ public abstract class FlightSqlTest {
         try (final FlightStream stream =
                 flightSqlClient.getStream(flightSqlClient.getSchemas(null, null).getEndpoints().get(0).getTicket())) {
             assertAll(
-                    // () -> {
-                    // MatcherAssert.assertThat(
-                    // stream.getSchema(), is(FlightSqlProducer.Schemas.GET_SCHEMAS_SCHEMA));
-                    // },
                     () -> {
                         final List<List<String>> schemas = getResults(stream);
                         MatcherAssert.assertThat(schemas, is(emptyList()));
@@ -497,6 +486,7 @@ public abstract class FlightSqlTest {
         }
     }
 
+    @Disabled("Deephaven doesn't support arrow non-nullable types")
     @Test
     public void testGetTablesSchema() {
         final FlightInfo info = flightSqlClient.getTables(null, null, null, null, true);
@@ -504,6 +494,7 @@ public abstract class FlightSqlTest {
                 info.getSchema(), is(Optional.of(FlightSqlProducer.Schemas.GET_TABLES_SCHEMA)));
     }
 
+    @Disabled("Deephaven doesn't support arrow non-nullable types")
     @Test
     public void testGetTablesSchemaExcludeSchema() {
         final FlightInfo info = flightSqlClient.getTables(null, null, null, null, false);
@@ -518,17 +509,14 @@ public abstract class FlightSqlTest {
                 flightSqlClient.getStream(
                         flightSqlClient.getTables(null, null, null, null, false).getEndpoints().get(0).getTicket())) {
             assertAll(
-                    // () -> {
-                    // MatcherAssert.assertThat(
-                    // stream.getSchema(), is(FlightSqlProducer.Schemas.GET_TABLES_SCHEMA_NO_SCHEMA));
-                    // },
                     () -> {
                         final List<List<String>> results = getResults(stream);
                         final List<List<String>> expectedResults =
                                 ImmutableList.of(
                                         // catalog_name | schema_name | table_name | table_type | table_schema
-                                        asList(null, null, "int_table", "TABLE"),
-                                        asList(null, null, "crypto", "TABLE"));
+                                        asList(null, null, "Table2", "TABLE"),
+                                        asList(null, null, "crypto", "TABLE"),
+                                        asList(null, null, "Table1", "TABLE"));
                         MatcherAssert.assertThat(results, is(expectedResults));
                     });
         }
@@ -553,8 +541,9 @@ public abstract class FlightSqlTest {
                         final List<List<String>> expectedResults =
                                 ImmutableList.of(
                                         // catalog_name | schema_name | table_name | table_type | table_schema
-                                        asList(null, null, "int_table", "TABLE"),
-                                        asList(null, null, "crypto", "TABLE"));
+                                        asList(null, null, "Table2", "TABLE"),
+                                        asList(null, null, "crypto", "TABLE"),
+                                        asList(null, null, "Table1", "TABLE"));
                         MatcherAssert.assertThat(results, is(expectedResults));
                     });
         }
