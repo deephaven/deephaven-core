@@ -15,6 +15,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
+import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -731,7 +732,7 @@ public class TableTools {
     public static Table newTable(TableDefinition definition) {
         Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
         for (ColumnDefinition<?> columnDefinition : definition.getColumns()) {
-            columns.put(columnDefinition.getName(), ArrayBackedColumnSource.getMemoryColumnSource(0,
+            columns.put(columnDefinition.getName(), NullValueColumnSource.getInstance(
                     columnDefinition.getDataType(), columnDefinition.getComponentType()));
         }
         return new QueryTable(definition, RowSetFactory.empty().toTracking(), columns) {
