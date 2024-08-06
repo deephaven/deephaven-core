@@ -312,6 +312,16 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
+    public void testSimple() {
+        final Table t = TableTools.emptyTable(1).select("A = i");
+        final File dest = new File(rootFile, "ParquetTest_emptyTrivialTable.parquet");
+        writeTable(t, dest.getPath());
+        final Table fromDisk = checkSingleTable(t, dest);
+        assertEquals(t.getDefinition(), fromDisk.getDefinition());
+    }
+
+
+    @Test
     public void flatParquetFormat() {
         flatTable("emptyFlatParquet", 0, true);
         flatTable("smallFlatParquet", 20, true);
@@ -453,7 +463,7 @@ public final class ParquetTableReadWriteTest {
         assertTableEquals(index2Table, index2Table.sort("someInt", "someString"));
     }
 
-    private static void verifyIndexingInfoExists(final Table table, final String... columnNames) {
+    static void verifyIndexingInfoExists(final Table table, final String... columnNames) {
         assertTrue(DataIndexer.hasDataIndex(table, columnNames));
         final DataIndex fullIndex = DataIndexer.getDataIndex(table, columnNames);
         Assert.neqNull(fullIndex, "fullIndex");

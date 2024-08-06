@@ -100,7 +100,8 @@ public interface SeekableChannelsProvider extends SafeCloseable {
     SeekableByteChannel getWriteChannel(@NotNull URI uri, boolean append) throws IOException;
 
     /**
-     * Creates an {@link OutputStream} to write to the given URI. The caller is responsible for closing the stream.
+     * Creates an {@link OutputStream} to write to the given URI. The caller is responsible for closing the stream. To
+     * abort upload, users should call {@link #abort(OutputStream)} on the stream.
      *
      * @param uri the URI to write to
      * @param append whether to append to the file if it already exists
@@ -111,6 +112,15 @@ public interface SeekableChannelsProvider extends SafeCloseable {
     default OutputStream getOutputStream(@NotNull final URI uri, boolean append, int bufferSizeHint)
             throws IOException {
         return new BufferedOutputStream(Channels.newOutputStream(getWriteChannel(uri, append)), bufferSizeHint);
+    }
+
+    /**
+     * Tries to abort the write operation and closes the provided output stream, assuming the stream was created by this
+     * provider.
+     */
+    default void abort(@NotNull final OutputStream outputStream) throws IOException {
+        // By default, we cannot abort the write operation, so just close the stream.
+        outputStream.close();
     }
 
     /**

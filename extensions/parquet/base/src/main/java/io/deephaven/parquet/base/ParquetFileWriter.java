@@ -5,7 +5,6 @@ package io.deephaven.parquet.base;
 
 import org.apache.commons.io.output.CountingOutputStream;
 import org.apache.parquet.format.converter.ParquetMetadataConverter;
-import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.parquet.compress.CompressorAdapter;
 import io.deephaven.parquet.compress.DeephavenCompressorAdapterFactory;
 import org.apache.parquet.Version;
@@ -20,6 +19,7 @@ import org.apache.parquet.schema.MessageType;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 
 import static io.deephaven.parquet.base.ParquetUtils.MAGIC;
-import static io.deephaven.parquet.base.ParquetUtils.PARQUET_OUTPUT_BUFFER_SIZE;
 import static org.apache.parquet.format.Util.writeFileMetaData;
 
 public final class ParquetFileWriter {
@@ -46,9 +45,8 @@ public final class ParquetFileWriter {
     private final ParquetMetadataFileWriter metadataFileWriter;
 
     public ParquetFileWriter(
-            final URI dest,
             final URI destForMetadata,
-            final SeekableChannelsProvider channelsProvider,
+            final OutputStream destOutputStream,
             final int targetPageSize,
             final ByteBufferAllocator allocator,
             final MessageType type,
@@ -58,8 +56,7 @@ public final class ParquetFileWriter {
         this.targetPageSize = targetPageSize;
         this.allocator = allocator;
         this.extraMetaData = new HashMap<>(extraMetaData);
-        countingOutput =
-                new CountingOutputStream(channelsProvider.getOutputStream(dest, false, PARQUET_OUTPUT_BUFFER_SIZE));
+        this.countingOutput = new CountingOutputStream(destOutputStream);
         countingOutput.write(MAGIC);
         this.type = type;
         this.compressorAdapter = DeephavenCompressorAdapterFactory.getInstance().getByName(codecName);
@@ -82,8 +79,8 @@ public final class ParquetFileWriter {
                 new ParquetMetadata(new FileMetaData(type, extraMetaData, Version.FULL_VERSION), blocks);
         serializeFooter(footer, countingOutput);
         metadataFileWriter.addParquetFileMetadata(destForMetadata, footer);
-        // Flush any buffered data and close the channel
-        countingOutput.close();
+        // Flush any buffered data, do not close the stream since it is managed by the calling code
+        countingOutput.flush();
         compressorAdapter.close();
     }
 

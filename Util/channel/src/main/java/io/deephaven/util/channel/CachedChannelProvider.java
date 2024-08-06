@@ -14,10 +14,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.file.Path;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -120,6 +120,11 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
                 ? new CachedChannel(wrappedProvider.getWriteChannel(uri, append), channelType, pathKey)
                 : result.position(append ? result.size() : 0); // The seek isn't really necessary for append; will be at
         // end no matter what.
+    }
+
+    @Override
+    public void abort(final @NotNull OutputStream outputStream) throws IOException {
+        wrappedProvider.abort(outputStream);
     }
 
     @Override

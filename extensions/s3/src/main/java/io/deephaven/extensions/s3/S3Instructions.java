@@ -30,9 +30,17 @@ public abstract class S3Instructions implements LogOutputAppendable {
     private static final int MIN_FRAGMENT_SIZE = 8 << 10; // 8 KiB
     private static final Duration DEFAULT_CONNECTION_TIMEOUT = Duration.ofSeconds(2);
     private static final Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(2);
-    private static final int MIN_PART_SIZE_MB = 5; // 5MiB
-    private static final int DEFAULT_PART_SIZE_MB = MIN_PART_SIZE_MB;
-    private static final int NUM_CONCURRENT_PARTS = 5;
+    private static final int DEFAULT_NUM_CONCURRENT_PARTS = 64;
+
+    /**
+     * We set maximum part size to 10 MB. The maximum number of parts allowed is 10,000. This means maximum size of a
+     * single file that we can write is roughly 100k MB (or about 98 GB). For uploading larger files, user would need to
+     * set a larger part size.
+     *
+     * @see <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/qfacts.html">Amazon S3 User Guide</a>
+     */
+    private static final int MIN_PART_SIZE_MB = 5;
+    private static final int DEFAULT_PART_SIZE_MB = 10;
 
     static final S3Instructions DEFAULT = builder().build();
 
@@ -105,7 +113,9 @@ public abstract class S3Instructions implements LogOutputAppendable {
     /**
      * The size of each part (in MiB) to upload when writing to S3, defaults to {@value #DEFAULT_PART_SIZE_MB} MiB. The
      * minimum allowed part size is {@value #MIN_PART_SIZE_MB} MiB. Setting a higher value may increase throughput, but
-     * may also increase memory usage.
+     * may also increase memory usage. Note that the maximum number of parts allowed for a single file is 10,000.
+     * Therefore, for {@value #DEFAULT_PART_SIZE_MB} MiB part size, the maximum size of a single file that can be
+     * written is {@value #DEFAULT_PART_SIZE_MB} * 10,000 MiB.
      */
     @Default
     public int partSizeMib() {
@@ -115,11 +125,11 @@ public abstract class S3Instructions implements LogOutputAppendable {
     /**
      * The maximum number of parts that can be uploaded concurrently when writing to S3 without blocking. Setting a
      * higher value may increase throughput, but may also increase memory usage. Defaults to
-     * {@value #NUM_CONCURRENT_PARTS}.
+     * {@value #DEFAULT_NUM_CONCURRENT_PARTS}.
      */
     @Default
     public int numConcurrentParts() {
-        return NUM_CONCURRENT_PARTS;
+        return DEFAULT_NUM_CONCURRENT_PARTS;
     }
 
     @Override
@@ -152,6 +162,7 @@ public abstract class S3Instructions implements LogOutputAppendable {
 
         Builder endpointOverride(URI endpointOverride);
 
+        // TODO better names for these two methods
         Builder partSizeMib(int partSizeMib);
 
         Builder numConcurrentParts(int numConcurrentParts);
@@ -210,9 +221,17 @@ public abstract class S3Instructions implements LogOutputAppendable {
     }
 
     @Check
-    final void boundsCheckNumConcurrentParts() {
+    final void boundsCheckMinNumConcurrentParts() {
         if (numConcurrentParts() < 1) {
             throw new IllegalArgumentException("numConcurrentParts(=" + numConcurrentParts() + ") must be >= 1");
+        }
+    }
+
+    @Check
+    final void boundsCheckMaxNumConcurrentParts() {
+        if (numConcurrentParts() > maxConcurrentRequests()) {
+            throw new IllegalArgumentException("numConcurrentParts(=" + numConcurrentParts() + ") must be <= " +
+                    "maxConcurrentRequests(=" + maxConcurrentRequests() + ")");
         }
     }
 

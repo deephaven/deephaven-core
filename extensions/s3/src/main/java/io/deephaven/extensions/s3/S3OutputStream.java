@@ -3,11 +3,11 @@
 //
 package io.deephaven.extensions.s3;
 
-import io.deephaven.UncheckedDeephavenException;
 import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.S3Uri;
+import software.amazon.awssdk.services.s3.model.AbortMultipartUploadRequest;
 import software.amazon.awssdk.services.s3.model.CompleteMultipartUploadRequest;
 import software.amazon.awssdk.services.s3.model.CompletedMultipartUpload;
 import software.amazon.awssdk.services.s3.model.CompletedPart;
@@ -28,7 +28,7 @@ import java.util.concurrent.ExecutionException;
 
 import static io.deephaven.extensions.s3.S3ChannelContext.handleS3Exception;
 
-public class S3OutputStream extends OutputStream {
+class S3OutputStream extends OutputStream {
 
     /**
      * @see <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/qfacts.html">Amazon S3 User Guide</a>
@@ -85,7 +85,7 @@ public class S3OutputStream extends OutputStream {
             final int nextSlotId = (nextPartNumber - 1) % numConcurrentParts;
             if (pendingRequests.size() == nextSlotId) {
                 pendingRequests.add(new OutgoingRequest(partSize));
-            } else if (pendingRequests.size() < nextSlotId - 1) {
+            } else if (pendingRequests.size() < nextSlotId) {
                 throw new IllegalStateException("Unexpected slot ID " + nextSlotId + " for uri " + uri + " with " +
                         pendingRequests.size() + " pending requests.");
             }
@@ -114,21 +114,54 @@ public class S3OutputStream extends OutputStream {
     }
 
     public void flush() throws IOException {
-        final int requestID = (nextPartNumber - 1) % numConcurrentParts;
-        final OutgoingRequest request = pendingRequests.get(requestID);
-        if (request.future == null) {
+        final int nextSlotId = (nextPartNumber - 1) % numConcurrentParts;
+        if (pendingRequests.size() == nextSlotId) {
+            // Nothing to flush
+            return;
+        }
+        final OutgoingRequest request = pendingRequests.get(nextSlotId);
+        if (request.buffer.position() != 0 && request.future == null) {
             sendPartRequest(request);
         }
     }
 
-    public void close() {
+    /**
+     * Try to finish the multipart upload and close the stream. Cancel the upload if an error occurs.
+     *
+     * @throws IOException if an error occurs while closing the stream
+     */
+    public void close() throws IOException {
+        if (uploadId == null) {
+            return;
+        }
         try {
             flush();
             completeMultipartUpload();
         } catch (final IOException e) {
-            abortMultipartUpload();
-            throw new UncheckedDeephavenException("Error closing S3OutputStream for uri " + uri, e);
+            abort();
+            throw new IOException(String.format("Error closing S3OutputStream for uri %s, aborting upload.", uri), e);
         }
+        uploadId = null;
+    }
+
+    /**
+     * Abort the multipart upload if it is in progress and close the stream.
+     */
+    void abort() throws IOException {
+        if (uploadId == null) {
+            return;
+        }
+        final AbortMultipartUploadRequest abortRequest = AbortMultipartUploadRequest.builder()
+                .bucket(uri.bucket().orElseThrow())
+                .key(uri.key().orElseThrow())
+                .uploadId(uploadId)
+                .build();
+        try {
+            s3AsyncClient.abortMultipartUpload(abortRequest).get();
+        } catch (final InterruptedException | ExecutionException | CancellationException e) {
+            throw handleS3Exception(e, String.format("aborting multipart upload for uri %s", uri), s3Instructions);
+        }
+        uploadId = null;
     }
 
     ////////// Helper methods and classes //////////
@@ -171,6 +204,9 @@ public class S3OutputStream extends OutputStream {
         return response.uploadId();
     }
 
+    /**
+     * Send a part request for the given buffer. This method assumes that the buffer is non-empty.
+     */
     private void sendPartRequest(final OutgoingRequest request) throws IOException {
         if (nextPartNumber > MAX_PART_NUMBER) {
             throw new IOException("Cannot upload more than " + MAX_PART_NUMBER + " parts for uri " + uri + ", please" +
@@ -212,18 +248,11 @@ public class S3OutputStream extends OutputStream {
     }
 
     private void completeMultipartUpload() throws IOException {
-        if (uploadId == null) {
-            // No parts were uploaded
-            return;
-        }
-
         // Complete all pending requests in the exact order they were sent
         for (int partNumber = completedParts.size() + 1; partNumber < nextPartNumber; partNumber++) {
             final OutgoingRequest request = pendingRequests.get((partNumber - 1) % numConcurrentParts);
             waitForCompletion(request);
         }
-
-        // Create the request to complete the multipart upload
         final CompleteMultipartUploadRequest completeRequest = CompleteMultipartUploadRequest.builder()
                 .bucket(uri.bucket().orElseThrow())
                 .key(uri.key().orElseThrow())
@@ -232,25 +261,10 @@ public class S3OutputStream extends OutputStream {
                         .parts(completedParts)
                         .build())
                 .build();
-
-        // Complete the multipart upload
         try {
             s3AsyncClient.completeMultipartUpload(completeRequest).get();
         } catch (final InterruptedException | ExecutionException | CancellationException e) {
             throw handleS3Exception(e, String.format("completing multipart upload for uri %s", uri), s3Instructions);
         }
-    }
-
-    /**
-     * TODO Where to call this?
-     */
-    private void abortMultipartUpload() {
-        if (uploadId == null) {
-            return;
-        }
-        s3AsyncClient.abortMultipartUpload(builder -> builder
-                .bucket(uri.bucket().orElseThrow())
-                .key(uri.key().orElseThrow())
-                .uploadId(uploadId));
     }
 }

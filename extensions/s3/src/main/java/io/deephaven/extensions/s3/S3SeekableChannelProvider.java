@@ -144,6 +144,14 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
         return new S3OutputStream(uri, s3AsyncClient, s3Instructions);
     }
 
+    @Override
+    public void abort(@NotNull final OutputStream outputStream) throws IOException {
+        if (!(outputStream instanceof S3OutputStream)) {
+            throw new IllegalArgumentException("Output stream is not an instance of S3OutputStream, but instance of "
+                    + outputStream.getClass());
+        }
+        ((S3OutputStream) outputStream).abort();
+    }
 
     @Override
     public Stream<URI> list(@NotNull final URI directory) {

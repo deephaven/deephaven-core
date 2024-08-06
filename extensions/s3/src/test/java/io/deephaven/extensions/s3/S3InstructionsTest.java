@@ -22,6 +22,8 @@ public class S3InstructionsTest {
         assertThat(instructions.connectionTimeout()).isEqualTo(Duration.ofSeconds(2));
         assertThat(instructions.readTimeout()).isEqualTo(Duration.ofSeconds(2));
         assertThat(instructions.credentials()).isEqualTo(Credentials.defaultCredentials());
+        assertThat(instructions.partSizeMib()).isEqualTo(10);
+        assertThat(instructions.numConcurrentParts()).isEqualTo(64);
         assertThat(instructions.endpointOverride()).isEmpty();
     }
 
@@ -36,13 +38,25 @@ public class S3InstructionsTest {
     }
 
     @Test
-    void minMaxConcurrentRequests() {
+    void testSetMaxConcurrentRequests() {
         assertThat(S3Instructions.builder()
                 .regionName("some-region")
-                .maxConcurrentRequests(1)
+                .maxConcurrentRequests(100)
                 .build()
                 .maxConcurrentRequests())
-                .isEqualTo(1);
+                .isEqualTo(100);
+    }
+
+    @Test
+    void testMinMaxConcurrentRequests() {
+        try {
+            S3Instructions.builder()
+                    .regionName("some-region")
+                    .maxConcurrentRequests(-1)
+                    .build();
+        } catch (IllegalArgumentException e) {
+            assertThat(e).hasMessageContaining("maxConcurrentRequests");
+        }
     }
 
     @Test
@@ -120,6 +134,43 @@ public class S3InstructionsTest {
                     .build();
         } catch (IllegalArgumentException e) {
             assertThat(e).hasMessageContaining("credentials");
+        }
+    }
+
+    @Test
+    void tooSmallPartSize() {
+        try {
+            S3Instructions.builder()
+                    .regionName("some-region")
+                    .partSizeMib(0)
+                    .build();
+        } catch (IllegalArgumentException e) {
+            assertThat(e).hasMessageContaining("partSizeMib");
+        }
+    }
+
+    @Test
+    void tooSmallNumConcurrentParts() {
+        try {
+            S3Instructions.builder()
+                    .regionName("some-region")
+                    .numConcurrentParts(0)
+                    .build();
+        } catch (IllegalArgumentException e) {
+            assertThat(e).hasMessageContaining("numConcurrentParts");
+        }
+    }
+
+    @Test
+    void tooLargeNumConcurrentParts() {
+        try {
+            S3Instructions.builder()
+                    .regionName("some-region")
+                    .numConcurrentParts(1001)
+                    .maxConcurrentRequests(1000)
+                    .build();
+        } catch (IllegalArgumentException e) {
+            assertThat(e).hasMessageContaining("numConcurrentParts");
         }
     }
 }
