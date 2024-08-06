@@ -2,14 +2,16 @@
 
 public class EnterpriseConnectionDialogViewModel {
   private string _jsonUrl = EnterpriseConstants.DefaultJsonUrl;
-  private string _userid = "";
-  private string _password = "";
-  private string _operateAs = "";
+  private string _userid = "iris";
+  private string _password = "iris";
+  private string _operateAs = "iris";
+  private string _persistentQuery = "zamboni1";
 
   public event EventHandler? JsonUrlChanged;
   public event EventHandler? UserIdChanged;
   public event EventHandler? PasswordChanged;
   public event EventHandler? OperateAsChanged;
+  public event EventHandler? PersistentQueryChanged;
 
   public string JsonUrl {
     get => _jsonUrl;
@@ -52,6 +54,17 @@ public class EnterpriseConnectionDialogViewModel {
       }
       _operateAs = value;
       OperateAsChanged?.Invoke(this, EventArgs.Empty);
+    }
+  }
+
+  public string PersistentQuery {
+    get => _persistentQuery;
+    set {
+      if (_persistentQuery == value) {
+        return;
+      }
+      _persistentQuery = value;
+      PersistentQueryChanged?.Invoke(this, EventArgs.Empty);
     }
   }
 }

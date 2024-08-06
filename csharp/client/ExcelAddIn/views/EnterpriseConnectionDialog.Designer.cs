@@ -88,44 +88,45 @@
       jsonUrlText.Location = new Point(184, 39);
       jsonUrlText.Name = "jsonUrlText";
       jsonUrlText.Size = new Size(433, 31);
-      jsonUrlText.TabIndex = 5;
+      jsonUrlText.TabIndex = 1;
       // 
       // operateAsText
       // 
       operateAsText.Location = new Point(184, 189);
       operateAsText.Name = "operateAsText";
       operateAsText.Size = new Size(433, 31);
-      operateAsText.TabIndex = 6;
+      operateAsText.TabIndex = 4;
       // 
       // persistentQueryText
       // 
       persistentQueryText.Location = new Point(184, 241);
       persistentQueryText.Name = "persistentQueryText";
       persistentQueryText.Size = new Size(433, 31);
-      persistentQueryText.TabIndex = 7;
+      persistentQueryText.TabIndex = 5;
       // 
       // passwordText
       // 
       passwordText.Location = new Point(184, 140);
       passwordText.Name = "passwordText";
       passwordText.Size = new Size(433, 31);
-      passwordText.TabIndex = 8;
+      passwordText.TabIndex = 3;
       // 
       // usernameText
       // 
       usernameText.Location = new Point(184, 88);
       usernameText.Name = "usernameText";
       usernameText.Size = new Size(433, 31);
-      usernameText.TabIndex = 9;
+      usernameText.TabIndex = 2;
       // 
       // connectButton
       // 
       connectButton.Location = new Point(270, 305);
       connectButton.Name = "connectButton";
       connectButton.Size = new Size(223, 64);
-      connectButton.TabIndex = 10;
+      connectButton.TabIndex = 6;
       connectButton.Text = "Connect To Deephaven Enterprise";
       connectButton.UseVisualStyleBackColor = true;
+      connectButton.Click += connectButton_Click;
       // 
       // label6
       // 

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Deephaven.DheClient.session;
+using System;
 using System.Diagnostics;
 using System.Net;
 
@@ -26,6 +27,12 @@ internal sealed class OperationManager {
   public void Connect(string connectionString) {
     _state.InvokeConnect(connectionString);
   }
+
+  public void ConnectToEnterprise(string jsonUrl, string username, string password,
+    string operateAs, string pqName) {
+    _state.InvokeConnectToEnterprise(jsonUrl, username, password, operateAs, pqName);
+  }
+
 
   public void Disconnect() {
     _state.InvokeDisconnect();
@@ -76,6 +83,12 @@ internal sealed class OperationManager {
       Invoke(() => StartConnect(connectionString));
     }
 
+    public void InvokeConnectToEnterprise(string jsonUrl, string username, string password,
+      string operateAs, string pqName) {
+      Invoke(() => StartConnectToEnterprise(jsonUrl, username, password, operateAs, pqName));
+    }
+
+
     public void InvokeDisconnect() {
       Invoke(Disconnect);
     }
@@ -123,6 +136,34 @@ internal sealed class OperationManager {
           Invoke(() => FinishConnect(cookie, newClient, null));
         } catch (Exception ex) {
           Invoke(() => FinishConnect(cookie, null, ex.Message));
+        }
+      });
+    }
+
+    private void StartConnectToEnterprise(string jsonUrl, string username, string password,
+      string operateAs, string pqName) {
+      Disconnect();
+      SetStateAndBroadcast(null, $"Creating session");
+      var cookie = new object();
+      _connectionCookie = cookie;
+      Task.Run(() => {
+        SessionManager? sm = null;
+        try {
+          sm = SessionManager.FromUrl("zamboni", jsonUrl);
+
+          if (!sm.PasswordAuthentication(username, password, operateAs)) {
+            SetStateAndBroadcast(null, "Password authentication failed");
+            return;
+          }
+
+          var dndClient = sm.ConnectToPqByName(pqName, false);
+          // TODO(kosak): make a plan to dispose the SessionManager
+          sm = null;
+          Invoke(() => FinishConnect(cookie, dndClient, null));
+        } catch (Exception ex) {
+          Invoke(() => FinishConnect(cookie, null, ex.Message));
+        } finally {
+          sm?.Dispose();
         }
       });
     }

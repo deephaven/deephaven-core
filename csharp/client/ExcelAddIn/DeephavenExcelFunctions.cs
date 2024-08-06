@@ -28,8 +28,9 @@ public static class DeephavenExcelFunctions {
 
   [ExcelCommand(MenuName = "Deephaven", MenuText = "Connect to Deephaven Enterprise")]
   public static void ConnectToDeephavenEnterprise() {
-    var f = new EnterpriseConnectionDialog(EnterpriseConnectionDialogViewModel, (self, connectionString) => {
-      OperationManager.Connect(connectionString);
+    var f = new EnterpriseConnectionDialog(EnterpriseConnectionDialogViewModel,
+      (self, jsonUrl, username, password, operateAs, pqName) => {
+      OperationManager.ConnectToEnterprise(jsonUrl, username, password, operateAs, pqName);
       self.Close();
     });
     f.Show();
