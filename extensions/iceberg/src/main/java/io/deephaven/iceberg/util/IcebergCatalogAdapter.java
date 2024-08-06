@@ -17,6 +17,7 @@ import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.iceberg.layout.IcebergFlatLayout;
 import io.deephaven.iceberg.layout.IcebergKeyValuePartitionedLayout;
 import io.deephaven.iceberg.location.IcebergTableLocationFactory;
@@ -439,19 +440,31 @@ public class IcebergCatalogAdapter {
             @NotNull final TableIdentifier tableIdentifier,
             @Nullable final Snapshot tableSnapshot,
             @Nullable final IcebergInstructions instructions) {
-
         // Load the table from the catalog.
         final org.apache.iceberg.Table table = catalog.loadTable(tableIdentifier);
 
         // Do we want the latest or a specific snapshot?
         final Snapshot snapshot = tableSnapshot != null ? tableSnapshot : table.currentSnapshot();
-        final Schema schema = table.schemas().get(snapshot.schemaId());
 
-        // Load the partitioning schema.
-        final org.apache.iceberg.PartitionSpec partitionSpec = table.spec();
+        // If no snapshots, use the table schema
+        final Schema schema = snapshot != null ? table.schemas().get(snapshot.schemaId()) : table.schema();
 
         // Get default instructions if none are provided
         final IcebergInstructions userInstructions = instructions == null ? IcebergInstructions.DEFAULT : instructions;
+
+        return snapshot == null
+                ? readTableNoSnapshot(schema, table, userInstructions)
+                : readTableSnapshot(schema, table, userInstructions, snapshot, fileIO);
+    }
+
+    static TableDefinition tableDefinition(
+            @NotNull final Schema schema,
+            @NotNull final org.apache.iceberg.Table table,
+            @NotNull final IcebergInstructions userInstructions,
+            long snapshotId) {
+
+        // Load the partitioning schema.
+        final org.apache.iceberg.PartitionSpec partitionSpec = table.spec();
 
         // Get the user supplied table definition.
         final TableDefinition userTableDef = userInstructions.tableDefinition().orElse(null);
@@ -465,9 +478,8 @@ public class IcebergCatalogAdapter {
         for (final Map.Entry<String, String> entry : userInstructions.columnRenames().entrySet()) {
             final String destinationName = entry.getValue();
             if (!NameValidator.isValidColumnName(destinationName)) {
-                throw new TableDataException(
-                        String.format("%s:%d - invalid column name provided (%s)", table, snapshot.snapshotId(),
-                                destinationName));
+                throw new TableDataException(String.format("%s:%d - invalid column name provided (%s)", table,
+                        snapshotId, destinationName));
             }
             // Add these renames to the legalized list.
             legalizedColumnRenames.put(entry.getKey(), destinationName);
@@ -516,6 +528,20 @@ public class IcebergCatalogAdapter {
             // Use the snapshot schema as the table definition.
             tableDef = icebergTableDef;
         }
+        return tableDef;
+    }
+
+    static Table readTableSnapshot(
+            @NotNull final Schema schema,
+            @NotNull final org.apache.iceberg.Table table,
+            @NotNull final IcebergInstructions instructions,
+            @NotNull final Snapshot snapshot,
+            @NotNull final FileIO fileIO) {
+
+        // Load the partitioning schema.
+        final org.apache.iceberg.PartitionSpec partitionSpec = table.spec();
+
+        final TableDefinition tableDef = tableDefinition(schema, table, instructions, snapshot.snapshotId());
 
         final String description;
         final TableLocationKeyFinder<IcebergTableLocationKey> keyFinder;
@@ -524,11 +550,11 @@ public class IcebergCatalogAdapter {
 
         if (partitionSpec.isUnpartitioned()) {
             // Create the flat layout location key finder
-            keyFinder = new IcebergFlatLayout(tableDef, table, snapshot, fileIO, userInstructions);
+            keyFinder = new IcebergFlatLayout(tableDef, table, snapshot, fileIO, instructions);
         } else {
             // Create the partitioning column location key finder
             keyFinder = new IcebergKeyValuePartitionedLayout(tableDef, table, snapshot, fileIO, partitionSpec,
-                    userInstructions);
+                    instructions);
         }
 
         refreshService = null;
@@ -549,6 +575,13 @@ public class IcebergCatalogAdapter {
                 updateSourceRegistrar);
 
         return result;
+    }
+
+    static Table readTableNoSnapshot(
+            @NotNull final Schema schema,
+            @NotNull final org.apache.iceberg.Table table,
+            @NotNull final IcebergInstructions userInstructions) {
+        return TableTools.newTable(tableDefinition(schema, table, userInstructions, -1));
     }
 
     /**

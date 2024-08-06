@@ -12,12 +12,13 @@ from deephaven.column import Column
 from deephaven.dtypes import DType
 from deephaven.experimental import s3
 
-from deephaven.jcompat import j_table_definition
+from deephaven.jcompat import j_table_definition, j_hashmap
 
 from deephaven.table import Table
 
 _JIcebergInstructions = jpy.get_type("io.deephaven.iceberg.util.IcebergInstructions")
 _JIcebergCatalogAdapter = jpy.get_type("io.deephaven.iceberg.util.IcebergCatalogAdapter")
+_JIcebergTools = jpy.get_type("io.deephaven.iceberg.util.IcebergTools")
 
 # IcebergToolsS3 is an optional library
 try:
@@ -250,3 +251,35 @@ def adapter_aws_glue(
     except Exception as e:
         raise DHError(e, "Failed to build Iceberg Catalog Adapter") from e
 
+def read_static_table(
+        metadata_file_location: str,
+        instructions: Optional[IcebergInstructions] = None,
+        properties: Optional[Dict[str, str]] = None,
+        hadoop_properties: Optional[Dict[str, str]] = None,
+        adapt_properties: bool = True,
+) -> Table:
+    return Table(
+        _JIcebergTools.readStatic(
+            metadata_file_location,
+            instructions.j_object if instructions else None,
+            j_hashmap(properties) if properties else None,
+            j_hashmap(hadoop_properties) if hadoop_properties else None,
+            adapt_properties,
+        )
+    )
+
+def read_static_table_definition(
+        metadata_file_location: str,
+        instructions: Optional[IcebergInstructions] = None,
+        properties: Optional[Dict[str, str]] = None,
+        hadoop_properties: Optional[Dict[str, str]] = None,
+        adapt_properties: bool = True,
+):
+    # todo: we don't have a python TableDefinition wrapper?
+    return _JIcebergTools.readStaticDefinition(
+        metadata_file_location,
+        instructions.j_object if instructions else None,
+        j_hashmap(properties) if properties else None,
+        j_hashmap(hadoop_properties) if hadoop_properties else None,
+        adapt_properties,
+    )

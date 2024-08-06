@@ -13,6 +13,7 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.s3.S3Instructions;
 import io.deephaven.iceberg.TestCatalog.IcebergTestCatalog;
 import io.deephaven.iceberg.TestCatalog.IcebergTestFileIO;
+import io.deephaven.qst.type.Type;
 import io.deephaven.time.DateTimeUtils;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.catalog.Catalog;
@@ -27,7 +28,11 @@ import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.File;
+import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -36,9 +41,25 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public abstract class IcebergToolsTest {
+    private static final TableDefinition ALL_TYPES_DEFINITION = TableDefinition.of(
+            ColumnDefinition.ofBoolean("booleanField"),
+            ColumnDefinition.ofInt("integerField"),
+            ColumnDefinition.ofLong("longField"),
+            ColumnDefinition.ofFloat("floatField"),
+            ColumnDefinition.ofDouble("doubleField"),
+            ColumnDefinition.ofString("stringField"),
+            ColumnDefinition.of("dateField", Type.find(LocalDate.class)),
+            ColumnDefinition.of("timeField", Type.find(LocalTime.class)),
+            ColumnDefinition.of("timestampField", Type.find(LocalDateTime.class)),
+            ColumnDefinition.of("decimalField", Type.find(BigDecimal.class)),
+            ColumnDefinition.of("fixedField", Type.byteType().arrayType()),
+            ColumnDefinition.of("binaryField", Type.byteType().arrayType()),
+            ColumnDefinition.ofTime("instantField"));
+
     IcebergInstructions instructions;
 
     public abstract S3AsyncClient s3AsyncClient();
@@ -75,10 +96,15 @@ public abstract class IcebergToolsTest {
 
     private void uploadParquetFiles(final File root, final String prefixToRemove)
             throws ExecutionException, InterruptedException, TimeoutException {
+        uploadFiles(root, prefixToRemove, f -> f.endsWith(".parquet"));
+    }
+
+    private void uploadFiles(final File root, final String prefixToRemove, Predicate<String> filePredicate)
+            throws ExecutionException, InterruptedException, TimeoutException {
         for (final File file : root.listFiles()) {
             if (file.isDirectory()) {
-                uploadParquetFiles(file, prefixToRemove);
-            } else if (file.getName().endsWith(".parquet")) {
+                uploadFiles(file, prefixToRemove, filePredicate);
+            } else if (filePredicate.test(file.getName())) {
                 final String key = file.getPath().substring(prefixToRemove.length() + 1);
 
                 keys.add(key);
@@ -714,5 +740,37 @@ public abstract class IcebergToolsTest {
         // Verify we retrieved all the rows.
         final io.deephaven.engine.table.Table table = adapter.readTable(tableId, instructions);
         Assert.eq(table.size(), "table.size()", 10, "10 rows in the table");
+    }
+
+    @Test
+    void readStaticDefinition() throws ExecutionException, InterruptedException, TimeoutException {
+        uploadFiles(new File(IcebergToolsTest.class.getResource("/warehouse/sample/all_types").getPath()),
+                warehousePath, f -> true);
+
+        final TableDefinition def_0 = IcebergTools.readStaticDefinition(
+                "s3://warehouse/sample/all_types/metadata/00000-bbb283f2-4659-434a-b422-227b8b15dfb9.metadata.json",
+                instructions, null, null, true);
+        final TableDefinition def_1 = IcebergTools.readStaticDefinition(
+                "s3://warehouse/sample/all_types/metadata/00001-15b8eb1c-5cf6-4266-9f0c-5ae723cd77ba.metadata.json",
+                instructions, null, null, true);
+
+        Assert.equals(def_0, "def_0", ALL_TYPES_DEFINITION);
+        Assert.equals(def_1, "def_1", ALL_TYPES_DEFINITION);
+    }
+
+    @Test
+    void readStatic() throws ExecutionException, InterruptedException, TimeoutException {
+        uploadFiles(new File(IcebergToolsTest.class.getResource("/warehouse/sample/all_types").getPath()),
+                warehousePath, f -> true);
+
+        final Table table_0 = IcebergTools.readStatic(
+                "s3://warehouse/sample/all_types/metadata/00000-bbb283f2-4659-434a-b422-227b8b15dfb9.metadata.json",
+                instructions, null, null, true);
+        final Table table_1 = IcebergTools.readStatic(
+                "s3://warehouse/sample/all_types/metadata/00001-15b8eb1c-5cf6-4266-9f0c-5ae723cd77ba.metadata.json",
+                instructions, null, null, true);
+
+        Assert.equals(table_0.getDefinition(), "table_0.getDefinition()", ALL_TYPES_DEFINITION);
+        Assert.equals(table_1.getDefinition(), "table_0.getDefinition()", ALL_TYPES_DEFINITION);
     }
 }
