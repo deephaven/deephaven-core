@@ -321,8 +321,8 @@ def write_partitioned(
 
     Args:
         table (Table): the source table or partitioned table
-        destination_dir (str): The path or URI to destination root directory in which the partitioned parquet data will
-            be stored in a nested directory structure format. Non-existing directories in the provided path will be
+        destination_dir (str): The path or URI to the destination root directory in which the partitioned parquet data
+            will be stored in a nested directory structure format. Non-existing directories in the provided path will be
             created.
         table_definition (Optional[Union[Dict[str, DType], List[Column]]): the table definition to use for writing,
             instead of the definitions implied by the table. Default is None, which means use the column definitions
