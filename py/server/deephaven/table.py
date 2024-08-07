@@ -435,6 +435,7 @@ class Table(JObjectWrapper):
             raise DHError("j_table type is not io.deephaven.engine.table.Table")
         self._definition = self.j_table.getDefinition()
         self._schema = None
+        self._cols_dict = None
         self._is_refreshing = None
         self._update_graph = None
         self._is_flat = None
@@ -494,6 +495,13 @@ class Table(JObjectWrapper):
 
         self._schema = _td_to_columns(self._definition)
         return self._schema
+
+    def columns_dict(self) -> Dict[str, Column]:
+        if self._cols_dict is None:
+            self._cols_dict = {}
+            for col in self.columns:
+                self._cols_dict[col.name] = col
+        return self._cols_dict
 
     @property
     def meta_table(self) -> Table:
