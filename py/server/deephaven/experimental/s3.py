@@ -79,8 +79,8 @@ class S3Instructions(JObjectWrapper):
             endpoint_override (str): the endpoint to connect to. Callers connecting to AWS do not typically need to set
                 this; it is most useful when connecting to non-AWS, S3-compatible APIs.
             part_size (int): Writes to S3 are done in parts or chunks, and this value determines the size of each part
-                (in bytes). The default value is 10 MiB and minimum allowed part size is 5 MiB. Setting a higher value
-                may increase throughput, but may also increase memory usage.
+                (in bytes). The default value is 10485760 (= 10 MiB) and minimum allowed part size is 5 MiB. Setting a
+                higher value may increase throughput, but may also increase memory usage.
                 Note that the maximum number of parts allowed for a single file is 10,000. Therefore, for 10 MiB part
                 size, the maximum size of a single file that can be written is roughly 100k MiB (or about 98 GiB).
             num_concurrent_parts (int): the maximum number of parts that can be uploaded concurrently when writing to S3
