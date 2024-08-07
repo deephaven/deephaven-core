@@ -1466,8 +1466,6 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             unsuppressEvents();
             LazyPromise.runLater(() -> {
                 fireEvent(EVENT_RECONNECT);
-                // TODO
-                // getBinding().maybeReviveSubscription();
             });
         }
     }
@@ -1762,7 +1760,10 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
     @Override
     public void maybeReviveSubscription() {
-        // getBinding().maybeReviveSubscription();
+        TableViewportSubscription viewportSubscription = subscriptions.get(getHandle());
+        if (viewportSubscription != null) {
+            viewportSubscription.revive();
+        }
     }
 
 }

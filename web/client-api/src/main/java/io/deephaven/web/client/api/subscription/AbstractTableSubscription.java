@@ -92,6 +92,13 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         rowStyleColumn = state.getRowFormatColumn() == null ? TableData.NO_ROW_FORMAT_COLUMN
                 : state.getRowFormatColumn().getIndex();
 
+        revive();
+    }
+
+    /**
+     * Creates the connection to the server. Used on initial connection, and for viewport reconnects.
+     */
+    protected void revive() {
         // Once the state is running, set up the actual subscription
         state.onRunning(s -> {
             if (status != Status.STARTING) {

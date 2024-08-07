@@ -103,6 +103,18 @@ public class TableViewportSubscription extends AbstractTableSubscription {
 
         refresh = updateIntervalMs == null ? 1000.0 : updateIntervalMs;
         this.original = existingTable;
+
+        existingTable.addEventListener(JsTable.EVENT_RECONNECT, e -> {
+            if (existingTable.state() == state()) {
+                revive();
+            }
+        });
+    }
+
+    // Expose this as public
+    @Override
+    public void revive() {
+        super.revive();
     }
 
     @Override
@@ -407,16 +419,6 @@ public class TableViewportSubscription extends AbstractTableSubscription {
             doExchange.send(payload);
             doExchange.end();
 
-        });
-    }
-
-    /**
-     * Instead of a micro-task between chained promises, insert a regular task so that control is returned to the
-     * browser long enough to prevent the UI hanging.
-     */
-    private <T> IThenable.ThenOnFulfilledCallbackFn<T, T> defer() {
-        return val -> new Promise<>((resolve, reject) -> {
-            DomGlobal.setTimeout(ignoreArgs -> resolve.onInvoke(val), 0);
         });
     }
 }

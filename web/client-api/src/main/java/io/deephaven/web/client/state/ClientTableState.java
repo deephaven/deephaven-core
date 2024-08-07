@@ -971,15 +971,9 @@ public final class ClientTableState extends TableConfig {
         assert was != null : "Cannot unpause a table that is not paused " + this;
         paused.delete(table);
         active.set(table, was.getActiveBinding());
-        // Now, we want to put back the viewport, if any.
-        refreshSubscription(was.getActiveBinding());
-    }
-
-    private void refreshSubscription(ActiveTableBinding sub) {
-        assert active.get(sub.getTable()) == sub;
-        // if (!sub.isSubscriptionPending()) {
-        // sub.maybeReviveSubscription();
-        // }
+        // Now, we want to put back the viewport, if any, since those may be still used by the original table
+        ActiveTableBinding sub = was.getActiveBinding();
+        table.maybeReviveSubscription();
     }
 
     public MappedIterable<ClientTableState> ancestors() {
