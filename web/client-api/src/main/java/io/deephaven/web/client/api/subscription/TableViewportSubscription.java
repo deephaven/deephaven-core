@@ -46,11 +46,11 @@ import static io.deephaven.web.client.api.JsTable.EVENT_ROWUPDATED;
 import static io.deephaven.web.client.api.barrage.WebBarrageUtils.serializeRanges;
 
 /**
- * This object serves as a "handle" to a subscription, allowing it to be acted on directly or canceled outright. If you retain
- * an instance of this, you have two choices - either only use it to call `close()` on it to stop the table's viewport without
- * creating a new one, or listen directly to this object instead of the table for data events, and always call `close()` when
- * finished. Calling any method on this object other than close() will result in it continuing to live on after `setViewport`
- * is called on the original table, or after the table is modified.
+ * This object serves as a "handle" to a subscription, allowing it to be acted on directly or canceled outright. If you
+ * retain an instance of this, you have two choices - either only use it to call `close()` on it to stop the table's
+ * viewport without creating a new one, or listen directly to this object instead of the table for data events, and
+ * always call `close()` when finished. Calling any method on this object other than close() will result in it
+ * continuing to live on after `setViewport` is called on the original table, or after the table is modified.
  */
 @TsName(namespace = "dh")
 public class TableViewportSubscription extends AbstractTableSubscription {
@@ -127,7 +127,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
 
             // Any position which was both added and removed should instead be marked as modified, this cleans
             // up anything excluded above that didn't otherwise make sense
-            for (PrimitiveIterator.OfLong it = removedCopy.indexIterator(); it.hasNext(); ) {
+            for (PrimitiveIterator.OfLong it = removedCopy.indexIterator(); it.hasNext();) {
                 long index = it.nextLong();
                 if (addedCopy.contains(index)) {
                     addedCopy.removeRange(new Range(index, index));

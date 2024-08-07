@@ -538,10 +538,7 @@ public class WorkerConnection {
     // @Override
     public void exportedTableUpdateMessage(TableTicket clientId, long size) {
         cache.get(clientId).ifPresent(state -> {
-            // if (!state.isSubscribed()) {
-            // // not presently subscribed so this is the only way to be informed of size changes
-            // state.setSize(size);
-            // }
+            state.setSize(size);
         });
     }
 

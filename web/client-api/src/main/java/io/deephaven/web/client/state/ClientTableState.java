@@ -423,29 +423,18 @@ public final class ClientTableState extends TableConfig {
         }
         this.size = size;
 
-        JsConsumer<JsTable> doSetSize = table -> {
-            long localSize = size;
-
-            // TODO relocate this to the subscription for a blink table
-            // final ActiveTableBinding binding = getActiveBinding(table);
-            // if (binding != null && table.isBlinkTable() && binding.getRows() != null) {
-            // localSize = Math.min(size, binding.getRows().size());
-            // }
-            table.setSize(localSize);
-        };
-
         if (isRunning()) {
             if (log) {
                 JsLog.debug("CTS immediate size update ", this.size, " actives: ", active);
             }
-            forActiveTables(doSetSize);
+            forActiveTables(t -> t.setSize(size));
         } else {
             if (queuedSize == null) {
                 JsLog.debug("Queuing size changed until RUNNING STATE; ", size);
                 onRunning(self -> {
                     JsLog.debug("Firing queued size change event (", queuedSize, ")");
                     forActiveTables(table -> {
-                        doSetSize.apply(table);
+                        table.setSize(size);
                         queuedSize = null;
                     });
                 }, JsRunnable.doNothing());

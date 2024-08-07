@@ -454,6 +454,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         if (isUncoalesced()) {
             return JsTable.SIZE_UNCOALESCED;
         }
+        // Only return the size from ETUM if we have no other choice
         return size;
     }
 
@@ -473,14 +474,10 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      */
     @JsProperty
     public double getTotalSize() {
-        // TODO note to me: I don't think this ever made sense, its not like we held open a subscription for the same
-        // table
-        // without the filter...
-        // TableViewportSubscription subscription = subscriptions.get(getHandle());
-        // if (subscription != null && subscription.getStatus() == TableViewportSubscription.Status.ACTIVE) {
-        // // only ask the viewport for the size if it is alive and ticking
-        // return subscription.totalSize();
-        // }
+        if (state().getFilters().isEmpty()) {
+            // If there are no filters, use the subscription size (if any)
+            return getSize();
+        }
         return getHeadState().getSize();
     }
 
