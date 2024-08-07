@@ -112,9 +112,9 @@ public abstract class S3Instructions implements LogOutputAppendable {
 
     /**
      * The size of each part (in bytes) to upload when writing to S3, defaults to {@value #DEFAULT_PART_SIZE}. The
-     * minimum allowed part size is {@value #MIN_PART_SIZE}. Setting a higher value may increase throughput, but
-     * may also increase memory usage. Note that the maximum number of parts allowed for a single file is 10,000.
-     * Therefore, for {@value #DEFAULT_PART_SIZE} part size, the maximum size of a single file that can be written is
+     * minimum allowed part size is {@value #MIN_PART_SIZE}. Setting a higher value may increase throughput, but may
+     * also increase memory usage. Note that the maximum number of parts allowed for a single file is 10,000. Therefore,
+     * for {@value #DEFAULT_PART_SIZE} part size, the maximum size of a single file that can be written is
      * {@value #DEFAULT_PART_SIZE} * 10,000 bytes.
      */
     @Default
