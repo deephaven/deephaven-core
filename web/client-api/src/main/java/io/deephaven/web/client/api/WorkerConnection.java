@@ -1290,7 +1290,6 @@ public class WorkerConnection {
                 // completely empty; perform release
                 final ClientTableState.ResolutionState previousState = state.getResolution();
                 state.setResolution(ClientTableState.ResolutionState.RELEASED);
-                // state.setSubscribed(false);
                 if (previousState != ClientTableState.ResolutionState.RELEASED) {
                     cache.release(state);
 

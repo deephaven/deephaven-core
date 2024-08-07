@@ -781,59 +781,6 @@ public final class ClientTableState extends TableConfig {
         return had;
     }
 
-    // private void setDesiredViewport(JsTable table, long firstRow, long lastRow, Column[] columns) {
-    // touch();
-    // final ActiveTableBinding sub = active.get(table);
-    // assert sub != null : "You cannot set the desired viewport on a non-active state + table combination";
-    // final RangeSet rows = sub.setDesiredViewport(firstRow, lastRow, columns);
-    // // let event loop eat multiple viewport sets and only apply the last one (winner of who gets spot in map)
-    // LazyPromise.runLater(() -> {
-    // if (sub.getRows() == rows) {
-    // // winner! now, on to the next hurdle... ensuring we have columns.
-    // // TODO: have an onColumnsReady callback, for cases when we know we're only waiting on
-    // // non-column-modifying operations
-    // onRunning(self -> {
-    // if (sub.getRows() == rows) {
-    // // winner again!
-    // applyViewport(sub);
-    // }
-    // }, JsRunnable.doNothing());
-    // }
-    // });
-    // }
-
-    // private void subscribe(JsTable table, Column[] columns) {
-    // touch();
-    // ActiveTableBinding binding = active.get(table);
-    // assert binding != null : "No active binding found for table " + table;
-    //
-    // onRunning(self -> {
-    // binding.setSubscriptionPending(true);
-    //
-    // if (getHandle().equals(table.getHandle())) {
-    // binding.setViewport(new Viewport(null, makeBitset(columns)));
-    // table.getConnection().scheduleCheck(this);
-    // }
-    // }, JsRunnable.doNothing());
-    // }
-    //
-    // private void applyViewport(ActiveTableBinding sub) {
-    // sub.setSubscriptionPending(false);
-    // final JsTable table = sub.getTable();
-    // // make sure we're still the tail entry before trying to apply viewport
-    // assert isRunning() : "Do not call this method unless you are in a running state! " + this;
-    // if (getHandle().equals(table.getHandle())) {
-    // final RangeSet rows = sub.getRows();
-    // Column[] desired = sub.getColumns();
-    // if (Js.isFalsy(desired)) {
-    // desired = getColumns();
-    // }
-    // Viewport vp = new Viewport(rows, makeBitset(desired));
-    // sub.setViewport(vp);
-    // table.refreshViewport(this, vp);
-    // }
-    // }
-
     public BitSet makeBitset(Column[] columns) {
         BitSet bitSet = new BitSet(getTableDef().getColumns().length);
         Arrays.stream(columns).flatMapToInt(Column::getRequiredColumns).forEach(bitSet::set);
@@ -849,16 +796,6 @@ public final class ClientTableState extends TableConfig {
                 + "active: " + active + " paused: " + paused;
         return iterate(active.keys()).plus(iterate(paused.keys()));
     }
-
-    // private void forActiveSubscriptions(JsBiConsumer<JsTable, Viewport> callback) {
-    // JsItr.forEach(active, (table, binding) -> {
-    // if (binding.getSubscription() != null) {
-    // assert binding.getTable() == table
-    // : "Corrupt binding between " + table + " and " + binding + " in " + active;
-    // callback.apply((JsTable) table, binding.getSubscription());
-    // }
-    // });
-    // }
 
     public void forActiveTables(JsConsumer<JsTable> callback) {
         JsItr.forEach(active, (table, sub) -> {
@@ -883,24 +820,6 @@ public final class ClientTableState extends TableConfig {
             callback.apply(item);
         }
     }
-
-    // public void handleDelta(DeltaUpdates updates) {
-    // assert size != SIZE_UNINITIALIZED : "Received delta before receiving initial size";
-    // setSize(size + updates.getAdded().size() - updates.getRemoved().size());
-    // forActiveSubscriptions((table, subscription) -> {
-    // assert table.getHandle().equals(handle);
-    // // we are the active state of this table, so forward along the delta.
-    // table.handleDelta(this, updates);
-    // });
-    // }
-    //
-    // public void setSubscribed(boolean subscribed) {
-    // this.subscribed = subscribed;
-    // }
-    //
-    // public boolean isSubscribed() {
-    // return subscribed;
-    // }
 
     @Override
     public String toString() {

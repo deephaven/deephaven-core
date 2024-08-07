@@ -375,12 +375,11 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     }
 
     public class TreeSubscription extends AbstractTableSubscription {
-        @TsInterface
         @TsName(namespace = "dh")
         public class TreeViewportData extends AbstractTableSubscription.UpdateEventData {
             private final double treeSize;
 
-            // private final JsArray<Column> columns;
+            private final JsArray<Column> columns;
             private final int constituentDepth;
 
             private TreeViewportData(WebBarrageSubscription subscription, int rowStyleColumn, JsArray<Column> columns,
@@ -391,48 +390,32 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                 // this.offset = offset;
                 this.treeSize = barrageSubscription.getCurrentRowSet().size();
                 constituentDepth = keyColumns.length + 2;
-                // this.columns = JsObject.freeze(Js.cast(Js.<JsArray<Column>>uncheckedCast(columns).slice()));
-                //
-                // // Unlike ViewportData, assume that we own this copy of the data and can mutate at will. As such,
-                // // we'll just clean the data that the requested columns know about for now.
-                // // TODO to improve this, we can have synthetic columns to handle data that wasn't requested/expected,
-                // // and then can share code with ViewportData
-                // Object[] data = new Object[dataColumns.length];
-                //
-                //
-                // // Without modifying this.columns (copied and frozen), make sure our key columns are present
-                // // in the list of columns that we will copy data for the viewport
-                // keyColumns.forEach((col, p1, p2) -> {
-                // if (this.columns.indexOf(col) == -1) {
-                // columns[columns.length] = col;
-                // }
-                // return null;
-                // });
+                this.columns = JsObject.freeze(Js.cast(Js.<JsArray<Column>>uncheckedCast(columns).slice()));
             }
 
-            // /**
-            // * Always returns empty for TreeTable.
-            // */
-            // @Override
-            // public JsRangeSet getAdded() {
-            // return new JsRangeSet(RangeSet.empty());
-            // }
-            //
-            // /**
-            // * Always returns empty for TreeTable.
-            // */
-            // @Override
-            // public JsRangeSet getRemoved() {
-            // return new JsRangeSet(RangeSet.empty());
-            // }
-            //
-            // /**
-            // * Always returns empty for TreeTable.
-            // */
-            // @Override
-            // public JsRangeSet getModified() {
-            // return new JsRangeSet(RangeSet.empty());
-            // }
+            /**
+             * Always returns empty for TreeTable.
+             */
+            @Override
+            public JsRangeSet getAdded() {
+                return new JsRangeSet(RangeSet.empty());
+            }
+
+            /**
+             * Always returns empty for TreeTable.
+             */
+            @Override
+            public JsRangeSet getRemoved() {
+                return new JsRangeSet(RangeSet.empty());
+            }
+
+            /**
+             * Always returns empty for TreeTable.
+             */
+            @Override
+            public JsRangeSet getModified() {
+                return new JsRangeSet(RangeSet.empty());
+            }
 
             @Override
             public Any getData(int index, Column column) {
@@ -441,7 +424,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                     // no constituent column, call super
                     return super.getData(index, column);
                 }
-                if (barrageSubscription.<Integer>getData(index, rowDepthCol.getIndex()).asInt() != constituentDepth) {
+                if (barrageSubscription.getData(index, rowDepthCol.getIndex()).asInt() != constituentDepth) {
                     // not at constituent depth, call super
                     return super.getData(index, column);
                 }
@@ -456,7 +439,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                     // no constituent column, call super
                     return super.getData(index, column);
                 }
-                if (barrageSubscription.<Integer>getData(index, rowDepthCol.getIndex()).asInt() != constituentDepth) {
+                if (barrageSubscription.getData(index, rowDepthCol.getIndex()).asInt() != constituentDepth) {
                     // not at constituent depth, call super
                     return super.getData(index, column);
                 }
@@ -471,7 +454,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                     // no constituent column, call super
                     return super.getFormat(index, column);
                 }
-                if (barrageSubscription.<Integer>getData(index, rowDepthCol.getIndex()).asInt() != constituentDepth) {
+                if (barrageSubscription.getData(index, rowDepthCol.getIndex()).asInt() != constituentDepth) {
                     // not at constituent depth, call super
                     return super.getFormat(index, column);
                 }
@@ -486,7 +469,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                     // no constituent column, call super
                     return super.getFormat(index, column);
                 }
-                if (barrageSubscription.<Integer>getData(index, rowDepthCol.getIndex()).asInt() != constituentDepth) {
+                if (barrageSubscription.getData(index, rowDepthCol.getIndex()).asInt() != constituentDepth) {
                     // not at constituent depth, call super
                     return super.getFormat(index, column);
                 }
@@ -494,12 +477,13 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                 return super.getFormat(index, sourceColumn);
             }
 
-            // @JsProperty
-            // public JsArray<Column> getColumns() {
-            // // This looks like its superclass, but we're actually returning a different field
-            // return columns;
-            // }
+            @JsProperty
+            public JsArray<Column> getColumns() {
+                // This looks like its superclass, but we're actually returning a different field
+                return columns;
+            }
 
+            // TODO need to restore this so the ts types make sense here
             // @JsProperty
             // @Override
             // public JsArray<TreeSubscription.TreeRow> getRows() {
@@ -613,7 +597,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
             // TODO Rewrite shifts as adds/removed/modifies? in the past we ignored them...
             TreeViewportData detail = new TreeViewportData(barrageSubscription, rowStyleColumn, getColumns(), rowsAdded,
                     rowsRemoved, totalMods, shifted);
-            detail.offset = this.serverViewport.getFirstRow();
+            detail.setOffset(this.serverViewport.getFirstRow());
             CustomEventInit<UpdateEventData> event = CustomEventInit.create();
             event.setDetail(detail);
             fireEvent(EVENT_UPDATED, event);

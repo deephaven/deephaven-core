@@ -301,8 +301,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         // cached copy in case it was requested, could be requested again
         private JsArray<SubscriptionRow> allRows;
 
-        // TODO expose this property only if this is a viewport
-        public double offset;
+        private double offset;
 
         public UpdateEventData(WebBarrageSubscription subscription, int rowStyleColumn, JsArray<Column> columns,
                 RangeSet added, RangeSet removed, RangeSet modified, ShiftedRange[] shifted) {
@@ -319,9 +318,14 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
          *
          * @return double
          */
+        // TODO expose this property only if this is a viewport
         @JsProperty
         public Double getOffset() {
             return offset;
+        }
+
+        public void setOffset(double offset) {
+            this.offset = offset;
         }
 
         @Override

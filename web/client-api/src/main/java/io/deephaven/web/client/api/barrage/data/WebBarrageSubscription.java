@@ -146,7 +146,6 @@ public abstract class WebBarrageSubscription {
      * @param key the row to read in key-space
      * @param col the index of the column to read
      * @return the value read from the table
-     * @param <T> the expected type of the column to read
      */
     public abstract Any getData(long key, int col);
 

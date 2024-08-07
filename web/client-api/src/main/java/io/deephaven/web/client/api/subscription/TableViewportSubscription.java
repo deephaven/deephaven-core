@@ -4,13 +4,10 @@
 package io.deephaven.web.client.api.subscription;
 
 import com.google.flatbuffers.FlatBufferBuilder;
-import com.vertispan.tsdefs.annotations.TsInterface;
 import com.vertispan.tsdefs.annotations.TsName;
 import elemental2.core.JsArray;
 import elemental2.dom.CustomEvent;
 import elemental2.dom.CustomEventInit;
-import elemental2.dom.DomGlobal;
-import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
@@ -70,7 +67,6 @@ import static io.deephaven.web.client.api.barrage.WebBarrageUtils.serializeRange
  *
  *
  */
-@TsInterface
 @TsName(namespace = "dh")
 public class TableViewportSubscription extends AbstractTableSubscription {
 
@@ -149,7 +145,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
         // TODO Rewrite shifts as adds/removed/modifies? in the past we ignored them...
         UpdateEventData detail = new UpdateEventData(barrageSubscription, rowStyleColumn, getColumns(), rowsAdded,
                 rowsRemoved, totalMods, shifted);
-        detail.offset = this.viewportRowSet.getFirstRow();
+        detail.setOffset(this.viewportRowSet.getFirstRow());
         this.viewportData = detail;
         CustomEventInit<UpdateEventData> event = CustomEventInit.create();
         event.setDetail(detail);
