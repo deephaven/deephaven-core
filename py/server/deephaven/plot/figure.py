@@ -2757,7 +2757,7 @@ class Figure(JObjectWrapper):
         self,
         name: str = None,
     ) -> Figure:
-        """Creates a new Axes which shares the y-Axis with the current Axes. For example, this is used for creating plots with a common x-axis but two different y-axes.
+        """Creates a new Axes which shares the y-Axis with the current Axes. For example, this is used for creating plots with a common y-axis but two different x-axes.
 
         Args:
             name (str): name
