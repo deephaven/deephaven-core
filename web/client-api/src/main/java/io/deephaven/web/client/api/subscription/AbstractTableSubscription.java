@@ -82,8 +82,6 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
     protected WebBarrageSubscription barrageSubscription;
 
     protected Status status = Status.STARTING;
-    @Deprecated // remove this, use status instead
-    private boolean subscriptionReady;
 
     public AbstractTableSubscription(ClientTableState state, WorkerConnection connection) {
         state.retain(this);
@@ -164,6 +162,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
     protected void sendBarrageSubscriptionRequest(RangeSet viewport, JsArray<Column> columns, Double updateIntervalMs,
             boolean isReverseViewport) {
         assert status == Status.ACTIVE || status == Status.PENDING_UPDATE : status;
+        status = Status.PENDING_UPDATE;
         this.columns = columns;
         this.viewportRowSet = viewport;
         this.columnBitSet = makeColumnBitset(columns);
@@ -202,7 +201,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
     }
 
     protected boolean isSubscriptionReady() {
-        return subscriptionReady;
+        return status == Status.ACTIVE;
     }
 
     public double size() {
@@ -214,7 +213,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
 
     private void onDataChanged(RangeSet rowsAdded, RangeSet rowsRemoved, RangeSet totalMods, ShiftedRange[] shifted,
             BitSet modifiedColumnSet) {
-        if (!subscriptionReady) {
+        if (!isSubscriptionReady()) {
             return;
         }
 
@@ -435,12 +434,15 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
     }
 
     private void onViewportChange(RangeSet serverViewport, BitSet serverColumns, boolean serverReverseViewport) {
-        subscriptionReady = ((serverColumns == null && columnBitSet == null)
+        boolean subscriptionReady = ((serverColumns == null && columnBitSet == null)
                 || (serverColumns == null && columnBitSet.cardinality() == state.getTableDef().getColumns().length)
                 || (serverColumns != null && serverColumns.equals(this.columnBitSet)))
                 && (serverViewport == null && this.viewportRowSet == null
                         || (serverViewport != null && serverViewport.equals(this.viewportRowSet)))
                 && serverReverseViewport == isReverseViewport;
+        if (subscriptionReady) {
+            status = Status.ACTIVE;
+        }
     }
 
     private final WebBarrageStreamReader reader = new WebBarrageStreamReader();

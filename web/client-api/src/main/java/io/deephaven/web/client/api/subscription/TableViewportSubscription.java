@@ -24,6 +24,7 @@ import io.deephaven.web.client.api.barrage.WebBarrageStreamReader;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.data.WebBarrageSubscription;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
+import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.shared.data.Range;
 import io.deephaven.web.shared.data.RangeSet;
@@ -269,9 +270,9 @@ public class TableViewportSubscription extends AbstractTableSubscription {
      */
     @JsMethod
     public void close() {
-        // if (status == Status.DONE) {
-        // JsLog.warn("TableViewportSubscription.close called on subscription that's already done.");
-        // }
+        if (status == Status.DONE) {
+            JsLog.warn("TableViewportSubscription.close called on subscription that's already done.");
+        }
         retained = false;
 
         // Instead of calling super.close(), we delegate to internalClose()
@@ -286,16 +287,13 @@ public class TableViewportSubscription extends AbstractTableSubscription {
         // indicate that the base table shouldn't get events anymore, even if it is still retained elsewhere
         originalActive = false;
 
-        if (retained) {
+        if (retained || status == Status.DONE) {
+            // the JsTable has indicated it is no longer interested in this viewport, but other calling
+            // code has retained it, keep it open for now.
             return;
         }
-        // if (retained || status == Status.DONE) {
-        // // the JsTable has indicated it is no longer interested in this viewport, but other calling
-        // // code has retained it, keep it open for now.
-        // return;
-        // }
-        //
-        // status = Status.DONE;
+
+        status = Status.DONE;
 
         super.close();
     }
