@@ -19,14 +19,13 @@ import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
-import io.deephaven.web.client.api.subscription.SubscriptionTableData;
+import io.deephaven.web.client.api.subscription.AbstractTableSubscription;
 import io.deephaven.web.client.api.subscription.TableSubscription;
 import io.deephaven.web.client.api.widget.JsWidget;
 import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.data.RangeSet;
 import jsinterop.annotations.JsIgnore;
-import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsProperty;
 import jsinterop.annotations.JsType;
@@ -143,11 +142,11 @@ public class JsPartitionedTable extends HasLifecycle implements ServerObject {
 
     private void handleKeys(Event update) {
         // noinspection unchecked
-        CustomEvent<SubscriptionTableData.UpdateEventData> event =
-                (CustomEvent<SubscriptionTableData.UpdateEventData>) update;
+        CustomEvent<AbstractTableSubscription.UpdateEventData> event =
+                (CustomEvent<AbstractTableSubscription.UpdateEventData>) update;
 
         // We're only interested in added rows, send an event indicating the new keys that are available
-        SubscriptionTableData.UpdateEventData eventData = event.detail;
+        AbstractTableSubscription.UpdateEventData eventData = event.detail;
         RangeSet added = eventData.getAdded().getRange();
         added.indexIterator().forEachRemaining((long index) -> {
             // extract the key to use

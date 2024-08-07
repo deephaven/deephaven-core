@@ -3,11 +3,8 @@
 //
 package io.deephaven.web.client.state;
 
-import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.state.HasTableState;
-import io.deephaven.web.shared.data.RangeSet;
-import io.deephaven.web.shared.data.Viewport;
 
 /**
  * An active binding describes the link between a {@link JsTable} and the {@link ClientTableState} it is currently
@@ -60,10 +57,6 @@ public class ActiveTableBinding implements HasTableState<ClientTableState> {
      * new table must copy all bindings to the new table.
      */
     private PausedTableBinding rollback;
-    private Viewport viewport;
-    private RangeSet rows;
-    private Column[] columns;
-    private boolean subscriptionPending;
 
     private ActiveTableBinding(
             JsTable table,
@@ -233,52 +226,5 @@ public class ActiveTableBinding implements HasTableState<ClientTableState> {
 
     public PausedTableBinding getPaused() {
         return paused;
-    }
-
-    public Viewport getSubscription() {
-        return viewport;
-    }
-
-    public void setViewport(Viewport viewport) {
-        this.viewport = viewport;
-    }
-
-    public RangeSet setDesiredViewport(long firstRow, long lastRow, Column[] columns) {
-        this.rows = RangeSet.ofRange(firstRow, lastRow);
-        this.columns = columns;
-        subscriptionPending = true;
-        return rows;
-    }
-
-    public void setDesiredSubscription(Column[] columns) {
-        assert this.rows == null;
-        this.columns = columns;
-        subscriptionPending = true;
-    }
-
-    public RangeSet getRows() {
-        return rows;
-    }
-
-    public Column[] getColumns() {
-        return columns;
-    }
-
-    public void setSubscriptionPending(boolean subscriptionPending) {
-        this.subscriptionPending = subscriptionPending;
-    }
-
-    public boolean isSubscriptionPending() {
-        return subscriptionPending;
-    }
-
-    public void maybeReviveSubscription() {
-        if (subscriptionPending || viewport != null) {
-            if (rows != null) {
-                state.setDesiredViewport(table, rows.getFirstRow(), rows.getLastRow(), columns);
-            } else {
-                state.subscribe(table, columns);
-            }
-        }
     }
 }

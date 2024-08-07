@@ -3,6 +3,7 @@
 //
 package io.deephaven.web.client.api.parse;
 
+import com.google.flatbuffers.FlatBufferBuilder;
 import com.google.gwt.i18n.client.TimeZone;
 import elemental2.core.ArrayBuffer;
 import elemental2.core.Float32Array;
@@ -14,14 +15,6 @@ import elemental2.core.JsDate;
 import elemental2.core.TypedArray;
 import elemental2.core.Uint16Array;
 import elemental2.core.Uint8Array;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Binary;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.FixedSizeBinary;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.FloatingPoint;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Int;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Precision;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Type;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Utf8;
-import io.deephaven.javascript.proto.dhinternal.flatbuffers.Builder;
 import io.deephaven.web.client.api.LongWrapper;
 import io.deephaven.web.client.api.i18n.JsDateTimeFormat;
 import io.deephaven.web.client.api.i18n.JsTimeZone;
@@ -29,6 +22,13 @@ import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsFunction;
 import jsinterop.base.Js;
 import jsinterop.base.JsArrayLike;
+import org.apache.arrow.flatbuf.Binary;
+import org.apache.arrow.flatbuf.FixedSizeBinary;
+import org.apache.arrow.flatbuf.FloatingPoint;
+import org.apache.arrow.flatbuf.Int;
+import org.apache.arrow.flatbuf.Precision;
+import org.apache.arrow.flatbuf.Type;
+import org.apache.arrow.flatbuf.Utf8;
 import org.gwtproject.nio.TypedArrayHelper;
 
 import java.nio.ByteBuffer;
@@ -40,16 +40,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static io.deephaven.web.client.api.subscription.QueryConstants.FALSE_BOOLEAN_AS_BYTE;
-import static io.deephaven.web.client.api.subscription.QueryConstants.NULL_BOOLEAN_AS_BYTE;
-import static io.deephaven.web.client.api.subscription.QueryConstants.NULL_BYTE;
-import static io.deephaven.web.client.api.subscription.QueryConstants.NULL_CHAR;
-import static io.deephaven.web.client.api.subscription.QueryConstants.NULL_DOUBLE;
-import static io.deephaven.web.client.api.subscription.QueryConstants.NULL_FLOAT;
-import static io.deephaven.web.client.api.subscription.QueryConstants.NULL_INT;
-import static io.deephaven.web.client.api.subscription.QueryConstants.NULL_LONG;
-import static io.deephaven.web.client.api.subscription.QueryConstants.NULL_SHORT;
-import static io.deephaven.web.client.api.subscription.QueryConstants.TRUE_BOOLEAN_AS_BYTE;
+import static io.deephaven.util.BooleanUtils.FALSE_BOOLEAN_AS_BYTE;
+import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;
+import static io.deephaven.util.BooleanUtils.TRUE_BOOLEAN_AS_BYTE;
+import static io.deephaven.util.QueryConstants.NULL_BYTE;
+import static io.deephaven.util.QueryConstants.NULL_CHAR;
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
+import static io.deephaven.util.QueryConstants.NULL_FLOAT;
+import static io.deephaven.util.QueryConstants.NULL_INT;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
+import static io.deephaven.util.QueryConstants.NULL_SHORT;
 
 /**
  * Given the expected type of a column, pick one of the enum entries and use that to read the data into arrow buffers.
@@ -101,8 +101,9 @@ public enum JsDataHandler {
         }
 
         @Override
-        public double writeType(Builder builder) {
-            return Utf8.createUtf8(builder);
+        public int writeType(FlatBufferBuilder builder) {
+            Utf8.startUtf8(builder);
+            return Utf8.endUtf8(builder);
         }
 
         @Override
@@ -201,7 +202,7 @@ public enum JsDataHandler {
         }
 
         @Override
-        public double writeType(Builder builder) {
+        public int writeType(FlatBufferBuilder builder) {
             return Int.createInt(builder, 64, true);
         }
 
@@ -249,7 +250,7 @@ public enum JsDataHandler {
     },
     INTEGER(Type.Int, "int") {
         @Override
-        public double writeType(Builder builder) {
+        public int writeType(FlatBufferBuilder builder) {
             return Int.createInt(builder, 32, true);
         }
 
@@ -261,7 +262,7 @@ public enum JsDataHandler {
     },
     SHORT(Type.Int, "short") {
         @Override
-        public double writeType(Builder builder) {
+        public int writeType(FlatBufferBuilder builder) {
             return Int.createInt(builder, 16, true);
         }
 
@@ -273,7 +274,7 @@ public enum JsDataHandler {
     },
     LONG(Type.Int, "long") {
         @Override
-        public double writeType(Builder builder) {
+        public int writeType(FlatBufferBuilder builder) {
             return Int.createInt(builder, 64, true);
         }
 
@@ -319,7 +320,7 @@ public enum JsDataHandler {
     },
     BYTE(Type.Int, "byte") {
         @Override
-        public double writeType(Builder builder) {
+        public int writeType(FlatBufferBuilder builder) {
             return Int.createInt(builder, 8, true);
         }
 
@@ -331,7 +332,7 @@ public enum JsDataHandler {
     },
     CHAR(Type.Int, "char") {
         @Override
-        public double writeType(Builder builder) {
+        public int writeType(FlatBufferBuilder builder) {
             return Int.createInt(builder, 16, false);
         }
 
@@ -343,7 +344,7 @@ public enum JsDataHandler {
     },
     FLOAT(Type.FloatingPoint, "float") {
         @Override
-        public double writeType(Builder builder) {
+        public int writeType(FlatBufferBuilder builder) {
             return FloatingPoint.createFloatingPoint(builder, Precision.SINGLE);
         }
 
@@ -355,7 +356,7 @@ public enum JsDataHandler {
     },
     DOUBLE(Type.FloatingPoint, "double") {
         @Override
-        public double writeType(Builder builder) {
+        public int writeType(FlatBufferBuilder builder) {
             return FloatingPoint.createFloatingPoint(builder, Precision.DOUBLE);
         }
 
@@ -368,7 +369,7 @@ public enum JsDataHandler {
     },
     BOOLEAN(Type.Bool, "boolean", "bool", "java.lang.Boolean") {
         @Override
-        public double writeType(Builder builder) {
+        public int writeType(FlatBufferBuilder builder) {
             return Int.createInt(builder, 8, true);
         }
 
@@ -440,25 +441,27 @@ public enum JsDataHandler {
     },
     BIG_DECIMAL(Type.Binary, "java.util.BigDecimal") {
         @Override
-        public double writeType(Builder builder) {
-            return Binary.createBinary(builder);
+        public int writeType(FlatBufferBuilder builder) {
+            Binary.startBinary(builder);
+            return Binary.endBinary(builder);
         }
     },
     BIG_INTEGER(Type.Binary, "java.util.BigInteger") {
         @Override
-        public double writeType(Builder builder) {
-            return Binary.createBinary(builder);
+        public int writeType(FlatBufferBuilder builder) {
+            Binary.startBinary(builder);
+            return Binary.endBinary(builder);
         }
     },
     LOCAL_DATE(Type.FixedSizeBinary, "java.time.LocalDate", "localdate") {
         @Override
-        public double writeType(Builder builder) {
+        public int writeType(FlatBufferBuilder builder) {
             return FixedSizeBinary.createFixedSizeBinary(builder, 6);
         }
     },
     LOCAL_TIME(Type.FixedSizeBinary, "java.time.LocalTime", "localtime") {
         @Override
-        public double writeType(Builder builder) {
+        public int writeType(FlatBufferBuilder builder) {
             return FixedSizeBinary.createFixedSizeBinary(builder, 7);
         }
     },
@@ -540,10 +543,10 @@ public enum JsDataHandler {
 
     private static final int SEPARATOR_INDEX = DEFAULT_DATE_TIME_PATTERN.indexOf('T');
 
-    private final int arrowTypeType;
+    private final byte arrowTypeType;
     private final String deephavenType;
 
-    JsDataHandler(int arrowTypeType, String... typeNames) {
+    JsDataHandler(byte arrowTypeType, String... typeNames) {
         this.arrowTypeType = arrowTypeType;
         assert typeNames.length > 0 : "Must have at least one name";
         this.deephavenType = typeNames[0];
@@ -553,7 +556,7 @@ public enum JsDataHandler {
         }
     }
 
-    public int typeType() {
+    public byte typeType() {
         return arrowTypeType;
     }
 
@@ -561,7 +564,7 @@ public enum JsDataHandler {
         return deephavenType;
     }
 
-    public abstract double writeType(Builder builder);
+    public abstract int writeType(FlatBufferBuilder builder);
 
     public void write(Object[] data, ParseContext context, JsConsumer<Node> addNode, JsConsumer<Uint8Array> addBuffer) {
         throw new UnsupportedOperationException("Can't parse " + name());

@@ -8,7 +8,7 @@ import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.JsRangeSet;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.TableData;
-import io.deephaven.web.client.api.subscription.SubscriptionTableData.UpdateEventData;
+import io.deephaven.web.client.api.subscription.AbstractTableSubscription;
 import io.deephaven.web.client.fu.JsSettings;
 import io.deephaven.web.shared.data.Range;
 import io.deephaven.web.shared.fu.JsFunction;
@@ -35,7 +35,7 @@ public class ChartData {
         this.table = table;
     }
 
-    public void update(UpdateEventData tableData) {
+    public void update(AbstractTableSubscription.UpdateEventData tableData) {
         Iterator<Range> addedIterator = tableData.getAdded().getRange().rangeIterator();
         Iterator<Range> removedIterator = tableData.getRemoved().getRange().rangeIterator();
         Iterator<Range> modifiedIterator = tableData.getModified().getRange().rangeIterator();
@@ -138,7 +138,7 @@ public class ChartData {
         }
     }
 
-    private void replaceDataRange(UpdateEventData tableData, Range range, int offset) {
+    private void replaceDataRange(AbstractTableSubscription.UpdateEventData tableData, Range range, int offset) {
         // we don't touch the indexes at all, only need to walk each column and replace values in this range
         for (Entry<String, Map<JsFunction<Any, Any>, JsArray<Any>>> columnMap : cachedData.entrySet()) {
             Column col = table.findColumn(columnMap.getKey());
@@ -160,7 +160,7 @@ public class ChartData {
         }
     }
 
-    private void insertDataRange(UpdateEventData tableData, Range range, int offset) {
+    private void insertDataRange(AbstractTableSubscription.UpdateEventData tableData, Range range, int offset) {
         // splice in the new indexes
         batchSplice(offset, asArray(indexes), longs(range));
 
@@ -195,7 +195,8 @@ public class ChartData {
         return Js.uncheckedCast(existingData);
     }
 
-    private Any[] values(UpdateEventData tableData, JsFunction<Any, Any> mapFunc, Column col, Range insertedRange) {
+    private Any[] values(AbstractTableSubscription.UpdateEventData tableData, JsFunction<Any, Any> mapFunc, Column col,
+            Range insertedRange) {
         JsArray<Any> result = new JsArray<>();
 
         if (mapFunc == null) {

@@ -15,15 +15,32 @@ configurations {
     dts
     typescriptDoclet
 }
-
 dependencies {
+    implementation platform(libs.grpc.bom)
+    implementation variantOf(libs.grpc.api) { classifier('sources') }
+
+    implementation project(':engine-chunk')
+    implementation project(':extensions-barrage')
+    implementation project(':DataStructures')
     implementation project(':web-shared-beans')
     implementation project(':web-client-backplane')
+    implementation libs.jetbrains.annotations
+    implementation variantOf(libs.jetbrains.annotations) { classifier("sources") }
+    implementation libs.immutables.value.annotations
+    implementation variantOf(libs.immutables.value.annotations) { classifier("sources") }
+
+    implementation libs.flatbuffers.java
+    implementation variantOf(libs.flatbuffers.java) { classifier("sources") }
+    implementation libs.arrow.format
+    implementation variantOf(libs.arrow.format) { classifier('sources') }
+    implementation libs.deephaven.barrage.format
+    implementation variantOf(libs.deephaven.barrage.format) { classifier('sources') }
 
     implementation libs.vertispan.ts.defs.annotations
     typescriptDoclet libs.vertispan.ts.defs.doclet
 
     implementation libs.vertispan.nio.gwt
+    implementation libs.vertispan.flatbuffers.gwt
 
     js project(path: ':proto:raw-js-openapi', configuration: 'js')
 
@@ -76,10 +93,14 @@ def gwtUnitTest = tasks.register('gwtUnitTest', Test) { t ->
                          '-runStyle HtmlUnit',
                          '-ea',
                          '-style PRETTY',
+                         '-generateJsInteropExports',
+                         '-includeJsInteropExports io.deephaven.*',
+                         '-excludeJsInteropExports io.deephaven.web.client.api.widget.plot.*',
                          "-war ${layout.buildDirectory.dir('unitTest-war').get().asFile.absolutePath}"
             ].join(' '),
             'gwt.persistentunitcachedir': layout.buildDirectory.dir('unitTest-unitCache').get().asFile.absolutePath,
     ]
+    t.classpath += tasks.getByName('gwtCompile').src
     t.include '**/ClientUnitTestSuite.class'
     t.useJUnit()
     t.scanForTestClasses = false
@@ -148,6 +169,9 @@ def gwtIntegrationTest = tasks.register('gwtIntegrationTest', Test) { t ->
                                       "-runStyle io.deephaven.web.junit.RunStyleRemoteWebDriver:${webdriverUrl}?firefox",
                                       '-ea',
                                       '-style PRETTY',
+                                      '-generateJsInteropExports',
+                                      '-includeJsInteropExports io.deephaven.*',
+                                      '-excludeJsInteropExports io.deephaven.web.client.api.widget.plot.*',
                                       "-setProperty dh.server=http://${deephavenDocker.containerName.get()}:10000",
                                       "-war ${layout.buildDirectory.dir('integrationTest-war').get().asFile.absolutePath}"
         ].join(' '))
@@ -181,6 +205,9 @@ Click the URL that is printed out to run the test in your browser, or refresh an
                                       '-runStyle Manual:1',
                                       '-ea',
                                       '-style PRETTY',
+                                      '-generateJsInteropExports',
+                                      '-includeJsInteropExports io.deephaven.*',
+                                      '-excludeJsInteropExports io.deephaven.web.client.api.widget.plot.*',
                                       '-setProperty dh.server=http://localhost:10000',
                                       '-setProperty compiler.useSourceMaps=true',
                                       "-war ${layout.buildDirectory.dir('manualTest-war').get().asFile.absolutePath}"

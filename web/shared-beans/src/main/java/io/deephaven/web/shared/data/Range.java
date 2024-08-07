@@ -11,9 +11,9 @@ import java.io.Serializable;
  * instances will compare only by start - the overlap(Range) method should be used to see if two ranges share at least
  * one item.
  */
-public class Range implements Serializable, Comparable<Range> {
-    private long first;
-    private long last;
+public class Range implements Comparable<Range> {
+    private final long first;
+    private final long last;
 
     // serialization
     Range() {
@@ -34,14 +34,6 @@ public class Range implements Serializable, Comparable<Range> {
 
     public long getLast() {
         return last;
-    }
-
-    void setFirst(long first) {
-        this.first = first;
-    }
-
-    void setLast(long last) {
-        this.last = last;
     }
 
     @Override

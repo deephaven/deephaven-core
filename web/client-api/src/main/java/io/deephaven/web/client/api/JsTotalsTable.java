@@ -13,6 +13,7 @@ import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.TypedTicket;
 import io.deephaven.web.client.api.console.JsVariableType;
 import io.deephaven.web.client.api.filter.FilterCondition;
+import io.deephaven.web.client.api.subscription.ViewportData;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.fu.RemoverFn;
 import jsinterop.annotations.JsIgnore;
@@ -66,7 +67,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
 
     public void refreshViewport() {
         if (firstRow != null && lastRow != null) {
-            setViewport(firstRow, lastRow, Js.uncheckedCast(columns), updateIntervalMs);
+            setViewport(firstRow, lastRow, Js.uncheckedCast(columns), updateIntervalMs, null);
         }
     }
 
@@ -109,12 +110,12 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
      */
     @JsMethod
     public void setViewport(double firstRow, double lastRow, @JsOptional JsArray<Column> columns,
-            @JsOptional Double updateIntervalMs) {
+            @JsOptional Double updateIntervalMs, @JsOptional @JsNullable Boolean isReverseViewport) {
         this.firstRow = firstRow;
         this.lastRow = lastRow;
         this.columns = columns != null ? Js.uncheckedCast(columns.slice()) : null;
         this.updateIntervalMs = updateIntervalMs;
-        wrappedTable.setViewport(firstRow, lastRow, columns, updateIntervalMs);
+        wrappedTable.setViewport(firstRow, lastRow, columns, updateIntervalMs, isReverseViewport);
     }
 
     /**
@@ -124,7 +125,7 @@ public class JsTotalsTable implements JoinableTable, ServerObject {
      * @return Promise of {@link TableData}
      */
     @JsMethod
-    public Promise<TableData> getViewportData() {
+    public Promise<ViewportData> getViewportData() {
         return wrappedTable.getViewportData();
     }
 

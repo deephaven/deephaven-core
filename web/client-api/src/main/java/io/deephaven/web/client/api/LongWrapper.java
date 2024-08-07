@@ -3,6 +3,7 @@
 //
 package io.deephaven.web.client.api;
 
+import io.deephaven.util.QueryConstants;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsType;
 
@@ -12,6 +13,9 @@ public class LongWrapper {
 
     @JsIgnore
     public static LongWrapper of(long value) {
+        if (value == QueryConstants.NULL_LONG) {
+            return null;
+        }
         return new LongWrapper(value);
     }
 

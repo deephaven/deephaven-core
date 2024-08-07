@@ -5,8 +5,6 @@ package io.deephaven.web.client.api;
 
 import elemental2.core.JsArray;
 import elemental2.dom.CustomEvent;
-import io.deephaven.web.client.api.subscription.ViewportData;
-import io.deephaven.web.client.api.tree.JsTreeTable;
 
 public class PartitionedTableTestGwt extends AbstractAsyncGwtTestCase {
     @Override

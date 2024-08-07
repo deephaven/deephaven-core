@@ -8,7 +8,7 @@ import elemental2.core.JsObject;
 import elemental2.core.JsSet;
 import elemental2.core.Uint8Array;
 import elemental2.promise.Promise;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Schema;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
 import io.deephaven.web.client.api.*;
@@ -57,6 +57,81 @@ import static io.deephaven.web.client.fu.JsItr.iterate;
  * Consider making this a js type with restricted, read-only property access.
  */
 public final class ClientTableState extends TableConfig {
+    public ChunkType[] chunkTypes() {
+        // This is roughly ReinterpretUtils.maybeConvertToWritablePrimitiveChunkType, and should
+        // be rewritten to skip the trip through Class
+        return Arrays.stream(columnTypes()).map(dataType -> {
+            if (dataType == Boolean.class || dataType == boolean.class) {
+                return ChunkType.Object;
+            }
+            // JS client holds date objects as objects, not as longs
+            // if (dataType == DateWrapper.class) {
+            // // Note that storing ZonedDateTime as a primitive is lossy on the time zone.
+            // return ChunkType.Long;
+            // }
+            if (dataType == Long.class || dataType == long.class) {
+                // JS client holds longs as LongWrappers
+                return ChunkType.Object;
+            }
+            return ChunkType.fromElementType(dataType);
+        }).toArray(ChunkType[]::new);
+    }
+
+    public Class<?>[] columnTypes() {
+        return Arrays.stream(tableDef.getColumns())
+                .map(ColumnDefinition::getType)
+                .map(t -> {
+                    switch (t) {
+                        case "boolean":
+                        case "java.lang.Boolean":
+                            return boolean.class;
+                        case "char":
+                        case "java.lang.Character":
+                            return char.class;
+                        case "byte":
+                        case "java.lang.Byte":
+                            return byte.class;
+                        case "int":
+                        case "java.lang.Integer":
+                            return int.class;
+                        case "short":
+                        case "java.lang.Short":
+                            return short.class;
+                        case "long":
+                        case "java.lang.Long":
+                            return long.class;
+                        case "java.lang.Float":
+                        case "float":
+                            return float.class;
+                        case "java.lang.Double":
+                        case "double":
+                            return double.class;
+                        case "java.time.Instant":
+                            return DateWrapper.class;
+                        case "java.math.BigInteger":
+                            return BigIntegerWrapper.class;
+                        case "java.math.BigDecimal":
+                            return BigDecimalWrapper.class;
+                        default:
+                            return Object.class;
+                    }
+                })
+                .toArray(Class<?>[]::new);
+    }
+
+    public Class<?>[] componentTypes() {
+        // The only componentType that matters is byte.class
+        return Arrays.stream(tableDef.getColumns()).map(ColumnDefinition::getType).map(t -> {
+            if (!t.endsWith("[]")) {
+                return null;
+            }
+            if (t.equals("io.deephaven.vector.ByteVector[]")) {
+                return byte.class;
+            }
+            return Object.class;
+        }).toArray(Class[]::new);
+    }
+
     public enum ResolutionState {
         /**
          * Table has been created on the client, but client does not yet have a handle ID referring to the table on the
@@ -121,7 +196,6 @@ public final class ClientTableState extends TableConfig {
 
     // A bit of state management
     private String failMsg;
-    private boolean subscribed;
     private Double queuedSize;
 
     // Leftovers from Table.StackEntry
@@ -349,27 +423,18 @@ public final class ClientTableState extends TableConfig {
         }
         this.size = size;
 
-        JsConsumer<JsTable> doSetSize = table -> {
-            long localSize = size;
-            final ActiveTableBinding binding = getActiveBinding(table);
-            if (binding != null && table.isBlinkTable() && binding.getRows() != null) {
-                localSize = Math.min(size, binding.getRows().size());
-            }
-            table.setSize(localSize);
-        };
-
         if (isRunning()) {
             if (log) {
                 JsLog.debug("CTS immediate size update ", this.size, " actives: ", active);
             }
-            forActiveTables(doSetSize);
+            forActiveTables(t -> t.setSize(size));
         } else {
             if (queuedSize == null) {
                 JsLog.debug("Queuing size changed until RUNNING STATE; ", size);
                 onRunning(self -> {
                     JsLog.debug("Firing queued size change event (", queuedSize, ")");
                     forActiveTables(table -> {
-                        doSetSize.apply(table);
+                        table.setSize(size);
                         queuedSize = null;
                     });
                 }, JsRunnable.doNothing());
@@ -630,12 +695,10 @@ public final class ClientTableState extends TableConfig {
     }
 
     /**
-     * @return true if there are no tables bound to this state.
-     *
-     *         If a table that had a subscription for this state was orphaned by a pending request, we want to clear the
-     *         subscription immediately so it becomes inert (immediately remove the subscription), but we may need to
-     *         rollback the request, and we don't want to release the handle until the pending request is finished
-     *         (whereupon we will remove the binding).
+     * @return true if there are no tables bound to this state. If a table that had a subscription for this state was
+     *         orphaned by a pending request, we want to clear the subscription immediately so it becomes inert
+     *         (immediately remove the subscription), but we may need to rollback the request, and we don't want to
+     *         release the handle until the pending request is finished (whereupon we will remove the binding).
      */
     public boolean isEmpty() {
         return active.size == 0 && paused.size == 0 && retainers.size == 0;
@@ -656,14 +719,6 @@ public final class ClientTableState extends TableConfig {
         JsLog.debug("Unretainment", retainer, " releasing ", LazyString.of(this::toStringMinimal));
         retainers.delete(retainer);
         connection.scheduleCheck(this);
-    }
-
-    public boolean isActiveEmpty() {
-        return active.size == 0;
-    }
-
-    public boolean hasNoSubscriptions() {
-        return JsItr.iterate(active.values()).allMatch(binding -> binding.getSubscription() == null);
     }
 
     public boolean hasSort(Sort candidate) {
@@ -715,59 +770,6 @@ public final class ClientTableState extends TableConfig {
         return had;
     }
 
-    public void setDesiredViewport(JsTable table, long firstRow, long lastRow, Column[] columns) {
-        touch();
-        final ActiveTableBinding sub = active.get(table);
-        assert sub != null : "You cannot set the desired viewport on a non-active state + table combination";
-        final RangeSet rows = sub.setDesiredViewport(firstRow, lastRow, columns);
-        // let event loop eat multiple viewport sets and only apply the last one (winner of who gets spot in map)
-        LazyPromise.runLater(() -> {
-            if (sub.getRows() == rows) {
-                // winner! now, on to the next hurdle... ensuring we have columns.
-                // TODO: have an onColumnsReady callback, for cases when we know we're only waiting on
-                // non-column-modifying operations
-                onRunning(self -> {
-                    if (sub.getRows() == rows) {
-                        // winner again!
-                        applyViewport(sub);
-                    }
-                }, JsRunnable.doNothing());
-            }
-        });
-    }
-
-    public void subscribe(JsTable table, Column[] columns) {
-        touch();
-        ActiveTableBinding binding = active.get(table);
-        assert binding != null : "No active binding found for table " + table;
-
-        onRunning(self -> {
-            binding.setSubscriptionPending(true);
-
-            if (getHandle().equals(table.getHandle())) {
-                binding.setViewport(new Viewport(null, makeBitset(columns)));
-                table.getConnection().scheduleCheck(this);
-            }
-        }, JsRunnable.doNothing());
-    }
-
-    private void applyViewport(ActiveTableBinding sub) {
-        sub.setSubscriptionPending(false);
-        final JsTable table = sub.getTable();
-        // make sure we're still the tail entry before trying to apply viewport
-        assert isRunning() : "Do not call this method unless you are in a running state! " + this;
-        if (getHandle().equals(table.getHandle())) {
-            final RangeSet rows = sub.getRows();
-            Column[] desired = sub.getColumns();
-            if (Js.isFalsy(desired)) {
-                desired = getColumns();
-            }
-            Viewport vp = new Viewport(rows, makeBitset(desired));
-            sub.setViewport(vp);
-            table.refreshViewport(this, vp);
-        }
-    }
-
     public BitSet makeBitset(Column[] columns) {
         BitSet bitSet = new BitSet(getTableDef().getColumns().length);
         Arrays.stream(columns).flatMapToInt(Column::getRequiredColumns).forEach(bitSet::set);
@@ -782,16 +784,6 @@ public final class ClientTableState extends TableConfig {
         assert iterate(active.keys()).noneMatch(paused::has) : "State cannot be active and paused at the same time; "
                 + "active: " + active + " paused: " + paused;
         return iterate(active.keys()).plus(iterate(paused.keys()));
-    }
-
-    public void forActiveSubscriptions(JsBiConsumer<JsTable, Viewport> callback) {
-        JsItr.forEach(active, (table, binding) -> {
-            if (binding.getSubscription() != null) {
-                assert binding.getTable() == table
-                        : "Corrupt binding between " + table + " and " + binding + " in " + active;
-                callback.apply((JsTable) table, binding.getSubscription());
-            }
-        });
     }
 
     public void forActiveTables(JsConsumer<JsTable> callback) {
@@ -816,24 +808,6 @@ public final class ClientTableState extends TableConfig {
         for (HasLifecycle item : JsItr.iterate(items.values())) {
             callback.apply(item);
         }
-    }
-
-    public void handleDelta(DeltaUpdates updates) {
-        assert size != SIZE_UNINITIALIZED : "Received delta before receiving initial size";
-        setSize(size + updates.getAdded().size() - updates.getRemoved().size());
-        forActiveSubscriptions((table, subscription) -> {
-            assert table.getHandle().equals(handle);
-            // we are the active state of this table, so forward along the delta.
-            table.handleDelta(this, updates);
-        });
-    }
-
-    public void setSubscribed(boolean subscribed) {
-        this.subscribed = subscribed;
-    }
-
-    public boolean isSubscribed() {
-        return subscribed;
     }
 
     @Override
@@ -905,15 +879,9 @@ public final class ClientTableState extends TableConfig {
         assert was != null : "Cannot unpause a table that is not paused " + this;
         paused.delete(table);
         active.set(table, was.getActiveBinding());
-        // Now, we want to put back the viewport, if any.
-        refreshSubscription(was.getActiveBinding());
-    }
-
-    private void refreshSubscription(ActiveTableBinding sub) {
-        assert active.get(sub.getTable()) == sub;
-        if (!sub.isSubscriptionPending()) {
-            sub.maybeReviveSubscription();
-        }
+        // Now, we want to put back the viewport, if any, since those may be still used by the original table
+        ActiveTableBinding sub = was.getActiveBinding();
+        table.maybeReviveSubscription();
     }
 
     public MappedIterable<ClientTableState> ancestors() {
@@ -925,7 +893,7 @@ public final class ClientTableState extends TableConfig {
     }
 
     /**
-     * Look through paused tables to see if any of them have been
+     * Look through paused tables to see if any of them have been closed.
      */
     public void cleanup() {
         assert JsItr.iterate(active.keys()).allMatch(t -> !t.isAlive() || t.state() == this)
@@ -1011,9 +979,7 @@ public final class ClientTableState extends TableConfig {
         Uint8Array flightSchemaMessage = def.getSchemaHeader_asU8();
         isStatic = def.getIsStatic();
 
-        Schema schema = WebBarrageUtils.readSchemaMessage(flightSchemaMessage);
-
-        setTableDef(WebBarrageUtils.readTableDefinition(schema));
+        setTableDef(WebBarrageUtils.readTableDefinition(WebBarrageUtils.readSchemaMessage(flightSchemaMessage)));
 
         setResolution(ResolutionState.RUNNING);
         setSize(Long.parseLong(def.getSize()));

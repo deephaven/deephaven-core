@@ -72,7 +72,7 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                                     .then(totals -> {
                                         assertEquals(3, totals.getColumns().length);
                                         assertEquals(1, totals.getSize(), DELTA);
-                                        totals.setViewport(0, 100, null, null);
+                                        totals.setViewport(0, 100, null, null, null);
 
                                         return waitForEvent(totals, JsTable.EVENT_UPDATED,
                                                 checkTotals(totals, 5, 6., 0, "a1"), 2508);
@@ -81,7 +81,7 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                                     .then(totals -> {
                                         assertEquals(3, totals.getColumns().length);
                                         assertEquals(1, totals.getSize(), DELTA);
-                                        totals.setViewport(0, 100, null, null);
+                                        totals.setViewport(0, 100, null, null, null);
 
                                         return waitForEvent(totals, JsTable.EVENT_UPDATED,
                                                 checkTotals(totals, 5, 6.0, 0., "a2"), 2509);
@@ -112,7 +112,7 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                                     totalTables[0] = totals;
                                     assertEquals(3, totals.getColumns().length);
                                     assertEquals(1, totals.getSize(), DELTA);
-                                    totals.setViewport(0, 100, null, null);
+                                    totals.setViewport(0, 100, null, null, null);
 
                                     // confirm the normal totals match the filtered data
                                     return waitForEvent(totals, JsTable.EVENT_UPDATED,
@@ -123,7 +123,7 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                                     totalTables[1] = totals;
                                     assertEquals(3, totals.getColumns().length);
                                     assertEquals(1, totals.getSize(), DELTA);
-                                    totals.setViewport(0, 100, null, null);
+                                    totals.setViewport(0, 100, null, null, null);
 
                                     // confirm the grand totals are unchanged
                                     return waitForEvent(totals, JsTable.EVENT_UPDATED,
@@ -238,7 +238,7 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                                         totalTables[0] = totals;
                                         assertEquals(4, totals.getColumns().length);
                                         assertEquals(2, totals.getSize(), DELTA);
-                                        totals.setViewport(0, 100, null, null);
+                                        totals.setViewport(0, 100, null, null, null);
 
                                         // confirm the normal totals match the filtered data
                                         return waitForEvent(totals, JsTable.EVENT_UPDATED, checkTotals(totals, "a1",
@@ -250,7 +250,7 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                                         totalTables[1] = totals;
                                         assertEquals(4, totals.getColumns().length);
                                         assertEquals(2, totals.getSize(), DELTA);
-                                        totals.setViewport(0, 100, null, null);
+                                        totals.setViewport(0, 100, null, null, null);
 
                                         // confirm the grand totals include the missing row...
                                         return waitForEvent(totals, JsTable.EVENT_UPDATED, checkTotals(totals, "a2",
@@ -269,8 +269,8 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                     totalTables[1].applyFilter(new FilterCondition[] {
                             totalTables[1].findColumn("J__Avg").filter().eq(FilterValue.ofNumber(5.0))
                     });
-                    totalTables[0].setViewport(0, 100, null, null);
-                    totalTables[1].setViewport(0, 100, null, null);
+                    totalTables[0].setViewport(0, 100, null, null, null);
+                    totalTables[1].setViewport(0, 100, null, null, null);
 
                     return promiseAllThen(table,
                             totalPromises[0] = waitForEvent(totalTables[0], JsTable.EVENT_UPDATED,
@@ -327,7 +327,7 @@ public class TotalsTableTestGwt extends AbstractAsyncGwtTestCase {
                             (JsTotalsTable totals) -> {
                                 assertEquals(4, totals.getColumns().length);
                                 assertEquals(2, totals.getSize(), DELTA);
-                                totals.setViewport(0, 100, null, null);
+                                totals.setViewport(0, 100, null, null, null);
 
                                 // confirm the grand totals are unchanged
                                 return waitForEvent(totals, JsTable.EVENT_UPDATED, update -> {
