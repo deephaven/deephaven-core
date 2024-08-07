@@ -25,47 +25,32 @@ import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.data.WebBarrageSubscription;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.fu.LazyPromise;
+import io.deephaven.web.shared.data.Range;
 import io.deephaven.web.shared.data.RangeSet;
 import io.deephaven.web.shared.data.ShiftedRange;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
 import jsinterop.base.Js;
+import jsinterop.base.JsPropertyMap;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.PrimitiveIterator;
 
+import static io.deephaven.web.client.api.JsTable.EVENT_ROWADDED;
+import static io.deephaven.web.client.api.JsTable.EVENT_ROWREMOVED;
+import static io.deephaven.web.client.api.JsTable.EVENT_ROWUPDATED;
 import static io.deephaven.web.client.api.barrage.WebBarrageUtils.serializeRanges;
 
 /**
- * Encapsulates event handling around table subscriptions by "cheating" and wrapping up a JsTable instance to do the
- * real dirty work. This allows a viewport to stay open on the old table if desired, while this one remains open.
- * <p>
- * As this just wraps a JsTable (and thus a CTS), it holds its own flattened, pUT'd handle to get deltas from the
- * server. The setViewport method can be used to adjust this table instead of creating a new one.
- * <p>
- * Existing methods on JsTable like setViewport and getViewportData are intended to proxy to this, which then will talk
- * to the underlying handle and accumulated data.
- * <p>
- * As long as we keep the existing methods/events on JsTable, close() is not required if no other method is called, with
- * the idea then that the caller did not actually use this type. This means that for every exported method (which then
- * will mark the instance of "actually being used, please don't automatically close me"), there must be an internal
- * version called by those existing JsTable method, which will allow this instance to be cleaned up once the JsTable
- * deems it no longer in use.
- * <p>
- * Note that if the caller does close an instance, this shuts down the JsTable's use of this (while the converse is not
- * true), providing a way to stop the server from streaming updates to the client.
- * <p>
- * This object serves as a "handle" to a subscription, allowing it to be acted on directly or canceled outright. If you
- * retain an instance of this, you have two choices - either only use it to call `close()` on it to stop the table's
- * viewport without creating a new one, or listen directly to this object instead of the table for data events, and
- * always call `close()` when finished. Calling any method on this object other than close() will result in it
- * continuing to live on after `setViewport` is called on the original table, or after the table is modified.
- *
- *
- *
+ * This object serves as a "handle" to a subscription, allowing it to be acted on directly or canceled outright. If you retain
+ * an instance of this, you have two choices - either only use it to call `close()` on it to stop the table's viewport without
+ * creating a new one, or listen directly to this object instead of the table for data events, and always call `close()` when
+ * finished. Calling any method on this object other than close() will result in it continuing to live on after `setViewport`
+ * is called on the original table, or after the table is modified.
  */
 @TsName(namespace = "dh")
 public class TableViewportSubscription extends AbstractTableSubscription {
@@ -124,32 +109,51 @@ public class TableViewportSubscription extends AbstractTableSubscription {
         if (rowsAdded.size() != rowsRemoved.size() && originalActive) {
             fireEventWithDetail(JsTable.EVENT_SIZECHANGED, size());
         }
-
-        // TODO fire legacy table row added/updated/modified events
-        // for (Integer index : mergeResults.added) {
-        // CustomEventInit<JsPropertyMap<?>> addedEvent = CustomEventInit.create();
-        // addedEvent.setDetail(wrap(vpd.getRows().getAt(index), index));
-        // fireEvent(EVENT_ROWADDED, addedEvent);
-        // }
-        // for (Integer index : mergeResults.modified) {
-        // CustomEventInit<JsPropertyMap<?>> addedEvent = CustomEventInit.create();
-        // addedEvent.setDetail(wrap(vpd.getRows().getAt(index), index));
-        // fireEvent(EVENT_ROWUPDATED, addedEvent);
-        // }
-        // for (Integer index : mergeResults.removed) {
-        // CustomEventInit<JsPropertyMap<?>> addedEvent = CustomEventInit.create();
-        // addedEvent.setDetail(wrap(vpd.getRows().getAt(index), index));
-        // fireEvent(EVENT_ROWREMOVED, addedEvent);
-        // }
-
-        // TODO Rewrite shifts as adds/removed/modifies? in the past we ignored them...
         UpdateEventData detail = new UpdateEventData(barrageSubscription, rowStyleColumn, getColumns(), rowsAdded,
                 rowsRemoved, totalMods, shifted);
+
         detail.setOffset(this.viewportRowSet.getFirstRow());
         this.viewportData = detail;
         CustomEventInit<UpdateEventData> event = CustomEventInit.create();
         event.setDetail(detail);
         refire(new CustomEvent<>(EVENT_UPDATED, event));
+
+        if (hasListeners(EVENT_ROWADDED) || hasListeners(EVENT_ROWREMOVED) || hasListeners(EVENT_ROWUPDATED)) {
+            RangeSet modifiedCopy = totalMods.copy();
+            // exclude added items from being marked as modified, since we're hiding shifts from api consumers
+            rowsAdded.rangeIterator().forEachRemaining(modifiedCopy::removeRange);
+            RangeSet removedCopy = rowsRemoved.copy();
+            RangeSet addedCopy = rowsAdded.copy();
+
+            // Any position which was both added and removed should instead be marked as modified, this cleans
+            // up anything excluded above that didn't otherwise make sense
+            for (PrimitiveIterator.OfLong it = removedCopy.indexIterator(); it.hasNext(); ) {
+                long index = it.nextLong();
+                if (addedCopy.contains(index)) {
+                    addedCopy.removeRange(new Range(index, index));
+                    it.remove();
+                    modifiedCopy.addRange(new Range(index, index));
+                }
+            }
+
+            fireLegacyEventOnRowsetEntries(EVENT_ROWADDED, detail, rowsAdded);
+            fireLegacyEventOnRowsetEntries(EVENT_ROWUPDATED, detail, totalMods);
+            fireLegacyEventOnRowsetEntries(EVENT_ROWREMOVED, detail, rowsRemoved);
+        }
+    }
+
+    private void fireLegacyEventOnRowsetEntries(String eventName, UpdateEventData updateEventData, RangeSet rowset) {
+        if (hasListeners(eventName)) {
+            rowset.indexIterator().forEachRemaining((long row) -> {
+                CustomEventInit<JsPropertyMap<?>> addedEvent = CustomEventInit.create();
+                addedEvent.setDetail(wrap(updateEventData.getRows().getAt((int) row), (int) row));
+                fireEvent(eventName, addedEvent);
+            });
+        }
+    }
+
+    private static JsPropertyMap<?> wrap(SubscriptionRow rowObj, int row) {
+        return JsPropertyMap.of("row", rowObj, "index", (double) row);
     }
 
     @Override
@@ -175,6 +179,16 @@ public class TableViewportSubscription extends AbstractTableSubscription {
             throw new IllegalArgumentException(type + " != " + e.type);
         }
         refire(e);
+    }
+
+    @Override
+    public boolean hasListeners(String name) {
+        if (originalActive && state() == original.state()) {
+            if (original.hasListeners(name)) {
+                return true;
+            }
+        }
+        return super.hasListeners(name);
     }
 
     /**

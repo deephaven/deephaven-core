@@ -54,7 +54,4 @@ public interface SubscriptionTableData extends TableData {
      */
     @JsProperty
     JsRangeSet getModified();
-
-    // @JsProperty
-    // JsShiftData getShifts();
 }
