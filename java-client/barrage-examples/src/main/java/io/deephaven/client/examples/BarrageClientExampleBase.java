@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 abstract class BarrageClientExampleBase implements Callable<Void> {
 
     private static final ClientChannelFactory CLIENT_CHANNEL_FACTORY = ClientChannelFactoryDefaulter.builder()
-            .userAgent(BarrageSessionFactoryConfig.userAgent(Collections.singletonList("deephaven-examples")))
+            .userAgent(BarrageSessionFactoryConfig.userAgent(Collections.singletonList("deephaven-barrage-examples")))
             .build();
 
     @ArgGroup(exclusive = false)

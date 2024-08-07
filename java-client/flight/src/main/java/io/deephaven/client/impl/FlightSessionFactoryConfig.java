@@ -28,8 +28,10 @@ public abstract class FlightSessionFactoryConfig {
             Stream.of(UserAgentUtility.versionProperty("flight", Flight.class)))
             .collect(Collectors.toList()));
 
+    private static final String DEEPHAVEN_JAVA_CLIENT_FLIGHT = "deephaven-java-client-flight";
+
     private static final ClientChannelFactory CLIENT_CHANNEL_FACTORY = ClientChannelFactoryDefaulter.builder()
-            .userAgent(userAgent(Collections.singletonList("deephaven-java-client-flight")))
+            .userAgent(userAgent(Collections.singletonList(DEEPHAVEN_JAVA_CLIENT_FLIGHT)))
             .build();
 
     public static Builder builder() {
@@ -41,7 +43,7 @@ public abstract class FlightSessionFactoryConfig {
      * user-agent</a> with {@code grpc-java}, {@code deephaven}, and {@code flight} versions, with the addition of
      * {@code extraProperties}.
      *
-     * @param extraProperties thee extra properties
+     * @param extraProperties the extra properties
      * @return the user-agent
      * @see UserAgentUtility#userAgent(List)
      */
@@ -58,7 +60,8 @@ public abstract class FlightSessionFactoryConfig {
     public abstract ClientConfig clientConfig();
 
     /**
-     * The client channel factory. By default, is a factory that sets a user-agent based on {@link #userAgent(List)}.
+     * The client channel factory. By default, is a factory that sets a user-agent which includes relevant versions (see
+     * {@link #userAgent(List)}) and the property {@value DEEPHAVEN_JAVA_CLIENT_FLIGHT}.
      */
     @Default
     public ClientChannelFactory clientChannelFactory() {

@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 abstract class FlightExampleBase implements Callable<Void> {
 
     static final ClientChannelFactory CLIENT_CHANNEL_FACTORY = ClientChannelFactoryDefaulter.builder()
-            .userAgent(FlightSessionFactoryConfig.userAgent(Collections.singletonList("deephaven-examples")))
+            .userAgent(FlightSessionFactoryConfig.userAgent(Collections.singletonList("deephaven-flight-examples")))
             .build();
 
     @ArgGroup(exclusive = false)

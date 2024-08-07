@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 abstract class SessionExampleBase implements Callable<Void> {
 
     private static final ClientChannelFactory CLIENT_CHANNEL_FACTORY = ClientChannelFactoryDefaulter.builder()
-            .userAgent(SessionFactoryConfig.userAgent(Collections.singletonList("deephaven-examples")))
+            .userAgent(SessionFactoryConfig.userAgent(Collections.singletonList("deephaven-session-examples")))
             .build();
 
     @ArgGroup(exclusive = false)

@@ -25,8 +25,10 @@ public abstract class SessionFactoryConfig {
     static final List<String> VERSION_PROPERTIES =
             Collections.singletonList(UserAgentUtility.versionProperty("deephaven", SessionFactoryConfig.class));
 
+    private static final String DEEPHAVEN_JAVA_CLIENT_SESSION = "deephaven-java-client-session";
+
     private static final ClientChannelFactory CLIENT_CHANNEL_FACTORY = ClientChannelFactoryDefaulter.builder()
-            .userAgent(userAgent(Collections.singletonList("deephaven-java-client-session")))
+            .userAgent(userAgent(Collections.singletonList(DEEPHAVEN_JAVA_CLIENT_SESSION)))
             .build();
 
     public static Builder builder() {
@@ -38,7 +40,7 @@ public abstract class SessionFactoryConfig {
      * user-agent</a> with {@code grpc-java} and {@code deephaven} versions, with the addition of
      * {@code extraProperties}.
      *
-     * @param extraProperties thee extra properties
+     * @param extraProperties the extra properties
      * @return the user-agent
      * @see UserAgentUtility#userAgent(List)
      */
@@ -55,7 +57,8 @@ public abstract class SessionFactoryConfig {
     public abstract ClientConfig clientConfig();
 
     /**
-     * The client channel factory. By default, is a factory that sets a user-agent based on {@link #userAgent(List)}.
+     * The client channel factory. By default, is a factory that sets a user-agent which includes relevant versions (see
+     * {@link #userAgent(List)}) and the property {@value DEEPHAVEN_JAVA_CLIENT_SESSION}.
      */
     @Default
     public ClientChannelFactory clientChannelFactory() {

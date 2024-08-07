@@ -61,12 +61,27 @@ public abstract class ClientChannelFactoryDefaulter implements ClientChannelFact
 
     public interface Builder {
 
+        /**
+         * Initializes the value for the {@link ClientChannelFactoryDefaulter#delegate() delegate} attribute.
+         * <p>
+         * If not set, this attribute will have a default value as returned by the initializer of
+         * {@link ClientChannelFactoryDefaulter#delegate()}.
+         */
         Builder delegate(ClientChannelFactory delegate);
 
+        /**
+         * Initializes the optional value {@link ClientChannelFactoryDefaulter#ssl() ssl} to ssl.
+         */
         Builder ssl(SSLConfig ssl);
 
+        /**
+         * Initializes the optional value {@link ClientChannelFactoryDefaulter#userAgent() userAgent} to userAgent.
+         */
         Builder userAgent(String userAgent);
 
+        /**
+         * Builds a new {@link ClientChannelFactoryDefaulter}.
+         */
         ClientChannelFactoryDefaulter build();
     }
 }

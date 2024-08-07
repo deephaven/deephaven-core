@@ -26,10 +26,12 @@ public abstract class BarrageSessionFactoryConfig {
     static final List<String> VERSION_PROPERTIES = Collections.unmodifiableList(Stream.concat(
             FlightSessionFactoryConfig.VERSION_PROPERTIES.stream(),
             Stream.of(UserAgentUtility.versionProperty("barrage", BarrageMessageWrapper.class)))
-            .collect(Collectors.toList()));
+            .collect(Collectors.toUnmodifiableList()));
+
+    private static final String DEEPHAVEN_JAVA_CLIENT_BARRAGE = "deephaven-java-client-barrage";
 
     private static final ClientChannelFactory CLIENT_CHANNEL_FACTORY = ClientChannelFactoryDefaulter.builder()
-            .userAgent(userAgent(Collections.singletonList("deephaven-java-client-barrage")))
+            .userAgent(userAgent(List.of(DEEPHAVEN_JAVA_CLIENT_BARRAGE)))
             .build();
 
     public static Builder builder() {
@@ -41,7 +43,7 @@ public abstract class BarrageSessionFactoryConfig {
      * user-agent</a> with {@code grpc-java}, {@code deephaven}, {@code flight}, and {@code barrage} versions, with the
      * addition of {@code extraProperties}.
      *
-     * @param extraProperties thee extra properties
+     * @param extraProperties the extra properties
      * @return the user-agent
      * @see UserAgentUtility#userAgent(List)
      */
@@ -58,7 +60,8 @@ public abstract class BarrageSessionFactoryConfig {
     public abstract ClientConfig clientConfig();
 
     /**
-     * The client channel factory. By default, is a factory that sets a user-agent based on {@link #userAgent(List)}.
+     * The client channel factory. By default, is a factory that sets a user-agent which includes relevant versions (see
+     * {@link #userAgent(List)}) and the property {@value DEEPHAVEN_JAVA_CLIENT_BARRAGE}.
      */
     @Default
     public ClientChannelFactory clientChannelFactory() {
