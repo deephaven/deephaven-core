@@ -30,7 +30,7 @@ jobs:
           cat gradle.properties
 
       - name: Generate and submit dependency graph
-        uses: gradle/actions/dependency-submission@v3
+        uses: gradle/actions/dependency-submission@v4
         env:
           # Dependencies derived from :server-jetty-app runtimeClasspath get a "runtime" scope and everything else gets
           # a "development" scope. Ideally, gradle would be able to pass along the finer dependency details (for
