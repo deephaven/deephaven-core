@@ -134,7 +134,7 @@ public class ColumnDefinition {
 
         return makeColumn(index,
                 this,
-                format == null || !format.isFormatColumn() ? null : format.getColumnIndex(),
+                style == null ? null : style.getColumnIndex(),
                 style == null ? null : style.getColumnIndex(),
                 isPartitionColumn(),
                 format == null || format.isFormatColumn() ? null : format.getColumnIndex(),

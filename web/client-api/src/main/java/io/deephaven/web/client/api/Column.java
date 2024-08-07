@@ -298,12 +298,12 @@ public class Column {
     }
 
     public Column withFormatStringColumnIndex(int formatStringColumnIndex) {
-        return new Column(jsIndex, index, formatStringColumnIndex, styleColumnIndex, type, name, isPartitionColumn,
+        return new Column(jsIndex, index, styleColumnIndex, styleColumnIndex, type, name, isPartitionColumn,
                 formatStringColumnIndex, description, isInputTableKeyColumn, isSortable);
     }
 
     public Column withStyleColumnIndex(int styleColumnIndex) {
-        return new Column(jsIndex, index, formatStringColumnIndex, styleColumnIndex, type, name, isPartitionColumn,
+        return new Column(jsIndex, index, styleColumnIndex, styleColumnIndex, type, name, isPartitionColumn,
                 formatStringColumnIndex, description, isInputTableKeyColumn, isSortable);
     }
 }
