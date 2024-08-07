@@ -725,6 +725,10 @@ class Table(JObjectWrapper):
         table. The "stamp key" is the last row of the trigger_table, limited by the stamp_cols. If trigger_table is
         empty, the "stamp key" will be represented by NULL values.
 
+        Note: the trigger_table must be append-only when the history flag is set to True. If the trigger_table is not
+        append-only and has modified or removed rows in its updates, the result snapshot table will be put in a failure
+        state and become unusable.
+
         Args:
             trigger_table (Table): the trigger table
             stamp_cols (Union[str, Sequence[str]): The columns from trigger_table that form the "stamp key", may be

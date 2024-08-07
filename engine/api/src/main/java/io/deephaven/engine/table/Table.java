@@ -44,8 +44,7 @@ public interface Table extends
     TableDefinition getDefinition();
 
     /**
-     * Provides column metadata in Table form. Convenience method, behaves exactly the same as
-     * getDefinition().getColumnDefinitionsTable().
+     * Provides column metadata in Table form.
      *
      * @return A Table of metadata about this Table's columns.
      */

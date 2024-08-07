@@ -2401,7 +2401,9 @@ public class QueryTable extends BaseTable<QueryTable> {
     private Table snapshotHistory(final String nuggetName, final Table baseTable,
             Collection<? extends JoinAddition> stampColumns) {
         return QueryPerformanceRecorder.withNugget(nuggetName, baseTable.sizeForInstrumentation(),
-                () -> maybeViewForSnapshot(stampColumns).snapshotHistoryInternal(baseTable));
+                () -> ((QueryTable) withAttributes(Map.of(APPEND_ONLY_TABLE_ATTRIBUTE, TRUE)))
+                        .maybeViewForSnapshot(stampColumns)
+                        .snapshotHistoryInternal(baseTable));
     }
 
     private Table snapshotHistoryInternal(final Table baseTable) {

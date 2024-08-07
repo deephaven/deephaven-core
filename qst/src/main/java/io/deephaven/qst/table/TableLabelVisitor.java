@@ -202,6 +202,11 @@ public class TableLabelVisitor extends TableVisitorGeneric<String> {
         return "snapshot()";
     }
 
+    @Override
+    public String visit(MultiJoinTable multiJoinTable) {
+        return "multiJoin()";
+    }
+
     private String join(String name, Join j) {
         return String.format("%s([%s],[%s])",
                 name,
