@@ -100,6 +100,7 @@ def gwtUnitTest = tasks.register('gwtUnitTest', Test) { t ->
             ].join(' '),
             'gwt.persistentunitcachedir': layout.buildDirectory.dir('unitTest-unitCache').get().asFile.absolutePath,
     ]
+    t.classpath += tasks.getByName('gwtCompile').src
     t.include '**/ClientUnitTestSuite.class'
     t.useJUnit()
     t.scanForTestClasses = false
