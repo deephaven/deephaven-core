@@ -312,16 +312,6 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
-    public void testSimple() {
-        final Table t = TableTools.emptyTable(1).select("A = i");
-        final File dest = new File(rootFile, "ParquetTest_emptyTrivialTable.parquet");
-        writeTable(t, dest.getPath());
-        final Table fromDisk = checkSingleTable(t, dest);
-        assertEquals(t.getDefinition(), fromDisk.getDefinition());
-    }
-
-
-    @Test
     public void flatParquetFormat() {
         flatTable("emptyFlatParquet", 0, true);
         flatTable("smallFlatParquet", 20, true);

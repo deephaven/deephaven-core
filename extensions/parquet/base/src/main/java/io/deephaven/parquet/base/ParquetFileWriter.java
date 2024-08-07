@@ -45,8 +45,8 @@ public final class ParquetFileWriter {
     private final ParquetMetadataFileWriter metadataFileWriter;
 
     public ParquetFileWriter(
-            final URI destForMetadata,
             final OutputStream destOutputStream,
+            final URI destForMetadata,
             final int targetPageSize,
             final ByteBufferAllocator allocator,
             final MessageType type,
@@ -79,7 +79,7 @@ public final class ParquetFileWriter {
                 new ParquetMetadata(new FileMetaData(type, extraMetaData, Version.FULL_VERSION), blocks);
         serializeFooter(footer, countingOutput);
         metadataFileWriter.addParquetFileMetadata(destForMetadata, footer);
-        // Flush any buffered data, do not close the stream since it is managed by the calling code
+        // Flush any buffered data, do not close the stream since it is managed by the layer above
         countingOutput.flush();
         compressorAdapter.close();
     }

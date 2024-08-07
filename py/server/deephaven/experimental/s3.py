@@ -80,7 +80,9 @@ class S3Instructions(JObjectWrapper):
                 this; it is most useful when connecting to non-AWS, S3-compatible APIs.
             part_size_mib (int): the size of each part (in MiB) to upload when writing to S3, defaults to 10 MiB. The
                 minimum allowed part size is 5 MiB. Setting a higher value may increase throughput, but may also
-                increase memory usage.
+                increase memory usage. Note that the maximum number of parts allowed for a single file is 10,000.
+                Therefore, for 10 MiB part size, the maximum size of a single file that can be written is roughly
+                100k MiB (or about 98 GiB).
             num_concurrent_parts (int): the maximum number of parts that can be uploaded concurrently when writing to S3
              without blocking, defaults to 64. Setting a higher value may increase throughput, but may also increase
              memory usage.

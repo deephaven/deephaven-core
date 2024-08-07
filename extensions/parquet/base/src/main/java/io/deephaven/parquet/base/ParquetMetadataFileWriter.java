@@ -26,7 +26,7 @@ public interface ParquetMetadataFileWriter {
 
     /**
      * Write the combined metadata to the provided streams and clear the metadata accumulated so far. The output streams
-     * are managed by the caller and should not be closed by this method.
+     * should be managed by the caller and will not be closed by this API.
      *
      * @param metadataOutputStream The output stream for the {@value ParquetUtils#METADATA_FILE_NAME} file
      * @param commonMetadataOutputStream The output stream for the {@value ParquetUtils#COMMON_METADATA_FILE_NAME} file

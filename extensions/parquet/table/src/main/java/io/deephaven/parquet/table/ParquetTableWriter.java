@@ -193,9 +193,10 @@ public class ParquetTableWriter {
                     tableInfoBuilder, metadataFileWriter, computedCache);
         } catch (Exception e) {
             if (cleanupDestinations != null) {
+                final boolean isFileURI = FILE_URI_SCHEME.equals(dest.getScheme());
                 for (final URI cleanupDest : cleanupDestinations) {
                     try {
-                        if (FILE_URI_SCHEME.equals(cleanupDest.getScheme())) {
+                        if (isFileURI) {
                             // noinspection ResultOfMethodCallIgnored
                             new File(cleanupDest).delete();
                         }
@@ -411,7 +412,7 @@ public class ParquetTableWriter {
 
         final Map<String, String> extraMetaData = new HashMap<>(tableMeta);
         extraMetaData.put(METADATA_KEY, tableInfoBuilder.build().serializeToJSON());
-        return new ParquetFileWriter(destForMetadata, destOutputStream,
+        return new ParquetFileWriter(destOutputStream, destForMetadata,
                 writeInstructions.getTargetPageSize(), new HeapByteBufferAllocator(), mappedSchema.getParquetSchema(),
                 writeInstructions.getCompressionCodecName(), extraMetaData, metadataFileWriter);
     }

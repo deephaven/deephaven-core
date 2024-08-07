@@ -19,6 +19,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.util.PartitionFormatter;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
+import io.deephaven.parquet.base.ParquetFileReader;
 import io.deephaven.parquet.base.ParquetMetadataFileWriter;
 import io.deephaven.parquet.base.NullParquetMetadataFileWriter;
 import io.deephaven.util.SafeCloseable;
@@ -411,7 +412,7 @@ public class ParquetTools {
      * @param indexColumns Names of index columns, stored as String list for each index
      * @param parquetColumnNameArr Names of index columns for the parquet file, stored as String[] for each index
      * @param dest The destination URI for the main table containing these index columns
-     * @param isDestFileURI Whether the destination is a "file" URI
+     * @param isDestFileURI Whether the destination is a {@value ParquetFileReader#FILE_URI_SCHEME} URI
      * @param channelProvider The channel provider to use for creating channels to the index files
      */
     private static List<ParquetTableWriter.IndexWritingInfo> indexInfoBuilderHelper(
@@ -862,7 +863,7 @@ public class ParquetTools {
                 installShadowFile(commonMetadataDestFile, shadowCommonMetadataFile, isDestFileURI);
             }
         } catch (Exception e) {
-            // Try to close all the shadow output streams
+            // Try to abort all the shadow output streams
             for (final OutputStream outputStream : shadowOutputStreams) {
                 if (outputStream != null) {
                     try {
@@ -872,27 +873,24 @@ public class ParquetTools {
                     }
                 }
             }
-            for (final URI dest : destList) {
-                rollbackShadowFiles(dest, isDestFileURI);
-            }
-            for (final URI shadowDest : shadowDestList) {
-                if (FILE_URI_SCHEME.equals(shadowDest.getScheme())) {
+            if (isDestFileURI) {
+                for (final URI dest : destList) {
+                    rollbackShadowFiles(dest, isDestFileURI);
+                }
+                for (final URI shadowDest : shadowDestList) {
                     // noinspection ResultOfMethodCallIgnored
                     new File(shadowDest).delete();
                 }
-            }
-            for (final URI firstCreatedDir : firstCreatedDirs) {
-                if (firstCreatedDir == null) {
-                    continue;
+                for (final URI firstCreatedDir : firstCreatedDirs) {
+                    if (firstCreatedDir == null) {
+                        continue;
+                    }
+                    final File firstCreatedDirFile = new File(firstCreatedDir);
+                    log.error().append(
+                            "Error in table writing, cleaning up potentially incomplete table destination path starting from ")
+                            .append(firstCreatedDirFile.getAbsolutePath()).append(e).endl();
+                    FileUtils.deleteRecursivelyOnNFS(firstCreatedDirFile);
                 }
-                if (!FILE_URI_SCHEME.equals(firstCreatedDir.getScheme())) {
-                    continue;
-                }
-                final File firstCreatedDirFile = new File(firstCreatedDir);
-                log.error().append(
-                        "Error in table writing, cleaning up potentially incomplete table destination path starting from ")
-                        .append(firstCreatedDirFile.getAbsolutePath()).append(e).endl();
-                FileUtils.deleteRecursivelyOnNFS(firstCreatedDirFile);
             }
             throw new UncheckedDeephavenException("Error writing parquet tables", e);
         }

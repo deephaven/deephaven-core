@@ -36,7 +36,6 @@ class S3AsyncClientFactory {
 
     private static final Logger log = LoggerFactory.getLogger(S3AsyncClientFactory.class);
     private static final Map<HttpClientConfig, SdkAsyncHttpClient> httpAsyncClientCache = new ConcurrentHashMap<>();
-    private static final Map<HttpClientConfig, SdkHttpClient> httpClientCache = new ConcurrentHashMap<>();
 
     private static volatile Executor futureCompletionExecutor;
     private static volatile ScheduledExecutorService scheduledExecutor;
@@ -110,15 +109,6 @@ class S3AsyncClientFactory {
         final HttpClientConfig config = new HttpClientConfig(instructions.maxConcurrentRequests(),
                 instructions.connectionTimeout());
         return httpAsyncClientCache.computeIfAbsent(config, key -> AwsCrtAsyncHttpClient.builder()
-                .maxConcurrency(config.maxConcurrentRequests())
-                .connectionTimeout(config.connectionTimeout())
-                .build());
-    }
-
-    private static SdkHttpClient getOrBuildHttpClient(@NotNull final S3Instructions instructions) {
-        final HttpClientConfig config = new HttpClientConfig(instructions.maxConcurrentRequests(),
-                instructions.connectionTimeout());
-        return httpClientCache.computeIfAbsent(config, key -> AwsCrtHttpClient.builder()
                 .maxConcurrency(config.maxConcurrentRequests())
                 .connectionTimeout(config.connectionTimeout())
                 .build());

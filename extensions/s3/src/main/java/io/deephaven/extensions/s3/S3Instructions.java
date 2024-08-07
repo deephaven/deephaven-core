@@ -33,14 +33,14 @@ public abstract class S3Instructions implements LogOutputAppendable {
     private static final int DEFAULT_NUM_CONCURRENT_PARTS = 64;
 
     /**
-     * We set maximum part size to 10 MB. The maximum number of parts allowed is 10,000. This means maximum size of a
-     * single file that we can write is roughly 100k MB (or about 98 GB). For uploading larger files, user would need to
-     * set a larger part size.
+     * We set default part size to 10 MiB. The maximum number of parts allowed is 10,000. This means maximum size of a
+     * single file that we can write is roughly 100k MiB (or about 98 GiB). For uploading larger files, user would need
+     * to set a larger part size.
      *
      * @see <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/qfacts.html">Amazon S3 User Guide</a>
      */
-    private static final int MIN_PART_SIZE_MB = 5;
-    private static final int DEFAULT_PART_SIZE_MB = 10;
+    private static final int DEFAULT_PART_SIZE_MiB = 10;
+    private static final int MIN_PART_SIZE_MiB = 5;
 
     static final S3Instructions DEFAULT = builder().build();
 
@@ -111,15 +111,15 @@ public abstract class S3Instructions implements LogOutputAppendable {
     }
 
     /**
-     * The size of each part (in MiB) to upload when writing to S3, defaults to {@value #DEFAULT_PART_SIZE_MB} MiB. The
-     * minimum allowed part size is {@value #MIN_PART_SIZE_MB} MiB. Setting a higher value may increase throughput, but
+     * The size of each part (in MiB) to upload when writing to S3, defaults to {@value #DEFAULT_PART_SIZE_MiB} MiB. The
+     * minimum allowed part size is {@value #MIN_PART_SIZE_MiB} MiB. Setting a higher value may increase throughput, but
      * may also increase memory usage. Note that the maximum number of parts allowed for a single file is 10,000.
-     * Therefore, for {@value #DEFAULT_PART_SIZE_MB} MiB part size, the maximum size of a single file that can be
-     * written is {@value #DEFAULT_PART_SIZE_MB} * 10,000 MiB.
+     * Therefore, for {@value #DEFAULT_PART_SIZE_MiB} MiB part size, the maximum size of a single file that can be
+     * written is {@value #DEFAULT_PART_SIZE_MiB} * 10,000 MiB.
      */
     @Default
     public int partSizeMib() {
-        return DEFAULT_PART_SIZE_MB; // 5MB
+        return DEFAULT_PART_SIZE_MiB;
     }
 
     /**
@@ -214,8 +214,8 @@ public abstract class S3Instructions implements LogOutputAppendable {
 
     @Check
     final void boundsCheckPartSize() {
-        if (partSizeMib() < MIN_PART_SIZE_MB) {
-            throw new IllegalArgumentException("partSizeMib(=" + partSizeMib() + ") must be >= " + MIN_PART_SIZE_MB +
+        if (partSizeMib() < MIN_PART_SIZE_MiB) {
+            throw new IllegalArgumentException("partSizeMib(=" + partSizeMib() + ") must be >= " + MIN_PART_SIZE_MiB +
                     " MiB");
         }
     }

@@ -22,7 +22,6 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -81,7 +80,7 @@ class S3OutputStream extends OutputStream {
                 uploadId = initiateMultipartUpload();
             }
 
-            // We use buffers and futures in a round-robin fashion
+            // We use request slots in a circular queue fashion
             final int nextSlotId = (nextPartNumber - 1) % numConcurrentParts;
             if (pendingRequests.size() == nextSlotId) {
                 pendingRequests.add(new OutgoingRequest(partSize));
@@ -158,7 +157,7 @@ class S3OutputStream extends OutputStream {
                 .build();
         try {
             s3AsyncClient.abortMultipartUpload(abortRequest).get();
-        } catch (final InterruptedException | ExecutionException | CancellationException e) {
+        } catch (final InterruptedException | ExecutionException e) {
             throw handleS3Exception(e, String.format("aborting multipart upload for uri %s", uri), s3Instructions);
         }
         uploadId = null;
@@ -198,7 +197,7 @@ class S3OutputStream extends OutputStream {
         final CreateMultipartUploadResponse response;
         try {
             response = future.get();
-        } catch (final InterruptedException | ExecutionException | CancellationException e) {
+        } catch (final InterruptedException | ExecutionException e) {
             throw handleS3Exception(e, String.format("initiating multipart upload for uri %s", uri), s3Instructions);
         }
         return response.uploadId();
@@ -233,7 +232,7 @@ class S3OutputStream extends OutputStream {
         final UploadPartResponse uploadPartResponse;
         try {
             uploadPartResponse = request.future.get();
-        } catch (final InterruptedException | ExecutionException | CancellationException e) {
+        } catch (final InterruptedException | ExecutionException e) {
             throw handleS3Exception(e, String.format("waiting for part %d for uri %s to complete uploading",
                     request.partNumber, uri), s3Instructions);
         }
@@ -263,7 +262,7 @@ class S3OutputStream extends OutputStream {
                 .build();
         try {
             s3AsyncClient.completeMultipartUpload(completeRequest).get();
-        } catch (final InterruptedException | ExecutionException | CancellationException e) {
+        } catch (final InterruptedException | ExecutionException e) {
             throw handleS3Exception(e, String.format("completing multipart upload for uri %s", uri), s3Instructions);
         }
     }
