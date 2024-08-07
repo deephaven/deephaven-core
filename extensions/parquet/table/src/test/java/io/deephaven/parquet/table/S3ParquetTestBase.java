@@ -103,7 +103,7 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
         final ParquetInstructions instructions = ParquetInstructions.builder()
                 .setSpecialInstructions(s3Instructions(
                         S3Instructions.builder()
-                                .partSizeMib(5)
+                                .partSize(5 << 20)
                                 .numConcurrentParts(5)
                                 .readTimeout(Duration.ofSeconds(10)))
                         .build())

@@ -22,7 +22,7 @@ public class S3InstructionsTest {
         assertThat(instructions.connectionTimeout()).isEqualTo(Duration.ofSeconds(2));
         assertThat(instructions.readTimeout()).isEqualTo(Duration.ofSeconds(2));
         assertThat(instructions.credentials()).isEqualTo(Credentials.defaultCredentials());
-        assertThat(instructions.partSizeMib()).isEqualTo(10);
+        assertThat(instructions.partSize()).isEqualTo(10485760);
         assertThat(instructions.numConcurrentParts()).isEqualTo(64);
         assertThat(instructions.endpointOverride()).isEmpty();
     }
@@ -142,10 +142,10 @@ public class S3InstructionsTest {
         try {
             S3Instructions.builder()
                     .regionName("some-region")
-                    .partSizeMib(0)
+                    .partSize(1024)
                     .build();
         } catch (IllegalArgumentException e) {
-            assertThat(e).hasMessageContaining("partSizeMib");
+            assertThat(e).hasMessageContaining("partSize");
         }
     }
 

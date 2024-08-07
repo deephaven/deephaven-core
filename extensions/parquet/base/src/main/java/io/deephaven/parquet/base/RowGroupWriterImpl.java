@@ -3,8 +3,8 @@
 //
 package io.deephaven.parquet.base;
 
+import com.google.common.io.CountingOutputStream;
 import io.deephaven.parquet.compress.CompressorAdapter;
-import org.apache.commons.io.output.CountingOutputStream;
 import org.apache.parquet.bytes.ByteBufferAllocator;
 import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.hadoop.metadata.ColumnChunkMetaData;

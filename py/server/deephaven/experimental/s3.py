@@ -46,7 +46,7 @@ class S3Instructions(JObjectWrapper):
                  secret_access_key: Optional[str] = None,
                  anonymous_access: bool = False,
                  endpoint_override: Optional[str] = None,
-                 part_size_mib: Optional[int] = None,
+                 part_size: Optional[int] = None,
                  num_concurrent_parts: Optional[int] = None):
 
         """
@@ -78,7 +78,7 @@ class S3Instructions(JObjectWrapper):
                 anonymous access. Can't be combined with other credentials. By default, is False.
             endpoint_override (str): the endpoint to connect to. Callers connecting to AWS do not typically need to set
                 this; it is most useful when connecting to non-AWS, S3-compatible APIs.
-            part_size_mib (int): the size of each part (in MiB) to upload when writing to S3, defaults to 10 MiB. The
+            part_size (int): the size of each part (in bytes) to upload when writing to S3, defaults to 10 MiB. The
                 minimum allowed part size is 5 MiB. Setting a higher value may increase throughput, but may also
                 increase memory usage. Note that the maximum number of parts allowed for a single file is 10,000.
                 Therefore, for 10 MiB part size, the maximum size of a single file that can be written is roughly
@@ -130,8 +130,8 @@ class S3Instructions(JObjectWrapper):
             if endpoint_override is not None:
                 builder.endpointOverride(endpoint_override)
 
-            if part_size_mib is not None:
-                builder.partSizeMib(part_size_mib)
+            if part_size is not None:
+                builder.partSize(part_size)
 
             if num_concurrent_parts is not None:
                 builder.numConcurrentParts(num_concurrent_parts)

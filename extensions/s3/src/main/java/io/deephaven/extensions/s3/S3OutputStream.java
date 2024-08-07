@@ -7,6 +7,7 @@ import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.S3Uri;
+import software.amazon.awssdk.services.s3.internal.multipart.SdkPojoConversionUtils;
 import software.amazon.awssdk.services.s3.model.AbortMultipartUploadRequest;
 import software.amazon.awssdk.services.s3.model.CompleteMultipartUploadRequest;
 import software.amazon.awssdk.services.s3.model.CompletedMultipartUpload;
@@ -57,7 +58,7 @@ class S3OutputStream extends OutputStream {
         this.s3AsyncClient = s3AsyncClient;
         this.s3Instructions = s3Instructions;
 
-        this.partSize = s3Instructions.partSizeMib() * 1024 * 1024;
+        this.partSize = s3Instructions.partSize();
         this.numConcurrentParts = s3Instructions.numConcurrentParts();
         this.pendingRequests = new ArrayList<>(numConcurrentParts);
 
@@ -236,11 +237,7 @@ class S3OutputStream extends OutputStream {
             throw handleS3Exception(e, String.format("waiting for part %d for uri %s to complete uploading",
                     request.partNumber, uri), s3Instructions);
         }
-
-        completedParts.add(CompletedPart.builder()
-                .eTag(uploadPartResponse.eTag())
-                .partNumber(request.partNumber)
-                .build());
+        completedParts.add(SdkPojoConversionUtils.toCompletedPart(uploadPartResponse, request.partNumber));
         request.buffer.clear();
         request.future = null;
         request.partNumber = INVALID_PART_NUMBER;

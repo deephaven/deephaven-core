@@ -39,8 +39,8 @@ public abstract class S3Instructions implements LogOutputAppendable {
      *
      * @see <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/qfacts.html">Amazon S3 User Guide</a>
      */
-    private static final int DEFAULT_PART_SIZE_MiB = 10;
-    private static final int MIN_PART_SIZE_MiB = 5;
+    private static final int DEFAULT_PART_SIZE = 10 << 20; // 10 MiB
+    private static final int MIN_PART_SIZE = 5 << 20; // 5 MiB
 
     static final S3Instructions DEFAULT = builder().build();
 
@@ -111,15 +111,15 @@ public abstract class S3Instructions implements LogOutputAppendable {
     }
 
     /**
-     * The size of each part (in MiB) to upload when writing to S3, defaults to {@value #DEFAULT_PART_SIZE_MiB} MiB. The
-     * minimum allowed part size is {@value #MIN_PART_SIZE_MiB} MiB. Setting a higher value may increase throughput, but
+     * The size of each part (in bytes) to upload when writing to S3, defaults to {@value #DEFAULT_PART_SIZE}. The
+     * minimum allowed part size is {@value #MIN_PART_SIZE}. Setting a higher value may increase throughput, but
      * may also increase memory usage. Note that the maximum number of parts allowed for a single file is 10,000.
-     * Therefore, for {@value #DEFAULT_PART_SIZE_MiB} MiB part size, the maximum size of a single file that can be
-     * written is {@value #DEFAULT_PART_SIZE_MiB} * 10,000 MiB.
+     * Therefore, for {@value #DEFAULT_PART_SIZE} part size, the maximum size of a single file that can be written is
+     * {@value #DEFAULT_PART_SIZE} * 10,000 bytes.
      */
     @Default
-    public int partSizeMib() {
-        return DEFAULT_PART_SIZE_MiB;
+    public int partSize() {
+        return DEFAULT_PART_SIZE;
     }
 
     /**
@@ -163,7 +163,7 @@ public abstract class S3Instructions implements LogOutputAppendable {
         Builder endpointOverride(URI endpointOverride);
 
         // TODO better names for these two methods
-        Builder partSizeMib(int partSizeMib);
+        Builder partSize(int partSize);
 
         Builder numConcurrentParts(int numConcurrentParts);
 
@@ -214,8 +214,8 @@ public abstract class S3Instructions implements LogOutputAppendable {
 
     @Check
     final void boundsCheckPartSize() {
-        if (partSizeMib() < MIN_PART_SIZE_MiB) {
-            throw new IllegalArgumentException("partSizeMib(=" + partSizeMib() + ") must be >= " + MIN_PART_SIZE_MiB +
+        if (partSize() < MIN_PART_SIZE) {
+            throw new IllegalArgumentException("partSize(=" + partSize() + ") must be >= " + MIN_PART_SIZE +
                     " MiB");
         }
     }

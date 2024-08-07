@@ -3,7 +3,7 @@
 //
 package io.deephaven.parquet.base;
 
-import org.apache.commons.io.output.CountingOutputStream;
+import com.google.common.io.CountingOutputStream;
 import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import io.deephaven.parquet.compress.CompressorAdapter;
 import io.deephaven.parquet.compress.DeephavenCompressorAdapterFactory;
@@ -86,11 +86,11 @@ public final class ParquetFileWriter {
 
     public static void serializeFooter(final ParquetMetadata footer, final CountingOutputStream countingOutput)
             throws IOException {
-        final long footerIndex = countingOutput.getByteCount();
+        final long footerIndex = countingOutput.getCount();
         final org.apache.parquet.format.FileMetaData parquetMetadata =
                 metadataConverter.toParquetMetadata(VERSION, footer);
         writeFileMetaData(parquetMetadata, countingOutput);
-        BytesUtils.writeIntLittleEndian(countingOutput, (int) (countingOutput.getByteCount() - footerIndex));
+        BytesUtils.writeIntLittleEndian(countingOutput, (int) (countingOutput.getCount() - footerIndex));
         countingOutput.write(MAGIC);
     }
 
@@ -104,10 +104,10 @@ public final class ParquetFileWriter {
                     continue;
                 }
                 final ColumnChunkMetaData column = columns.get(cIndex);
-                final long offset = countingOutput.getByteCount();
+                final long offset = countingOutput.getCount();
                 Util.writeOffsetIndex(ParquetMetadataConverter.toParquetOffsetIndex(offsetIndex), countingOutput);
                 column.setOffsetIndexReference(
-                        new IndexReference(offset, (int) (countingOutput.getByteCount() - offset)));
+                        new IndexReference(offset, (int) (countingOutput.getCount() - offset)));
             }
         }
     }

@@ -3,13 +3,13 @@
 //
 package io.deephaven.parquet.table;
 
+import com.google.common.io.CountingOutputStream;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.parquet.base.ParquetFileWriter;
 import io.deephaven.parquet.base.ParquetMetadataFileWriter;
 import io.deephaven.parquet.base.ParquetUtils;
 import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
-import org.apache.commons.io.output.CountingOutputStream;
 import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.hadoop.metadata.FileMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
