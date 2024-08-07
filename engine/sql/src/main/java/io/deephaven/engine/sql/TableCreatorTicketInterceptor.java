@@ -7,10 +7,12 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.qst.TableCreator;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.InputTable;
+import io.deephaven.qst.table.MultiJoinInput;
 import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.TicketTable;
 import io.deephaven.qst.table.TimeTable;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -50,6 +52,11 @@ class TableCreatorTicketInterceptor implements TableCreator<Table> {
     @Override
     public Table of(InputTable inputTable) {
         return delegate.of(inputTable);
+    }
+
+    @Override
+    public Table multiJoin(List<MultiJoinInput<Table>> multiJoinInputs) {
+        return delegate.multiJoin(multiJoinInputs);
     }
 
     @Override

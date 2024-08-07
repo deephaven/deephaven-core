@@ -21,22 +21,22 @@ import io.deephaven.extensions.barrage.chunk.array.ArrayExpansionKernel;
 import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.DataInput;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Iterator;
-import java.util.PrimitiveIterator;
 
 public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGenerator<ObjectChunk<T, Values>> {
     private static final String DEBUG_NAME = "VarListChunkInputStreamGenerator";
 
+    private final Factory factory;
     private final Class<T> type;
 
     private WritableIntChunk<ChunkPositions> offsets;
     private ChunkInputStreamGenerator innerGenerator;
 
-    VarListChunkInputStreamGenerator(final Class<T> type, final ObjectChunk<T, Values> chunk, final long rowOffset) {
+    VarListChunkInputStreamGenerator(ChunkInputStreamGenerator.Factory factory, final Class<T> type,
+            final ObjectChunk<T, Values> chunk, final long rowOffset) {
         super(chunk, 0, rowOffset);
+        this.factory = factory;
         this.type = type;
     }
 
@@ -56,8 +56,7 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
         offsets = WritableIntChunk.makeWritableChunk(chunk.size() + 1);
 
         final WritableChunk<Values> innerChunk = kernel.expand(chunk, offsets);
-        innerGenerator = ChunkInputStreamGenerator.makeInputStreamGenerator(
-                chunkType, myType, myComponentType, innerChunk, 0);
+        innerGenerator = factory.makeInputStreamGenerator(chunkType, myType, myComponentType, innerChunk, 0);
     }
 
     @Override

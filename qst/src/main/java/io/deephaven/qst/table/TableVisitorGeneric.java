@@ -156,4 +156,9 @@ public abstract class TableVisitorGeneric<T> implements TableSpec.Visitor<T> {
     public T visit(DropColumnsTable dropColumnsTable) {
         return accept(dropColumnsTable);
     }
+
+    @Override
+    public T visit(MultiJoinTable multiJoinTable) {
+        return accept(multiJoinTable);
+    }
 }

@@ -17,6 +17,7 @@ import io.deephaven.engine.table.impl.select.WouldMatchPairFactory;
 import io.deephaven.api.util.ConcurrentMethod;
 import io.deephaven.engine.util.ColumnFormatting;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.annotations.FinalDefault;
 
 import javax.annotation.Nullable;
@@ -47,27 +48,7 @@ public interface TableDefaults extends Table, TableOperationsDefaults<Table, Tab
     @ConcurrentMethod
     @FinalDefault
     default Table meta() {
-        List<String> columnNames = new ArrayList<>();
-        List<String> columnDataTypes = new ArrayList<>();
-        List<String> columnTypes = new ArrayList<>();
-        List<Boolean> columnPartitioning = new ArrayList<>();
-        for (ColumnDefinition<?> cDef : getDefinition().getColumns()) {
-            columnNames.add(cDef.getName());
-            final Class<?> dataType = cDef.getDataType();
-            final String dataTypeName = dataType.getCanonicalName();
-            columnDataTypes.add(dataTypeName == null ? dataType.getName() : dataTypeName);
-            columnTypes.add(cDef.getColumnType().name());
-            columnPartitioning.add(cDef.isPartitioning());
-        }
-        final String[] resultColumnNames = {"Name", "DataType", "ColumnType", "IsPartitioning"};
-        final Object[] resultValues = {
-                columnNames.toArray(String[]::new),
-                columnDataTypes.toArray(String[]::new),
-                columnTypes.toArray(String[]::new),
-                columnPartitioning.toArray(new Boolean[0]),
-        };
-
-        return new InMemoryTable(resultColumnNames, resultValues);
+        return TableTools.metaTable(getDefinition());
     }
 
     @Override

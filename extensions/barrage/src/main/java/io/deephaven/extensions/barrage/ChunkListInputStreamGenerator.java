@@ -19,7 +19,8 @@ public class ChunkListInputStreamGenerator implements SafeCloseable {
     private final List<ChunkInputStreamGenerator> generators;
     private final ChunkInputStreamGenerator emptyGenerator;
 
-    public ChunkListInputStreamGenerator(Class<?> type, Class<?> componentType, List<Chunk<Values>> data,
+    public ChunkListInputStreamGenerator(ChunkInputStreamGenerator.Factory factory, Class<?> type,
+            Class<?> componentType, List<Chunk<Values>> data,
             ChunkType chunkType) {
         // create an input stream generator for each chunk
         ChunkInputStreamGenerator[] generators = new ChunkInputStreamGenerator[data.size()];
@@ -27,12 +28,12 @@ public class ChunkListInputStreamGenerator implements SafeCloseable {
         long rowOffset = 0;
         for (int i = 0; i < data.size(); ++i) {
             final Chunk<Values> valuesChunk = data.get(i);
-            generators[i] = ChunkInputStreamGenerator.makeInputStreamGenerator(chunkType, type, componentType,
+            generators[i] = factory.makeInputStreamGenerator(chunkType, type, componentType,
                     valuesChunk, rowOffset);
             rowOffset += valuesChunk.size();
         }
         this.generators = Arrays.asList(generators);
-        emptyGenerator = ChunkInputStreamGenerator.makeInputStreamGenerator(
+        emptyGenerator = factory.makeInputStreamGenerator(
                 chunkType, type, componentType, chunkType.getEmptyChunk(), 0);
     }
 
