@@ -3,13 +3,13 @@
 //
 package io.deephaven.extensions.barrage.chunk;
 
-import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.extensions.barrage.util.DefensiveDrainable;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.Nullable;
