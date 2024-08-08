@@ -76,7 +76,7 @@ tdunning = "3.2"
 trove = "3.0.3"
 undercouch = "2.15.1"
 univocity = "2.6.0"
-vertispan-nio = "1.0-alpha-1"
+vertispan-nio = "1.0-alpha-2"
 vertispan-ts-defs = "1.0.0-RC4"
 
 # test versions
