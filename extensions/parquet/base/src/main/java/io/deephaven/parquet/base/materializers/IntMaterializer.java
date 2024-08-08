@@ -1,12 +1,15 @@
 //
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit LongMaterializer and run "./gradlew replicatePageMaterializers" to regenerate
+//
+// @formatter:off
 package io.deephaven.parquet.base.materializers;
 
 import io.deephaven.parquet.base.PageMaterializer;
 import io.deephaven.parquet.base.PageMaterializerFactory;
 import org.apache.parquet.column.values.ValuesReader;
-
 
 public class IntMaterializer extends IntMaterializerBase implements PageMaterializer {
 
