@@ -207,7 +207,7 @@ public class WritableCharChunk<ATTR extends Any> extends CharChunk<ATTR> impleme
 
     @Override
     public final void sort(int start, int length) {
-        WritableChunkImpl.sort(data, offset + start, offset + start + length);
+        WritableChunkUtils.sort(data, offset + start, offset + start + length);
     }
 
     @Override
@@ -217,7 +217,7 @@ public class WritableCharChunk<ATTR extends Any> extends CharChunk<ATTR> impleme
 
     @Override
     public final void sortUnsafe(int start, int length) {
-        WritableChunkImpl.sortUnsafe(data, offset + start, offset + start + length);
+        WritableChunkUtils.sortUnsafe(data, offset + start, offset + start + length);
     }
 
     @Override

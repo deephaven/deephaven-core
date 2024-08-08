@@ -11,6 +11,7 @@ import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 
 import io.deephaven.util.type.TypeUtils;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 // region FillWithNullValueImports
@@ -173,7 +174,7 @@ public class WritableBooleanChunk<ATTR extends Any> extends BooleanChunk<ATTR> i
 
     @Override
     public final void sort(int start, int length) {
-        WritableChunkImpl.sort(data, offset + start, offset + start + length);
+        WritableChunkUtils.sort(data, offset + start, offset + start + length);
     }
 
     @Override
@@ -183,7 +184,7 @@ public class WritableBooleanChunk<ATTR extends Any> extends BooleanChunk<ATTR> i
 
     @Override
     public final void sortUnsafe(int start, int length) {
-        WritableChunkImpl.sortUnsafe(data, offset + start, offset + start + length);
+        WritableChunkUtils.sortUnsafe(data, offset + start, offset + start + length);
     }
 
     @Override

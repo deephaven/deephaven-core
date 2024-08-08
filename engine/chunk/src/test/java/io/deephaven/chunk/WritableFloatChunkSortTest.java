@@ -14,16 +14,13 @@ import java.util.Random;
 
 public class WritableFloatChunkSortTest {
 
-    private static final long NEG_ZERO_BITS = Float.floatToIntBits(-0.0f);
-    private static final long ZERO_BITS = Float.floatToIntBits(0.0f);
-
     private static final float[] SPECIAL_VALUES = new float[] {
             QueryConstants.NULL_FLOAT,
             Float.NEGATIVE_INFINITY,
-            Math.nextUp(QueryConstants.NULL_FLOAT),
+            QueryConstants.MIN_FINITE_FLOAT,
             -Float.MIN_NORMAL,
-            -0.0f,
-            0.0f,
+            WritableChunkTestUtil.negativeZeroFloat(),
+            WritableChunkTestUtil.positiveZeroFloat(),
             Float.MIN_NORMAL,
             Math.nextDown(Float.MAX_VALUE),
             Float.MAX_VALUE,
@@ -44,10 +41,10 @@ public class WritableFloatChunkSortTest {
         final float[] x = new float[] {
                 QueryConstants.NULL_FLOAT,
                 Float.NEGATIVE_INFINITY,
-                Math.nextUp(QueryConstants.NULL_FLOAT),
+                QueryConstants.MIN_FINITE_FLOAT,
                 -Float.MIN_NORMAL,
-                0.0f,
-                -0.0f,
+                WritableChunkTestUtil.positiveZeroFloat(),
+                WritableChunkTestUtil.negativeZeroFloat(),
                 Float.MIN_NORMAL,
                 Math.nextDown(Float.MAX_VALUE),
                 Float.MAX_VALUE,
@@ -63,10 +60,10 @@ public class WritableFloatChunkSortTest {
         final float[] x = new float[] {
                 Float.NEGATIVE_INFINITY,
                 QueryConstants.NULL_FLOAT,
-                Math.nextUp(QueryConstants.NULL_FLOAT),
+                QueryConstants.MIN_FINITE_FLOAT,
                 -Float.MIN_NORMAL,
-                0.0f,
-                -0.0f,
+                WritableChunkTestUtil.negativeZeroFloat(),
+                WritableChunkTestUtil.positiveZeroFloat(),
                 Float.MIN_NORMAL,
                 Math.nextDown(Float.MAX_VALUE),
                 Float.MAX_VALUE,
@@ -83,10 +80,10 @@ public class WritableFloatChunkSortTest {
                 Float.NaN,
                 QueryConstants.NULL_FLOAT,
                 Float.NEGATIVE_INFINITY,
-                Math.nextUp(QueryConstants.NULL_FLOAT),
+                QueryConstants.MIN_FINITE_FLOAT,
                 -Float.MIN_NORMAL,
-                -0.0f,
-                0.0f,
+                WritableChunkTestUtil.negativeZeroFloat(),
+                WritableChunkTestUtil.positiveZeroFloat(),
                 Float.MIN_NORMAL,
                 Math.nextDown(Float.MAX_VALUE),
                 Float.MAX_VALUE,
@@ -99,7 +96,10 @@ public class WritableFloatChunkSortTest {
     @Test
     public void zeros() {
         // This is really a test of our test, giving a bit more confidence that isSorted is correct
-        Assert.eqFalse(isSorted(new float[] {0.0f, -0.0f}, 0, 2), "isSorted(new float[] { 0.0f, -0.0f }, 0, 2)");
+        Assert.eqFalse(
+                isSorted(new float[] {WritableChunkTestUtil.positiveZeroFloat(),
+                        WritableChunkTestUtil.negativeZeroFloat()}, 0, 2),
+                "isSorted(new float[] { 0.0f, -0.0f }, 0, 2)");
     }
 
     @Test
@@ -146,7 +146,7 @@ public class WritableFloatChunkSortTest {
             final float a = x[i - 1];
             final float b = x[i];
             if (FloatComparisons.gt(a, b)
-                    || (Float.floatToIntBits(a) == ZERO_BITS && Float.floatToIntBits(b) == NEG_ZERO_BITS)) {
+                    || (WritableChunkTestUtil.isPositiveZero(a) && WritableChunkTestUtil.isNegativeZero(b))) {
                 return false;
             }
         }
@@ -165,7 +165,7 @@ public class WritableFloatChunkSortTest {
             return special(r);
         }
         if (x < 64) {
-            return Float.floatToIntBits(r.nextInt());
+            return WritableChunkTestUtil.randomBitsFloat(r);
         }
         return r.nextFloat();
     }

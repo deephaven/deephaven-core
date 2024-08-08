@@ -91,7 +91,7 @@ public class ByteCompactKernel implements CompactKernel {
         final int end = start + length;
         for (int rpos = start; rpos < end; ++rpos) {
             final byte nextValue = valueChunk.get(rpos);
-            if (!countNullAndNan && CompactKernelImpl.isNullOrNan(nextValue)) {
+            if (!countNullAndNan && isNullOrNan(nextValue)) {
                 continue;
             }
             if (wpos == -1 || !ByteComparisons.eq(nextValue, lastValue)) {
@@ -104,5 +104,11 @@ public class ByteCompactKernel implements CompactKernel {
         }
         // endregion compactAndCount
         return wpos + 1;
+    }
+
+    private static boolean isNullOrNan(byte value) {
+        // region isNullOrNan
+        return value == NULL_BYTE;
+        // endregion isNullOrNan
     }
 }

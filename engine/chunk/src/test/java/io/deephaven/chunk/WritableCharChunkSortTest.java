@@ -45,7 +45,7 @@ public class WritableCharChunkSortTest {
     public void biasedBruteSort() {
         final int maxArraySize = 3;
         // Any changes to sort logic should be manually verified with a larger number of iterations
-        final int numIters = 1000000;
+        final int numIters = 100;
         final long seed = System.currentTimeMillis();
         System.out.println("Seed: " + seed);
         final Random r = new Random(seed);

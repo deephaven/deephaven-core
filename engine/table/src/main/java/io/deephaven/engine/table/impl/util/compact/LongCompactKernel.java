@@ -91,7 +91,7 @@ public class LongCompactKernel implements CompactKernel {
         final int end = start + length;
         for (int rpos = start; rpos < end; ++rpos) {
             final long nextValue = valueChunk.get(rpos);
-            if (!countNullAndNan && CompactKernelImpl.isNullOrNan(nextValue)) {
+            if (!countNullAndNan && isNullOrNan(nextValue)) {
                 continue;
             }
             if (wpos == -1 || !LongComparisons.eq(nextValue, lastValue)) {
@@ -104,5 +104,11 @@ public class LongCompactKernel implements CompactKernel {
         }
         // endregion compactAndCount
         return wpos + 1;
+    }
+
+    private static boolean isNullOrNan(long value) {
+        // region isNullOrNan
+        return value == NULL_LONG;
+        // endregion isNullOrNan
     }
 }

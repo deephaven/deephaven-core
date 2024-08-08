@@ -91,7 +91,7 @@ public class IntCompactKernel implements CompactKernel {
         final int end = start + length;
         for (int rpos = start; rpos < end; ++rpos) {
             final int nextValue = valueChunk.get(rpos);
-            if (!countNullAndNan && CompactKernelImpl.isNullOrNan(nextValue)) {
+            if (!countNullAndNan && isNullOrNan(nextValue)) {
                 continue;
             }
             if (wpos == -1 || !IntComparisons.eq(nextValue, lastValue)) {
@@ -104,5 +104,11 @@ public class IntCompactKernel implements CompactKernel {
         }
         // endregion compactAndCount
         return wpos + 1;
+    }
+
+    private static boolean isNullOrNan(int value) {
+        // region isNullOrNan
+        return value == NULL_INT;
+        // endregion isNullOrNan
     }
 }

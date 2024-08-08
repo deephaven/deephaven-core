@@ -91,7 +91,7 @@ public class FloatCompactKernel implements CompactKernel {
         final int end = start + length;
         for (int rpos = start; rpos < end; ++rpos) {
             final float nextValue = valueChunk.get(rpos);
-            if (!countNullAndNan && CompactKernelImpl.isNullOrNan(nextValue)) {
+            if (!countNullAndNan && isNullOrNan(nextValue)) {
                 continue;
             }
             if (wpos == -1 || !FloatComparisons.eq(nextValue, lastValue)) {
@@ -104,5 +104,11 @@ public class FloatCompactKernel implements CompactKernel {
         }
         // endregion compactAndCount
         return wpos + 1;
+    }
+
+    private static boolean isNullOrNan(float value) {
+        // region isNullOrNan
+        return value == NULL_FLOAT || Float.isNaN(value);
+        // endregion isNullOrNan
     }
 }

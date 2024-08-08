@@ -85,6 +85,8 @@ public class ReplicateSourceAndChunkTests {
         fixupSortedDoubleGenerator(charToDouble(TASK,
                 "engine/test-utils/src/main/java/io/deephaven/engine/testutil/generator/SortedCharGenerator.java",
                 Collections.emptyMap()));
+
+        floatToAllFloatingPoints(TASK, "engine/chunk/src/test/java/io/deephaven/chunk/WritableFloatChunkSortTest.java");
     }
 
     private static void fixupObjectColumnSourceTest(String objectPath) throws IOException {

@@ -91,4 +91,10 @@ public class BooleanCompactKernel implements CompactKernel {
         // endregion compactAndCount
         return wpos + 1;
     }
+
+    private static boolean isNullOrNan(boolean value) {
+        // region isNullOrNan
+        return false;
+        // endregion isNullOrNan
+    }
 }

@@ -107,18 +107,16 @@ public interface WritableChunk<ATTR extends Any> extends Chunk<ATTR>, PoolableCh
 
     /**
      * Sort this chunk using Arrays-defined ordering. This is equivalent to Deephaven-defined ordering (with a
-     * floating-point exception for {@code -0.0 < 0.0}) when ignoring nulls (and NaNs for floating-point types). Callers
-     * should only use this when they know the array does not contain nulls (and NaNs for floating-point types), or when
-     * the caller plans to explicitly exclude nulls (and NaNs for floating-point types) after sorting, or when the
+     * floating-point exception for {@code -0.0 < 0.0}) when ignoring nulls. Callers should only use this when they know
+     * the array does not contain nulls, or when the caller plans to explicitly exclude nulls after sorting, or when the
      * caller does not actually care about the sorting order (for example, is using sort as a means of grouping data).
      */
     void sortUnsafe();
 
     /**
      * Sort this chunk's subset using Arrays-defined ordering. This is equivalent to Deephaven-defined ordering (with a
-     * floating-point exception for {@code -0.0 < 0.0}) when ignoring nulls (and NaNs for floating-point types). Callers
-     * should only use this when they know the array does not contain nulls (and NaNs for floating-point types), or when
-     * the caller plans to explicitly exclude nulls (and NaNs for floating-point types) after sorting, or when the
+     * floating-point exception for {@code -0.0 < 0.0}) when ignoring nulls. Callers should only use this when they know
+     * the array does not contain nulls, or when the caller plans to explicitly exclude nulls after sorting, or when the
      * caller does not actually care about the sorting order (for example, is using sort as a means of grouping data).
      */
     void sortUnsafe(int start, int length);

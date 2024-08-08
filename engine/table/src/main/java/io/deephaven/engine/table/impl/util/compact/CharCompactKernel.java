@@ -87,7 +87,7 @@ public class CharCompactKernel implements CompactKernel {
         final int end = start + length;
         for (int rpos = start; rpos < end; ++rpos) {
             final char nextValue = valueChunk.get(rpos);
-            if (!countNullAndNan && CompactKernelImpl.isNullOrNan(nextValue)) {
+            if (!countNullAndNan && isNullOrNan(nextValue)) {
                 continue;
             }
             if (wpos == -1 || !CharComparisons.eq(nextValue, lastValue)) {
@@ -100,5 +100,11 @@ public class CharCompactKernel implements CompactKernel {
         }
         // endregion compactAndCount
         return wpos + 1;
+    }
+
+    private static boolean isNullOrNan(char value) {
+        // region isNullOrNan
+        return value == NULL_CHAR;
+        // endregion isNullOrNan
     }
 }

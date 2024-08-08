@@ -211,7 +211,7 @@ public class WritableIntChunk<ATTR extends Any> extends IntChunk<ATTR> implement
 
     @Override
     public final void sort(int start, int length) {
-        WritableChunkImpl.sort(data, offset + start, offset + start + length);
+        WritableChunkUtils.sort(data, offset + start, offset + start + length);
     }
 
     @Override
@@ -221,7 +221,7 @@ public class WritableIntChunk<ATTR extends Any> extends IntChunk<ATTR> implement
 
     @Override
     public final void sortUnsafe(int start, int length) {
-        WritableChunkImpl.sortUnsafe(data, offset + start, offset + start + length);
+        WritableChunkUtils.sortUnsafe(data, offset + start, offset + start + length);
     }
 
     @Override
