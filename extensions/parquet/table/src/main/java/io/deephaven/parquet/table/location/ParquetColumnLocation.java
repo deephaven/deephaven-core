@@ -494,19 +494,59 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             if (intLogicalType.isSigned()) {
                 switch (intLogicalType.getBitWidth()) {
                     case 8:
-                        return Optional.of(ToBytePage.create(pageType));
+                        if (pageType.equals(byte.class)) {
+                            return Optional.of(ToBytePage.create(pageType));
+                        } else if (pageType.equals(short.class)) {
+                            return Optional.of(ToShortPage.create(pageType));
+                        } else if (pageType.equals(int.class)) {
+                            return Optional.of(ToIntPage.create(pageType));
+                        } else if (pageType.equals(long.class)) {
+                            return Optional.of(ToLongPage.createFromInt(pageType));
+                        }
+                        throw new IllegalArgumentException("Cannot convert parquet byte column to " + pageType);
                     case 16:
-                        return Optional.of(ToShortPage.create(pageType));
+                        if (pageType.equals(short.class)) {
+                            return Optional.of(ToShortPage.create(pageType));
+                        } else if (pageType.equals(int.class)) {
+                            return Optional.of(ToIntPage.create(pageType));
+                        } else if (pageType.equals(long.class)) {
+                            return Optional.of(ToLongPage.createFromInt(pageType));
+                        }
+                        throw new IllegalArgumentException("Cannot convert parquet short column to " + pageType);
                     case 32:
-                        return Optional.of(ToIntPage.create(pageType));
+                        if (pageType.equals(int.class)) {
+                            return Optional.of(ToIntPage.create(pageType));
+                        } else if (pageType.equals(long.class)) {
+                            return Optional.of(ToLongPage.createFromInt(pageType));
+                        }
+                        throw new IllegalArgumentException("Cannot convert parquet int column to " + pageType);
                     case 64:
                         return Optional.of(ToLongPage.create(pageType));
                 }
             } else {
                 switch (intLogicalType.getBitWidth()) {
-                    case 8:
+                    case 8: // Test these
+                        if (pageType.equals(char.class)) {
+                            return Optional.of(ToCharPage.create(pageType));
+                        } else if (pageType.equals(short.class)) {
+                            return Optional.of(ToShortPage.createFromUnsignedByte(pageType));
+                        } else if (pageType.equals(int.class)) {
+                            return Optional.of(ToIntPage.createFromUnsignedByte(pageType));
+                        } else if (pageType.equals(long.class)) {
+                            return Optional.of(ToLongPage.createFromUnsignedByte(pageType));
+                        }
+                        throw new IllegalArgumentException(
+                                "Cannot convert parquet unsigned byte column to " + pageType);
                     case 16:
-                        return Optional.of(ToCharPage.create(pageType));
+                        if (pageType.equals(char.class)) {
+                            return Optional.of(ToCharPage.create(pageType));
+                        } else if (pageType.equals(int.class)) {
+                            return Optional.of(ToIntPage.createFromUnsignedShort(pageType));
+                        } else if (pageType.equals(long.class)) {
+                            return Optional.of(ToLongPage.createFromUnsignedShort(pageType));
+                        }
+                        throw new IllegalArgumentException(
+                                "Cannot convert parquet unsigned short column to " + pageType);
                     case 32:
                         return Optional.of(ToLongPage.createFromUnsignedInt(pageType));
                 }

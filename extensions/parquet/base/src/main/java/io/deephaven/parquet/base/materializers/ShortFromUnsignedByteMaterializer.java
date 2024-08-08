@@ -7,27 +7,27 @@ import io.deephaven.parquet.base.PageMaterializer;
 import io.deephaven.parquet.base.PageMaterializerFactory;
 import org.apache.parquet.column.values.ValuesReader;
 
-public class ShortMaterializer extends ShortMaterializerBase implements PageMaterializer {
+public class ShortFromUnsignedByteMaterializer extends ShortMaterializerBase implements PageMaterializer {
 
     public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
-            return new ShortMaterializer(dataReader, (short) nullValue, numValues);
+            return new ShortFromUnsignedByteMaterializer(dataReader, (short) nullValue, numValues);
         }
 
         @Override
         public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
-            return new ShortMaterializer(dataReader, numValues);
+            return new ShortFromUnsignedByteMaterializer(dataReader, numValues);
         }
     };
 
     private final ValuesReader dataReader;
 
-    private ShortMaterializer(ValuesReader dataReader, int numValues) {
+    private ShortFromUnsignedByteMaterializer(ValuesReader dataReader, int numValues) {
         this(dataReader, (short) 0, numValues);
     }
 
-    private ShortMaterializer(ValuesReader dataReader, short nullValue, int numValues) {
+    private ShortFromUnsignedByteMaterializer(ValuesReader dataReader, short nullValue, int numValues) {
         super(nullValue, numValues);
         this.dataReader = dataReader;
     }
@@ -35,7 +35,7 @@ public class ShortMaterializer extends ShortMaterializerBase implements PageMate
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = (short) dataReader.readInteger();
+            data[ii] = (short) Byte.toUnsignedInt((byte) dataReader.readInteger());
         }
     }
 }

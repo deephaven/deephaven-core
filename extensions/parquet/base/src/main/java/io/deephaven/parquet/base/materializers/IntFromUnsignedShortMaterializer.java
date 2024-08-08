@@ -7,27 +7,27 @@ import io.deephaven.parquet.base.PageMaterializer;
 import io.deephaven.parquet.base.PageMaterializerFactory;
 import org.apache.parquet.column.values.ValuesReader;
 
-public class ShortMaterializer extends ShortMaterializerBase implements PageMaterializer {
+public class IntFromUnsignedShortMaterializer extends IntMaterializerBase implements PageMaterializer {
 
     public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
-            return new ShortMaterializer(dataReader, (short) nullValue, numValues);
+            return new IntFromUnsignedShortMaterializer(dataReader, (int) nullValue, numValues);
         }
 
         @Override
         public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
-            return new ShortMaterializer(dataReader, numValues);
+            return new IntFromUnsignedShortMaterializer(dataReader, numValues);
         }
     };
 
     private final ValuesReader dataReader;
 
-    private ShortMaterializer(ValuesReader dataReader, int numValues) {
-        this(dataReader, (short) 0, numValues);
+    private IntFromUnsignedShortMaterializer(ValuesReader dataReader, int numValues) {
+        this(dataReader, 0, numValues);
     }
 
-    private ShortMaterializer(ValuesReader dataReader, short nullValue, int numValues) {
+    private IntFromUnsignedShortMaterializer(ValuesReader dataReader, int nullValue, int numValues) {
         super(nullValue, numValues);
         this.dataReader = dataReader;
     }
@@ -35,7 +35,7 @@ public class ShortMaterializer extends ShortMaterializerBase implements PageMate
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = (short) dataReader.readInteger();
+            data[ii] = Short.toUnsignedInt((short) dataReader.readInteger());
         }
     }
 }
