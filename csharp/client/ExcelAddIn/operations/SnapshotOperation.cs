@@ -5,11 +5,13 @@ namespace Deephaven.DeephavenClient.ExcelAddIn.Operations;
 
 internal class SnapshotOperation : IOperation {
   private readonly string _tableName;
+  private readonly string _filter;
   private readonly bool _wantHeaders;
   private readonly IDataListener _sender;
 
-  public SnapshotOperation(string tableName, bool wantHeaders, IDataListener sender) {
+  public SnapshotOperation(string tableName, string filter, bool wantHeaders, IDataListener sender) {
     _tableName = tableName;
+    _filter = filter;
     _wantHeaders = wantHeaders;
     _sender = sender;
   }
@@ -29,7 +31,9 @@ internal class SnapshotOperation : IOperation {
 
     try {
       using var th = client.Manager.FetchTable(_tableName);
-      using var ct = th.ToClientTable();
+      using var filteredTh = _filter.Length != 0 ? th.Where(_filter) : null;
+      var thToUse = filteredTh ?? th;
+      using var ct = thToUse.ToClientTable();
       var result = Renderer.Render(ct, _wantHeaders);
       _sender.OnNext(result);
     } catch (Exception ex) {

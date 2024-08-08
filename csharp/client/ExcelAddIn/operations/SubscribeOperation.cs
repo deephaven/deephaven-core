@@ -5,13 +5,15 @@ namespace Deephaven.DeephavenClient.ExcelAddIn.Operations;
 
 internal class SubscribeOperation : IOperation {
   private readonly string _tableName;
+  private readonly string _filter;
   private readonly bool _wantHeaders;
   private readonly IDataListener _sender;
   private TableHandle? _currentTableHandle;
   private SubscriptionHandle? _currentSubHandle;
 
-  public SubscribeOperation(string tableName, bool wantHeaders, IDataListener sender) {
+  public SubscribeOperation(string tableName, string filter, bool wantHeaders, IDataListener sender) {
     _tableName = tableName;
+    _filter = filter;
     _wantHeaders = wantHeaders;
     _sender = sender;
   }
@@ -23,8 +25,8 @@ internal class SubscribeOperation : IOperation {
         _currentTableHandle.Unsubscribe(_currentSubHandle!);
         _currentSubHandle!.Dispose();
         _currentTableHandle.Dispose();
-        _currentSubHandle = null;
         _currentTableHandle = null;
+        _currentSubHandle = null;
       }
 
       if (message != null) {
@@ -39,7 +41,14 @@ internal class SubscribeOperation : IOperation {
 
       _sender.OnStatus($"Subscribing to \"{_tableName}\"");
 
-      _currentTableHandle = client.Manager.FetchTable(_tableName);
+      var thToUse = client.Manager.FetchTable(_tableName);
+      if (_filter.Length != 0) {
+        var filtered = thToUse.Where(_filter);
+        thToUse.Dispose();
+        thToUse = filtered;
+      }
+
+      _currentTableHandle = thToUse;
       _currentSubHandle = _currentTableHandle.Subscribe(new MyTickingCallback(_sender, _wantHeaders));
     } catch (Exception ex) {
       _sender.OnError(ex);
