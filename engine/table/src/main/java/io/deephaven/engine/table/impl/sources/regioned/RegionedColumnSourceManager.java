@@ -295,7 +295,7 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
                  * to close() the previous row sets for modified locations. This is not important for current
                  * implementations, since they always allocate new, flat RowSets.
                  */
-                rowSetSource.set(entry.regionIndex, entry.location.getRowSet());
+                rowSetSource.set(entry.regionIndex, entry.rowSetAtLastUpdate);
                 if (modifiedRegionBuilder != null) {
                     modifiedRegionBuilder.appendKey(entry.regionIndex);
                 }
@@ -346,7 +346,7 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
                                 wcs.set(entry.regionIndex, entry.location.getKey().getPartitionValue(key)));
                 // @formatter:on
                 locationSource.set(entry.regionIndex, entry.location);
-                rowSetSource.set(entry.regionIndex, entry.location.getRowSet());
+                rowSetSource.set(entry.regionIndex, entry.rowSetAtLastUpdate);
             });
         }
 
