@@ -36,7 +36,9 @@ public abstract class ClientConfig {
     public abstract Optional<SSLConfig> ssl();
 
     /**
-     * The user agent.
+     * The user-agent.
+     *
+     * @see <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#user-agents">grpc user-agents</a>
      */
     public abstract Optional<String> userAgent();
 
@@ -62,6 +64,11 @@ public abstract class ClientConfig {
      * Returns or creates a client config with {@link #ssl()} as {@code ssl}.
      */
     public abstract ClientConfig withSsl(SSLConfig ssl);
+
+    /**
+     * Returns or creates a client config with {@link #userAgent()} as {@code userAgent}.
+     */
+    public abstract ClientConfig withUserAgent(String userAgent);
 
     public interface Builder {
 

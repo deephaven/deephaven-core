@@ -4,12 +4,17 @@
 package io.deephaven.client.impl;
 
 import io.deephaven.annotations.BuildableStyle;
+import io.deephaven.client.grpc.UserAgentUtility;
 import io.grpc.ManagedChannel;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Immutable
 @BuildableStyle
@@ -17,8 +22,31 @@ public abstract class SessionFactoryConfig {
 
     private static final SessionConfig SESSION_CONFIG_EMPTY = SessionConfig.builder().build();
 
+    static final List<String> VERSION_PROPERTIES =
+            Collections.singletonList(UserAgentUtility.versionProperty("deephaven", SessionFactoryConfig.class));
+
+    private static final ClientChannelFactory CLIENT_CHANNEL_FACTORY = ClientChannelFactoryDefaulter.builder()
+            .userAgent(userAgent(Collections.singletonList("deephaven-java-client-session")))
+            .build();
+
     public static Builder builder() {
         return ImmutableSessionFactoryConfig.builder();
+    }
+
+    /**
+     * Constructs a <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#user-agents">grpc
+     * user-agent</a> with {@code grpc-java} and {@code deephaven} versions, with the addition of
+     * {@code extraProperties}.
+     *
+     * @param extraProperties thee extra properties
+     * @return the user-agent
+     * @see UserAgentUtility#userAgent(List)
+     */
+    public static String userAgent(List<String> extraProperties) {
+        return UserAgentUtility.userAgent(Stream.concat(
+                VERSION_PROPERTIES.stream(),
+                extraProperties.stream())
+                .collect(Collectors.toList()));
     }
 
     /**
@@ -27,11 +55,11 @@ public abstract class SessionFactoryConfig {
     public abstract ClientConfig clientConfig();
 
     /**
-     * The client channel factory. By default is {@link ClientChannelFactory#defaultInstance()}.
+     * The client channel factory. By default, is a factory that sets a user-agent based on {@link #userAgent(List)}.
      */
     @Default
     public ClientChannelFactory clientChannelFactory() {
-        return ClientChannelFactory.defaultInstance();
+        return CLIENT_CHANNEL_FACTORY;
     }
 
     /**

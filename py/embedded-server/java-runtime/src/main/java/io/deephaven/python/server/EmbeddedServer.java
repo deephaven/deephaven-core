@@ -4,8 +4,10 @@
 package io.deephaven.python.server;
 
 import dagger.Component;
+import dagger.Module;
+import dagger.Provides;
 import io.deephaven.auth.AuthenticationRequestHandler;
-import io.deephaven.client.ClientDefaultsModule;
+import io.deephaven.client.impl.BarrageSessionFactoryConfig;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.integrations.python.PyLogOutputStream;
@@ -15,7 +17,6 @@ import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferOutputStream;
 import io.deephaven.server.auth.CommunityAuthorizationModule;
 import io.deephaven.server.config.ServerConfig;
-import io.deephaven.time.calendar.CalendarsFromConfigurationModule;
 import io.deephaven.server.console.ExecutionContextModule;
 import io.deephaven.server.console.groovy.GroovyConsoleSessionModule;
 import io.deephaven.server.console.python.PythonConsoleSessionModule;
@@ -30,7 +31,11 @@ import io.deephaven.server.runner.DeephavenApiConfigModule;
 import io.deephaven.server.runner.DeephavenApiServer;
 import io.deephaven.server.runner.DeephavenApiServerModule;
 import io.deephaven.server.runner.MainHelper;
+import io.deephaven.server.session.ClientChannelFactoryModule;
+import io.deephaven.server.session.ClientChannelFactoryModule.UserAgent;
 import io.deephaven.server.session.ObfuscatingErrorTransformerModule;
+import io.deephaven.server.session.SslConfigModule;
+import io.deephaven.time.calendar.CalendarsFromConfigurationModule;
 import org.jpy.PyModule;
 import org.jpy.PyObject;
 
@@ -41,12 +46,25 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 public class EmbeddedServer {
 
-    @Singleton
-    @Component(modules = {
+    @Module(includes = {
+            ClientChannelFactoryModule.class,
+            SslConfigModule.class
+    })
+    public interface EmbeddedPythonClientChannelFactoryModule {
+
+        @Provides
+        @UserAgent
+        static String providesUserAgent() {
+            return BarrageSessionFactoryConfig.userAgent(List.of("deephaven-server-embedded"));
+        }
+    }
+
+    @Module(includes = {
             DeephavenApiServerModule.class,
             EmbeddedPyLogModule.class,
             DeephavenApiConfigModule.class,
@@ -59,10 +77,15 @@ public class EmbeddedServer {
             GroovyConsoleSessionModule.class,
             ExecutionContextModule.class,
             CommunityAuthorizationModule.class,
-            ClientDefaultsModule.class,
             ObfuscatingErrorTransformerModule.class,
             CalendarsFromConfigurationModule.class,
+            EmbeddedPythonClientChannelFactoryModule.class,
     })
+    public interface PythonServerModule {
+    }
+
+    @Singleton
+    @Component(modules = PythonServerModule.class)
     public interface PythonServerComponent extends JettyServerComponent {
         @Component.Builder
         interface Builder extends JettyServerComponent.Builder<Builder, PythonServerComponent> {
