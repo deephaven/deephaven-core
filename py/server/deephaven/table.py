@@ -3811,6 +3811,9 @@ def table_diff(t1: Table, t2: Table, max_diffs: int = 1, floating_comparison: Li
         if max_diffs < 1:
             raise ValueError("max_diffs must be greater than 0.")
 
+        if floating_comparison not in ['exact', 'absolute', 'relative']:
+            raise ValueError("floating_comparison must be one of 'exact', 'absolute', or 'relative'.")
+
         if floating_comparison != 'exact':
             diff_items.append(_JDiffItems.DoublesExact)
         if floating_comparison == 'relative':
