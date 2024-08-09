@@ -1146,7 +1146,7 @@ class TableTestCase(BaseTestCase):
             d = table_diff(t1, t2, max_diffs=10, ignore_column_order=True)
             self.assertEqual(d, "")
 
-        with self.subTest("diff - floating_comparison = 'absolute' - double"):
+        with self.subTest("diff - floating_comparison = 'absolute'-double"):
             t1 = empty_table(10).update(["A = i", "B = i + 1.0"])
             t2 = empty_table(10).update(["A = i", "B = i + 1.00001"])
             d = table_diff(t1, t2, max_diffs=10, floating_comparison='exact').split("\n")
