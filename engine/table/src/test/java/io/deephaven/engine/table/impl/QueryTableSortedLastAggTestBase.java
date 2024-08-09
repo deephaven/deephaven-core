@@ -8,14 +8,13 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
-import org.assertj.core.api.AbstractDoubleAssert;
-import org.assertj.core.api.AbstractFloatAssert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import static io.deephaven.engine.testutil.assertj.TableAssert.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Category(OutOfBandTest.class)
@@ -121,37 +120,25 @@ public abstract class QueryTableSortedLastAggTestBase {
     }
 
     public void check(char expected, char[] data) {
-        assertThat(charValue(sortedLast(data))).isEqualTo(expected);
+        assertThat(sortedLast(data))
+                .columnSourceValues(S1)
+                .chars()
+                .containsExactly(expected);
     }
 
     public void check(float expected, float[] data) {
-        at(floatValue(sortedLast(data))).isEqualTo(expected);
+        assertThat(sortedLast(data))
+                .columnSourceValues(S1)
+                .floats()
+                .usingElementComparator(Float::compare)
+                .containsExactly(expected);
     }
 
     public void check(double expected, double[] data) {
-        at(doubleValue(sortedLast(data))).isEqualTo(expected);
-    }
-
-    private static char charValue(Table x) {
-        assertThat(x.size()).isEqualTo(1);
-        return x.getColumnSource(S1, char.class).getChar(x.getRowSet().firstRowKey());
-    }
-
-    private static double floatValue(Table x) {
-        assertThat(x.size()).isEqualTo(1);
-        return x.getColumnSource(S1, float.class).getFloat(x.getRowSet().firstRowKey());
-    }
-
-    private static double doubleValue(Table x) {
-        assertThat(x.size()).isEqualTo(1);
-        return x.getColumnSource(S1, double.class).getDouble(x.getRowSet().firstRowKey());
-    }
-
-    private static AbstractFloatAssert<?> at(float x) {
-        return assertThat(x).usingComparator(Float::compareTo);
-    }
-
-    private static AbstractDoubleAssert<?> at(double x) {
-        return assertThat(x).usingComparator(Double::compareTo);
+        assertThat(sortedLast(data))
+                .columnSourceValues(S1)
+                .doubles()
+                .usingElementComparator(Double::compare)
+                .containsExactly(expected);
     }
 }

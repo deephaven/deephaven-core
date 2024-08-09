@@ -22,5 +22,5 @@ dependencies {
 
     implementation libs.junit4
     implementation platform(libs.junit.bom)
-    implementation libs.assertj
+    api libs.assertj
 }
