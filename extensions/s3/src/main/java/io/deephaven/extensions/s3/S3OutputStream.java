@@ -193,6 +193,8 @@ class S3OutputStream extends OutputStream {
                 .bucket(uri.bucket().orElseThrow())
                 .key(uri.key().orElseThrow())
                 .build();
+        // Note: We can add support for other parameters like tagging, storage class, encryption, permissions, etc. in
+        // future
         final CompletableFuture<CreateMultipartUploadResponse> future =
                 s3AsyncClient.createMultipartUpload(createMultipartUploadRequest);
         final CreateMultipartUploadResponse response;
