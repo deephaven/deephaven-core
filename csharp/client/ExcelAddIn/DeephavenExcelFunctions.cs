@@ -67,7 +67,7 @@ public static class DeephavenExcelFunctions {
       var op = new SubscribeOperation(tableName, filterVal, wantHeadersVal, oc);
       return new DeephavenExcelObservable(OperationManager, op, oc);
     };
-    return ExcelAsyncUtil.Observe(functionName, new[]{tableName, wantHeaders}, osrc);
+    return ExcelAsyncUtil.Observe(functionName, new[]{tableName, filter, wantHeaders}, osrc);
   }
 
   private static bool TryInterpretArgs(object filter, object wantHeaders, out string filterVal,
