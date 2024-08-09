@@ -9,8 +9,10 @@ import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 import software.amazon.awssdk.core.client.config.SdkAdvancedAsyncClientOption;
 import software.amazon.awssdk.core.retry.RetryMode;
+import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient;
 import software.amazon.awssdk.http.crt.AwsCrtAsyncHttpClient;
+import software.amazon.awssdk.http.crt.AwsCrtHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.S3AsyncClientBuilder;
@@ -33,7 +35,7 @@ class S3AsyncClientFactory {
             getOrComputeThreadCountProperty("S3.numScheduledExecutorThreads", 5);
 
     private static final Logger log = LoggerFactory.getLogger(S3AsyncClientFactory.class);
-    private static final Map<HttpClientConfig, SdkAsyncHttpClient> httpClientCache = new ConcurrentHashMap<>();
+    private static final Map<HttpClientConfig, SdkAsyncHttpClient> httpAsyncClientCache = new ConcurrentHashMap<>();
 
     private static volatile Executor futureCompletionExecutor;
     private static volatile ScheduledExecutorService scheduledExecutor;
@@ -43,7 +45,7 @@ class S3AsyncClientFactory {
                 .asyncConfiguration(
                         b -> b.advancedOption(SdkAdvancedAsyncClientOption.FUTURE_COMPLETION_EXECUTOR,
                                 ensureAsyncFutureCompletionExecutor()))
-                .httpClient(getOrBuildHttpClient(instructions))
+                .httpClient(getOrBuildHttpAsyncClient(instructions))
                 .overrideConfiguration(ClientOverrideConfiguration.builder()
                         // If we find that the STANDARD retry policy does not work well in all situations, we might
                         // try experimenting with ADAPTIVE retry policy, potentially with fast fail.
@@ -58,11 +60,11 @@ class S3AsyncClientFactory {
                 .credentialsProvider(instructions.awsV2CredentialsProvider());
         instructions.regionName().map(Region::of).ifPresent(builder::region);
         instructions.endpointOverride().ifPresent(builder::endpointOverride);
-        final S3AsyncClient ret = builder.build();
+        final S3AsyncClient s3AsyncClient = builder.build();
         if (log.isDebugEnabled()) {
             log.debug().append("Building S3AsyncClient with instructions: ").append(instructions).endl();
         }
-        return ret;
+        return s3AsyncClient;
     }
 
     private static class HttpClientConfig {
@@ -103,10 +105,10 @@ class S3AsyncClientFactory {
         }
     }
 
-    private static SdkAsyncHttpClient getOrBuildHttpClient(@NotNull final S3Instructions instructions) {
+    private static SdkAsyncHttpClient getOrBuildHttpAsyncClient(@NotNull final S3Instructions instructions) {
         final HttpClientConfig config = new HttpClientConfig(instructions.maxConcurrentRequests(),
                 instructions.connectionTimeout());
-        return httpClientCache.computeIfAbsent(config, key -> AwsCrtAsyncHttpClient.builder()
+        return httpAsyncClientCache.computeIfAbsent(config, key -> AwsCrtAsyncHttpClient.builder()
                 .maxConcurrency(config.maxConcurrentRequests())
                 .connectionTimeout(config.connectionTimeout())
                 .build());

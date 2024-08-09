@@ -6,6 +6,8 @@ package io.deephaven.parquet.base;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.net.URI;
 
 /**
  * Used to write {@value ParquetUtils#METADATA_FILE_NAME} and {@value ParquetUtils#COMMON_METADATA_FILE_NAME} files for
@@ -17,21 +19,18 @@ public interface ParquetMetadataFileWriter {
      * Add the parquet metadata for the provided parquet file to the list of metadata to be written to combined metadata
      * files.
      *
-     * @param parquetFilePath The parquet file destination path
+     * @param parquetFileURI The parquet file destination URI
      * @param metadata The parquet metadata corresponding to the parquet file
      */
-    void addParquetFileMetadata(String parquetFilePath, ParquetMetadata metadata);
+    void addParquetFileMetadata(URI parquetFileURI, ParquetMetadata metadata);
 
     /**
-     * Write the combined metadata files for all metadata accumulated so far and clear the list.
+     * Write the combined metadata to the provided streams and clear the metadata accumulated so far. The output streams
+     * should be managed by the caller and will not be closed by this API.
      *
-     * @param metadataFilePath The destination path for the {@value ParquetUtils#METADATA_FILE_NAME} file
-     * @param commonMetadataFilePath The destination path for the {@value ParquetUtils#COMMON_METADATA_FILE_NAME} file
+     * @param metadataOutputStream The output stream for the {@value ParquetUtils#METADATA_FILE_NAME} file
+     * @param commonMetadataOutputStream The output stream for the {@value ParquetUtils#COMMON_METADATA_FILE_NAME} file
      */
-    void writeMetadataFiles(String metadataFilePath, String commonMetadataFilePath) throws IOException;
-
-    /**
-     * Clear the list of metadata accumulated so far.
-     */
-    void clear();
+    void writeMetadataFiles(OutputStream metadataOutputStream, OutputStream commonMetadataOutputStream)
+            throws IOException;
 }

@@ -13,7 +13,6 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -231,13 +230,13 @@ public class CachedChannelProviderTest {
         }
 
         @Override
-        public SeekableByteChannel getWriteChannel(@NotNull String path, boolean append) {
-            return new TestMockChannel(count.getAndIncrement(), path);
+        public SeekableByteChannel getWriteChannel(@NotNull String uriStr, boolean append) {
+            return new TestMockChannel(count.getAndIncrement(), uriStr);
         }
 
         @Override
-        public SeekableByteChannel getWriteChannel(@NotNull Path path, boolean append) {
-            return new TestMockChannel(count.getAndIncrement(), path.toString());
+        public SeekableByteChannel getWriteChannel(@NotNull URI uri, boolean append) {
+            return new TestMockChannel(count.getAndIncrement(), uri.toString());
         }
 
         @Override

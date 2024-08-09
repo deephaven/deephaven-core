@@ -90,7 +90,9 @@ public final class ParquetUtils {
     }
 
     /**
-     * Resolve a relative path against a base URI. The path can be from Windows or Unix systems.
+     * Resolve a relative path against a base URI. The path can be from Windows or Unix systems. This method should be
+     * used if we expect the relative path to contain file separators or special characters, otherwise use
+     * {@code base.resolve(relativePath)}
      */
     public static URI resolve(final URI base, final String relativePath) {
         final URI relativeURI;

@@ -24,11 +24,11 @@ import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.ref.SoftReference;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -130,8 +130,27 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public SeekableByteChannel getWriteChannel(@NotNull final Path path, final boolean append) {
-        throw new UnsupportedOperationException("Writing to S3 is currently unsupported");
+    public SeekableByteChannel getWriteChannel(@NotNull final URI uri, final boolean append) {
+        throw new UnsupportedOperationException("Creating seekable write channels for S3 is currently unsupported, " +
+                "use getOutputStream instead");
+    }
+
+    @Override
+    public OutputStream getOutputStream(@NotNull final URI uri, final boolean append, final int bufferSizeHint) {
+        if (append) {
+            throw new UnsupportedOperationException("Appending to S3 is currently unsupported");
+        }
+        // bufferSizeHint is unused because s3 output stream is buffered internally into parts
+        return new S3OutputStream(uri, s3AsyncClient, s3Instructions);
+    }
+
+    @Override
+    public void abort(@NotNull final OutputStream outputStream) throws IOException {
+        if (!(outputStream instanceof S3OutputStream)) {
+            throw new IllegalArgumentException("Output stream is not an instance of S3OutputStream, but instance of "
+                    + outputStream.getClass());
+        }
+        ((S3OutputStream) outputStream).abort();
     }
 
     @Override
