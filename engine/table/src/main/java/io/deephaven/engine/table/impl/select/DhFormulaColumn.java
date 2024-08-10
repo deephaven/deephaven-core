@@ -35,6 +35,7 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.util.CompletionStageFuture;
 import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.ObjectVector;
+import io.deephaven.vector.VectorFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jpy.PyObject;
 
@@ -160,31 +161,10 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     }
 
     public static Class<?> getVectorType(Class<?> declaredType) {
-        if (!io.deephaven.util.type.TypeUtils.isConvertibleToPrimitive(declaredType) || declaredType == boolean.class
-                || declaredType == Boolean.class) {
+        if (declaredType == boolean.class || declaredType == Boolean.class) {
             return ObjectVector.class;
-        } else {
-            final String declaredTypeSimpleName =
-                    io.deephaven.util.type.TypeUtils.getUnboxedType(declaredType).getSimpleName();
-            switch (declaredTypeSimpleName) {
-                case "byte":
-                    return io.deephaven.vector.ByteVector.class;
-                case "short":
-                    return io.deephaven.vector.ShortVector.class;
-                case "char":
-                    return io.deephaven.vector.CharVector.class;
-                case "int":
-                    return io.deephaven.vector.IntVector.class;
-                case "long":
-                    return io.deephaven.vector.LongVector.class;
-                case "float":
-                    return io.deephaven.vector.FloatVector.class;
-                case "double":
-                    return io.deephaven.vector.DoubleVector.class;
-                default:
-                    throw new RuntimeException("Unexpected type " + declaredType);
-            }
         }
+        return VectorFactory.forElementType(TypeUtils.getUnboxedType(declaredType)).vectorType();
     }
 
     @Override

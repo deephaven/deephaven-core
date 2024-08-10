@@ -47,6 +47,12 @@ final public class ViewColumnLayer extends SelectOrViewColumnLayer {
                 .append(getLayerIndex()).append("}");
     }
 
+    @Override
+    public boolean allowCrossColumnParallelization() {
+        // this should not actually matter; but false seems like the safe answer for any formula
+        return false;
+    }
+
     private static ColumnSource<?> checkResultType(@NotNull final ColumnSource<?> cs) {
         final Class<?> resultType = cs.getType();
         if (!ALLOW_LIVENESS_REFERENT_RESULTS && LivenessReferent.class.isAssignableFrom(resultType)) {
@@ -55,11 +61,5 @@ final public class ViewColumnLayer extends SelectOrViewColumnLayer {
                     resultType));
         }
         return cs;
-    }
-
-    @Override
-    public boolean allowCrossColumnParallelization() {
-        // this should not actually matter; but false seems like the safe answer for any formula
-        return false;
     }
 }
