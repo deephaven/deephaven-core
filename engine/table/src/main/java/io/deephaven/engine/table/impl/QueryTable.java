@@ -1536,7 +1536,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
                     // Init all the rows by cooking up a fake Update
                     final TableUpdate fakeUpdate = new TableUpdateImpl(
-                            analyzer.alreadyFlattenedSources() ? RowSetFactory.flat(rowSet.size()) : rowSet.copy(),
+                            analyzer.flatResult() ? RowSetFactory.flat(rowSet.size()) : rowSet.copy(),
                             RowSetFactory.empty(), RowSetFactory.empty(),
                             RowSetShiftData.EMPTY, ModifiedColumnSet.ALL);
 

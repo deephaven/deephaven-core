@@ -14,7 +14,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
-public class BaseLayer extends SelectAndViewAnalyzer {
+public class BaseLayer extends SelectAndViewAnalyzer.Layer {
     private final Map<String, ColumnSource<?>> sources;
     private final boolean publishTheseSources;
 
@@ -25,73 +25,62 @@ public class BaseLayer extends SelectAndViewAnalyzer {
     }
 
     @Override
-    int getLayerIndexFor(String column) {
-        if (sources.containsKey(column)) {
-            return BASE_LAYER_INDEX;
-        }
-        throw new IllegalArgumentException("Unknown column: " + column);
+    Set<String> getLayerColumnNames() {
+        return sources.keySet();
     }
 
     @Override
-    void setBaseBits(BitSet bitset) {
-        bitset.set(BASE_LAYER_INDEX);
-    }
-
-    @Override
-    public void setAllNewColumns(BitSet bitset) {
-        bitset.set(BASE_LAYER_INDEX);
-    }
-
-    @Override
-    void populateModifiedColumnSetRecurse(ModifiedColumnSet mcsBuilder, Set<String> remainingDepsToSatisfy) {
+    void populateModifiedColumnSetInReverse(
+            final ModifiedColumnSet mcsBuilder,
+            final Set<String> remainingDepsToSatisfy) {
         mcsBuilder.setAll(remainingDepsToSatisfy.toArray(String[]::new));
     }
 
     @Override
-    final Map<String, ColumnSource<?>> getColumnSourcesRecurse(GetMode mode) {
+    void populateColumnSources(
+            final Map<String, ColumnSource<?>> result,
+            final GetMode mode) {
         // We specifically return a LinkedHashMap so the columns get populated in order
-        final Map<String, ColumnSource<?>> result = new LinkedHashMap<>();
         if (mode == GetMode.All || (mode == GetMode.Published && publishTheseSources)) {
             result.putAll(sources);
         }
-        return result;
     }
 
     @Override
-    public void applyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper, JobScheduler jobScheduler,
-            @Nullable LivenessNode liveResultOwner, SelectLayerCompletionHandler onCompletion) {
-        // nothing to do at the base layer
-        onCompletion.onLayerCompleted(BASE_LAYER_INDEX);
+    public CompletionHandler createUpdateHandler(
+            final TableUpdate upstream,
+            final RowSet toClear,
+            final SelectAndViewAnalyzer.UpdateHelper helper,
+            final JobScheduler jobScheduler,
+            @Nullable final LivenessNode liveResultOwner,
+            final CompletionHandler onCompletion) {
+        return new CompletionHandler(new BitSet(), onCompletion) {
+            @Override
+            protected void onAllRequiredColumnsCompleted() {
+                // nothing to do at the base layer
+                onCompletion.onLayerCompleted(getLayerIndex());
+            }
+        };
     }
 
     @Override
-    final Map<String, Set<String>> calcDependsOnRecurse(boolean forcePublishAllSources) {
-        final Map<String, Set<String>> result = new HashMap<>();
+    final void calcDependsOn(
+            final Map<String, Set<String>> result,
+            boolean forcePublishAllSources) {
         if (publishTheseSources || forcePublishAllSources) {
             for (final String col : sources.keySet()) {
                 result.computeIfAbsent(col, dummy -> new HashSet<>()).add(col);
             }
         }
-        return result;
     }
 
     @Override
-    public SelectAndViewAnalyzer getInner() {
-        return null;
-    }
-
-    @Override
-    public void startTrackingPrev() {
-        // nothing to do
+    boolean allowCrossColumnParallelization() {
+        return true;
     }
 
     @Override
     public LogOutput append(LogOutput logOutput) {
         return logOutput.append("{BaseLayer").append(", layerIndex=").append(getLayerIndex()).append("}");
-    }
-
-    @Override
-    public boolean allowCrossColumnParallelization() {
-        return true;
     }
 }

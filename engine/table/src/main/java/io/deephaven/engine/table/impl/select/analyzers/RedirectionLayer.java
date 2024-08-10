@@ -8,9 +8,9 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.util.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -20,66 +20,78 @@ import java.util.*;
 
 /**
  * A layer that maintains the row redirection for future SelectColumnLayers.
- *
+ * <p>
  * {@implNote This class is part of the Deephaven engine, and not intended for direct use.}
  */
-public final class RedirectionLayer extends SelectAndViewAnalyzer {
-    private final SelectAndViewAnalyzer inner;
+public final class RedirectionLayer extends SelectAndViewAnalyzer.Layer {
     private final TrackingRowSet resultRowSet;
     private final WritableRowRedirection rowRedirection;
     private final WritableRowSet freeValues = RowSetFactory.empty();
     private long maxInnerIndex;
 
-    RedirectionLayer(SelectAndViewAnalyzer inner, TrackingRowSet resultRowSet, WritableRowRedirection rowRedirection) {
+    RedirectionLayer(SelectAndViewAnalyzer analyzer, TrackingRowSet resultRowSet,
+            WritableRowRedirection rowRedirection) {
         super(REDIRECTION_LAYER_INDEX);
-        Assert.eq(inner.getLayerIndex(), "inner.getLayerIndex()", BASE_LAYER_INDEX);
-        this.inner = inner;
+        Assert.eq(analyzer.getNextLayerIndex(), "analyzer.getNextLayerIndex()", REDIRECTION_LAYER_INDEX);
         this.resultRowSet = resultRowSet;
         this.rowRedirection = rowRedirection;
         this.maxInnerIndex = -1;
     }
 
     @Override
-    int getLayerIndexFor(String column) {
-        // Result columns' applyUpdate depend on the result of the redirection.
-        Assert.eq(inner.getLayerIndexFor(column), "inner.getLayerIndexFor(column)", BASE_LAYER_INDEX);
-        return REDIRECTION_LAYER_INDEX;
+    Set<String> getLayerColumnNames() {
+        return Set.of();
     }
 
     @Override
-    void setBaseBits(BitSet bitset) {
-        inner.setBaseBits(bitset);
-        bitset.set(REDIRECTION_LAYER_INDEX);
+    void populateModifiedColumnSetInReverse(
+            final ModifiedColumnSet mcsBuilder,
+            final Set<String> remainingDepsToSatisfy) {
+        // we don't generate any column sources, so we don't need to do anything here
     }
 
     @Override
-    public void populateModifiedColumnSetRecurse(ModifiedColumnSet mcsBuilder, Set<String> remainingDepsToSatisfy) {
-        inner.populateModifiedColumnSetRecurse(mcsBuilder, remainingDepsToSatisfy);
+    void populateColumnSources(
+            final Map<String, ColumnSource<?>> result,
+            final GetMode mode) {
+        // we don't generate any column sources, so we don't need to do anything here
     }
 
     @Override
-    public Map<String, ColumnSource<?>> getColumnSourcesRecurse(GetMode mode) {
-        return inner.getColumnSourcesRecurse(mode);
+    void calcDependsOn(
+            final Map<String, Set<String>> result,
+            final boolean forcePublishAllSources) {
+        // we don't generate any column sources, so we don't need to do anything here
     }
 
     @Override
-    public void applyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper, JobScheduler jobScheduler,
-            @Nullable LivenessNode liveResultOwner, SelectLayerCompletionHandler onCompletion) {
+    boolean allowCrossColumnParallelization() {
+        return true;
+    }
+
+    @Override
+    public CompletionHandler createUpdateHandler(
+            final TableUpdate upstream,
+            final RowSet toClear,
+            final SelectAndViewAnalyzer.UpdateHelper helper,
+            final JobScheduler jobScheduler,
+            @Nullable final LivenessNode liveResultOwner,
+            final CompletionHandler onCompletion) {
         final BitSet baseLayerBitSet = new BitSet();
-        inner.setBaseBits(baseLayerBitSet);
-        inner.applyUpdate(upstream, toClear, helper, jobScheduler, liveResultOwner,
-                new SelectLayerCompletionHandler(baseLayerBitSet, onCompletion) {
-                    @Override
-                    public void onAllRequiredColumnsCompleted() {
-                        // we only have a base layer underneath us, so we do not care about the bitSet; it is always
-                        // empty
-                        doApplyUpdate(upstream, toClear, helper, onCompletion);
-                    }
-                });
+        baseLayerBitSet.set(BASE_LAYER_INDEX);
+        return new CompletionHandler(baseLayerBitSet, onCompletion) {
+            @Override
+            public void onAllRequiredColumnsCompleted() {
+                // we only have a base layer underneath us, so we do not care about the bitSet; it is always
+                // empty
+                doApplyUpdate(upstream, onCompletion);
+            }
+        };
     }
 
-    private void doApplyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper,
-            SelectLayerCompletionHandler onCompletion) {
+    private void doApplyUpdate(
+            final TableUpdate upstream,
+            final CompletionHandler onCompletion) {
         // we need to remove the removed values from our row redirection, and add them to our free RowSet; so that
         // updating tables will not consume more space over the course of a day for abandoned rows
         final RowSetBuilderRandom innerToFreeBuilder = RowSetFactory.builderRandom();
@@ -150,32 +162,16 @@ public final class RedirectionLayer extends SelectAndViewAnalyzer {
             freeValues.removeRange(0, lastAllocated.get());
         }
 
-        onCompletion.onLayerCompleted(REDIRECTION_LAYER_INDEX);
-    }
-
-    @Override
-    public Map<String, Set<String>> calcDependsOnRecurse(boolean forcePublishAllResources) {
-        return inner.calcDependsOnRecurse(forcePublishAllResources);
-    }
-
-    @Override
-    public SelectAndViewAnalyzer getInner() {
-        return inner;
+        onCompletion.onLayerCompleted(getLayerIndex());
     }
 
     @Override
     public void startTrackingPrev() {
         rowRedirection.startTrackingPrevValues();
-        inner.startTrackingPrev();
     }
 
     @Override
     public LogOutput append(LogOutput logOutput) {
         return logOutput.append("{RedirectionLayer").append(", layerIndex=").append(getLayerIndex()).append("}");
-    }
-
-    @Override
-    public boolean allowCrossColumnParallelization() {
-        return inner.allowCrossColumnParallelization();
     }
 }

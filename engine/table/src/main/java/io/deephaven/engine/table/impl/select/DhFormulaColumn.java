@@ -35,7 +35,6 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.util.CompletionStageFuture;
 import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.ObjectVector;
-import io.deephaven.vector.Vector;
 import org.jetbrains.annotations.NotNull;
 import org.jpy.PyObject;
 
@@ -167,13 +166,23 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         } else {
             final String declaredTypeSimpleName =
                     io.deephaven.util.type.TypeUtils.getUnboxedType(declaredType).getSimpleName();
-            try {
-                return Class.forName(Vector.class.getPackage().getName() + '.'
-                        + Character.toUpperCase(declaredTypeSimpleName.charAt(0))
-                        + declaredTypeSimpleName.substring(1)
-                        + "Vector");
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException("Unexpected exception for type " + declaredType, e);
+            switch (declaredTypeSimpleName) {
+                case "byte":
+                    return io.deephaven.vector.ByteVector.class;
+                case "short":
+                    return io.deephaven.vector.ShortVector.class;
+                case "char":
+                    return io.deephaven.vector.CharVector.class;
+                case "int":
+                    return io.deephaven.vector.IntVector.class;
+                case "long":
+                    return io.deephaven.vector.LongVector.class;
+                case "float":
+                    return io.deephaven.vector.FloatVector.class;
+                case "double":
+                    return io.deephaven.vector.DoubleVector.class;
+                default:
+                    throw new RuntimeException("Unexpected type " + declaredType);
             }
         }
     }

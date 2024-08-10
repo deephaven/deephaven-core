@@ -92,7 +92,7 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
         }
 
         analyzer.applyUpdate(acquiredUpdate, toClear, updateHelper, jobScheduler, this,
-                new SelectAndViewAnalyzer.SelectLayerCompletionHandler(allNewColumns, completedColumns) {
+                new SelectAndViewAnalyzer.Layer.CompletionHandler(allNewColumns, completedColumns) {
                     @Override
                     public void onAllRequiredColumnsCompleted() {
                         completionRoutine(acquiredUpdate, jobScheduler, toClear, updateHelper);

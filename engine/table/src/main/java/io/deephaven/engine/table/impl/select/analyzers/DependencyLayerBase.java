@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.table.impl.select.analyzers;
 
-import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.select.SelectColumn;
@@ -11,8 +10,7 @@ import io.deephaven.engine.table.ColumnSource;
 
 import java.util.*;
 
-public abstract class DependencyLayerBase extends SelectAndViewAnalyzer {
-    final SelectAndViewAnalyzer inner;
+public abstract class DependencyLayerBase extends SelectAndViewAnalyzer.Layer {
     final String name;
     final SelectColumn selectColumn;
     final boolean selectColumnHoldsVector;
@@ -21,35 +19,46 @@ public abstract class DependencyLayerBase extends SelectAndViewAnalyzer {
     private final String[] dependencies;
     final ModifiedColumnSet myModifiedColumnSet;
 
-    DependencyLayerBase(SelectAndViewAnalyzer inner, String name, SelectColumn selectColumn,
-            ColumnSource<?> columnSource,
-            String[] dependencies, ModifiedColumnSet mcsBuilder) {
-        super(inner.getLayerIndex() + 1);
-        this.inner = inner;
+    DependencyLayerBase(
+            final SelectAndViewAnalyzer analyzer,
+            final String name,
+            final SelectColumn selectColumn,
+            final ColumnSource<?> columnSource,
+            final String[] dependencies,
+            final ModifiedColumnSet mcsBuilder) {
+        super(analyzer.getNextLayerIndex());
         this.name = name;
         this.selectColumn = selectColumn;
         selectColumnHoldsVector = Vector.class.isAssignableFrom(selectColumn.getReturnedType());
         this.columnSource = columnSource;
         this.dependencies = dependencies;
         final Set<String> remainingDepsToSatisfy = new HashSet<>(Arrays.asList(dependencies));
-        inner.populateModifiedColumnSetRecurse(mcsBuilder, remainingDepsToSatisfy);
+        analyzer.populateModifiedColumnSet(mcsBuilder, remainingDepsToSatisfy);
         this.myModifiedColumnSet = mcsBuilder;
     }
 
     @Override
-    void populateModifiedColumnSetRecurse(ModifiedColumnSet mcsBuilder, Set<String> remainingDepsToSatisfy) {
+    Set<String> getLayerColumnNames() {
+        return Set.of(name);
+    }
+
+    @Override
+    void populateModifiedColumnSetInReverse(
+            final ModifiedColumnSet mcsBuilder,
+            final Set<String> remainingDepsToSatisfy) {
         // Later-defined columns override earlier-defined columns. So we satisfy column dependencies "on the way
         // down" the recursion.
         if (remainingDepsToSatisfy.remove(name)) {
             // Caller had a dependency on us, so caller gets our dependencies
             mcsBuilder.setAll(myModifiedColumnSet);
         }
-        inner.populateModifiedColumnSetRecurse(mcsBuilder, remainingDepsToSatisfy);
     }
 
     @Override
-    final Map<String, Set<String>> calcDependsOnRecurse(boolean forcePublishAllResources) {
-        final Map<String, Set<String>> result = inner.calcDependsOnRecurse(forcePublishAllResources);
+    void calcDependsOn(
+            final Map<String, Set<String>> result,
+            final boolean forcePublishAllSources) {
+
         final Set<String> thisResult = new HashSet<>();
         for (final String dep : dependencies) {
             final Set<String> innerDependencies = result.get(dep);
@@ -61,25 +70,7 @@ public abstract class DependencyLayerBase extends SelectAndViewAnalyzer {
                 thisResult.addAll(innerDependencies);
             }
         }
+
         result.put(name, thisResult);
-        return result;
-    }
-
-    @Override
-    public SelectAndViewAnalyzer getInner() {
-        return inner;
-    }
-
-    @Override
-    int getLayerIndexFor(String column) {
-        if (name.equals(column)) {
-            return getLayerIndex();
-        }
-        return inner.getLayerIndexFor(column);
-    }
-
-    @Override
-    void setBaseBits(BitSet bitset) {
-        inner.setBaseBits(bitset);
     }
 }

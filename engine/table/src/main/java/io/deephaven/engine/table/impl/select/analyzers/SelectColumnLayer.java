@@ -57,7 +57,6 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     private final RowSet parentRowSet;
     private final boolean isRedirected;
     private final boolean flattenedResult;
-    private final boolean alreadyFlattenedSources;
     private final BitSet dependencyBitSet;
     private final boolean canParallelizeThisColumn;
     private final boolean isSystemic;
@@ -75,7 +74,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     SelectColumnLayer(
             UpdateGraph updateGraph, RowSet parentRowSet, SelectAndViewAnalyzer inner, String name, SelectColumn sc,
             WritableColumnSource<?> ws, WritableColumnSource<?> underlying, String[] deps, ModifiedColumnSet mcsBuilder,
-            boolean isRedirected, boolean flattenedResult, boolean alreadyFlattenedSources) {
+            boolean isRedirected, boolean flattenedResult) {
         super(inner, name, sc, ws, underlying, deps, mcsBuilder);
         this.updateGraph = updateGraph;
         this.parentRowSet = parentRowSet;
@@ -94,7 +93,6 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         Arrays.stream(deps).mapToInt(inner::getLayerIndexFor).forEach(dependencyBitSet::set);
 
         this.flattenedResult = flattenedResult;
-        this.alreadyFlattenedSources = alreadyFlattenedSources;
 
         // We can only parallelize this column if we are not redirected, our destination provides ensure previous, and
         // the select column is stateless
@@ -136,9 +134,13 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     }
 
     @Override
-    public void applyUpdate(final TableUpdate upstream, final RowSet toClear,
-            final UpdateHelper helper, final JobScheduler jobScheduler, @Nullable final LivenessNode liveResultOwner,
-            final SelectLayerCompletionHandler onCompletion) {
+    public CompletionHandler createUpdateHandler(
+            final TableUpdate upstream,
+            final RowSet toClear,
+            final SelectAndViewAnalyzer.UpdateHelper helper,
+            final JobScheduler jobScheduler,
+            @Nullable final LivenessNode liveResultOwner,
+            final CompletionHandler onCompletion) {
         if (upstream.removed().isNonempty()) {
             if (isRedirected) {
                 clearObjectsAtThisLevel(upstream.removed());
@@ -149,79 +151,84 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         }
 
         // recurse so that dependent intermediate columns are already updated
-        inner.applyUpdate(upstream, toClear, helper, jobScheduler, liveResultOwner,
-                new SelectLayerCompletionHandler(dependencyBitSet, onCompletion) {
-                    @Override
-                    public void onAllRequiredColumnsCompleted() {
-                        // We don't want to bother with threads if we are going to process a small update
-                        final long totalSize = upstream.added().size() + upstream.modified().size();
+        return new CompletionHandler(dependencyBitSet, onCompletion) {
+            @Override
+            public void onAllRequiredColumnsCompleted() {
+                // We don't want to bother with threads if we are going to process a small update
+                final long totalSize = upstream.added().size() + upstream.modified().size();
 
-                        // If we have shifts, that makes everything nasty; so we do not want to deal with it
-                        final boolean hasShifts = upstream.shifted().nonempty();
+                // If we have shifts, that makes everything nasty; so we do not want to deal with it
+                final boolean hasShifts = upstream.shifted().nonempty();
 
-                        final boolean serialTableOperationsSafe = updateGraph.serialTableOperationsSafe()
-                                || updateGraph.sharedLock().isHeldByCurrentThread()
-                                || updateGraph.exclusiveLock().isHeldByCurrentThread();
+                final boolean serialTableOperationsSafe = updateGraph.serialTableOperationsSafe()
+                        || updateGraph.sharedLock().isHeldByCurrentThread()
+                        || updateGraph.exclusiveLock().isHeldByCurrentThread();
 
-                        if (canParallelizeThisColumn && jobScheduler.threadCount() > 1 && !hasShifts &&
-                                ((resultTypeIsTableOrRowSet && totalSize > 0)
-                                        || totalSize >= QueryTable.MINIMUM_PARALLEL_SELECT_ROWS)) {
-                            final long divisionSize = resultTypeIsTableOrRowSet ? 1
-                                    : Math.max(QueryTable.MINIMUM_PARALLEL_SELECT_ROWS,
-                                            (totalSize + jobScheduler.threadCount() - 1) / jobScheduler.threadCount());
-                            final List<TableUpdate> updates = new ArrayList<>();
-                            // divide up the additions and modifications
-                            try (final RowSequence.Iterator rsAddIt = upstream.added().getRowSequenceIterator();
-                                    final RowSequence.Iterator rsModIt = upstream.modified().getRowSequenceIterator()) {
-                                while (rsAddIt.hasMore() || rsModIt.hasMore()) {
-                                    final TableUpdateImpl update = new TableUpdateImpl();
-                                    update.modifiedColumnSet = upstream.modifiedColumnSet();
-                                    update.shifted = RowSetShiftData.EMPTY;
-                                    update.removed = RowSetFactory.empty();
+                if (canParallelizeThisColumn && jobScheduler.threadCount() > 1 && !hasShifts &&
+                        ((resultTypeIsTableOrRowSet && totalSize > 0)
+                                || totalSize >= QueryTable.MINIMUM_PARALLEL_SELECT_ROWS)) {
+                    final long divisionSize = resultTypeIsTableOrRowSet ? 1
+                            : Math.max(QueryTable.MINIMUM_PARALLEL_SELECT_ROWS,
+                                    (totalSize + jobScheduler.threadCount() - 1) / jobScheduler.threadCount());
+                    final List<TableUpdate> updates = new ArrayList<>();
+                    // divide up the additions and modifications
+                    try (final RowSequence.Iterator rsAddIt = upstream.added().getRowSequenceIterator();
+                            final RowSequence.Iterator rsModIt = upstream.modified().getRowSequenceIterator()) {
+                        while (rsAddIt.hasMore() || rsModIt.hasMore()) {
+                            final TableUpdateImpl update = new TableUpdateImpl();
+                            update.modifiedColumnSet = upstream.modifiedColumnSet();
+                            update.shifted = RowSetShiftData.EMPTY;
+                            update.removed = RowSetFactory.empty();
 
-                                    if (rsAddIt.hasMore()) {
-                                        update.added = rsAddIt.getNextRowSequenceWithLength(divisionSize).asRowSet();
-                                    } else {
-                                        update.added = RowSetFactory.empty();
-                                    }
-
-                                    if (update.added.size() < divisionSize && rsModIt.hasMore()) {
-                                        update.modified = rsModIt
-                                                .getNextRowSequenceWithLength(divisionSize - update.added().size())
-                                                .asRowSet();
-                                    } else {
-                                        update.modified = RowSetFactory.empty();
-                                    }
-
-                                    updates.add(update);
-                                }
+                            if (rsAddIt.hasMore()) {
+                                update.added = rsAddIt.getNextRowSequenceWithLength(divisionSize).asRowSet();
+                            } else {
+                                update.added = RowSetFactory.empty();
                             }
 
-                            if (updates.isEmpty()) {
-                                throw new IllegalStateException();
+                            if (update.added.size() < divisionSize && rsModIt.hasMore()) {
+                                update.modified = rsModIt
+                                        .getNextRowSequenceWithLength(divisionSize - update.added().size())
+                                        .asRowSet();
+                            } else {
+                                update.modified = RowSetFactory.empty();
                             }
 
-                            jobScheduler.submit(
-                                    executionContext,
-                                    () -> prepareParallelUpdate(jobScheduler, upstream, toClear, helper,
-                                            liveResultOwner, onCompletion, this::onError, updates,
-                                            serialTableOperationsSafe),
-                                    SelectColumnLayer.this, this::onError);
-                        } else {
-                            jobScheduler.submit(
-                                    executionContext,
-                                    () -> doSerialApplyUpdate(upstream, toClear, helper, liveResultOwner, onCompletion,
-                                            serialTableOperationsSafe),
-                                    SelectColumnLayer.this, this::onError);
+                            updates.add(update);
                         }
                     }
-                });
+
+                    if (updates.isEmpty()) {
+                        throw new IllegalStateException();
+                    }
+
+                    jobScheduler.submit(
+                            executionContext,
+                            () -> prepareParallelUpdate(jobScheduler, upstream, toClear, helper,
+                                    liveResultOwner, onCompletion, onCompletion::onError, updates,
+                                    serialTableOperationsSafe),
+                            SelectColumnLayer.this, onCompletion::onError);
+                } else {
+                    jobScheduler.submit(
+                            executionContext,
+                            () -> doSerialApplyUpdate(upstream, toClear, helper, liveResultOwner, onCompletion,
+                                    serialTableOperationsSafe),
+                            SelectColumnLayer.this, onCompletion::onError);
+                }
+            }
+        };
     }
 
-    private void prepareParallelUpdate(final JobScheduler jobScheduler, final TableUpdate upstream,
-            final RowSet toClear, final UpdateHelper helper, @Nullable final LivenessNode liveResultOwner,
-            final SelectLayerCompletionHandler onCompletion, final Consumer<Exception> onError,
-            final List<TableUpdate> splitUpdates, final boolean serialTableOperationsSafe) {
+    private void prepareParallelUpdate(
+            final JobScheduler jobScheduler,
+            final TableUpdate upstream,
+            final RowSet toClear,
+            final SelectAndViewAnalyzer.UpdateHelper helper,
+            @Nullable final LivenessNode liveResultOwner,
+            final CompletionHandler onCompletion,
+            final Consumer<Exception> onError,
+            final List<TableUpdate> splitUpdates,
+            final boolean serialTableOperationsSafe) {
         // we have to do removal and previous initialization before we can do any of the actual filling in multiple
         // threads to avoid concurrency problems with our destination column sources
         doEnsureCapacity();
@@ -255,8 +262,12 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                 onError);
     }
 
-    private void doSerialApplyUpdate(final TableUpdate upstream, final RowSet toClear, final UpdateHelper helper,
-            @Nullable final LivenessNode liveResultOwner, final SelectLayerCompletionHandler onCompletion,
+    private void doSerialApplyUpdate(
+            final TableUpdate upstream,
+            final RowSet toClear,
+            final SelectAndViewAnalyzer.UpdateHelper helper,
+            @Nullable final LivenessNode liveResultOwner,
+            final CompletionHandler onCompletion,
             final boolean serialTableOperationsSafe) {
         doEnsureCapacity();
         final boolean oldSafe = updateGraph.setSerialTableOperationsSafe(serialTableOperationsSafe);
@@ -272,8 +283,11 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         onCompletion.onLayerCompleted(getLayerIndex());
     }
 
-    private void doParallelApplyUpdate(final TableUpdate upstream, final UpdateHelper helper,
-            @Nullable final LivenessNode liveResultOwner, final boolean serialTableOperationsSafe,
+    private void doParallelApplyUpdate(
+            final TableUpdate upstream,
+            final SelectAndViewAnalyzer.UpdateHelper helper,
+            @Nullable final LivenessNode liveResultOwner,
+            final boolean serialTableOperationsSafe,
             final long startOffset) {
         final boolean oldSafe = updateGraph.setSerialTableOperationsSafe(serialTableOperationsSafe);
         try {
@@ -285,8 +299,11 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         upstream.release();
     }
 
-    private Boolean doApplyUpdate(final TableUpdate upstream, final UpdateHelper helper,
-            @Nullable final LivenessNode liveResultOwner, final long startOffset) {
+    private Boolean doApplyUpdate(
+            final TableUpdate upstream,
+            final SelectAndViewAnalyzer.UpdateHelper helper,
+            @Nullable final LivenessNode liveResultOwner,
+            final long startOffset) {
         final int PAGE_SIZE = 4096;
         final LongToIntFunction contextSize = (long size) -> size > PAGE_SIZE ? PAGE_SIZE : (int) size;
 
@@ -595,16 +612,6 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     }
 
     @Override
-    public boolean flattenedResult() {
-        return flattenedResult;
-    }
-
-    @Override
-    public boolean alreadyFlattenedSources() {
-        return alreadyFlattenedSources;
-    }
-
-    @Override
     public LogOutput append(LogOutput logOutput) {
         return logOutput.append("{SelectColumnLayer: ").append(selectColumn.toString()).append(", layerIndex=")
                 .append(getLayerIndex()).append("}");
@@ -612,6 +619,6 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
     @Override
     public boolean allowCrossColumnParallelization() {
-        return selectColumn.isStateless() && inner.allowCrossColumnParallelization();
+        return selectColumn.isStateless();
     }
 }

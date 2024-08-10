@@ -22,17 +22,23 @@ final public class ViewColumnLayer extends SelectOrViewColumnLayer {
     private static final boolean ALLOW_LIVENESS_REFERENT_RESULTS = Configuration.getInstance()
             .getBooleanForClassWithDefault(ViewColumnLayer.class, "allowLivenessReferentResults", false);
 
-    ViewColumnLayer(SelectAndViewAnalyzer inner, String name, SelectColumn sc, ColumnSource cs, String[] deps,
+    ViewColumnLayer(SelectAndViewAnalyzer inner, String name, SelectColumn sc, ColumnSource<?> cs, String[] deps,
             ModifiedColumnSet mcsBuilder) {
         super(inner, name, sc, checkResultType(cs), null, deps, mcsBuilder);
     }
 
     @Override
-    public void applyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper, JobScheduler jobScheduler,
-            @Nullable LivenessNode liveResultOwner, SelectLayerCompletionHandler completionHandler) {
-        // To be parallel with SelectColumnLayer, we would recurse here, but since this is ViewColumnLayer
-        // (and all my inner layers are ViewColumnLayer), there's nothing to do.
+    public CompletionHandler createUpdateHandler(
+            final TableUpdate upstream,
+            final RowSet toClear,
+            final SelectAndViewAnalyzer.UpdateHelper helper,
+            final JobScheduler jobScheduler,
+            @Nullable final LivenessNode liveResultOwner,
+            final CompletionHandler completionHandler) {
+        // There should be nothing to do here.
         Assert.eqNull(completionHandler, "completionHandler");
+
+        return null;
     }
 
     @Override
@@ -41,13 +47,7 @@ final public class ViewColumnLayer extends SelectOrViewColumnLayer {
                 .append(getLayerIndex()).append("}");
     }
 
-    @Override
-    public boolean allowCrossColumnParallelization() {
-        // this should not actually matter; but false seems like the safe answer for any formula
-        return false;
-    }
-
-    private static ColumnSource checkResultType(@NotNull final ColumnSource cs) {
+    private static ColumnSource<?> checkResultType(@NotNull final ColumnSource<?> cs) {
         final Class<?> resultType = cs.getType();
         if (!ALLOW_LIVENESS_REFERENT_RESULTS && LivenessReferent.class.isAssignableFrom(resultType)) {
             throw new UnsupportedOperationException(String.format(
@@ -55,5 +55,11 @@ final public class ViewColumnLayer extends SelectOrViewColumnLayer {
                     resultType));
         }
         return cs;
+    }
+
+    @Override
+    public boolean allowCrossColumnParallelization() {
+        // this should not actually matter; but false seems like the safe answer for any formula
+        return false;
     }
 }

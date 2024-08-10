@@ -12,18 +12,23 @@ import java.util.Map;
 public abstract class SelectOrViewColumnLayer extends DependencyLayerBase {
     private final ColumnSource<?> optionalUnderlying;
 
-    SelectOrViewColumnLayer(SelectAndViewAnalyzer inner, String name, SelectColumn sc,
-            ColumnSource<?> ws, ColumnSource<?> optionalUnderlying,
-            String[] deps, ModifiedColumnSet mcsBuilder) {
-        super(inner, name, sc, ws, deps, mcsBuilder);
+    SelectOrViewColumnLayer(
+            final SelectAndViewAnalyzer analyzer,
+            final String name,
+            final SelectColumn sc,
+            final ColumnSource<?> ws,
+            final ColumnSource<?> optionalUnderlying,
+            final String[] deps,
+            final ModifiedColumnSet mcsBuilder) {
+        super(analyzer, name, sc, ws, deps, mcsBuilder);
         this.optionalUnderlying = optionalUnderlying;
     }
 
     @Override
-    final Map<String, ColumnSource<?>> getColumnSourcesRecurse(GetMode mode) {
-        final Map<String, ColumnSource<?>> result = inner.getColumnSourcesRecurse(mode);
+    void populateColumnSources(
+            final Map<String, ColumnSource<?>> result,
+            final GetMode mode) {
         result.put(name, columnSource);
-        return result;
     }
 
     @Override
@@ -32,6 +37,5 @@ public abstract class SelectOrViewColumnLayer extends DependencyLayerBase {
         if (optionalUnderlying != null) {
             optionalUnderlying.startTrackingPrevValues();
         }
-        inner.startTrackingPrev();
     }
 }

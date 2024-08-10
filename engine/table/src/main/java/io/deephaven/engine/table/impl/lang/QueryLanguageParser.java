@@ -264,9 +264,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         this.packageImports = packageImports == null ? Collections.emptySet() : Set.copyOf(packageImports);
         this.classImports = classImports == null ? Collections.emptySet() : Set.copyOf(classImports);
         this.staticImports = staticImports == null ? Collections.emptySet() : Set.copyOf(staticImports);
-        this.variables = variables == null ? Collections.emptyMap() : Map.copyOf(variables);
-        this.variableTypeArguments =
-                variableTypeArguments == null ? Collections.emptyMap() : Map.copyOf(variableTypeArguments);
+        this.variables = variables == null ? Collections.emptyMap() : variables;
+        this.variableTypeArguments = variableTypeArguments == null ? Collections.emptyMap() : variableTypeArguments;
         this.queryScopeVariables = queryScopeVariables == null ? new HashMap<>() : queryScopeVariables;
         this.columnVariables = columnVariables == null ? Collections.emptySet() : columnVariables;
         this.unboxArguments = unboxArguments;

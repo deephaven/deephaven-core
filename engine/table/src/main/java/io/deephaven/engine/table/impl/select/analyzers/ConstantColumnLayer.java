@@ -23,23 +23,17 @@ import java.util.BitSet;
 
 public class ConstantColumnLayer extends SelectOrViewColumnLayer {
     private final BitSet dependencyBitSet;
-    private final boolean flattenedResult;
-    private final boolean alreadyFlattenedSources;
 
     ConstantColumnLayer(
-            SelectAndViewAnalyzer inner,
+            SelectAndViewAnalyzer analyzer,
             String name,
             SelectColumn sc,
             WritableColumnSource<?> ws,
             String[] deps,
-            ModifiedColumnSet mcsBuilder,
-            boolean flattenedResult,
-            boolean alreadyFlattenedSources) {
-        super(inner, name, sc, ws, null, deps, mcsBuilder);
+            ModifiedColumnSet mcsBuilder) {
+        super(analyzer, name, sc, ws, null, deps, mcsBuilder);
         this.dependencyBitSet = new BitSet();
-        this.flattenedResult = flattenedResult;
-        this.alreadyFlattenedSources = alreadyFlattenedSources;
-        Arrays.stream(deps).mapToInt(inner::getLayerIndexFor).forEach(dependencyBitSet::set);
+        Arrays.stream(deps).mapToInt(analyzer::getLayerIndexFor).forEach(dependencyBitSet::set);
         initialize(ws);
     }
 
@@ -60,38 +54,31 @@ public class ConstantColumnLayer extends SelectOrViewColumnLayer {
     }
 
     @Override
-    public void applyUpdate(final TableUpdate upstream, final RowSet toClear, final UpdateHelper helper,
-            final JobScheduler jobScheduler, @Nullable final LivenessNode liveResultOwner,
-            final SelectLayerCompletionHandler onCompletion) {
+    public CompletionHandler createUpdateHandler(
+            final TableUpdate upstream,
+            final RowSet toClear,
+            final SelectAndViewAnalyzer.UpdateHelper helper,
+            final JobScheduler jobScheduler,
+            @Nullable final LivenessNode liveResultOwner,
+            final CompletionHandler onCompletion) {
         // Nothing to do at this level, but need to recurse because my inner layers might need to be called (e.g.
         // because they are SelectColumnLayers)
-        inner.applyUpdate(upstream, toClear, helper, jobScheduler, liveResultOwner,
-                new SelectLayerCompletionHandler(dependencyBitSet, onCompletion) {
-                    @Override
-                    public void onAllRequiredColumnsCompleted() {
-                        // we don't need to do anything specific here; our result value is constant
-                        onCompletion.onLayerCompleted(getLayerIndex());
-                    }
-                });
+        return new CompletionHandler(dependencyBitSet, onCompletion) {
+            @Override
+            public void onAllRequiredColumnsCompleted() {
+                // we don't need to do anything specific here; our result value is constant
+                onCompletion.onLayerCompleted(getLayerIndex());
+            }
+        };
+    }
+
+    @Override
+    boolean allowCrossColumnParallelization() {
+        return true;
     }
 
     @Override
     public LogOutput append(LogOutput logOutput) {
         return logOutput.append("{ConstantColumnLayer: ").append(selectColumn.toString()).append("}");
-    }
-
-    @Override
-    public boolean flattenedResult() {
-        return flattenedResult;
-    }
-
-    @Override
-    public boolean alreadyFlattenedSources() {
-        return alreadyFlattenedSources;
-    }
-
-    @Override
-    public boolean allowCrossColumnParallelization() {
-        return inner.allowCrossColumnParallelization();
     }
 }

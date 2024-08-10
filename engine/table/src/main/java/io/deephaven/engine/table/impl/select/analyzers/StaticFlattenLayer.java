@@ -7,14 +7,10 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingRowSet;
-import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.table.impl.util.WrappedRowSetRowRedirection;
@@ -24,27 +20,27 @@ import org.jetbrains.annotations.Nullable;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-final public class StaticFlattenLayer extends SelectAndViewAnalyzer {
-    private final SelectAndViewAnalyzer inner;
+final public class StaticFlattenLayer extends SelectAndViewAnalyzer.Layer {
     private final TrackingRowSet parentRowSet;
     private final Map<String, ColumnSource<?>> overriddenColumns;
 
-    StaticFlattenLayer(SelectAndViewAnalyzer inner, TrackingRowSet parentRowSet) {
-        super(inner.getLayerIndex() + 1);
-        this.inner = inner;
+    StaticFlattenLayer(
+            final SelectAndViewAnalyzer analyzer,
+            final TrackingRowSet parentRowSet,
+            final Map<String, ColumnSource<?>> allColumnSources) {
+        super(analyzer.getNextLayerIndex());
         this.parentRowSet = parentRowSet;
         final HashSet<String> alreadyFlattenedColumns = new HashSet<>();
-        inner.getNewColumnSources().forEach((name, cs) -> {
+        analyzer.getNewColumnSources().forEach((name, cs) -> {
             alreadyFlattenedColumns.add(name);
         });
 
         final RowRedirection rowRedirection = new WrappedRowSetRowRedirection(parentRowSet);
         overriddenColumns = new HashMap<>();
-        inner.getAllColumnSources().forEach((name, cs) -> {
+        allColumnSources.forEach((name, cs) -> {
             if (alreadyFlattenedColumns.contains(name)) {
                 return;
             }
@@ -54,31 +50,48 @@ final public class StaticFlattenLayer extends SelectAndViewAnalyzer {
     }
 
     @Override
-    void setBaseBits(BitSet bitset) {
-        inner.setBaseBits(bitset);
+    Set<String> getLayerColumnNames() {
+        return Set.of();
     }
 
     @Override
-    void populateModifiedColumnSetRecurse(ModifiedColumnSet mcsBuilder, Set<String> remainingDepsToSatisfy) {
-        inner.populateModifiedColumnSetRecurse(mcsBuilder, remainingDepsToSatisfy);
+    void populateModifiedColumnSetInReverse(ModifiedColumnSet mcsBuilder, Set<String> remainingDepsToSatisfy) {
+        // we don't have any dependencies, so we don't need to do anything here
     }
 
     @Override
-    Map<String, ColumnSource<?>> getColumnSourcesRecurse(GetMode mode) {
-        final Map<String, ColumnSource<?>> innerColumns = inner.getColumnSourcesRecurse(mode);
+    boolean allowCrossColumnParallelization() {
+        return true;
+    }
 
-        if (overriddenColumns.keySet().stream().noneMatch(innerColumns::containsKey)) {
-            return innerColumns;
+    @Override
+    void populateColumnSources(
+            final Map<String, ColumnSource<?>> result,
+            final GetMode mode) {
+        // for each overridden column replace it in the result map
+        for (Map.Entry<String, ColumnSource<?>> entry : overriddenColumns.entrySet()) {
+            final String columnName = entry.getKey();
+            if (result.containsKey(columnName)) {
+                result.put(columnName, entry.getValue());
+            }
         }
-
-        final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
-        innerColumns.forEach((name, cs) -> columns.put(name, overriddenColumns.getOrDefault(name, cs)));
-        return columns;
     }
 
     @Override
-    public void applyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper, JobScheduler jobScheduler,
-            @Nullable LivenessNode liveResultOwner, SelectLayerCompletionHandler onCompletion) {
+    void calcDependsOn(
+            final Map<String, Set<String>> result,
+            final boolean forcePublishAllSources) {
+        // we don't have any dependencies, so we don't need to do anything here
+    }
+
+    @Override
+    public CompletionHandler createUpdateHandler(
+            final TableUpdate upstream,
+            final RowSet toClear,
+            final SelectAndViewAnalyzer.UpdateHelper helper,
+            final JobScheduler jobScheduler,
+            @Nullable final LivenessNode liveResultOwner,
+            final CompletionHandler onCompletion) {
         // this must be the fake update used to initialize the result table
         Assert.eqTrue(upstream.added().isFlat(), "upstream.added.isFlat()");
         Assert.eq(upstream.added().size(), "upstream.added.size()", parentRowSet.size(), "parentRowSet.size()");
@@ -86,61 +99,26 @@ final public class StaticFlattenLayer extends SelectAndViewAnalyzer {
         Assert.eqTrue(upstream.modified().isEmpty(), "upstream.modified.isEmpty()");
 
         final BitSet baseLayerBitSet = new BitSet();
-        inner.setBaseBits(baseLayerBitSet);
-        final TableUpdate innerUpdate = new TableUpdateImpl(
-                parentRowSet.copy(), RowSetFactory.empty(), RowSetFactory.empty(),
-                RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
-        inner.applyUpdate(innerUpdate, toClear, helper, jobScheduler, liveResultOwner,
-                new SelectLayerCompletionHandler(baseLayerBitSet, onCompletion) {
-                    @Override
-                    public void onAllRequiredColumnsCompleted() {
-                        onCompletion.onLayerCompleted(getLayerIndex());
-                    }
-                });
+        baseLayerBitSet.set(BASE_LAYER_INDEX);
+        return new CompletionHandler(baseLayerBitSet, onCompletion) {
+            @Override
+            public void onAllRequiredColumnsCompleted() {
+                onCompletion.onLayerCompleted(getLayerIndex());
+            }
+        };
     }
 
-    @Override
-    Map<String, Set<String>> calcDependsOnRecurse(boolean forcePublishAllResources) {
-        return inner.calcDependsOnRecurse(forcePublishAllResources);
-    }
-
-    @Override
-    public SelectAndViewAnalyzer getInner() {
-        return inner;
-    }
-
-    @Override
-    int getLayerIndexFor(String column) {
-        if (overriddenColumns.containsKey(column)) {
-            return getLayerIndex();
-        }
-        return inner.getLayerIndexFor(column);
+    public RowSet getParentRowSetCopy() {
+        return parentRowSet.copy();
     }
 
     @Override
     public void startTrackingPrev() {
-        throw new UnsupportedOperationException("StaticFlattenLayer is used in only non-refreshing scenarios");
+        throw new UnsupportedOperationException("StaticFlattenLayer supports only non-refreshing scenarios");
     }
 
     @Override
     public LogOutput append(LogOutput logOutput) {
         return logOutput.append("{StaticFlattenLayer").append(", layerIndex=").append(getLayerIndex()).append("}");
-    }
-
-    @Override
-    public boolean allowCrossColumnParallelization() {
-        return inner.allowCrossColumnParallelization();
-    }
-
-    @Override
-    public boolean flattenedResult() {
-        // this layer performs a flatten, so the result is flattened
-        return true;
-    }
-
-    @Override
-    public boolean alreadyFlattenedSources() {
-        // this layer performs a flatten, so the sources are now flattened
-        return true;
     }
 }
