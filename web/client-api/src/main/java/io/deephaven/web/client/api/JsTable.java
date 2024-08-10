@@ -48,7 +48,6 @@ import io.deephaven.web.client.api.state.StateCache;
 import io.deephaven.web.client.api.subscription.TableSubscription;
 import io.deephaven.web.client.api.subscription.TableViewportSubscription;
 import io.deephaven.web.client.api.subscription.ViewportData;
-import io.deephaven.web.client.api.subscription.ViewportRow;
 import io.deephaven.web.client.api.tree.JsRollupConfig;
 import io.deephaven.web.client.api.tree.JsTreeTable;
 import io.deephaven.web.client.api.tree.JsTreeTableConfig;
@@ -1537,11 +1536,6 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     @JsNullable
     public String getPluginName() {
         return lastVisibleState().getTableDef().getAttributes().getPluginName();
-    }
-
-    // Factored out so that we always apply the same format
-    private JsPropertyMap<?> wrap(ViewportRow at, int index) {
-        return JsPropertyMap.of("row", at, "index", (double) index);
     }
 
     @Override
