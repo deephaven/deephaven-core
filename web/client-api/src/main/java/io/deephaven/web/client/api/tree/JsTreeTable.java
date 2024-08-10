@@ -374,13 +374,16 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         return viewTicket;
     }
 
+    private int constituentDepth() {
+        return keyColumns.length + 2;
+    }
+
     public class TreeSubscription extends AbstractTableSubscription {
         @TsName(namespace = "dh")
         public class TreeViewportData extends AbstractTableSubscription.UpdateEventData {
             private final double treeSize;
 
             private final JsArray<Column> columns;
-            private final int constituentDepth;
 
             private TreeViewportData(WebBarrageSubscription subscription, int rowStyleColumn, JsArray<Column> columns,
                     RangeSet added, RangeSet removed, RangeSet modified, ShiftedRange[] shifted) {
@@ -389,7 +392,6 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
 
                 // this.offset = offset;
                 this.treeSize = barrageSubscription.getCurrentRowSet().size();
-                constituentDepth = keyColumns.length + 2;
                 this.columns = JsObject.freeze(Js.cast(Js.<JsArray<Column>>uncheckedCast(columns).slice()));
             }
 
@@ -424,7 +426,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                     // no constituent column, call super
                     return super.getData(index, column);
                 }
-                if (barrageSubscription.getData(index, rowDepthCol.getIndex()).asInt() != constituentDepth) {
+                if (barrageSubscription.getData(index, rowDepthCol.getIndex()).asInt() != constituentDepth()) {
                     // not at constituent depth, call super
                     return super.getData(index, column);
                 }
@@ -439,7 +441,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                     // no constituent column, call super
                     return super.getData(index, column);
                 }
-                if (barrageSubscription.getData(index, rowDepthCol.getIndex()).asInt() != constituentDepth) {
+                if (barrageSubscription.getData(index, rowDepthCol.getIndex()).asInt() != constituentDepth()) {
                     // not at constituent depth, call super
                     return super.getData(index, column);
                 }
@@ -454,7 +456,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                     // no constituent column, call super
                     return super.getFormat(index, column);
                 }
-                if (barrageSubscription.getData(index, rowDepthCol.getIndex()).asInt() != constituentDepth) {
+                if (barrageSubscription.getData(index, rowDepthCol.getIndex()).asInt() != constituentDepth()) {
                     // not at constituent depth, call super
                     return super.getFormat(index, column);
                 }
@@ -469,7 +471,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                     // no constituent column, call super
                     return super.getFormat(index, column);
                 }
-                if (barrageSubscription.getData(index, rowDepthCol.getIndex()).asInt() != constituentDepth) {
+                if (barrageSubscription.getData(index, rowDepthCol.getIndex()).asInt() != constituentDepth()) {
                     // not at constituent depth, call super
                     return super.getFormat(index, column);
                 }
@@ -553,6 +555,21 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                 Js.<JsArray<Double>>cast(keyTableData[i++]).push((double) depth());
                 Js.<JsArray<Double>>cast(keyTableData[i++]).push(action);
             }
+
+//            @Override
+//            public Format getFormat(Column column) {
+//                Column sourceColumn = sourceColumns.get(column.getName());
+//                if (sourceColumn == null) {
+//                    // no constituent column, call super
+//                    return super.getFormat(column);
+//                }
+//                if (barrageSubscription.getData(index, rowDepthCol.getIndex()).asInt() != constituentDepth()) {
+//                    // not at constituent depth, call super
+//                    return super.getFormat(column);
+//                }
+//                // read source col instead
+//                return super.getFormat(sourceColumn);
+//            }
         }
 
         // TODO move to superclass and check on viewport change

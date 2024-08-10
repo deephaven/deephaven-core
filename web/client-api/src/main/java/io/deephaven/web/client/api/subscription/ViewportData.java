@@ -17,6 +17,7 @@ import jsinterop.annotations.JsProperty;
  * Do not assume that the first row in `rows` is the first visible row, because extra rows may be provided for easier
  * scrolling without going to the server.
  */
+//TODO re-add dh.ViewportRow
 @TsInterface
 @TsName(namespace = "dh")
 public interface ViewportData extends TableData {

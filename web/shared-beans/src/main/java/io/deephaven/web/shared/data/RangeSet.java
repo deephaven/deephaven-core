@@ -438,4 +438,17 @@ public class RangeSet {
 
         return result;
     }
+
+    public long get(long key) {
+        Iterator<Range> rangeIterator = rangeIterator();
+        long position = 0;
+        while (rangeIterator.hasNext()) {
+            Range next = rangeIterator.next();
+            if (key < position + next.size()) {
+                return next.getFirst() + (key - position);
+            }
+            position += next.size();
+        }
+        return -1;
+    }
 }

@@ -296,6 +296,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         private final JsRangeSet added;
         private final JsRangeSet removed;
         private final JsRangeSet modified;
+        private final JsRangeSet fullRowSet;
 
         // cached copy in case it was requested, could be requested again
         private JsArray<SubscriptionRow> allRows;
@@ -310,6 +311,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
             this.added = new JsRangeSet(added);
             this.removed = new JsRangeSet(removed);
             this.modified = new JsRangeSet(modified);
+            this.fullRowSet = new JsRangeSet(transformRowsetForConsumer(subscription.getCurrentRowSet(), subscription.getServerViewport(), subscription.isReversed()));
         }
 
         /**
@@ -365,7 +367,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
 
         @Override
         public Any getData(long key, Column column) {
-            return subscription.getData(key, column.getIndex());
+            return subscription.getData(fullRowSet.getRange().get(key), column.getIndex());
         }
 
         @Override
@@ -416,7 +418,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
 
         @Override
         public JsRangeSet getFullIndex() {
-            return new JsRangeSet(subscription.getCurrentRowSet());
+            return fullRowSet;
         }
     }
 

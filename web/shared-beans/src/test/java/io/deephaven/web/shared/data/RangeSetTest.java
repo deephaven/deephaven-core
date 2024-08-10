@@ -490,4 +490,15 @@ public class RangeSetTest {
         assertEquals(initialRange, initialRange.subsetForPositions(RangeSet.ofRange(0, 9), false));
     }
 
+    @Test
+    public void testGet() {
+        long[] rows = {0, 1, 4, 5, 7, 9};
+        RangeSet initialRange = RangeSet.ofItems(rows);
+
+        for (int i = 0; i < rows.length; i++) {
+            assertEquals(rows[i], initialRange.get(i));
+        }
+
+        initialRange.removeRange(new Range(0, 1));
+    }
 }
