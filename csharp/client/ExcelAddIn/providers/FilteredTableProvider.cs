@@ -1,8 +1,9 @@
 ﻿using Deephaven.DeephavenClient;
+using Deephaven.ExcelAddIn.Util;
 
 namespace Deephaven.ExcelAddIn.Providers;
 
-internal class FilteredTableProvider : IObservable<TableHandleOrStatus> {
+internal class FilteredTableProvider : IObservable<StatusOr<TableHandle>> {
   public IDisposable Subscribe(FilteredTableDescriptor descriptor, IObserver<StatusOr<TableHandle>> observer) {
     var cp = _connectionProviderCollection.LookupOrCreate(descriptor.ConnectionId);
 
