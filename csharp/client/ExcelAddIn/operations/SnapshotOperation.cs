@@ -7,18 +7,18 @@ internal class SnapshotOperation : IOperation {
   private readonly string _tableName;
   private readonly string _filter;
   private readonly bool _wantHeaders;
-  private readonly IDataListener _sender;
+  private readonly IDataListener _dataListener;
 
-  public SnapshotOperation(string tableName, string filter, bool wantHeaders, IDataListener sender) {
+  public SnapshotOperation(string tableName, string filter, bool wantHeaders, IDataListener dataListener) {
     _tableName = tableName;
     _filter = filter;
     _wantHeaders = wantHeaders;
-    _sender = sender;
+    _dataListener = dataListener;
   }
 
   public void NewClientState(Client? client, string? message) {
     if (message != null) {
-      _sender.OnStatus(message);
+      _dataListener.OnStatus(message);
       return;
     }
 

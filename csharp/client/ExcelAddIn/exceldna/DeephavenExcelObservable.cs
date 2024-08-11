@@ -5,13 +5,15 @@ using ExcelDna.Integration;
 namespace Deephaven.DeephavenClient.ExcelAddIn.ExcelDna;
 
 /// <summary>
+/// TODO(kosak): make this make sense.
+/// 
 /// This class implements IExcelObservable, which itself is simply an implementation
 /// of the .NET Observable pattern. The basic idea is that there might be multiple
-/// IExcelObservers who want to subscribe to us. Initially, the state is quiescent:
-/// there are no observers, and there has been no attempt
-/// to do the table operation (e.g. no attempt to fetch or subscribe to the table).
+/// IExcelObservers who want to observe us. Initially, the state is quiescent:
+/// no one has observed us yet, and so we have not started our attempt to get
+/// data from Deephaven either.
 ///
-/// On the first call to Subscribe, we add the observer to our collection
+/// On the first call to Subscribe, we add the observer to our collection of observers,
 /// and we also register the operation with the OperationManager. This will in turn
 /// indirectly invoke IOperation.Start(), which will begin the specified interaction
 /// with Deephaven (for example, fetching or subscribing to a Deephaven table).

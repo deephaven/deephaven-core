@@ -1,12 +1,7 @@
-﻿using System.Diagnostics;
-using System.Runtime.InteropServices;
-using Deephaven.DeephavenClient.ExcelAddIn.ExcelDna;
+﻿using Deephaven.DeephavenClient.ExcelAddIn.ExcelDna;
 using Deephaven.DeephavenClient.ExcelAddIn.Operations;
 using Deephaven.DeephavenClient.ExcelAddIn.ViewModels;
 using Deephaven.DeephavenClient.ExcelAddIn.Views;
-using Deephaven.DeephavenClient.Interop;
-using Deephaven.DeephavenClient.Interop.TestApi;
-using Deephaven.DheClient.session;
 using ExcelAddIn.views;
 using ExcelDna.Integration;
 
@@ -43,29 +38,32 @@ public static class DeephavenExcelFunctions {
   }
 
   [ExcelFunction(Description = "Snapshots a table", IsThreadSafe = true)]
-  public static object DEEPHAVEN_SNAPSHOT(string tableName, object filter, object wantHeaders) {
+  public static object DEEPHAVEN_SNAPSHOT(string tableDescriptor, object filter, object wantHeaders) {
     const string functionName = "Deephaven.Client.ExcelAddIn.DeephavenExcelFunctions.DEEPHAVEN_SNAPSHOT";
     if (!TryInterpretArgs(filter, wantHeaders, out var filterVal, out var wantHeadersVal, out string errorText)) {
       return errorText;
     }
-    ExcelObservableSource osrc = () => {
-      var oc = new ObserverContainer();
-      var op = new SnapshotOperation(tableName, filterVal, wantHeadersVal, oc);
-      return new DeephavenExcelObservable(OperationManager, op, oc);
-    };
-    return ExcelAsyncUtil.Observe(functionName, new[]{tableName, filter, wantHeaders}, osrc);
+
+    ExcelObservableSource osrc = () => new SnapshotOperation(tableDescriptor, filterVal, wantHeadersVal, OperationManager);
+    // {
+    //   var oc = new ObserverContainer();
+    //   var op = new SnapshotOperation(tableName, filterVal, wantHeadersVal, oc);
+    //   return new DeephavenExcelObservable(OperationManager, op, oc);
+    // };
+    return ExcelAsyncUtil.Observe(functionName, new[]{ tableDescriptor, filter, wantHeaders}, osrc);
   }
 
   [ExcelFunction(Description = "Subscribes to a table", IsThreadSafe = true)]
-  public static object DEEPHAVEN_SUBSCRIBE(string tableName, object filter, object wantHeaders) {
+  public static object DEEPHAVEN_SUBSCRIBE(string tableDescriptor, object filter, object wantHeaders) {
     const string functionName = "Deephaven.Client.ExcelAddIn.DeephavenExcelFunctions.DEEPHAVEN_SUBSCRIBE";
     if (!TryInterpretArgs(filter, wantHeaders, out var filterVal, out var wantHeadersVal, out string errorText)) {
       return errorText;
     }
     ExcelObservableSource osrc = () => {
+      fancyPants.Susbcribe(hatelove);
       var oc = new ObserverContainer();
-      var op = new SubscribeOperation(tableName, filterVal, wantHeadersVal, oc);
-      return new DeephavenExcelObservable(OperationManager, op, oc);
+      var op = new SubscribeOperation(tableName, filterVal, wantHeadersVal, oc.GetDataListener());
+      return new DeephavenExcelObservable(OperationManager, op, oc.GetObserverCollection());
     };
     return ExcelAsyncUtil.Observe(functionName, new[]{tableName, filter, wantHeaders}, osrc);
   }
