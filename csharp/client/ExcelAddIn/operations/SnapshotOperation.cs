@@ -1,14 +1,15 @@
-﻿using Deephaven.DeephavenClient.ExcelAddIn.ExcelDna;
-using Deephaven.DeephavenClient.ExcelAddIn.Util;
+﻿using Deephaven.DeephavenClient.ExcelAddIn.Util;
+using Deephaven.ExcelAddIn.Providers;
 using ExcelDna.Integration;
 
-namespace Deephaven.DeephavenClient.ExcelAddIn.Operations;
+namespace Deephaven.ExcelAddIn.Operations;
 
 internal class SnapshotOperation : IExcelObservable, IObserver<TableHandleOrStatus> {
   private readonly string _tableDescriptor;
   private readonly string _filter;
   private readonly bool _wantHeaders;
   private readonly FilteredTableProvider _filteredTableProvider;
+  private IDisposable? _filteredTableDisposer = null;
 
   public SnapshotOperation(string tableDescriptor, string filter, bool wantHeaders,
     FilteredTableProvider filteredTableProvider) {
@@ -34,12 +35,8 @@ internal class SnapshotOperation : IExcelObservable, IObserver<TableHandleOrStat
       return;
     }
 
-    var temp = _filteredTableDisposer;
-    if (temp == null) {
-      return;
-    }
-    _filteredTableDisposer = null;
-    temp.Dispose();
+    var temp = Util.SetToNull(ref _filteredTableDisposer);
+    temp?.Dispose();
   }
 
   void IObserver<TableHandleOrStatus>.OnNext(TableHandleOrStatus thos) {
@@ -47,6 +44,8 @@ internal class SnapshotOperation : IExcelObservable, IObserver<TableHandleOrStat
       _observerCollection.OnMessageAll(status);
       return;
     }
+
+    _observerCollection.OnMessageAll($"Snapshotting \"{_tableName}\"");
 
     try {
       using var ct = tableHandle.ToClientTable();
@@ -64,19 +63,6 @@ internal class SnapshotOperation : IExcelObservable, IObserver<TableHandleOrStat
   void IObserver<TableHandleOrStatus>.OnError(Exception error) {
     throw new NotImplementedException();
   }
-
-
-
-  _observerCollection.Remove(observer, out var wasLast);
-      if () {
-        
-      }
-
-
-      return IExcelObservableRemove(observer);
-    });
-  }
-
 
   public void NewClientState(Client? client, string? message) {
     if (message != null) {

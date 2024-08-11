@@ -44,13 +44,13 @@ public static class DeephavenExcelFunctions {
       return errorText;
     }
 
-    ExcelObservableSource osrc = () => new SnapshotOperation(tableDescriptor, filterVal, wantHeadersVal, OperationManager);
+    ExcelObservableSource eos = () => new SnapshotOperation(tableDescriptor, filterVal, wantHeadersVal, OperationManager);
     // {
     //   var oc = new ObserverContainer();
     //   var op = new SnapshotOperation(tableName, filterVal, wantHeadersVal, oc);
     //   return new DeephavenExcelObservable(OperationManager, op, oc);
     // };
-    return ExcelAsyncUtil.Observe(functionName, new[]{ tableDescriptor, filter, wantHeaders}, osrc);
+    return ExcelAsyncUtil.Observe(functionName, new[]{ tableDescriptor, filter, wantHeaders}, eos);
   }
 
   [ExcelFunction(Description = "Subscribes to a table", IsThreadSafe = true)]
