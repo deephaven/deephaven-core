@@ -8,44 +8,67 @@ internal class SnapshotOperation : IExcelObservable, IObserver<TableHandleOrStat
   private readonly string _tableDescriptor;
   private readonly string _filter;
   private readonly bool _wantHeaders;
-  private readonly OperationManager _filteredTableProvider;
+  private readonly FilteredTableProvider _filteredTableProvider;
 
   public SnapshotOperation(string tableDescriptor, string filter, bool wantHeaders,
     FilteredTableProvider filteredTableProvider) {
     _tableDescriptor = tableDescriptor;
     _filter = filter;
     _wantHeaders = wantHeaders;
-    _operationManager = operationManager;
+    _filteredTableProvider = filteredTableProvider;
   }
 
   IDisposable IExcelObservable.Subscribe(IExcelObserver observer) {
     _observerCollection.Add(observer, out var isFirst);
 
     if (isFirst) {
-      _operationManagerDisposer = _operationManager.SubscribeToFilteredTable(this, _tableDescriptor, _filter);
+      _filteredTableDisposer = _filteredTableProvider.Subscribe(this, _tableDescriptor, _filter);
     }
 
-    return new ActionAsDisposable(() => IExcelObservableDispose(observer));
+    return new ActionAsDisposable(() => ExcelObservableDispose(observer));
   }
 
-  public void ExcelObservableDispose(IExcelObserver observer) {
+  private void ExcelObservableDispose(IExcelObserver observer) {
     _observerCollection.Remove(observer, out var wasLast);
     if (!wasLast) {
       return;
     }
 
-    var temp = _operationManagerDisposer;
+    var temp = _filteredTableDisposer;
     if (temp == null) {
       return;
     }
-    _operationManagerDisposer = null;
+    _filteredTableDisposer = null;
     temp.Dispose();
+  }
+
+  void IObserver<TableHandleOrStatus>.OnNext(TableHandleOrStatus thos) {
+    if (!thos.TryGetTableHandle(out var tableHandle, out var status)) {
+      _observerCollection.OnMessageAll(status);
+      return;
+    }
+
+    try {
+      using var ct = tableHandle.ToClientTable();
+      var result = Renderer.Render(ct, _wantHeaders);
+      _observerCollection.OnNextAll(result);
+    } catch (Exception ex) {
+      _observerCollection.OnExceptionAll(ex);
+    }
+  }
+
+  void IObserver<TableHandleOrStatus>.OnCompleted() {
+    throw new NotImplementedException();
+  }
+
+  void IObserver<TableHandleOrStatus>.OnError(Exception error) {
+    throw new NotImplementedException();
   }
 
 
 
   _observerCollection.Remove(observer, out var wasLast);
-      if (wasLast) {
+      if () {
         
       }
 
