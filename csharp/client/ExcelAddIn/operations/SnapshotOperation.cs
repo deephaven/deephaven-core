@@ -4,13 +4,14 @@ using ExcelDna.Integration;
 
 namespace Deephaven.DeephavenClient.ExcelAddIn.Operations;
 
-internal class SnapshotOperation : IExcelObservable {
+internal class SnapshotOperation : IExcelObservable, IObserver<TableHandleOrStatus> {
   private readonly string _tableDescriptor;
   private readonly string _filter;
   private readonly bool _wantHeaders;
-  private readonly OperationManager _operationManager;
+  private readonly OperationManager _filteredTableProvider;
 
-  public SnapshotOperation(string tableDescriptor, string filter, bool wantHeaders, OperationManager operationManager) {
+  public SnapshotOperation(string tableDescriptor, string filter, bool wantHeaders,
+    FilteredTableProvider filteredTableProvider) {
     _tableDescriptor = tableDescriptor;
     _filter = filter;
     _wantHeaders = wantHeaders;
