@@ -57,11 +57,11 @@ public sealed class ObserverContainer : IObserverCollection, IDataListener {
   private readonly object _sync = new();
   private readonly HashSet<IExcelObserver> _observers = new();
 
-  IObserverCollection GetObserverCollection() {
+  public IObserverCollection GetObserverCollection() {
     return this;
   }
 
-  IDataListener GetDataListener() {
+  public IDataListener GetDataListener() {
     return this;
   }
 
