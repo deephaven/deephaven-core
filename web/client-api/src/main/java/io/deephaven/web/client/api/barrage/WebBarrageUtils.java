@@ -30,7 +30,6 @@ public class WebBarrageUtils {
     public static final int FLATBUFFER_MAGIC = 0x6E687064;
 
     public static Uint8Array wrapMessage(FlatBufferBuilder innerBuilder, byte messageType) {
-        // TODO this doesnt look right, probably we can append the message rather than copying?
         FlatBufferBuilder outerBuilder = new FlatBufferBuilder(1024);
         int messageOffset = BarrageMessageWrapper.createMsgPayloadVector(outerBuilder, innerBuilder.dataBuffer());
         int offset =

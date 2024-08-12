@@ -625,7 +625,6 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         @Override
         protected void notifyUpdate(RangeSet rowsAdded, RangeSet rowsRemoved, RangeSet totalMods,
                 ShiftedRange[] shifted) {
-            // TODO Rewrite shifts as adds/removed/modifies? in the past we ignored them...
             TreeViewportData detail = new TreeViewportData(barrageSubscription, rowStyleColumn, getColumns(), rowsAdded,
                     rowsRemoved, totalMods, shifted);
             detail.setOffset(this.serverViewport.getFirstRow());

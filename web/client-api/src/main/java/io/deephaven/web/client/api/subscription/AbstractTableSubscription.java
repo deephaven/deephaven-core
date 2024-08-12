@@ -106,7 +106,6 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
                 // already closed
                 return;
             }
-            // TODO going to need "started change" so we don't let data escape when still updating
             WebBarrageSubscription.ViewportChangedHandler viewportChangedHandler = this::onViewportChange;
             WebBarrageSubscription.DataChangedHandler dataChangedHandler = this::onDataChanged;
 
@@ -123,12 +122,11 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
                             new FlightData());
 
             doExchange.onData(this::onFlightData);
-            // TODO handle stream ending, error
             doExchange.onEnd(this::onStreamEnd);
 
             sendFirstSubscriptionRequest();
         }, () -> {
-            // TODO fail
+            // Don't let subscription be used again, table failed and user will have already gotten an error elsewhere
             status = Status.DONE;
         });
     }
@@ -170,13 +168,12 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         this.viewportRowSet = viewport;
         this.columnBitSet = makeColumnBitset(columns);
         this.isReverseViewport = isReverseViewport;
-        // TODO validate that we can change updateinterval
         this.options = BarrageSubscriptionOptions.builder()
                 .batchSize(WebBarrageSubscription.BATCH_SIZE)
                 .maxMessageSize(WebBarrageSubscription.MAX_MESSAGE_SIZE)
                 .columnConversionMode(ColumnConversionMode.Stringify)
                 .minUpdateIntervalMs(updateIntervalMs == null ? 0 : (int) (double) updateIntervalMs)
-                .columnsAsList(false)// TODO flip this to true
+                .columnsAsList(false)// TODO(deephaven-core#5927) flip this to true
                 .useDeephavenNulls(true)
                 .build();
         FlatBufferBuilder request = subscriptionRequest(
@@ -211,6 +208,9 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         if (status == Status.ACTIVE) {
             return barrageSubscription.getCurrentRowSet().size();
         }
+        if (status == Status.DONE) {
+            throw new IllegalStateException("Can't read size when already closed");
+        }
         return state.getSize();
     }
 
@@ -226,6 +226,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
     }
 
     protected void notifyUpdate(RangeSet rowsAdded, RangeSet rowsRemoved, RangeSet totalMods, ShiftedRange[] shifted) {
+        // TODO (deephaven-core#2435) Rewrite shifts as adds/removed/modifies
         UpdateEventData detail = new UpdateEventData(
                 barrageSubscription,
                 rowStyleColumn,

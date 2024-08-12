@@ -315,28 +315,6 @@ public class TableViewportSubscription extends AbstractTableSubscription {
         return promise.asPromise();
     }
 
-    public Status getStatus() {
-        // if (realized == null) {
-        // assert status != Status.ACTIVE
-        // : "when the realized table is null, status should only be DONE or STARTING, instead is " + status;
-        // } else {
-        // if (realized.isAlive()) {
-        // assert status == Status.ACTIVE
-        // : "realized table is alive, expected status ACTIVE, instead is " + status;
-        // } else {
-        // assert status == Status.DONE : "realized table is closed, expected status DONE, instead is " + status;
-        // }
-        // }
-
-        return status;
-    }
-
-    public double size() {
-        // TODO this is wrong
-        assert getStatus() != Status.DONE;
-        return super.size();
-    }
-
     @JsMethod
     public Promise<TableData> snapshot(JsRangeSet rows, Column[] columns) {
         retainForExternalUse();
