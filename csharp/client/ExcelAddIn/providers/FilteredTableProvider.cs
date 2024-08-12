@@ -3,16 +3,32 @@ using Deephaven.ExcelAddIn.Util;
 
 namespace Deephaven.ExcelAddIn.Providers;
 
-internal class FilteredTableProvider : IObservable<StatusOr<TableHandle>> {
+internal class FilteredTable666 {
+  private readonly Dictionary<string, ConnectionProvider> _connectionProviderCollection = new();
+
   public IDisposable Subscribe(FilteredTableDescriptor descriptor, IObserver<StatusOr<TableHandle>> observer) {
-    var cp = _connectionProviderCollection.LookupOrCreate(descriptor.ConnectionId);
+    var cp = _connectionProviderCollection.LookupOrCreate(descriptor.ConnectionId,
+      () => new ConnectionProvider());
 
-
-
-    var jerky = cp.Subscribe(myNubbin);
-    return jerky;
+    var myNubbin = new MyNubbin(descriptor, observer);
+    return cp.Subscribe(myNubbin);
   }
 }
+
+internal class Credentials {
+
+}
+
+internal class ConnectionProvider : IObservable<Connection> {
+  private Credentials? credentials;
+}
+
+internal class Connection {
+  // from pq to client providerok lover 
+  private readonly Dictionary<string, ClientProvider> _clientProviderCollection = new();
+}
+
+
 
 internal class MyNubbin : IObserver<StatusOr<CoreOrCorePlusConnection>> {
   public void OnNext(StatusOr<CoreOrCorePlusConnection> so) {
