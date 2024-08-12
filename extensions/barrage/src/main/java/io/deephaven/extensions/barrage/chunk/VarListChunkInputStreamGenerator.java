@@ -13,7 +13,6 @@ import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
-import io.deephaven.chunk.util.pools.PoolableChunk;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -60,17 +59,13 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
     }
 
     @Override
-    public void close() {
-        if (REFERENCE_COUNT_UPDATER.decrementAndGet(this) == 0) {
-            if (chunk instanceof PoolableChunk) {
-                ((PoolableChunk) chunk).close();
-            }
-            if (offsets != null) {
-                offsets.close();
-            }
-            if (innerGenerator != null) {
-                innerGenerator.close();
-            }
+    protected void onReferenceCountAtZero() {
+        super.onReferenceCountAtZero();
+        if (offsets != null) {
+            offsets.close();
+        }
+        if (innerGenerator != null) {
+            innerGenerator.close();
         }
     }
 

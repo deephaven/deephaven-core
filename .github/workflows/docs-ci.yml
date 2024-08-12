@@ -76,6 +76,9 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
       - name: Set JAVA_HOME
         run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
 
@@ -85,12 +88,8 @@ jobs:
           cat gradle.properties
 
       - name: All Javadoc
-        uses: burrunan/gradle-cache-action@v1
-        with:
-          job-id: allJavadoc
-          arguments: --scan outputVersion combined-javadoc:allJavadoc
-          gradle-version: wrapper
-          
+        run: ./gradlew --scan outputVersion combined-javadoc:allJavadoc
+
       - name: Get Deephaven Version
         id: dhc-version
         run: echo "version=$(cat build/version)" >> $GITHUB_OUTPUT
@@ -139,6 +138,9 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
       - name: Set JAVA_HOME
         run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
 
@@ -148,12 +150,8 @@ jobs:
           cat gradle.properties
 
       - name: Run typedoc on JS API
-        uses: burrunan/gradle-cache-action@v1
-        with:
-          job-id: typedoc
-          arguments: --scan outputVersion :web-client-api:types:typedoc
-          gradle-version: wrapper
-          
+        run: ./gradlew --scan outputVersion :web-client-api:types:typedoc
+
       - name: Get Deephaven Version
         id: dhc-version
         run: echo "version=$(cat build/version)" >> $GITHUB_OUTPUT
@@ -202,6 +200,9 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
       - name: Set JAVA_HOME
         run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
 
@@ -211,12 +212,8 @@ jobs:
           cat gradle.properties
 
       - name: Generate Python Docs
-        uses: burrunan/gradle-cache-action@v1
-        with:
-          job-id: pythonDocs
-          arguments: --scan outputVersion sphinx:pythonDocs sphinx:pydeephavenDocs
-          gradle-version: wrapper
- 
+        run: ./gradlew --scan outputVersion sphinx:pythonDocs sphinx:pydeephavenDocs
+
       - name: Get Deephaven Version
         id: dhc-version
         run: echo "version=$(cat build/version)" >> $GITHUB_OUTPUT
@@ -285,6 +282,9 @@ jobs:
           distribution: 'temurin'
           java-version: '11'
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
       - name: Set JAVA_HOME
         run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
 
@@ -294,12 +294,8 @@ jobs:
           cat gradle.properties
 
       - name: Generate C++ Docs
-        uses: burrunan/gradle-cache-action@v1
-        with:
-          job-id: cppDocs
-          arguments: --scan outputVersion sphinx:cppClientDocs sphinx:cppExamplesDocs
-          gradle-version: wrapper
-         
+        run: ./gradlew --scan outputVersion sphinx:cppClientDocs sphinx:cppExamplesDocs
+
       - name: Get Deephaven Version
         id: dhc-version
         run: echo "version=$(cat build/version)" >> $GITHUB_OUTPUT
@@ -360,6 +356,9 @@ jobs:
           distribution: 'temurin'
           java-version: '11'
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
       - name: Set JAVA_HOME
         run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
 
@@ -369,12 +368,8 @@ jobs:
           cat gradle.properties
 
       - name: Generate R Docs
-        uses: burrunan/gradle-cache-action@v1
-        with:
-          job-id: rDocs
-          arguments: --scan outputVersion R:rClientSite
-          gradle-version: wrapper
-          
+        run: ./gradlew --scan outputVersion R:rClientSite
+
       - name: Get Deephaven Version
         id: dhc-version
         run: echo "version=$(cat build/version)" >> $GITHUB_OUTPUT

@@ -72,7 +72,7 @@ def _table_reader_all(table: Table, cols: Optional[Union[str, Sequence[str]]] = 
 
 
 def _table_reader_all_dict(table: Table, cols: Optional[Union[str, Sequence[str]]] = None, *, row_set: jpy.JType,
-                           prev: bool = False, to_numpy: bool = True) -> Dict[str, Union[np.ndarray | jpy.JType]]:
+                           prev: bool = False, to_numpy: bool = True) -> Dict[str, Union[np.ndarray, jpy.JType]]:
     """ Reads all the rows in the given row set of a table into a dictionary. The dictionary is a map of column names
     to numpy arrays or Java arrays.
 
