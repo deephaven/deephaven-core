@@ -4,13 +4,7 @@
 package io.deephaven.web.client.api.barrage.data;
 
 import elemental2.core.JsArray;
-import io.deephaven.chunk.ByteChunk;
 import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.DoubleChunk;
-import io.deephaven.chunk.IntChunk;
-import io.deephaven.chunk.LongChunk;
-import io.deephaven.chunk.ObjectChunk;
-import io.deephaven.chunk.ShortChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.web.client.api.barrage.WebBarrageMessage;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
@@ -20,7 +14,6 @@ import io.deephaven.web.shared.data.Range;
 import io.deephaven.web.shared.data.RangeSet;
 import io.deephaven.web.shared.data.ShiftedRange;
 import jsinterop.base.Any;
-import jsinterop.base.Js;
 
 import java.util.Arrays;
 import java.util.BitSet;
@@ -35,6 +28,10 @@ import java.util.TreeMap;
  * developers are acutely aware of extra async costs in requesting data, and can clearly indicate how much data is
  * requested. This class represents a barrage subscription for the JS API, and exposes access to the data presently
  * available on the client.
+ * <p>
+ * This is a rough analog to {@link io.deephaven.extensions.barrage.table.BarrageTable} and its subtypes, but isn't
+ * directly exposed to API consumers. Instead, the subscription types wrap this, and delegate their data storage and
+ * snapshot/delta handling here.
  */
 public abstract class WebBarrageSubscription {
 

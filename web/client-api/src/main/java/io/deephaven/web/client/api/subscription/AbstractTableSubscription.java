@@ -49,6 +49,10 @@ import java.util.BitSet;
  * of the table. When closed, it cannot be reused again.
  * <p>
  * This is also a base class for types exposed to JS.
+ * <p>
+ * This is a rough analog of the JVM's {@code BarrageSubscriptionImpl} class. In contrast to the JVM code, this is
+ * exposed to api consumers, rather than wrapping in a Table type, as it handles the barrage stream and provides events
+ * that client code can listen to.
  */
 public abstract class AbstractTableSubscription extends HasEventHandling {
     /**
