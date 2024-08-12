@@ -326,8 +326,6 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
          *
          * @return double
          */
-        // TODO expose this property only if this is a viewport
-        @JsProperty
         public Double getOffset() {
             return offset;
         }
