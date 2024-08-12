@@ -57,80 +57,6 @@ import static io.deephaven.web.client.fu.JsItr.iterate;
  * Consider making this a js type with restricted, read-only property access.
  */
 public final class ClientTableState extends TableConfig {
-    public ChunkType[] chunkTypes() {
-        // This is roughly ReinterpretUtils.maybeConvertToWritablePrimitiveChunkType, and should
-        // be rewritten to skip the trip through Class
-        return Arrays.stream(columnTypes()).map(dataType -> {
-            if (dataType == Boolean.class || dataType == boolean.class) {
-                return ChunkType.Object;
-            }
-            // JS client holds date objects as objects, not as longs
-            // if (dataType == DateWrapper.class) {
-            // // Note that storing ZonedDateTime as a primitive is lossy on the time zone.
-            // return ChunkType.Long;
-            // }
-            if (dataType == Long.class || dataType == long.class) {
-                // JS client holds longs as LongWrappers
-                return ChunkType.Object;
-            }
-            return ChunkType.fromElementType(dataType);
-        }).toArray(ChunkType[]::new);
-    }
-
-    public Class<?>[] columnTypes() {
-        return Arrays.stream(tableDef.getColumns())
-                .map(ColumnDefinition::getType)
-                .map(t -> {
-                    switch (t) {
-                        case "boolean":
-                        case "java.lang.Boolean":
-                            return boolean.class;
-                        case "char":
-                        case "java.lang.Character":
-                            return char.class;
-                        case "byte":
-                        case "java.lang.Byte":
-                            return byte.class;
-                        case "int":
-                        case "java.lang.Integer":
-                            return int.class;
-                        case "short":
-                        case "java.lang.Short":
-                            return short.class;
-                        case "long":
-                        case "java.lang.Long":
-                            return long.class;
-                        case "java.lang.Float":
-                        case "float":
-                            return float.class;
-                        case "java.lang.Double":
-                        case "double":
-                            return double.class;
-                        case "java.time.Instant":
-                            return DateWrapper.class;
-                        case "java.math.BigInteger":
-                            return BigIntegerWrapper.class;
-                        case "java.math.BigDecimal":
-                            return BigDecimalWrapper.class;
-                        default:
-                            return Object.class;
-                    }
-                })
-                .toArray(Class<?>[]::new);
-    }
-
-    public Class<?>[] componentTypes() {
-        // The only componentType that matters is byte.class
-        return Arrays.stream(tableDef.getColumns()).map(ColumnDefinition::getType).map(t -> {
-            if (!t.endsWith("[]")) {
-                return null;
-            }
-            if (t.equals("io.deephaven.vector.ByteVector[]")) {
-                return byte.class;
-            }
-            return Object.class;
-        }).toArray(Class[]::new);
-    }
 
     public enum ResolutionState {
         /**
@@ -305,6 +231,90 @@ public final class ClientTableState extends TableConfig {
 
     public TableTicket getHandle() {
         return handle;
+    }
+
+    /**
+     * Returns the ChunkType to use for each column in the table. This is roughly
+     * {@link io.deephaven.engine.table.impl.sources.ReinterpretUtils#maybeConvertToWritablePrimitiveChunkType(Class)}
+     * but without the trip through Class. Note also that effectively all types are stored as Objects except non-long
+     * primitives, so that they can be appropriately wrapped before storing (though the storage process will handle DH
+     * nulls).
+     */
+    public ChunkType[] chunkTypes() {
+        return Arrays.stream(columnTypes()).map(dataType -> {
+            if (dataType == Boolean.class || dataType == boolean.class) {
+                return ChunkType.Object;
+            }
+            if (dataType == Long.class || dataType == long.class) {
+                // JS client holds longs as LongWrappers
+                return ChunkType.Object;
+            }
+            return ChunkType.fromElementType(dataType);
+        }).toArray(ChunkType[]::new);
+    }
+
+    /**
+     * Returns the Java Class to represent each column in the table. This lets the client replace certain JVM-only
+     * classes with alternative implementations, but still use the simple
+     * {@link io.deephaven.extensions.barrage.chunk.ChunkReader.TypeInfo} wrapper.
+     */
+    public Class<?>[] columnTypes() {
+        return Arrays.stream(tableDef.getColumns())
+                .map(ColumnDefinition::getType)
+                .map(t -> {
+                    switch (t) {
+                        case "boolean":
+                        case "java.lang.Boolean":
+                            return boolean.class;
+                        case "char":
+                        case "java.lang.Character":
+                            return char.class;
+                        case "byte":
+                        case "java.lang.Byte":
+                            return byte.class;
+                        case "int":
+                        case "java.lang.Integer":
+                            return int.class;
+                        case "short":
+                        case "java.lang.Short":
+                            return short.class;
+                        case "long":
+                        case "java.lang.Long":
+                            return long.class;
+                        case "java.lang.Float":
+                        case "float":
+                            return float.class;
+                        case "java.lang.Double":
+                        case "double":
+                            return double.class;
+                        case "java.time.Instant":
+                            return DateWrapper.class;
+                        case "java.math.BigInteger":
+                            return BigIntegerWrapper.class;
+                        case "java.math.BigDecimal":
+                            return BigDecimalWrapper.class;
+                        default:
+                            return Object.class;
+                    }
+                })
+                .toArray(Class<?>[]::new);
+    }
+
+    /**
+     * Returns the Java Class to represent the component type in any list/array type. Only used to detect if a byte[]
+     * should be used for holding data at this time.
+     */
+    public Class<?>[] componentTypes() {
+        // The only componentType that matters is byte.class
+        return Arrays.stream(tableDef.getColumns()).map(ColumnDefinition::getType).map(t -> {
+            if (!t.endsWith("[]")) {
+                return null;
+            }
+            if (t.equals("io.deephaven.vector.ByteVector[]")) {
+                return byte.class;
+            }
+            return Object.class;
+        }).toArray(Class[]::new);
     }
 
     public ClientTableState newState(TableTicket newHandle, TableConfig config) {
