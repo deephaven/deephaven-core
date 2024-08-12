@@ -616,7 +616,6 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         }
 
         public void setViewport(double firstRow, double lastRow, JsArray<Column> columns, Double updateInterval) {
-            // TODO
             serverViewport = RangeSet.ofRange((long) firstRow, (long) lastRow);
 
             sendBarrageSubscriptionRequest(RangeSet.ofRange((long) firstRow, (long) lastRow), Js.uncheckedCast(columns),
@@ -692,7 +691,6 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                             range,
                             alwaysFireEvent);
 
-                    // TODO pass in the current ticket instead of state. for now this is a workaround.
                     ClientTableState state = new ClientTableState(connection,
                             new TableTicket(viewTicket.ticket().getTicket_asU8()), (callback, newState, metadata) -> {
                                 callback.apply("fail, trees dont reconnect like this", null);

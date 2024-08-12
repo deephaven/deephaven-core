@@ -18,6 +18,7 @@ import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.io.streams.ByteBufferInputStream;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.shared.data.RangeSet;
 import io.deephaven.web.shared.data.ShiftedRange;
 import org.apache.arrow.flatbuf.Field;
@@ -55,8 +56,11 @@ public class WebBarrageStreamReader {
     private final WebChunkReaderFactory chunkReaderFactory = new WebChunkReaderFactory();
     private final List<ChunkReader> readers = new ArrayList<>();
 
-    public WebBarrageMessage parseFrom(final StreamReaderOptions options, BitSet expectedColumns,
-            ChunkType[] columnChunkTypes, Class<?>[] columnTypes, Class<?>[] componentTypes,
+    public WebBarrageMessage parseFrom(
+            final StreamReaderOptions options,
+            ChunkType[] columnChunkTypes,
+            Class<?>[] columnTypes,
+            Class<?>[] componentTypes,
             FlightData flightData) throws IOException {
         ByteBuffer headerAsBB = TypedArrayHelper.wrap(flightData.getDataHeader_asU8());
         Message header = headerAsBB.hasRemaining() ? Message.getRootAsMessage(headerAsBB) : null;
@@ -66,7 +70,8 @@ public class WebBarrageStreamReader {
             BarrageMessageWrapper wrapper =
                     BarrageMessageWrapper.getRootAsBarrageMessageWrapper(msgAsBB);
             if (wrapper.magic() != WebBarrageUtils.FLATBUFFER_MAGIC) {
-                // TODO warn
+                JsLog.warn(
+                        "WebBarrageStreamReader: skipping app_metadata that does not look like BarrageMessageWrapper");
             } else if (wrapper.msgType() == BarrageMessageType.BarrageUpdateMetadata) {
                 if (msg != null) {
                     throw new IllegalStateException(
@@ -143,10 +148,6 @@ public class WebBarrageStreamReader {
             }
         }
 
-        // TODO double check if this is the right place
-        if (header == null) {
-            throw new IllegalStateException("Missing metadata header; cannot decode body");
-        }
         byte headerType = header.headerType();
         if (headerType == MessageHeader.Schema) {
             // there is no body and our clients do not want to see schema messages

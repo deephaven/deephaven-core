@@ -369,7 +369,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
             doExchange.onData(data -> {
                 WebBarrageMessage message;
                 try {
-                    message = reader.parseFrom(options, null, state().chunkTypes(), state().columnTypes(),
+                    message = reader.parseFrom(options, state().chunkTypes(), state().columnTypes(),
                             state().componentTypes(), data);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
