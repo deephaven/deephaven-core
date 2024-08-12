@@ -74,7 +74,10 @@ public class WebChunkReaderFactory implements ChunkReader.Factory {
                         return new IntChunkReader(options);
                     }
                     case 64: {
-                        return new LongChunkReader(options).transform(LongWrapper::of);
+                        if (t.isSigned()) {
+                            return new LongChunkReader(options).transform(LongWrapper::of);
+                        }
+                        throw new IllegalArgumentException("Unsigned 64bit integers not supported");
                     }
                     default:
                         throw new IllegalArgumentException("Unsupported Int bitwidth: " + t.bitWidth());
