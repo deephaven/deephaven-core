@@ -50,6 +50,7 @@ class Column(JObjectWrapper):
                 raise DHError(
                     "Must specify the data fields or j_column_definition for Column, but not both."
                 )
+            self.name = j_column_definition.getName()
             self.j_column_definition = j_column_definition
         else:
             if not name or not data_type:
@@ -62,6 +63,7 @@ class Column(JObjectWrapper):
                 component_type.qst_type.clazz() if component_type else None
             )
             j_column_type = column_type.value
+            self.name = name
             self.j_column_definition = _JColumnDefinition.fromGenericType(
                 name, j_data_type, j_component_type, j_column_type
             )
@@ -69,10 +71,6 @@ class Column(JObjectWrapper):
     @property
     def j_object(self) -> jpy.JType:
         return self.j_column_definition
-
-    @cached_property
-    def name(self) -> str:
-        return self.j_column_definition.getName()
 
     @cached_property
     def data_type(self) -> DType:
@@ -93,21 +91,19 @@ class Column(JObjectWrapper):
     def _to_j_column(self, input_data: Any = None):
         if input_data is None:
             return _JColumn.empty(self.j_column_header)
-        else:
-            if self.data_type.is_primitive:
-                return _JColumn.ofUnsafe(
-                    self.name,
-                    dtypes.array(
-                        self.data_type,
-                        input_data,
-                        remap=dtypes.null_remap(self.data_type),
-                    ),
-                )
-            else:
-                return _JColumn.of(
-                    self.j_column_header,
-                    dtypes.array(self.data_type, input_data),
-                )
+        if self.data_type.is_primitive:
+            return _JColumn.ofUnsafe(
+                self.name,
+                dtypes.array(
+                    self.data_type,
+                    input_data,
+                    remap=dtypes.null_remap(self.data_type),
+                ),
+            )
+        return _JColumn.of(
+            self.j_column_header,
+            dtypes.array(self.data_type, input_data),
+        )
 
 
 class InputColumn(JObjectWrapper):
@@ -126,6 +122,7 @@ class InputColumn(JObjectWrapper):
     ):
         try:
             column_definition = Column(name, data_type, component_type, column_type, j_column_definition)
+            self.name = column_definition.name
             self.j_column = column_definition._to_j_column(input_data)
         except Exception as e:
             raise DHError(e, f"failed to create an InputColumn ({self.name}).") from e

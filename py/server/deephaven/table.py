@@ -428,10 +428,12 @@ class TableDefinition(JObjectWrapper,Mapping):
 
     @cached_property
     def _dict(self) -> Dict[str, Column]:
-        """The column definitions dictionary."""
         return {
-            j_col.getName() : Column(j_column_definition=j_col)
-            for j_col in self.j_table_definition.getColumnsArray()
+            col.name: col
+            for col in [
+                Column(j_column_definition=j_col)
+                for j_col in self.j_table_definition.getColumnsArray()
+            ]
         }
 
     def __getitem__(self, key) -> Column:
