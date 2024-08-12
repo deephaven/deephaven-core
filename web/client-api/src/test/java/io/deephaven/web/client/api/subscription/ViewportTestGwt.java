@@ -12,6 +12,7 @@ import io.deephaven.web.client.api.AbstractAsyncGwtTestCase;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.HasEventHandling;
 import io.deephaven.web.client.api.JsTable;
+import io.deephaven.web.client.api.TableData;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.filter.FilterValue;
 import io.deephaven.web.shared.fu.RemoverFn;
@@ -179,10 +180,16 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                         assertEquals(0, indexOf(viewport.getColumns(), table.findColumn("I")));
 
                         assertEquals(1, viewport.getRows().length);
-                        assertNotNull(viewport.getRows().getAt(0).get(table.findColumn("I")));
-                        assertThrowsException(() -> viewport.getRows().getAt(0).get(table.findColumn("J")));
-                        assertThrowsException(() -> viewport.getRows().getAt(0).get(table.findColumn("K")));
+                        TableData.Row row1 = viewport.getRows().getAt(0);
+                        assertNotNull(viewport.getData(0, table.findColumn("I")));
+                        assertNotNull(row1.get(table.findColumn("I")));
+                        assertNotNull(table.findColumn("I").get(row1));
+                        assertNotNull(row1.getFormat(table.findColumn("I")));
+                        assertNotNull(table.findColumn("I").getFormat(row1));
+                        assertNotNull(viewport.getFormat(0, table.findColumn("I")));
 
+                        assertThrowsException(() -> row1.get(table.findColumn("J")));
+                        assertThrowsException(() -> row1.get(table.findColumn("K")));
                     }, 2501);
                 })
                 .then(table -> {
