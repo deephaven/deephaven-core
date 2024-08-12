@@ -14,8 +14,7 @@ from deephaven.execution_context import make_user_exec_ctx, get_exec_ctx
 from deephaven.html import to_html
 from deephaven.jcompat import j_hashmap
 from deephaven.pandas import to_pandas
-from deephaven.stream.table_publisher import table_publisher
-from deephaven.table import Table, SearchDisplayMode
+from deephaven.table import Table, SearchDisplayMode, table_diff
 from tests.testbase import BaseTestCase, table_equals
 
 
@@ -1123,6 +1122,64 @@ class TableTestCase(BaseTestCase):
         with self.assertRaises(DHError) as cm:
             t.partition_by("A", "B")
         self.assertIn("drop_keys must be", str(cm.exception))
+
+    def test_table_diff(self):
+        with self.subTest("diff"):
+            t1 = empty_table(10).update(["A = i", "B = i", "C = i"])
+            t2 = empty_table(10).update(["A = i", "B = i % 2 == 0? i: i + 1", "C = i % 2 == 0? i + 1: i"])
+            d = table_diff(t1, t2, max_diffs=10).split("\n")
+            self.assertEqual(len(d), 3)
+            self.assertIn("row 1", d[0])
+            self.assertIn("row 0", d[1])
+
+            d = table_diff(t1, t2).split("\n")
+            self.assertEqual(len(d), 2)
+
+        with self.subTest("diff - ignore column order"):
+            t1 = empty_table(10).update(["A = i", "B = i + 1"])
+            t2 = empty_table(10).update(["B = i + 1", "A = i"])
+            d = table_diff(t1, t2, max_diffs=10).split("\n")
+            self.assertEqual(len(d), 3)
+
+            t1 = empty_table(10).update(["A = i", "B = i"])
+            t2 = empty_table(10).update(["B = i", "A = i"])
+            d = table_diff(t1, t2, max_diffs=10, ignore_column_order=True)
+            self.assertEqual(d, "")
+
+        with self.subTest("diff - floating_comparison = 'absolute'-double"):
+            t1 = empty_table(10).update(["A = i", "B = i + 1.0"])
+            t2 = empty_table(10).update(["A = i", "B = i + 1.00001"])
+            d = table_diff(t1, t2, max_diffs=10, floating_comparison='exact').split("\n")
+            self.assertEqual(len(d), 2)
+
+            t1 = empty_table(10).update(["A = i", "B = i + 1.0"])
+            t2 = empty_table(10).update(["A = i", "B = i + 1.00001"])
+            d = table_diff(t1, t2, max_diffs=10, floating_comparison='absolute')
+            self.assertEqual(d, "")
+
+        with self.subTest("diff - floating_comparison = 'absolute'-float"):
+            t1 = empty_table(10).update(["A = i", "B = (float)(i + 1.0)"])
+            t2 = empty_table(10).update(["A = i", "B = (float)(i + 1.005)"])
+            d = table_diff(t1, t2, max_diffs=10, floating_comparison='exact').split("\n")
+            self.assertEqual(len(d), 2)
+
+            t1 = empty_table(10).update(["A = i", "B = (float)(i + 1.0)"])
+            # 1.005 would cause the difference to be greater than 0.005, something like 0.00500001144
+            t2 = empty_table(10).update(["A = i", "B = (float)(i + 1.004999)"])
+            d = table_diff(t1, t2, max_diffs=10, floating_comparison='absolute')
+            self.assertEqual(d, "")
+
+        with self.subTest("diff - floating_comparison='relative'-double"):
+            t1 = empty_table(10).update(["A = i", "B = i + 1.0"])
+            t2 = empty_table(10).update(["A = i", "B = i + 1.00001"])
+            d = table_diff(t1, t2, max_diffs=10, floating_comparison='relative')
+            self.assertEqual(d, "")
+
+        with self.subTest("diff - floating_comparison='relative'-float"):
+            t1 = empty_table(10).update(["A = i", "B = (float)(i + 1.0)"])
+            t2 = empty_table(10).update(["A = i", "B = (float)(i + 1.005)"])
+            d = table_diff(t1, t2, max_diffs=10, floating_comparison='relative')
+            self.assertFalse(d)
 
 
 if __name__ == "__main__":

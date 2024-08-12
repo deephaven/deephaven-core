@@ -11,7 +11,7 @@ import contextlib
 import inspect
 from enum import Enum
 from enum import auto
-from typing import Any, Optional, Callable, Dict, Generator, Tuple
+from typing import Any, Optional, Callable, Dict, Generator, Tuple, Literal
 from typing import Sequence, List, Union, Protocol
 
 import jpy
@@ -43,6 +43,8 @@ _JLayoutHintBuilder = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder")
 _JSearchDisplayMode = jpy.get_type("io.deephaven.engine.util.LayoutHintBuilder$SearchDisplayModes")
 _JSnapshotWhenOptions = jpy.get_type("io.deephaven.api.snapshot.SnapshotWhenOptions")
 _JBlinkTableTools = jpy.get_type("io.deephaven.engine.table.impl.BlinkTableTools")
+_JDiffItems = jpy.get_type("io.deephaven.engine.util.TableDiff$DiffItems")
+_JEnumSet = jpy.get_type("java.util.EnumSet")
 
 # PartitionedTable
 _JPartitionedTable = jpy.get_type("io.deephaven.engine.table.PartitionedTable")
@@ -3765,3 +3767,67 @@ def multi_join(input: Union[Table, Sequence[Table], MultiJoinInput, Sequence[Mul
             table() method.
     """
     return MultiJoinTable(input, on)
+
+
+# region utility functions
+
+def table_diff(t1: Table, t2: Table, max_diffs: int = 1, floating_comparison: Literal['exact', 'absolute', 'relative'] = 'exact',
+               ignore_column_order: bool = False) -> str:
+    """Returns the differences between this table and the provided table as a string. If the two tables are the same,
+    an empty string is returned. The differences are returned in a human-readable format.
+
+    This method starts by comparing the table sizes, and then the schema of the two tables, such as the number of
+    columns, column names, column types, column orders. If the schemas are different, the comparison stops and
+    the differences are returned. If the schemas are the same, the method proceeds to compare the data in the
+    tables. The method compares the data in the tables column by column (not row by row) and only records the first
+    difference found in each column.
+
+    Note, inexact comparison of floating numbers may sometimes be desirable due to their inherent imprecision.
+    When that is the case, the floating_comparison should be set to either 'absolute' or 'relative'. When it is set
+    to 'absolute', the absolute value of the difference between two floating numbers is used to compare against a
+    threshold. The threshold is set to 0.0001 for Doubles and 0.005 for Floats. Only differences that are greater
+    than the threshold are recorded. When floating_comparison is set to 'relative', the relative difference between
+    two floating numbers is used to compare against the threshold. The relative difference is calculated as the absolute
+    difference divided by the smaller absolute value between the two numbers.
+
+    Args:
+        t1 (Table): the table to compare
+        t2 (Table): the table to compare against
+        max_diffs (int): the maximum number of differences to return, default is 1
+        floating_comparison (Literal['exact', 'absolute', 'relative']): the type of comparison to use for floating numbers,
+            default is 'exact'
+        ignore_column_order (bool): whether columns that exist in both tables but in different orders are
+            treated as differences.  False indicates that column order matters (default), and True indicates that
+            column order does not matter.
+
+    Returns:
+        string
+
+    Raises:
+        DHError
+    """
+    try:
+        diff_items = []
+        if max_diffs < 1:
+            raise ValueError("max_diffs must be greater than 0.")
+
+        if floating_comparison not in ['exact', 'absolute', 'relative']:
+            raise ValueError("floating_comparison must be one of 'exact', 'absolute', or 'relative'.")
+
+        if floating_comparison != 'exact':
+            diff_items.append(_JDiffItems.DoublesExact)
+        if floating_comparison == 'relative':
+            diff_items.append(_JDiffItems.DoubleFraction)
+        if ignore_column_order:
+            diff_items.append(_JDiffItems.ColumnsOrder)
+
+        with auto_locking_ctx(t1, t2):
+            if diff_items:
+                j_diff_items = _JEnumSet.of(*diff_items)
+                return _JTableTools.diff(t1.j_table, t2.j_table, max_diffs, j_diff_items)
+            else:
+                return _JTableTools.diff(t1.j_table, t2.j_table, max_diffs)
+    except Exception as e:
+        raise DHError(e, "table diff failed") from e
+
+# endregion
