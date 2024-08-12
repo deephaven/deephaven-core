@@ -11,6 +11,10 @@ import org.assertj.core.api.ClassAssert;
 
 public class ColumnSourceAssert<T> extends AbstractAssert<ColumnSourceAssert<T>, ColumnSource<T>> {
 
+    public static <T> ColumnSourceAssert<T> assertThat(ColumnSource<T> columnSource) {
+        return new ColumnSourceAssert<>(columnSource);
+    }
+
     public ColumnSourceAssert(ColumnSource<T> columnSource) {
         super(columnSource, ColumnSourceAssert.class);
     }

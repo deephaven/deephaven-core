@@ -78,7 +78,7 @@ public class TableAssert extends AbstractAssert<TableAssert, Table> {
     }
 
     public void isNotFlat() {
-        Assertions.assertThat(actual.isFailed()).isFalse();
+        Assertions.assertThat(actual.isFlat()).isFalse();
     }
 
     public void isFailed() {

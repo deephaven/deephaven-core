@@ -55,19 +55,19 @@ public class RowSetAssert extends AbstractAssert<RowSetAssert, RowSet> {
         return assertThat(actual.trackingCast().prev());
     }
 
-    public void containsRange(int start, int end) {
+    public void containsRange(long start, long end) {
         Assertions.assertThat(actual.containsRange(start, end)).isTrue();
     }
 
-    public void doesNotContainsRange(int start, int end) {
+    public void doesNotContainsRange(long start, long end) {
         Assertions.assertThat(actual.containsRange(start, end)).isFalse();
     }
 
-    public void overlapsRange(int start, int end) {
+    public void overlapsRange(long start, long end) {
         Assertions.assertThat(actual.overlapsRange(start, end)).isTrue();
     }
 
-    public void doesNotoverlapsRange(int start, int end) {
+    public void doesNotOverlapsRange(long start, long end) {
         Assertions.assertThat(actual.overlapsRange(start, end)).isFalse();
     }
 
