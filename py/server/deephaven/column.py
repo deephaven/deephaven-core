@@ -4,16 +4,16 @@
 
 """ This module implements the Column class and functions that work with Columns. """
 
-from dataclasses import dataclass, field
 from enum import Enum
+from functools import cached_property
 from typing import Sequence, Any
 
 import jpy
 
 import deephaven.dtypes as dtypes
 from deephaven import DHError
-from deephaven.dtypes import DType
-from deephaven.dtypes import _instant_array
+from deephaven.dtypes import DType, _instant_array, from_jtype
+from deephaven._wrapper import JObjectWrapper
 
 _JColumnHeader = jpy.get_type("io.deephaven.qst.column.header.ColumnHeader")
 _JColumn = jpy.get_type("io.deephaven.qst.column.Column")
@@ -32,46 +32,107 @@ class ColumnType(Enum):
         return self.name
 
 
-@dataclass
-class Column:
-    """ A Column object represents a column definition in a Deephaven Table. """
-    name: str
-    data_type: DType
-    component_type: DType = None
-    column_type: ColumnType = ColumnType.NORMAL
+class Column(JObjectWrapper):
+    """A Column object represents a column definition in a Deephaven Table."""
+
+    j_object_type = _JColumnDefinition
+
+    def __init__(
+        self,
+        name: str = None,
+        data_type: DType = None,
+        component_type: DType = None,
+        column_type: ColumnType = ColumnType.NORMAL,
+        j_column_definition: jpy.JType = None,
+    ):
+        if j_column_definition:
+            if name or data_type or component_type or column_type != ColumnType.NORMAL:
+                raise DHError(
+                    "Must specify the data fields or j_column_definition for Column, but not both."
+                )
+            self.j_column_definition = j_column_definition
+        else:
+            if not name or not data_type:
+                raise DHError("Must specify both name and data_type")
+            if hasattr(data_type.j_type, "jclass"):
+                j_data_type = data_type.j_type.jclass
+            else:
+                j_data_type = data_type.qst_type.clazz()
+            j_component_type = (
+                component_type.qst_type.clazz() if component_type else None
+            )
+            j_column_type = column_type.value
+            self.j_column_definition = _JColumnDefinition.fromGenericType(
+                name, j_data_type, j_component_type, j_column_type
+            )
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_column_definition
+
+    @cached_property
+    def name(self) -> str:
+        return self.j_column_definition.getName()
+
+    @cached_property
+    def data_type(self) -> DType:
+        return from_jtype(self.j_column_definition.getDataType())
+
+    @cached_property
+    def component_type(self) -> DType:
+        return from_jtype(self.j_column_definition.getComponentType())
+
+    @cached_property
+    def column_type(self) -> ColumnType:
+        return ColumnType(self.j_column_definition.getColumnType())
 
     @property
     def j_column_header(self):
         return _JColumnHeader.of(self.name, self.data_type.qst_type)
 
-    @property
-    def j_column_definition(self):
-        if hasattr(self.data_type.j_type, 'jclass'):
-            j_data_type = self.data_type.j_type.jclass
+    def _to_j_column(self, input_data: Any = None):
+        if input_data is None:
+            return _JColumn.empty(self.j_column_header)
         else:
-            j_data_type = self.data_type.qst_type.clazz()
-        j_component_type = self.component_type.qst_type.clazz() if self.component_type else None
-        j_column_type = self.column_type.value
-        return _JColumnDefinition.fromGenericType(self.name, j_data_type, j_component_type, j_column_type)
-
-
-@dataclass
-class InputColumn(Column):
-    """ An InputColumn represents a user defined column with some input data. """
-    input_data: Any = field(default=None)
-
-    def __post_init__(self):
-        try:
-            if self.input_data is None:
-                self.j_column = _JColumn.empty(self.j_column_header)
+            if self.data_type.is_primitive:
+                return _JColumn.ofUnsafe(
+                    self.name,
+                    dtypes.array(
+                        self.data_type,
+                        input_data,
+                        remap=dtypes.null_remap(self.data_type),
+                    ),
+                )
             else:
-                if self.data_type.is_primitive:
-                    self.j_column = _JColumn.ofUnsafe(self.name, dtypes.array(self.data_type, self.input_data,
-                                                                              remap=dtypes.null_remap(self.data_type)))
-                else:
-                    self.j_column = _JColumn.of(self.j_column_header, dtypes.array(self.data_type, self.input_data))
+                return _JColumn.of(
+                    self.j_column_header,
+                    dtypes.array(self.data_type, input_data),
+                )
+
+
+class InputColumn(JObjectWrapper):
+    """ An InputColumn represents a user defined column with some input data."""
+
+    j_object_type = _JColumn
+
+    def __init__(
+        self,
+        name: str = None,
+        data_type: DType = None,
+        component_type: DType = None,
+        column_type: ColumnType = ColumnType.NORMAL,
+        j_column_definition: jpy.JType = None,
+        input_data: Any = None,
+    ):
+        try:
+            column_definition = Column(name, data_type, component_type, column_type, j_column_definition)
+            self.j_column = column_definition._to_j_column(input_data)
         except Exception as e:
             raise DHError(e, f"failed to create an InputColumn ({self.name}).") from e
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_column
 
 
 def bool_col(name: str, data: Sequence) -> InputColumn:

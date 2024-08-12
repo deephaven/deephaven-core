@@ -11,6 +11,7 @@ import contextlib
 import inspect
 from enum import Enum
 from enum import auto
+from functools import cached_property
 from typing import Any, Optional, Callable, Dict, Generator, Tuple
 from typing import Sequence, List, Union, Protocol
 
@@ -424,23 +425,13 @@ class TableDefinition(JObjectWrapper,Mapping):
         """This table definition as a table."""
         return Table(_JTableTools.metaTable(self.j_table_definition))
 
-    @property
+    @cached_property
     def _dict(self) -> Dict[str, Column]:
         """The column definitions dictionary."""
-        if self._d:
-            return self._d
-        d = {}
-        j_cols = self.j_table_definition.getColumnsArray()
-        for j_col in j_cols:
-            name = j_col.getName()
-            d[name] = Column(
-                name=name,
-                data_type=dtypes.from_jtype(j_col.getDataType()),
-                component_type=dtypes.from_jtype(j_col.getComponentType()),
-                column_type=ColumnType(j_col.getColumnType()),
-            )
-        self._d = d
-        return self._d
+        return {
+            j_col.getName() : Column(j_column_definition=j_col)
+            for j_col in self.j_table_definition.getColumnsArray()
+        }
 
     def __getitem__(self, key) -> Column:
         return self._dict[key]
@@ -487,9 +478,6 @@ class Table(JObjectWrapper):
         if self.j_table is None:
             raise DHError("j_table type is not io.deephaven.engine.table.Table")
         self._definition = TableDefinition(self.j_table.getDefinition())
-        self._is_refreshing = None
-        self._update_graph = None
-        self._is_flat = None
 
     def __repr__(self):
         default_repr = super().__repr__()
@@ -512,31 +500,25 @@ class Table(JObjectWrapper):
         """The current number of rows in the table."""
         return self.j_table.size()
 
-    @property
+    @cached_property
     def is_refreshing(self) -> bool:
         """Whether this table is refreshing."""
-        if self._is_refreshing is None:
-            self._is_refreshing = self.j_table.isRefreshing()
-        return self._is_refreshing
+        return self.j_table.isRefreshing()
 
-    @property
+    @cached_property
     def is_blink(self) -> bool:
         """Whether this table is a blink table."""
         return _JBlinkTableTools.isBlink(self.j_table)
 
-    @property
+    @cached_property
     def update_graph(self) -> UpdateGraph:
         """The update graph of the table."""
-        if self._update_graph is None:
-            self._update_graph = UpdateGraph(self.j_table.getUpdateGraph())
-        return self._update_graph
+        return UpdateGraph(self.j_table.getUpdateGraph())
 
-    @property
+    @cached_property
     def is_flat(self) -> bool:
         """Whether this table is guaranteed to be flat, i.e. its row set will be from 0 to number of rows - 1."""
-        if self._is_flat is None:
-            self._is_flat = self.j_table.isFlat()
-        return self._is_flat
+        return self.j_table.isFlat()
 
     @property
     def definition(self) -> TableDefinition:
@@ -2387,11 +2369,6 @@ class PartitionedTable(JObjectWrapper):
         self.j_partitioned_table = j_partitioned_table
         self._definition = None
         self._table = None
-        self._key_columns = None
-        self._unique_keys = None
-        self._constituent_column = None
-        self._constituent_changes_permitted = None
-        self._is_refreshing = None
 
     @classmethod
     def from_partitioned_table(cls,
@@ -2483,31 +2460,25 @@ class PartitionedTable(JObjectWrapper):
         except Exception as e:
             raise DHError(e, "failed to create a PartitionedTable from constituent tables.") from e
 
-    @property
+    @cached_property
     def table(self) -> Table:
         """The underlying partitioned table."""
-        if self._table is None:
-            self._table = Table(j_table=self.j_partitioned_table.table())
-        return self._table
+        return Table(j_table=self.j_partitioned_table.table())
 
     @property
     def update_graph(self) -> UpdateGraph:
         """The underlying partitioned table's update graph."""
         return self.table.update_graph
 
-    @property
+    @cached_property
     def is_refreshing(self) -> bool:
         """Whether the underlying partitioned table is refreshing."""
-        if self._is_refreshing is None:
-            self._is_refreshing = self.table.is_refreshing
-        return self._is_refreshing
+        return self.table.is_refreshing
 
-    @property
+    @cached_property
     def key_columns(self) -> List[str]:
         """The partition key column names."""
-        if self._key_columns is None:
-            self._key_columns = list(self.j_partitioned_table.keyColumnNames().toArray())
-        return self._key_columns
+        return list(self.j_partitioned_table.keyColumnNames().toArray())
 
     def keys(self) -> Table:
         """Returns a Table containing all the keys of the underlying partitioned table."""
@@ -2516,30 +2487,23 @@ class PartitionedTable(JObjectWrapper):
         else:
             return self.table.select_distinct(self.key_columns)
 
-    @property
+    @cached_property
     def unique_keys(self) -> bool:
         """Whether the keys in the underlying table must always be unique. If keys must be unique, one can expect
         that self.table.select_distinct(self.key_columns) and self.table.view(self.key_columns) operations always
         produce equivalent tables."""
-        if self._unique_keys is None:
-            self._unique_keys = self.j_partitioned_table.uniqueKeys()
-        return self._unique_keys
+        return self.j_partitioned_table.uniqueKeys()
 
-    @property
+    @cached_property
     def constituent_column(self) -> str:
         """The name of the column containing constituent tables."""
-        if self._constituent_column is None:
-            self._constituent_column = self.j_partitioned_table.constituentColumnName()
-        return self._constituent_column
+        return self.j_partitioned_table.constituentColumnName()
 
-    @property
+    @cached_property
     def constituent_table_definition(self) -> TableDefinition:
         """The column definitions for constituent tables. All constituent tables in a partitioned table have the
         same column definitions."""
-        if not self._definition:
-            self._definition = TableDefinition(self.j_partitioned_table.constituentDefinition())
-
-        return self._definition
+        return TableDefinition(self.j_partitioned_table.constituentDefinition())
 
     @property
     def constituent_table_columns(self) -> List[Column]:
@@ -2547,7 +2511,7 @@ class PartitionedTable(JObjectWrapper):
         same column definitions."""
         return list(self.constituent_table_definition)
 
-    @property
+    @cached_property
     def constituent_changes_permitted(self) -> bool:
         """Can the constituents of the underlying partitioned table change?  Specifically, can the values of the
         constituent column change?
@@ -2562,9 +2526,7 @@ class PartitionedTable(JObjectWrapper):
         if the underlying partitioned table is refreshing. Also note that the underlying partitioned table must be
         refreshing if it contains any refreshing constituents.
         """
-        if self._constituent_changes_permitted is None:
-            self._constituent_changes_permitted = self.j_partitioned_table.constituentChangesPermitted()
-        return self._constituent_changes_permitted
+        return self.j_partitioned_table.constituentChangesPermitted()
 
     def merge(self) -> Table:
         """Makes a new Table that contains all the rows from all the constituent tables. In the merged result,
