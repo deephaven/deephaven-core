@@ -273,10 +273,12 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
             String numberFormat = null;
             String formatString = null;
             if (column.getStyleColumnIndex() != null) {
-                cellColors = subscription.getData(index, column.getStyleColumnIndex()).uncheckedCast();
+                LongWrapper wrapper = subscription.getData(index, column.getStyleColumnIndex()).uncheckedCast();
+                cellColors = wrapper == null ? 0 : wrapper.getWrapped();
             }
             if (rowStyleColumn != TableData.NO_ROW_FORMAT_COLUMN) {
-                rowColors = subscription.getData(index, rowStyleColumn).uncheckedCast();
+                LongWrapper wrapper = subscription.getData(index, rowStyleColumn).uncheckedCast();
+                rowColors = wrapper == null ? 0 : wrapper.getWrapped();
             }
             if (column.getFormatStringColumnIndex() != null) {
                 numberFormat = subscription.getData(index, column.getFormatStringColumnIndex()).uncheckedCast();
@@ -311,7 +313,8 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
             this.added = new JsRangeSet(added);
             this.removed = new JsRangeSet(removed);
             this.modified = new JsRangeSet(modified);
-            this.fullRowSet = new JsRangeSet(transformRowsetForConsumer(subscription.getCurrentRowSet(), subscription.getServerViewport(), subscription.isReversed()));
+            this.fullRowSet = new JsRangeSet(transformRowsetForConsumer(subscription.getCurrentRowSet(),
+                    subscription.getServerViewport(), subscription.isReversed()));
         }
 
         /**
@@ -377,21 +380,24 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
 
         @Override
         public Format getFormat(long index, Column column) {
+            long key = fullRowSet.getRange().get(index);
             long cellColors = 0;
             long rowColors = 0;
             String numberFormat = null;
             String formatString = null;
             if (column.getStyleColumnIndex() != null) {
-                cellColors = subscription.getData(index, column.getStyleColumnIndex()).uncheckedCast();
+                LongWrapper wrapper = subscription.getData(key, column.getStyleColumnIndex()).uncheckedCast();
+                cellColors = wrapper == null ? 0 : wrapper.getWrapped();
             }
             if (rowStyleColumn != NO_ROW_FORMAT_COLUMN) {
-                rowColors = subscription.getData(index, rowStyleColumn).uncheckedCast();
+                LongWrapper wrapper = subscription.getData(key, column.getStyleColumnIndex()).uncheckedCast();
+                rowColors = wrapper == null ? 0 : wrapper.getWrapped();
             }
             if (column.getFormatStringColumnIndex() != null) {
-                numberFormat = subscription.getData(index, column.getFormatStringColumnIndex()).uncheckedCast();
+                numberFormat = subscription.getData(key, column.getFormatStringColumnIndex()).uncheckedCast();
             }
             if (column.getFormatStringColumnIndex() != null) {
-                formatString = subscription.getData(index, column.getFormatStringColumnIndex()).uncheckedCast();
+                formatString = subscription.getData(key, column.getFormatStringColumnIndex()).uncheckedCast();
             }
             return new Format(cellColors, rowColors, numberFormat, formatString);
         }

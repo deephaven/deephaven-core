@@ -41,7 +41,8 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
             .script("from datetime import datetime, timedelta")
             .script("growingForward",
                     "time_table(period=\"PT00:00:01\", start_time=datetime.now() - timedelta(minutes=1)).update([\"I=i\", \"J=i*i\", \"K=0\"])")
-            .script("growingBackward", "growingForward.sort_descending(\"Timestamp\")")
+            .script("growingBackward",
+                    "growingForward.sort_descending(\"Timestamp\").format_columns(['I=I>2 ? GREEN : RED'])")
             .script("blinkOne",
                     "time_table(\"PT00:00:01\").update([\"I=i\", \"J=1\"]).last_by(by=\"J\").where(\"I%2 != 0\")");
 

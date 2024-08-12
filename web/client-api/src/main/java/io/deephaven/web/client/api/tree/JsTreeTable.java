@@ -556,20 +556,35 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                 Js.<JsArray<Double>>cast(keyTableData[i++]).push(action);
             }
 
-//            @Override
-//            public Format getFormat(Column column) {
-//                Column sourceColumn = sourceColumns.get(column.getName());
-//                if (sourceColumn == null) {
-//                    // no constituent column, call super
-//                    return super.getFormat(column);
-//                }
-//                if (barrageSubscription.getData(index, rowDepthCol.getIndex()).asInt() != constituentDepth()) {
-//                    // not at constituent depth, call super
-//                    return super.getFormat(column);
-//                }
-//                // read source col instead
-//                return super.getFormat(sourceColumn);
-//            }
+            @Override
+            public Any get(Column column) {
+                Column sourceColumn = sourceColumns.get(column.getName());
+                if (sourceColumn == null) {
+                    // no constituent column, call super
+                    return super.get(column);
+                }
+                if (barrageSubscription.getData(index, rowDepthCol.getIndex()).asInt() != constituentDepth()) {
+                    // not at constituent depth, call super
+                    return super.get(column);
+                }
+                // read source col instead
+                return super.get(sourceColumn);
+            }
+
+            @Override
+            public Format getFormat(Column column) {
+                Column sourceColumn = sourceColumns.get(column.getName());
+                if (sourceColumn == null) {
+                    // no constituent column, call super
+                    return super.getFormat(column);
+                }
+                if (barrageSubscription.getData(index, rowDepthCol.getIndex()).asInt() != constituentDepth()) {
+                    // not at constituent depth, call super
+                    return super.getFormat(column);
+                }
+                // read source col instead
+                return super.getFormat(sourceColumn);
+            }
         }
 
         // TODO move to superclass and check on viewport change
