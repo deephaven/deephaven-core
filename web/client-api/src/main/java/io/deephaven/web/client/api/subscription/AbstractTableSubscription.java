@@ -130,8 +130,8 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
             sendFirstSubscriptionRequest();
         }, () -> {
             // TODO fail
+            status = Status.DONE;
         });
-
     }
 
     public Status getStatus() {
@@ -473,7 +473,10 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
     }
 
     protected void onStreamEnd(ResponseStreamWrapper.Status status) {
-        // TODO handle stream end/error
+        if (this.status != Status.DONE && status.isTransportError()) {
+            // If the subscription isn't closed and we hit a transport error, allow it to restart
+            this.status = Status.STARTING;
+        }
     }
 
     /**
