@@ -48,6 +48,10 @@ public final class TableSubscription extends AbstractTableSubscription {
      * @param updateIntervalMs the new update interval, or null/omit to use the default of one second
      */
     public void changeSubscription(JsArray<Column> columns, @JsNullable Double updateIntervalMs) {
+        if (updateIntervalMs != null && !updateIntervalMs.equals(this.updateIntervalMs)) {
+            throw new IllegalArgumentException(
+                    "Can't change refreshIntervalMs on a later call to setViewport, it must be consistent or omitted");
+        }
         sendBarrageSubscriptionRequest(null, columns, updateIntervalMs, false);
     }
 
