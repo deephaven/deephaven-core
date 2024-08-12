@@ -416,7 +416,6 @@ class TableDefinition(JObjectWrapper,Mapping):
 
     def __init__(self, j_table_definition: jpy.JType):
         self.j_table_definition = j_table_definition
-        self._d = None
 
     @property
     def j_object(self) -> jpy.JType:
@@ -530,7 +529,7 @@ class Table(JObjectWrapper):
     @property
     def columns(self) -> List[Column]:
         """The column definitions of the table."""
-        return list(self.definition)
+        return list(self.definition.values())
 
     @property
     def meta_table(self) -> Table:
@@ -2515,7 +2514,7 @@ class PartitionedTable(JObjectWrapper):
     def constituent_table_columns(self) -> List[Column]:
         """The column definitions for constituent tables. All constituent tables in a partitioned table have the
         same column definitions."""
-        return list(self.constituent_table_definition)
+        return list(self.constituent_table_definition.values())
 
     @cached_property
     def constituent_changes_permitted(self) -> bool:
