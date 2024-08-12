@@ -167,6 +167,7 @@ public abstract class WebBarrageSubscription {
         public void applyUpdates(WebBarrageMessage message) {
             if (message.isSnapshot) {
                 updateServerViewport(message.snapshotRowSet, message.snapshotColumns, message.snapshotRowSetIsReversed);
+                viewportChangedHandler.onServerViewportChanged(serverViewport, serverColumns, serverReverseViewport);
             }
 
             assert message.shifted.length == 0;
@@ -178,7 +179,7 @@ public abstract class WebBarrageSubscription {
                 return;
             }
 
-            long addedRows = message.rowsAdded.size();
+            long addedRows = message.rowsIncluded.size();
             RangeSet destinationRowSet;
             if (mode == Mode.APPEND) {
                 destinationRowSet = RangeSet.ofRange(capacity, capacity + addedRows - 1);
@@ -200,9 +201,8 @@ public abstract class WebBarrageSubscription {
                 }
             }
 
-            if (message.isSnapshot) {
-                viewportChangedHandler.onServerViewportChanged(serverViewport, serverColumns, serverReverseViewport);
-            }
+            message.rowsRemoved.rangeIterator().forEachRemaining(currentRowSet::removeRange);
+            message.rowsAdded.rangeIterator().forEachRemaining(currentRowSet::addRange);
             state.setSize(message.rowsAdded.size());
             dataChangedHandler.onDataChanged(message.rowsAdded, message.rowsRemoved, RangeSet.empty(), message.shifted,
                     new BitSet(0));
@@ -230,6 +230,7 @@ public abstract class WebBarrageSubscription {
         public void applyUpdates(WebBarrageMessage message) {
             if (message.isSnapshot) {
                 updateServerViewport(message.snapshotRowSet, message.snapshotColumns, message.snapshotRowSetIsReversed);
+                viewportChangedHandler.onServerViewportChanged(serverViewport, serverColumns, serverReverseViewport);
             }
 
             final boolean mightBeInitialSnapshot = getCurrentRowSet().isEmpty() && message.isSnapshot;
@@ -373,9 +374,6 @@ public abstract class WebBarrageSubscription {
                 freeRows(populatedRows);
             }
 
-            if (message.isSnapshot) {
-                viewportChangedHandler.onServerViewportChanged(serverViewport, serverColumns, serverReverseViewport);
-            }
             state.setSize(currentRowSet.size());
             dataChangedHandler.onDataChanged(message.rowsAdded, message.rowsRemoved, totalMods, message.shifted,
                     modifiedColumnSet);

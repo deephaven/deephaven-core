@@ -257,12 +257,9 @@ public class TableViewportSubscription extends AbstractTableSubscription {
         if (isReverseViewport == null) {
             isReverseViewport = false;
         }
-        if (!state().getTableDef().getAttributes().isBlinkTable()) {
-            // we only set blink table viewports once; and that's in the constructor
-            RangeSet viewport = RangeSet.ofRange((long) firstRow, (long) lastRow);
-            this.sendBarrageSubscriptionRequest(viewport, Js.uncheckedCast(columns), updateIntervalMs,
-                    isReverseViewport);
-        }
+        RangeSet viewport = RangeSet.ofRange((long) firstRow, (long) lastRow);
+        this.sendBarrageSubscriptionRequest(viewport, Js.uncheckedCast(columns), updateIntervalMs,
+                isReverseViewport);
     }
 
     /**
