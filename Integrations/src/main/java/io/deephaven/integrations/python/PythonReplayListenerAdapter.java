@@ -14,6 +14,8 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jpy.PyObject;
@@ -33,7 +35,10 @@ import java.util.Arrays;
 public class PythonReplayListenerAdapter extends InstrumentedTableUpdateListenerAdapter
         implements TableSnapshotReplayer {
     private static final long serialVersionUID = -8882402061960621245L;
-    private final PyObject pyCallable;
+    private static final Logger log = LoggerFactory.getLogger(PythonReplayListenerAdapter.class);
+
+    private final PyObject pyListenerCallable;
+    private final PyObject pyOnFailureCallback;
     private final NotificationQueue.Dependency[] dependencies;
 
     /**
@@ -43,22 +48,24 @@ public class PythonReplayListenerAdapter extends InstrumentedTableUpdateListener
      *        null.
      * @param source The source table to which this listener will subscribe.
      * @param retain Whether a hard reference to this listener should be maintained to prevent it from being collected.
-     * @param pyObjectIn Python listener object.
+     * @param pyListener Python listener object.
      * @param dependencies The tables that must be satisfied before this listener is executed.
      */
     public static PythonReplayListenerAdapter create(@Nullable String description, Table source, boolean retain,
-            PyObject pyObjectIn, NotificationQueue.Dependency... dependencies) {
+            PyObject pyListener, @Nullable PyObject pyOnFailureCallback, NotificationQueue.Dependency... dependencies) {
         final UpdateGraph updateGraph = source.getUpdateGraph(dependencies);
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            return new PythonReplayListenerAdapter(description, source, retain, pyObjectIn, dependencies);
+            return new PythonReplayListenerAdapter(description, source, retain, pyListener, pyOnFailureCallback,
+                    dependencies);
         }
     }
 
-    private PythonReplayListenerAdapter(@Nullable String description, Table source, boolean retain, PyObject pyObjectIn,
-            NotificationQueue.Dependency... dependencies) {
+    private PythonReplayListenerAdapter(@Nullable String description, Table source, boolean retain, PyObject pyListener,
+            @Nullable PyObject pyOnFailureCallback, NotificationQueue.Dependency... dependencies) {
         super(description, source, retain);
         this.dependencies = dependencies;
-        this.pyCallable = PythonUtils.pyListenerFunc(pyObjectIn);
+        this.pyListenerCallable = PythonUtils.pyListenerFunc(pyListener);
+        this.pyOnFailureCallback = pyOnFailureCallback;
     }
 
     @Override
@@ -69,18 +76,36 @@ public class PythonReplayListenerAdapter extends InstrumentedTableUpdateListener
         final TableUpdate update =
                 new TableUpdateImpl(source.getRowSet(), emptyRowSet, emptyRowSet, emptyShift, emptyColumnSet);
         final boolean isReplay = true;
-        pyCallable.call("__call__", update, isReplay);
+        pyListenerCallable.call("__call__", update, isReplay);
     }
 
     @Override
     public void onUpdate(final TableUpdate update) {
         final boolean isReplay = false;
-        pyCallable.call("__call__", update, isReplay);
+        pyListenerCallable.call("__call__", update, isReplay);
+    }
+
+    @Override
+    public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
+        if (!pyOnFailureCallback.isNone()) {
+            try {
+                pyOnFailureCallback.call("__call__", originalException);
+            } catch (Throwable e) {
+                // If the Python onFailure callback fails, log the new exception
+                // and continue with the original exception.
+                log.error().append("Python onFailure callback failed: ").append(e).endl();
+            }
+        }
+        super.onFailureInternal(originalException, sourceEntry);
     }
 
     @Override
     public boolean canExecute(final long step) {
         return super.canExecute(step)
                 && (dependencies.length == 0 || Arrays.stream(dependencies).allMatch(t -> t.satisfied(step)));
+    }
+
+    public boolean isFailed() {
+        return failed;
     }
 }

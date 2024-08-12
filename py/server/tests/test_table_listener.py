@@ -22,6 +22,7 @@ from tests.testbase import BaseTestCase
 
 _JColumnVectors = jpy.get_type("io.deephaven.engine.table.vectors.ColumnVectors")
 
+
 class TableUpdateRecorder:
     def __init__(self, table: Optional[Table] = None, chunk_size: int = None, cols: Union[str, List[str]] = None):
         self.table = table
@@ -477,6 +478,53 @@ class TableListenerTestCase(BaseTestCase):
             mlh.stop()
             self.assertGreaterEqual(len(tur.replays), 6)
             self.assertEqual(tur.replays.count(True), 2)
+
+    def test_on_error(self):
+        with self.subTest("Good Error Callback"):
+            t = time_table("PT1S").update("X = i")
+            def bad_listner_func(table_udpate, is_replay: bool) -> None:
+                raise ValueError("invalid value")
+
+            def on_error(e: Exception) -> None:
+                nonlocal error_caught
+                error_caught = True
+                self.assertIn("invalid value", str(e))
+
+            error_caught = False
+            tlh = listen(t, bad_listner_func, on_error=on_error)
+            t.await_update()
+            self.assertTrue(error_caught)
+            self.assertTrue(tlh.j_object.isFailed())
+
+            def good_listner_func(table_udpate, is_replay: bool) -> None:
+                pass
+
+            error_caught = False
+            tlh = listen(t, good_listner_func, on_error=on_error)
+            t.await_update()
+            self.assertFalse(error_caught)
+            self.assertFalse(tlh.j_object.isFailed())
+
+            t = None
+
+        with self.subTest("Bad Error Callback"):
+            t = time_table("PT1S").update("X = i")
+            error_caught: bool = False
+
+            def listner_func(table_udpate, is_replay: bool) -> None:
+                raise ValueError("invalid value")
+
+            def on_error(e: Exception) -> None:
+                nonlocal error_caught
+                error_caught = True
+                self.assertIn("invalid value", str(e))
+                raise ValueError("reraise the exception") from e
+
+            tlh = listen(t, listner_func, on_error=on_error)
+            t.await_update()
+            self.assertTrue(error_caught)
+            self.assertTrue(tlh.j_object.isFailed())
+            t = None
 
 
 if __name__ == "__main__":
