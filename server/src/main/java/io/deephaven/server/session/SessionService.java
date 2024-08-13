@@ -36,6 +36,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -326,6 +327,9 @@ public class SessionService {
      * @return the session or null if the session is invalid
      */
     public SessionState getSessionForAuthToken(final String token) throws AuthenticationException {
+        String bearerKey = null;
+        String bearerPayload = null;
+
         if (token.startsWith(Auth2Constants.BEARER_PREFIX)) {
             final String authToken = token.substring(Auth2Constants.BEARER_PREFIX.length());
             try {
@@ -336,19 +340,36 @@ public class SessionService {
                 }
             } catch (IllegalArgumentException | InvalidUuidException ignored) {
             }
+
+            // In case we don't have another handler for Bearer, look for nested tokens to try later
+            int offset = authToken.indexOf(' ');
+            bearerKey = authToken.substring(0, offset < 0 ? authToken.length() : offset);
+            bearerPayload = offset < 0 ? "" : authToken.substring(offset + 1);
         }
 
         int offset = token.indexOf(' ');
         final String key = token.substring(0, offset < 0 ? token.length() : offset);
         final String payload = offset < 0 ? "" : token.substring(offset + 1);
+        // Use the auth type to look up a handler
         AuthenticationRequestHandler handler = authRequestHandlers.get(key);
-        if (handler == null) {
-            log.info().append("No AuthenticationRequestHandler registered for type ").append(key).endl();
-            throw new AuthenticationException();
+        if (handler != null) {
+            Optional<AuthContext> s = handler.login(payload, SessionServiceGrpcImpl::insertCallHeader);
+            if (s.isPresent()) {
+                return newSession(s.get());
+            }
         }
-        return handler.login(payload, SessionServiceGrpcImpl::insertCallHeader)
-                .map(this::newSession)
-                .orElseThrow(AuthenticationException::new);
+        if (bearerKey != null) {
+            handler = authRequestHandlers.get(bearerKey);
+            if (handler != null) {
+                Optional<AuthContext> s = handler.login(bearerPayload, SessionServiceGrpcImpl::insertCallHeader);
+                if (s.isPresent()) {
+                    return newSession(s.get());
+                }
+            }
+        }
+
+        log.info().append("No AuthenticationRequestHandler registered for type ").append(key).endl();
+        throw new AuthenticationException();
     }
 
     /**
