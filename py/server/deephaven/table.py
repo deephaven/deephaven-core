@@ -13,9 +13,7 @@ from enum import Enum
 from enum import auto
 from functools import cached_property
 from typing import Any, Optional, Callable, Dict, Generator, Tuple, Literal
-from typing import Sequence, List, Union, Protocol
-
-from collections.abc import Mapping, Iterable
+from typing import Sequence, List, Union, Protocol, Mapping, Iterable
 
 import jpy
 import numpy as np
@@ -2525,8 +2523,8 @@ class PartitionedTable(JObjectWrapper):
 
     @cached_property
     def constituent_table_definition(self) -> TableDefinition:
-        """The column definitions for constituent tables. All constituent tables in a partitioned table have the
-        same column definitions."""
+        """The table definitions for constituent tables. All constituent tables in a partitioned table have the
+        same table definitions."""
         return TableDefinition(self.j_partitioned_table.constituentDefinition())
 
     @property
