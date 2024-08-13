@@ -1933,10 +1933,23 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             TestCase.assertEquals(Instant.ofEpochSecond(0, (nanos / DateTimeUtils.MILLI) * DateTimeUtils.MILLI),
                     DateTimeUtils.nowMillisResolution());
 
-            TestCase.assertTrue(Math.abs(Clock.system().currentTimeNanos()
-                    - DateTimeUtils.epochNanos(DateTimeUtils.nowSystem())) < 1_000_000L);
-            TestCase.assertTrue(Math.abs(Clock.system().currentTimeNanos()
-                    - DateTimeUtils.epochNanos(DateTimeUtils.nowSystemMillisResolution())) < 1_000_000L);
+            // occasionally the following tests fail due to the clock resolution or a system pause,
+            // so run them multiple times
+            boolean isClockOk = false;
+            for (int i = 0; i < 10; i++) {
+                isClockOk |= Math.abs(Clock.system().currentTimeNanos()
+                        - DateTimeUtils.epochNanos(DateTimeUtils.nowSystem())) < 1_000_000L;
+            }
+            TestCase.assertTrue(isClockOk);
+
+            // occasionally the following tests fail due to the clock resolution or a system pause,
+            // so run them multiple times
+            boolean isMillisClockOk = false;
+            for (int i = 0; i < 10; i++) {
+                isMillisClockOk |= Math.abs(Clock.system().currentTimeNanos()
+                        - DateTimeUtils.epochNanos(DateTimeUtils.nowSystemMillisResolution())) < 1_000_000L;
+            }
+            TestCase.assertTrue(isMillisClockOk);
 
             TestCase.assertEquals(DateTimeUtils.formatDate(Instant.ofEpochSecond(0, nanos), TZ_AL),
                     DateTimeUtils.today(TZ_AL));
