@@ -1933,23 +1933,17 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             TestCase.assertEquals(Instant.ofEpochSecond(0, (nanos / DateTimeUtils.MILLI) * DateTimeUtils.MILLI),
                     DateTimeUtils.nowMillisResolution());
 
-            // occasionally the following tests fail due to the clock resolution or a system pause,
-            // so run them multiple times
-            boolean isClockOk = false;
-            for (int i = 0; i < 10; i++) {
-                isClockOk |= Math.abs(Clock.system().currentTimeNanos()
-                        - DateTimeUtils.epochNanos(DateTimeUtils.nowSystem())) < 1_000_000L;
-            }
-            TestCase.assertTrue(isClockOk);
+            // Occasionally tests fail because of invalid clocks on the test system
+            final LocalDate startDate = LocalDate.of(1990, 1, 1);
+            final LocalDate currentDate = DateTimeUtils.toLocalDate(
+                    DateTimeUtils.epochNanosToInstant(Clock.system().currentTimeNanos()), DateTimeUtils.timeZone());
+            assertTrue("Checking for a valid date on the test system: currentDate=" + currentDate,
+                    currentDate.isAfter(startDate));
 
-            // occasionally the following tests fail due to the clock resolution or a system pause,
-            // so run them multiple times
-            boolean isMillisClockOk = false;
-            for (int i = 0; i < 10; i++) {
-                isMillisClockOk |= Math.abs(Clock.system().currentTimeNanos()
-                        - DateTimeUtils.epochNanos(DateTimeUtils.nowSystemMillisResolution())) < 1_000_000L;
-            }
-            TestCase.assertTrue(isMillisClockOk);
+            TestCase.assertTrue(Math.abs(Clock.system().currentTimeNanos()
+                    - DateTimeUtils.epochNanos(DateTimeUtils.nowSystem())) < 1_000_000L);
+            TestCase.assertTrue(Math.abs(Clock.system().currentTimeNanos()
+                    - DateTimeUtils.epochNanos(DateTimeUtils.nowSystemMillisResolution())) < 1_000_000L);
 
             TestCase.assertEquals(DateTimeUtils.formatDate(Instant.ofEpochSecond(0, nanos), TZ_AL),
                     DateTimeUtils.today(TZ_AL));
