@@ -11,6 +11,7 @@ import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.channel.Channels;
+import io.deephaven.util.channel.CompletableOutputStream;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.jetbrains.annotations.NotNull;
@@ -130,27 +131,9 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public SeekableByteChannel getWriteChannel(@NotNull final URI uri, final boolean append) {
-        throw new UnsupportedOperationException("Creating seekable write channels for S3 is currently unsupported, " +
-                "use getOutputStream instead");
-    }
-
-    @Override
-    public OutputStream getOutputStream(@NotNull final URI uri, final boolean append, final int bufferSizeHint) {
-        if (append) {
-            throw new UnsupportedOperationException("Appending to S3 is currently unsupported");
-        }
+    public CompletableOutputStream getOutputStream(@NotNull final URI uri, final int bufferSizeHint) {
         // bufferSizeHint is unused because s3 output stream is buffered internally into parts
         return new S3OutputStream(uri, s3AsyncClient, s3Instructions);
-    }
-
-    @Override
-    public void abort(@NotNull final OutputStream outputStream) throws IOException {
-        if (!(outputStream instanceof S3OutputStream)) {
-            throw new IllegalArgumentException("Output stream is not an instance of S3OutputStream, but instance of "
-                    + outputStream.getClass());
-        }
-        ((S3OutputStream) outputStream).abort();
     }
 
     @Override

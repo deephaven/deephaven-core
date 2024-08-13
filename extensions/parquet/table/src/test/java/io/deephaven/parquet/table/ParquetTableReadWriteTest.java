@@ -2606,6 +2606,10 @@ public final class ParquetTableReadWriteTest {
         indexOverwritingTestsImpl(MULTI_WRITER);
     }
 
+    private static File getBackupFile(final File destFile) {
+        return new File(destFile.getParent(), ".OLD_" + destFile.getName());
+    }
+
     private void indexOverwritingTestsImpl(TestParquetTableWriter writer) {
         // Create an empty parent directory
         final File parentDir = new File(rootFile, "tempDir");
@@ -2651,7 +2655,7 @@ public final class ParquetTableReadWriteTest {
         // The directory should still contain the updated table, its index file for column xxx, and old index file
         // for column vvv
         final File xxxIndexFile = new File(parentDir, xxxIndexFilePath);
-        final File backupXXXIndexFile = ParquetTools.getBackupFile(xxxIndexFile);
+        final File backupXXXIndexFile = getBackupFile(xxxIndexFile);
         final String backupXXXIndexFileName = backupXXXIndexFile.getName();
         verifyFilesInDir(parentDir, new String[] {destFilename},
                 Map.of("vvv", new String[] {vvvIndexFilePath},
@@ -3010,10 +3014,6 @@ public final class ParquetTableReadWriteTest {
         final TableDefinition fooBarDefinition;
         final TableDefinition barDefinition;
         {
-            fooSource.mkdirs();
-            fooBarSource.mkdirs();
-            barSource.mkdirs();
-
             final ColumnHolder<Integer> fooCol = intCol("Foo", 1, 2, 3);
             final ColumnHolder<String> barCol = stringCol("Bar", "Zip", "Zap", "Zoom");
 
@@ -3125,8 +3125,6 @@ public final class ParquetTableReadWriteTest {
             final File p1FileEmpty = new File(emptySource, "01.parquet");
             final File p2FileEmpty = new File(emptySource, "02.parquet");
 
-            p1File.mkdirs();
-            p2File.mkdirs();
             emptySource.mkdirs();
 
             final ColumnHolder<Integer> foo1 = intCol("Foo", 1, 2, 3);
@@ -3140,8 +3138,6 @@ public final class ParquetTableReadWriteTest {
             writeTable(p1, p1File.getPath());
             writeTable(p2, p2File.getPath());
             writeIntoEmptySource = () -> {
-                p1FileEmpty.mkdirs();
-                p2FileEmpty.mkdirs();
                 writeTable(p1, p1FileEmpty.getPath());
                 writeTable(p2, p2FileEmpty.getPath());
             };
@@ -3244,8 +3240,6 @@ public final class ParquetTableReadWriteTest {
             final File p1FileEmpty = new File(emptySource, "Partition=1/z.parquet");
             final File p2FileEmpty = new File(emptySource, "Partition=2/a.parquet");
 
-            p1File.mkdirs();
-            p2File.mkdirs();
             emptySource.mkdirs();
 
             final ColumnHolder<Integer> part1 = intCol("Partition", 1, 1, 1);
@@ -3262,8 +3256,6 @@ public final class ParquetTableReadWriteTest {
             writeTable(p1, p1File.getPath());
             writeTable(p2, p2File.getPath());
             writeIntoEmptySource = () -> {
-                p1FileEmpty.mkdirs();
-                p2FileEmpty.mkdirs();
                 writeTable(p1, p1FileEmpty.getPath());
                 writeTable(p2, p2FileEmpty.getPath());
             };

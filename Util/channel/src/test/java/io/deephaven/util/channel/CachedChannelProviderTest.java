@@ -53,48 +53,15 @@ public class CachedChannelProviderTest {
     }
 
     @Test
-    public void testSimpleReadWrite() throws IOException {
+    public void testSimplePooledReadChannelClose() throws IOException {
         SeekableChannelsProvider wrappedProvider = new TestChannelProvider();
         CachedChannelProvider cachedChannelProvider = CachedChannelProvider.create(wrappedProvider, 100);
         for (int i = 0; i < 1000; i++) {
-            SeekableByteChannel rc =
-                    ((i / 100) % 2 == 0 ? cachedChannelProvider.getReadChannel(wrappedProvider.makeContext(), "r" + i)
-                            : cachedChannelProvider.getWriteChannel("w" + i, false));
+            SeekableByteChannel rc = cachedChannelProvider.getReadChannel(wrappedProvider.makeContext(), "r" + i);
             rc.close();
         }
         assertEquals(900, closed.size());
         assertTrue(closed.get(0).endsWith("r0"));
-    }
-
-    @Test
-    public void testSimpleWrite() throws IOException {
-        SeekableChannelsProvider wrappedProvider = new TestChannelProvider();
-        CachedChannelProvider cachedChannelProvider = CachedChannelProvider.create(wrappedProvider, 100);
-        for (int i = 0; i < 1000; i++) {
-            SeekableByteChannel rc = cachedChannelProvider.getWriteChannel("w" + i, false);
-            // Call write to hit the assertions inside the mock channel
-            final ByteBuffer buffer = ByteBuffer.allocate(1);
-            rc.write(buffer);
-            rc.close();
-        }
-        assertEquals(900, closed.size());
-        for (int i = 0; i < 900; i++) {
-            assertTrue(closed.get(i).endsWith("w" + (i)));
-        }
-    }
-
-    @Test
-    public void testSimpleAppend() throws IOException {
-        SeekableChannelsProvider wrappedProvider = new TestChannelProvider();
-        CachedChannelProvider cachedChannelProvider = CachedChannelProvider.create(wrappedProvider, 100);
-        for (int i = 0; i < 1000; i++) {
-            SeekableByteChannel rc = cachedChannelProvider.getWriteChannel("a" + i, true);
-            rc.close();
-        }
-        assertEquals(900, closed.size());
-        for (int i = 0; i < 900; i++) {
-            assertTrue(closed.get(i).endsWith("a" + (i)));
-        }
     }
 
     @Test
@@ -141,33 +108,6 @@ public class CachedChannelProviderTest {
             }
             for (int ci = 0; ci < someResult.length; ++ci) {
                 someResult[someResult.length - ci - 1].close();
-            }
-        }
-        assertEquals(0, closed.size());
-    }
-
-    @Test
-    public void testReuse10() throws IOException {
-        final SeekableChannelsProvider wrappedProvider = new TestChannelProvider();
-        final CachedChannelProvider cachedChannelProvider = CachedChannelProvider.create(wrappedProvider, 100);
-        final SeekableByteChannel[] someResult = new SeekableByteChannel[100];
-        for (int pi = 0; pi < 10; ++pi) {
-            for (int ci = 0; ci < 10; ++ci) {
-                someResult[pi * 10 + ci] = cachedChannelProvider.getWriteChannel("w" + pi % 10, false);
-            }
-            for (int ci = 0; ci < 10; ++ci) {
-                someResult[pi * 10 + 9 - ci].close();
-            }
-        }
-        for (int step = 0; step < 10; ++step) {
-            final SeekableByteChannel[] reused = new SeekableByteChannel[100];
-            for (int ri = 0; ri < 100; ++ri) {
-                SeekableByteChannel rc = cachedChannelProvider.getWriteChannel("w" + (ri / 10) % 10, false);
-                assertSame(rc, someResult[ri % 100]);
-                reused[ri] = rc;
-            }
-            for (int ri = 0; ri < 100; ++ri) {
-                reused[99 - ri].close();
             }
         }
         assertEquals(0, closed.size());
@@ -230,13 +170,8 @@ public class CachedChannelProviderTest {
         }
 
         @Override
-        public SeekableByteChannel getWriteChannel(@NotNull String uriStr, boolean append) {
-            return new TestMockChannel(count.getAndIncrement(), uriStr);
-        }
-
-        @Override
-        public SeekableByteChannel getWriteChannel(@NotNull URI uri, boolean append) {
-            return new TestMockChannel(count.getAndIncrement(), uri.toString());
+        public CompletableOutputStream getOutputStream(@NotNull final URI uri, int bufferSizeHint) {
+            throw new UnsupportedOperationException("getOutputStream");
         }
 
         @Override

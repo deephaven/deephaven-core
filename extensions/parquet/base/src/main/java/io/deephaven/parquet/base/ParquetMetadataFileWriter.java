@@ -3,10 +3,10 @@
 //
 package io.deephaven.parquet.base;
 
+import io.deephaven.util.channel.CompletableOutputStream;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.URI;
 
 /**
@@ -26,11 +26,12 @@ public interface ParquetMetadataFileWriter {
 
     /**
      * Write the combined metadata to the provided streams and clear the metadata accumulated so far. The output streams
-     * should be managed by the caller and will not be closed by this API.
+     * should be marked as {@link CompletableOutputStream#done()} after writing is finished.
      *
      * @param metadataOutputStream The output stream for the {@value ParquetUtils#METADATA_FILE_NAME} file
      * @param commonMetadataOutputStream The output stream for the {@value ParquetUtils#COMMON_METADATA_FILE_NAME} file
      */
-    void writeMetadataFiles(OutputStream metadataOutputStream, OutputStream commonMetadataOutputStream)
-            throws IOException;
+    void writeMetadataFiles(
+            CompletableOutputStream metadataOutputStream,
+            CompletableOutputStream commonMetadataOutputStream) throws IOException;
 }

@@ -10,6 +10,7 @@ import io.deephaven.parquet.base.ParquetMetadataFileWriter;
 import io.deephaven.parquet.base.ParquetUtils;
 import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
+import io.deephaven.util.channel.CompletableOutputStream;
 import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.hadoop.metadata.FileMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
@@ -110,14 +111,14 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
 
     /**
      * Write the combined metadata to the provided streams and clear the metadata accumulated so far. The output streams
-     * are managed by the caller and should not be closed by this method.
+     * are marked as {@link CompletableOutputStream#done()} after writing is finished.
      *
      * @param metadataOutputStream The output stream for the {@value ParquetUtils#METADATA_FILE_NAME} file
      * @param commonMetadataOutputStream The output stream for the {@value ParquetUtils#COMMON_METADATA_FILE_NAME} file
      */
     public void writeMetadataFiles(
-            final OutputStream metadataOutputStream,
-            final OutputStream commonMetadataOutputStream) throws IOException {
+            final CompletableOutputStream metadataOutputStream,
+            final CompletableOutputStream commonMetadataOutputStream) throws IOException {
         if (parquetFileMetadataList.isEmpty()) {
             throw new UncheckedDeephavenException("No parquet files to write metadata for");
         }
@@ -125,6 +126,7 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
         final ParquetMetadata metadataFooter = new ParquetMetadata(new FileMetaData(mergedSchema,
                 mergedKeyValueMetaData, mergedCreatedByString), mergedBlocks);
         writeMetadataFile(metadataFooter, metadataOutputStream);
+        metadataOutputStream.done();
 
         // Skip the blocks data and merge schema with partitioning columns' schema to write the common metadata file.
         // The ordering of arguments in method call is important because we want to keep partitioning columns in the
@@ -134,6 +136,7 @@ final class ParquetMetadataFileWriterImpl implements ParquetMetadataFileWriter {
                 new ParquetMetadata(new FileMetaData(mergedSchema, mergedKeyValueMetaData, mergedCreatedByString),
                         new ArrayList<>());
         writeMetadataFile(commonMetadataFooter, commonMetadataOutputStream);
+        commonMetadataOutputStream.done();
 
         // Clear the accumulated metadata
         clear();

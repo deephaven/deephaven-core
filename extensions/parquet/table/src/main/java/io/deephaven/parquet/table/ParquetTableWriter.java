@@ -27,6 +27,7 @@ import io.deephaven.parquet.table.transfer.TransferObject;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.channel.CompletableOutputStream;
 import io.deephaven.vector.Vector;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.parquet.bytes.HeapByteBufferAllocator;
@@ -71,29 +72,21 @@ public class ParquetTableWriter {
          */
         final String[] parquetColumnNames;
         /**
-         * Destination to be added in the index metadata of the main parquet file
-         */
-        final URI destForMetadata;
-        /**
-         * Destination for writing the index file. The two filenames can differ because we write index files to shadow
-         * file paths first and then place them at the final path once the write is complete. The metadata should always
-         * hold the accurate path.
+         * Destination for writing the index file
          */
         final URI dest;
         /**
          * Output stream to write the index file
          */
-        final OutputStream destOutputStream;
+        final CompletableOutputStream destOutputStream;
 
         IndexWritingInfo(
                 final List<String> indexColumnNames,
                 final String[] parquetColumnNames,
-                final URI destForMetadata,
                 final URI dest,
-                final OutputStream destOutputStream) {
+                final CompletableOutputStream destOutputStream) {
             this.indexColumnNames = indexColumnNames;
             this.parquetColumnNames = parquetColumnNames;
-            this.destForMetadata = destForMetadata;
             this.dest = dest;
             this.destOutputStream = destOutputStream;
         }
@@ -106,10 +99,8 @@ public class ParquetTableWriter {
      * @param definition Table definition
      * @param writeInstructions Write instructions for customizations while writing
      * @param dest The destination URI to write to
-     * @param destOutputStream The output stream to write to dest, will be managed by the caller
-     * @param destForMetadata The destination to store in the metadata files. This can be different from {@code dest} if
-     *        we are writing the parquet file to a shadow location first since the metadata should always hold the
-     *        accurate path.
+     * @param destOutputStream The output stream to write to dest, should be marked as
+     *        {@link CompletableOutputStream#done()} once writing is finished
      * @param incomingMeta A map of metadata values to be stores in the file footer
      * @param indexInfoList Arrays containing the column names for indexes to persist as sidecar tables. Indexes that
      *        are specified but missing will be computed on demand.
@@ -127,8 +118,7 @@ public class ParquetTableWriter {
             @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions writeInstructions,
             @NotNull final URI dest,
-            @NotNull final OutputStream destOutputStream,
-            @NotNull final URI destForMetadata,
+            @NotNull final CompletableOutputStream destOutputStream,
             @NotNull final Map<String, String> incomingMeta,
             @Nullable final List<ParquetTableWriter.IndexWritingInfo> indexInfoList,
             @NotNull final ParquetMetadataFileWriter metadataFileWriter,
@@ -165,7 +155,7 @@ public class ParquetTableWriter {
 
                         cleanupDestinations.add(info.dest);
                         tableInfoBuilder.addDataIndexes(DataIndexInfo.of(
-                                destDir.relativize(info.destForMetadata).getPath(),
+                                destDir.relativize(info.dest).getPath(),
                                 info.parquetColumnNames));
                         final ParquetInstructions writeInstructionsToUse;
                         if (INDEX_ROW_SET_COLUMN_NAME.equals(dataIndex.rowSetColumnName())) {
@@ -175,9 +165,9 @@ public class ParquetTableWriter {
                                     .addColumnNameMapping(INDEX_ROW_SET_COLUMN_NAME, dataIndex.rowSetColumnName())
                                     .build();
                         }
-                        write(indexTable, indexTable.getDefinition(), writeInstructionsToUse,
-                                info.destOutputStream, info.destForMetadata, Collections.emptyMap(),
-                                indexTableInfoBuilder, NullParquetMetadataFileWriter.INSTANCE, computedCache);
+                        write(indexTable, indexTable.getDefinition(), writeInstructionsToUse, info.dest,
+                                info.destOutputStream, Collections.emptyMap(), indexTableInfoBuilder,
+                                NullParquetMetadataFileWriter.INSTANCE, computedCache);
                     }
                 }
             }
@@ -189,18 +179,15 @@ public class ParquetTableWriter {
             if (!sortedColumns.isEmpty()) {
                 tableInfoBuilder.addSortingColumns(SortColumnInfo.of(sortedColumns.get(0)));
             }
-            write(t, definition, writeInstructions, destOutputStream, destForMetadata, incomingMeta,
+            write(t, definition, writeInstructions, dest, destOutputStream, incomingMeta,
                     tableInfoBuilder, metadataFileWriter, computedCache);
         } catch (Exception e) {
             if (cleanupDestinations != null) {
                 final boolean isFileURI = FILE_URI_SCHEME.equals(dest.getScheme());
-                for (final URI cleanupDest : cleanupDestinations) {
-                    try {
-                        if (isFileURI) {
-                            // noinspection ResultOfMethodCallIgnored
-                            new File(cleanupDest).delete();
-                        }
-                    } catch (Exception ignored) {
+                if (isFileURI) {
+                    for (final URI cleanupDest : cleanupDestinations) {
+                        // noinspection ResultOfMethodCallIgnored
+                        new File(cleanupDest).delete();
                     }
                 }
             }
@@ -214,10 +201,9 @@ public class ParquetTableWriter {
      * @param table The table to write
      * @param definition The table definition
      * @param writeInstructions Write instructions for customizations while writing
-     * @param destOutputStream The output stream to write to dest, will be managed by the caller
-     * @param destForMetadata The destination to store in the metadata files. This can be different from {@code dest} if
-     *        we are writing the parquet file to a shadow location first since the metadata should always hold the
-     *        accurate path.
+     * @param dest The destination URI to write to
+     * @param destOutputStream The output stream to write to dest, should be marked as
+     *        {@link CompletableOutputStream#done()} once writing is finished
      * @param tableMeta A map of metadata values to be stores in the file footer
      * @param tableInfoBuilder A partially constructed builder for the metadata object
      * @param metadataFileWriter The writer for the {@value ParquetUtils#METADATA_FILE_NAME} and
@@ -229,8 +215,8 @@ public class ParquetTableWriter {
             @NotNull final Table table,
             @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions writeInstructions,
-            @NotNull final OutputStream destOutputStream,
-            @NotNull final URI destForMetadata,
+            @NotNull final URI dest,
+            @NotNull final CompletableOutputStream destOutputStream,
             @NotNull final Map<String, String> tableMeta,
             @NotNull final TableInfo.Builder tableInfoBuilder,
             @NotNull final ParquetMetadataFileWriter metadataFileWriter,
@@ -239,11 +225,13 @@ public class ParquetTableWriter {
             final Table t = pretransformTable(table, definition);
             final TrackingRowSet tableRowSet = t.getRowSet();
             final Map<String, ? extends ColumnSource<?>> columnSourceMap = t.getColumnSourceMap();
-            final ParquetFileWriter parquetFileWriter = getParquetFileWriter(computedCache, definition, tableRowSet,
-                    columnSourceMap, destOutputStream, destForMetadata, writeInstructions, tableMeta, tableInfoBuilder,
-                    metadataFileWriter);
-            // Given the transformation, do not use the original table's "definition" for writing
-            write(t, writeInstructions, parquetFileWriter, computedCache);
+            try (final ParquetFileWriter parquetFileWriter = getParquetFileWriter(computedCache, definition,
+                    tableRowSet, columnSourceMap, dest, destOutputStream, writeInstructions, tableMeta,
+                    tableInfoBuilder, metadataFileWriter)) {
+                // Given the transformation, do not use the original table's "definition" for writing
+                write(t, writeInstructions, parquetFileWriter, computedCache);
+            }
+            destOutputStream.done();
         }
     }
 
@@ -278,8 +266,6 @@ public class ParquetTableWriter {
                 }
             }
         }
-
-        parquetFileWriter.close();
     }
 
     /**
@@ -348,10 +334,8 @@ public class ParquetTableWriter {
      * @param definition The writable definition
      * @param tableRowSet The row set being written
      * @param columnSourceMap The columns of the table
-     * @param destOutputStream The output stream to write to dest, will be managed by the caller
-     * @param destForMetadata The destination to store in the metadata files. This can be different from {@code dest} if
-     *        we are writing the parquet file to a shadow location first since the metadata should always hold the
-     *        accurate path.
+     * @param dest The destination URI to write to
+     * @param destOutputStream The output stream to write to dest
      * @param writeInstructions Write instructions for the file
      * @param tableMeta Metadata to include in the parquet metadata
      * @param tableInfoBuilder Builder for accumulating per-column information to construct the deephaven metadata
@@ -365,8 +349,8 @@ public class ParquetTableWriter {
             @NotNull final TableDefinition definition,
             @NotNull final RowSet tableRowSet,
             @NotNull final Map<String, ? extends ColumnSource<?>> columnSourceMap,
+            @NotNull final URI dest,
             @NotNull final OutputStream destOutputStream,
-            @NotNull final URI destForMetadata,
             @NotNull final ParquetInstructions writeInstructions,
             @NotNull final Map<String, String> tableMeta,
             @NotNull final TableInfo.Builder tableInfoBuilder,
@@ -412,8 +396,8 @@ public class ParquetTableWriter {
 
         final Map<String, String> extraMetaData = new HashMap<>(tableMeta);
         extraMetaData.put(METADATA_KEY, tableInfoBuilder.build().serializeToJSON());
-        return new ParquetFileWriter(destOutputStream, destForMetadata,
-                writeInstructions.getTargetPageSize(), new HeapByteBufferAllocator(), mappedSchema.getParquetSchema(),
+        return new ParquetFileWriter(dest, destOutputStream, writeInstructions.getTargetPageSize(),
+                new HeapByteBufferAllocator(), mappedSchema.getParquetSchema(),
                 writeInstructions.getCompressionCodecName(), extraMetaData, metadataFileWriter);
     }
 

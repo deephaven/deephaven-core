@@ -111,20 +111,9 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public SeekableByteChannel getWriteChannel(@NotNull final URI uri, final boolean append) throws IOException {
-        final String pathKey = uri.toString();
-        final ChannelType channelType = append ? ChannelType.WriteAppend : ChannelType.Write;
-        final KeyedObjectHashMap<String, PerPathPool> channelPool = channelPools.get(channelType);
-        final CachedChannel result = tryGetPooledChannel(pathKey, channelPool);
-        return result == null
-                ? new CachedChannel(wrappedProvider.getWriteChannel(uri, append), channelType, pathKey)
-                : result.position(append ? result.size() : 0); // The seek isn't really necessary for append; will be at
-        // end no matter what.
-    }
-
-    @Override
-    public void abort(final @NotNull OutputStream outputStream) throws IOException {
-        wrappedProvider.abort(outputStream);
+    public final CompletableOutputStream getOutputStream(@NotNull final URI uri, int bufferSizeHint)
+            throws IOException {
+        return wrappedProvider.getOutputStream(uri, bufferSizeHint);
     }
 
     @Override

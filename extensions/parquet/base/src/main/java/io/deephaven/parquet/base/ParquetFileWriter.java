@@ -9,7 +9,6 @@ import io.deephaven.parquet.compress.CompressorAdapter;
 import io.deephaven.parquet.compress.DeephavenCompressorAdapterFactory;
 import org.apache.parquet.Version;
 import org.apache.parquet.bytes.ByteBufferAllocator;
-import org.apache.parquet.bytes.BytesUtils;
 
 import org.apache.parquet.format.Util;
 import org.apache.parquet.hadoop.metadata.*;
@@ -29,7 +28,7 @@ import java.util.Map;
 import static io.deephaven.parquet.base.ParquetUtils.MAGIC;
 import static org.apache.parquet.format.Util.writeFileMetaData;
 
-public final class ParquetFileWriter {
+public final class ParquetFileWriter implements AutoCloseable {
     private static final ParquetMetadataConverter metadataConverter = new ParquetMetadataConverter();
     private static final int VERSION = 1;
 
@@ -41,12 +40,12 @@ public final class ParquetFileWriter {
     private final Map<String, String> extraMetaData;
     private final List<BlockMetaData> blocks = new ArrayList<>();
     private final List<List<OffsetIndex>> offsetIndexes = new ArrayList<>();
-    private final URI destForMetadata;
+    private final URI dest;
     private final ParquetMetadataFileWriter metadataFileWriter;
 
     public ParquetFileWriter(
+            final URI dest,
             final OutputStream destOutputStream,
-            final URI destForMetadata,
             final int targetPageSize,
             final ByteBufferAllocator allocator,
             final MessageType type,
@@ -60,7 +59,7 @@ public final class ParquetFileWriter {
         countingOutput.write(MAGIC);
         this.type = type;
         this.compressorAdapter = DeephavenCompressorAdapterFactory.getInstance().getByName(codecName);
-        this.destForMetadata = destForMetadata;
+        this.dest = dest;
         this.metadataFileWriter = metadataFileWriter;
     }
 
@@ -73,12 +72,13 @@ public final class ParquetFileWriter {
         return rowGroupWriter;
     }
 
+    @Override
     public void close() throws IOException {
         serializeOffsetIndexes();
         final ParquetMetadata footer =
                 new ParquetMetadata(new FileMetaData(type, extraMetaData, Version.FULL_VERSION), blocks);
         serializeFooter(footer, countingOutput);
-        metadataFileWriter.addParquetFileMetadata(destForMetadata, footer);
+        metadataFileWriter.addParquetFileMetadata(dest, footer);
         // Flush any buffered data, do not close the stream since it is managed by the layer above
         countingOutput.flush();
         compressorAdapter.close();
@@ -90,8 +90,17 @@ public final class ParquetFileWriter {
         final org.apache.parquet.format.FileMetaData parquetMetadata =
                 metadataConverter.toParquetMetadata(VERSION, footer);
         writeFileMetaData(parquetMetadata, countingOutput);
-        BytesUtils.writeIntLittleEndian(countingOutput, (int) (countingOutput.getCount() - footerIndex));
+        countingOutput.write(intToLittleEndian((int) (countingOutput.getCount() - footerIndex)));
         countingOutput.write(MAGIC);
+    }
+
+    private static byte[] intToLittleEndian(final int value) {
+        return new byte[] {
+                (byte) (value & 0xFF),
+                (byte) ((value >> 8) & 0xFF),
+                (byte) ((value >> 16) & 0xFF),
+                (byte) ((value >> 24) & 0xFF)
+        };
     }
 
     private void serializeOffsetIndexes() throws IOException {

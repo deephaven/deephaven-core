@@ -28,7 +28,6 @@ import software.amazon.awssdk.core.async.AsyncRequestBody;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -92,6 +91,7 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
 
     @Test
     public final void readWriteSingleParquetFile() {
+        readWriteSingleParquetFileHelper(0); // Empty table
         readWriteSingleParquetFileHelper(5_000);
         readWriteSingleParquetFileHelper(50_000);
         readWriteSingleParquetFileHelper(500_000);
@@ -103,8 +103,8 @@ abstract class S3ParquetTestBase extends S3SeekableChannelTestSetup {
         final ParquetInstructions instructions = ParquetInstructions.builder()
                 .setSpecialInstructions(s3Instructions(
                         S3Instructions.builder()
-                                .partSize(5 << 20)
-                                .numConcurrentParts(5)
+                                .writePartSize(5 << 20)
+                                .numConcurrentWriteParts(5)
                                 .readTimeout(Duration.ofSeconds(10)))
                         .build())
                 .build();

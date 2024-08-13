@@ -22,8 +22,8 @@ public class S3InstructionsTest {
         assertThat(instructions.connectionTimeout()).isEqualTo(Duration.ofSeconds(2));
         assertThat(instructions.readTimeout()).isEqualTo(Duration.ofSeconds(2));
         assertThat(instructions.credentials()).isEqualTo(Credentials.defaultCredentials());
-        assertThat(instructions.partSize()).isEqualTo(10485760);
-        assertThat(instructions.numConcurrentParts()).isEqualTo(64);
+        assertThat(instructions.writePartSize()).isEqualTo(10485760);
+        assertThat(instructions.numConcurrentWriteParts()).isEqualTo(64);
         assertThat(instructions.endpointOverride()).isEmpty();
     }
 
@@ -138,39 +138,39 @@ public class S3InstructionsTest {
     }
 
     @Test
-    void tooSmallPartSize() {
+    void tooSmallWritePartSize() {
         try {
             S3Instructions.builder()
                     .regionName("some-region")
-                    .partSize(1024)
+                    .writePartSize(1024)
                     .build();
         } catch (IllegalArgumentException e) {
-            assertThat(e).hasMessageContaining("partSize");
+            assertThat(e).hasMessageContaining("writePartSize");
         }
     }
 
     @Test
-    void tooSmallNumConcurrentParts() {
+    void tooSmallNumConcurrentWriteParts() {
         try {
             S3Instructions.builder()
                     .regionName("some-region")
-                    .numConcurrentParts(0)
+                    .numConcurrentWriteParts(0)
                     .build();
         } catch (IllegalArgumentException e) {
-            assertThat(e).hasMessageContaining("numConcurrentParts");
+            assertThat(e).hasMessageContaining("numConcurrentWriteParts");
         }
     }
 
     @Test
-    void tooLargeNumConcurrentParts() {
+    void tooLargeNumConcurrentWriteParts() {
         try {
             S3Instructions.builder()
                     .regionName("some-region")
-                    .numConcurrentParts(1001)
+                    .numConcurrentWriteParts(1001)
                     .maxConcurrentRequests(1000)
                     .build();
         } catch (IllegalArgumentException e) {
-            assertThat(e).hasMessageContaining("numConcurrentParts");
+            assertThat(e).hasMessageContaining("numConcurrentWriteParts");
         }
     }
 }

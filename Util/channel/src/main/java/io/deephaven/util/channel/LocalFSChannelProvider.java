@@ -53,17 +53,8 @@ public class LocalFSChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public SeekableByteChannel getWriteChannel(@NotNull final URI uri, final boolean append) throws IOException {
-        final FileChannel result = FileChannel.open(Path.of(uri),
-                StandardOpenOption.WRITE,
-                StandardOpenOption.CREATE,
-                append ? StandardOpenOption.APPEND : StandardOpenOption.TRUNCATE_EXISTING);
-        if (append) {
-            result.position(result.size());
-        } else {
-            result.position(0);
-        }
-        return result;
+    public final CompletableOutputStream getOutputStream(@NotNull final URI uri, int bufferSizeHint) {
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override

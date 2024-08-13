@@ -30,7 +30,7 @@ public abstract class S3Instructions implements LogOutputAppendable {
     private static final int MIN_FRAGMENT_SIZE = 8 << 10; // 8 KiB
     private static final Duration DEFAULT_CONNECTION_TIMEOUT = Duration.ofSeconds(2);
     private static final Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(2);
-    private static final int DEFAULT_NUM_CONCURRENT_PARTS = 64;
+    private static final int DEFAULT_NUM_CONCURRENT_WRITE_PARTS = 64;
 
     /**
      * We set default part size to 10 MiB. The maximum number of parts allowed is 10,000. This means maximum size of a
@@ -39,8 +39,8 @@ public abstract class S3Instructions implements LogOutputAppendable {
      *
      * @see <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/qfacts.html">Amazon S3 User Guide</a>
      */
-    private static final int DEFAULT_PART_SIZE = 10 << 20; // 10 MiB
-    private static final int MIN_PART_SIZE = 5 << 20; // 5 MiB
+    private static final int DEFAULT_WRITE_PART_SIZE = 10 << 20; // 10 MiB
+    static final int MIN_WRITE_PART_SIZE = 5 << 20; // 5 MiB
 
     static final S3Instructions DEFAULT = builder().build();
 
@@ -111,25 +111,25 @@ public abstract class S3Instructions implements LogOutputAppendable {
     }
 
     /**
-     * The size of each part (in bytes) to upload when writing to S3, defaults to {@value #DEFAULT_PART_SIZE}. The
-     * minimum allowed part size is {@value #MIN_PART_SIZE}. Setting a higher value may increase throughput, but may
-     * also increase memory usage. Note that the maximum number of parts allowed for a single file is 10,000. Therefore,
-     * for {@value #DEFAULT_PART_SIZE} part size, the maximum size of a single file that can be written is
-     * {@value #DEFAULT_PART_SIZE} * 10,000 bytes.
+     * The size of each part (in bytes) to upload when writing to S3, defaults to {@value #DEFAULT_WRITE_PART_SIZE}. The
+     * minimum allowed part size is {@value #MIN_WRITE_PART_SIZE}. Setting a higher value may increase throughput, but
+     * may also increase memory usage. Note that the maximum number of parts allowed for a single file is 10,000.
+     * Therefore, for {@value #DEFAULT_WRITE_PART_SIZE} part size, the maximum size of a single file that can be written
+     * is {@value #DEFAULT_WRITE_PART_SIZE} * 10,000 bytes.
      */
     @Default
-    public int partSize() {
-        return DEFAULT_PART_SIZE;
+    public int writePartSize() {
+        return DEFAULT_WRITE_PART_SIZE;
     }
 
     /**
      * The maximum number of parts that can be uploaded concurrently when writing to S3 without blocking. Setting a
      * higher value may increase throughput, but may also increase memory usage. Defaults to
-     * {@value #DEFAULT_NUM_CONCURRENT_PARTS}.
+     * {@value #DEFAULT_NUM_CONCURRENT_WRITE_PARTS}.
      */
     @Default
-    public int numConcurrentParts() {
-        return DEFAULT_NUM_CONCURRENT_PARTS;
+    public int numConcurrentWriteParts() {
+        return DEFAULT_NUM_CONCURRENT_WRITE_PARTS;
     }
 
     @Override
@@ -162,10 +162,9 @@ public abstract class S3Instructions implements LogOutputAppendable {
 
         Builder endpointOverride(URI endpointOverride);
 
-        // TODO better names for these two methods
-        Builder partSize(int partSize);
+        Builder writePartSize(int writePartSize);
 
-        Builder numConcurrentParts(int numConcurrentParts);
+        Builder numConcurrentWriteParts(int numConcurrentWriteParts);
 
         default Builder endpointOverride(String endpointOverride) {
             return endpointOverride(URI.create(endpointOverride));
@@ -213,25 +212,27 @@ public abstract class S3Instructions implements LogOutputAppendable {
     }
 
     @Check
-    final void boundsCheckPartSize() {
-        if (partSize() < MIN_PART_SIZE) {
-            throw new IllegalArgumentException("partSize(=" + partSize() + ") must be >= " + MIN_PART_SIZE +
-                    " MiB");
+    final void boundsCheckWritePartSize() {
+        if (writePartSize() < MIN_WRITE_PART_SIZE) {
+            throw new IllegalArgumentException(
+                    "writePartSize(=" + writePartSize() + ") must be >= " + MIN_WRITE_PART_SIZE + " MiB");
         }
     }
 
     @Check
-    final void boundsCheckMinNumConcurrentParts() {
-        if (numConcurrentParts() < 1) {
-            throw new IllegalArgumentException("numConcurrentParts(=" + numConcurrentParts() + ") must be >= 1");
+    final void boundsCheckMinNumConcurrentWriteParts() {
+        if (numConcurrentWriteParts() < 1) {
+            throw new IllegalArgumentException(
+                    "numConcurrentWriteParts(=" + numConcurrentWriteParts() + ") must be >= 1");
         }
     }
 
     @Check
-    final void boundsCheckMaxNumConcurrentParts() {
-        if (numConcurrentParts() > maxConcurrentRequests()) {
-            throw new IllegalArgumentException("numConcurrentParts(=" + numConcurrentParts() + ") must be <= " +
-                    "maxConcurrentRequests(=" + maxConcurrentRequests() + ")");
+    final void boundsCheckMaxNumConcurrentWriteParts() {
+        if (numConcurrentWriteParts() > maxConcurrentRequests()) {
+            throw new IllegalArgumentException(
+                    "numConcurrentWriteParts(=" + numConcurrentWriteParts() + ") must be <= " +
+                            "maxConcurrentRequests(=" + maxConcurrentRequests() + ")");
         }
     }
 

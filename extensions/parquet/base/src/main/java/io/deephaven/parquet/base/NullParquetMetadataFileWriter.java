@@ -3,9 +3,9 @@
 //
 package io.deephaven.parquet.base;
 
+import io.deephaven.util.channel.CompletableOutputStream;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 
-import java.io.OutputStream;
 import java.net.URI;
 
 /**
@@ -20,6 +20,6 @@ public enum NullParquetMetadataFileWriter implements ParquetMetadataFileWriter {
 
     @Override
     public void writeMetadataFiles(
-            final OutputStream metadataOutputStream,
-            final OutputStream commonMetadataOutputStream) {}
+            final CompletableOutputStream metadataOutputStream,
+            final CompletableOutputStream commonMetadataOutputStream) {}
 }

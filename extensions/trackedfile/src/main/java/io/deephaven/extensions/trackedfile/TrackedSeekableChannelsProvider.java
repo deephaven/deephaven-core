@@ -10,6 +10,7 @@ import io.deephaven.engine.util.file.FileHandleFactory;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.engine.util.file.TrackedSeekableByteChannel;
 import io.deephaven.util.channel.Channels;
+import io.deephaven.util.channel.CompletableOutputStream;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.BaseSeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
@@ -73,12 +74,8 @@ final class TrackedSeekableChannelsProvider implements SeekableChannelsProvider 
     }
 
     @Override
-    public SeekableByteChannel getWriteChannel(@NotNull final URI uri, final boolean append)
-            throws IOException {
-        // NB: I'm not sure this is actually the intended behavior; the "truncate-once" is per-handle, not per file.
-        Assert.assertion(FILE_URI_SCHEME.equals(uri.getScheme()), "Expected a file uri, got " + uri);
-        return new TrackedSeekableByteChannel(append ? fileHandleFactory.writeAppendCreateHandleCreator
-                : new TruncateOnceFileCreator(fileHandleFactory), new File(uri));
+    public CompletableOutputStream getOutputStream(@NotNull final URI uri, int bufferSizeHint) throws IOException {
+        return new CompletableLocalOutputStream(new File(uri), this, bufferSizeHint);
     }
 
     @Override
@@ -93,6 +90,12 @@ final class TrackedSeekableChannelsProvider implements SeekableChannelsProvider 
         // Assuming that the URI is a file, not a directory. The caller should manage file vs. directory handling in
         // the processor.
         return Files.walk(Path.of(directory)).map(path -> FileUtils.convertToURI(path, false));
+    }
+
+    // TODO Discuss with Ryan if I still should use this method
+    SeekableByteChannel getWriteChannel(@NotNull final File destFile) throws IOException {
+        // NB: I'm not sure this is actually the intended behavior; the "truncate-once" is per-handle, not per file.
+        return new TrackedSeekableByteChannel(new TruncateOnceFileCreator(fileHandleFactory), destFile);
     }
 
     private static final class TruncateOnceFileCreator implements FileHandleFactory.FileToHandleFunction {
@@ -112,7 +115,7 @@ final class TrackedSeekableChannelsProvider implements SeekableChannelsProvider 
 
         @NotNull
         @Override
-        public final FileHandle invoke(@NotNull final File file) throws IOException {
+        public FileHandle invoke(@NotNull final File file) throws IOException {
             if (FIRST_TIME_UPDATER.compareAndSet(this, FIRST_TIME_TRUE, FIRST_TIME_FALSE)) {
                 return fileHandleFactory.writeTruncateCreateHandleCreator.invoke(file);
             }

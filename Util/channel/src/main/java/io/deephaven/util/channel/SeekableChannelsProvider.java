@@ -6,12 +6,9 @@ package io.deephaven.util.channel;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.URI;
-import java.nio.channels.Channels;
 import java.nio.channels.SeekableByteChannel;
 import java.util.stream.Stream;
 
@@ -93,35 +90,17 @@ public interface SeekableChannelsProvider extends SafeCloseable {
      */
     InputStream getInputStream(SeekableByteChannel channel, int sizeHint) throws IOException;
 
-    default SeekableByteChannel getWriteChannel(@NotNull final String uriStr, final boolean append) throws IOException {
-        return getWriteChannel(convertToURI(uriStr, false), append);
-    }
-
-    SeekableByteChannel getWriteChannel(@NotNull URI uri, boolean append) throws IOException;
-
     /**
-     * Creates an {@link OutputStream} to write to the given URI. The caller is responsible for closing the stream. To
-     * abort upload, users should call {@link #abort(OutputStream)} on the stream.
+     * Creates a {@link CompletableOutputStream} to write to the given URI.
      *
      * @param uri the URI to write to
-     * @param append whether to append to the file if it already exists
      * @param bufferSizeHint the number of bytes the caller expects to buffer before flushing
      * @return the output stream
      * @throws IOException if an IO exception occurs
+     * @see CompletableOutputStream
      */
-    default OutputStream getOutputStream(@NotNull final URI uri, boolean append, int bufferSizeHint)
-            throws IOException {
-        return new BufferedOutputStream(Channels.newOutputStream(getWriteChannel(uri, append)), bufferSizeHint);
-    }
+    CompletableOutputStream getOutputStream(@NotNull final URI uri, int bufferSizeHint) throws IOException;
 
-    /**
-     * Tries to abort the write operation and closes the provided output stream, assuming the stream was created by this
-     * provider.
-     */
-    default void abort(@NotNull final OutputStream outputStream) throws IOException {
-        // By default, we cannot abort the write operation, so just close the stream.
-        outputStream.close();
-    }
 
     /**
      * Returns a stream of URIs, the elements of which are the entries in the directory. The listing is non-recursive.
