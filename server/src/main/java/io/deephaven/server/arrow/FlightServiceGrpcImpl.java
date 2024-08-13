@@ -76,10 +76,9 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
         // handle the scenario where authentication headers initialized a session
         SessionState session = sessionService.getOptionalSession();
         if (session != null) {
-            // We should immediately reply, since some clients will not even send a message on the stream. This does put
-            // us at risk of hitting https://github.com/envoyproxy/envoy/issues/30149, but we have no other choice,
-            // since there might never be another call from the client.
-            GrpcUtil.safelyComplete(responseObserver, Flight.HandshakeResponse.newBuilder()
+            // We should immediately reply, since some clients will not even send a message on the stream. Do not close
+            // to avoid hitting https://github.com/envoyproxy/envoy/issues/30149.
+            GrpcUtil.safelyOnNext(responseObserver, Flight.HandshakeResponse.newBuilder()
                     .setPayload(session.getExpiration().getTokenAsByteString())
                     .build());
             return new StreamObserver<>() {
@@ -95,7 +94,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
 
                 @Override
                 public void onCompleted() {
-                    // ignore, already closed
+                    GrpcUtil.safelyComplete(responseObserver);
                 }
             };
         }
