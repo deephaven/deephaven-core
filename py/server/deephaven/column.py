@@ -85,10 +85,49 @@ class Column(JObjectWrapper):
         return ColumnType(self.j_column_definition.getColumnType())
 
     @property
-    def j_column_header(self):
+    def j_column_header(self) -> jpy.JType:
         return _JColumnHeader.of(self.name, self.data_type.qst_type)
 
-    def _to_j_column(self, input_data: Any = None):
+
+class InputColumn:
+    """ An InputColumn represents a user defined column with some input data."""
+
+    def __init__(
+        self,
+        name: str = None,
+        data_type: DType = None,
+        component_type: DType = None,
+        column_type: ColumnType = ColumnType.NORMAL,
+        j_column_definition: jpy.JType = None,
+        input_data: Any = None,
+    ):
+        try:
+            self.column = Column(name, data_type, component_type, column_type, j_column_definition)
+            self.j_column = self._to_j_column(input_data)
+        except Exception as e:
+            raise DHError(e, f"failed to create an InputColumn ({self.name}).") from e
+
+    @property
+    def name(self):
+        return self.column.name
+
+    @property
+    def data_type(self) -> DType:
+        return self.column.data_type
+
+    @property
+    def component_type(self) -> DType:
+        return self.column.component_type
+
+    @property
+    def column_type(self) -> ColumnType:
+        return self.column.column_type
+
+    @property
+    def j_column_header(self) -> jpy.JType:
+        return self.column.j_column_header
+
+    def _to_j_column(self, input_data: Any = None) -> jpy.JType:
         if input_data is None:
             return _JColumn.empty(self.j_column_header)
         if self.data_type.is_primitive:
@@ -104,32 +143,6 @@ class Column(JObjectWrapper):
             self.j_column_header,
             dtypes.array(self.data_type, input_data),
         )
-
-
-class InputColumn(JObjectWrapper):
-    """ An InputColumn represents a user defined column with some input data."""
-
-    j_object_type = _JColumn
-
-    def __init__(
-        self,
-        name: str = None,
-        data_type: DType = None,
-        component_type: DType = None,
-        column_type: ColumnType = ColumnType.NORMAL,
-        j_column_definition: jpy.JType = None,
-        input_data: Any = None,
-    ):
-        try:
-            column_definition = Column(name, data_type, component_type, column_type, j_column_definition)
-            self.name = column_definition.name
-            self.j_column = column_definition._to_j_column(input_data)
-        except Exception as e:
-            raise DHError(e, f"failed to create an InputColumn ({self.name}).") from e
-
-    @property
-    def j_object(self) -> jpy.JType:
-        return self.j_column
 
 
 def bool_col(name: str, data: Sequence) -> InputColumn:
