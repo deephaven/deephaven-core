@@ -177,7 +177,7 @@ class UpdateByTestCase(BaseTestCase):
                 for t in (self.static_table, self.ticking_table):
                     rt = t.update_by(ops=op, by="b")
                     self.assertTrue(rt.is_refreshing is t.is_refreshing)
-                    self.assertEqual(len(rt.columns), 1 + len(t.columns))
+                    self.assertEqual(len(rt.definition), 1 + len(t.definition))
                     with update_graph.exclusive_lock(self.test_update_graph):
                         self.assertEqual(rt.size, t.size)
 
@@ -192,7 +192,7 @@ class UpdateByTestCase(BaseTestCase):
                     rt_proxy = pt_proxy.update_by(op, by="e")
                     for ct, rct in zip(pt_proxy.target.constituent_tables, rt_proxy.target.constituent_tables):
                         self.assertTrue(rct.is_refreshing is ct.is_refreshing)
-                        self.assertEqual(len(rct.columns), 1 + len(ct.columns))
+                        self.assertEqual(len(rct.definition), 1 + len(ct.definition))
                         with update_graph.exclusive_lock(self.test_update_graph):
                             self.assertEqual(ct.size, rct.size)                        
 
@@ -202,7 +202,7 @@ class UpdateByTestCase(BaseTestCase):
                 for t in (self.static_table, self.ticking_table):
                     rt = t.update_by(ops=op, by="e")
                     self.assertTrue(rt.is_refreshing is t.is_refreshing)
-                    self.assertEqual(len(rt.columns), 2 + len(t.columns))
+                    self.assertEqual(len(rt.definition), 2 + len(t.definition))
                     with update_graph.exclusive_lock(self.test_update_graph):
                         self.assertEqual(rt.size, t.size)
 
@@ -230,7 +230,7 @@ class UpdateByTestCase(BaseTestCase):
                 for t in (self.static_table, self.ticking_table):
                     rt = t.update_by(ops=op, by="c")
                     self.assertTrue(rt.is_refreshing is t.is_refreshing)
-                    self.assertEqual(len(rt.columns), 2 + len(t.columns))
+                    self.assertEqual(len(rt.definition), 2 + len(t.definition))
                     with update_graph.exclusive_lock(self.test_update_graph):
                         self.assertEqual(rt.size, t.size)
 
@@ -245,7 +245,7 @@ class UpdateByTestCase(BaseTestCase):
                     rt_proxy = pt_proxy.update_by(op, by="c")
                     for ct, rct in zip(pt_proxy.target.constituent_tables, rt_proxy.target.constituent_tables):
                         self.assertTrue(rct.is_refreshing is ct.is_refreshing)
-                        self.assertEqual(len(rct.columns), 2 + len(ct.columns))
+                        self.assertEqual(len(rct.definition), 2 + len(ct.definition))
                         with update_graph.exclusive_lock(self.test_update_graph):
                             self.assertEqual(ct.size, rct.size)
 
@@ -260,7 +260,7 @@ class UpdateByTestCase(BaseTestCase):
         for t in (self.static_table, self.ticking_table):
             rt = t.update_by(ops=multiple_ops, by="c")
             self.assertTrue(rt.is_refreshing is t.is_refreshing)
-            self.assertEqual(len(rt.columns), 10 + len(t.columns))
+            self.assertEqual(len(rt.definition), 10 + len(t.definition))
             with update_graph.exclusive_lock(self.test_update_graph):
                 self.assertEqual(rt.size, t.size)
 

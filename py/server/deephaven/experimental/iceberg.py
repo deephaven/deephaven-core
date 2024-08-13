@@ -8,13 +8,8 @@ import jpy
 
 from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
-from deephaven.column import Column
-from deephaven.dtypes import DType
 from deephaven.experimental import s3
-
-from deephaven.jcompat import j_table_definition
-
-from deephaven.table import Table
+from deephaven.table import Table, TableDefinition, TableDefinitionAlias
 
 _JIcebergInstructions = jpy.get_type("io.deephaven.iceberg.util.IcebergInstructions")
 _JIcebergCatalogAdapter = jpy.get_type("io.deephaven.iceberg.util.IcebergCatalogAdapter")
@@ -39,14 +34,14 @@ class IcebergInstructions(JObjectWrapper):
     j_object_type = _JIcebergInstructions
 
     def __init__(self,
-                 table_definition: Optional[Union[Dict[str, DType], List[Column]]] = None,
+                 table_definition: Optional[TableDefinitionAlias] = None,
                  data_instructions: Optional[s3.S3Instructions] = None,
                  column_renames: Optional[Dict[str, str]] = None):
         """
         Initializes the instructions using the provided parameters.
 
         Args:
-            table_definition (Optional[Union[Dict[str, DType], List[Column], None]]): the table definition; if omitted,
+            table_definition (Optional[TableDefinitionAlias]): the table definition; if omitted,
                 the definition is inferred from the Iceberg schema. Setting a definition guarantees the returned table
                 will have that definition. This is useful for specifying a subset of the Iceberg schema columns.
             data_instructions (Optional[s3.S3Instructions]): Special instructions for reading data files, useful when
@@ -62,7 +57,7 @@ class IcebergInstructions(JObjectWrapper):
             builder = self.j_object_type.builder()
 
             if table_definition is not None:
-                builder.tableDefinition(j_table_definition(table_definition))
+                builder.tableDefinition(TableDefinition.of(table_definition).j_table_definition)
 
             if data_instructions is not None:
                 builder.dataInstructions(data_instructions.j_object)

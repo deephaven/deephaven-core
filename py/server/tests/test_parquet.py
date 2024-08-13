@@ -14,7 +14,7 @@ import pyarrow.parquet
 
 from deephaven import DHError, empty_table, dtypes, new_table
 from deephaven import arrow as dharrow
-from deephaven.column import InputColumn, Column, ColumnType, string_col, int_col, char_col, long_col
+from deephaven.column import InputColumn, ColumnDefinition, ColumnType, string_col, int_col, char_col, long_col
 from deephaven.pandas import to_pandas, to_table
 from deephaven.parquet import (write, batch_write, read, delete, ColumnInstruction, ParquetFileLayout,
                                write_partitioned)
@@ -597,12 +597,12 @@ class ParquetTestCase(BaseTestCase):
             actual = read(
                 kv_dir,
                 table_definition=[
-                    Column(
+                    ColumnDefinition.of(
                         "Partition", dtypes.int32, column_type=ColumnType.PARTITIONING
                     ),
-                    Column("x", dtypes.int32),
-                    Column("y", dtypes.double),
-                    Column("z", dtypes.double),
+                    ColumnDefinition.of("x", dtypes.int32),
+                    ColumnDefinition.of("y", dtypes.double),
+                    ColumnDefinition.of("z", dtypes.double),
                 ],
                 file_layout=ParquetFileLayout.KV_PARTITIONED,
             )
@@ -655,7 +655,7 @@ class ParquetTestCase(BaseTestCase):
             shutil.rmtree(root_dir)
 
         def verify_table_from_disk(table):
-            self.assertTrue(len(table.columns))
+            self.assertTrue(len(table.definition))
             self.assertTrue(table.columns[0].name == "X")
             self.assertTrue(table.columns[0].column_type == ColumnType.PARTITIONING)
             self.assert_table_equals(table.select().sort(["X", "Y"]), source.sort(["X", "Y"]))
@@ -696,9 +696,9 @@ class ParquetTestCase(BaseTestCase):
 
         shutil.rmtree(root_dir)
         table_definition = [
-            Column("X", dtypes.string, column_type=ColumnType.PARTITIONING),
-            Column("Y", dtypes.string),
-            Column("Number", dtypes.int32)
+            ColumnDefinition.of("X", dtypes.string, column_type=ColumnType.PARTITIONING),
+            ColumnDefinition.of("Y", dtypes.string),
+            ColumnDefinition.of("Number", dtypes.int32)
         ]
         write_partitioned(source, table_definition=table_definition, destination_dir=root_dir,
                           base_name=base_name, max_dictionary_keys=max_dictionary_keys)

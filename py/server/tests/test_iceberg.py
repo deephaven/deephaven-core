@@ -4,7 +4,7 @@
 import jpy
 
 from deephaven import dtypes
-from deephaven.column import Column, ColumnType
+from deephaven.column import ColumnDefinition, ColumnType
 
 from tests.testbase import BaseTestCase
 from deephaven.experimental import s3, iceberg
@@ -60,12 +60,12 @@ class IcebergTestCase(BaseTestCase):
 
     def test_instruction_create_with_table_definition_list(self):
         table_def=[
-            Column(
+            ColumnDefinition.of(
                 "Partition", dtypes.int32, column_type=ColumnType.PARTITIONING
             ),
-            Column("x", dtypes.int32),
-            Column("y", dtypes.double),
-            Column("z", dtypes.double),
+            ColumnDefinition.of("x", dtypes.int32),
+            ColumnDefinition.of("y", dtypes.double),
+            ColumnDefinition.of("z", dtypes.double),
         ]
 
         iceberg_instructions = iceberg.IcebergInstructions(table_definition=table_def)
