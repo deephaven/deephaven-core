@@ -4,6 +4,7 @@
 package io.deephaven.server.session;
 
 import com.github.f4b6a3.uuid.UuidCreator;
+import com.github.f4b6a3.uuid.exception.InvalidUuidException;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.protobuf.ByteString;
@@ -333,7 +334,7 @@ public class SessionService {
                 if (session != null) {
                     return session;
                 }
-            } catch (IllegalArgumentException ignored) {
+            } catch (IllegalArgumentException | InvalidUuidException ignored) {
             }
         }
 
