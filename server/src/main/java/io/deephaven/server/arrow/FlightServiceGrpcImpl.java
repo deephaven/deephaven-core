@@ -73,6 +73,33 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
     @Override
     public StreamObserver<Flight.HandshakeRequest> handshake(
             @NotNull final StreamObserver<Flight.HandshakeResponse> responseObserver) {
+        // handle the scenario where authentication headers initialized a session
+        SessionState session = sessionService.getOptionalSession();
+        if (session != null) {
+            // We should immediately reply, since some clients will not even send a message on the stream. This does put
+            // us at risk of hitting https://github.com/envoyproxy/envoy/issues/30149, but we have no other choice,
+            // since there might never be another call from the client.
+            GrpcUtil.safelyComplete(responseObserver, Flight.HandshakeResponse.newBuilder()
+                    .setPayload(session.getExpiration().getTokenAsByteString())
+                    .build());
+            return new StreamObserver<>() {
+                @Override
+                public void onNext(Flight.HandshakeRequest value) {
+                    // noop, already sent response
+                }
+
+                @Override
+                public void onError(Throwable t) {
+                    // ignore, already closed
+                }
+
+                @Override
+                public void onCompleted() {
+                    // ignore, already closed
+                }
+            };
+        }
+
         return new HandshakeObserver(responseObserver);
     }
 
@@ -87,13 +114,6 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
 
         @Override
         public void onNext(final Flight.HandshakeRequest value) {
-            // handle the scenario where authentication headers initialized a session
-            SessionState session = sessionService.getOptionalSession();
-            if (session != null) {
-                respondWithAuthTokenBin(session);
-                return;
-            }
-
             final AuthenticationRequestHandler.HandshakeResponseListener handshakeResponseListener =
                     (protocol, response) -> {
                         GrpcUtil.safelyComplete(responseObserver, Flight.HandshakeResponse.newBuilder()
@@ -122,7 +142,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                 return;
             }
 
-            session = sessionService.newSession(auth.get());
+            SessionState session = sessionService.newSession(auth.get());
             respondWithAuthTokenBin(session);
         }
 
