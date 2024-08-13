@@ -84,10 +84,6 @@ class Column(JObjectWrapper):
     def column_type(self) -> ColumnType:
         return ColumnType(self.j_column_definition.getColumnType())
 
-    @property
-    def j_column_header(self) -> jpy.JType:
-        return _JColumnHeader.of(self.name, self.data_type.qst_type)
-
 
 class InputColumn:
     """ An InputColumn represents a user defined column with some input data."""
@@ -123,13 +119,9 @@ class InputColumn:
     def column_type(self) -> ColumnType:
         return self.column.column_type
 
-    @property
-    def j_column_header(self) -> jpy.JType:
-        return self.column.j_column_header
-
     def _to_j_column(self, input_data: Any = None) -> jpy.JType:
         if input_data is None:
-            return _JColumn.empty(self.j_column_header)
+            return _JColumn.empty(_JColumnHeader.of(self.name, self.data_type.qst_type))
         if self.data_type.is_primitive:
             return _JColumn.ofUnsafe(
                 self.name,
@@ -139,10 +131,7 @@ class InputColumn:
                     remap=dtypes.null_remap(self.data_type),
                 ),
             )
-        return _JColumn.of(
-            self.j_column_header,
-            dtypes.array(self.data_type, input_data),
-        )
+        return _JColumn.of(_JColumnHeader.of(self.name, self.data_type.qst_type), dtypes.array(self.data_type, input_data))
 
 
 def bool_col(name: str, data: Sequence) -> InputColumn:
