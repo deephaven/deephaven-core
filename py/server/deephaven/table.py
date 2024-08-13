@@ -24,7 +24,7 @@ from deephaven._jpy import strict_cast
 from deephaven._wrapper import JObjectWrapper
 from deephaven._wrapper import unwrap
 from deephaven.agg import Aggregation
-from deephaven.column import Column, ColumnType
+from deephaven.column import ColumnDefinition
 from deephaven.filters import Filter, and_, or_
 from deephaven.jcompat import j_unary_operator, j_binary_operator, j_map_to_dict, j_hashmap
 from deephaven.jcompat import to_sequence, j_array_list
@@ -408,25 +408,29 @@ def _sort_column(col, dir_):
         _JColumnName.of(col)))
 
 
+TableDefinitionAlias = Union[Mapping[str, dtypes.DType], Iterable[ColumnDefinition], 'TableDefinition']
+"""The TableDefinition type alias"""
+
 class TableDefinition(JObjectWrapper, Mapping):
-    """A Deephaven table definition."""
+    """A Deephaven table definition, as a mapping from column name to ColumnDefinition."""
 
     j_object_type = _JTableDefinition
 
     @staticmethod
-    def from_columns(
-            columns: Union[Mapping[str, DType], Iterable[Column]],
-    ) -> TableDefinition:
-        columns = (
+    def of(table_definition: TableDefinitionAlias) -> 'TableDefinition':
+        """Produce a Deephaven TableDefinition from user input."""
+        if isinstance(table_definition, TableDefinition):
+            return table_definition
+        column_definitions = (
             [
-                Column(name=name, data_type=data_type)
-                for (name, data_type) in columns.items()
+                ColumnDefinition.of(name, data_type)
+                for (name, data_type) in table_definition.items()
             ]
-            if isinstance(columns, Mapping)
-            else columns
+            if isinstance(table_definition, Mapping)
+            else table_definition
         )
         return TableDefinition(
-            _JTableDefinition.of([col.j_column_definition for col in columns])
+            _JTableDefinition.of([col.j_column_definition for col in column_definitions])
         )
 
     def __init__(self, j_table_definition: jpy.JType):
@@ -442,16 +446,16 @@ class TableDefinition(JObjectWrapper, Mapping):
         return Table(_JTableTools.metaTable(self.j_table_definition))
 
     @cached_property
-    def _dict(self) -> Dict[str, Column]:
+    def _dict(self) -> Dict[str, ColumnDefinition]:
         return {
             col.name: col
             for col in [
-                Column(j_column_definition=j_col)
+                ColumnDefinition(j_col)
                 for j_col in self.j_table_definition.getColumnsArray()
             ]
         }
 
-    def __getitem__(self, key) -> Column:
+    def __getitem__(self, key) -> ColumnDefinition:
         return self._dict[key]
 
     def __iter__(self):
@@ -544,7 +548,12 @@ class Table(JObjectWrapper):
         return self._definition
 
     @property
-    def columns(self) -> List[Column]:
+    def column_names(self) -> List[str]:
+        """The column names of the table."""
+        return list(self.definition.keys())
+
+    @property
+    def columns(self) -> List[ColumnDefinition]:
         """The column definitions of the table."""
         return list(self.definition.values())
 
@@ -2398,18 +2407,18 @@ class PartitionedTable(JObjectWrapper):
                                key_cols: Union[str, List[str]] = None,
                                unique_keys: bool = None,
                                constituent_column: str = None,
-                               constituent_table_columns: List[Column] = None,
+                               constituent_table_definition: Optional[TableDefinitionAlias] = None,
                                constituent_changes_permitted: bool = None) -> PartitionedTable:
         """Creates a PartitionedTable from the provided underlying partitioned Table.
 
-        Note: key_cols, unique_keys, constituent_column, constituent_table_columns,
+        Note: key_cols, unique_keys, constituent_column, constituent_table_definition,
         constituent_changes_permitted must either be all None or all have values. When they are None, their values will
         be inferred as follows:
 
         |    * key_cols: the names of all columns with a non-Table data type
         |    * unique_keys: False
         |    * constituent_column: the name of the first column with a Table data type
-        |    * constituent_table_columns: the column definitions of the first cell (constituent table) in the constituent
+        |    * constituent_table_definition: the table definitions of the first cell (constituent table) in the constituent
             column. Consequently, the constituent column can't be empty.
         |    * constituent_changes_permitted: the value of table.is_refreshing
 
@@ -2419,7 +2428,7 @@ class PartitionedTable(JObjectWrapper):
             key_cols (Union[str, List[str]]): the key column name(s) of 'table'
             unique_keys (bool): whether the keys in 'table' are guaranteed to be unique
             constituent_column (str): the constituent column name in 'table'
-            constituent_table_columns (List[Column]): the column definitions of the constituent table
+            constituent_table_definition (Optional[TableDefinitionAlias]): the table definitions of the constituent table
             constituent_changes_permitted (bool): whether the values of the constituent column can change
 
         Returns:
@@ -2428,7 +2437,7 @@ class PartitionedTable(JObjectWrapper):
         Raise:
             DHError
         """
-        none_args = [key_cols, unique_keys, constituent_column, constituent_table_columns,
+        none_args = [key_cols, unique_keys, constituent_column, constituent_table_definition,
                      constituent_changes_permitted]
 
         try:
@@ -2436,7 +2445,7 @@ class PartitionedTable(JObjectWrapper):
                 return PartitionedTable(j_partitioned_table=_JPartitionedTableFactory.of(table.j_table))
 
             if all([arg is not None for arg in none_args]):
-                table_def = _JTableDefinition.of([col.j_column_definition for col in constituent_table_columns])
+                table_def = TableDefinition.of(constituent_table_definition).j_table_definition
                 j_partitioned_table = _JPartitionedTableFactory.of(table.j_table,
                                                                    j_array_list(to_sequence(key_cols)),
                                                                    unique_keys,
@@ -2453,18 +2462,18 @@ class PartitionedTable(JObjectWrapper):
     @classmethod
     def from_constituent_tables(cls,
                                 tables: List[Table],
-                                constituent_table_columns: List[Column] = None) -> PartitionedTable:
+                                constituent_table_definition: Optional[TableDefinitionAlias] = None) -> PartitionedTable:
         """Creates a PartitionedTable with a single column named '__CONSTITUENT__' containing the provided constituent
         tables.
 
         The result PartitionedTable has no key columns, and both its unique_keys and constituent_changes_permitted
-        properties are set to False. When constituent_table_columns isn't provided, it will be set to the column
+        properties are set to False. When constituent_table_definition isn't provided, it will be set to the table
         definitions of the first table in the provided constituent tables.
 
         Args:
             tables (List[Table]): the constituent tables
-            constituent_table_columns (List[Column]): a list of column definitions compatible with all the constituent
-                tables, default is None
+            constituent_table_definition (Optional[TableDefinitionAlias]): the table definition compatible with all the
+                constituent tables, default is None
 
         Returns:
             a PartitionedTable
@@ -2473,10 +2482,10 @@ class PartitionedTable(JObjectWrapper):
             DHError
         """
         try:
-            if not constituent_table_columns:
+            if not constituent_table_definition:
                 return PartitionedTable(j_partitioned_table=_JPartitionedTableFactory.ofTables(to_sequence(tables)))
             else:
-                table_def = _JTableDefinition.of([col.j_column_definition for col in constituent_table_columns])
+                table_def = TableDefinition.of(constituent_table_definition).j_table_definition
                 return PartitionedTable(j_partitioned_table=_JPartitionedTableFactory.ofTables(table_def,
                                                                                                to_sequence(tables)))
         except Exception as e:
@@ -2528,7 +2537,7 @@ class PartitionedTable(JObjectWrapper):
         return TableDefinition(self.j_partitioned_table.constituentDefinition())
 
     @property
-    def constituent_table_columns(self) -> List[Column]:
+    def constituent_table_columns(self) -> List[ColumnDefinition]:
         """The column definitions for constituent tables. All constituent tables in a partitioned table have the
         same column definitions."""
         return list(self.constituent_table_definition.values())

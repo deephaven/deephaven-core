@@ -43,7 +43,7 @@ class ColumnDefinition(JObjectWrapper):
             data_type: DType,
             component_type: DType = None,
             column_type: ColumnType = ColumnType.NORMAL,
-    ) -> "ColumnDefinition":
+    ) -> 'ColumnDefinition':
         return ColumnDefinition(
             _JColumnDefinition.fromGenericType(
                 name,
