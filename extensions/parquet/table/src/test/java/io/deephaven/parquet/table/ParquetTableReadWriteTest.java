@@ -1480,6 +1480,29 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
+    public void testBigDecimalArrayColumn() {
+        final Table bdArrayTable = TableTools.emptyTable(10000).select(Selectable.from(List.of(
+                "someBigDecimalArrayColumn = new java.math.BigDecimal[] {i % 10 == 0 ? null : " +
+                        "java.math.BigDecimal.valueOf(ii).stripTrailingZeros()}")));
+        final File dest = new File(rootFile + File.separator + "testBigDecimalArrayColumn.parquet");
+        try {
+            ParquetTools.writeTable(bdArrayTable, dest.getPath());
+            fail("Expected exception because writing arrays of big decimal column types is not supported");
+        } catch (final RuntimeException e) {
+            assertTrue(e.getCause() instanceof UnsupportedOperationException);
+        }
+
+        // Convert array to vector table
+        final Table bdVectorTable = arrayToVectorTable(bdArrayTable);
+        try {
+            ParquetTools.writeTable(bdVectorTable, dest.getPath());
+            fail("Expected exception because writing vectors of big decimal column types is not supported");
+        } catch (final RuntimeException e) {
+            assertTrue(e.getCause() instanceof UnsupportedOperationException);
+        }
+    }
+
+    @Test
     public void testArrayColumns() {
         ArrayList<String> columns =
                 new ArrayList<>(Arrays.asList(
