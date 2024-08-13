@@ -9,12 +9,12 @@ from typing import List, Any
 from deephaven import DHError, read_csv, empty_table, SortDirection, time_table, update_graph, new_table, dtypes
 from deephaven.agg import sum_, weighted_avg, avg, pct, group, count_, first, last, max_, median, min_, std, abs_sum, \
     var, formula, partition, unique, count_distinct, distinct
-from deephaven.column import datetime_col
+from deephaven.column import Column, datetime_col
 from deephaven.execution_context import make_user_exec_ctx, get_exec_ctx
 from deephaven.html import to_html
 from deephaven.jcompat import j_hashmap
 from deephaven.pandas import to_pandas
-from deephaven.table import Table, SearchDisplayMode, table_diff
+from deephaven.table import Table, TableDefinition, SearchDisplayMode, table_diff
 from tests.testbase import BaseTestCase, table_equals
 
 
@@ -83,6 +83,16 @@ class TableTestCase(BaseTestCase):
 
         t = self.test_table.where(["a > 500"])
         self.assertNotEqual(t, self.test_table)
+
+    def test_definition(self):
+        expected = TableDefinition.from_columns({
+            "a": dtypes.int32,
+            "b": dtypes.int32,
+            "c": dtypes.int32,
+            "d": dtypes.int32,
+            "e": dtypes.int32
+        })
+        self.assertEquals(expected, self.test_table.definition)
 
     def test_meta_table(self):
         t = self.test_table.meta_table

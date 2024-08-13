@@ -15,7 +15,7 @@ from functools import cached_property
 from typing import Any, Optional, Callable, Dict, Generator, Tuple, Literal
 from typing import Sequence, List, Union, Protocol
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Iterable
 
 import jpy
 import numpy as np
@@ -410,9 +410,26 @@ def _sort_column(col, dir_):
         _JColumnName.of(col)))
 
 
-class TableDefinition(JObjectWrapper,Mapping):
+class TableDefinition(JObjectWrapper, Mapping):
     """A Deephaven table definition."""
+
     j_object_type = _JTableDefinition
+
+    @staticmethod
+    def from_columns(
+            columns: Union[Mapping[str, DType], Iterable[Column]],
+    ) -> TableDefinition:
+        columns = (
+            [
+                Column(name=name, data_type=data_type)
+                for (name, data_type) in columns.items()
+            ]
+            if isinstance(columns, Mapping)
+            else columns
+        )
+        return TableDefinition(
+            _JTableDefinition.of([col.j_column_definition for col in columns])
+        )
 
     def __init__(self, j_table_definition: jpy.JType):
         self.j_table_definition = j_table_definition
