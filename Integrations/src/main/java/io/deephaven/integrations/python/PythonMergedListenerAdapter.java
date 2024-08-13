@@ -13,6 +13,8 @@ import io.deephaven.engine.table.impl.MergedListener;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.UpdateGraph;
+import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.NotNull;
@@ -33,7 +35,10 @@ import java.util.stream.Stream;
  */
 @ScriptApi
 public class PythonMergedListenerAdapter extends MergedListener {
-    private final PyObject pyCallable;
+    private static final Logger log = LoggerFactory.getLogger(PythonMergedListenerAdapter.class);
+
+    private final PyObject pyListenerCallable;
+    private final PyObject pyOnFailureCallback;
 
     /**
      * Create a Python merged listener.
@@ -42,23 +47,26 @@ public class PythonMergedListenerAdapter extends MergedListener {
      * @param dependencies The tables that must be satisfied before this listener is executed.
      * @param listenerDescription A description for the UpdatePerformanceTracker to append to its entry description, may
      *        be null.
-     * @param pyObjectIn Python listener object.
+     * @param pyListener Python listener object.
      */
     private PythonMergedListenerAdapter(
             @NotNull ListenerRecorder[] recorders,
             @Nullable NotificationQueue.Dependency[] dependencies,
             @Nullable String listenerDescription,
-            @NotNull PyObject pyObjectIn) {
+            @NotNull PyObject pyListener,
+            @Nullable PyObject pyOnFailureCallback) {
         super(Arrays.asList(recorders), Arrays.asList(dependencies), listenerDescription, null);
         Arrays.stream(recorders).forEach(rec -> rec.setMergedListener(this));
-        this.pyCallable = PythonUtils.pyMergeListenerFunc(pyObjectIn);
+        this.pyListenerCallable = PythonUtils.pyMergeListenerFunc(pyListener);
+        this.pyOnFailureCallback = pyOnFailureCallback;
     }
 
     public static PythonMergedListenerAdapter create(
             @NotNull ListenerRecorder[] recorders,
             @Nullable NotificationQueue.Dependency[] dependencies,
             @Nullable String listenerDescription,
-            @NotNull PyObject pyObjectIn) {
+            @NotNull PyObject pyListener,
+            @Nullable PyObject pyOnFailureCallback) {
         if (recorders.length < 2) {
             throw new IllegalArgumentException("At least two listener recorders must be provided");
         }
@@ -71,7 +79,8 @@ public class PythonMergedListenerAdapter extends MergedListener {
         final UpdateGraph updateGraph = allItems[0].getUpdateGraph(allItems);
 
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            return new PythonMergedListenerAdapter(recorders, dependencies, listenerDescription, pyObjectIn);
+            return new PythonMergedListenerAdapter(recorders, dependencies, listenerDescription, pyListener,
+                    pyOnFailureCallback);
         }
     }
 
@@ -91,6 +100,19 @@ public class PythonMergedListenerAdapter extends MergedListener {
 
     @Override
     protected void process() {
-        pyCallable.call("__call__");
+        try {
+            pyListenerCallable.call("__call__");
+        } catch (Exception e) {
+            if (!pyOnFailureCallback.isNone()) {
+                try {
+                    pyOnFailureCallback.call("__call__", e);
+                } catch (Exception e2) {
+                    // If the Python onFailure callback fails, log the new exception
+                    // and continue with the original exception.
+                    log.error().append("Python on_error callback failed: ").append(e2).endl();
+                }
+            }
+            throw e;
+        }
     }
 }

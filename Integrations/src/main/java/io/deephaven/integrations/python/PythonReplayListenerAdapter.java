@@ -93,7 +93,7 @@ public class PythonReplayListenerAdapter extends InstrumentedTableUpdateListener
             } catch (Throwable e) {
                 // If the Python onFailure callback fails, log the new exception
                 // and continue with the original exception.
-                log.error().append("Python onFailure callback failed: ").append(e).endl();
+                log.error().append("Python on_error callback failed: ").append(e).endl();
             }
         }
         super.onFailureInternal(originalException, sourceEntry);

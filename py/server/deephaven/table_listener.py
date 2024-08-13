@@ -433,7 +433,7 @@ class MergedListenerHandle(JObjectWrapper):
         return self.merged_listener_adapter
 
     def __init__(self, tables: Sequence[Table], listener: Union[Callable[[Dict[Table, TableUpdate], bool], None], MergedListener],
-                 description: str = None, dependencies: Union[Table, Sequence[Table]] = None):
+                 description: str = None, dependencies: Union[Table, Sequence[Table]] = None, on_error: Callable[[Exception], None] = None):
         """Creates a new MergedListenerHandle with the provided listener recorders and dependencies.
 
         Table change events are processed by 'listener', which can be either
@@ -464,6 +464,15 @@ class MergedListenerHandle(JObjectWrapper):
                 the listener is safe, it is not recommended because reading or operating on the result tables of those
                 operations may not be safe. It is best to perform the operations on the dependent tables beforehand,
                 and then add the result tables as dependencies to the listener so that they can be safely read in it.
+            on_error (Callable[[Exception], None]): a callback function to call when an error occurs during the
+                listener's execution, default is None. The function must take an Exception object as its only argument.
+                When the on_error function is invoked, the listener will be put in a failed state and will not receive
+                any further table updates. If the function raises an exception, the exception will only be logged in
+                the Deephaven server log and will not be further processed by the server.
+
+                Although optional, it is recommended that you provide an on_error function to handle any exceptions that
+                may occur during the listener's execution, even when the listener is not expected to raise any exceptions
+                or uses try-except blocks to handle them.
 
         Raises:
             DHError
@@ -490,7 +499,8 @@ class MergedListenerHandle(JObjectWrapper):
                         to_sequence(self.listener_recorders),
                         to_sequence(self.dependencies),
                         description,
-                        self)
+                        self,
+                        on_error)
             self.started = False
         except Exception as e:
             raise DHError(e, "failed to create a merged listener adapter.") from e
@@ -546,8 +556,8 @@ class MergedListenerHandle(JObjectWrapper):
 
 
 def merged_listen(tables: Sequence[Table], listener: Union[Callable[[Dict[Table, TableUpdate]], None], MergedListener],
-                do_replay: bool = False, description: str = None, dependencies: Union[Table, Sequence[Table]] = None)\
-        -> MergedListenerHandle:
+                do_replay: bool = False, description: str = None, dependencies: Union[Table, Sequence[Table]] = None,
+                  on_error: Callable[[Exception], None] = None) -> MergedListenerHandle:
     """This is a convenience function that creates a MergedListenerHandle object and immediately starts it to
     listen for table updates.
 
@@ -574,8 +584,17 @@ def merged_listen(tables: Sequence[Table], listener: Union[Callable[[Dict[Table,
             the listener is safe, it is not recommended because reading or operating on the result tables of those
             operations may not be safe. It is best to perform the operations on the dependent tables beforehand,
             and then add the result tables as dependencies to the listener so that they can be safely read in it.
+        on_error (Callable[[Exception], None]): a callback function to call when an error occurs during the
+            listener's execution, default is None. The function must take an Exception object as its only argument.
+            When the on_error function is invoked, the listener will be put in a failed state and will not receive
+            any further table updates. If the function raises an exception, the exception will only be logged in
+            the Deephaven server log and will not be further processed by the server.
+
+            Although optional, it is recommended that you provide an on_error function to handle any exceptions that
+            may occur during the listener's execution, even when the listener is not expected to raise any exceptions
+            or uses try-except blocks to handle them.
     """
     merged_listener_handle = MergedListenerHandle(tables=tables, listener=listener,
-                                                  description=description, dependencies=dependencies)
+                                                  description=description, dependencies=dependencies, on_error=on_error)
     merged_listener_handle.start(do_replay=do_replay)
     return merged_listener_handle
