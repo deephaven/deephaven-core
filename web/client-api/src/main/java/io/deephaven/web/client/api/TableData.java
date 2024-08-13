@@ -8,7 +8,7 @@ import com.vertispan.tsdefs.annotations.TsTypeRef;
 import com.vertispan.tsdefs.annotations.TsUnion;
 import com.vertispan.tsdefs.annotations.TsUnionMember;
 import elemental2.core.JsArray;
-import io.deephaven.web.client.api.subscription.AbstractTableSubscription;
+import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsOverlay;
 import jsinterop.annotations.JsPackage;
@@ -29,8 +29,9 @@ import jsinterop.base.Js;
  * Java note: this interface contains some extra overloads that aren't available in JS. Implementations are expected to
  * implement only abstract methods, and default methods present in this interface will dispatch accordingly.
  */
-@TsName(namespace = "dh")
+@JsType(namespace = "dh")
 public interface TableData {
+    @JsIgnore
     int NO_ROW_FORMAT_COLUMN = -1;
 
     /**
@@ -66,9 +67,7 @@ public interface TableData {
     JsArray<Column> getColumns();
 
     /**
-     * A lazily computed array of all rows in the entire table
-     *
-     * @return {@link AbstractTableSubscription.SubscriptionRow} array.
+     * A lazily computed array of all rows available on the client.
      */
     @JsProperty
     JsArray<@TsTypeRef(Row.class) ? extends Row> getRows();
@@ -87,8 +86,10 @@ public interface TableData {
         return get(Js.coerceToInt(index));
     }
 
+    @JsIgnore
     Row get(long index);
 
+    @JsIgnore
     Row get(int index);
 
     /**
@@ -106,8 +107,10 @@ public interface TableData {
         return getData(index.asInt(), column);
     }
 
+    @JsIgnore
     Any getData(int index, Column column);
 
+    @JsIgnore
     Any getData(long index, Column column);
 
     /**
@@ -125,11 +128,18 @@ public interface TableData {
         return getFormat(index.asInt(), column);
     }
 
+    @JsIgnore
     Format getFormat(int index, Column column);
 
+    @JsIgnore
     Format getFormat(long index, Column column);
 
-    @TsName(namespace = "dh")
+    /**
+     * Represents a row available in a subscription/snapshot on the client. Do not retain references to rows - they will
+     * not function properly when the event isn't actively going off (or promise resolving). Instead, wait for the next
+     * event, or re-request the viewport data.
+     */
+    @JsType(namespace = "dh")
     interface Row {
         @JsProperty
         LongWrapper getIndex();

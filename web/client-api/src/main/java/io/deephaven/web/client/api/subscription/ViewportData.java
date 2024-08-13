@@ -3,10 +3,11 @@
 //
 package io.deephaven.web.client.api.subscription;
 
-import com.vertispan.tsdefs.annotations.TsInterface;
-import com.vertispan.tsdefs.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsTypeRef;
+import elemental2.core.JsArray;
 import io.deephaven.web.client.api.TableData;
 import jsinterop.annotations.JsProperty;
+import jsinterop.annotations.JsType;
 
 /**
  * Extends {@link TableData}, but only contains data in the current viewport. The only API change from TableData is that
@@ -17,9 +18,7 @@ import jsinterop.annotations.JsProperty;
  * Do not assume that the first row in `rows` is the first visible row, because extra rows may be provided for easier
  * scrolling without going to the server.
  */
-// TODO re-add dh.ViewportRow
-@TsInterface
-@TsName(namespace = "dh")
+@JsType(namespace = "dh")
 public interface ViewportData extends TableData {
 
     /**
@@ -27,4 +26,25 @@ public interface ViewportData extends TableData {
      */
     @JsProperty
     Double getOffset();
+
+    @JsProperty
+    @Override
+    JsArray<TableData.@TsTypeRef(ViewportRow.class) Row> getRows();
+
+    /**
+     * Reads a row object from the viewport, based on its position in the table.
+     */
+    @Override
+    @TsTypeRef(ViewportRow.class)
+    default TableData.Row get(RowPositionUnion index) {
+        return TableData.super.get(index);
+    }
+
+    /**
+     * This object may be pooled internally or discarded and not updated. Do not retain references to it. Instead,
+     * request the viewport again.
+     */
+    @JsType(namespace = "dh")
+    interface ViewportRow extends TableData.Row {
+    }
 }

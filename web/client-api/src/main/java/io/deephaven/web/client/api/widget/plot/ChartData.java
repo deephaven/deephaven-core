@@ -9,6 +9,7 @@ import io.deephaven.web.client.api.JsRangeSet;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.TableData;
 import io.deephaven.web.client.api.subscription.AbstractTableSubscription;
+import io.deephaven.web.client.api.subscription.SubscriptionTableData;
 import io.deephaven.web.client.fu.JsSettings;
 import io.deephaven.web.shared.data.Range;
 import io.deephaven.web.shared.fu.JsFunction;
@@ -36,9 +37,10 @@ public class ChartData {
     }
 
     public void update(AbstractTableSubscription.UpdateEventData tableData) {
-        Iterator<Range> addedIterator = tableData.getAdded().getRange().rangeIterator();
-        Iterator<Range> removedIterator = tableData.getRemoved().getRange().rangeIterator();
-        Iterator<Range> modifiedIterator = tableData.getModified().getRange().rangeIterator();
+        SubscriptionTableData data = (SubscriptionTableData) tableData;
+        Iterator<Range> addedIterator = data.getAdded().getRange().rangeIterator();
+        Iterator<Range> removedIterator = data.getRemoved().getRange().rangeIterator();
+        Iterator<Range> modifiedIterator = data.getModified().getRange().rangeIterator();
 
         Range nextAdded = addedIterator.hasNext() ? addedIterator.next() : null;
         Range nextRemoved = removedIterator.hasNext() ? removedIterator.next() : null;
@@ -130,7 +132,7 @@ public class ChartData {
             assert cachedData.values().stream().flatMap(m -> m.values().stream()).allMatch(arr -> arr
                     .reduce((Object val, Any p1, int p2) -> ((Integer) val) + 1, 0) == indexes.length);
 
-            JsRangeSet fullIndex = tableData.getFullIndex();
+            JsRangeSet fullIndex = ((SubscriptionTableData) tableData).getFullIndex();
             PrimitiveIterator.OfLong iter = fullIndex.getRange().indexIterator();
             for (int j = 0; j < indexes.length; j++) {
                 assert indexes[j] == iter.nextLong();

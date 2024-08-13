@@ -45,6 +45,7 @@ import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.input.JsInputTable;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
 import io.deephaven.web.client.api.state.StateCache;
+import io.deephaven.web.client.api.subscription.AbstractTableSubscription;
 import io.deephaven.web.client.api.subscription.TableSubscription;
 import io.deephaven.web.client.api.subscription.TableViewportSubscription;
 import io.deephaven.web.client.api.subscription.ViewportData;
@@ -726,11 +727,11 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
      * resolve until that data is ready. If this table is closed before the promise resolves, it will be rejected - to
      * separate the lifespan of this promise from the table itself, call
      * {@link TableViewportSubscription#getViewportData()} on the result from {@link #setViewport(double, double)}.
-     * 
+     *
      * @return Promise of {@link TableData}
      */
     @JsMethod
-    public Promise<ViewportData> getViewportData() {
+    public Promise<AbstractTableSubscription.@TsTypeRef(ViewportData.class) UpdateEventData> getViewportData() {
         TableViewportSubscription subscription = subscriptions.get(getHandle());
         if (subscription == null) {
             return Promise.reject("No viewport currently set");

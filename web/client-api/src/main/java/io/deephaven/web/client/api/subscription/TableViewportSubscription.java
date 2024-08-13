@@ -5,6 +5,7 @@ package io.deephaven.web.client.api.subscription;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 import com.vertispan.tsdefs.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import elemental2.core.JsArray;
 import elemental2.dom.CustomEvent;
 import elemental2.dom.CustomEventInit;
@@ -110,7 +111,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
         if (rowsAdded.size() != rowsRemoved.size() && originalActive) {
             fireEventWithDetail(JsTable.EVENT_SIZECHANGED, size());
         }
-        UpdateEventData detail = new UpdateEventData(barrageSubscription, rowStyleColumn, getColumns(), rowsAdded,
+        UpdateEventData detail = new SubscriptionEventData(barrageSubscription, rowStyleColumn, getColumns(), rowsAdded,
                 rowsRemoved, totalMods, shifted);
 
         detail.setOffset(this.viewportRowSet.getFirstRow());
@@ -147,7 +148,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
         if (hasListeners(eventName)) {
             rowset.indexIterator().forEachRemaining((long row) -> {
                 CustomEventInit<JsPropertyMap<?>> addedEvent = CustomEventInit.create();
-                addedEvent.setDetail(wrap(updateEventData.getRows().getAt((int) row), (int) row));
+                addedEvent.setDetail(wrap((SubscriptionRow) updateEventData.getRows().getAt((int) row), (int) row));
                 fireEvent(eventName, addedEvent);
             });
         }
@@ -301,16 +302,16 @@ public class TableViewportSubscription extends AbstractTableSubscription {
      * @return Promise of {@link TableData}.
      */
     @JsMethod
-    public Promise<ViewportData> getViewportData() {
+    public Promise<@TsTypeRef(ViewportData.class) UpdateEventData> getViewportData() {
         retainForExternalUse();
         return getInternalViewportData();
     }
 
-    public Promise<ViewportData> getInternalViewportData() {
+    public Promise<@TsTypeRef(ViewportData.class) UpdateEventData> getInternalViewportData() {
         if (isSubscriptionReady()) {
             return Promise.resolve(viewportData);
         }
-        final LazyPromise<ViewportData> promise = new LazyPromise<>();
+        final LazyPromise<UpdateEventData> promise = new LazyPromise<>();
         addEventListenerOneShot(EVENT_UPDATED, ignored -> promise.succeed(viewportData));
         return promise.asPromise();
     }
@@ -389,7 +390,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
             doExchange.onEnd(status -> {
                 if (status.isOk()) {
                     // notify the caller that the snapshot is finished
-                    resolve.onInvoke(new UpdateEventData(snapshot, rowStyleColumn, Js.uncheckedCast(columns),
+                    resolve.onInvoke(new SubscriptionEventData(snapshot, rowStyleColumn, Js.uncheckedCast(columns),
                             RangeSet.ofRange(0, rowsReceived.get() - 1),
                             RangeSet.empty(),
                             RangeSet.empty(),

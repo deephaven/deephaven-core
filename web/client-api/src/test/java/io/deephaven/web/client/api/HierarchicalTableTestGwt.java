@@ -6,6 +6,7 @@ package io.deephaven.web.client.api;
 import elemental2.dom.CustomEvent;
 import elemental2.promise.Promise;
 import io.deephaven.web.client.api.tree.JsTreeTable;
+import io.deephaven.web.client.api.tree.TreeViewportData;
 
 public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
     private static final Format red = new Format(0x1ff000001e0e0e0L, 0, null, null);
@@ -39,20 +40,22 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                     assertEquals("Parent", treeTable.getColumns().getAt(1).getName());
 
                     treeTable.setViewport(0, 99, treeTable.getColumns(), null);
-                    return treeTable.getViewportData().then(data -> {
-                        assertEquals(1d, data.getTreeSize());
+                    return treeTable.getViewportData()
+                            .then(data -> Promise.resolve((TreeViewportData) data))
+                            .then(data -> {
+                                assertEquals(1d, data.getTreeSize());
 
-                        treeTable.expand(JsTreeTable.RowReferenceUnion.of(0), null);
-                        return treeTable.<JsTreeTable.TreeSubscription.TreeViewportData>nextEvent(
-                                JsTreeTable.EVENT_UPDATED, 2001d);
-                    }).then(event -> {
-                        assertEquals(10d, event.detail.getTreeSize());
+                                treeTable.expand(JsTreeTable.RowReferenceUnion.of(0), null);
+                                return treeTable.<TreeViewportData>nextEvent(
+                                        JsTreeTable.EVENT_UPDATED, 2001d);
+                            }).then(event -> {
+                                assertEquals(10d, event.detail.getTreeSize());
 
-                        treeTable.close();
+                                treeTable.close();
 
-                        assertTrue(treeTable.isClosed());
-                        return null;
-                    });
+                                assertTrue(treeTable.isClosed());
+                                return null;
+                            });
                 })
                 .then(this::finish).catch_(this::report);
     }
@@ -77,16 +80,16 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                     // Wait for the table to tick such that the first row has children
                     // Read values from the one returned row
                     return waitForEventWhere(treeTable, JsTreeTable.EVENT_UPDATED,
-                            (CustomEvent<JsTreeTable.TreeSubscription.TreeViewportData> d) -> d.detail
+                            (CustomEvent<TreeViewportData> d) -> d.detail
                                     .getTreeSize() == 1
-                                    && d.detail.getRows().getAtAsAny(0).<JsTreeTable.TreeSubscription.TreeRow>cast()
+                                    && d.detail.getRows().getAtAsAny(0).<TreeViewportData.TreeRow>cast()
                                             .hasChildren(),
                             10001)
                             .then(JsTreeTable::getViewportData)
+                            .then(data -> Promise.resolve((TreeViewportData) data))
                             .then(data -> {
                                 assertEquals(1.0, data.getTreeSize());
-                                JsTreeTable.TreeSubscription.TreeRow row1 =
-                                        (JsTreeTable.TreeSubscription.TreeRow) data.getRows().getAt(0);
+                                TreeViewportData.TreeRow row1 = (TreeViewportData.TreeRow) data.getRows().getAt(0);
                                 Column timestampCol = treeTable.findColumn("Timestamp");
                                 assertEquals(Format.EMPTY, data.getFormat(0, timestampCol));
                                 assertEquals(Format.EMPTY, row1.getFormat(timestampCol));
@@ -109,14 +112,13 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
 
                                 // Wait for the expand to occur and table to show all 10 rows
                                 return waitForEventWhere(treeTable, JsTreeTable.EVENT_UPDATED,
-                                        (CustomEvent<JsTreeTable.TreeSubscription.TreeViewportData> d) -> d.detail
-                                                .getTreeSize() == 10,
+                                        (CustomEvent<TreeViewportData> d) -> d.detail.getTreeSize() == 10,
                                         14004);
                             })
                             .then(JsTreeTable::getViewportData)
+                            .then(data -> Promise.resolve((TreeViewportData) data))
                             .then(data -> {
-                                JsTreeTable.TreeSubscription.TreeRow row2 =
-                                        (JsTreeTable.TreeSubscription.TreeRow) data.getRows().getAt(1);
+                                TreeViewportData.TreeRow row2 = (TreeViewportData.TreeRow) data.getRows().getAt(1);
 
                                 Column timestampCol = treeTable.findColumn("Timestamp");
                                 assertEquals(Format.EMPTY, data.getFormat(1, timestampCol));
@@ -163,13 +165,12 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
 
                     // Wait for the table to tick such that we have at least 4 rows (root, three children)
                     return waitForEventWhere(rollup, JsTreeTable.EVENT_UPDATED,
-                            (CustomEvent<JsTreeTable.TreeSubscription.TreeViewportData> d) -> d.detail
-                                    .getTreeSize() == 4,
+                            (CustomEvent<TreeViewportData> d) -> d.detail.getTreeSize() == 4,
                             10002)
                             .then(JsTreeTable::getViewportData)
+                            .then(data -> Promise.resolve((TreeViewportData) data))
                             .then(data -> {
-                                JsTreeTable.TreeSubscription.TreeRow row1 =
-                                        (JsTreeTable.TreeSubscription.TreeRow) data.getRows().getAt(0);
+                                TreeViewportData.TreeRow row1 = (TreeViewportData.TreeRow) data.getRows().getAt(0);
 
                                 assertEquals(Format.EMPTY, data.getFormat(0, xCol));
                                 assertEquals(Format.EMPTY, row1.getFormat(xCol));
@@ -187,8 +188,7 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                                 assertEquals(0d, row1.get(yCol).asDouble());
                                 assertEquals(0d, yCol.get(row1).asDouble());
 
-                                JsTreeTable.TreeSubscription.TreeRow row2 =
-                                        (JsTreeTable.TreeSubscription.TreeRow) data.getRows().getAt(1);
+                                TreeViewportData.TreeRow row2 = (TreeViewportData.TreeRow) data.getRows().getAt(1);
                                 assertEquals(Format.EMPTY, data.getFormat(1, xCol));
                                 assertEquals(Format.EMPTY, row2.getFormat(xCol));
                                 assertEquals(Format.EMPTY, xCol.getFormat(row2));
@@ -210,16 +210,13 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
 
                                 // Wait for the expand to occur and table to show all 10 rows
                                 return waitForEventWhere(rollup, JsTreeTable.EVENT_UPDATED,
-                                        (CustomEvent<JsTreeTable.TreeSubscription.TreeViewportData> d) -> {
-                                            return d.detail
-                                                    .getTreeSize() > 4;
-                                        },
+                                        (CustomEvent<TreeViewportData> d) -> d.detail.getTreeSize() > 4,
                                         14008);
                             })
                             .then(JsTreeTable::getViewportData)
+                            .then(data -> Promise.resolve((TreeViewportData) data))
                             .then(data -> {
-                                JsTreeTable.TreeSubscription.TreeRow row3 =
-                                        (JsTreeTable.TreeSubscription.TreeRow) data.getRows().getAt(2);
+                                TreeViewportData.TreeRow row3 = (TreeViewportData.TreeRow) data.getRows().getAt(2);
 
                                 assertEquals(Format.EMPTY, data.getFormat(2, xCol));
                                 assertEquals(Format.EMPTY, row3.getFormat(xCol));
@@ -240,10 +237,7 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                                 // Collapse row 2, wait until back to 4 rows
                                 rollup.collapse(JsTreeTable.RowReferenceUnion.of(1));
                                 return waitForEventWhere(rollup, JsTreeTable.EVENT_UPDATED,
-                                        (CustomEvent<JsTreeTable.TreeSubscription.TreeViewportData> d) -> {
-                                            return d.detail
-                                                    .getTreeSize() == 4;
-                                        },
+                                        (CustomEvent<TreeViewportData> d) -> d.detail.getTreeSize() == 4,
                                         14009);
                             })
                             .then(event -> {

@@ -4,9 +4,7 @@
 package io.deephaven.web.client.api.subscription;
 
 import com.google.flatbuffers.FlatBufferBuilder;
-import com.vertispan.tsdefs.annotations.TsInterface;
-import com.vertispan.tsdefs.annotations.TsName;
-import com.vertispan.tsdefs.annotations.TsTypeRef;
+import com.vertispan.tsdefs.annotations.TsIgnore;
 import elemental2.core.JsArray;
 import elemental2.dom.CustomEventInit;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
@@ -32,6 +30,7 @@ import io.deephaven.web.client.fu.JsSettings;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.data.RangeSet;
 import io.deephaven.web.shared.data.ShiftedRange;
+import jsinterop.annotations.JsProperty;
 import jsinterop.base.Any;
 import jsinterop.base.Js;
 import org.jetbrains.annotations.Nullable;
@@ -227,7 +226,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
 
     protected void notifyUpdate(RangeSet rowsAdded, RangeSet rowsRemoved, RangeSet totalMods, ShiftedRange[] shifted) {
         // TODO (deephaven-core#2435) Rewrite shifts as adds/removed/modifies
-        UpdateEventData detail = new UpdateEventData(
+        UpdateEventData detail = new SubscriptionEventData(
                 barrageSubscription,
                 rowStyleColumn,
                 columns,
@@ -243,8 +242,6 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         fireEvent(TableSubscription.EVENT_UPDATED, event);
     }
 
-    @TsInterface
-    @TsName(namespace = "dh")
     public static class SubscriptionRow implements TableData.Row {
         private final WebBarrageSubscription subscription;
         private final int rowStyleColumn;
@@ -294,15 +291,49 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         }
     }
 
+    /**
+     * TableData type for both viewports and full table subscriptions.
+     */
+    @TsIgnore
+    public static class SubscriptionEventData extends UpdateEventData implements ViewportData, SubscriptionTableData {
+        public SubscriptionEventData(WebBarrageSubscription subscription, int rowStyleColumn, JsArray<Column> columns,
+                RangeSet added, RangeSet removed, RangeSet modified, ShiftedRange[] shifted) {
+            super(subscription, rowStyleColumn, columns, added, removed, modified, shifted);
+        }
 
-    public static class UpdateEventData implements SubscriptionTableData, ViewportData {
+        @Override
+        public JsRangeSet getAdded() {
+            return added;
+        }
+
+        @Override
+        public JsRangeSet getRemoved() {
+            return removed;
+        }
+
+        @Override
+        public JsRangeSet getModified() {
+            return modified;
+        }
+
+        @Override
+        public JsRangeSet getFullIndex() {
+            return fullRowSet;
+        }
+    }
+
+    /**
+     * Base type to allow trees to extend from here separately from tables.
+     */
+    @TsIgnore
+    public abstract static class UpdateEventData implements TableData {
         protected final WebBarrageSubscription subscription;
         private final int rowStyleColumn;
         private final JsArray<Column> columns;
-        private final JsRangeSet added;
-        private final JsRangeSet removed;
-        private final JsRangeSet modified;
-        private final JsRangeSet fullRowSet;
+        protected final JsRangeSet added;
+        protected final JsRangeSet removed;
+        protected final JsRangeSet modified;
+        protected final JsRangeSet fullRowSet;
 
         // cached copy in case it was requested, could be requested again
         private JsArray<SubscriptionRow> allRows;
@@ -321,11 +352,8 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
                     subscription.getServerViewport(), subscription.isReversed()));
         }
 
-        /**
-         * The position of the first returned row.
-         *
-         * @return double
-         */
+        // for ViewportData
+        @JsProperty
         public Double getOffset() {
             return offset;
         }
@@ -335,7 +363,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         }
 
         @Override
-        public JsArray<@TsTypeRef(SubscriptionRow.class) ? extends SubscriptionRow> getRows() {
+        public JsArray<TableData.Row> getRows() {
             if (allRows == null) {
                 allRows = new JsArray<>();
                 RangeSet rowSet = subscription.getCurrentRowSet();
@@ -348,7 +376,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
                     assert allRows.length == positions.size();
                 }
             }
-            return allRows;
+            return (JsArray<Row>) (JsArray) allRows;
         }
 
         protected SubscriptionRow makeRow(long index) {
@@ -361,7 +389,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         }
 
         @Override
-        public SubscriptionRow get(long index) {
+        public Row get(long index) {
             return makeRow(index);
         }
 
@@ -407,26 +435,6 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         @Override
         public JsArray<Column> getColumns() {
             return columns;
-        }
-
-        @Override
-        public JsRangeSet getAdded() {
-            return added;
-        }
-
-        @Override
-        public JsRangeSet getRemoved() {
-            return removed;
-        }
-
-        @Override
-        public JsRangeSet getModified() {
-            return modified;
-        }
-
-        @Override
-        public JsRangeSet getFullIndex() {
-            return fullRowSet;
         }
     }
 

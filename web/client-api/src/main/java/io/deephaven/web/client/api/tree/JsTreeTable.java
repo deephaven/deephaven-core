@@ -3,8 +3,8 @@
 //
 package io.deephaven.web.client.api.tree;
 
-import com.vertispan.tsdefs.annotations.TsInterface;
-import com.vertispan.tsdefs.annotations.TsName;
+import com.vertispan.tsdefs.annotations.TsIgnore;
+import com.vertispan.tsdefs.annotations.TsTypeRef;
 import com.vertispan.tsdefs.annotations.TsUnion;
 import com.vertispan.tsdefs.annotations.TsUnionMember;
 import elemental2.core.JsArray;
@@ -93,7 +93,7 @@ import java.util.stream.Collectors;
  * roll-up table, the totals only include leaf nodes (as non-leaf nodes are generated through grouping the contents of
  * the original table). Roll-ups also have the {@link JsRollupConfig#includeConstituents} property, indicating that a
  * {@link Column} in the tree may have a {@link Column#getConstituentType()} property reflecting that the type of cells
- * where {@link TreeSubscription.TreeRow#hasChildren()} is false will be different from usual.</li>
+ * where {@link TreeSubscription.TreeRowImpl#hasChildren()} is false will be different from usual.</li>
  * </ul>
  */
 @JsType(namespace = "dh", name = "TreeTable")
@@ -163,7 +163,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     private Column[] columns;
     private int updateInterval = 1000;
 
-    private TreeSubscription.TreeViewportData currentViewportData;
+    private TreeSubscription.TreeViewportDataImpl currentViewportData;
 
     private boolean alwaysFireNextEvent = false;
 
@@ -379,44 +379,20 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     }
 
     public class TreeSubscription extends AbstractTableSubscription {
-        @TsName(namespace = "dh")
-        public class TreeViewportData extends AbstractTableSubscription.UpdateEventData {
+        @TsIgnore
+        public class TreeViewportDataImpl extends AbstractTableSubscription.UpdateEventData
+                implements TreeViewportData {
             private final double treeSize;
 
             private final JsArray<Column> columns;
 
-            private TreeViewportData(WebBarrageSubscription subscription, int rowStyleColumn, JsArray<Column> columns,
+            private TreeViewportDataImpl(WebBarrageSubscription subscription, int rowStyleColumn,
+                    JsArray<Column> columns,
                     RangeSet added, RangeSet removed, RangeSet modified, ShiftedRange[] shifted) {
                 super(subscription, rowStyleColumn, columns, added, removed, modified, shifted);
 
-
-                // this.offset = offset;
                 this.treeSize = barrageSubscription.getCurrentRowSet().size();
                 this.columns = JsObject.freeze(Js.cast(Js.<JsArray<Column>>uncheckedCast(columns).slice()));
-            }
-
-            /**
-             * Always returns empty for TreeTable.
-             */
-            @Override
-            public JsRangeSet getAdded() {
-                return new JsRangeSet(RangeSet.empty());
-            }
-
-            /**
-             * Always returns empty for TreeTable.
-             */
-            @Override
-            public JsRangeSet getRemoved() {
-                return new JsRangeSet(RangeSet.empty());
-            }
-
-            /**
-             * Always returns empty for TreeTable.
-             */
-            @Override
-            public JsRangeSet getModified() {
-                return new JsRangeSet(RangeSet.empty());
             }
 
             @Override
@@ -479,70 +455,40 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                 return super.getFormat(index, sourceColumn);
             }
 
-            @JsProperty
+            @Override
             public JsArray<Column> getColumns() {
                 // This looks like its superclass, but we're actually returning a different field
                 return columns;
             }
 
-            // TODO need to restore this so the ts types make sense here
-            // @JsProperty
-            // @Override
-            // public JsArray<TreeSubscription.TreeRow> getRows() {
-            // return (JsArray<TreeRow>) super.getRows();
-            // }
-
             @Override
             protected SubscriptionRow makeRow(long index) {
-                return new TreeRow(subscription, index);
+                return new TreeRowImpl(subscription, index);
             }
 
+            @JsProperty
             public double getTreeSize() {
                 return treeSize;
             }
         }
 
-        /**
-         * Row implementation that also provides additional read-only properties. represents visible rows in the table,
-         * but with additional properties to reflect the tree structure.
-         */
-        @TsInterface
-        @TsName(namespace = "dh")
-        public class TreeRow extends SubscriptionRow {
+        public class TreeRowImpl extends SubscriptionRow implements TreeViewportData.TreeRow {
 
-            public TreeRow(WebBarrageSubscription subscription, long index) {
+            public TreeRowImpl(WebBarrageSubscription subscription, long index) {
                 super(subscription, rowStyleColumn, index);
             }
 
-            /**
-             * True if this node is currently expanded to show its children; false otherwise. Those children will be the
-             * rows below this one with a greater depth than this one.
-             *
-             * @return boolean
-             */
-            @JsProperty(name = "isExpanded")
+            @Override
             public boolean isExpanded() {
                 return barrageSubscription.getData(index, rowExpandedCol.getIndex()).uncheckedCast() == Boolean.TRUE;
             }
 
-            /**
-             * True if this node has children and can be expanded; false otherwise. Note that this value may change when
-             * the table updates, depending on the table's configuration.
-             *
-             * @return boolean
-             */
-            @JsProperty(name = "hasChildren")
+            @Override
             public boolean hasChildren() {
                 return barrageSubscription.getData(index, rowExpandedCol.getIndex()).uncheckedCast() != null;
             }
 
-            /**
-             * The number of levels above this node; zero for top level nodes. Generally used by the UI to indent the
-             * row and its expand/collapse icon.
-             *
-             * @return int
-             */
-            @JsProperty(name = "depth")
+            @Override
             public int depth() {
                 return Js.coerceToInt(barrageSubscription.getData(index, rowDepthCol.getIndex()));
             }
@@ -625,8 +571,9 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         @Override
         protected void notifyUpdate(RangeSet rowsAdded, RangeSet rowsRemoved, RangeSet totalMods,
                 ShiftedRange[] shifted) {
-            TreeViewportData detail = new TreeViewportData(barrageSubscription, rowStyleColumn, getColumns(), rowsAdded,
-                    rowsRemoved, totalMods, shifted);
+            TreeViewportDataImpl detail =
+                    new TreeViewportDataImpl(barrageSubscription, rowStyleColumn, getColumns(), rowsAdded,
+                            rowsRemoved, totalMods, shifted);
             detail.setOffset(this.serverViewport.getFirstRow());
             CustomEventInit<UpdateEventData> event = CustomEventInit.create();
             event.setDetail(detail);
@@ -706,8 +653,8 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
 
                     subscription.addEventListener(TreeSubscription.EVENT_UPDATED,
                             (CustomEvent<AbstractTableSubscription.UpdateEventData> data) -> {
-                                TreeSubscription.TreeViewportData detail =
-                                        (TreeSubscription.TreeViewportData) data.detail;
+                                TreeSubscription.TreeViewportDataImpl detail =
+                                        (TreeSubscription.TreeViewportDataImpl) data.detail;
 
                                 handleUpdate(nextSort, nextFilters, detail, alwaysFireEvent);
                             });
@@ -734,7 +681,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     }
 
     private void handleUpdate(List<Sort> nextSort, List<FilterCondition> nextFilters,
-            TreeSubscription.TreeViewportData viewportData, boolean alwaysFireEvent) {
+            TreeSubscription.TreeViewportDataImpl viewportData, boolean alwaysFireEvent) {
         JsLog.debug("tree table response arrived", viewportData);
         if (closed) {
             // ignore
@@ -750,7 +697,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         this.filters = nextFilters;
 
         if (fireEvent) {
-            CustomEventInit<TreeSubscription.TreeViewportData> updatedEvent = CustomEventInit.create();
+            CustomEventInit<TreeSubscription.TreeViewportDataImpl> updatedEvent = CustomEventInit.create();
             updatedEvent.setDetail(viewportData);
             fireEvent(EVENT_UPDATED, updatedEvent);
         }
@@ -832,7 +779,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
 
         @JsOverlay
         default boolean isTreeRow() {
-            return this instanceof TreeSubscription.TreeRow;
+            return this instanceof TreeSubscription.TreeRowImpl;
         }
 
         @JsOverlay
@@ -842,7 +789,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
 
         @JsOverlay
         @TsUnionMember
-        default TreeSubscription.TreeRow asTreeRow() {
+        default TreeViewportData.TreeRow asTreeRow() {
             return Js.cast(this);
         }
 
@@ -873,11 +820,11 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
             action = ACTION_EXPAND;
         }
 
-        final TreeSubscription.TreeRow r;
+        final TreeSubscription.TreeRowImpl r;
         if (row.isNumber()) {
-            r = (TreeSubscription.TreeRow) currentViewportData.getRows().getAt((int) (row.asNumber()));
+            r = (TreeSubscription.TreeRowImpl) currentViewportData.getRows().getAt((int) (row.asNumber()));
         } else if (row.isTreeRow()) {
-            r = row.asTreeRow();
+            r = (TreeSubscription.TreeRowImpl) row.asTreeRow();
         } else {
             throw new IllegalArgumentException("row parameter must be an index or a row");
         }
@@ -902,11 +849,11 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
      * @return boolean
      */
     public boolean isExpanded(RowReferenceUnion row) {
-        final TreeSubscription.TreeRow r;
+        final TreeSubscription.TreeRowImpl r;
         if (row.isNumber()) {
-            r = (TreeSubscription.TreeRow) currentViewportData.getRows().getAt((int) (row.asNumber()));
+            r = (TreeSubscription.TreeRowImpl) currentViewportData.getRows().getAt((int) (row.asNumber()));
         } else if (row.isTreeRow()) {
-            r = row.asTreeRow();
+            r = (TreeSubscription.TreeRowImpl) row.asTreeRow();
         } else {
             throw new IllegalArgumentException("row parameter must be an index or a row");
         }
@@ -925,8 +872,8 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         replaceSubscription(RebuildStep.SUBSCRIPTION);
     }
 
-    public Promise<TreeSubscription.TreeViewportData> getViewportData() {
-        LazyPromise<TreeSubscription.TreeViewportData> promise = new LazyPromise<>();
+    public Promise<@TsTypeRef(TreeViewportData.class) Object> getViewportData() {
+        LazyPromise<Object> promise = new LazyPromise<>();
 
         if (currentViewportData == null) {
             // only one of these two will fire, and when they do, they'll remove both handlers.
