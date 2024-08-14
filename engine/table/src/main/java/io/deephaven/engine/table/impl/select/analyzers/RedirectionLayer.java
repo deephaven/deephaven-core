@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl.select.analyzers;
 
 import io.deephaven.base.log.LogOutput;
-import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -17,6 +16,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 /**
  * A layer that maintains the row redirection for future SelectColumnLayers.
@@ -27,12 +27,14 @@ public final class RedirectionLayer extends SelectAndViewAnalyzer.Layer {
     private final TrackingRowSet resultRowSet;
     private final WritableRowRedirection rowRedirection;
     private final WritableRowSet freeValues = RowSetFactory.empty();
+    private final BitSet layerDependencySet = new BitSet();
     private long maxInnerIndex;
 
-    RedirectionLayer(SelectAndViewAnalyzer analyzer, TrackingRowSet resultRowSet,
-            WritableRowRedirection rowRedirection) {
-        super(REDIRECTION_LAYER_INDEX);
-        Assert.eq(analyzer.getNextLayerIndex(), "analyzer.getNextLayerIndex()", REDIRECTION_LAYER_INDEX);
+    RedirectionLayer(
+            final SelectAndViewAnalyzer.AnalyzerContext context,
+            final TrackingRowSet resultRowSet,
+            final WritableRowRedirection rowRedirection) {
+        super(context.getNextLayerIndex());
         this.resultRowSet = resultRowSet;
         this.rowRedirection = rowRedirection;
         this.maxInnerIndex = -1;
@@ -44,24 +46,18 @@ public final class RedirectionLayer extends SelectAndViewAnalyzer.Layer {
     }
 
     @Override
-    void populateModifiedColumnSetInReverse(
-            final ModifiedColumnSet mcsBuilder,
-            final Set<String> remainingDepsToSatisfy) {
+    void populateColumnSources(final Map<String, ColumnSource<?>> result) {
         // we don't generate any column sources, so we don't need to do anything here
     }
 
     @Override
-    void populateColumnSources(
-            final Map<String, ColumnSource<?>> result,
-            final GetMode mode) {
-        // we don't generate any column sources, so we don't need to do anything here
+    ModifiedColumnSet getModifiedColumnSet() {
+        return ModifiedColumnSet.EMPTY;
     }
 
     @Override
-    void calcDependsOn(
-            final Map<String, Set<String>> result,
-            final boolean forcePublishAllSources) {
-        // we don't generate any column sources, so we don't need to do anything here
+    BitSet getLayerDependencySet() {
+        return layerDependencySet;
     }
 
     @Override
@@ -70,28 +66,21 @@ public final class RedirectionLayer extends SelectAndViewAnalyzer.Layer {
     }
 
     @Override
-    public CompletionHandler createUpdateHandler(
+    public Runnable createUpdateHandler(
             final TableUpdate upstream,
             final RowSet toClear,
             final SelectAndViewAnalyzer.UpdateHelper helper,
             final JobScheduler jobScheduler,
             @Nullable final LivenessNode liveResultOwner,
-            final CompletionHandler onCompletion) {
-        final BitSet baseLayerBitSet = new BitSet();
-        baseLayerBitSet.set(BASE_LAYER_INDEX);
-        return new CompletionHandler(baseLayerBitSet, onCompletion) {
-            @Override
-            public void onAllRequiredColumnsCompleted() {
-                // we only have a base layer underneath us, so we do not care about the bitSet; it is always
-                // empty
-                doApplyUpdate(upstream, onCompletion);
-            }
-        };
+            final Runnable onSuccess,
+            final Consumer<Exception> onError) {
+        // note that we process this layer directly because all subsequent layers depend on it
+        return () -> doApplyUpdate(upstream, onSuccess);
     }
 
     private void doApplyUpdate(
             final TableUpdate upstream,
-            final CompletionHandler onCompletion) {
+            final Runnable onSuccess) {
         // we need to remove the removed values from our row redirection, and add them to our free RowSet; so that
         // updating tables will not consume more space over the course of a day for abandoned rows
         final RowSetBuilderRandom innerToFreeBuilder = RowSetFactory.builderRandom();
@@ -162,7 +151,7 @@ public final class RedirectionLayer extends SelectAndViewAnalyzer.Layer {
             freeValues.removeRange(0, lastAllocated.get());
         }
 
-        onCompletion.onLayerCompleted(getLayerIndex());
+        onSuccess.run();
     }
 
     @Override

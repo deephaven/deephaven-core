@@ -4,17 +4,10 @@
 package io.deephaven.engine.table.impl.select.analyzers;
 
 import io.deephaven.base.log.LogOutput;
-import io.deephaven.engine.liveness.LivenessNode;
-import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.table.impl.util.JobScheduler;
-import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
-import java.util.BitSet;
 import java.util.Map;
 
 /**
@@ -23,50 +16,24 @@ import java.util.Map;
  * {@implNote This class is part of the Deephaven engine, and not intended for direct use.}
  */
 final public class PreserveColumnLayer extends DependencyLayerBase {
-    private final BitSet dependencyBitSet;
 
     PreserveColumnLayer(
-            final SelectAndViewAnalyzer analyzer,
-            final String name,
+            final SelectAndViewAnalyzer.AnalyzerContext context,
             final SelectColumn sc,
             final ColumnSource<?> cs,
             final String[] deps,
             final ModifiedColumnSet mcsBuilder) {
-        super(analyzer, name, sc, cs, deps, mcsBuilder);
-        this.dependencyBitSet = new BitSet();
-        Arrays.stream(deps).mapToInt(analyzer::getLayerIndexFor).forEach(dependencyBitSet::set);
+        super(context, sc, cs, deps, mcsBuilder);
     }
 
     @Override
-    public CompletionHandler createUpdateHandler(
-            final TableUpdate upstream,
-            final RowSet toClear,
-            final SelectAndViewAnalyzer.UpdateHelper helper,
-            final JobScheduler jobScheduler,
-            @Nullable final LivenessNode liveResultOwner,
-            final CompletionHandler onCompletion) {
-        return new CompletionHandler(dependencyBitSet, onCompletion) {
-            @Override
-            public void onAllRequiredColumnsCompleted() {
-                // we don't need to do anything specific here
-                onCompletion.onLayerCompleted(getLayerIndex());
-            }
-        };
+    public boolean hasRefreshingLogic() {
+        return false;
     }
 
     @Override
-    void populateColumnSources(
-            final Map<String, ColumnSource<?>> result,
-            final GetMode mode) {
-        switch (mode) {
-            case New:
-                // we have no new sources
-                break;
-            case Published:
-            case All:
-                result.put(name, columnSource);
-                break;
-        }
+    void populateColumnSources(final Map<String, ColumnSource<?>> result) {
+        result.put(name, columnSource);
     }
 
     @Override

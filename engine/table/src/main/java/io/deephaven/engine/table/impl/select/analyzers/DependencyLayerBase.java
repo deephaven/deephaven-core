@@ -15,26 +15,24 @@ public abstract class DependencyLayerBase extends SelectAndViewAnalyzer.Layer {
     final SelectColumn selectColumn;
     final boolean selectColumnHoldsVector;
     final ColumnSource<?> columnSource;
-    // probably don't need this any more
-    private final String[] dependencies;
     final ModifiedColumnSet myModifiedColumnSet;
+    final BitSet myLayerDependencySet;
 
     DependencyLayerBase(
-            final SelectAndViewAnalyzer analyzer,
-            final String name,
+            final SelectAndViewAnalyzer.AnalyzerContext context,
             final SelectColumn selectColumn,
             final ColumnSource<?> columnSource,
             final String[] dependencies,
             final ModifiedColumnSet mcsBuilder) {
-        super(analyzer.getNextLayerIndex());
-        this.name = name;
+        super(context.getNextLayerIndex());
+        this.name = selectColumn.getName();
         this.selectColumn = selectColumn;
         selectColumnHoldsVector = Vector.class.isAssignableFrom(selectColumn.getReturnedType());
         this.columnSource = columnSource;
-        this.dependencies = dependencies;
-        final Set<String> remainingDepsToSatisfy = new HashSet<>(Arrays.asList(dependencies));
-        analyzer.populateModifiedColumnSet(mcsBuilder, remainingDepsToSatisfy);
+        context.populateModifiedColumnSet(mcsBuilder, dependencies);
         this.myModifiedColumnSet = mcsBuilder;
+        this.myLayerDependencySet = new BitSet();
+        context.populateLayerDependencySet(myLayerDependencySet, dependencies);
     }
 
     @Override
@@ -43,34 +41,7 @@ public abstract class DependencyLayerBase extends SelectAndViewAnalyzer.Layer {
     }
 
     @Override
-    void populateModifiedColumnSetInReverse(
-            final ModifiedColumnSet mcsBuilder,
-            final Set<String> remainingDepsToSatisfy) {
-        // Later-defined columns override earlier-defined columns. So we satisfy column dependencies "on the way
-        // down" the recursion.
-        if (remainingDepsToSatisfy.remove(name)) {
-            // Caller had a dependency on us, so caller gets our dependencies
-            mcsBuilder.setAll(myModifiedColumnSet);
-        }
-    }
-
-    @Override
-    void calcDependsOn(
-            final Map<String, Set<String>> result,
-            final boolean forcePublishAllSources) {
-
-        final Set<String> thisResult = new HashSet<>();
-        for (final String dep : dependencies) {
-            final Set<String> innerDependencies = result.get(dep);
-            if (innerDependencies == null) {
-                // There are no further expansions of 'dep', so add it as a dependency.
-                thisResult.add(dep);
-            } else {
-                // Instead of adding 'dep', add what 'dep' expands to.
-                thisResult.addAll(innerDependencies);
-            }
-        }
-
-        result.put(name, thisResult);
+    public ModifiedColumnSet getModifiedColumnSet() {
+        return myModifiedColumnSet;
     }
 }

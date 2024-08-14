@@ -15,28 +15,32 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.ShiftedColumnsFactory;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.select.SwitchColumn;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
+import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
 import io.deephaven.engine.table.impl.util.InverseWrappedRowSetRowRedirection;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.RowRedirection;
+import io.deephaven.engine.table.impl.util.WrappedRowSetRowRedirection;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseablePair;
 import io.deephaven.vector.Vector;
-import org.apache.commons.lang3.mutable.MutableObject;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -46,6 +50,9 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
 
     public enum Mode {
         VIEW_LAZY, VIEW_EAGER, SELECT_STATIC, SELECT_REFRESHING, SELECT_REDIRECTED_REFRESHING, SELECT_REDIRECTED_STATIC
+    }
+    public enum UpdateFlavor {
+        Select, View, Update, UpdateView, LazyUpdate
     }
 
     public static void initializeSelectColumns(
@@ -69,36 +76,22 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         }
     }
 
-    public static SelectAndViewAnalyzerWrapper create(
-            QueryTable sourceTable, Mode mode, Map<String, ColumnSource<?>> columnSources,
-            TrackingRowSet rowSet, ModifiedColumnSet parentMcs, boolean publishTheseSources, boolean useShiftedColumns,
-            SelectColumn... selectColumns) {
-        return create(sourceTable, mode, columnSources, rowSet, parentMcs, publishTheseSources, useShiftedColumns,
-                true, selectColumns);
-    }
-
-    public static SelectAndViewAnalyzerWrapper create(
+    public static AnalyzerContext create(
             final QueryTable sourceTable,
             final Mode mode,
-            final Map<String, ColumnSource<?>> columnSources,
-            TrackingRowSet rowSet,
             final ModifiedColumnSet parentMcs,
             final boolean publishTheseSources,
             boolean useShiftedColumns,
-            final boolean allowInternalFlatten,
             final SelectColumn... selectColumns) {
         final UpdateGraph updateGraph = sourceTable.getUpdateGraph();
 
-        final Map<String, ColumnSource<?>> allColumnSources = new HashMap<>(columnSources);
-        final SelectAndViewAnalyzer analyzer = new SelectAndViewAnalyzer() {
-            @Override
-            void addLayer(final Layer layer) {
-                super.addLayer(layer);
-                layer.populateColumnSources(allColumnSources, Layer.GetMode.All);
-            }
-        };
+        final Map<String, ColumnSource<?>> columnSources = sourceTable.getColumnSourceMap();
+        final TrackingRowSet rowSet = sourceTable.getRowSet();
 
-        analyzer.addLayer(new BaseLayer(columnSources, publishTheseSources));
+        final boolean flatResult = !sourceTable.isFlat()
+                && (columnSources.isEmpty() || !publishTheseSources)
+                && mode == Mode.SELECT_STATIC;
+        final AnalyzerContext context = new AnalyzerContext(sourceTable, publishTheseSources, flatResult);
 
         final Map<String, ColumnDefinition<?>> columnDefinitions = new LinkedHashMap<>();
         final RowRedirection rowRedirection;
@@ -107,18 +100,11 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         } else if (mode == Mode.SELECT_REDIRECTED_REFRESHING && rowSet.size() < Integer.MAX_VALUE) {
             final WritableRowRedirection writableRowRedirection =
                     WritableRowRedirection.FACTORY.createRowRedirection(rowSet.intSize());
-            analyzer.addLayer(new RedirectionLayer(analyzer, rowSet, writableRowRedirection));
+            context.addLayer(new RedirectionLayer(context, rowSet, writableRowRedirection));
             rowRedirection = writableRowRedirection;
         } else {
             rowRedirection = null;
         }
-
-        List<SelectColumn> processedCols = new LinkedList<>();
-        List<SelectColumn> remainingCols = null;
-        FormulaColumn shiftColumn = null;
-        boolean shiftColumnHasPositiveOffset = false;
-
-        final HashSet<String> resultColumns = new HashSet<>();
 
         // First pass to initialize all columns and to compile formulas in one batch.
         final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
@@ -129,9 +115,10 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             columnDefinitions.put(name, cd);
         }
 
+        final Set<String> resultColumnNames = new HashSet<>();
         for (final SelectColumn sc : selectColumns) {
-            if (remainingCols != null) {
-                remainingCols.add(sc);
+            if (context.remainingCols != null) {
+                context.remainingCols.add(sc);
                 continue;
             }
 
@@ -141,49 +128,43 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             columnDefinitions.put(sc.getName(), cd);
 
             if (useShiftedColumns && hasConstantArrayAccess(sc)) {
-                remainingCols = new LinkedList<>();
-                shiftColumn = sc instanceof FormulaColumn
+                context.remainingCols = new LinkedList<>();
+                context.shiftColumn = sc instanceof FormulaColumn
                         ? (FormulaColumn) sc
                         : (FormulaColumn) ((SwitchColumn) sc).getRealColumn();
-                shiftColumnHasPositiveOffset = hasPositiveOffsetConstantArrayAccess(sc);
+                context.shiftColumnHasPositiveOffset = hasPositiveOffsetConstantArrayAccess(sc);
                 continue;
             }
 
-            processedCols.add(sc);
+            // In our first pass, determine whether any columns will be preserved so that we don't prematurely flatten.
+            final SourceColumn realColumn = tryToGetSourceColumn(sc);
+
+            if (realColumn != null && !resultColumnNames.contains(realColumn.getSourceName())) {
+                // if we are preserving a column, then we cannot change key space
+                context.flatResult &= !shouldPreserve(sc, columnSources.get(realColumn.getSourceName()));
+            }
+
+            // TODO (deephaven#5760): If layers may define more than one column, we'll need to add all of them here.
+            resultColumnNames.add(sc.getName());
+
+            context.processedCols.add(sc);
         }
 
         compilationProcessor.compile();
 
         // Second pass builds the analyzer and destination columns
-        final TrackingRowSet originalRowSet = rowSet;
-        analyzer.flatResult = rowSet.isFlat();
-        // if we preserve a column, we set this to false
-        analyzer.flattenedResult = !analyzer.flatResult
-                && allowInternalFlatten
-                && (columnSources.isEmpty() || !publishTheseSources)
-                && mode == Mode.SELECT_STATIC;
-        int numberOfInternallyFlattenedColumns = 0;
-
         final HashMap<String, ColumnSource<?>> resultAlias = new HashMap<>();
-        for (final SelectColumn sc : processedCols) {
-            sc.initInputs(rowSet, allColumnSources);
+        for (final SelectColumn sc : context.processedCols) {
 
-            // When flattening the result, intermediate columns generate results in position space. When we discover
-            // that a select column depends on an intermediate result, then we must flatten all parent columns so
-            // that all dependent columns are in the same result-key space.
-            if (!analyzer.flatResult && analyzer.flattenedResult
+            // if this select column depends on result column then its updates must happen in result-key-space
+            final boolean useResultKeySpace = !sourceTable.isFlat() && context.flatResult
                     && Stream.concat(sc.getColumns().stream(), sc.getColumnArrays().stream())
-                            .anyMatch(resultColumns::contains)) {
-                analyzer.addLayer(new StaticFlattenLayer(analyzer, rowSet, allColumnSources));
-                rowSet = RowSetFactory.flat(rowSet.size()).toTracking();
-                analyzer.flatResult = true;
+                            .anyMatch(context.selectedSources::containsKey);
 
-                // we must re-initialize the column inputs as they may have changed post-flatten
-                sc.initInputs(rowSet, allColumnSources);
-            }
+            sc.initInputs(rowSet, useResultKeySpace ? context.allSourcesInResultKeySpace : context.allSources);
 
-            final boolean isNewResultColumn = resultColumns.add(sc.getName());
-            // this shadows any known alias
+            // TODO (deephaven-core#5760): If layers may define more than one column, we'll need to fix resultAlias.
+            // new columns shadow known aliases
             resultAlias.remove(sc.getName());
 
             final Stream<String> allDependencies =
@@ -205,43 +186,14 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             if (hasConstantValue(sc)) {
                 final WritableColumnSource<?> constViewSource =
                         SingleValueColumnSource.getSingleValueColumnSource(sc.getReturnedType());
-                final String name = sc.getName();
-                analyzer.addLayer(
-                        new ConstantColumnLayer(analyzer, name, sc, constViewSource, distinctDeps, mcsBuilder));
+                context.addLayer(new ConstantColumnLayer(context, sc, constViewSource, distinctDeps, mcsBuilder));
                 continue;
             }
 
-            final SourceColumn realColumn;
-            if (sc instanceof SourceColumn) {
-                realColumn = (SourceColumn) sc;
-            } else if ((sc instanceof SwitchColumn) && ((SwitchColumn) sc).getRealColumn() instanceof SourceColumn) {
-                realColumn = (SourceColumn) ((SwitchColumn) sc).getRealColumn();
-            } else {
-                realColumn = null;
-            }
-
-            if (realColumn != null && shouldPreserve(sc)) {
-                boolean sourceIsNew = resultColumns.contains(realColumn.getSourceName());
-                if (realColumn.getSourceName().equals(sc.getName()) && isNewResultColumn) {
-                    // If this is a "COL_NAME = COL_NAME" identity mapping then it is new iff the result column is new
-                    sourceIsNew = false;
-                }
-                if (!sourceIsNew) {
-                    if (numberOfInternallyFlattenedColumns > 0) {
-                        // we must preserve this column, but have already created an analyzer for the internally
-                        // flattened column, therefore must start over without permitting internal flattening
-                        return create(sourceTable, mode, columnSources, originalRowSet, parentMcs, publishTheseSources,
-                                useShiftedColumns, false, selectColumns);
-                    } else {
-                        // we can not flatten future columns because we are preserving a column that may not be flat
-                        analyzer.flattenedResult = false;
-                    }
-                }
-
-                final String name = sc.getName();
-                final ColumnSource<?> cs = sc.getDataView();
-                analyzer.addLayer(new PreserveColumnLayer(analyzer, name, sc, cs, distinctDeps, mcsBuilder));
-
+            final SourceColumn realColumn = tryToGetSourceColumn(sc);
+            if (realColumn != null && shouldPreserve(sc, sc.getDataView())) {
+                context.addLayer(new PreserveColumnLayer(
+                        context, sc, sc.getDataView(), distinctDeps, mcsBuilder));
                 continue;
             }
 
@@ -249,8 +201,8 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             if (realColumn != null) {
                 final ColumnSource<?> alias = resultAlias.get(realColumn.getSourceName());
                 if (alias != null) {
-                    final String name = sc.getName();
-                    analyzer.addLayer(new PreserveColumnLayer(analyzer, name, sc, alias, distinctDeps, mcsBuilder));
+                    context.addLayer(new PreserveColumnLayer(
+                            context, sc, alias, distinctDeps, mcsBuilder));
                     continue;
                 }
             }
@@ -260,35 +212,30 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                     : cs -> resultAlias.put(realColumn.getSourceName(), cs);
 
             final long targetDestinationCapacity =
-                    rowSet.isEmpty() ? 0 : (analyzer.flattenedResult ? rowSet.size() : rowSet.lastRowKey() + 1);
+                    rowSet.isEmpty() ? 0 : (context.flatResult ? rowSet.size() : rowSet.lastRowKey() + 1);
             switch (mode) {
                 case VIEW_LAZY: {
                     final ColumnSource<?> viewCs = sc.getLazyView();
                     maybeCreateAlias.accept(viewCs);
-                    final String name = sc.getName();
-                    analyzer.addLayer(new ViewColumnLayer(analyzer, name, sc, viewCs, distinctDeps, mcsBuilder));
+                    context.addLayer(new ViewColumnLayer(context, sc, viewCs, distinctDeps, mcsBuilder));
                     break;
                 }
                 case VIEW_EAGER: {
                     final ColumnSource<?> viewCs = sc.getDataView();
                     maybeCreateAlias.accept(viewCs);
-                    final String name = sc.getName();
-                    analyzer.addLayer(new ViewColumnLayer(analyzer, name, sc, viewCs, distinctDeps, mcsBuilder));
+                    context.addLayer(new ViewColumnLayer(context, sc, viewCs, distinctDeps, mcsBuilder));
                     break;
                 }
                 case SELECT_STATIC: {
                     // We need to call newDestInstance because only newDestInstance has the knowledge to endow our
                     // created array with the proper componentType (in the case of Vectors).
-                    final WritableColumnSource<?> scs = analyzer.flatResult || analyzer.flattenedResult
+                    final WritableColumnSource<?> scs = sourceTable.isFlat() || context.flatResult
                             ? sc.newFlatDestInstance(targetDestinationCapacity)
                             : sc.newDestInstance(targetDestinationCapacity);
                     maybeCreateAlias.accept(scs);
-                    final String name = sc.getName();
-                    analyzer.addLayer(new SelectColumnLayer(updateGraph, rowSet, analyzer, name, sc, scs, null,
-                            distinctDeps, mcsBuilder, false, analyzer.flattenedResult));
-                    if (analyzer.flattenedResult) {
-                        numberOfInternallyFlattenedColumns++;
-                    }
+                    context.addLayer(new SelectColumnLayer(
+                            updateGraph, rowSet, context, sc, scs, null, distinctDeps, mcsBuilder, false,
+                            useResultKeySpace));
                     break;
                 }
                 case SELECT_REDIRECTED_STATIC: {
@@ -296,16 +243,15 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                     final WritableColumnSource<?> scs = WritableRedirectedColumnSource.maybeRedirect(
                             rowRedirection, underlyingSource, rowSet.size());
                     maybeCreateAlias.accept(scs);
-                    final String name = sc.getName();
-                    analyzer.addLayer(new SelectColumnLayer(updateGraph, rowSet, analyzer, name, sc, scs,
-                            underlyingSource, distinctDeps, mcsBuilder, true, false));
+                    context.addLayer(new SelectColumnLayer(
+                            updateGraph, rowSet, context, sc, scs, underlyingSource, distinctDeps, mcsBuilder, true,
+                            useResultKeySpace));
                     break;
                 }
                 case SELECT_REDIRECTED_REFRESHING:
                 case SELECT_REFRESHING: {
                     // We need to call newDestInstance because only newDestInstance has the knowledge to endow our
                     // created array with the proper componentType (in the case of Vectors).
-                    // TODO: use DeltaAwareColumnSource
                     WritableColumnSource<?> scs = sc.newDestInstance(targetDestinationCapacity);
                     WritableColumnSource<?> underlyingSource = null;
                     if (rowRedirection != null) {
@@ -314,9 +260,9 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                                 rowRedirection, underlyingSource, rowSet.intSize());
                     }
                     maybeCreateAlias.accept(scs);
-                    final String name = sc.getName();
-                    analyzer.addLayer(new SelectColumnLayer(updateGraph, rowSet, analyzer, name, sc, scs,
-                            underlyingSource, distinctDeps, mcsBuilder, rowRedirection != null, false));
+                    context.addLayer(new SelectColumnLayer(
+                            updateGraph, rowSet, context, sc, scs, underlyingSource, distinctDeps, mcsBuilder,
+                            rowRedirection != null, useResultKeySpace));
                     break;
                 }
                 default:
@@ -324,8 +270,19 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             }
         }
 
-        return new SelectAndViewAnalyzerWrapper(analyzer, shiftColumn, shiftColumnHasPositiveOffset, remainingCols,
-                processedCols);
+        return context;
+    }
+
+    private static @Nullable SourceColumn tryToGetSourceColumn(final SelectColumn sc) {
+        final SourceColumn realColumn;
+        if (sc instanceof SourceColumn) {
+            realColumn = (SourceColumn) sc;
+        } else if ((sc instanceof SwitchColumn) && ((SwitchColumn) sc).getRealColumn() instanceof SourceColumn) {
+            realColumn = (SourceColumn) ((SwitchColumn) sc).getRealColumn();
+        } else {
+            realColumn = null;
+        }
+        return realColumn;
     }
 
     private static boolean hasConstantArrayAccess(final SelectColumn sc) {
@@ -369,67 +326,389 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         return false;
     }
 
-    private static boolean shouldPreserve(final SelectColumn sc) {
-        // we already know sc is a SourceColumn or switches to a SourceColumn
-        final ColumnSource<?> sccs = sc.getDataView();
-        return sccs instanceof InMemoryColumnSource && ((InMemoryColumnSource) sccs).isInMemory()
+    private static boolean shouldPreserve(
+            final SelectColumn sc,
+            final ColumnSource<?> columnSource) {
+        return columnSource instanceof InMemoryColumnSource && ((InMemoryColumnSource) columnSource).isInMemory()
                 && !Vector.class.isAssignableFrom(sc.getReturnedType());
     }
 
-    /**
-     * Set the bits in bitset that represent all the new columns. This is used to identify when the select or update
-     * operation is complete.
-     *
-     * @param bitset the bitset to manipulate.
-     */
-    public void setAllNewColumns(BitSet bitset) {
-        bitset.set(0, layers.size());
-    }
+    /** The layers that make up this analyzer. */
+    private final Layer[] layers;
 
-    private final List<Layer> layers = new ArrayList<>();
-    private final Map<String, Integer> columnToLayerIndex = new HashMap<>();
-
-    /** Whether the result is already flat. */
-    private boolean flatResult = false;
     /** Whether the result should be flat. */
-    private boolean flattenedResult = false;
+    private final boolean flatResult;
 
-    SelectAndViewAnalyzer() {
+    private final BitSet requiredLayers = new BitSet();
+    private final BitSet remainingLayers = new BitSet();
 
-    }
-
-    void addLayer(final Layer layer) {
-        layers.add(layer);
-
-        for (final String columnName : layer.getLayerColumnNames()) {
-            columnToLayerIndex.put(columnName, layer.getLayerIndex());
+    private SelectAndViewAnalyzer(
+            final Layer[] layers,
+            final boolean flatResult) {
+        this.layers = layers;
+        this.flatResult = flatResult;
+        for (final Layer layer : layers) {
+            if (layer.hasRefreshingLogic()) {
+                requiredLayers.set(layer.getLayerIndex());
+            } else {
+                this.layers[layer.getLayerIndex()] = null;
+            }
         }
     }
 
-    public int getNextLayerIndex() {
-        return layers.size();
+    public final static class AnalyzerContext {
+
+        /** The analyzer that we are building. */
+        private final List<Layer> layers = new ArrayList<>();
+        /** The sources that are available to the analyzer, including parent columns. */
+        private final Map<String, ColumnSource<?>> allSources = new LinkedHashMap<>();
+        /** The sources that are available to the analyzer, including parent columns, in result key space. */
+        private final Map<String, ColumnSource<?>> allSourcesInResultKeySpace;
+        /** The sources that are explicitly defined to the analyzer, including preserved parent columns. */
+        private final Map<String, ColumnSource<?>> selectedSources = new HashMap<>();
+        /** The sources that are published to the child table. */
+        private final Map<String, ColumnSource<?>> publishedSources = new LinkedHashMap<>();
+        /** A mapping from result column name to the layer index that created it. */
+        private final Map<String, Integer> columnToLayerIndex = new HashMap<>();
+        /** The select columns that have been processed so far. */
+        private final List<SelectColumn> processedCols = new ArrayList<>();
+
+        /** A holder for the shift column, if any. */
+        private FormulaColumn shiftColumn;
+        /** Whether the shift column has a positive offset. */
+        private boolean shiftColumnHasPositiveOffset;
+        /** The columns that will need to be processed after the shift column. */
+        private List<SelectColumn> remainingCols;
+        /** Whether the result should be flat. */
+        private boolean flatResult;
+        /** The layer that will be used to process redirection, if we have one. */
+        private int redirectionLayer = -1;
+
+        AnalyzerContext(
+                final QueryTable sourceTable,
+                final boolean publishTheseSources,
+                final boolean flatResult) {
+            final Map<String, ColumnSource<?>> sources = sourceTable.getColumnSourceMap();
+
+            this.flatResult = flatResult;
+
+            allSources.putAll(sources);
+            for (final String columnName : allSources.keySet()) {
+                columnToLayerIndex.put(columnName, -1);
+            }
+
+            if (publishTheseSources) {
+                publishedSources.putAll(sources);
+            }
+
+            if (!flatResult) {
+                // result key space is the same as parent key space
+                allSourcesInResultKeySpace = allSources;
+            } else {
+                allSourcesInResultKeySpace = new HashMap<>();
+
+                final RowRedirection rowRedirection = new WrappedRowSetRowRedirection(sourceTable.getRowSet());
+                allSources.forEach((name, cs) -> allSourcesInResultKeySpace.put(name,
+                        RedirectedColumnSource.maybeRedirect(rowRedirection, cs)));
+            }
+        }
+
+        /**
+         * Add a layer to the analyzer.
+         *
+         * @param layer the layer to add
+         */
+        void addLayer(final Layer layer) {
+            if (layer instanceof RedirectionLayer) {
+                if (redirectionLayer != -1) {
+                    throw new IllegalStateException("Cannot have more than one redirection layer");
+                }
+                redirectionLayer = layers.size();
+            }
+
+            layer.populateColumnSources(allSources);
+            if (flatResult) {
+                layer.populateColumnSources(allSourcesInResultKeySpace);
+            }
+            layer.populateColumnSources(selectedSources);
+            layer.populateColumnSources(publishedSources);
+
+            layers.add(layer);
+
+            for (final String columnName : layer.getLayerColumnNames()) {
+                columnToLayerIndex.put(columnName, layer.getLayerIndex());
+            }
+        }
+
+        /**
+         * @return the next layerIndex to use
+         */
+        int getNextLayerIndex() {
+            return layers.size();
+        }
+
+        /**
+         * Return the layerIndex for a given string column.
+         *
+         * @param column the name of the column
+         *
+         * @return the layerIndex
+         */
+        int getLayerIndexFor(String column) {
+            final Integer layerIndex = columnToLayerIndex.get(column);
+            if (layerIndex == null) {
+                throw new IllegalStateException("Column " + column + " not found in any layer of the analyzer");
+            }
+            return layerIndex;
+        }
+
+        /**
+         * Populate the ModifiedColumnSet with all indirect/direct dependencies on the parent table.
+         *
+         * @param mcsBuilder the result ModifiedColumnSet to populate
+         * @param dependencies the immediate dependencies
+         */
+        void populateModifiedColumnSet(
+                final ModifiedColumnSet mcsBuilder,
+                final String[] dependencies) {
+            for (final String dep : dependencies) {
+                final int layerIndex = getLayerIndexFor(dep);
+                if (layerIndex != -1) {
+                    mcsBuilder.setAll(layers.get(layerIndex).getModifiedColumnSet());
+                } else if (!allSources.containsKey(dep)) {
+                    // we should have blown up during initDef if this is the case
+                    throw new IllegalStateException("Column " + dep + " not found in any layer of the analyzer");
+                } else if (!selectedSources.containsKey(dep)) {
+                    // this is a preserved parent column
+                    mcsBuilder.setAll(dep);
+                }
+            }
+        }
+
+        /**
+         * Populate the layer dependency set with the layer indices that the dependencies are in.
+         *
+         * @param layerDependencySet the result bitset to populate
+         * @param dependencies the dependencies
+         */
+        void populateLayerDependencySet(
+                final BitSet layerDependencySet,
+                final String[] dependencies) {
+            for (final String dep : dependencies) {
+                final int layerIndex = getLayerIndexFor(dep);
+                if (layerIndex != -1) {
+                    layerDependencySet.or(layers.get(layerIndex).getLayerDependencySet());
+                } else if (!allSources.containsKey(dep)) {
+                    // we should have blown up during initDef if this is the case
+                    throw new IllegalStateException("Column " + dep + " not found in any layer of the analyzer");
+                }
+                // Note that preserved columns do not belong to a layer.
+            }
+        }
+
+        /**
+         * Set the redirection layer in the bitset if the analyzer has any redirection.
+         *
+         * @param layerDependencies the result bitset to populate
+         */
+        void setRedirectionLayer(final BitSet layerDependencies) {
+            if (redirectionLayer != -1) {
+                layerDependencies.set(redirectionLayer);
+            }
+        }
+
+        /**
+         * @return the column sources explicitly created by the analyzer
+         */
+        public Map<String, ColumnSource<?>> getSelectedColumnSources() {
+            return selectedSources;
+        }
+
+        /**
+         * @return the column sources that are published to the child table
+         */
+        public Map<String, ColumnSource<?>> getPublishedColumnSources() {
+            // Note that if we have a shift column that we forcefully publish all columns.
+            return shiftColumn == null ? publishedSources : allSources;
+        }
+
+        /**
+         * @return the final analyzer
+         */
+        public SelectAndViewAnalyzer createAnalyzer() {
+            return new SelectAndViewAnalyzer(layers.toArray(Layer[]::new), flatResult);
+        }
+
+        /**
+         * @return which select columns were included in the result (not including the shift, or post-shift, columns)
+         */
+        public List<SelectColumn> getProcessedColumns() {
+            return processedCols;
+        }
+
+        /**
+         * @return whether the result should be flat
+         */
+        public boolean isFlatResult() {
+            return flatResult;
+        }
+
+        /**
+         * Our job here is to calculate the effects: a map from incoming column to a list of columns that it effects. We
+         * do this in two stages. In the first stage we create a map from column to (set of dependent columns). In the
+         * second stage we reverse that map.
+         *
+         * @return the effects map
+         */
+        public Map<String, String[]> calcEffects() {
+            final Map<String, ColumnSource<?>> resultMap = getPublishedColumnSources();
+
+            // Create the mapping from result column to dependent source columns.
+            final Map<String, String[]> dependsOn = new HashMap<>();
+            for (final String columnName : resultMap.keySet()) {
+                final int layerIndex = getLayerIndexFor(columnName);
+                final String[] dependencies;
+                if (layerIndex == -1) {
+                    dependencies = new String[] {columnName};
+                } else {
+                    dependencies = layers.get(layerIndex).getModifiedColumnSet().dirtyColumnNames();
+                }
+                dependsOn.put(columnName, dependencies);
+            }
+
+            // Now create the mapping from source column to result columns.
+            final Map<String, List<String>> effects = new HashMap<>();
+            for (Map.Entry<String, String[]> entry : dependsOn.entrySet()) {
+                final String depender = entry.getKey();
+                for (final String dependee : entry.getValue()) {
+                    effects.computeIfAbsent(dependee, dummy -> new ArrayList<>()).add(depender);
+                }
+            }
+
+            // Convert effects type into result type
+            final Map<String, String[]> result = new HashMap<>();
+            for (Map.Entry<String, List<String>> entry : effects.entrySet()) {
+                final String[] value = entry.getValue().toArray(String[]::new);
+                result.put(entry.getKey(), value);
+            }
+            return result;
+        }
+
+        /**
+         * Shift columns introduce intermediary table operations. This method applies remaining work to the result built
+         * so far.
+         *
+         * @param sourceTable the source table
+         * @param resultSoFar the intermediate result
+         * @param updateFlavor the update flavor
+         * @return the final result
+         */
+        public QueryTable applyShiftsAndRemainingColumns(
+                final @NotNull QueryTable sourceTable,
+                @NotNull QueryTable resultSoFar,
+                final UpdateFlavor updateFlavor) {
+            if (shiftColumn != null) {
+                resultSoFar = (QueryTable) ShiftedColumnsFactory.getShiftedColumnsTable(
+                        resultSoFar, shiftColumn, updateFlavor);
+            }
+
+            // shift columns may introduce modifies that are not present in the original table; set these before using
+            if (sourceTable.isRefreshing()) {
+                if (shiftColumn == null && sourceTable.isAddOnly()) {
+                    resultSoFar.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
+                }
+                if ((shiftColumn == null || !shiftColumnHasPositiveOffset) && sourceTable.isAppendOnly()) {
+                    // note if the shift offset is non-positive, then this result is still append-only
+                    resultSoFar.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
+                }
+                if (sourceTable.hasAttribute(Table.TEST_SOURCE_TABLE_ATTRIBUTE)) {
+                    // be convenient for test authors by propagating the test source table attribute
+                    resultSoFar.setAttribute(Table.TEST_SOURCE_TABLE_ATTRIBUTE, true);
+                }
+                if (sourceTable.isBlink()) {
+                    // blink tables, although possibly not useful, can have shift columns
+                    resultSoFar.setAttribute(Table.BLINK_TABLE_ATTRIBUTE, true);
+                }
+            }
+
+            boolean isMultiStateSelect = shiftColumn != null || remainingCols != null;
+            if (isMultiStateSelect && (updateFlavor == UpdateFlavor.Select || updateFlavor == UpdateFlavor.View)) {
+                List<SelectColumn> newResultColumns = new LinkedList<>();
+                for (SelectColumn processed : processedCols) {
+                    newResultColumns.add(new SourceColumn(processed.getName()));
+                }
+                if (shiftColumn != null) {
+                    newResultColumns.add(new SourceColumn(shiftColumn.getName()));
+                }
+                if (remainingCols != null) {
+                    newResultColumns.addAll(remainingCols);
+                }
+
+                if (updateFlavor == UpdateFlavor.Select) {
+                    resultSoFar = (QueryTable) resultSoFar.select(newResultColumns);
+                } else {
+                    resultSoFar = (QueryTable) resultSoFar.view(newResultColumns);
+                }
+            } else if (remainingCols != null) {
+                switch (updateFlavor) {
+                    case Update: {
+                        resultSoFar = (QueryTable) resultSoFar.update(remainingCols);
+                        break;
+                    }
+                    case UpdateView: {
+                        resultSoFar = (QueryTable) resultSoFar.updateView(remainingCols);
+                        break;
+                    }
+                    case LazyUpdate: {
+                        resultSoFar = (QueryTable) resultSoFar.lazyUpdate(remainingCols);
+                        break;
+                    }
+                    default:
+                        throw new IllegalStateException("Unexpected update flavor: " + updateFlavor);
+                }
+            }
+
+            return resultSoFar;
+        }
     }
 
-    public static abstract class Layer implements LogOutputAppendable {
-
-        static final int BASE_LAYER_INDEX = 0;
-        static final int REDIRECTION_LAYER_INDEX = 1;
-
-        enum GetMode {
-            All, New, Published
-        }
+    static abstract class Layer implements LogOutputAppendable {
 
         /**
          * The layerIndex is used to identify each layer uniquely within the bitsets for completion.
          */
         private final int layerIndex;
 
-        public Layer(int layerIndex) {
+        Layer(int layerIndex) {
             this.layerIndex = layerIndex;
         }
 
+        /**
+         * @return which index in the layer stack this layer is
+         */
         int getLayerIndex() {
             return layerIndex;
+        }
+
+        /**
+         * @return whether this layer has refreshing logic and needs to be updated
+         */
+        boolean hasRefreshingLogic() {
+            return true;
+        }
+
+        /**
+         * @return the modified column set of the parent table that this layer indirectly depends on
+         */
+        ModifiedColumnSet getModifiedColumnSet() {
+            return failNoRefreshingLogic();
+        }
+
+        /**
+         * @return the layer dependency set indicating which layers this layer depends on
+         */
+        BitSet getLayerDependencySet() {
+            return new BitSet();
         }
 
         @Override
@@ -437,29 +716,29 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             return new LogOutputStringImpl().append(this).toString();
         }
 
-        public void startTrackingPrev() {
+        void startTrackingPrev() {
             // default is that there is nothing to do
         }
 
+        /**
+         * @return the column names created by this layer
+         */
         abstract Set<String> getLayerColumnNames();
 
-        abstract void populateModifiedColumnSetInReverse(
-                ModifiedColumnSet mcsBuilder,
-                Set<String> remainingDepsToSatisfy);
+        /**
+         * Populate the column sources for this layer.
+         *
+         * @param result the map to populate
+         */
+        abstract void populateColumnSources(Map<String, ColumnSource<?>> result);
 
-        abstract void populateColumnSources(
-                Map<String, ColumnSource<?>> result,
-                GetMode mode);
-
-        abstract void calcDependsOn(
-                final Map<String, Set<String>> result,
-                boolean forcePublishAllSources);
-
-
+        /**
+         * @return true if this layer allows parallelization across columns
+         */
         abstract boolean allowCrossColumnParallelization();
 
         /**
-         * Apply this update to this SelectAndViewAnalyzer.
+         * Apply this update to this Layer.
          *
          * @param upstream the upstream update
          * @param toClear rows that used to exist and no longer exist
@@ -467,120 +746,29 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
          * @param jobScheduler scheduler for parallel sub-tasks
          * @param liveResultOwner {@link LivenessNode node} to be used to manage/unmanage results that happen to be
          *        {@link io.deephaven.engine.liveness.LivenessReferent liveness referents}
-         * @param onCompletion called when the inner column is complete
+         * @param onSuccess called when the update completed successfully
+         * @param onError called when the update failed
          */
-        public abstract CompletionHandler createUpdateHandler(
+        Runnable createUpdateHandler(
                 TableUpdate upstream,
                 RowSet toClear,
                 UpdateHelper helper,
                 JobScheduler jobScheduler,
                 @Nullable LivenessNode liveResultOwner,
-                CompletionHandler onCompletion);
-
-        /**
-         * A class that handles the completion of one select column.
-         */
-        public static abstract class CompletionHandler {
-            /**
-             * Note that the completed columns are shared among the entire operation's completion handlers.
-             */
-            private final BitSet completedColumns;
-            private final BitSet requiredColumns;
-            private volatile boolean fired = false;
-
-            /**
-             * Create a completion handler for a column. Reuses the completedColumns from the provided handler.
-             *
-             * @param requiredColumns the columns required for this layer
-             * @param handler the handler orchestrating when other columns are fired
-             */
-            CompletionHandler(BitSet requiredColumns, CompletionHandler handler) {
-                this.requiredColumns = requiredColumns;
-                this.completedColumns = handler.completedColumns;
-            }
-
-            /**
-             * Create the final completion handler.
-             *
-             * @param requiredColumns the columns required for this handler to fire
-             * @param completedColumns the set of completed columns, shared with all the other handlers
-             */
-            public CompletionHandler(BitSet requiredColumns, BitSet completedColumns) {
-                this.requiredColumns = requiredColumns;
-                this.completedColumns = completedColumns;
-            }
-
-            /**
-             * Called when a single column is completed.
-             * <p>
-             * If we are ready, then we call {@link #onAllRequiredColumnsCompleted()}.
-             * <p>
-             * We may not be ready, but other columns downstream of us may be ready, so they are also notified (the
-             * nextHandler).
-             *
-             * @param completedColumn the layerIndex of the completedColumn
-             */
-            void onLayerCompleted(int completedColumn) {
-                if (!fired) {
-                    boolean readyToFire = false;
-                    synchronized (completedColumns) {
-                        if (!fired) {
-                            completedColumns.set(completedColumn);
-                            if (requiredColumns.get(completedColumn) || requiredColumns.isEmpty()) {
-                                readyToFire = requiredColumns.stream().allMatch(completedColumns::get);
-                                if (readyToFire) {
-                                    fired = true;
-                                }
-                            }
-                        }
-                    }
-                    if (readyToFire) {
-                        onAllRequiredColumnsCompleted();
-                    }
-                }
-            }
-
-            protected void onError(Exception error) {
-
-            }
-
-            /**
-             * Called when all required columns are completed.
-             */
-            protected abstract void onAllRequiredColumnsCompleted();
+                Runnable onSuccess,
+                Consumer<Exception> onError) {
+            return failNoRefreshingLogic();
         }
-    }
 
-    public final void populateModifiedColumnSet(
-            final ModifiedColumnSet mcsBuilder,
-            final Set<String> remainingDepsToSatisfy) {
-        for (int ii = layers.size() - 1; ii >= 0; --ii) {
-            layers.get(ii).populateModifiedColumnSetInReverse(mcsBuilder, remainingDepsToSatisfy);
+        private <T> T failNoRefreshingLogic() {
+            throw new UnsupportedOperationException(String.format(
+                    "%s does not have any refreshing logic", this.getClass().getSimpleName()));
         }
-    }
-
-    public final Map<String, ColumnSource<?>> getAllColumnSources() {
-        return getColumnSources(Layer.GetMode.All);
-    }
-
-    public final Map<String, ColumnSource<?>> getNewColumnSources() {
-        return getColumnSources(Layer.GetMode.New);
-    }
-
-    public final Map<String, ColumnSource<?>> getPublishedColumnSources() {
-        return getColumnSources(Layer.GetMode.Published);
-    }
-
-    private Map<String, ColumnSource<?>> getColumnSources(final Layer.GetMode mode) {
-        final Map<String, ColumnSource<?>> result = new LinkedHashMap<>();
-        for (final Layer layer : layers) {
-            layer.populateColumnSources(result, mode);
-        }
-        return result;
     }
 
     public static class UpdateHelper implements SafeCloseable {
         private RowSet existingRows;
+        private TableUpdate upstreamInResultSpace;
         private SafeCloseablePair<RowSet, RowSet> shiftedWithModifies;
         private SafeCloseablePair<RowSet, RowSet> shiftedWithoutModifies;
 
@@ -590,6 +778,15 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         public UpdateHelper(RowSet parentRowSet, TableUpdate upstream) {
             this.parentRowSet = parentRowSet;
             this.upstream = upstream;
+        }
+
+        TableUpdate resultKeySpaceUpdate() {
+            if (upstreamInResultSpace == null) {
+                upstreamInResultSpace = new TableUpdateImpl(
+                        RowSetFactory.flat(upstream.added().size()), RowSetFactory.empty(), RowSetFactory.empty(),
+                        RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
+            }
+            return upstreamInResultSpace;
         }
 
         private RowSet getExisting() {
@@ -641,6 +838,10 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                 shiftedWithoutModifies.close();
                 shiftedWithoutModifies = null;
             }
+            if (upstreamInResultSpace != null) {
+                upstreamInResultSpace.release();
+                upstreamInResultSpace = null;
+            }
         }
     }
 
@@ -653,7 +854,8 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
      * @param jobScheduler scheduler for parallel sub-tasks
      * @param liveResultOwner {@link LivenessNode node} to be used to manage/unmanage results that happen to be
      *        {@link io.deephaven.engine.liveness.LivenessReferent liveness referents}
-     * @param onCompletion Called when an inner column is complete. The outer layer should pass the {@code onCompletion}
+     * @param onSuccess called when the update completed successfully
+     * @param onError called when the update failed
      */
     public void applyUpdate(
             final TableUpdate upstream,
@@ -661,171 +863,141 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             final UpdateHelper helper,
             final JobScheduler jobScheduler,
             @Nullable final LivenessNode liveResultOwner,
-            final Layer.CompletionHandler onCompletion) {
+            final Runnable onSuccess,
+            final Consumer<Exception> onError) {
 
-        TableUpdateImpl postFlatten = null;
-        final MutableObject<TableUpdateImpl> postFlattenHolder = new MutableObject<>();
-        final Layer.CompletionHandler[] handlers = new Layer.CompletionHandler[layers.size()];
+        remainingLayers.or(requiredLayers);
 
-        final BitSet allLayers = new BitSet();
-        setAllNewColumns(allLayers);
+        final Runnable[] runners = new Runnable[layers.length];
+        final UpdateScheduler scheduler = new UpdateScheduler(runners, onSuccess, onError);
 
-        final Layer.CompletionHandler innerHandler = new Layer.CompletionHandler(
-                allLayers, onCompletion) {
-            @Override
-            protected void onError(Exception error) {
-                // propagate the error upstream
-                onCompletion.onError(error);
-            }
-
-            @Override
-            void onLayerCompleted(int completedColumn) {
-                super.onLayerCompleted(completedColumn);
-
-                for (int ii = 1; ii < layers.size(); ++ii) {
-                    handlers[ii].onLayerCompleted(completedColumn);
-                }
-
-                onCompletion.onLayerCompleted(completedColumn);
-            }
-
-            @Override
-            protected void onAllRequiredColumnsCompleted() {
-                final TableUpdateImpl update = postFlattenHolder.getValue();
-                if (update != null) {
-                    update.release();
-                }
-            }
-        };
-
-        for (int ii = layers.size() - 1; ii >= 0; --ii) {
-            final Layer currentLayer = layers.get(ii);
-            handlers[ii] = currentLayer.createUpdateHandler(
-                    postFlatten != null ? postFlatten : upstream,
-                    toClear, helper, jobScheduler, liveResultOwner, innerHandler);
-
-            if (currentLayer instanceof StaticFlattenLayer) {
-                postFlatten = new TableUpdateImpl();
-                postFlatten.added = ((StaticFlattenLayer) currentLayer).getParentRowSetCopy();
-                postFlatten.removed = RowSetFactory.empty();
-                postFlatten.modified = RowSetFactory.empty();
-                postFlatten.modifiedColumnSet = ModifiedColumnSet.EMPTY;
-                postFlatten.shifted = RowSetShiftData.EMPTY;
+        for (int ii = 0; ii < layers.length; ++ii) {
+            final Layer layer = layers[ii];
+            if (layer != null) {
+                runners[ii] = layer.createUpdateHandler(
+                        upstream, toClear, helper, jobScheduler, liveResultOwner,
+                        () -> scheduler.onLayerComplete(layer.getLayerIndex()), onError);
             }
         }
 
-        // base layer is invoked manually
-        handlers[0].onAllRequiredColumnsCompleted();
+        scheduler.tryToKickOffWork();
     }
 
-    /**
-     * Our job here is to calculate the effects: a map from incoming column to a list of columns that it effects. We do
-     * this in two stages. In the first stage we create a map from column to (set of dependent columns). In the second
-     * stage we reverse that map.
-     */
-    public final Map<String, String[]> calcEffects(boolean forcePublishAllResources) {
-        final Map<String, Set<String>> dependsOn = calcDependsOn(forcePublishAllResources);
+    private class UpdateScheduler {
+        private final ReentrantLock runLock = new ReentrantLock();
+        private final AtomicBoolean needsRun = new AtomicBoolean();
 
-        // Now create effects, which is the inverse of dependsOn:
-        // An entry W -> [X, Y, Z] in effects means that W affects X, Y, and Z
-        final Map<String, List<String>> effects = new HashMap<>();
-        for (Map.Entry<String, Set<String>> entry : dependsOn.entrySet()) {
-            final String depender = entry.getKey();
-            for (final String dependee : entry.getValue()) {
-                effects.computeIfAbsent(dependee, dummy -> new ArrayList<>()).add(depender);
+        private final Runnable[] runners;
+        private final Runnable onSuccess;
+        private final Consumer<Exception> onError;
+
+        private volatile boolean updateComplete;
+
+        public UpdateScheduler(
+                final Runnable[] runners,
+                final Runnable onSuccess,
+                final Consumer<Exception> onError) {
+            this.runners = runners;
+            this.onSuccess = onSuccess;
+            this.onError = onError;
+        }
+
+        public void onLayerComplete(final int layerIndex) {
+            synchronized (remainingLayers) {
+                remainingLayers.set(layerIndex, false);
+            }
+
+            tryToKickOffWork();
+        }
+
+        private void tryToKickOffWork() {
+            needsRun.set(true);
+            while (true) {
+                if (runLock.isHeldByCurrentThread() || !runLock.tryLock()) {
+                    // do not permit re-entry or waiting on another thread doing exactly this work
+                    return;
+                }
+
+                try {
+                    if (needsRun.compareAndSet(true, false)) {
+                        doKickOffWork();
+                    }
+                } catch (final Exception exception) {
+                    try {
+                        onError.accept(exception);
+                    } catch (final Exception ignored) {
+                    }
+                } finally {
+                    runLock.unlock();
+                }
+
+                if (!needsRun.get()) {
+                    return;
+                }
             }
         }
-        // Convert effects type into result type
-        final Map<String, String[]> result = new HashMap<>();
-        for (Map.Entry<String, List<String>> entry : effects.entrySet()) {
-            final String[] value = entry.getValue().toArray(String[]::new);
-            result.put(entry.getKey(), value);
-        }
-        return result;
-    }
 
-    final Map<String, Set<String>> calcDependsOn(boolean forcePublishAllResources) {
-        final Map<String, Set<String>> result = new HashMap<>();
-        for (final Layer layer : layers) {
-            layer.calcDependsOn(result, forcePublishAllResources);
+        private void doKickOffWork() {
+            if (updateComplete) {
+                // we may have already completed the update, but are checking again due to the potential of a race
+                return;
+            }
+
+            int nextLayer = 0;
+            while (nextLayer >= 0) {
+                boolean complete;
+                boolean readyToFire = false;
+                Runnable runner = null;
+                synchronized (remainingLayers) {
+                    complete = remainingLayers.isEmpty();
+                    nextLayer = remainingLayers.nextSetBit(nextLayer);
+
+                    if (nextLayer != -1) {
+                        if ((runner = runners[nextLayer]) != null) {
+                            readyToFire = !layers[nextLayer].getLayerDependencySet().intersects(remainingLayers);
+                        }
+
+                        if (readyToFire) {
+                            runners[nextLayer] = null;
+                        } else {
+                            ++nextLayer;
+                        }
+                    }
+                }
+
+                if (readyToFire) {
+                    runner.run();
+                } else if (complete) {
+                    updateComplete = true;
+                    onSuccess.run();
+                    return;
+                }
+            }
         }
-        return result;
     }
 
     public void startTrackingPrev() {
         for (final Layer layer : layers) {
-            layer.startTrackingPrev();
+            if (layer != null) {
+                layer.startTrackingPrev();
+            }
         }
     }
 
     /**
-     * Have the column sources already been flattened? Only the STATIC_SELECT case flattens the result. A static flatten
-     * layer is only added if SelectColumn depends on an intermediate result.
+     * Is the result of this select/view flat?
      */
     public boolean flatResult() {
         return flatResult;
     }
 
     /**
-     * Was the result internally flattened? Only the STATIC_SELECT case flattens the result. If the result preserves any
-     * columns, then flattening is not permitted. Because all the other layers cannot internally flatten, the default
-     * implementation returns false.
-     */
-    public boolean flattenedResult() {
-        return flattenedResult;
-    }
-
-    /**
-     * Return the layerIndex for a given string column.
-     *
-     * @param column the name of the column
-     *
-     * @return the layerIndex
-     */
-    int getLayerIndexFor(String column) {
-        return columnToLayerIndex.getOrDefault(column, -1);
-    }
-
-    /**
      * Can all of our columns permit parallel updates?
      */
     public boolean allowCrossColumnParallelization() {
-        return layers.stream().allMatch(Layer::allowCrossColumnParallelization);
-    }
-
-    /**
-     * Create a completion handler that signals a future when the update is completed.
-     *
-     * @param waitForResult a void future indicating success or failure
-     *
-     * @return a completion handler that will signal the future
-     */
-    public Layer.CompletionHandler futureCompletionHandler(CompletableFuture<Void> waitForResult) {
-        final BitSet completedColumns = new BitSet();
-        final BitSet requiredColumns = new BitSet();
-
-        setAllNewColumns(requiredColumns);
-
-        return new Layer.CompletionHandler(requiredColumns, completedColumns) {
-            boolean errorOccurred = false;
-
-            @Override
-            public void onAllRequiredColumnsCompleted() {
-                if (errorOccurred) {
-                    return;
-                }
-                waitForResult.complete(null);
-            }
-
-            @Override
-            protected void onError(Exception error) {
-                if (errorOccurred) {
-                    return;
-                }
-                errorOccurred = true;
-                waitForResult.completeExceptionally(error);
-            }
-        };
+        return Arrays.stream(layers)
+                .filter(Objects::nonNull)
+                .allMatch(Layer::allowCrossColumnParallelization);
     }
 
     @Override
@@ -833,6 +1005,9 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         logOutput = logOutput.append("SelectAndViewAnalyzer{");
         boolean first = true;
         for (final Layer layer : layers) {
+            if (layer == null) {
+                continue;
+            }
             if (first) {
                 first = false;
             } else {
