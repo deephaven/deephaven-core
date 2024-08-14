@@ -105,7 +105,7 @@ def table_publisher(
 
     j_table_publisher = _JTablePublisher.of(
         name,
-        TableDefinition.of(table_definition).j_table_definition,
+        TableDefinition(table_definition).j_table_definition,
         j_lambda(adapt_callback, _JConsumer, None) if on_flush_callback else None,
         j_runnable(on_shutdown_callback) if on_shutdown_callback else None,
         (update_graph or get_exec_ctx().update_graph).j_update_graph,

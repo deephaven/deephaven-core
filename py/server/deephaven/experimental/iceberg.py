@@ -57,7 +57,7 @@ class IcebergInstructions(JObjectWrapper):
             builder = self.j_object_type.builder()
 
             if table_definition is not None:
-                builder.tableDefinition(TableDefinition.of(table_definition).j_table_definition)
+                builder.tableDefinition(TableDefinition(table_definition).j_table_definition)
 
             if data_instructions is not None:
                 builder.dataInstructions(data_instructions.j_object)

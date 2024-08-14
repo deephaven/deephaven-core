@@ -408,7 +408,7 @@ def _sort_column(col, dir_):
         _JColumnName.of(col)))
 
 
-TableDefinitionAlias = Union[Mapping[str, dtypes.DType], Iterable[ColumnDefinition], 'TableDefinition']
+TableDefinitionAlias = Union['TableDefinition', Mapping[str, dtypes.DType], Iterable[ColumnDefinition]]
 """The TableDefinition type alias"""
 
 class TableDefinition(JObjectWrapper, Mapping):
@@ -417,24 +417,24 @@ class TableDefinition(JObjectWrapper, Mapping):
     j_object_type = _JTableDefinition
 
     @staticmethod
-    def of(table_definition: TableDefinitionAlias) -> 'TableDefinition':
-        """Produce a Deephaven TableDefinition from user input."""
-        if isinstance(table_definition, TableDefinition):
+    def _to_j_table_definition(table_definition: TableDefinitionAlias) -> jpy.JType:
+        if isinstance(table_definition, _JTableDefinition):
             return table_definition
-        column_definitions = (
-            [
+        if isinstance(table_definition, TableDefinition):
+            return table_definition.j_table_definition
+        if isinstance(table_definition, Mapping):
+            column_definitions = [
                 ColumnDefinition.of(name, data_type)
-                for (name, data_type) in table_definition.items()
+                for name, data_type in table_definition.items()
             ]
-            if isinstance(table_definition, Mapping)
-            else table_definition
-        )
-        return TableDefinition(
-            _JTableDefinition.of([col.j_column_definition for col in column_definitions])
-        )
+        elif isinstance(table_definition, Iterable):
+            column_definitions = table_definition
+        else:
+            raise DHError(f"Unexpected table_definition type: {type(table_definition)}")
+        return _JTableDefinition.of([col.j_column_definition for col in column_definitions])
 
-    def __init__(self, j_table_definition: jpy.JType):
-        self.j_table_definition = j_table_definition
+    def __init__(self, table_definition: TableDefinitionAlias):
+        self.j_table_definition = TableDefinition._to_j_table_definition(table_definition)
 
     @property
     def j_object(self) -> jpy.JType:
@@ -2445,7 +2445,7 @@ class PartitionedTable(JObjectWrapper):
                 return PartitionedTable(j_partitioned_table=_JPartitionedTableFactory.of(table.j_table))
 
             if all([arg is not None for arg in none_args]):
-                table_def = TableDefinition.of(constituent_table_definition).j_table_definition
+                table_def = TableDefinition(constituent_table_definition).j_table_definition
                 j_partitioned_table = _JPartitionedTableFactory.of(table.j_table,
                                                                    j_array_list(to_sequence(key_cols)),
                                                                    unique_keys,
@@ -2485,7 +2485,7 @@ class PartitionedTable(JObjectWrapper):
             if not constituent_table_definition:
                 return PartitionedTable(j_partitioned_table=_JPartitionedTableFactory.ofTables(to_sequence(tables)))
             else:
-                table_def = TableDefinition.of(constituent_table_definition).j_table_definition
+                table_def = TableDefinition(constituent_table_definition).j_table_definition
                 return PartitionedTable(j_partitioned_table=_JPartitionedTableFactory.ofTables(table_def,
                                                                                                to_sequence(tables)))
         except Exception as e:

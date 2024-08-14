@@ -3,7 +3,7 @@
 #
 import unittest
 from typing import Mapping
-from deephaven import dtypes, new_table
+from deephaven import dtypes, new_table, DHError
 from deephaven.table import TableDefinition
 from deephaven.column import ColumnDefinition, string_col, bool_col
 from tests.testbase import BaseTestCase
@@ -12,7 +12,7 @@ from tests.testbase import BaseTestCase
 class TableDefinitionTestCase(BaseTestCase):
     def setUp(self):
         super().setUp()
-        self.test_definition = TableDefinition.of(
+        self.test_definition = TableDefinition(
             {
                 "Bool": dtypes.bool_,
                 "Char": dtypes.char,
@@ -49,22 +49,34 @@ class TableDefinitionTestCase(BaseTestCase):
         self.assertFalse("FooBarBaz" in self.test_definition)
 
     def test_get(self):
-        self.assertEquals(ColumnDefinition.of("Bool", dtypes.bool_), self.test_definition["Bool"])
-        self.assertEquals(ColumnDefinition.of("Char", dtypes.char), self.test_definition["Char"])
-        self.assertEquals(ColumnDefinition.of("Short", dtypes.short), self.test_definition["Short"])
-        self.assertEquals(ColumnDefinition.of("Int", dtypes.int32), self.test_definition["Int"])
-        self.assertEquals(ColumnDefinition.of("Long", dtypes.int64), self.test_definition["Long"])
+        self.assertEquals(
+            ColumnDefinition.of("Bool", dtypes.bool_), self.test_definition["Bool"]
+        )
+        self.assertEquals(
+            ColumnDefinition.of("Char", dtypes.char), self.test_definition["Char"]
+        )
+        self.assertEquals(
+            ColumnDefinition.of("Short", dtypes.short), self.test_definition["Short"]
+        )
+        self.assertEquals(
+            ColumnDefinition.of("Int", dtypes.int32), self.test_definition["Int"]
+        )
+        self.assertEquals(
+            ColumnDefinition.of("Long", dtypes.int64), self.test_definition["Long"]
+        )
         self.assertEquals(
             ColumnDefinition.of("Float", dtypes.float32), self.test_definition["Float"]
         )
         self.assertEquals(
-            ColumnDefinition.of("Double", dtypes.float64), self.test_definition["Double"]
+            ColumnDefinition.of("Double", dtypes.float64),
+            self.test_definition["Double"],
         )
         self.assertEquals(
             ColumnDefinition.of("String", dtypes.string), self.test_definition["String"]
         )
         self.assertEquals(
-            ColumnDefinition.of("Instant", dtypes.Instant), self.test_definition["Instant"]
+            ColumnDefinition.of("Instant", dtypes.Instant),
+            self.test_definition["Instant"],
         )
         with self.assertRaises(KeyError):
             self.test_definition["FooBarBaz"]
@@ -137,7 +149,7 @@ class TableDefinitionTestCase(BaseTestCase):
         expected_hash = hash(self.test_definition)
         for actual in [
             self.test_definition,
-            TableDefinition.of(
+            TableDefinition(
                 {
                     "Bool": dtypes.bool_,
                     "Char": dtypes.char,
@@ -150,7 +162,7 @@ class TableDefinitionTestCase(BaseTestCase):
                     "Instant": dtypes.Instant,
                 }
             ),
-            TableDefinition.of(self.test_definition.values()),
+            TableDefinition(self.test_definition.values()),
         ]:
             self.assertEquals(actual, self.test_definition)
             self.assertEquals(hash(actual), expected_hash)
@@ -192,6 +204,10 @@ class TableDefinitionTestCase(BaseTestCase):
         )
 
         self.assert_table_equals(expected, self.test_definition.table)
+
+    def test_unexpected_type(self):
+        with self.assertRaises(DHError):
+            TableDefinition(42)
 
 
 if __name__ == "__main__":

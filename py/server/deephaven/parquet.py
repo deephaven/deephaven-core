@@ -133,7 +133,7 @@ def _build_parquet_instructions(
         builder.setFileLayout(_j_file_layout(file_layout))
 
     if table_definition is not None:
-        builder.setTableDefinition(TableDefinition.of(table_definition).j_table_definition)
+        builder.setTableDefinition(TableDefinition(table_definition).j_table_definition)
 
     if index_columns:
         builder.addAllIndexColumns(_j_list_of_list_of_string(index_columns))

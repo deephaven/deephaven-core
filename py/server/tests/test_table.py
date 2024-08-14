@@ -85,7 +85,7 @@ class TableTestCase(BaseTestCase):
         self.assertNotEqual(t, self.test_table)
 
     def test_definition(self):
-        expected = TableDefinition.of({
+        expected = TableDefinition({
             "a": dtypes.int32,
             "b": dtypes.int32,
             "c": dtypes.int32,

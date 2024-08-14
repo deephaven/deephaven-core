@@ -316,7 +316,7 @@ def input_table(col_defs: Optional[TableDefinitionAlias] = None, init_table: Tab
             raise ValueError("both column definitions and init table are provided.")
 
         if col_defs:
-            j_arg_1 = TableDefinition.of(col_defs).j_table_definition
+            j_arg_1 = TableDefinition(col_defs).j_table_definition
         else:
             j_arg_1 = init_table.j_table
 
