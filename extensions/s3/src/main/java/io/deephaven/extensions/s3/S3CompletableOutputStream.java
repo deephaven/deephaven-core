@@ -29,7 +29,7 @@ import java.util.concurrent.ExecutionException;
 import static io.deephaven.extensions.s3.S3ChannelContext.handleS3Exception;
 import static io.deephaven.extensions.s3.S3Instructions.MIN_WRITE_PART_SIZE;
 
-class S3OutputStream extends CompletableOutputStream {
+class S3CompletableOutputStream extends CompletableOutputStream {
 
     /**
      * @see <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/qfacts.html">Amazon S3 User Guide</a>
@@ -50,9 +50,9 @@ class S3OutputStream extends CompletableOutputStream {
 
     private int nextPartNumber;
     private String uploadId; // Initialized on first write, changed back to null when multipart upload completed/aborted
-    private boolean done;
+    private State state;
 
-    S3OutputStream(
+    S3CompletableOutputStream(
             @NotNull final URI uri,
             @NotNull final S3AsyncClient s3AsyncClient,
             @NotNull final S3Instructions s3Instructions) {
@@ -66,20 +66,61 @@ class S3OutputStream extends CompletableOutputStream {
 
         this.nextPartNumber = MIN_PART_NUMBER;
         this.completedParts = new ArrayList<>();
+        this.state = State.OPEN;
     }
 
-    public void write(int b) throws IOException {
-        // We could support single byte writes by creating single byte arrays, but that would be inefficient
-        throw new UnsupportedOperationException("Single byte writes are not supported");
+    @Override
+    public void write(final int b) throws IOException {
+        write((dest, destOff, destCount) -> {
+            verifyNotFull(dest);
+            dest.put((byte) b);
+            return 1;
+        }, 0, 1);
     }
 
-    public void write(byte[] b) throws IOException {
+    @Override
+    public void write(final byte @NotNull [] b) throws IOException {
         write(b, 0, b.length);
     }
 
-    public void write(final byte @NotNull [] b, int off, int len) throws IOException {
-        if (done) {
-            throw new IOException("Write failed because S3 output stream for " + uri + " marked as done.");
+    @Override
+    public void write(final byte @NotNull [] b, final int off, final int len) throws IOException {
+        write((dest, currentOffset, remainingLength) -> {
+            verifyNotFull(dest);
+            final int lengthToWrite = Math.min(remainingLength, dest.remaining());
+            dest.put(b, currentOffset, lengthToWrite);
+            return lengthToWrite;
+        }, off, len);
+    }
+
+    @FunctionalInterface
+    interface DataWriter {
+        /**
+         * Writes data to the given destination buffer, starting from the current offset in the source data.
+         *
+         * @param dest the destination buffer to write data to
+         * @param currentOffset the current offset in the source data
+         * @param remainingLength the remaining number of bytes of source data to write
+         * @return the number of bytes written to the destination buffer
+         *
+         * @throws IOException if an I/O error occurs during the write operation
+         */
+        int write(ByteBuffer dest, int currentOffset, int remainingLength) throws IOException;
+    }
+
+    /**
+     * Writes data to S3 using the provided {@link DataWriter}.
+     *
+     * @param writer the {@link DataWriter} used to write data to the destination buffer
+     * @param off the offset in the source data from which to start writing
+     * @param len the length of the data to be written
+     *
+     * @throws IOException if an I/O error occurs during the write operation or if the stream is marked as done
+     */
+    public void write(@NotNull final DataWriter writer, int off, int len) throws IOException {
+        if (state != State.OPEN) {
+            throw new IOException("Cannot write to stream for uri " + uri + " because stream in state " + state +
+                    " instead of OPEN");
         }
         while (len != 0) {
             if (uploadId == null) {
@@ -105,55 +146,61 @@ class S3OutputStream extends CompletableOutputStream {
 
             // Write as much as possible to this buffer
             final ByteBuffer buffer = useRequest.buffer;
-            final int count = Math.min(len, buffer.remaining());
-            buffer.put(b, off, count);
+            final int lengthWritten = writer.write(buffer, off, len);
             if (!buffer.hasRemaining()) {
                 sendPartRequest(useRequest);
             }
-            off += count;
-            len -= count;
+            off += lengthWritten;
+            len -= lengthWritten;
         }
     }
 
+    @Override
     public void flush() throws IOException {
         // Flush the next part if it is larger than the minimum part size
         flushImpl(false);
     }
 
-    /**
-     * Try to finish the multipart upload and close the stream. Cancel the upload if an error occurs.
-     *
-     * @throws IOException if an error occurs while closing the stream
-     */
-    public void close() throws IOException {
-        if (!done) {
-            abort();
-        }
-        try {
-            complete();
-        } catch (final IOException e) {
-            abort();
-            throw new IOException(String.format("Error closing S3OutputStream for uri %s, aborting upload.", uri), e);
-        }
-    }
-
     @Override
     public void done() throws IOException {
-        if (!done) {
-            flushImpl(true);
-            done = true;
+        if (state == State.DONE) {
+            return;
         }
+        if (state != State.OPEN) {
+            throw new IOException("Cannot mark stream as done for uri " + uri + " because stream in state " + state +
+                    " instead of OPEN");
+        }
+        flushImpl(true);
+        state = State.DONE;
     }
 
     @Override
     public void complete() throws IOException {
+        if (state == State.COMPLETED) {
+            return;
+        }
         done();
         completeMultipartUpload();
+        state = State.COMPLETED;
     }
 
     @Override
-    public void rollback() {
-        // no-op since we cannot roll back a multipart upload
+    public void rollback() throws IOException {
+        if (state == State.COMPLETED || state == State.ABORTED) {
+            // Cannot roll back a completed or aborted multipart upload
+            return;
+        }
+        abortMultipartUpload();
+        state = State.ABORTED;
+    }
+
+    @Override
+    public void close() throws IOException {
+        if (state == State.COMPLETED || state == State.ABORTED) {
+            return;
+        }
+        abortMultipartUpload();
+        state = State.ABORTED;
     }
 
     ////////// Helper methods and classes //////////
@@ -175,8 +222,20 @@ class S3OutputStream extends CompletableOutputStream {
         private CompletableFuture<UploadPartResponse> future;
 
         OutgoingRequest(final int writePartSize) {
+            // TODO(deephaven-core#5935): Experiment with buffer pool here
             buffer = ByteBuffer.allocate(writePartSize);
             partNumber = INVALID_PART_NUMBER;
+        }
+    }
+
+    /**
+     * Verifies that there is space available in the destination buffer to write more data.
+     */
+    private void verifyNotFull(final ByteBuffer dest) {
+        if (!dest.hasRemaining()) {
+            // This should not happen because we flush the buffer once it is full
+            throw new IllegalStateException("No space available in the destination buffer to add additional bytes " +
+                    "for uri " + uri);
         }
     }
 
@@ -252,16 +311,17 @@ class S3OutputStream extends CompletableOutputStream {
             return;
         }
         final OutgoingRequest request = pendingRequests.get(nextSlotId);
-        if (request.buffer.position() != 0 && request.future == null) {
-            if (force || request.buffer.position() >= MIN_WRITE_PART_SIZE) {
-                sendPartRequest(request);
-            }
+        if (request.buffer.position() != 0
+                && request.future == null
+                && (force || request.buffer.position() >= MIN_WRITE_PART_SIZE)) {
+            sendPartRequest(request);
         }
     }
 
     private void completeMultipartUpload() throws IOException {
         if (uploadId == null) {
-            return;
+            throw new IllegalStateException("Cannot complete multipart upload for uri " + uri + " because upload ID " +
+                    "is null");
         }
         // Complete all pending requests in the exact order they were sent
         final int partCount = nextPartNumber - 1;
@@ -288,11 +348,12 @@ class S3OutputStream extends CompletableOutputStream {
     }
 
     /**
-     * Abort the multipart upload if it is in progress and close the stream.
+     * Abort the multipart upload if it is in progress.
      */
-    private void abort() throws IOException {
+    private void abortMultipartUpload() throws IOException {
         if (uploadId == null) {
-            return;
+            throw new IllegalStateException("Cannot abort multipart upload for uri " + uri + " because upload ID " +
+                    "is null");
         }
         final AbortMultipartUploadRequest abortRequest = AbortMultipartUploadRequest.builder()
                 .bucket(uri.bucket().orElseThrow())

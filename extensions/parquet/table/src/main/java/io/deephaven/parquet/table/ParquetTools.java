@@ -19,7 +19,6 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.util.PartitionFormatter;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
-import io.deephaven.parquet.base.ParquetFileReader;
 import io.deephaven.parquet.base.ParquetMetadataFileWriter;
 import io.deephaven.parquet.base.NullParquetMetadataFileWriter;
 import io.deephaven.util.SafeCloseable;
@@ -55,7 +54,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.*;
@@ -64,7 +62,6 @@ import java.util.stream.Collectors;
 
 import static io.deephaven.base.FileUtils.URI_SEPARATOR_CHAR;
 import static io.deephaven.base.FileUtils.convertToURI;
-import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
 import static io.deephaven.parquet.base.ParquetUtils.PARQUET_OUTPUT_BUFFER_SIZE;
 import static io.deephaven.parquet.base.ParquetUtils.resolve;
 import static io.deephaven.parquet.table.ParquetInstructions.FILE_INDEX_TOKEN;
@@ -591,78 +588,72 @@ public class ParquetTools {
         }
 
         // List of output streams created, to rollback in case of exceptions
-        final Collection<CompletableOutputStream> outputStreams = new ArrayList<>(destinations.length);
-
-        try {
-            final List<List<ParquetTableWriter.IndexWritingInfo>> indexInfoLists;
-            if (indexColumns.isEmpty()) {
-                // Write the tables without any index info
-                for (int tableIdx = 0; tableIdx < sources.length; tableIdx++) {
-                    final Table source = sources[tableIdx];
-                    final CompletableOutputStream outputStream = channelsProvider.getOutputStream(
-                            destinations[tableIdx], PARQUET_OUTPUT_BUFFER_SIZE);
-                    outputStreams.add(outputStream);
-                    ParquetTableWriter.write(source, definition, writeInstructions, destinations[tableIdx],
-                            outputStream, Collections.emptyMap(), (List<ParquetTableWriter.IndexWritingInfo>) null,
-                            metadataFileWriter, computedCache);
-                }
-            } else {
-                // Create index info for each table and write the table and index files to shadow path
-                indexInfoLists = new ArrayList<>(sources.length);
-
-                // Shared parquet column names across all tables
-                final String[][] parquetColumnNameArr = indexColumns.stream()
-                        .map((Collection<String> columns) -> columns.stream()
-                                .map(writeInstructions::getParquetColumnNameFromColumnNameOrDefault)
-                                .toArray(String[]::new))
-                        .toArray(String[][]::new);
-
-                for (int tableIdx = 0; tableIdx < sources.length; tableIdx++) {
-                    final URI tableDestination = destinations[tableIdx];
-                    final List<ParquetTableWriter.IndexWritingInfo> indexInfoList =
-                            indexInfoBuilderHelper(indexColumns, parquetColumnNameArr, tableDestination,
-                                    channelsProvider);
-                    indexInfoLists.add(indexInfoList);
-                    final CompletableOutputStream outputStream = channelsProvider.getOutputStream(
-                            destinations[tableIdx], PARQUET_OUTPUT_BUFFER_SIZE);
-                    outputStreams.add(outputStream);
-                    for (final ParquetTableWriter.IndexWritingInfo info : indexInfoList) {
-                        outputStreams.add(info.destOutputStream);
+        final List<CompletableOutputStream> outputStreams = new ArrayList<>(destinations.length);
+        try (final SafeCloseable ignored = () -> SafeCloseable.closeAll(outputStreams.stream())) {
+            try {
+                if (indexColumns.isEmpty()) {
+                    // Write the tables without any index info
+                    for (int tableIdx = 0; tableIdx < sources.length; tableIdx++) {
+                        final Table source = sources[tableIdx];
+                        final CompletableOutputStream outputStream = channelsProvider.getOutputStream(
+                                destinations[tableIdx], PARQUET_OUTPUT_BUFFER_SIZE);
+                        outputStreams.add(outputStream);
+                        ParquetTableWriter.write(source, definition, writeInstructions, destinations[tableIdx],
+                                outputStream, Collections.emptyMap(), (List<ParquetTableWriter.IndexWritingInfo>) null,
+                                metadataFileWriter, computedCache);
                     }
-                    final Table sourceTable = sources[tableIdx];
-                    ParquetTableWriter.write(sourceTable, definition, writeInstructions, destinations[tableIdx],
-                            outputStream, Collections.emptyMap(), indexInfoList, metadataFileWriter, computedCache);
-                }
-            }
+                } else {
+                    // Shared parquet column names across all tables
+                    final String[][] parquetColumnNameArr = indexColumns.stream()
+                            .map((Collection<String> columns) -> columns.stream()
+                                    .map(writeInstructions::getParquetColumnNameFromColumnNameOrDefault)
+                                    .toArray(String[]::new))
+                            .toArray(String[][]::new);
 
-            if (writeInstructions.generateMetadataFiles()) {
-                final URI metadataDest = metadataRootDir.resolve(METADATA_FILE_NAME);
-                final CompletableOutputStream metadataOutputStream = channelsProvider.getOutputStream(
-                        metadataDest, PARQUET_OUTPUT_BUFFER_SIZE);
-                outputStreams.add(metadataOutputStream);
-                final URI commonMetadataDest = metadataRootDir.resolve(COMMON_METADATA_FILE_NAME);
-                final CompletableOutputStream commonMetadataOutputStream = channelsProvider.getOutputStream(
-                        commonMetadataDest, PARQUET_OUTPUT_BUFFER_SIZE);
-                outputStreams.add(commonMetadataOutputStream);
-                metadataFileWriter.writeMetadataFiles(metadataOutputStream, commonMetadataOutputStream);
-            }
-
-            // Commit all the writes to underlying file system, to detect any exceptions early before closing
-            for (final CompletableOutputStream outputStream : outputStreams) {
-                outputStream.complete();
-            }
-            for (final CompletableOutputStream outputStream : outputStreams) {
-                outputStream.close();
-            }
-        } catch (final Exception e) {
-            for (final CompletableOutputStream outputStream : outputStreams) {
-                try {
-                    outputStream.rollback();
-                } catch (IOException e1) {
-                    log.error().append("Error in rolling back output stream ").append(e1).endl();
+                    for (int tableIdx = 0; tableIdx < sources.length; tableIdx++) {
+                        final URI tableDestination = destinations[tableIdx];
+                        final List<ParquetTableWriter.IndexWritingInfo> indexInfoList =
+                                indexInfoBuilderHelper(indexColumns, parquetColumnNameArr, tableDestination,
+                                        channelsProvider);
+                        final CompletableOutputStream outputStream = channelsProvider.getOutputStream(
+                                destinations[tableIdx], PARQUET_OUTPUT_BUFFER_SIZE);
+                        outputStreams.add(outputStream);
+                        for (final ParquetTableWriter.IndexWritingInfo info : indexInfoList) {
+                            outputStreams.add(info.destOutputStream);
+                        }
+                        final Table sourceTable = sources[tableIdx];
+                        ParquetTableWriter.write(sourceTable, definition, writeInstructions, destinations[tableIdx],
+                                outputStream, Collections.emptyMap(), indexInfoList, metadataFileWriter, computedCache);
+                    }
                 }
+
+                if (writeInstructions.generateMetadataFiles()) {
+                    final URI metadataDest = metadataRootDir.resolve(METADATA_FILE_NAME);
+                    final CompletableOutputStream metadataOutputStream = channelsProvider.getOutputStream(
+                            metadataDest, PARQUET_OUTPUT_BUFFER_SIZE);
+                    outputStreams.add(metadataOutputStream);
+                    final URI commonMetadataDest = metadataRootDir.resolve(COMMON_METADATA_FILE_NAME);
+                    final CompletableOutputStream commonMetadataOutputStream = channelsProvider.getOutputStream(
+                            commonMetadataDest, PARQUET_OUTPUT_BUFFER_SIZE);
+                    outputStreams.add(commonMetadataOutputStream);
+                    metadataFileWriter.writeMetadataFiles(metadataOutputStream, commonMetadataOutputStream);
+                }
+
+                // Commit all the writes to underlying file system, to detect any exceptions early before closing
+                for (final CompletableOutputStream outputStream : outputStreams) {
+                    outputStream.complete();
+                }
+            } catch (final Exception e) {
+                // Try to rollback all the output streams in reverse order to undo any writes
+                for (int idx = outputStreams.size() - 1; idx >= 0; idx--) {
+                    try {
+                        outputStreams.get(idx).rollback();
+                    } catch (IOException e1) {
+                        log.error().append("Error in rolling back output stream ").append(e1).endl();
+                    }
+                }
+                throw new UncheckedDeephavenException("Error writing parquet tables", e);
             }
-            throw new UncheckedDeephavenException("Error writing parquet tables", e);
         }
     }
 
@@ -761,11 +752,17 @@ public class ParquetTools {
             definition = firstDefinition;
         }
         final URI[] destinationUris = new URI[destinations.length];
-        destinationUris[0] = convertToURI(destinations[0], false);
-        final String firstScheme = destinationUris[0].getScheme();
-        for (int idx = 1; idx < destinations.length; idx++) {
+        String firstScheme = null;
+        for (int idx = 0; idx < destinations.length; idx++) {
+            if (!destinations[idx].endsWith(PARQUET_FILE_EXTENSION)) {
+                throw new IllegalArgumentException(
+                        String.format("Destination %s does not end in %s extension", destinations[idx],
+                                PARQUET_FILE_EXTENSION));
+            }
             destinationUris[idx] = convertToURI(destinations[idx], false);
-            if (!firstScheme.equals(destinationUris[idx].getScheme())) {
+            if (idx == 0) {
+                firstScheme = destinationUris[0].getScheme();
+            } else if (!firstScheme.equals(destinationUris[idx].getScheme())) {
                 throw new IllegalArgumentException("All destination URIs must have the same scheme, expected " +
                         firstScheme + " found " + destinationUris[idx].getScheme());
             }

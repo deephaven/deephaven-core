@@ -9,9 +9,9 @@ import java.io.OutputStream;
 /**
  * An {@link OutputStream} that can be marked as done, completed, or rolled back.
  * <p>
- * The {@link #done()} method is to push all cached data to the underlying storage, {@link #complete()} to finalize the
- * write operation, and {@link #rollback()} to cancel the write. Closing this output stream without calling done or
- * complete will not write any data to the underlying storage.
+ * The {@link #done()} method is used to flush all buffered data to the underlying storage, {@link #complete()} to
+ * finalize the write operation, and {@link #rollback()} to cancel the write. Closing this output stream without calling
+ * complete will not flush data to the underlying storage.
  * <p>
  * One usage pattern can be like this:
  * 
@@ -19,8 +19,8 @@ import java.io.OutputStream;
  * try (final CompletableOutputStream outputStream = CreateCompletableOutputStream()) {
  *     try {
  *         IOUtils.copy(inputStream, outputStream);
- *         outputStream.done();
- *         outputStream.close();
+ *         outputStream.done(); // Optional; use this to flush buffered data without completing the stream
+ *         outputStream.complete();
  *     } catch (IOException e) {
  *         outputStream.rollback();
  *     }
@@ -28,22 +28,44 @@ import java.io.OutputStream;
  * </pre>
  */
 public abstract class CompletableOutputStream extends OutputStream {
+
+    protected enum State {
+        OPEN, DONE, COMPLETED, ABORTED;
+
+        @Override
+        public String toString() {
+            switch (this) {
+                case OPEN:
+                    return "OPEN";
+                case DONE:
+                    return "DONE";
+                case COMPLETED:
+                    return "COMPLETED";
+                case ABORTED:
+                    return "ABORTED";
+                default:
+                    return super.toString();
+            }
+        }
+    }
+
     /**
-     * Pushes all cached data to the underlying storage. This method should be called after the user is done writing to
-     * the output stream. All writes to the output stream after calling this method will lead to an {@link IOException}.
+     * Flush all buffered data to the underlying storage. This is optional and should be called after the user is done
+     * writing to the output stream. All writes to the output stream after calling this method will lead to an
+     * {@link IOException}.
      */
     public abstract void done() throws IOException;
 
     /**
-     * Push all cached data to underlying storage and commit the data to the underlying storage. This method should be
-     * called after the user is done writing to the output stream. All writes to the output stream after calling this
-     * method will lead to an {@link IOException}.
+     * Flush all buffered data and save all written data to the underlying storage. This method should be called after
+     * the user is done writing to the output stream. All writes to the output stream after calling this method will
+     * lead to an {@link IOException}.
      */
     public abstract void complete() throws IOException;
 
     /**
-     * Try to roll back any data committed to the underlying storage, reverting back to the original state before
-     * opening this stream.
+     * Try to roll back any data written to the underlying storage, reverting back to the original state before opening
+     * this stream. This is an optional operation, as some implementations may not be able to support it.
      */
     public abstract void rollback() throws IOException;
 }

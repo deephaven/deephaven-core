@@ -25,7 +25,6 @@ import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.lang.ref.SoftReference;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -133,7 +132,7 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     @Override
     public CompletableOutputStream getOutputStream(@NotNull final URI uri, final int bufferSizeHint) {
         // bufferSizeHint is unused because s3 output stream is buffered internally into parts
-        return new S3OutputStream(uri, s3AsyncClient, s3Instructions);
+        return new S3CompletableOutputStream(uri, s3AsyncClient, s3Instructions);
     }
 
     @Override

@@ -593,6 +593,19 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
+    public void basicParquetWrongDestinationTest() {
+        final Table table = TableTools.emptyTable(5).update("A=(int)i");
+        final File dest = new File(rootFile, "basicParquetWrongDestinationTest.parquet");
+        writeTable(table, dest.getPath());
+        final File wrongDest = new File(rootFile, "basicParquetWrongDestinationTest");
+        try {
+            writeTable(table, wrongDest.getPath());
+            fail("Expected an exception because destination does not end with .parquet");
+        } catch (final IllegalArgumentException expected) {
+        }
+    }
+
+    @Test
     public void basicParquetWithMetadataTest() {
         final Table table = TableTools.emptyTable(5).update("A=(int)i", "B=(long)i", "C=(double)i");
         final String filename = "basicParquetWithMetadataTest.parquet";
@@ -2046,16 +2059,6 @@ public final class ParquetTableReadWriteTest {
         assertTableEquals(expected, fromDisk);
     }
 
-    /**
-     * These are tests for writing a table to a parquet file and making sure there are no unnecessary files left in the
-     * directory after we finish writing.
-     */
-    @Test
-    public void basicWriteTests() {
-        basicWriteTestsImpl(SINGLE_WRITER);
-        basicWriteTestsImpl(MULTI_WRITER);
-    }
-
     @Test
     public void readPartitionedDataGeneratedOnWindows() {
         final String path = ParquetTableReadWriteTest.class
@@ -2066,6 +2069,16 @@ public final class ParquetTableReadWriteTest {
                 longCol("n_legs", 5, 2, 4, 100, 2, 4),
                 stringCol("animal", "Brittle stars", "Flamingo", "Dog", "Centipede", "Parrot", "Horse"));
         assertTableEquals(expected, partitionedDataFromWindows.sort("year"));
+    }
+
+    /**
+     * These are tests for writing a table to a parquet file and making sure there are no unnecessary files left in the
+     * directory after we finish writing.
+     */
+    @Test
+    public void basicWriteTests() {
+        basicWriteTestsImpl(SINGLE_WRITER);
+        basicWriteTestsImpl(MULTI_WRITER);
     }
 
     private static void basicWriteTestsImpl(TestParquetTableWriter writer) {
@@ -2086,6 +2099,7 @@ public final class ParquetTableReadWriteTest {
         // This write should fail
         final Table badTable = TableTools.emptyTable(5)
                 .updateView("InputString = ii % 2 == 0 ? Long.toString(ii) : null", "A=InputString.charAt(0)");
+        DataIndexer.getOrCreateDataIndex(badTable, "InputString");
         try {
             writer.writeTable(badTable, destFile);
             TestCase.fail("Exception expected for invalid formula");
@@ -2190,9 +2204,10 @@ public final class ParquetTableReadWriteTest {
         final File parentDir = new File(rootFile, "tempDir");
         parentDir.mkdir();
 
-        // Write two tables to parquet file and read them back
+        // Write two tables to parquet file
         final Table firstTable = TableTools.emptyTable(5)
                 .updateView("InputString = Long.toString(ii)", "A=InputString.charAt(0)");
+        DataIndexer.getOrCreateDataIndex(firstTable, "InputString");
         final File firstDestFile = new File(parentDir, "firstTable.parquet");
 
         final Table secondTable = TableTools.emptyTable(5)
@@ -2202,7 +2217,7 @@ public final class ParquetTableReadWriteTest {
         final Table[] tablesToSave = new Table[] {firstTable, secondTable};
         final String[] destinations = new String[] {firstDestFile.getPath(), secondDestFile.getPath()};
 
-        // This write should fail
+        // This write should fail because of the null value in the second table
         try {
             writeTables(tablesToSave, destinations,
                     ParquetInstructions.EMPTY.withTableDefinition(firstTable.getDefinition()));

@@ -75,7 +75,7 @@ final class TrackedSeekableChannelsProvider implements SeekableChannelsProvider 
 
     @Override
     public CompletableOutputStream getOutputStream(@NotNull final URI uri, int bufferSizeHint) throws IOException {
-        return new CompletableLocalOutputStream(new File(uri), this, bufferSizeHint);
+        return new LocalCompletableOutputStream(new File(uri), this, bufferSizeHint);
     }
 
     @Override
@@ -92,9 +92,7 @@ final class TrackedSeekableChannelsProvider implements SeekableChannelsProvider 
         return Files.walk(Path.of(directory)).map(path -> FileUtils.convertToURI(path, false));
     }
 
-    // TODO Discuss with Ryan if I still should use this method
     SeekableByteChannel getWriteChannel(@NotNull final File destFile) throws IOException {
-        // NB: I'm not sure this is actually the intended behavior; the "truncate-once" is per-handle, not per file.
         return new TrackedSeekableByteChannel(new TruncateOnceFileCreator(fileHandleFactory), destFile);
     }
 

@@ -38,14 +38,12 @@ import org.apache.parquet.schema.Types;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.nio.IntBuffer;
 import java.util.*;
 
-import static io.deephaven.base.FileUtils.FILE_URI_SCHEME;
 import static io.deephaven.parquet.base.ParquetUtils.METADATA_KEY;
 
 /**
@@ -134,65 +132,49 @@ public class ParquetTableWriter {
         }
 
         final TableInfo.Builder tableInfoBuilder = TableInfo.builder();
-        List<URI> cleanupDestinations = null;
-        try {
-            if (indexInfoList != null) {
-                cleanupDestinations = new ArrayList<>(indexInfoList.size());
-                final URI destDir = dest.resolve(".");
-                for (final ParquetTableWriter.IndexWritingInfo info : indexInfoList) {
-                    try (final SafeCloseable ignored = t.isRefreshing() ? LivenessScopeStack.open() : null) {
-                        // This will retrieve an existing index if one exists, or create a new one if not
-                        final BasicDataIndex dataIndex = Optional
-                                .ofNullable(DataIndexer.getDataIndex(t, info.indexColumnNames))
-                                .or(() -> Optional.of(DataIndexer.getOrCreateDataIndex(t, info.indexColumnNames)))
-                                .get()
-                                .transform(DataIndexTransformer.builder().invertRowSet(t.getRowSet()).build());
-                        final Table indexTable = dataIndex.table().sort(info.indexColumnNames.toArray(new String[0]));
-                        final TableInfo.Builder indexTableInfoBuilder = TableInfo.builder().addSortingColumns(
-                                info.indexColumnNames.stream()
-                                        .map(cn -> SortColumnInfo.of(cn, SortColumnInfo.SortDirection.Ascending))
-                                        .toArray(SortColumnInfo[]::new));
+        if (indexInfoList != null) {
+            final URI destDir = dest.resolve(".");
+            for (final ParquetTableWriter.IndexWritingInfo info : indexInfoList) {
+                try (final SafeCloseable ignored = t.isRefreshing() ? LivenessScopeStack.open() : null) {
+                    // This will retrieve an existing index if one exists, or create a new one if not
+                    final BasicDataIndex dataIndex = Optional
+                            .ofNullable(DataIndexer.getDataIndex(t, info.indexColumnNames))
+                            .or(() -> Optional.of(DataIndexer.getOrCreateDataIndex(t, info.indexColumnNames)))
+                            .get()
+                            .transform(DataIndexTransformer.builder().invertRowSet(t.getRowSet()).build());
+                    final Table indexTable = dataIndex.table().sort(info.indexColumnNames.toArray(new String[0]));
+                    final TableInfo.Builder indexTableInfoBuilder = TableInfo.builder().addSortingColumns(
+                            info.indexColumnNames.stream()
+                                    .map(cn -> SortColumnInfo.of(cn, SortColumnInfo.SortDirection.Ascending))
+                                    .toArray(SortColumnInfo[]::new));
 
-                        cleanupDestinations.add(info.dest);
-                        tableInfoBuilder.addDataIndexes(DataIndexInfo.of(
-                                destDir.relativize(info.dest).getPath(),
-                                info.parquetColumnNames));
-                        final ParquetInstructions writeInstructionsToUse;
-                        if (INDEX_ROW_SET_COLUMN_NAME.equals(dataIndex.rowSetColumnName())) {
-                            writeInstructionsToUse = writeInstructions;
-                        } else {
-                            writeInstructionsToUse = new ParquetInstructions.Builder(writeInstructions)
-                                    .addColumnNameMapping(INDEX_ROW_SET_COLUMN_NAME, dataIndex.rowSetColumnName())
-                                    .build();
-                        }
-                        write(indexTable, indexTable.getDefinition(), writeInstructionsToUse, info.dest,
-                                info.destOutputStream, Collections.emptyMap(), indexTableInfoBuilder,
-                                NullParquetMetadataFileWriter.INSTANCE, computedCache);
+                    tableInfoBuilder.addDataIndexes(DataIndexInfo.of(
+                            destDir.relativize(info.dest).getPath(),
+                            info.parquetColumnNames));
+                    final ParquetInstructions writeInstructionsToUse;
+                    if (INDEX_ROW_SET_COLUMN_NAME.equals(dataIndex.rowSetColumnName())) {
+                        writeInstructionsToUse = writeInstructions;
+                    } else {
+                        writeInstructionsToUse = new ParquetInstructions.Builder(writeInstructions)
+                                .addColumnNameMapping(INDEX_ROW_SET_COLUMN_NAME, dataIndex.rowSetColumnName())
+                                .build();
                     }
+                    write(indexTable, indexTable.getDefinition(), writeInstructionsToUse, info.dest,
+                            info.destOutputStream, Collections.emptyMap(), indexTableInfoBuilder,
+                            NullParquetMetadataFileWriter.INSTANCE, computedCache);
                 }
             }
-
-            // SortedColumnsAttribute effectively only stores (zero or more) individual columns by which the table is
-            // sorted, rather than ordered sets expressing multi-column sorts. Given that mismatch, we can only reflect
-            // a single column sort in the metadata at this time.
-            final List<SortColumn> sortedColumns = SortedColumnsAttribute.getSortedColumns(t);
-            if (!sortedColumns.isEmpty()) {
-                tableInfoBuilder.addSortingColumns(SortColumnInfo.of(sortedColumns.get(0)));
-            }
-            write(t, definition, writeInstructions, dest, destOutputStream, incomingMeta,
-                    tableInfoBuilder, metadataFileWriter, computedCache);
-        } catch (Exception e) {
-            if (cleanupDestinations != null) {
-                final boolean isFileURI = FILE_URI_SCHEME.equals(dest.getScheme());
-                if (isFileURI) {
-                    for (final URI cleanupDest : cleanupDestinations) {
-                        // noinspection ResultOfMethodCallIgnored
-                        new File(cleanupDest).delete();
-                    }
-                }
-            }
-            throw e;
         }
+
+        // SortedColumnsAttribute effectively only stores (zero or more) individual columns by which the table is
+        // sorted, rather than ordered sets expressing multi-column sorts. Given that mismatch, we can only reflect
+        // a single column sort in the metadata at this time.
+        final List<SortColumn> sortedColumns = SortedColumnsAttribute.getSortedColumns(t);
+        if (!sortedColumns.isEmpty()) {
+            tableInfoBuilder.addSortingColumns(SortColumnInfo.of(sortedColumns.get(0)));
+        }
+        write(t, definition, writeInstructions, dest, destOutputStream, incomingMeta,
+                tableInfoBuilder, metadataFileWriter, computedCache);
     }
 
     /**

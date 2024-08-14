@@ -21,20 +21,18 @@ import java.nio.channels.Channels;
  * A {@link CompletableOutputStream} that writes to a temporary shadow file paths in the same directory to prevent
  * overwriting any existing data in case of failure.
  */
-public class CompletableLocalOutputStream extends CompletableOutputStream {
+class LocalCompletableOutputStream extends CompletableOutputStream {
+
+    private static final Logger log = LoggerFactory.getLogger(LocalCompletableOutputStream.class);
 
     private final File firstCreatedDir;
     private final File destFile;
     private final File shadowDestFile;
     private final OutputStream shadowDelegateStream; // Writes to the shadow file
 
-    private boolean done;
-    private boolean closed;
-    private boolean installedShadowFiles;
+    private State state;
 
-    private static final Logger log = LoggerFactory.getLogger(CompletableLocalOutputStream.class);
-
-    CompletableLocalOutputStream(
+    LocalCompletableOutputStream(
             @NotNull final File destFile,
             @NotNull final TrackedSeekableChannelsProvider provider,
             final int bufferSizeHint) throws IOException {
@@ -44,55 +42,61 @@ public class CompletableLocalOutputStream extends CompletableOutputStream {
         this.shadowDestFile = getShadowFile(destFile);
         this.shadowDelegateStream = new BufferedOutputStream(Channels.newOutputStream(
                 provider.getWriteChannel(shadowDestFile)), bufferSizeHint);
+        this.state = State.OPEN;
     }
 
     @Override
     public void write(int b) throws IOException {
-        verifyNotClosed();
+        verifyOpen();
         shadowDelegateStream.write(b);
     }
 
     @Override
     public void write(byte[] b) throws IOException {
-        verifyNotClosed();
+        verifyOpen();
         shadowDelegateStream.write(b);
     }
 
     @Override
     public void write(byte[] b, int off, int len) throws IOException {
-        verifyNotClosed();
+        verifyOpen();
         shadowDelegateStream.write(b, off, len);
     }
 
     @Override
     public void flush() throws IOException {
-        verifyNotClosed();
+        verifyOpen();
         shadowDelegateStream.flush();
     }
 
-    public void done() {
-        done = true;
+    public void done() throws IOException {
+        if (state == State.DONE) {
+            return;
+        }
+        if (state != State.OPEN) {
+            throw new IOException("Cannot mark stream as done for file " + destFile.getAbsolutePath() + " because " +
+                    "stream in state " + state + " instead of OPEN");
+        }
+        flush();
+        state = State.DONE;
     }
 
     public void complete() throws IOException {
+        if (state == State.COMPLETED) {
+            return;
+        }
         done();
         shadowDelegateStream.close();
         installShadowFile(destFile, shadowDestFile);
-        installedShadowFiles = true;
+        state = State.COMPLETED;
     }
 
     @Override
-    public void close() throws IOException {
-        if (closed) {
+    public void rollback() {
+        if (state == State.ABORTED) {
             return;
         }
-        shadowDelegateStream.close();
-        deleteBackupFileNoExcept(destFile);
-        closed = true;
-    }
-
-    public void rollback() {
-        if (installedShadowFiles) {
+        if (state == State.COMPLETED) {
             rollbackShadowFiles(destFile);
         }
         // noinspection ResultOfMethodCallIgnored
@@ -102,16 +106,27 @@ public class CompletableLocalOutputStream extends CompletableOutputStream {
                     .append(firstCreatedDir.getAbsolutePath()).endl();
             FileUtils.deleteRecursivelyOnNFS(firstCreatedDir);
         }
+        state = State.ABORTED;
+    }
+
+    @Override
+    public void close() throws IOException {
+        if (state == State.ABORTED) {
+            return;
+        }
+        if (state != State.COMPLETED) {
+            rollback();
+            return;
+        }
+        deleteBackupFileNoExcept(destFile);
     }
 
     ////////////// Helper methods /////////////
 
-    private void verifyNotClosed() {
-        if (done) {
-            throw new UncheckedDeephavenException("Write failed because the stream is already marked done");
-        }
-        if (closed) {
-            throw new UncheckedDeephavenException("Write failed because the stream is already closed");
+    private void verifyOpen() throws IOException {
+        if (state != State.OPEN) {
+            throw new IOException("Cannot write to stream for file " + destFile.getAbsolutePath() + " because stream " +
+                    "in state " + state + " instead of OPEN");
         }
     }
 
@@ -121,7 +136,7 @@ public class CompletableLocalOutputStream extends CompletableOutputStream {
     private static void deleteBackupFile(@NotNull final File destFile) {
         if (!deleteBackupFileNoExcept(destFile)) {
             throw new UncheckedDeephavenException(
-                    String.format("Failed to delete backup file at %s", getBackupFile(destFile)));
+                    String.format("Failed to delete backup file at %s", getBackupFile(destFile).getAbsolutePath()));
         }
     }
 
@@ -150,12 +165,12 @@ public class CompletableLocalOutputStream extends CompletableOutputStream {
     /**
      * Make any missing ancestor directories of {@code destination}.
      *
-     * @param destFile The destination file
+     * @param destination The destination file
      * @return The first created directory, or null if no directories were made.
      */
     @Nullable
-    private static File prepareDestinationFileLocation(@NotNull final File destFile) {
-        final File destination = destFile.getAbsoluteFile();
+    private static File prepareDestinationFileLocation(@NotNull File destination) {
+        destination = destination.getAbsoluteFile();
         if (destination.exists()) {
             if (destination.isDirectory()) {
                 throw new UncheckedDeephavenException(
@@ -204,13 +219,8 @@ public class CompletableLocalOutputStream extends CompletableOutputStream {
         if (destFile.exists() && !destFile.renameTo(backupDestFile)) {
             throw new UncheckedDeephavenException(
                     String.format("Failed to install shadow file at %s because a file already exists at the path " +
-                            "which " + "couldn't be renamed to %s", destFile.getAbsolutePath(),
+                            "which couldn't be renamed to %s", destFile.getAbsolutePath(),
                             backupDestFile.getAbsolutePath()));
-        }
-        if (!shadowDestFile.exists()) {
-            throw new UncheckedDeephavenException(
-                    String.format("Failed to install shadow file at %s because shadow file doesn't exist at %s",
-                            destFile.getAbsolutePath(), shadowDestFile.getAbsolutePath()));
         }
         if (!shadowDestFile.renameTo(destFile)) {
             throw new UncheckedDeephavenException(String.format(
@@ -220,8 +230,7 @@ public class CompletableLocalOutputStream extends CompletableOutputStream {
     }
 
     /**
-     * Roll back any changes made in the {@link #installShadowFile} in best-effort manner. This method is a no-op if the
-     * destination is not a file URI.
+     * Roll back any changes made in the {@link #installShadowFile} in best-effort manner.
      */
     private static void rollbackShadowFiles(@NotNull final File destFile) {
         final File backupDestFile = getBackupFile(destFile);

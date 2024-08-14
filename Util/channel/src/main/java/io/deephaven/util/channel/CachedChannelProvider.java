@@ -14,7 +14,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
@@ -111,7 +110,7 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public final CompletableOutputStream getOutputStream(@NotNull final URI uri, int bufferSizeHint)
+    public final CompletableOutputStream getOutputStream(@NotNull final URI uri, final int bufferSizeHint)
             throws IOException {
         return wrappedProvider.getOutputStream(uri, bufferSizeHint);
     }
