@@ -133,17 +133,17 @@ def to_pandas(table: Table, cols: List[str] = None,
         if table.is_refreshing:
             table = table.snapshot()
 
-        col_def_dict = table.definition
+        table_def = table.definition
         if not cols:
-            cols = list(col_def_dict.keys())
+            cols = list(table_def.keys())
         else:
-            diff_set = set(cols) - set(col_def_dict.keys())
+            diff_set = set(cols) - set(table_def.keys())
             if diff_set:
                 raise DHError(message=f"columns - {list(diff_set)} not found")
 
         data = {}
         for col in cols:
-            series = _column_to_series(table, col_def_dict[col], conv_null)
+            series = _column_to_series(table, table_def[col], conv_null)
             data[col] = series
 
         return pd.DataFrame(data=data, columns=cols, copy=False)

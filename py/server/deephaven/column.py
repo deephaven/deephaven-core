@@ -6,7 +6,7 @@
 
 from enum import Enum
 from functools import cached_property
-from typing import Sequence, Any
+from typing import Sequence, Any, Optional
 
 import jpy
 
@@ -41,9 +41,20 @@ class ColumnDefinition(JObjectWrapper):
     def of(
             name: str,
             data_type: DType,
-            component_type: DType = None,
+            component_type: Optional[DType] = None,
             column_type: ColumnType = ColumnType.NORMAL,
     ) -> 'ColumnDefinition':
+        """Creates a ColumnDefinition.
+
+        Args:
+            name (str): the column name
+            data_type (DType): the column data type
+            component_type (Optional[DType]): the column component type, None by default
+            column_type (ColumnType): the column type, NORMAL by default
+
+        Returns:
+            a new ColumnDefinition
+        """
         return ColumnDefinition(
             _JColumnDefinition.fromGenericType(
                 name,
@@ -64,18 +75,22 @@ class ColumnDefinition(JObjectWrapper):
 
     @cached_property
     def name(self) -> str:
+        """The column name."""
         return self.j_column_definition.getName()
 
     @cached_property
     def data_type(self) -> DType:
+        """The column data type."""
         return from_jtype(self.j_column_definition.getDataType())
 
     @cached_property
-    def component_type(self) -> DType:
+    def component_type(self) -> Optional[DType]:
+        """The column component type."""
         return from_jtype(self.j_column_definition.getComponentType())
 
     @cached_property
     def column_type(self) -> ColumnType:
+        """The column type."""
         return ColumnType(self.j_column_definition.getColumnType())
 
 
@@ -117,18 +132,22 @@ class InputColumn:
 
     @property
     def name(self):
+        """The column name."""
         return self.column_definition.name
 
     @property
     def data_type(self) -> DType:
+        """The column data type."""
         return self.column_definition.data_type
 
     @property
     def component_type(self) -> DType:
+        """The column component type."""
         return self.column_definition.component_type
 
     @property
     def column_type(self) -> ColumnType:
+        """The column type."""
         return self.column_definition.column_type
 
     def _to_j_column(self, input_data: Any = None) -> jpy.JType:

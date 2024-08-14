@@ -298,7 +298,7 @@ def input_table(col_defs: Optional[TableDefinitionAlias] = None, init_table: Tab
     The keyed input table has keys for each row and supports addition/deletion/modification of rows by the keys.
 
     Args:
-        col_defs (Dict[str, DType]): the column definitions
+        col_defs (Optional[TableDefinitionAlias]): the table definition
         init_table (Table): the initial table
         key_cols (Union[str, Sequence[str]): the name(s) of the key column(s)
 

@@ -73,7 +73,7 @@ class TablePublisher(JObjectWrapper):
 
 def table_publisher(
     name: str,
-    table_definition: TableDefinitionAlias,
+    col_defs: TableDefinitionAlias,
     on_flush_callback: Optional[Callable[[TablePublisher], None]] = None,
     on_shutdown_callback: Optional[Callable[[], None]] = None,
     update_graph: Optional[UpdateGraph] = None,
@@ -83,7 +83,7 @@ def table_publisher(
 
     Args:
         name (str): the name, used for logging
-        table_definition (TableDefinitionAlias): the table definition for the resulting blink table
+        col_defs (TableDefinitionAlias): the table definition for the resulting blink table
         on_flush_callback (Optional[Callable[[TablePublisher], None]]): the on-flush callback, if present, is called
             once at the beginning of each update graph cycle. This is a pattern that allows publishers to add any data
             they may have been batching. Do note though, this blocks the update cycle from proceeding, so
@@ -105,7 +105,7 @@ def table_publisher(
 
     j_table_publisher = _JTablePublisher.of(
         name,
-        TableDefinition(table_definition).j_table_definition,
+        TableDefinition(col_defs).j_table_definition,
         j_lambda(adapt_callback, _JConsumer, None) if on_flush_callback else None,
         j_runnable(on_shutdown_callback) if on_shutdown_callback else None,
         (update_graph or get_exec_ctx().update_graph).j_update_graph,

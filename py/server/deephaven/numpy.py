@@ -95,15 +95,15 @@ def to_numpy(table: Table, cols: List[str] = None) -> np.ndarray:
         if table.is_refreshing:
             table = table.snapshot()
 
-        col_def_dict = table.definition
+        table_def = table.definition
         if not cols:
-            cols = list(col_def_dict.keys())
+            cols = list(table_def.keys())
         else:
-            diff_set = set(cols) - set(col_def_dict.keys())
+            diff_set = set(cols) - set(table_def.keys())
             if diff_set:
                 raise DHError(message=f"columns - {list(diff_set)} not found")
 
-        col_defs = [col_def_dict[col] for col in cols]
+        col_defs = [table_def[col] for col in cols]
         if len(set([col_def.data_type for col_def in col_defs])) != 1:
             raise DHError(message="columns must be of the same data type.")
 
