@@ -125,7 +125,7 @@ import static io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOpera
 import static io.deephaven.engine.table.impl.by.RollupConstants.*;
 import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.util.type.TypeUtils.getBoxedType;
-import static io.deephaven.util.type.TypeUtils.isNumeric;
+import static io.deephaven.util.type.NumericTypeUtils.isNumeric;
 
 /**
  * Conversion tool to generate an {@link AggregationContextFactory} for a collection of {@link Aggregation
@@ -2005,7 +2005,6 @@ public class AggregationProcessor implements AggregationContextFactory {
     public static AggregationRowLookup getRowLookup(@NotNull final Table aggregationResult) {
         final Object value = aggregationResult.getAttribute(AGGREGATION_ROW_LOOKUP_ATTRIBUTE);
         Assert.neqNull(value, "aggregation result row lookup");
-        Assert.instanceOf(value, "aggregation result row lookup", AggregationRowLookup.class);
         return (AggregationRowLookup) value;
     }
 }

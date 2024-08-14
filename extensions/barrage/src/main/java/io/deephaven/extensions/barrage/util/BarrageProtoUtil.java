@@ -22,7 +22,6 @@ import org.apache.arrow.flight.impl.Flight;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -62,12 +61,6 @@ public class BarrageProtoUtil {
             return ExternalizableRowSetUtils.readExternalCompressedDelta(ois);
         } catch (final IOException e) {
             throw new UncheckedDeephavenException("Unexpected exception during deserialization: ", e);
-        }
-    }
-
-    public static class ExposedByteArrayOutputStream extends ByteArrayOutputStream {
-        public byte[] peekBuffer() {
-            return buf;
         }
     }
 

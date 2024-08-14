@@ -175,9 +175,13 @@ public class TypeInfos {
             final RowSet rowSet,
             final Map<String, ? extends ColumnSource<?>> columnSourceMap,
             @NotNull final ParquetInstructions instructions) {
-        final Class<?> dataType = column.getDataType();
-        if (BigDecimal.class.equals(dataType)) {
+        if (BigDecimal.class.equals(column.getDataType())) {
             return bigDecimalTypeInfo(computedCache, column, rowSet, columnSourceMap);
+        }
+        if (BigDecimal.class.equals(column.getComponentType())) {
+            throw new UnsupportedOperationException("Writing arrays/vector columns for big decimals is currently not " +
+                    "supported");
+            // TODO(deephaven-core#4612): Add support for this
         }
         return lookupTypeInfo(column, instructions);
     }

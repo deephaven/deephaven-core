@@ -10,6 +10,7 @@ package io.deephaven.chunk.util.hashing;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.util.compare.FloatComparisons;
 
 // region name
 public class FloatChunkEquals implements ChunkEquals {
@@ -250,7 +251,7 @@ public class FloatChunkEquals implements ChunkEquals {
 
     // region eq
     static private boolean eq(float lhs, float rhs) {
-        return ((Float.isNaN(lhs) && Float.isNaN(rhs)) || lhs == rhs);
+        return FloatComparisons.eq(lhs, rhs);
     }
     // endregion eq
 

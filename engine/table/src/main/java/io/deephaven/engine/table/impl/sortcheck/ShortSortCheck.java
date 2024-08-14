@@ -36,12 +36,8 @@ public class ShortSortCheck implements SortCheck {
     }
 
     // region comparison functions
-    private static int doComparison(short lhs, short rhs) {
-        return ShortComparisons.compare(lhs, rhs);
+    private static boolean leq(short lhs, short rhs) {
+        return ShortComparisons.leq(lhs, rhs);
     }
     // endregion comparison functions
-
-    private static boolean leq(short lhs, short rhs) {
-        return doComparison(lhs, rhs) <= 0;
-    }
 }

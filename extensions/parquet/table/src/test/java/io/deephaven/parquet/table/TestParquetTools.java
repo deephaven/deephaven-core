@@ -353,7 +353,7 @@ public class TestParquetTools {
         final TableDefinition partitionedDefinition = TableDefinition.of(allColumns);
 
         final Table result = ParquetTools.readTable(
-                new ParquetKeyValuePartitionedLayout(testRootFile.toURI(), 2, ParquetInstructions.EMPTY),
+                ParquetKeyValuePartitionedLayout.create(testRootFile.toURI(), 2, ParquetInstructions.EMPTY, null),
                 ParquetInstructions.EMPTY);
         TestCase.assertEquals(partitionedDefinition, result.getDefinition());
         final Table expected = TableTools.merge(

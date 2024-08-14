@@ -15,9 +15,7 @@ import io.deephaven.engine.table.impl.multijoin.IncrementalMultiJoinStateManager
 import io.deephaven.engine.table.impl.multijoin.StaticMultiJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.naturaljoin.RightIncrementalNaturalJoinStateManagerTypedBase;
 import io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase;
-import io.deephaven.engine.table.impl.by.IncrementalChunkedOperatorAggregationStateManagerTypedBase;
 import io.deephaven.engine.table.impl.by.StaticChunkedOperatorAggregationStateManagerOpenAddressedBase;
-import io.deephaven.engine.table.impl.by.StaticChunkedOperatorAggregationStateManagerTypedBase;
 import io.deephaven.engine.table.impl.by.typed.HasherConfig;
 import io.deephaven.engine.table.impl.by.typed.TypedHasherFactory;
 import io.deephaven.engine.table.impl.naturaljoin.IncrementalNaturalJoinStateManagerTypedBase;
@@ -32,9 +30,7 @@ import java.util.Optional;
 
 public class ReplicateTypedHashers {
     public static void main(String[] args) throws IOException {
-        generatePackage(StaticChunkedOperatorAggregationStateManagerTypedBase.class, true);
         generatePackage(StaticChunkedOperatorAggregationStateManagerOpenAddressedBase.class, true);
-        generatePackage(IncrementalChunkedOperatorAggregationStateManagerTypedBase.class, true);
         generatePackage(IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class, true);
         generatePackage(StaticNaturalJoinStateManagerTypedBase.class, false);
         generatePackage(RightIncrementalNaturalJoinStateManagerTypedBase.class, false);
