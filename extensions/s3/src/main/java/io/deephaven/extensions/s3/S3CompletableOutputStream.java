@@ -38,6 +38,10 @@ class S3CompletableOutputStream extends CompletableOutputStream {
     private static final int MAX_PART_NUMBER = 10000;
     private static final int INVALID_PART_NUMBER = -1;
 
+    private enum State {
+        OPEN, DONE, COMPLETED, ABORTED
+    }
+
     private final S3Uri uri;
     private final S3AsyncClient s3AsyncClient;
     private final S3Instructions s3Instructions;
@@ -94,7 +98,7 @@ class S3CompletableOutputStream extends CompletableOutputStream {
     }
 
     @FunctionalInterface
-    interface DataWriter {
+    private interface DataWriter {
         /**
          * Writes data to the given destination buffer, starting from the current offset in the source data.
          *
@@ -117,7 +121,7 @@ class S3CompletableOutputStream extends CompletableOutputStream {
      *
      * @throws IOException if an I/O error occurs during the write operation or if the stream is marked as done
      */
-    public void write(@NotNull final DataWriter writer, int off, int len) throws IOException {
+    private void write(@NotNull final DataWriter writer, int off, int len) throws IOException {
         if (state != State.OPEN) {
             throw new IOException("Cannot write to stream for uri " + uri + " because stream in state " + state +
                     " instead of OPEN");

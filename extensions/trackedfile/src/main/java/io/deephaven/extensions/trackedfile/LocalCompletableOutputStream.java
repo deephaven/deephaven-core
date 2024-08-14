@@ -25,6 +25,10 @@ class LocalCompletableOutputStream extends CompletableOutputStream {
 
     private static final Logger log = LoggerFactory.getLogger(LocalCompletableOutputStream.class);
 
+    private enum State {
+        OPEN, DONE, COMPLETED, ROLLED_BACK
+    }
+
     private final File firstCreatedDir;
     private final File destFile;
     private final File shadowDestFile;
@@ -93,7 +97,7 @@ class LocalCompletableOutputStream extends CompletableOutputStream {
 
     @Override
     public void rollback() {
-        if (state == State.ABORTED) {
+        if (state == State.ROLLED_BACK) {
             return;
         }
         if (state == State.COMPLETED) {
@@ -106,12 +110,12 @@ class LocalCompletableOutputStream extends CompletableOutputStream {
                     .append(firstCreatedDir.getAbsolutePath()).endl();
             FileUtils.deleteRecursivelyOnNFS(firstCreatedDir);
         }
-        state = State.ABORTED;
+        state = State.ROLLED_BACK;
     }
 
     @Override
     public void close() throws IOException {
-        if (state == State.ABORTED) {
+        if (state == State.ROLLED_BACK) {
             return;
         }
         if (state != State.COMPLETED) {

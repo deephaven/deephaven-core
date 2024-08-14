@@ -29,26 +29,6 @@ import java.io.OutputStream;
  */
 public abstract class CompletableOutputStream extends OutputStream {
 
-    protected enum State {
-        OPEN, DONE, COMPLETED, ABORTED;
-
-        @Override
-        public String toString() {
-            switch (this) {
-                case OPEN:
-                    return "OPEN";
-                case DONE:
-                    return "DONE";
-                case COMPLETED:
-                    return "COMPLETED";
-                case ABORTED:
-                    return "ABORTED";
-                default:
-                    return super.toString();
-            }
-        }
-    }
-
     /**
      * Flush all buffered data to the underlying storage. This is optional and should be called after the user is done
      * writing to the output stream. All writes to the output stream after calling this method will lead to an
