@@ -229,6 +229,13 @@ def _wrap_listener_obj(t: Table, listener: TableListener):
     return listener
 
 
+def _error_callback_wrapper(callback: Callable[[Exception], None]):
+    @wraps(callback)
+    def wrapper(e):
+        callback(RuntimeError(e))
+
+    return wrapper
+
 class TableListenerHandle(JObjectWrapper):
     """A handle to manage a table listener's lifecycle."""
     j_object_type = _JPythonReplayListenerAdapter
@@ -294,7 +301,7 @@ class TableListenerHandle(JObjectWrapper):
 
         try:
             self.listener_adapter = _JPythonReplayListenerAdapter.create(description, t.j_table, False,
-                                                                         self.listener_wrapped, on_error,
+                                                                         self.listener_wrapped, _error_callback_wrapper(on_error),
                                                                          self.dependencies)
         except Exception as e:
             raise DHError(e, "failed to create a table listener.") from e
@@ -500,7 +507,7 @@ class MergedListenerHandle(JObjectWrapper):
                         to_sequence(self.dependencies),
                         description,
                         self,
-                        on_error)
+                        _error_callback_wrapper(on_error))
             self.started = False
         except Exception as e:
             raise DHError(e, "failed to create a merged listener adapter.") from e

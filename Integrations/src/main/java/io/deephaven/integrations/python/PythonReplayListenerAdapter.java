@@ -3,6 +3,7 @@
 //
 package io.deephaven.integrations.python;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
@@ -89,7 +90,7 @@ public class PythonReplayListenerAdapter extends InstrumentedTableUpdateListener
     public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
         if (!pyOnFailureCallback.isNone()) {
             try {
-                pyOnFailureCallback.call("__call__", originalException);
+                pyOnFailureCallback.call("__call__", ExceptionUtils.getStackTrace(originalException));
             } catch (Throwable e) {
                 // If the Python onFailure callback fails, log the new exception
                 // and continue with the original exception.

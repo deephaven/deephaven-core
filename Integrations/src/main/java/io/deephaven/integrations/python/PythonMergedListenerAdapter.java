@@ -17,6 +17,7 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ScriptApi;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jpy.PyObject;
@@ -105,7 +106,7 @@ public class PythonMergedListenerAdapter extends MergedListener {
         } catch (Exception e) {
             if (!pyOnFailureCallback.isNone()) {
                 try {
-                    pyOnFailureCallback.call("__call__", e);
+                    pyOnFailureCallback.call("__call__", ExceptionUtils.getStackTrace(e));
                 } catch (Exception e2) {
                     // If the Python onFailure callback fails, log the new exception
                     // and continue with the original exception.
