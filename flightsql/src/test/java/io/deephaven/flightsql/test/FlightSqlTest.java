@@ -60,6 +60,7 @@ import javax.inject.Singleton;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.channels.Channels;
+import java.sql.*;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.Executors;
@@ -662,6 +663,46 @@ public abstract class FlightSqlTest {
             }
         }
         return results;
+    }
+
+    @Test
+    public void testJDBCExecuteQuery() throws SQLException {
+        try (Connection connection =  DriverManager.getConnection("jdbc:arrow-flight-sql://localhost:" + localPort +
+                "/?Authorization=Anonymous&useEncryption=false")) {
+            Statement statement = connection.createStatement();
+            ResultSet rs = statement.executeQuery("SELECT * FROM crypto where Instrument='BTC/USD' AND Price > 50000 and Exchange = 'binance'");
+            ResultSetMetaData rsmd = rs.getMetaData();
+            int columnsNumber = rsmd.getColumnCount();
+            while (rs.next()) {
+                for (int i = 1; i <= columnsNumber; i++) {
+                    if (i > 1) System.out.print(",  ");
+                    String columnValue = rs.getString(i);
+                    System.out.print(columnValue + " " + rsmd.getColumnName(i));
+                }
+                System.out.println("");
+            }
+        }
+    }
+
+    @Test
+    public void testJDBCExecute() throws SQLException {
+        try (Connection connection =  DriverManager.getConnection("jdbc:arrow-flight-sql://localhost:" + localPort +
+                "/?Authorization=Anonymous&useEncryption=false")) {
+            Statement statement = connection.createStatement();
+            if (statement.execute("SELECT * FROM crypto")) {
+                ResultSet rs = statement.getResultSet();
+                ResultSetMetaData rsmd = rs.getMetaData();
+                int columnsNumber = rsmd.getColumnCount();
+                while (rs.next()) {
+                    for (int i = 1; i <= columnsNumber; i++) {
+                        if (i > 1) System.out.print(",  ");
+                        String columnValue = rs.getString(i);
+                        System.out.print(columnValue + " " + rsmd.getColumnName(i));
+                    }
+                    System.out.println("");
+                }
+            }
+        }
     }
 }
 
