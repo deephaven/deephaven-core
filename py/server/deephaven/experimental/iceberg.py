@@ -9,7 +9,7 @@ import jpy
 from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
 from deephaven.experimental import s3
-from deephaven.table import Table, TableDefinition, TableDefinitionAlias
+from deephaven.table import Table, TableDefinition, TableDefinitionLike
 
 _JIcebergInstructions = jpy.get_type("io.deephaven.iceberg.util.IcebergInstructions")
 _JIcebergCatalogAdapter = jpy.get_type("io.deephaven.iceberg.util.IcebergCatalogAdapter")
@@ -34,14 +34,14 @@ class IcebergInstructions(JObjectWrapper):
     j_object_type = _JIcebergInstructions
 
     def __init__(self,
-                 table_definition: Optional[TableDefinitionAlias] = None,
+                 table_definition: Optional[TableDefinitionLike] = None,
                  data_instructions: Optional[s3.S3Instructions] = None,
                  column_renames: Optional[Dict[str, str]] = None):
         """
         Initializes the instructions using the provided parameters.
 
         Args:
-            table_definition (Optional[TableDefinitionAlias]): the table definition; if omitted,
+            table_definition (Optional[TableDefinitionLike]): the table definition; if omitted,
                 the definition is inferred from the Iceberg schema. Setting a definition guarantees the returned table
                 will have that definition. This is useful for specifying a subset of the Iceberg schema columns.
             data_instructions (Optional[s3.S3Instructions]): Special instructions for reading data files, useful when

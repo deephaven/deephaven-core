@@ -12,7 +12,7 @@ import jpy
 
 from deephaven import DHError
 from deephaven.jcompat import j_array_list
-from deephaven.table import Table, TableDefinition, TableDefinitionAlias, PartitionedTable
+from deephaven.table import Table, TableDefinition, TableDefinitionLike, PartitionedTable
 from deephaven.experimental import s3
 
 _JParquetTools = jpy.get_type("io.deephaven.parquet.table.ParquetTools")
@@ -67,7 +67,7 @@ def _build_parquet_instructions(
     generate_metadata_files: Optional[bool] = None,
     base_name: Optional[str] = None,
     file_layout: Optional[ParquetFileLayout] = None,
-    table_definition: Optional[TableDefinitionAlias] = None,
+    table_definition: Optional[TableDefinitionLike] = None,
     index_columns: Optional[Sequence[Sequence[str]]] = None,
     special_instructions: Optional[s3.S3Instructions] = None,
 ):
@@ -164,7 +164,7 @@ def read(
     is_legacy_parquet: bool = False,
     is_refreshing: bool = False,
     file_layout: Optional[ParquetFileLayout] = None,
-    table_definition: Optional[TableDefinitionAlias] = None,
+    table_definition: Optional[TableDefinitionLike] = None,
     special_instructions: Optional[s3.S3Instructions] = None,
 ) -> Table:
     """ Reads in a table from a single parquet, metadata file, or directory with recognized layout.
@@ -233,7 +233,7 @@ def delete(path: str) -> None:
 def write(
     table: Table,
     path: str,
-    table_definition: Optional[TableDefinitionAlias] = None,
+    table_definition: Optional[TableDefinitionLike] = None,
     col_instructions: Optional[List[ColumnInstruction]] = None,
     compression_codec_name: Optional[str] = None,
     max_dictionary_keys: Optional[int] = None,
@@ -296,7 +296,7 @@ def write(
 def write_partitioned(
         table: Union[Table, PartitionedTable],
         destination_dir: str,
-        table_definition: Optional[TableDefinitionAlias] = None,
+        table_definition: Optional[TableDefinitionLike] = None,
         col_instructions: Optional[List[ColumnInstruction]] = None,
         compression_codec_name: Optional[str] = None,
         max_dictionary_keys: Optional[int] = None,
@@ -377,7 +377,7 @@ def write_partitioned(
 def batch_write(
     tables: List[Table],
     paths: List[str],
-    table_definition: Optional[TableDefinitionAlias] = None,
+    table_definition: Optional[TableDefinitionLike] = None,
     col_instructions: Optional[List[ColumnInstruction]] = None,
     compression_codec_name: Optional[str] = None,
     max_dictionary_keys: Optional[int] = None,

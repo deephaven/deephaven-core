@@ -17,7 +17,7 @@ from deephaven.column import InputColumn
 from deephaven.dtypes import DType, Duration, Instant
 from deephaven.execution_context import ExecutionContext
 from deephaven.jcompat import j_lambda, j_list_to_list, to_sequence
-from deephaven.table import Table, TableDefinition, TableDefinitionAlias
+from deephaven.table import Table, TableDefinition, TableDefinitionLike
 from deephaven.update_graph import auto_locking_ctx
 
 _JTableFactory = jpy.get_type("io.deephaven.engine.table.TableFactory")
@@ -285,7 +285,7 @@ class InputTable(Table):
         return j_list_to_list(self.j_input_table.getValueNames())
 
 
-def input_table(col_defs: Optional[TableDefinitionAlias] = None, init_table: Table = None,
+def input_table(col_defs: Optional[TableDefinitionLike] = None, init_table: Table = None,
                 key_cols: Union[str, Sequence[str]] = None) -> InputTable:
     """Creates an in-memory InputTable from either column definitions or an initial table. When key columns are
     provided, the InputTable will be keyed, otherwise it will be append-only.
@@ -298,7 +298,7 @@ def input_table(col_defs: Optional[TableDefinitionAlias] = None, init_table: Tab
     The keyed input table has keys for each row and supports addition/deletion/modification of rows by the keys.
 
     Args:
-        col_defs (Optional[TableDefinitionAlias]): the table definition
+        col_defs (Optional[TableDefinitionLike]): the table definition
         init_table (Table): the initial table
         key_cols (Union[str, Sequence[str]): the name(s) of the key column(s)
 

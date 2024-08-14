@@ -17,6 +17,7 @@ from typing import Sequence, List, Union, Protocol, Mapping, Iterable
 
 import jpy
 import numpy as np
+import sys
 
 from deephaven import DHError
 from deephaven import dtypes
@@ -408,8 +409,15 @@ def _sort_column(col, dir_):
         _JColumnName.of(col)))
 
 
-TableDefinitionAlias = Union['TableDefinition', Mapping[str, dtypes.DType], Iterable[ColumnDefinition]]
-"""The TableDefinition type alias"""
+if sys.version_info >= (3, 10):
+    # novermin
+    from typing import TypeAlias
+    TableDefinitionLike : TypeAlias = 'TableDefinition' | Mapping[str, dtypes.DType] | Iterable[ColumnDefinition] | jpy.JType
+    """A Union representing objects that can be coerced into a TableDefinition."""
+else:
+    TableDefinitionLike = Union['TableDefinition', Mapping[str, dtypes.DType], Iterable[ColumnDefinition], jpy.JType]
+    """A Union representing objects that can be coerced into a TableDefinition."""
+
 
 class TableDefinition(JObjectWrapper, Mapping):
     """A Deephaven table definition, as a mapping from column name to ColumnDefinition."""
@@ -417,7 +425,7 @@ class TableDefinition(JObjectWrapper, Mapping):
     j_object_type = _JTableDefinition
 
     @staticmethod
-    def _to_j_table_definition(table_definition: TableDefinitionAlias) -> jpy.JType:
+    def _to_j_table_definition(table_definition: TableDefinitionLike) -> jpy.JType:
         if isinstance(table_definition, _JTableDefinition):
             return table_definition
         if isinstance(table_definition, TableDefinition):
@@ -433,7 +441,7 @@ class TableDefinition(JObjectWrapper, Mapping):
             raise DHError(f"Unexpected table_definition type: {type(table_definition)}")
         return _JTableDefinition.of([col.j_column_definition for col in column_definitions])
 
-    def __init__(self, table_definition: TableDefinitionAlias):
+    def __init__(self, table_definition: TableDefinitionLike):
         self.j_table_definition = TableDefinition._to_j_table_definition(table_definition)
 
     @property
@@ -2407,7 +2415,7 @@ class PartitionedTable(JObjectWrapper):
                                key_cols: Union[str, List[str]] = None,
                                unique_keys: bool = None,
                                constituent_column: str = None,
-                               constituent_table_definition: Optional[TableDefinitionAlias] = None,
+                               constituent_table_definition: Optional[TableDefinitionLike] = None,
                                constituent_changes_permitted: bool = None) -> PartitionedTable:
         """Creates a PartitionedTable from the provided underlying partitioned Table.
 
@@ -2428,7 +2436,7 @@ class PartitionedTable(JObjectWrapper):
             key_cols (Union[str, List[str]]): the key column name(s) of 'table'
             unique_keys (bool): whether the keys in 'table' are guaranteed to be unique
             constituent_column (str): the constituent column name in 'table'
-            constituent_table_definition (Optional[TableDefinitionAlias]): the table definitions of the constituent table
+            constituent_table_definition (Optional[TableDefinitionLike]): the table definitions of the constituent table
             constituent_changes_permitted (bool): whether the values of the constituent column can change
 
         Returns:
@@ -2462,7 +2470,7 @@ class PartitionedTable(JObjectWrapper):
     @classmethod
     def from_constituent_tables(cls,
                                 tables: List[Table],
-                                constituent_table_definition: Optional[TableDefinitionAlias] = None) -> PartitionedTable:
+                                constituent_table_definition: Optional[TableDefinitionLike] = None) -> PartitionedTable:
         """Creates a PartitionedTable with a single column named '__CONSTITUENT__' containing the provided constituent
         tables.
 
@@ -2472,7 +2480,7 @@ class PartitionedTable(JObjectWrapper):
 
         Args:
             tables (List[Table]): the constituent tables
-            constituent_table_definition (Optional[TableDefinitionAlias]): the table definition compatible with all the
+            constituent_table_definition (Optional[TableDefinitionLike]): the table definition compatible with all the
                 constituent tables, default is None
 
         Returns:
