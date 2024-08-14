@@ -161,10 +161,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     }
 
     public static Class<?> getVectorType(Class<?> declaredType) {
-        if (declaredType == boolean.class || declaredType == Boolean.class) {
-            return ObjectVector.class;
-        }
-        return VectorFactory.forElementType(TypeUtils.getUnboxedType(declaredType)).vectorType();
+        return VectorFactory.forElementType(declaredType).vectorType();
     }
 
     @Override
