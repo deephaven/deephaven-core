@@ -25,7 +25,7 @@ from deephaven._jpy import strict_cast
 from deephaven._wrapper import JObjectWrapper
 from deephaven._wrapper import unwrap
 from deephaven.agg import Aggregation
-from deephaven.column import ColumnDefinition
+from deephaven.column import col_def, ColumnDefinition
 from deephaven.filters import Filter, and_, or_
 from deephaven.jcompat import j_unary_operator, j_binary_operator, j_map_to_dict, j_hashmap
 from deephaven.jcompat import to_sequence, j_array_list
@@ -410,12 +410,22 @@ def _sort_column(col, dir_):
 
 
 if sys.version_info >= (3, 10):
-    # novermin
-    from typing import TypeAlias
-    TableDefinitionLike : TypeAlias = 'TableDefinition' | Mapping[str, dtypes.DType] | Iterable[ColumnDefinition] | jpy.JType
+    from typing import TypeAlias # novermin
+
+    TableDefinitionLike: TypeAlias = Union[
+        "TableDefinition",
+        Mapping[str, dtypes.DType],
+        Iterable[ColumnDefinition],
+        jpy.JType,
+    ]
     """A Union representing objects that can be coerced into a TableDefinition."""
 else:
-    TableDefinitionLike = Union['TableDefinition', Mapping[str, dtypes.DType], Iterable[ColumnDefinition], jpy.JType]
+    TableDefinitionLike = Union[
+        "TableDefinition",
+        Mapping[str, dtypes.DType],
+        Iterable[ColumnDefinition],
+        jpy.JType,
+    ]
     """A Union representing objects that can be coerced into a TableDefinition."""
 
 
@@ -426,23 +436,51 @@ class TableDefinition(JObjectWrapper, Mapping):
 
     @staticmethod
     def _to_j_table_definition(table_definition: TableDefinitionLike) -> jpy.JType:
-        if isinstance(table_definition, _JTableDefinition):
-            return table_definition
         if isinstance(table_definition, TableDefinition):
             return table_definition.j_table_definition
+        if isinstance(table_definition, _JTableDefinition):
+            return table_definition
         if isinstance(table_definition, Mapping):
+            for name in table_definition.keys():
+                if not isinstance(name, str):
+                    raise DHError(
+                        f"Expected TableDefinitionLike Mapping to contain str keys, found type {type(name)}"
+                    )
+            for data_type in table_definition.values():
+                if not isinstance(data_type, dtypes.DType):
+                    raise DHError(
+                        f"Expected TableDefinitionLike Mapping to contain DType values, found type {type(data_type)}"
+                    )
             column_definitions = [
-                ColumnDefinition.of(name, data_type)
-                for name, data_type in table_definition.items()
+                col_def(name, data_type) for name, data_type in table_definition.items()
             ]
         elif isinstance(table_definition, Iterable):
+            for column_definition in table_definition:
+                if not isinstance(column_definition, ColumnDefinition):
+                    raise DHError(
+                        f"Expected TableDefinitionLike Iterable to contain ColumnDefinition values, found type {type(column_definition)}"
+                    )
             column_definitions = table_definition
         else:
-            raise DHError(f"Unexpected table_definition type: {type(table_definition)}")
-        return _JTableDefinition.of([col.j_column_definition for col in column_definitions])
+            raise DHError(
+                f"Unexpected TableDefinitionLike type: {type(table_definition)}"
+            )
+        return _JTableDefinition.of(
+            [col.j_column_definition for col in column_definitions]
+        )
 
     def __init__(self, table_definition: TableDefinitionLike):
-        self.j_table_definition = TableDefinition._to_j_table_definition(table_definition)
+        """Construct a TableDefinition.
+
+        Args:
+            table_definition (TableDefinitionLike): The columns to read. If None, all columns are read.
+
+        Returns:
+            The TableDefinition
+        """
+        self.j_table_definition = TableDefinition._to_j_table_definition(
+            table_definition
+        )
 
     @property
     def j_object(self) -> jpy.JType:
@@ -452,6 +490,18 @@ class TableDefinition(JObjectWrapper, Mapping):
     def table(self) -> Table:
         """This table definition as a table."""
         return Table(_JTableTools.metaTable(self.j_table_definition))
+
+    def keys(self):
+        """The column names as a dictview."""
+        return self._dict.keys()
+
+    def items(self):
+        """The column name, column definition tuples as a dictview."""
+        return self._dict.items()
+
+    def values(self):
+        """The column definitions as a dictview."""
+        return self._dict.values()
 
     @cached_property
     def _dict(self) -> Dict[str, ColumnDefinition]:
@@ -483,15 +533,6 @@ class TableDefinition(JObjectWrapper, Mapping):
 
     def __hash__(self):
         return JObjectWrapper.__hash__(self)
-
-    def keys(self):
-        return self._dict.keys()
-
-    def items(self):
-        return self._dict.items()
-
-    def values(self):
-        return self._dict.values()
 
 
 class Table(JObjectWrapper):

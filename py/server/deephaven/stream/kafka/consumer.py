@@ -9,7 +9,7 @@ from warnings import warn
 
 from deephaven import dtypes
 from deephaven._wrapper import JObjectWrapper
-from deephaven.column import ColumnDefinition
+from deephaven.column import col_def
 from deephaven.dherror import DHError
 from deephaven.dtypes import DType
 from deephaven.jcompat import j_hashmap, j_properties, j_array_list
@@ -449,9 +449,9 @@ def json_spec(col_defs: Union[Dict[str, DType], List[Tuple[str, DType]]], mappin
     """
     try:
         if isinstance(col_defs, dict):
-            col_defs = [ColumnDefinition.of(k, v).j_column_definition for k, v in col_defs.items()]
+            col_defs = [col_def(k, v).j_column_definition for k, v in col_defs.items()]
         else:
-            col_defs = [ColumnDefinition.of(*t).j_column_definition for t in col_defs]
+            col_defs = [col_def(*t).j_column_definition for t in col_defs]
 
         if mapping is None:
             return KeyValueSpec(j_spec=_JKafkaTools_Consume.jsonSpec(col_defs))

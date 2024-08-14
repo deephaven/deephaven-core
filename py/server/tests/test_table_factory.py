@@ -328,7 +328,7 @@ class TableFactoryTestCase(BaseTestCase):
         with self.subTest("from table definition"):
             append_only_input_table = input_table(col_defs=t.definition)
             self.assertEqual(append_only_input_table.key_names, [])
-            self.assertEqual(append_only_input_table.value_names, [col.name for col in cols])
+            self.assertEqual(append_only_input_table.value_names, [col._column_definition.name for col in cols])
             append_only_input_table.add(t)
             self.assertEqual(append_only_input_table.size, 2)
             append_only_input_table.add(t)
@@ -336,7 +336,7 @@ class TableFactoryTestCase(BaseTestCase):
 
             keyed_input_table = input_table(col_defs=t.definition, key_cols="String")
             self.assertEqual(keyed_input_table.key_names, ["String"])
-            self.assertEqual(keyed_input_table.value_names, [col.name for col in cols if col.name != "String"])
+            self.assertEqual(keyed_input_table.value_names, [col._column_definition.name for col in cols if col._column_definition.name != "String"])
             keyed_input_table.add(t)
             self.assertEqual(keyed_input_table.size, 2)
             keyed_input_table.add(t)
@@ -345,14 +345,14 @@ class TableFactoryTestCase(BaseTestCase):
         with self.subTest("from init table"):
             append_only_input_table = input_table(init_table=t)
             self.assertEqual(append_only_input_table.key_names, [])
-            self.assertEqual(append_only_input_table.value_names, [col.name for col in cols])
+            self.assertEqual(append_only_input_table.value_names, [col._column_definition.name for col in cols])
             self.assertEqual(append_only_input_table.size, 2)
             append_only_input_table.add(t)
             self.assertEqual(append_only_input_table.size, 4)
 
             keyed_input_table = input_table(init_table=t, key_cols="String")
             self.assertEqual(keyed_input_table.key_names, ["String"])
-            self.assertEqual(keyed_input_table.value_names, [col.name for col in cols if col.name != "String"])
+            self.assertEqual(keyed_input_table.value_names, [col._column_definition.name for col in cols if col._column_definition.name != "String"])
             self.assertEqual(keyed_input_table.size, 2)
             keyed_input_table.add(t)
             self.assertEqual(keyed_input_table.size, 2)
@@ -367,7 +367,7 @@ class TableFactoryTestCase(BaseTestCase):
 
             keyed_input_table = input_table(init_table=t, key_cols=["String", "Double"])
             self.assertEqual(keyed_input_table.key_names, ["String", "Double"])
-            self.assertEqual(keyed_input_table.value_names, [col.name for col in cols if col.name != "String" and col.name != "Double"])
+            self.assertEqual(keyed_input_table.value_names, [col._column_definition.name for col in cols if col._column_definition.name != "String" and col._column_definition.name != "Double"])
             self.assertEqual(keyed_input_table.size, 2)
             keyed_input_table.delete(t.select(["String", "Double"]))
             self.assertEqual(keyed_input_table.size, 0)
