@@ -1601,8 +1601,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                         if (liveResultCapture != null) {
                             analyzer.startTrackingPrev();
                             final Map<String, String[]> effects = analyzerContext.calcEffects();
-                            final SelectOrUpdateListener soul = new SelectOrUpdateListener(updateDescription, this,
-                                    resultTable, effects, analyzer);
+                            final SelectOrUpdateListener soul = new SelectOrUpdateListener(
+                                    updateDescription, this, resultTable, effects, analyzer);
                             liveResultCapture.transferTo(soul);
                             addUpdateListener(soul);
                             ConstituentDependency.install(resultTable, soul);
