@@ -606,6 +606,55 @@ func doQueryTest(inputRec arrow.Record, t *testing.T, exec execBatchOrSerial, op
 	return recs
 }
 
+func doQueryTestALot(inputRec arrow.Record, t *testing.T, exec execBatchOrSerial, op queryOp) (zamboni []arrow.Record) {
+	defer inputRec.Release()
+
+	ctx := context.Background()
+
+	c, err := client.NewClient(ctx, test_tools.GetHost(), test_tools.GetPort(), test_tools.GetAuthType(), test_tools.GetAuthToken())
+	if err != nil {
+		t.Fatalf("NewClient %s", err.Error())
+	}
+	defer c.Close()
+
+	input, err := c.ImportTable(ctx, inputRec)
+	if err != nil {
+		t.Errorf("ImportTable %s", err.Error())
+		return nil
+	}
+	defer input.Release(ctx)
+
+	query := op(input)
+
+	for i := 0; i < 60; i++ {
+		t.Logf("Hi this is iteration %d", i)
+
+		tables, err := exec(c, ctx, query...)
+		if err != nil {
+			t.Errorf("ExecBatch %s", err.Error())
+			return nil
+		}
+
+		var recs []arrow.Record
+		for _, table := range tables {
+			rec, err := table.Snapshot(ctx)
+			if err != nil {
+				t.Errorf("Snapshot %s", err.Error())
+				return nil
+			}
+			recs = append(recs, rec)
+			err = table.Release(ctx)
+			if err != nil {
+				t.Errorf("Release %s", err.Error())
+				return nil
+			}
+		}
+		zamboni = recs
+		time.Sleep(10 * time.Second)
+	}
+	return
+}
+
 func TestEmptyUpdateQueryBatched(t *testing.T) {
 	emptyUpdateQuery(t, (*client.Client).ExecBatch)
 }
@@ -760,7 +809,7 @@ func TestWhereQuerySerial(t *testing.T) {
 }
 
 func whereQuery(t *testing.T, exec execBatchOrSerial) {
-	results := doQueryTest(test_tools.ExampleRecord(), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
+	results := doQueryTestALot(test_tools.ExampleRecord(), t, exec, func(tbl *client.TableHandle) []client.QueryNode {
 		return []client.QueryNode{tbl.Query().Where("Volume % 1000 != 0")}
 	})
 	defer results[0].Release()
