@@ -65,7 +65,7 @@ public class FormulaAnalyzer {
 
     public static Result analyze(final String rawFormulaString,
             final Map<String, ColumnDefinition<?>> columnDefinitionMap,
-            final QueryLanguageParser.Result queryLanguageResult) throws Exception {
+            final QueryLanguageParser.Result queryLanguageResult) {
 
         log.debug().append("Expression (after language conversion) : ")
                 .append(queryLanguageResult.getConvertedExpression())

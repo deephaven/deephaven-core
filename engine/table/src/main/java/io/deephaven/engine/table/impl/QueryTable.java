@@ -1498,8 +1498,7 @@ public class QueryTable extends BaseTable<QueryTable> {
     public SelectValidationResult validateSelect(final SelectColumn... selectColumns) {
         final SelectColumn[] clones = SelectColumn.copyFrom(selectColumns);
         SelectAndViewAnalyzer.AnalyzerContext analyzerContext = SelectAndViewAnalyzer.createContext(
-                this, SelectAndViewAnalyzer.Mode.SELECT_STATIC, true,
-                false, clones);
+                this, SelectAndViewAnalyzer.Mode.SELECT_STATIC, true, false, clones);
         return new SelectValidationResult(analyzerContext.createAnalyzer(), clones);
     }
 

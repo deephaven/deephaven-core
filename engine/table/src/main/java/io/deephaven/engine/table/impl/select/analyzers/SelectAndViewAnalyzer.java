@@ -484,11 +484,8 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                 if (layerIndex == Layer.PARENT_TABLE_INDEX) {
                     // this is a preserved parent column
                     mcsBuilder.setAll(dep);
-                } else if (layerIndex != Layer.UNSET_INDEX) { // Forward-looking
-                    mcsBuilder.setAll(layers.get(layerIndex).getModifiedColumnSet());
                 } else {
-                    // we should have blown up during initDef if this is the case
-                    throw new IllegalStateException("Column " + dep + " not found in any layer of the analyzer");
+                    mcsBuilder.setAll(layers.get(layerIndex).getModifiedColumnSet());
                 }
             }
         }
@@ -504,10 +501,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                 final String[] dependencies) {
             for (final String dep : dependencies) {
                 final int layerIndex = getLayerIndexFor(dep);
-                if (layerIndex == Layer.UNSET_INDEX) {
-                    // we should have blown up during initDef if this is the case
-                    throw new IllegalStateException("Column " + dep + " not found in any layer of the analyzer");
-                } else if (layerIndex != Layer.PARENT_TABLE_INDEX) {
+                if (layerIndex != Layer.PARENT_TABLE_INDEX) {
                     // note that implicitly preserved columns do not belong to a layer.
                     layerDependencySet.or(layers.get(layerIndex).getLayerDependencySet());
                 }
