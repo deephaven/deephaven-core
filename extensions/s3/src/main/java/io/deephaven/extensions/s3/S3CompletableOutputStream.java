@@ -76,7 +76,6 @@ class S3CompletableOutputStream extends CompletableOutputStream {
     @Override
     public void write(final int b) throws IOException {
         write((dest, destOff, destCount) -> {
-            verifyNotFull(dest);
             dest.put((byte) b);
             return 1;
         }, 0, 1);
@@ -90,7 +89,6 @@ class S3CompletableOutputStream extends CompletableOutputStream {
     @Override
     public void write(final byte @NotNull [] b, final int off, final int len) throws IOException {
         write((dest, currentOffset, remainingLength) -> {
-            verifyNotFull(dest);
             final int lengthToWrite = Math.min(remainingLength, dest.remaining());
             dest.put(b, currentOffset, lengthToWrite);
             return lengthToWrite;
@@ -100,7 +98,8 @@ class S3CompletableOutputStream extends CompletableOutputStream {
     @FunctionalInterface
     private interface DataWriter {
         /**
-         * Writes data to the given destination buffer, starting from the current offset in the source data.
+         * Writes source data from a single {@code outputStream.write} call to the given destination buffer, starting
+         * from the current offset in the source data.
          *
          * @param dest the destination buffer to write data to
          * @param currentOffset the current offset in the source data
@@ -113,13 +112,13 @@ class S3CompletableOutputStream extends CompletableOutputStream {
     }
 
     /**
-     * Writes data to S3 using the provided {@link DataWriter}.
+     * Writes source data from a single {@code outputStream.write} call to S3 using the provided {@link DataWriter}.
      *
      * @param writer the {@link DataWriter} used to write data to the destination buffer
      * @param off the offset in the source data from which to start writing
      * @param len the length of the data to be written
      *
-     * @throws IOException if an I/O error occurs during the write operation or if the stream is marked as done
+     * @throws IOException if an I/O error occurs during the write operation or if the stream is not {@link State#OPEN}
      */
     private void write(@NotNull final DataWriter writer, int off, int len) throws IOException {
         if (state != State.OPEN) {
@@ -229,17 +228,6 @@ class S3CompletableOutputStream extends CompletableOutputStream {
             // TODO(deephaven-core#5935): Experiment with buffer pool here
             buffer = ByteBuffer.allocate(writePartSize);
             partNumber = INVALID_PART_NUMBER;
-        }
-    }
-
-    /**
-     * Verifies that there is space available in the destination buffer to write more data.
-     */
-    private void verifyNotFull(final ByteBuffer dest) {
-        if (!dest.hasRemaining()) {
-            // This should not happen because we flush the buffer once it is full
-            throw new IllegalStateException("No space available in the destination buffer to add additional bytes " +
-                    "for uri " + uri);
         }
     }
 
