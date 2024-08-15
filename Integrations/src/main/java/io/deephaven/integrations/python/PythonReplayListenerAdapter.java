@@ -77,7 +77,7 @@ public class PythonReplayListenerAdapter extends InstrumentedTableUpdateListener
             @Nullable NotificationQueue.Dependency... dependencies) {
         super(description, source, retain);
         this.dependencies = dependencies;
-        this.pyListenerCallable = Objects.requireNonNull(PythonUtils.pyListenerFunc(pyListener));
+        this.pyListenerCallable = PythonUtils.pyListenerFunc(Objects.requireNonNull(pyListener));
         this.pyOnFailureCallback = Objects.requireNonNull(pyOnFailureCallback);
     }
 
