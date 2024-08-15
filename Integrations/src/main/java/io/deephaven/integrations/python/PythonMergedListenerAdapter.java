@@ -59,7 +59,7 @@ public class PythonMergedListenerAdapter extends MergedListener {
             @NotNull PyObject pyOnFailureCallback) {
         super(Arrays.asList(recorders), Arrays.asList(dependencies), listenerDescription, null);
         Arrays.stream(recorders).forEach(rec -> rec.setMergedListener(this));
-        this.pyListenerCallable = PythonUtils.pyMergeListenerFunc(pyListener);
+        this.pyListenerCallable = PythonUtils.pyMergeListenerFunc(Objects.requireNonNull(pyListener));
         this.pyOnFailureCallback = Objects.requireNonNull(pyOnFailureCallback);
     }
 
