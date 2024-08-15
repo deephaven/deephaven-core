@@ -51,6 +51,8 @@ dependencies {
 
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly libs.slf4j.simple
+
+    implementation project(':flightsql')
 }
 
 test.systemProperty "PeriodicUpdateGraph.allowUnitTestMode", false

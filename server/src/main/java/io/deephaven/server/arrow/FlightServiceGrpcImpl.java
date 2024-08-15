@@ -7,6 +7,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteStringAccess;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.rpc.Code;
+import io.deephaven.auth.AuthContext;
 import io.deephaven.auth.AuthenticationException;
 import io.deephaven.auth.AuthenticationRequestHandler;
 import io.deephaven.auth.BasicAuthMarshaller;
@@ -23,7 +24,6 @@ import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketRouter;
-import io.deephaven.auth.AuthContext;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
@@ -156,14 +156,14 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                 return;
             }
             responseObserver.onCompleted();
-//            responseObserver.onError(
-//                    Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, "no authentication details provided"));
+            // responseObserver.onError(
+            // Exceptions.statusRuntimeException(Code.UNAUTHENTICATED, "no authentication details provided"));
         }
     }
 
     @Override
     public void doAction(Flight.Action request, StreamObserver<Flight.Result> responseObserver) {
-        super.doAction(request, responseObserver);
+        ticketRouter.doAction(sessionService.getOptionalSession(), request, responseObserver);
     }
 
     @Override

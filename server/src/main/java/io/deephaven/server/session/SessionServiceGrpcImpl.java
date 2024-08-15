@@ -51,6 +51,13 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
     public static final String DEEPHAVEN_SESSION_ID = Auth2Constants.AUTHORIZATION_HEADER;
     public static final Metadata.Key<String> SESSION_HEADER_KEY =
             Metadata.Key.of(Auth2Constants.AUTHORIZATION_HEADER, Metadata.ASCII_STRING_MARSHALLER);
+
+    public static final Metadata.Key<String> SET_COOKIE =
+            Metadata.Key.of("Set-Cookie", Metadata.ASCII_STRING_MARSHALLER);
+
+    public static final Metadata.Key<String> COOKIE =
+            Metadata.Key.of("cookie", Metadata.ASCII_STRING_MARSHALLER);
+
     public static final Context.Key<SessionState> SESSION_CONTEXT_KEY =
             Context.key(Auth2Constants.AUTHORIZATION_HEADER);
 
@@ -305,6 +312,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                 final SessionService.TokenExpiration exp = service.refreshToken(session);
                 if (exp != null) {
                     md.put(SESSION_HEADER_KEY, Auth2Constants.BEARER_PREFIX + exp.token.toString());
+                    md.put(SET_COOKIE, "deephaven_cookie=" + exp.token.toString());
                 }
             }
         }
@@ -349,6 +357,16 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                 }
             }
 
+            final String cookie = metadata.get(COOKIE);
+            if (session == null && cookie != null) {
+                try {
+                    session = service.getSessionForCookie(cookie);
+                } catch (AuthenticationException e) {
+                    //
+                }
+            }
+
+
             // Lookup the session using Flight Auth 2.0 token.
             final String token = metadata.get(SESSION_HEADER_KEY);
             if (session == null && token != null) {
@@ -360,6 +378,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
                     return new ServerCall.Listener<>() {};
                 }
             }
+
 
             // On the outer half of the call we'll install the context that includes our session.
             final InterceptedCall<ReqT, RespT> serverCall = new InterceptedCall<>(service, call, session);

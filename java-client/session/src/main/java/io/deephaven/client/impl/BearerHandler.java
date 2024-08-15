@@ -23,6 +23,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.deephaven.client.impl.Authentication.AUTHORIZATION_HEADER;
+import static io.deephaven.client.impl.Authentication.SET_COOKIE;
 
 /**
  * As a {@link ClientInterceptor}, this parser the responses for the bearer token.
@@ -87,6 +88,7 @@ public final class BearerHandler extends CallCredentials implements ClientInterc
         }
         final Metadata headers = new Metadata();
         headers.put(AUTHORIZATION_HEADER, BEARER_PREFIX + bearerToken);
+        headers.put(SET_COOKIE, "deephaven_authorization_cookie=" + bearerToken);
         applier.apply(headers);
     }
 

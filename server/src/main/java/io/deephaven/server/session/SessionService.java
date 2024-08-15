@@ -350,6 +350,21 @@ public class SessionService {
                 .orElseThrow(AuthenticationException::new);
     }
 
+    public SessionState getSessionForCookie(final String cookie) throws AuthenticationException {
+        try {
+            // deephaven_cookie=7a8a9245-58c5-4b48-82cb-623612f27f28
+            final String token = cookie.split("=")[1];
+            final UUID uuid = UuidCreator.fromString(token);
+            SessionState session = getSessionForToken(uuid);
+            if (session != null) {
+                return session;
+            }
+        } catch (RuntimeException e) {
+            // ignore
+        }
+        throw new AuthenticationException();
+    }
+
     /**
      * Lookup a session by token.
      *

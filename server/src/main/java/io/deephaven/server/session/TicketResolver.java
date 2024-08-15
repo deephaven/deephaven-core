@@ -6,7 +6,11 @@ package io.deephaven.server.session;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
+import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flight.impl.Flight;
+import org.apache.arrow.flight.impl.Flight.Action;
+import org.apache.arrow.flight.impl.Flight.FlightDescriptor;
+import org.apache.arrow.flight.impl.Flight.Result;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.ByteBuffer;
@@ -175,4 +179,34 @@ public interface TicketResolver {
      * @param visitor the callback to invoke per descriptor path
      */
     void forAllFlightInfo(@Nullable SessionState session, Consumer<Flight.FlightInfo> visitor);
+
+    default boolean supports(FlightDescriptor descriptor) {
+        switch (descriptor.getType()) {
+            case PATH:
+                return supportsPath(descriptor);
+            case CMD:
+                return supportsCommand(descriptor);
+            default:
+                throw new IllegalArgumentException("Unexpected type " + descriptor.getType());
+        }
+    }
+
+    default boolean supportsPath(FlightDescriptor descriptor) {
+        return descriptor.getPathCount() > 0 && flightDescriptorRoute().equals(descriptor.getPath(0));
+    }
+
+    // This is hacky, because there is no guarantee that two separate Flight services won't have overlapping command
+    // bytes; for example, consider a simple 4 byte int that represents a command.
+    default boolean supportsCommand(FlightDescriptor descriptor) {
+        return false;
+    }
+
+    default boolean supportsDoActionType(String type) {
+        return false;
+    }
+
+    default void doAction(@Nullable final SessionState session, Action request,
+            StreamObserver<Result> responseObserver) {
+        throw new UnsupportedOperationException();
+    }
 }

@@ -6,17 +6,23 @@ plugins {
 description = 'The Deephaven flight SQL library'
 
 dependencies {
+    implementation project(':server')
+    implementation project(':proto:proto-backplane-grpc-flight')
+
     implementation libs.arrow.flight.sql
-    implementation project(path: ':engine-sql')
+    implementation project(':engine-sql')
     implementation project(':extensions-barrage')
 
     testImplementation project(':server')
     testImplementation project(':extensions-csv')
     implementation libs.slf4j.jul.to.slf4j
+
     implementation libs.dagger
-    testImplementation project(path: ':server-jetty')
-    testImplementation project(path: ':server-test-utils')
     annotationProcessor libs.dagger.compiler
+
+    testImplementation project(':server-jetty')
+    testImplementation project(':server-test-utils')
+
     testImplementation libs.dagger
     testAnnotationProcessor libs.dagger.compiler
 

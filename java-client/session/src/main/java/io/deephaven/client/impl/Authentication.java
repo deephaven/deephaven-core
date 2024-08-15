@@ -30,6 +30,8 @@ public final class Authentication {
      */
     public static final Key<String> AUTHORIZATION_HEADER = Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
 
+    public static final Key<String> SET_COOKIE = Key.of("Set-Cookie", Metadata.ASCII_STRING_MARSHALLER);
+
     /**
      * Starts an authentication request.
      *

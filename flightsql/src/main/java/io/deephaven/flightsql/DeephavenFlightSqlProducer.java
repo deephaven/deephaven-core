@@ -4,19 +4,15 @@
 package io.deephaven.flightsql;
 
 import com.google.protobuf.Any;
-import com.google.protobuf.ByteString;
 import com.google.protobuf.ProtocolStringList;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.sql.Sql;
-import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.TableFactory;
 import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.qst.column.Column;
-import io.deephaven.qst.type.Type;
 import org.apache.arrow.flight.CallStatus;
 import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.flight.sql.FlightSqlProducer;

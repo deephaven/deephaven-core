@@ -15,12 +15,19 @@ import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.util.SafeCloseable;
+import io.grpc.stub.ServerCalls;
+import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flight.impl.Flight;
+import org.apache.arrow.flight.impl.Flight.Action;
+import org.apache.arrow.flight.impl.Flight.FlightDescriptor.DescriptorType;
+import org.apache.arrow.flight.impl.Flight.Result;
+import org.apache.arrow.flight.impl.FlightServiceGrpc;
 import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -32,12 +39,14 @@ public class TicketRouter {
             new KeyedObjectHashMap<>(RESOLVER_OBJECT_DESCRIPTOR_ID);
 
     private final TicketResolver.Authorization authorization;
+    private final Set<TicketResolver> resolvers;
 
     @Inject
     public TicketRouter(
             final AuthorizationProvider authorizationProvider,
             final Set<TicketResolver> resolvers) {
         this.authorization = authorizationProvider.getTicketResolverAuthorization();
+        this.resolvers = Objects.requireNonNull(resolvers);
         resolvers.forEach(resolver -> {
             if (!byteResolverMap.add(resolver)) {
                 throw new IllegalArgumentException("Duplicate ticket resolver for ticket route "
@@ -309,6 +318,24 @@ public class TicketRouter {
         byteResolverMap.iterator().forEachRemaining(resolver -> resolver.forAllFlightInfo(session, visitor));
     }
 
+    public void doAction(@Nullable final SessionState session, Action request,
+            StreamObserver<Result> responseObserver) {
+        final String type = request.getType();
+        TicketResolver actionHandler = null;
+        for (TicketResolver resolver : resolvers) {
+            if (resolver.supportsDoActionType(type)) {
+                actionHandler = resolver;
+                // TODO: should we throw error if multiple support same type?
+                break;
+            }
+        }
+        if (actionHandler == null) {
+            ServerCalls.asyncUnimplementedUnaryCall(FlightServiceGrpc.getDoActionMethod(), responseObserver);
+            return;
+        }
+        actionHandler.doAction(session, request, responseObserver);
+    }
+
     public static Flight.FlightInfo getFlightInfo(final Table table,
             final Flight.FlightDescriptor descriptor,
             final Flight.Ticket ticket) {
@@ -338,23 +365,25 @@ public class TicketRouter {
                 throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                         "Could not resolve '" + logId + "': flight descriptor does not have route path");
             }
-
             final String route = descriptor.getPath(0);
             final TicketResolver resolver = descriptorResolverMap.get(route);
             if (resolver == null) {
                 throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                         "Could not resolve '" + logId + "': no resolver for route '" + route + "'");
             }
-
             return resolver;
-        } else {
-            // command resolver - we only have flight-sql for now.
-            final TicketResolver resolver = descriptorResolverMap.get("flight-sql");
-            if (resolver == null) {
-                throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                        "Could not resolve '" + logId + "': no resolver for route 'flight-sql'");
+        } else if (descriptor.getType() == DescriptorType.CMD) {
+            for (TicketResolver resolver : resolvers) {
+                if (resolver.supportsCommand(descriptor)) {
+                    // todo: error if more than one?
+                    return resolver;
+                }
             }
-            return resolver;
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                    "Could not resolve '" + logId + "': no resolver for command");
+        } else {
+            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                    "Could not resolve '" + logId + "': unexpected type");
         }
     }
 
