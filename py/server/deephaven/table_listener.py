@@ -6,7 +6,7 @@
 from abc import ABC, abstractmethod
 from functools import wraps
 from inspect import signature
-from typing import Callable, Union, List, Generator, Dict, Literal, Sequence, Optional
+from typing import Callable, Union, List, Generator, Dict, Sequence, Optional
 
 import jpy
 import numpy
@@ -17,12 +17,12 @@ from deephaven._wrapper import JObjectWrapper
 from deephaven.jcompat import to_sequence, j_list_to_list
 from deephaven.table import Table
 from deephaven._table_reader import _table_reader_all_dict, _table_reader_chunk_dict
-from deephaven.update_graph import UpdateGraph
 
 _JPythonReplayListenerAdapter = jpy.get_type("io.deephaven.integrations.python.PythonReplayListenerAdapter")
 _JTableUpdate = jpy.get_type("io.deephaven.engine.table.TableUpdate")
 _JListenerRecorder = jpy.get_type("io.deephaven.engine.table.impl.ListenerRecorder")
 _JPythonMergedListenerAdapter = jpy.get_type("io.deephaven.integrations.python.PythonMergedListenerAdapter")
+
 
 class TableUpdate(JObjectWrapper):
     """A TableUpdate object represents a table update event.  It contains the added, removed, and modified rows in the
@@ -188,13 +188,25 @@ class TableUpdate(JObjectWrapper):
 
 
 class TableListener(ABC):
-    """An abstract table listener class that should be subclassed by any user table listener class."""
+    """An abstract table listener class that should be subclassed by any user table listener class. It provides a
+    default implementation for the on_error method that simply prints out the error."""
 
     @abstractmethod
     def on_update(self, update: TableUpdate, is_replay: bool) -> None:
         """The required method on a listener object that receives table updates."""
         ...
 
+    def on_error(self, e: Exception) -> None:
+        """The callback method on a listener object that handles the received error. The default implementation simply prints the error.
+
+        Args:
+            e (Exception): the exception that occurred during the listener's execution.
+        """
+        print(f"An error occurred during listener execution: {self}, {e}")
+
+
+def _default_on_error(e: Exception) -> None:
+    print(f"An error occurred during listener execution: {e}")
 
 def _listener_wrapper(table: Table):
     """A decorator to wrap a user listener function or on_update method to receive the numpy-converted Table updates.
@@ -229,17 +241,25 @@ def _wrap_listener_obj(t: Table, listener: TableListener):
     return listener
 
 
+def _error_callback_wrapper(callback: Callable[[Exception], None]):
+    @wraps(callback)
+    def wrapper(e):
+        callback(RuntimeError(e))
+
+    return wrapper
+
 class TableListenerHandle(JObjectWrapper):
     """A handle to manage a table listener's lifecycle."""
     j_object_type = _JPythonReplayListenerAdapter
 
     def __init__(self, t: Table, listener: Union[Callable[[TableUpdate, bool], None], TableListener], description: str = None,
-                 dependencies: Union[Table, Sequence[Table]] = None):
+                 dependencies: Union[Table, Sequence[Table]] = None, on_error: Callable[[Exception], None] = None):
         """Creates a new table listener handle with dependencies.
 
         Table change events are processed by 'listener', which can be either
         (1) a callable (e.g. function) or
-        (2) an instance of TableListener type which provides an "on_update" method.
+        (2) an instance of a TableListener subclass that must override the abstract "on_update" method, and optionally
+        override the default "on_error" method.
 
         The callable or the on_update method must have the following signatures.
         * (update: TableUpdate, is_replay: bool): support replaying the initial table snapshot and normal table updates
@@ -265,6 +285,13 @@ class TableListenerHandle(JObjectWrapper):
                 the listener is safe, it is not recommended because reading or operating on the result tables of those
                 operations may not be safe. It is best to perform the operations on the dependent tables beforehand,
                 and then add the result tables as dependencies to the listener so that they can be safely read in it.
+            on_error (Callable[[Exception], None]): a callback function to be invoked when an error occurs during the
+                listener's execution. It should only be set when the listener is a function, not when it is an instance
+                of TableListener. Defaults to None. When None, a default callback function will be provided that simply
+                prints out the received exception. If the callback function itself raises an exception, the new exception
+                will be logged in the Deephaven server log and will not be further processed by the server.
+
+
 
         Raises:
             DHError
@@ -277,14 +304,23 @@ class TableListenerHandle(JObjectWrapper):
         self.dependencies = to_sequence(dependencies)
 
         if isinstance(listener, TableListener):
+            if on_error:
+                raise DHError(message="Invalid on_error argument for listeners of TableListener type which already have an on_error method.")
             self.listener_wrapped = _wrap_listener_obj(t, listener)
+            on_error_callback = _error_callback_wrapper(listener.on_error)
         elif callable(listener):
             self.listener_wrapped = _wrap_listener_func(t, listener)
+            if on_error:
+                on_error_callback = _error_callback_wrapper(on_error)
+            else:
+                on_error_callback = _error_callback_wrapper(_default_on_error)
         else:
             raise DHError(message="listener is neither callable nor TableListener object")
 
         try:
-            self.listener_adapter = _JPythonReplayListenerAdapter.create(description, t.j_table, False, self.listener_wrapped, self.dependencies)
+            self.listener_adapter = _JPythonReplayListenerAdapter.create(description, t.j_table, False,
+                                                                         self.listener_wrapped, on_error_callback,
+                                                                         self.dependencies)
         except Exception as e:
             raise DHError(e, "failed to create a table listener.") from e
         self.started = False
@@ -326,7 +362,7 @@ class TableListenerHandle(JObjectWrapper):
 
 
 def listen(t: Table, listener: Union[Callable[[TableUpdate, bool], None], TableListener], description: str = None, do_replay: bool = False,
-           dependencies: Union[Table, Sequence[Table]] = None) -> TableListenerHandle:
+           dependencies: Union[Table, Sequence[Table]] = None, on_error: Callable[[Exception], None] = None) -> TableListenerHandle:
     """This is a convenience function that creates a TableListenerHandle object and immediately starts it to listen
     for table updates.
 
@@ -352,6 +388,12 @@ def listen(t: Table, listener: Union[Callable[[TableUpdate, bool], None], TableL
             the listener is safe, it is not recommended because reading or operating on the result tables of those
             operations may not be safe. It is best to perform the operations on the dependent tables beforehand,
             and then add the result tables as dependencies to the listener so that they can be safely read in it.
+        on_error (Callable[[Exception], None]): a callback function to be invoked when an error occurs during the
+            listener's execution. It should only be set when the listener is a function, not when it is an instance
+            of TableListener. Defaults to None. When None, a default callback function will be provided that simply
+            prints out the received exception. If the callback function itself raises an exception, the new exception
+            will be logged in the Deephaven server log and will not be further processed by the server.
+
 
     Returns:
         a TableListenerHandle
@@ -359,8 +401,8 @@ def listen(t: Table, listener: Union[Callable[[TableUpdate, bool], None], TableL
     Raises:
         DHError
     """
-    table_listener_handle = TableListenerHandle(t=t, dependencies=dependencies, listener=listener,
-                                                                    description=description)
+    table_listener_handle = TableListenerHandle(t=t, listener=listener, description=description,
+                                                dependencies=dependencies,  on_error=on_error)
     table_listener_handle.start(do_replay=do_replay)
     return table_listener_handle
 
@@ -394,7 +436,8 @@ class _ListenerRecorder (JObjectWrapper):
 
 
 class MergedListener(ABC):
-    """An abstract multi-table listener class that should be subclassed by any user multi-table listener class."""
+    """An abstract multi-table listener class that should be subclassed by any user multi-table listener class. It
+    provides a default implementation for the on_error method that simply prints out the error."""
 
     @abstractmethod
     def on_update(self, updates: Dict[Table, TableUpdate], is_replay: bool) -> None:
@@ -402,6 +445,14 @@ class MergedListener(ABC):
         tables that are listened to.
         """
         ...
+
+    def on_error(self, e: Exception) -> None:
+        """ The callback method on a listener object that handles the received error. The default implementation simply prints the error.
+
+        Args:
+            e (Exception): the exception that occurred during the listener's execution.
+        """
+        print(f"An error occurred during listener execution: {self}, {e}")
 
 
 class MergedListenerHandle(JObjectWrapper):
@@ -413,12 +464,14 @@ class MergedListenerHandle(JObjectWrapper):
         return self.merged_listener_adapter
 
     def __init__(self, tables: Sequence[Table], listener: Union[Callable[[Dict[Table, TableUpdate], bool], None], MergedListener],
-                 description: str = None, dependencies: Union[Table, Sequence[Table]] = None):
+                 description: str = None, dependencies: Union[Table, Sequence[Table]] = None, on_error: Callable[[Exception], None] = None):
         """Creates a new MergedListenerHandle with the provided listener recorders and dependencies.
 
         Table change events are processed by 'listener', which can be either
         (1) a callable (e.g. function) or
-        (2) an instance of MergedListener type which provides an "on_update" method.
+        (2) an instance of a MergedListener subclass that must override the abstract "on_update" method, and optionally
+        override the default "on_error" method.
+
         The callable or the on_update method must have the following signature.
         *(updates: Dict[Table, TableUpdate], is_replay: bool): support replaying the initial table snapshots and normal table updates
         The 'updates' parameter is a dictionary of Table to TableUpdate;
@@ -444,6 +497,12 @@ class MergedListenerHandle(JObjectWrapper):
                 the listener is safe, it is not recommended because reading or operating on the result tables of those
                 operations may not be safe. It is best to perform the operations on the dependent tables beforehand,
                 and then add the result tables as dependencies to the listener so that they can be safely read in it.
+            on_error (Callable[[Exception], None]): a callback function to be invoked when an error occurs during the
+                listener's execution. It should only be set when the listener is a function, not when it is an instance
+                of MergedListener. Defaults to None. When None, a default callback function will be provided that simply
+                prints out the received exception. If the callback function itself raises an exception, the new exception
+                will be logged in the Deephaven server log and will not be further processed by the server.
+
 
         Raises:
             DHError
@@ -457,20 +516,30 @@ class MergedListenerHandle(JObjectWrapper):
         self.dependencies = dependencies
 
         if isinstance(listener, MergedListener):
+            if on_error:
+                raise DHError(message="Invalid on_error argument for listeners of MergedListener type which already have an on_error method.")
             self.listener = listener.on_update
-        else:
+            on_error_callback = _error_callback_wrapper(listener.on_error)
+        elif callable(listener):
             self.listener = listener
+            if on_error:
+                on_error_callback = _error_callback_wrapper(on_error)
+            else:
+                on_error_callback = _error_callback_wrapper(_default_on_error)
+        else:
+            raise DHError(message="listener is neither callable nor MergedListener object")
+
         n_params = len(signature(self.listener).parameters)
         if n_params != 2:
             raise ValueError("merged listener function must have 2 parameters (updates, is_replay).")
-
 
         try:
             self.merged_listener_adapter = _JPythonMergedListenerAdapter.create(
                         to_sequence(self.listener_recorders),
                         to_sequence(self.dependencies),
                         description,
-                        self)
+                        self,
+                        on_error_callback)
             self.started = False
         except Exception as e:
             raise DHError(e, "failed to create a merged listener adapter.") from e
@@ -512,7 +581,6 @@ class MergedListenerHandle(JObjectWrapper):
 
         self.started = True
 
-
     def stop(self) -> None:
         """Stop the listener."""
         if not self.started:
@@ -527,8 +595,8 @@ class MergedListenerHandle(JObjectWrapper):
 
 
 def merged_listen(tables: Sequence[Table], listener: Union[Callable[[Dict[Table, TableUpdate]], None], MergedListener],
-                do_replay: bool = False, description: str = None, dependencies: Union[Table, Sequence[Table]] = None)\
-        -> MergedListenerHandle:
+                do_replay: bool = False, description: str = None, dependencies: Union[Table, Sequence[Table]] = None,
+                  on_error: Callable[[Exception], None] = None) -> MergedListenerHandle:
     """This is a convenience function that creates a MergedListenerHandle object and immediately starts it to
     listen for table updates.
 
@@ -555,8 +623,13 @@ def merged_listen(tables: Sequence[Table], listener: Union[Callable[[Dict[Table,
             the listener is safe, it is not recommended because reading or operating on the result tables of those
             operations may not be safe. It is best to perform the operations on the dependent tables beforehand,
             and then add the result tables as dependencies to the listener so that they can be safely read in it.
+        on_error (Callable[[Exception], None]): a callback function to be invoked when an error occurs during the
+            listener's execution. It should only be set when the listener is a function, not when it is an instance
+            of MergedListener. Defaults to None. When None, a default callback function will be provided that simply
+            prints out the received exception. If the callback function itself raises an exception, the new exception
+            will be logged in the Deephaven server log and will not be further processed by the server.
     """
     merged_listener_handle = MergedListenerHandle(tables=tables, listener=listener,
-                                                  description=description, dependencies=dependencies)
+                                                  description=description, dependencies=dependencies, on_error=on_error)
     merged_listener_handle.start(do_replay=do_replay)
     return merged_listener_handle
