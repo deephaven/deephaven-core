@@ -60,7 +60,7 @@ public class PythonMergedListenerAdapter extends MergedListener {
         super(Arrays.asList(recorders), Arrays.asList(dependencies), listenerDescription, null);
         Arrays.stream(recorders).forEach(rec -> rec.setMergedListener(this));
         this.pyListenerCallable = PythonUtils.pyMergeListenerFunc(pyListener);
-        this.pyOnFailureCallback = pyOnFailureCallback;
+        this.pyOnFailureCallback = Objects.requireNonNull(pyOnFailureCallback);
     }
 
     public static PythonMergedListenerAdapter create(
@@ -108,7 +108,7 @@ public class PythonMergedListenerAdapter extends MergedListener {
     @Override
     protected void propagateErrorDownstream(boolean fromProcess, @NotNull Throwable error,
             TableListener.@Nullable Entry entry) {
-        if (pyOnFailureCallback != null && !pyOnFailureCallback.isNone()) {
+        if (!pyOnFailureCallback.isNone()) {
             try {
                 pyOnFailureCallback.call("__call__", ExceptionUtils.getStackTrace(error));
             } catch (Exception e2) {

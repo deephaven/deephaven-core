@@ -24,6 +24,7 @@ import org.jpy.PyObject;
 
 import javax.annotation.Nullable;
 import java.util.Arrays;
+import java.util.Objects;
 
 
 /**
@@ -77,7 +78,7 @@ public class PythonReplayListenerAdapter extends InstrumentedTableUpdateListener
         super(description, source, retain);
         this.dependencies = dependencies;
         this.pyListenerCallable = PythonUtils.pyListenerFunc(pyListener);
-        this.pyOnFailureCallback = pyOnFailureCallback;
+        this.pyOnFailureCallback = Objects.requireNonNull(pyOnFailureCallback);
     }
 
     @Override
