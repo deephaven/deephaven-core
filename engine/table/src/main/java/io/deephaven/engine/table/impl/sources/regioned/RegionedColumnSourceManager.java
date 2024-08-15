@@ -291,9 +291,8 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
             if (entry.pollUpdates(addedRowSetBuilder)) {
                 // Changes were detected, update the row set in the table and mark the row/column as modified.
                 /*
-                 * Since TableLocationState.getRowSet() returns a copy(), we should consider adding an UpdateCommitter
-                 * to close() the previous row sets for modified locations. This is not important for current
-                 * implementations, since they always allocate new, flat RowSets.
+                 * Since TableLocationState.getRowSet() returns a copy(), we own entry.rowSetAtLastUpdate and can
+                 * propagate it without making another copy().
                  */
                 rowSetSource.set(entry.regionIndex, entry.rowSetAtLastUpdate);
                 if (modifiedRegionBuilder != null) {
@@ -574,7 +573,12 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
                             .appendRange(regionFirstKey + subRegionFirstKey, regionFirstKey + subRegionLastKey));
                 }
             } finally {
-                rowSetAtLastUpdate.close();
+                /*
+                 * Since we record rowSetAtLastUpdate in the RowSet column of our includedLocationsTable, we must not
+                 * close() the old rowSetAtLastUpdate here. We should instead consider adding an UpdateCommitter to
+                 * close() the previous RowSets for modified locations, but this is not important for current
+                 * implementations since they always allocate new, flat RowSets.
+                 */
                 rowSetAtLastUpdate = updateRowSet;
             }
             // There was a change to the row set.
