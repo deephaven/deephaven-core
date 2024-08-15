@@ -19,6 +19,7 @@ dependencies {
     implementation project(':Configuration')
     implementation project(':DataStructures')
     implementation libs.commons.io
+    implementation libs.guava
 
     compileOnly libs.jetbrains.annotations
     testImplementation libs.junit4

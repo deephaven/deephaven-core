@@ -240,13 +240,14 @@ def write(
     max_dictionary_size: Optional[int] = None,
     target_page_size: Optional[int] = None,
     generate_metadata_files: Optional[bool] = None,
-    index_columns: Optional[Sequence[Sequence[str]]] = None
+    index_columns: Optional[Sequence[Sequence[str]]] = None,
+    special_instructions: Optional[s3.S3Instructions] = None
 ) -> None:
     """ Write a table to a Parquet file.
 
     Args:
         table (Table): the source table
-        path (str): the destination file path; the file name should end in a ".parquet" extension. If the path
+        path (str): the destination file path or URI; the file name should end in a ".parquet" extension. If the path
             includes any non-existing directories, they are created. If there is an error, any intermediate directories
             previously created are removed; note this makes this method unsafe for concurrent use
         table_definition (Optional[Union[Dict[str, DType], List[Column]]): the table definition to use for writing,
@@ -273,6 +274,8 @@ def write(
             source table. This argument can be used to narrow the set of indexes to write, or to be explicit about the
             expected set of indexes present on all sources. Indexes that are specified but missing will be computed on
             demand.
+        special_instructions (Optional[s3.S3Instructions]): Special instructions for writing parquet files, useful when
+            writing files to a non-local file system, like S3. By default, None.
     Raises:
         DHError
     """
@@ -287,6 +290,7 @@ def write(
             generate_metadata_files=generate_metadata_files,
             table_definition=table_definition,
             index_columns=index_columns,
+            special_instructions=special_instructions,
         )
         _JParquetTools.writeTable(table.j_table, path, write_instructions)
     except Exception as e:
@@ -304,7 +308,8 @@ def write_partitioned(
         target_page_size: Optional[int] = None,
         base_name: Optional[str] = None,
         generate_metadata_files: Optional[bool] = None,
-        index_columns: Optional[Sequence[Sequence[str]]] = None
+        index_columns: Optional[Sequence[Sequence[str]]] = None,
+        special_instructions: Optional[s3.S3Instructions] = None
 ) -> None:
     """ Write table to disk in parquet format with the partitioning columns written as "key=value" format in a nested
     directory structure. For example, for a partitioned column "date", we will have a directory structure like
@@ -314,8 +319,9 @@ def write_partitioned(
 
     Args:
         table (Table): the source table or partitioned table
-        destination_dir (str): The path to destination root directory in which the partitioned parquet data will be stored
-            in a nested directory structure format. Non-existing directories in the provided path will be created.
+        destination_dir (str): The path or URI to the destination root directory in which the partitioned parquet data
+            will be stored in a nested directory structure format. Non-existing directories in the provided path will be
+            created.
         table_definition (Optional[Union[Dict[str, DType], List[Column]]): the table definition to use for writing,
             instead of the definitions implied by the table. Default is None, which means use the column definitions
             implied by the table. This definition can be used to skip some columns or add additional columns with
@@ -352,6 +358,8 @@ def write_partitioned(
             source table. This argument can be used to narrow the set of indexes to write, or to be explicit about the
             expected set of indexes present on all sources. Indexes that are specified but missing will be computed on
             demand.
+        special_instructions (Optional[s3.S3Instructions]): Special instructions for writing parquet files, useful when
+            writing files to a non-local file system, like S3. By default, None.
 
     Raises:
         DHError
@@ -368,6 +376,7 @@ def write_partitioned(
             base_name=base_name,
             table_definition=table_definition,
             index_columns=index_columns,
+            special_instructions=special_instructions,
         )
         _JParquetTools.writeKeyValuePartitionedTable(table.j_object, destination_dir, write_instructions)
     except Exception as e:
@@ -384,7 +393,8 @@ def batch_write(
     max_dictionary_size: Optional[int] = None,
     target_page_size: Optional[int] = None,
     generate_metadata_files: Optional[bool] = None,
-    index_columns: Optional[Sequence[Sequence[str]]] = None
+    index_columns: Optional[Sequence[Sequence[str]]] = None,
+    special_instructions: Optional[s3.S3Instructions] = None
 ):
     """ Writes tables to disk in parquet format to a supplied set of paths.
 
@@ -392,7 +402,7 @@ def batch_write(
 
     Args:
         tables (List[Table]): the source tables
-        paths (List[str]): the destination paths. Any non-existing directories in the paths provided are
+        paths (List[str]): the destination paths or URIs. Any non-existing directories in the paths provided are
             created. If there is an error, any intermediate directories previously created are removed; note this makes
             this method unsafe for concurrent use
         table_definition (Optional[Union[Dict[str, DType], List[Column]]]): the table definition to use for writing.
@@ -418,6 +428,8 @@ def batch_write(
             source table. This argument can be used to narrow the set of indexes to write, or to be explicit about the
             expected set of indexes present on all sources. Indexes that are specified but missing will be computed on
             demand.
+        special_instructions (Optional[s3.S3Instructions]): Special instructions for writing parquet files, useful when
+            writing files to a non-local file system, like S3. By default, None.
 
     Raises:
         DHError
@@ -433,6 +445,7 @@ def batch_write(
             generate_metadata_files=generate_metadata_files,
             table_definition=table_definition,
             index_columns=index_columns,
+            special_instructions=special_instructions,
         )
         _JParquetTools.writeTables([t.j_table for t in tables], _j_string_array(paths), write_instructions)
     except Exception as e:

@@ -14,7 +14,7 @@ import pyarrow.parquet
 
 from deephaven import DHError, empty_table, dtypes, new_table
 from deephaven import arrow as dharrow
-from deephaven.column import InputColumn, ColumnType, col_def, string_col, int_col, char_col, long_col
+from deephaven.column import InputColumn, ColumnType, col_def, string_col, int_col, char_col, long_col, short_col
 from deephaven.pandas import to_pandas, to_table
 from deephaven.parquet import (write, batch_write, read, delete, ColumnInstruction, ParquetFileLayout,
                                write_partitioned)
@@ -778,6 +778,32 @@ class ParquetTestCase(BaseTestCase):
             char_col("uint16Col", [65535, 2, 0]),
             long_col("uint32Col", [4294967295, 2, 0]),
         ])
+        self.assert_table_equals(table_from_disk, expected)
+
+    def test_unsigned_byte_cast(self):
+        data = {'uint8Col': [255, 2, 0]}
+        df = pandas.DataFrame(data)
+        df['uint8Col'] = df['uint8Col'].astype(np.uint8)
+        pyarrow.parquet.write_table(pyarrow.Table.from_pandas(df), 'data_from_pyarrow.parquet')
+
+        # UByte -> Char
+        table_from_disk = read("data_from_pyarrow.parquet", table_definition={"uint8Col": dtypes.char})
+        expected = new_table([char_col("uint8Col", [255, 2, 0])])
+        self.assert_table_equals(table_from_disk, expected)
+
+        # UByte -> Short
+        table_from_disk = read("data_from_pyarrow.parquet", table_definition={"uint8Col": dtypes.short})
+        expected = new_table([short_col("uint8Col", [255, 2, 0])])
+        self.assert_table_equals(table_from_disk, expected)
+
+        # UByte -> Int
+        table_from_disk = read("data_from_pyarrow.parquet", table_definition={"uint8Col": dtypes.int32})
+        expected = new_table([int_col("uint8Col", [255, 2, 0])])
+        self.assert_table_equals(table_from_disk, expected)
+
+        # UByte -> Long
+        table_from_disk = read("data_from_pyarrow.parquet", table_definition={"uint8Col": dtypes.long})
+        expected = new_table([long_col("uint8Col", [255, 2, 0])])
         self.assert_table_equals(table_from_disk, expected)
 
     def test_v2_pages(self):
