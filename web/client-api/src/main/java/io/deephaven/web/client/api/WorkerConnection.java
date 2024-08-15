@@ -807,6 +807,7 @@ public class WorkerConnection {
             array = TypedArray.SetArrayUnionType.of(bytes);
         }
         Uint8Array bytesWithPrefix = new Uint8Array(length + 2);
+        // Add the shared ticket prefix at the start of the provided value
         bytesWithPrefix.setAt(0, (double) 'h');
         bytesWithPrefix.setAt(1, (double) '/');
         bytesWithPrefix.set(array, 2);
