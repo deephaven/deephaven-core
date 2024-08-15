@@ -267,10 +267,7 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
                 final long dataOffset = ch.position();
                 nextHeaderOffset = dataOffset + pageHeader.getCompressed_page_size();
                 final PageType pageType = pageHeader.type;
-                if (pageType == PageType.DICTIONARY_PAGE && headerOffset == columnChunk.meta_data.getData_page_offset()
-                        && columnChunk.meta_data.getDictionary_page_offset() == 0) {
-                    // https://stackoverflow.com/questions/55225108/why-is-dictionary-page-offset-0-for-plain-dictionary-encoding
-                    // Skip the dictionary page and jump to the data page
+                if (pageType == PageType.DICTIONARY_PAGE) {
                     return next(holder.get());
                 }
                 if (pageType != PageType.DATA_PAGE && pageType != PageType.DATA_PAGE_V2) {
