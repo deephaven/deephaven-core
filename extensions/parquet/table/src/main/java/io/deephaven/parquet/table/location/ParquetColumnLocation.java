@@ -371,58 +371,58 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                 final PrimitiveType.PrimitiveTypeName typeName = type.getPrimitiveTypeName();
                 switch (typeName) {
                     case BOOLEAN:
-                        if (pageType.equals(Boolean.class)) {
+                        if (pageType == Boolean.class) {
                             toPage = ToBooleanAsBytePage.create(pageType);
-                        } else if (pageType.equals(byte.class)) {
+                        } else if (pageType == byte.class) {
                             toPage = ToBytePage.createFromBoolean(pageType);
-                        } else if (pageType.equals(short.class)) {
+                        } else if (pageType == short.class) {
                             toPage = ToShortPage.createFromBoolean(pageType);
-                        } else if (pageType.equals(int.class)) {
+                        } else if (pageType == int.class) {
                             toPage = ToIntPage.createFromBoolean(pageType);
-                        } else if (pageType.equals(long.class)) {
+                        } else if (pageType == long.class) {
                             toPage = ToLongPage.createFromBoolean(pageType);
                         } else {
-                            throw new TableDataException(
+                            throw new IllegalArgumentException(
                                     "Cannot convert parquet BOOLEAN primitive column to " + pageType);
                         }
                         break;
                     case INT32:
-                        if (pageType.equals(int.class)) {
+                        if (pageType == int.class) {
                             toPage = ToIntPage.create(pageType);
-                        } else if (pageType.equals(long.class)) {
+                        } else if (pageType == long.class) {
                             toPage = ToLongPage.createFromInt(pageType);
                         } else {
-                            throw new TableDataException("Cannot convert parquet INT32 column to " + pageType);
+                            throw new IllegalArgumentException("Cannot convert parquet INT32 column to " + pageType);
                         }
                         break;
                     case INT64:
-                        if (pageType.equals(long.class)) {
+                        if (pageType == long.class) {
                             toPage = ToLongPage.create(pageType);
                         } else {
-                            throw new TableDataException("Cannot convert parquet INT64 column to " + pageType);
+                            throw new IllegalArgumentException("Cannot convert parquet INT64 column to " + pageType);
                         }
                         break;
                     case INT96:
-                        if (pageType.equals(Instant.class)) {
+                        if (pageType == Instant.class) {
                             toPage = ToInstantPage.createFromInt96(pageType);
                         } else {
-                            throw new TableDataException("Cannot convert parquet INT96 column to " + pageType);
+                            throw new IllegalArgumentException("Cannot convert parquet INT96 column to " + pageType);
                         }
                         break;
                     case DOUBLE:
-                        if (pageType.equals(double.class)) {
+                        if (pageType == double.class) {
                             toPage = ToDoublePage.create(pageType);
                         } else {
-                            throw new TableDataException("Cannot convert parquet DOUBLE column to " + pageType);
+                            throw new IllegalArgumentException("Cannot convert parquet DOUBLE column to " + pageType);
                         }
                         break;
                     case FLOAT:
-                        if (pageType.equals(float.class)) {
+                        if (pageType == float.class) {
                             toPage = ToFloatPage.create(pageType);
-                        } else if (pageType.equals(double.class)) {
+                        } else if (pageType == double.class) {
                             toPage = ToDoublePage.createFromFloat(pageType);
                         } else {
-                            throw new TableDataException("Cannot convert parquet FLOAT column to " + pageType);
+                            throw new IllegalArgumentException("Cannot convert parquet FLOAT column to " + pageType);
                         }
                         break;
                     case BINARY:
@@ -451,7 +451,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             }
 
             if (toPage == null) {
-                throw new TableDataException(
+                throw new IllegalArgumentException(
                         "Unsupported parquet column type " + type.getPrimitiveTypeName() +
                                 " with logical type " + logicalTypeAnnotation + " and page type " + pageType);
             }
@@ -471,7 +471,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             // noinspection unchecked
             return (ToPage<ATTR, RESULT>) toPage;
 
-        } catch (RuntimeException except) {
+        } catch (final RuntimeException except) {
             throw new TableDataException(
                     "Unexpected exception accessing column " + parquetColumnName, except);
         }
@@ -532,29 +532,29 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             if (intLogicalType.isSigned()) {
                 switch (intLogicalType.getBitWidth()) {
                     case 8:
-                        if (pageType.equals(byte.class)) {
+                        if (pageType == byte.class) {
                             return Optional.of(ToBytePage.create(pageType));
-                        } else if (pageType.equals(short.class)) {
+                        } else if (pageType == short.class) {
                             return Optional.of(ToShortPage.create(pageType));
-                        } else if (pageType.equals(int.class)) {
+                        } else if (pageType == int.class) {
                             return Optional.of(ToIntPage.create(pageType));
-                        } else if (pageType.equals(long.class)) {
+                        } else if (pageType == long.class) {
                             return Optional.of(ToLongPage.createFromInt(pageType));
                         }
                         throw new IllegalArgumentException("Cannot convert parquet byte column to " + pageType);
                     case 16:
-                        if (pageType.equals(short.class)) {
+                        if (pageType == short.class) {
                             return Optional.of(ToShortPage.create(pageType));
-                        } else if (pageType.equals(int.class)) {
+                        } else if (pageType == int.class) {
                             return Optional.of(ToIntPage.create(pageType));
-                        } else if (pageType.equals(long.class)) {
+                        } else if (pageType == long.class) {
                             return Optional.of(ToLongPage.createFromInt(pageType));
                         }
                         throw new IllegalArgumentException("Cannot convert parquet short column to " + pageType);
                     case 32:
-                        if (pageType.equals(int.class)) {
+                        if (pageType == int.class) {
                             return Optional.of(ToIntPage.create(pageType));
-                        } else if (pageType.equals(long.class)) {
+                        } else if (pageType == long.class) {
                             return Optional.of(ToLongPage.createFromInt(pageType));
                         }
                         throw new IllegalArgumentException("Cannot convert parquet int column to " + pageType);
@@ -564,23 +564,23 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             } else {
                 switch (intLogicalType.getBitWidth()) {
                     case 8:
-                        if (pageType.equals(char.class)) {
+                        if (pageType == char.class) {
                             return Optional.of(ToCharPage.create(pageType));
-                        } else if (pageType.equals(short.class)) {
+                        } else if (pageType == short.class) {
                             return Optional.of(ToShortPage.createFromUnsignedByte(pageType));
-                        } else if (pageType.equals(int.class)) {
+                        } else if (pageType == int.class) {
                             return Optional.of(ToIntPage.createFromUnsignedByte(pageType));
-                        } else if (pageType.equals(long.class)) {
+                        } else if (pageType == long.class) {
                             return Optional.of(ToLongPage.createFromUnsignedByte(pageType));
                         }
                         throw new IllegalArgumentException(
                                 "Cannot convert parquet unsigned byte column to " + pageType);
                     case 16:
-                        if (pageType.equals(char.class)) {
+                        if (pageType == char.class) {
                             return Optional.of(ToCharPage.create(pageType));
-                        } else if (pageType.equals(int.class)) {
+                        } else if (pageType == int.class) {
                             return Optional.of(ToIntPage.createFromUnsignedShort(pageType));
-                        } else if (pageType.equals(long.class)) {
+                        } else if (pageType == long.class) {
                             return Optional.of(ToLongPage.createFromUnsignedShort(pageType));
                         }
                         throw new IllegalArgumentException(
@@ -625,7 +625,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                 case FIXED_LEN_BYTE_ARRAY: // fall through
                 case BINARY:
                     final int encodedSizeInBytes = typeName == BINARY ? -1 : type.getTypeLength();
-                    if (BigDecimal.class.equals(pageType)) {
+                    if (pageType == BigDecimal.class) {
                         final int precision = decimalLogicalType.getPrecision();
                         final int scale = decimalLogicalType.getScale();
                         try {
@@ -638,7 +638,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                                 pageType,
                                 new BigDecimalParquetBytesCodec(precision, scale, encodedSizeInBytes),
                                 columnChunkReader.getDictionarySupplier()));
-                    } else if (BigInteger.class.equals(pageType)) {
+                    } else if (pageType == BigInteger.class) {
                         return Optional.of(ToBigIntegerPage.create(
                                 pageType,
                                 new BigIntegerParquetBytesCodec(encodedSizeInBytes),
