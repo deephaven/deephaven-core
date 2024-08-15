@@ -34,7 +34,6 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.CompletionStageFuture;
 import io.deephaven.util.type.TypeUtils;
-import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.VectorFactory;
 import org.jetbrains.annotations.NotNull;
 import org.jpy.PyObject;
@@ -181,10 +180,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         try {
             final QueryLanguageParser.Result result = FormulaAnalyzer.parseFormula(
                     formulaString, columnDefinitionMap, Collections.emptyMap(),
-                    compilationRequestProcessor.getQueryScopeVariables(),
-                    compilationRequestProcessor.getPackageImports(),
-                    compilationRequestProcessor.getClassImports(),
-                    compilationRequestProcessor.getStaticImports());
+                    compilationRequestProcessor.getFormulaImports());
             analyzedFormula = FormulaAnalyzer.analyze(formulaString, columnDefinitionMap, result);
             hasConstantValue = result.isConstantValueExpression();
             formulaShiftColPair = result.getFormulaShiftColPair();

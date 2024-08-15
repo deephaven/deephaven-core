@@ -192,7 +192,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
      *        imported.
      * @param variables A map of the names of scope variables to their types
      * @param variableTypeArguments A map of the names of scope variables to their type arguments
-     * @param queryScopeVariables A mutable map of the names of query scope variables to their values
+     * @param queryScopeVariables A map of the names of query scope variables to their values
      * @param columnVariables A set of column variable names
      * @param unboxArguments If true it will unbox the query scope arguments
      * @param timeConversionResult The result of converting time literals in the expression
@@ -266,7 +266,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
      *        imported.
      * @param variables A map of the names of scope variables to their types
      * @param variableTypeArguments A map of the names of scope variables to their type arguments
-     * @param queryScopeVariables A mutable map of the names of query scope variables to their values
+     * @param queryScopeVariables A map of the names of query scope variables to their values
      * @param columnVariables A set of column variable names
      * @param unboxArguments If true it will unbox the query scope arguments
      * @param verifyIdempotence If true, the parser will verify that the result expression will not mutate when parsed

@@ -16,6 +16,7 @@ import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.UpdateGraphJobScheduler;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * A Shift-Aware listener for Select or Update. It uses the SelectAndViewAnalyzer to calculate how columns affect other
@@ -86,9 +87,19 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
             jobScheduler = new ImmediateJobScheduler();
         }
 
+        // do not allow a double-notify
+        final AtomicBoolean hasNotified = new AtomicBoolean();
         analyzer.applyUpdate(acquiredUpdate, toClear, updateHelper, jobScheduler, this,
-                () -> completionRoutine(acquiredUpdate, jobScheduler, toClear, updateHelper),
-                this::handleException);
+                () -> {
+                    if (!hasNotified.getAndSet(true)) {
+                        completionRoutine(acquiredUpdate, jobScheduler, toClear, updateHelper);
+                    }
+                },
+                error -> {
+                    if (!hasNotified.getAndSet(true)) {
+                        handleException(error);
+                    }
+                });
     }
 
     private void handleException(Exception e) {

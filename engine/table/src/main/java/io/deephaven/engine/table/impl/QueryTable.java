@@ -1498,7 +1498,7 @@ public class QueryTable extends BaseTable<QueryTable> {
     public SelectValidationResult validateSelect(final SelectColumn... selectColumns) {
         final SelectColumn[] clones = SelectColumn.copyFrom(selectColumns);
         SelectAndViewAnalyzer.AnalyzerContext analyzerContext = SelectAndViewAnalyzer.createContext(
-                this, SelectAndViewAnalyzer.Mode.SELECT_STATIC, getModifiedColumnSetForUpdates(), true,
+                this, SelectAndViewAnalyzer.Mode.SELECT_STATIC, true,
                 false, clones);
         return new SelectValidationResult(analyzerContext.createAnalyzer(), clones);
     }
@@ -1526,8 +1526,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                     }
                     final boolean publishTheseSources = flavor == Flavor.Update;
                     final SelectAndViewAnalyzer.AnalyzerContext analyzerContext = SelectAndViewAnalyzer.createContext(
-                            this, mode, getModifiedColumnSetForUpdates(), publishTheseSources, true,
-                            selectColumns);
+                            this, mode, publishTheseSources, true, selectColumns);
 
                     final SelectAndViewAnalyzer analyzer = analyzerContext.createAnalyzer();
                     final SelectColumn[] processedColumns = analyzerContext.getProcessedColumns()
@@ -1597,12 +1596,6 @@ public class QueryTable extends BaseTable<QueryTable> {
                                 resultTable.setFlat();
                             }
                             propagateDataIndexes(processedColumns, resultTable);
-                            for (final ColumnSource<?> columnSource : analyzerContext.getNewColumnSources()
-                                    .values()) {
-                                if (columnSource instanceof PossiblyImmutableColumnSource) {
-                                    ((PossiblyImmutableColumnSource) columnSource).setImmutable();
-                                }
-                            }
                         }
                     }
                     propagateFlatness(resultTable);
@@ -1766,8 +1759,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                                 final SelectAndViewAnalyzer.AnalyzerContext analyzerContext =
                                         SelectAndViewAnalyzer.createContext(
                                                 this, SelectAndViewAnalyzer.Mode.VIEW_EAGER,
-                                                getModifiedColumnSetForUpdates(), publishTheseSources, true,
-                                                viewColumns);
+                                                publishTheseSources, true, viewColumns);
                                 final SelectColumn[] processedViewColumns = analyzerContext.getProcessedColumns()
                                         .toArray(SelectColumn[]::new);
                                 QueryTable queryTable = new QueryTable(
@@ -1857,8 +1849,7 @@ public class QueryTable extends BaseTable<QueryTable> {
 
                         final SelectAndViewAnalyzer.AnalyzerContext analyzerContext =
                                 SelectAndViewAnalyzer.createContext(
-                                        this, SelectAndViewAnalyzer.Mode.VIEW_LAZY,
-                                        getModifiedColumnSetForUpdates(), true, true, selectColumns);
+                                        this, SelectAndViewAnalyzer.Mode.VIEW_LAZY, true, true, selectColumns);
                         final SelectColumn[] processedColumns = analyzerContext.getProcessedColumns()
                                 .toArray(SelectColumn[]::new);
                         final QueryTable result = new QueryTable(

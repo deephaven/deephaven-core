@@ -4,15 +4,11 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.context.QueryCompilerRequest;
-import io.deephaven.engine.context.QueryLibrary;
-import io.deephaven.engine.context.QueryScope;
-import io.deephaven.engine.rowset.TrackingWritableRowSet;
-import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
+import io.deephaven.engine.table.impl.select.codegen.FormulaAnalyzer;
 import io.deephaven.util.MultiException;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.CompletionStageFuture;
@@ -21,12 +17,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -48,76 +39,20 @@ public abstract class QueryCompilerRequestProcessor {
     }
 
     /**
-     * @return a CachingSupplier that supplies a snapshot of the current query scope variables
+     * @return a CachingSupplier that supplies a snapshot of current query scope variables and query library imports
      */
     @VisibleForTesting
-    public static CachingSupplier<Map<String, Object>> newQueryScopeVariableSupplier() {
-        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
-        return new CachingSupplier<>(() -> Collections.unmodifiableMap(
-                queryScope.toMap((name, value) -> NameValidator.isValidQueryParameterName(name))));
+    public static CachingSupplier<FormulaAnalyzer.Imports> newFormulaImportsSupplier() {
+        return new CachingSupplier<>(FormulaAnalyzer.Imports::new);
     }
 
-    /**
-     * @return a CachingSupplier that supplies a snapshot of the current {@link QueryLibrary} package imports
-     */
-    private static CachingSupplier<Collection<Package>> newPackageImportsSupplier() {
-        final QueryLibrary queryLibrary = ExecutionContext.getContext().getQueryLibrary();
-        return new CachingSupplier<>(() -> Set.copyOf(queryLibrary.getPackageImports()));
-    }
+    private final CachingSupplier<FormulaAnalyzer.Imports> formulaImportsSupplier = newFormulaImportsSupplier();
 
     /**
-     * @return a CachingSupplier that supplies a snapshot of the current {@link QueryLibrary} class imports
+     * @return a lazily cached snapshot of current query scope variables and query library imports
      */
-    private static CachingSupplier<Collection<Class<?>>> newClassImportsSupplier() {
-        final QueryLibrary queryLibrary = ExecutionContext.getContext().getQueryLibrary();
-        return new CachingSupplier<>(() -> {
-            final Collection<Class<?>> classImports = new HashSet<>(queryLibrary.getClassImports());
-            // because QueryLibrary is in the context package, without visibility, we need to add these manually
-            classImports.add(TrackingWritableRowSet.class);
-            classImports.add(WritableColumnSource.class);
-            return Collections.unmodifiableCollection(classImports);
-        });
-    }
-
-    /**
-     * @return a CachingSupplier that supplies a snapshot of the current {@link QueryLibrary} static imports
-     */
-    private static CachingSupplier<Collection<Class<?>>> newStaticImportsSupplier() {
-        final QueryLibrary queryLibrary = ExecutionContext.getContext().getQueryLibrary();
-        return new CachingSupplier<>(() -> Set.copyOf(queryLibrary.getStaticImports()));
-    }
-
-    private final CachingSupplier<Map<String, Object>> queryScopeVariableSupplier = newQueryScopeVariableSupplier();
-    private final CachingSupplier<Collection<Package>> packageImportsSupplier = newPackageImportsSupplier();
-    private final CachingSupplier<Collection<Class<?>>> classImportsSupplier = newClassImportsSupplier();
-    private final CachingSupplier<Collection<Class<?>>> staticImportsSupplier = newStaticImportsSupplier();
-
-    /**
-     * @return a lazily cached snapshot of the current query scope variables
-     */
-    public final Map<String, Object> getQueryScopeVariables() {
-        return queryScopeVariableSupplier.get();
-    }
-
-    /**
-     * @return a lazily cached snapshot of the current {@link QueryLibrary} package imports
-     */
-    public final Collection<Package> getPackageImports() {
-        return packageImportsSupplier.get();
-    }
-
-    /**
-     * @return a lazily cached snapshot of the current {@link QueryLibrary} class imports
-     */
-    public final Collection<Class<?>> getClassImports() {
-        return classImportsSupplier.get();
-    }
-
-    /**
-     * @return a lazily cached snapshot of the current {@link QueryLibrary} static imports
-     */
-    public final Collection<Class<?>> getStaticImports() {
-        return staticImportsSupplier.get();
+    public final FormulaAnalyzer.Imports getFormulaImports() {
+        return formulaImportsSupplier.get();
     }
 
     /**

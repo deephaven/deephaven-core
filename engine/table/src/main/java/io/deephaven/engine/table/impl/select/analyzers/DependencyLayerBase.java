@@ -29,7 +29,7 @@ public abstract class DependencyLayerBase extends SelectAndViewAnalyzer.Layer {
         this.selectColumn = selectColumn;
         selectColumnHoldsVector = Vector.class.isAssignableFrom(selectColumn.getReturnedType());
         this.columnSource = columnSource;
-        context.populateModifiedColumnSet(mcsBuilder, dependencies);
+        context.populateParentDependenciesMCS(mcsBuilder, dependencies);
         this.myModifiedColumnSet = mcsBuilder;
         this.myLayerDependencySet = new BitSet();
         context.populateLayerDependencySet(myLayerDependencySet, dependencies);

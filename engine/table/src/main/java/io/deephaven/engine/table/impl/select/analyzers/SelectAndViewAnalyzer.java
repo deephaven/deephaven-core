@@ -3,9 +3,12 @@
 //
 package io.deephaven.engine.table.impl.select.analyzers;
 
+import gnu.trove.map.TObjectIntMap;
+import gnu.trove.map.hash.TObjectIntHashMap;
 import io.deephaven.base.Pair;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -22,6 +25,7 @@ import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.select.SwitchColumn;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
+import io.deephaven.engine.table.impl.sources.PossiblyImmutableColumnSource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
 import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
@@ -39,7 +43,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -79,7 +82,6 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
     public static AnalyzerContext createContext(
             final QueryTable parentTable,
             final Mode mode,
-            final ModifiedColumnSet parentMcs,
             final boolean publishParentSources,
             boolean useShiftedColumns,
             final SelectColumn... selectColumns) {
@@ -161,7 +163,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             // note: if flatResult is true then we are not preserving any parent columns
             final boolean useResultKeySpace = context.flatResult
                     && Stream.concat(sc.getColumns().stream(), sc.getColumnArrays().stream())
-                            .anyMatch(context.newSources::containsKey);
+                            .anyMatch(columnName -> context.getLayerIndexFor(columnName) != Layer.PARENT_TABLE_INDEX);
 
             sc.initInputs(rowSet, useResultKeySpace ? context.allSourcesInResultKeySpace : context.allSources);
 
@@ -172,7 +174,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             final Stream<String> allDependencies =
                     Stream.concat(sc.getColumns().stream(), sc.getColumnArrays().stream());
             final String[] distinctDeps = allDependencies.distinct().toArray(String[]::new);
-            final ModifiedColumnSet mcsBuilder = new ModifiedColumnSet(parentMcs);
+            final ModifiedColumnSet mcsBuilder = new ModifiedColumnSet(parentTable.getModifiedColumnSetForUpdates());
 
             if (useShiftedColumns && hasConstantArrayAccess(sc)) {
                 // we use the first shifted column to split between processed columns and remaining columns
@@ -231,6 +233,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                     final WritableColumnSource<?> scs = parentIsFlat || context.flatResult
                             ? sc.newFlatDestInstance(targetDestinationCapacity)
                             : sc.newDestInstance(targetDestinationCapacity);
+                    maybeSetStaticColumnSourceImmutable(scs);
                     maybeCreateAlias.accept(scs);
                     context.addLayer(new SelectColumnLayer(
                             updateGraph, rowSet, context, sc, scs, null, distinctDeps, mcsBuilder, false,
@@ -241,6 +244,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                     final WritableColumnSource<?> underlyingSource = sc.newDestInstance(rowSet.size());
                     final WritableColumnSource<?> scs = WritableRedirectedColumnSource.maybeRedirect(
                             rowRedirection, underlyingSource, rowSet.size());
+                    maybeSetStaticColumnSourceImmutable(scs);
                     maybeCreateAlias.accept(scs);
                     context.addLayer(new SelectColumnLayer(
                             updateGraph, rowSet, context, sc, scs, underlyingSource, distinctDeps, mcsBuilder, true,
@@ -270,6 +274,12 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         }
 
         return context;
+    }
+
+    private static void maybeSetStaticColumnSourceImmutable(final ColumnSource<?> columnSource) {
+        if (columnSource instanceof PossiblyImmutableColumnSource) {
+            ((PossiblyImmutableColumnSource) columnSource).setImmutable();
+        }
     }
 
     private static @Nullable SourceColumn tryToGetSourceColumn(final SelectColumn sc) {
@@ -357,16 +367,17 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
 
         /** The analyzer that we are building. */
         private final List<Layer> layers = new ArrayList<>();
-        /** The sources that are available to the analyzer, including parent columns. */
+        /**
+         * The sources that are available to the analyzer, including parent columns. Parent columns are in parent key
+         * space, others are in result key space.
+         */
         private final Map<String, ColumnSource<?>> allSources = new LinkedHashMap<>();
         /** The sources that are available to the analyzer, including parent columns, in result key space. */
         private final Map<String, ColumnSource<?>> allSourcesInResultKeySpace;
-        /** The sources that are explicitly defined to the analyzer, including preserved parent columns. */
-        private final Map<String, ColumnSource<?>> newSources = new HashMap<>();
         /** The sources that are published to the child table. */
         private final Map<String, ColumnSource<?>> publishedSources = new LinkedHashMap<>();
         /** A mapping from result column name to the layer index that created it. */
-        private final Map<String, Integer> columnToLayerIndex = new HashMap<>();
+        private final TObjectIntMap<String> columnToLayerIndex;
         /** The select columns that have been processed so far. */
         private final List<SelectColumn> processedCols = new ArrayList<>();
 
@@ -379,23 +390,24 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         /** Whether the result should be flat. */
         private boolean flatResult;
         /** The layer that will be used to process redirection, if we have one. */
-        private int redirectionLayer = -1;
+        private int redirectionLayer = Layer.UNSET_INDEX;
 
         AnalyzerContext(
                 final QueryTable parentTable,
-                final boolean publishTheseSources,
+                final boolean publishParentSources,
                 final boolean flatResult) {
-            final Map<String, ColumnSource<?>> sources = parentTable.getColumnSourceMap();
+            final Map<String, ColumnSource<?>> parentSources = parentTable.getColumnSourceMap();
+            columnToLayerIndex = new TObjectIntHashMap<>(parentSources.size(), 0.5f, Layer.UNSET_INDEX);
 
             this.flatResult = flatResult;
 
-            allSources.putAll(sources);
+            allSources.putAll(parentSources);
             for (final String columnName : allSources.keySet()) {
-                columnToLayerIndex.put(columnName, -1);
+                columnToLayerIndex.put(columnName, Layer.PARENT_TABLE_INDEX);
             }
 
-            if (publishTheseSources) {
-                publishedSources.putAll(sources);
+            if (publishParentSources) {
+                publishedSources.putAll(parentSources);
             }
 
             if (!flatResult) {
@@ -417,7 +429,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
          */
         void addLayer(final Layer layer) {
             if (layer instanceof RedirectionLayer) {
-                if (redirectionLayer != -1) {
+                if (redirectionLayer != Layer.UNSET_INDEX) {
                     throw new IllegalStateException("Cannot have more than one redirection layer");
                 }
                 redirectionLayer = layers.size();
@@ -427,7 +439,6 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             if (flatResult) {
                 layer.populateColumnSources(allSourcesInResultKeySpace);
             }
-            layer.populateColumnSources(newSources);
             layer.populateColumnSources(publishedSources);
 
             layers.add(layer);
@@ -452,8 +463,8 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
          * @return the layerIndex
          */
         int getLayerIndexFor(String column) {
-            final Integer layerIndex = columnToLayerIndex.get(column);
-            if (layerIndex == null) {
+            final int layerIndex = columnToLayerIndex.get(column);
+            if (layerIndex == Layer.UNSET_INDEX) {
                 throw new IllegalStateException("Column " + column + " not found in any layer of the analyzer");
             }
             return layerIndex;
@@ -465,19 +476,19 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
          * @param mcsBuilder the result ModifiedColumnSet to populate
          * @param dependencies the immediate dependencies
          */
-        void populateModifiedColumnSet(
+        void populateParentDependenciesMCS(
                 final ModifiedColumnSet mcsBuilder,
                 final String[] dependencies) {
             for (final String dep : dependencies) {
                 final int layerIndex = getLayerIndexFor(dep);
-                if (layerIndex != -1) {
-                    mcsBuilder.setAll(layers.get(layerIndex).getModifiedColumnSet());
-                } else if (!allSources.containsKey(dep)) {
-                    // we should have blown up during initDef if this is the case
-                    throw new IllegalStateException("Column " + dep + " not found in any layer of the analyzer");
-                } else if (!newSources.containsKey(dep)) {
+                if (layerIndex == Layer.PARENT_TABLE_INDEX) {
                     // this is a preserved parent column
                     mcsBuilder.setAll(dep);
+                } else if (layerIndex != Layer.UNSET_INDEX) { // Forward-looking
+                    mcsBuilder.setAll(layers.get(layerIndex).getModifiedColumnSet());
+                } else {
+                    // we should have blown up during initDef if this is the case
+                    throw new IllegalStateException("Column " + dep + " not found in any layer of the analyzer");
                 }
             }
         }
@@ -493,13 +504,13 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                 final String[] dependencies) {
             for (final String dep : dependencies) {
                 final int layerIndex = getLayerIndexFor(dep);
-                if (layerIndex != -1) {
-                    layerDependencySet.or(layers.get(layerIndex).getLayerDependencySet());
-                } else if (!allSources.containsKey(dep)) {
+                if (layerIndex == Layer.UNSET_INDEX) {
                     // we should have blown up during initDef if this is the case
                     throw new IllegalStateException("Column " + dep + " not found in any layer of the analyzer");
+                } else if (layerIndex != Layer.PARENT_TABLE_INDEX) {
+                    // note that implicitly preserved columns do not belong to a layer.
+                    layerDependencySet.or(layers.get(layerIndex).getLayerDependencySet());
                 }
-                // Note that preserved columns do not belong to a layer.
             }
         }
 
@@ -509,23 +520,16 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
          * @param layerDependencies the result bitset to populate
          */
         void setRedirectionLayer(final BitSet layerDependencies) {
-            if (redirectionLayer != -1) {
+            if (redirectionLayer != Layer.UNSET_INDEX) {
                 layerDependencies.set(redirectionLayer);
             }
-        }
-
-        /**
-         * @return the column sources explicitly created by the analyzer
-         */
-        public Map<String, ColumnSource<?>> getNewColumnSources() {
-            return newSources;
         }
 
         /**
          * @return the column sources that are published through the child table
          */
         public Map<String, ColumnSource<?>> getPublishedColumnSources() {
-            // Note that if we have a shift column that we forcefully publish all columns.
+            // Note that if we have a shift column that we forcibly publish all columns.
             return shiftColumn == null ? publishedSources : allSources;
         }
 
@@ -565,7 +569,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             for (final String columnName : resultMap.keySet()) {
                 final int layerIndex = getLayerIndexFor(columnName);
                 final String[] dependencies;
-                if (layerIndex == -1) {
+                if (layerIndex == Layer.PARENT_TABLE_INDEX) {
                     dependencies = new String[] {columnName};
                 } else {
                     dependencies = layers.get(layerIndex).getModifiedColumnSet().dirtyColumnNames();
@@ -601,7 +605,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
          * @return the final result
          */
         public QueryTable applyShiftsAndRemainingColumns(
-                final @NotNull QueryTable parentTable,
+                @NotNull final QueryTable parentTable,
                 @NotNull QueryTable resultSoFar,
                 final UpdateFlavor updateFlavor) {
             if (shiftColumn != null) {
@@ -670,6 +674,10 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
     }
 
     static abstract class Layer implements LogOutputAppendable {
+        private static final BitSet EMPTY_BITSET = new BitSet();
+
+        public static final int UNSET_INDEX = -1;
+        public static final int PARENT_TABLE_INDEX = -2;
 
         /**
          * The layerIndex is used to identify each layer uniquely within the bitsets for completion.
@@ -705,7 +713,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
          * @return the layer dependency set indicating which layers this layer depends on
          */
         BitSet getLayerDependencySet() {
-            return new BitSet();
+            return EMPTY_BITSET;
         }
 
         @Override
@@ -777,6 +785,12 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             this.upstream = upstream;
         }
 
+        /**
+         * Flatten the upstream update from the parent key space to the destination key space. We are guaranteed to be
+         * in STATIC_SELECT mode.
+         *
+         * @return the flattened update
+         */
         TableUpdate resultKeySpaceUpdate() {
             if (upstreamInResultSpace == null) {
                 upstreamInResultSpace = new TableUpdateImpl(
@@ -863,6 +877,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             final Runnable onSuccess,
             final Consumer<Exception> onError) {
 
+        Assert.assertion(remainingLayers.isEmpty(), "remainingLayers.isEmpty()");
         remainingLayers.or(requiredLayers);
 
         final Runnable[] runners = new Runnable[layers.length];
@@ -871,6 +886,8 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         for (int ii = 0; ii < layers.length; ++ii) {
             final Layer layer = layers[ii];
             if (layer != null) {
+                // TODO (deephaven-core#4896): this error handling allows concurrent layers to fail without ensuring
+                // that other tasks are finished.
                 runners[ii] = layer.createUpdateHandler(
                         upstream, toClear, helper, jobScheduler, liveResultOwner,
                         () -> scheduler.onLayerComplete(layer.getLayerIndex()), onError);
@@ -882,13 +899,14 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
 
     private class UpdateScheduler {
         private final ReentrantLock runLock = new ReentrantLock();
-        private final AtomicBoolean needsRun = new AtomicBoolean();
 
         private final Runnable[] runners;
         private final Runnable onSuccess;
         private final Consumer<Exception> onError;
 
-        private volatile boolean updateComplete;
+        private volatile boolean needsRun;
+        /** whether we have already invoked onSuccess */
+        private boolean updateComplete;
 
         public UpdateScheduler(
                 final Runnable[] runners,
@@ -908,7 +926,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         }
 
         private void tryToKickOffWork() {
-            needsRun.set(true);
+            needsRun = true;
             while (true) {
                 if (runLock.isHeldByCurrentThread() || !runLock.tryLock()) {
                     // do not permit re-entry or waiting on another thread doing exactly this work
@@ -916,7 +934,8 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                 }
 
                 try {
-                    if (needsRun.compareAndSet(true, false)) {
+                    if (needsRun) {
+                        needsRun = false;
                         doKickOffWork();
                     }
                 } catch (final Exception exception) {
@@ -928,7 +947,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                     runLock.unlock();
                 }
 
-                if (!needsRun.get()) {
+                if (!needsRun) {
                     return;
                 }
             }
@@ -947,7 +966,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                 Runnable runner = null;
                 synchronized (remainingLayers) {
                     complete = remainingLayers.isEmpty();
-                    nextLayer = remainingLayers.nextSetBit(nextLayer);
+                    nextLayer = complete ? -1 : remainingLayers.nextSetBit(nextLayer);
 
                     if (nextLayer != -1) {
                         if ((runner = runners[nextLayer]) != null) {

@@ -223,7 +223,8 @@ public class MatchFilter extends WhereFilterImpl implements DependencyStreamProv
                 return;
             }
             final List<Object> valueList = new ArrayList<>();
-            final Map<String, Object> queryScopeVariables = compilationProcessor.getQueryScopeVariables();
+            final Map<String, Object> queryScopeVariables =
+                    compilationProcessor.getFormulaImports().getQueryScopeVariables();
             final ColumnTypeConvertor convertor = ColumnTypeConvertorFactory.getConvertor(column.getDataType());
             for (String strValue : strValues) {
                 convertor.convertValue(column, tableDefinition, strValue, queryScopeVariables, valueList::add);
