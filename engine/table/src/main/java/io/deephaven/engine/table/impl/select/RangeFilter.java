@@ -183,7 +183,7 @@ public class RangeFilter extends WhereFilterImpl {
 
             try {
                 boolean wasAnArrayType = convertor.convertValue(
-                        def, tableDefinition, value, compilationProcessor.getQueryScopeVariables(),
+                        def, tableDefinition, value, compilationProcessor.getFormulaImports().getQueryScopeVariables(),
                         realValue::setValue);
                 if (wasAnArrayType) {
                     conversionError =

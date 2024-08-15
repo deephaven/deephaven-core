@@ -36,6 +36,8 @@ public class VarListChunkReader<T> implements ChunkReader {
         if (componentType == boolean.class || componentType == Boolean.class) {
             // Note: Internally booleans are passed around as bytes, but the wire format is packed bits.
             chunkType = ChunkType.Byte;
+        } else if (componentType != null && !componentType.isPrimitive()) {
+            chunkType = ChunkType.Object;
         } else {
             chunkType = ChunkType.fromElementType(componentType);
         }
