@@ -268,6 +268,7 @@ final class ColumnChunkReaderImpl implements ColumnChunkReader {
                 nextHeaderOffset = dataOffset + pageHeader.getCompressed_page_size();
                 final PageType pageType = pageHeader.type;
                 if (pageType == PageType.DICTIONARY_PAGE) {
+                    // Skip the dictionary page and jump to the data page
                     return next(holder.get());
                 }
                 if (pageType != PageType.DATA_PAGE && pageType != PageType.DATA_PAGE_V2) {
