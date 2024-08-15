@@ -37,6 +37,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.Function;
@@ -372,12 +373,17 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                     case BOOLEAN:
                         if (pageType.equals(Boolean.class)) {
                             toPage = ToBooleanAsBytePage.create(pageType);
+                        } else if (pageType.equals(byte.class)) {
+                            toPage = ToBytePage.createFromBoolean(pageType);
                         } else if (pageType.equals(short.class)) {
                             toPage = ToShortPage.createFromBoolean(pageType);
                         } else if (pageType.equals(int.class)) {
                             toPage = ToIntPage.createFromBoolean(pageType);
                         } else if (pageType.equals(long.class)) {
                             toPage = ToLongPage.createFromBoolean(pageType);
+                        } else {
+                            throw new TableDataException(
+                                    "Cannot convert parquet BOOLEAN primitive column to " + pageType);
                         }
                         break;
                     case INT32:
@@ -385,22 +391,38 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                             toPage = ToIntPage.create(pageType);
                         } else if (pageType.equals(long.class)) {
                             toPage = ToLongPage.createFromInt(pageType);
+                        } else {
+                            throw new TableDataException("Cannot convert parquet INT32 column to " + pageType);
                         }
                         break;
                     case INT64:
-                        toPage = ToLongPage.create(pageType);
+                        if (pageType.equals(long.class)) {
+                            toPage = ToLongPage.create(pageType);
+                        } else {
+                            throw new TableDataException("Cannot convert parquet INT64 column to " + pageType);
+                        }
                         break;
                     case INT96:
-                        toPage = ToInstantPage.createFromInt96(pageType);
+                        if (pageType.equals(Instant.class)) {
+                            toPage = ToInstantPage.createFromInt96(pageType);
+                        } else {
+                            throw new TableDataException("Cannot convert parquet INT96 column to " + pageType);
+                        }
                         break;
                     case DOUBLE:
-                        toPage = ToDoublePage.create(pageType);
+                        if (pageType.equals(double.class)) {
+                            toPage = ToDoublePage.create(pageType);
+                        } else {
+                            throw new TableDataException("Cannot convert parquet DOUBLE column to " + pageType);
+                        }
                         break;
                     case FLOAT:
                         if (pageType.equals(float.class)) {
                             toPage = ToFloatPage.create(pageType);
                         } else if (pageType.equals(double.class)) {
                             toPage = ToDoublePage.createFromFloat(pageType);
+                        } else {
+                            throw new TableDataException("Cannot convert parquet FLOAT column to " + pageType);
                         }
                         break;
                     case BINARY:

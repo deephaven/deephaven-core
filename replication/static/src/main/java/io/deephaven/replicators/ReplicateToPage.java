@@ -26,7 +26,6 @@ public class ReplicateToPage {
 
     public static void main(String... args) throws IOException {
         charToFloat(TASK, TO_CHAR_PAGE_PATH, null, "interface");
-        charToByte(TASK, TO_CHAR_PAGE_PATH, (Map<String, Long>) null, "interface");
 
         // LocalDateTime -> LocalTime
         String[][] pairs = new String[][] {

@@ -636,6 +636,21 @@ public final class ParquetTableReadWriteTest {
         final File arrayTableDest = new File(rootFile, "testOverrideBooleanArrayType.parquet");
         ParquetTools.writeTable(arrayTable, arrayTableDest.getPath());
         assertTableEquals(arrayTable, ParquetTools.readTable(arrayTableDest.getPath()));
+        // Boolean -> byte
+        {
+            final ParquetInstructions readInstructions = ParquetInstructions.builder()
+                    .setTableDefinition(TableDefinition.of(ColumnDefinition.ofByte("A")))
+                    .build();
+            final Table byteTable =
+                    TableTools.emptyTable(5).update("A = i % 3 == 0 ? (byte)1 : i % 3 == 1 ? (byte)0 : null");
+            assertTableEquals(byteTable, ParquetTools.readTable(dest.getPath(), readInstructions));
+
+            final Table byteArrayTable =
+                    TableTools.emptyTable(5)
+                            .update("A = new byte[] {i % 3 == 0 ? (byte)1 : i % 3 == 1 ? (byte)0 : (byte)null}");
+            assertTableEquals(byteArrayTable, ParquetTools.readTable(arrayTableDest.getPath(),
+                    readInstructions.withTableDefinition(byteArrayTable.getDefinition())).select());
+        }
 
         // Boolean -> short
         {
