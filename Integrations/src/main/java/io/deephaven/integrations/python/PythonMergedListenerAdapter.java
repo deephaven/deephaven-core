@@ -7,6 +7,7 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.table.TableListener;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.ListenerRecorder;
 import io.deephaven.engine.table.impl.MergedListener;
@@ -101,19 +102,20 @@ public class PythonMergedListenerAdapter extends MergedListener {
 
     @Override
     protected void process() {
-        try {
-            pyListenerCallable.call("__call__");
-        } catch (Exception e) {
-            if (!pyOnFailureCallback.isNone()) {
-                try {
-                    pyOnFailureCallback.call("__call__", ExceptionUtils.getStackTrace(e));
-                } catch (Exception e2) {
-                    // If the Python onFailure callback fails, log the new exception
-                    // and continue with the original exception.
-                    log.error().append("Python on_error callback failed: ").append(e2).endl();
-                }
+        pyListenerCallable.call("__call__");
+    }
+
+    @Override
+    protected void propagateErrorDownstream(boolean fromProcess, @NotNull Throwable error,
+            TableListener.@Nullable Entry entry) {
+        if (pyOnFailureCallback != null && !pyOnFailureCallback.isNone()) {
+            try {
+                pyOnFailureCallback.call("__call__", ExceptionUtils.getStackTrace(error));
+            } catch (Exception e2) {
+                // If the Python onFailure callback fails, log the new exception
+                // and continue with the original exception.
+                log.error().append("Python on_error callback failed: ").append(e2).endl();
             }
-            throw e;
         }
     }
 }
