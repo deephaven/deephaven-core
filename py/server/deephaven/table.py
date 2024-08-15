@@ -473,10 +473,13 @@ class TableDefinition(JObjectWrapper, Mapping):
         """Construct a TableDefinition.
 
         Args:
-            table_definition (TableDefinitionLike): The columns to read. If None, all columns are read.
+            table_definition (TableDefinitionLike): The table definition like object
 
         Returns:
-            The TableDefinition
+            A new TableDefinition
+
+        Raises:
+            DHError
         """
         self.j_table_definition = TableDefinition._to_j_table_definition(
             table_definition
@@ -571,12 +574,12 @@ class Table(JObjectWrapper):
         """The current number of rows in the table."""
         return self.j_table.size()
 
-    @cached_property
+    @property
     def is_refreshing(self) -> bool:
         """Whether this table is refreshing."""
         return self.j_table.isRefreshing()
 
-    @cached_property
+    @property
     def is_blink(self) -> bool:
         """Whether this table is a blink table."""
         return _JBlinkTableTools.isBlink(self.j_table)
@@ -586,7 +589,7 @@ class Table(JObjectWrapper):
         """The update graph of the table."""
         return UpdateGraph(self.j_table.getUpdateGraph())
 
-    @cached_property
+    @property
     def is_flat(self) -> bool:
         """Whether this table is guaranteed to be flat, i.e. its row set will be from 0 to number of rows - 1."""
         return self.j_table.isFlat()
@@ -2456,7 +2459,7 @@ class PartitionedTable(JObjectWrapper):
                                key_cols: Union[str, List[str]] = None,
                                unique_keys: bool = None,
                                constituent_column: str = None,
-                               constituent_table_definition: Optional[TableDefinitionLike] = None,
+                               constituent_table_columns: Optional[TableDefinitionLike] = None,
                                constituent_changes_permitted: bool = None) -> PartitionedTable:
         """Creates a PartitionedTable from the provided underlying partitioned Table.
 
@@ -2477,7 +2480,7 @@ class PartitionedTable(JObjectWrapper):
             key_cols (Union[str, List[str]]): the key column name(s) of 'table'
             unique_keys (bool): whether the keys in 'table' are guaranteed to be unique
             constituent_column (str): the constituent column name in 'table'
-            constituent_table_definition (Optional[TableDefinitionLike]): the table definitions of the constituent table
+            constituent_table_columns (Optional[TableDefinitionLike]): the table definitions of the constituent table
             constituent_changes_permitted (bool): whether the values of the constituent column can change
 
         Returns:
@@ -2486,7 +2489,7 @@ class PartitionedTable(JObjectWrapper):
         Raise:
             DHError
         """
-        none_args = [key_cols, unique_keys, constituent_column, constituent_table_definition,
+        none_args = [key_cols, unique_keys, constituent_column, constituent_table_columns,
                      constituent_changes_permitted]
 
         try:
@@ -2494,7 +2497,7 @@ class PartitionedTable(JObjectWrapper):
                 return PartitionedTable(j_partitioned_table=_JPartitionedTableFactory.of(table.j_table))
 
             if all([arg is not None for arg in none_args]):
-                table_def = TableDefinition(constituent_table_definition).j_table_definition
+                table_def = TableDefinition(constituent_table_columns).j_table_definition
                 j_partitioned_table = _JPartitionedTableFactory.of(table.j_table,
                                                                    j_array_list(to_sequence(key_cols)),
                                                                    unique_keys,
@@ -2511,7 +2514,7 @@ class PartitionedTable(JObjectWrapper):
     @classmethod
     def from_constituent_tables(cls,
                                 tables: List[Table],
-                                constituent_table_definition: Optional[TableDefinitionLike] = None) -> PartitionedTable:
+                                constituent_table_columns: Optional[TableDefinitionLike] = None) -> PartitionedTable:
         """Creates a PartitionedTable with a single column named '__CONSTITUENT__' containing the provided constituent
         tables.
 
@@ -2521,7 +2524,7 @@ class PartitionedTable(JObjectWrapper):
 
         Args:
             tables (List[Table]): the constituent tables
-            constituent_table_definition (Optional[TableDefinitionLike]): the table definition compatible with all the
+            constituent_table_columns (Optional[TableDefinitionLike]): the table definition compatible with all the
                 constituent tables, default is None
 
         Returns:
@@ -2531,10 +2534,10 @@ class PartitionedTable(JObjectWrapper):
             DHError
         """
         try:
-            if not constituent_table_definition:
+            if not constituent_table_columns:
                 return PartitionedTable(j_partitioned_table=_JPartitionedTableFactory.ofTables(to_sequence(tables)))
             else:
-                table_def = TableDefinition(constituent_table_definition).j_table_definition
+                table_def = TableDefinition(constituent_table_columns).j_table_definition
                 return PartitionedTable(j_partitioned_table=_JPartitionedTableFactory.ofTables(table_def,
                                                                                                to_sequence(tables)))
         except Exception as e:

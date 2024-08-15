@@ -5,7 +5,8 @@
 """ This module provides Java compatibility support including convenience functions to create some widely used Java
 data structures from corresponding Python ones in order to be able to call Java methods. """
 
-from typing import Any, Callable, Dict, Iterable, List, Sequence, Set, TypeVar, Union, Optional
+from typing import Any, Callable, Dict, Iterable, List, Sequence, Set, TypeVar, Union, Optional, Mapping
+from warnings import warn
 
 import jpy
 import numpy as np
@@ -14,6 +15,7 @@ import pandas as pd
 from deephaven import dtypes, DHError
 from deephaven._wrapper import unwrap, wrap_j_object, JObjectWrapper
 from deephaven.dtypes import DType, _PRIMITIVE_DTYPE_NULL_MAP
+from deephaven.column import ColumnDefinition
 
 _NULL_BOOLEAN_AS_BYTE = jpy.get_type("io.deephaven.util.BooleanUtils").NULL_BOOLEAN_AS_BYTE
 _JPrimitiveArrayConversionUtility = jpy.get_type("io.deephaven.integrations.common.PrimitiveArrayConversionUtility")
@@ -326,6 +328,40 @@ def _j_array_to_series(dtype: DType, j_array: jpy.JType, conv_null: bool) -> pd.
 
     return s
 
+# Note: unable to import TableDefinitionLike due to circular ref (table.py -> agg.py -> jcompat.py)
+def j_table_definition(
+        table_definition: Union[
+            "TableDefinition",
+            Mapping[str, dtypes.DType],
+            Iterable[ColumnDefinition],
+            jpy.JType,
+            None,
+        ],
+) -> Optional[jpy.JType]:
+    """Deprecated for removal next release, prefer TableDefinition. Produce a Deephaven TableDefinition from user input.
+
+    Args:
+        table_definition (Optional[TableDefinitionLike]): the table definition as a dictionary of column
+            names and their corresponding data types or a list of Column objects
+
+    Returns:
+        a Deephaven TableDefinition object or None if the input is None
+
+    Raises:
+        DHError
+    """
+    warn(
+        "j_table_definition is deprecated for removal next release, prefer TableDefinition",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    from deephaven.table import TableDefinition
+
+    return (
+        TableDefinition(table_definition).j_table_definition
+        if table_definition
+        else None
+    )
 
 class AutoCloseable(JObjectWrapper):
     """A context manager wrapper to allow Java AutoCloseable to be used in with statements.

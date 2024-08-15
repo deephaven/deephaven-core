@@ -191,7 +191,7 @@ class PartitionedTableTestCase(BaseTestCase):
             key_cols="Y",
             unique_keys=True,
             constituent_column="aggPartition",
-            constituent_table_definition=test_table.definition,
+            constituent_table_columns=test_table.definition,
             constituent_changes_permitted=True,
         )
         self.assertEqual(pt.key_columns, pt1.key_columns)
@@ -204,7 +204,7 @@ class PartitionedTableTestCase(BaseTestCase):
                 key_cols="Y",
                 unique_keys=True,
                 constituent_column="Non-existing",
-                constituent_table_definition=test_table.definition,
+                constituent_table_columns=test_table.definition,
                 constituent_changes_permitted=True,
             )
         self.assertIn("no column named", str(cm.exception))

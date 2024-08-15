@@ -67,7 +67,7 @@ class ColumnDefinition(JObjectWrapper):
 
 
 class Column(ColumnDefinition):
-    """A Column object represents a column definition in a Deephaven Table. Deprecated for removal, prefer col_def."""
+    """A Column object represents a column definition in a Deephaven Table. Deprecated for removal next release, prefer col_def."""
 
     def __init__(
             self,
@@ -76,9 +76,9 @@ class Column(ColumnDefinition):
             component_type: DType = None,
             column_type: ColumnType = ColumnType.NORMAL,
     ):
-        """Deprecated for removal, prefer col_def."""
+        """Deprecated for removal next release, prefer col_def."""
         warn(
-            "Column is deprecated, prefer col_def",
+            "Column is deprecated for removal next release, prefer col_def",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -108,6 +108,9 @@ class InputColumn:
 
         Returns:
             a new InputColumn
+
+        Raises:
+            DHError
         """
         try:
             self._column_definition = col_def(
@@ -158,17 +161,23 @@ def col_def(
 
     Returns:
         a new ColumnDefinition
+
+    Raises:
+        DHError
     """
-    return ColumnDefinition(
-        _JColumnDefinition.fromGenericType(
-            name,
-            data_type.j_type.jclass
-            if hasattr(data_type.j_type, "jclass")
-            else data_type.qst_type.clazz(),
-            component_type.qst_type.clazz() if component_type else None,
-            column_type.value,
+    try:
+        return ColumnDefinition(
+            _JColumnDefinition.fromGenericType(
+                name,
+                data_type.j_type.jclass
+                if hasattr(data_type.j_type, "jclass")
+                else data_type.qst_type.clazz(),
+                component_type.qst_type.clazz() if component_type else None,
+                column_type.value,
+            )
         )
-    )
+    except Exception as e:
+        raise DHError(e, f"failed to create a ColumnDefinition ({name}).") from e
 
 
 def bool_col(name: str, data: Sequence) -> InputColumn:

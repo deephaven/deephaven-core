@@ -181,6 +181,10 @@ class ColumnTestCase(BaseTestCase):
         self.assertEquals(foo_def.component_type, None)
         self.assertEquals(foo_def.column_type, ColumnType.PARTITIONING)
 
+    def test_col_def_invalid_component_type(self):
+        with self.assertRaises(DHError):
+            col_def("Foo", dtypes.int32_array, component_type=dtypes.int64)
+
 
 @dataclass
 class CustomClass:
