@@ -3,8 +3,6 @@
 //
 package io.deephaven.engine.table.impl.select.codegen;
 
-import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.QueryLibrary;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.select.QueryScopeParamTypeUtil;
@@ -12,8 +10,6 @@ import io.deephaven.time.TimeLiteralReplacedExpression;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.engine.table.impl.select.DhFormulaColumn;
 import io.deephaven.engine.table.impl.select.formula.FormulaSourceDescriptor;
-import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -83,8 +79,12 @@ public class FormulaAnalyzer {
             @NotNull final String formulaString,
             @NotNull final Map<String, ColumnDefinition<?>> availableColumns,
             @NotNull final Map<String, String> columnRenames,
-            @NotNull final Map<String, Object> queryScopeVariables) throws Exception {
-        return parseFormula(formulaString, availableColumns, columnRenames, queryScopeVariables, true);
+            @NotNull final Map<String, Object> queryScopeVariables,
+            @NotNull final Collection<Package> packageImports,
+            @NotNull final Collection<Class<?>> classImports,
+            @NotNull final Collection<Class<?>> staticImports) throws Exception {
+        return parseFormula(formulaString, availableColumns, columnRenames, queryScopeVariables, packageImports,
+                classImports, staticImports, true);
     }
 
     /**
@@ -94,6 +94,9 @@ public class FormulaAnalyzer {
      * @param availableColumns The columns available for use in the formula
      * @param columnRenames Outer to inner column name mapping
      * @param queryScopeVariables The query scope variables
+     * @param packageImports The package imports
+     * @param classImports The class imports
+     * @param staticImports The static imports
      * @param unboxArguments If true it will unbox the query scope arguments
      * @return The parsed formula {@link QueryLanguageParser.Result result}
      * @throws Exception If the formula cannot be parsed
@@ -103,6 +106,9 @@ public class FormulaAnalyzer {
             @NotNull final Map<String, ColumnDefinition<?>> availableColumns,
             @NotNull final Map<String, String> columnRenames,
             @NotNull final Map<String, Object> queryScopeVariables,
+            @NotNull final Collection<Package> packageImports,
+            @NotNull final Collection<Class<?>> classImports,
+            @NotNull final Collection<Class<?>> staticImports,
             final boolean unboxArguments) throws Exception {
 
         final TimeLiteralReplacedExpression timeConversionResult =
@@ -200,12 +206,8 @@ public class FormulaAnalyzer {
 
         possibleVariables.putAll(timeConversionResult.getNewVariables());
 
-        final QueryLibrary queryLibrary = ExecutionContext.getContext().getQueryLibrary();
-        final Set<Class<?>> classImports = new HashSet<>(queryLibrary.getClassImports());
-        classImports.add(TrackingWritableRowSet.class);
-        classImports.add(WritableColumnSource.class);
-        return new QueryLanguageParser(timeConversionResult.getConvertedFormula(), queryLibrary.getPackageImports(),
-                classImports, queryLibrary.getStaticImports(), possibleVariables, possibleVariableParameterizedTypes,
+        return new QueryLanguageParser(timeConversionResult.getConvertedFormula(), packageImports,
+                classImports, staticImports, possibleVariables, possibleVariableParameterizedTypes,
                 queryScopeVariables, columnVariables, unboxArguments, timeConversionResult).getResult();
     }
 

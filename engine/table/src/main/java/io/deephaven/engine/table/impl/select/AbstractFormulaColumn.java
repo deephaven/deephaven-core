@@ -98,8 +98,12 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
         return usedColumns;
     }
 
-    private HashMap<String, ColumnSource<?>> filterColumnSources(
+    private Map<String, ColumnSource<?>> filterColumnSources(
             final Map<String, ? extends ColumnSource<?>> columnsOfInterest) {
+        if (usedColumns.isEmpty() && usedColumnArrays.isEmpty()) {
+            return Map.of();
+        }
+
         final HashMap<String, ColumnSource<?>> sources = new HashMap<>();
         for (String columnName : usedColumns) {
             sources.put(columnName, columnsOfInterest.get(columnName));
@@ -131,7 +135,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     }
 
     protected void applyUsedVariables(
-            @NotNull final Map<String, ColumnDefinition<?>> columnDefinitionMap,
+            @NotNull final Map<String, ColumnDefinition<?>> parentColumnDefinitions,
             @NotNull final Set<String> variablesUsed,
             @NotNull final Map<String, Object> possibleParams) {
         // the column definition map passed in is being mutated by the caller, so we need to make a copy
@@ -141,7 +145,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
         usedColumns = new ArrayList<>();
         usedColumnArrays = new ArrayList<>();
         for (String variable : variablesUsed) {
-            ColumnDefinition<?> columnDefinition = columnDefinitionMap.get(variable);
+            ColumnDefinition<?> columnDefinition = parentColumnDefinitions.get(variable);
             if (variable.equals("i")) {
                 usesI = true;
             } else if (variable.equals("ii")) {
@@ -154,7 +158,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
             } else {
                 String strippedColumnName =
                         variable.substring(0, Math.max(0, variable.length() - COLUMN_SUFFIX.length()));
-                columnDefinition = columnDefinitionMap.get(strippedColumnName);
+                columnDefinition = parentColumnDefinitions.get(strippedColumnName);
                 if (variable.endsWith(COLUMN_SUFFIX) && columnDefinition != null) {
                     columnDefinitions.put(strippedColumnName, columnDefinition);
                     usedColumnArrays.add(strippedColumnName);

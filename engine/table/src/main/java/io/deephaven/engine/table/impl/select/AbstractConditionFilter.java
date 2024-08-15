@@ -89,7 +89,11 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
         try {
             final QueryLanguageParser.Result result = FormulaAnalyzer.parseFormula(
                     formula, tableDefinition.getColumnNameMap(), outerToInnerNames,
-                    compilationProcessor.getQueryScopeVariables(), unboxArguments);
+                    compilationProcessor.getQueryScopeVariables(),
+                    compilationProcessor.getPackageImports(),
+                    compilationProcessor.getClassImports(),
+                    compilationProcessor.getStaticImports(),
+                    unboxArguments);
 
             formulaShiftColPair = result.getFormulaShiftColPair();
             if (formulaShiftColPair != null) {

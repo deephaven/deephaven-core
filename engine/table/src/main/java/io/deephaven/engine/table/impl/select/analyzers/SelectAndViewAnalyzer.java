@@ -76,22 +76,23 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         }
     }
 
-    public static AnalyzerContext create(
-            final QueryTable sourceTable,
+    public static AnalyzerContext createContext(
+            final QueryTable parentTable,
             final Mode mode,
             final ModifiedColumnSet parentMcs,
-            final boolean publishTheseSources,
+            final boolean publishParentSources,
             boolean useShiftedColumns,
             final SelectColumn... selectColumns) {
-        final UpdateGraph updateGraph = sourceTable.getUpdateGraph();
+        final UpdateGraph updateGraph = parentTable.getUpdateGraph();
 
-        final Map<String, ColumnSource<?>> columnSources = sourceTable.getColumnSourceMap();
-        final TrackingRowSet rowSet = sourceTable.getRowSet();
+        final Map<String, ColumnSource<?>> columnSources = parentTable.getColumnSourceMap();
+        final TrackingRowSet rowSet = parentTable.getRowSet();
 
-        final boolean flatResult = !sourceTable.isFlat()
-                && (columnSources.isEmpty() || !publishTheseSources)
+        final boolean parentIsFlat = parentTable.isFlat();
+        final boolean flatResult = !parentIsFlat
+                && (columnSources.isEmpty() || !publishParentSources)
                 && mode == Mode.SELECT_STATIC;
-        final AnalyzerContext context = new AnalyzerContext(sourceTable, publishTheseSources, flatResult);
+        final AnalyzerContext context = new AnalyzerContext(parentTable, publishParentSources, flatResult);
 
         final Map<String, ColumnDefinition<?>> columnDefinitions = new LinkedHashMap<>();
         final RowRedirection rowRedirection;
@@ -141,7 +142,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
 
             if (realColumn != null && !resultColumnNames.contains(realColumn.getSourceName())) {
                 // if we are preserving a column, then we cannot change key space
-                context.flatResult &= !shouldPreserve(sc, columnSources.get(realColumn.getSourceName()));
+                context.flatResult &= !shouldPreserve(columnSources.get(realColumn.getSourceName()));
             }
 
             // TODO (deephaven#5760): If layers may define more than one column, we'll need to add all of them here.
@@ -157,9 +158,10 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         for (final SelectColumn sc : context.processedCols) {
 
             // if this select column depends on result column then its updates must happen in result-key-space
-            final boolean useResultKeySpace = !sourceTable.isFlat() && context.flatResult
+            // note: if flatResult is true then we are not preserving any parent columns
+            final boolean useResultKeySpace = context.flatResult
                     && Stream.concat(sc.getColumns().stream(), sc.getColumnArrays().stream())
-                            .anyMatch(context.selectedSources::containsKey);
+                            .anyMatch(context.newSources::containsKey);
 
             sc.initInputs(rowSet, useResultKeySpace ? context.allSourcesInResultKeySpace : context.allSources);
 
@@ -179,8 +181,8 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
 
             // shifted columns appear to not be safe for refresh, so we do not validate them until they are rewritten
             // using the intermediary shifted column
-            if (sourceTable.isRefreshing()) {
-                sc.validateSafeForRefresh(sourceTable);
+            if (parentTable.isRefreshing()) {
+                sc.validateSafeForRefresh(parentTable);
             }
 
             if (hasConstantValue(sc)) {
@@ -191,23 +193,20 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             }
 
             final SourceColumn realColumn = tryToGetSourceColumn(sc);
-            if (realColumn != null && shouldPreserve(sc, sc.getDataView())) {
-                context.addLayer(new PreserveColumnLayer(
-                        context, sc, sc.getDataView(), distinctDeps, mcsBuilder));
-                continue;
-            }
-
-            // look for an existing alias that can be preserved instead
             if (realColumn != null) {
+                if (shouldPreserve(sc.getDataView())) {
+                    context.addLayer(new PreserveColumnLayer(context, sc, sc.getDataView(), distinctDeps, mcsBuilder));
+                    continue;
+                }
+                // look for an existing alias that can be preserved instead
                 final ColumnSource<?> alias = resultAlias.get(realColumn.getSourceName());
                 if (alias != null) {
-                    context.addLayer(new PreserveColumnLayer(
-                            context, sc, alias, distinctDeps, mcsBuilder));
+                    context.addLayer(new PreserveColumnLayer(context, sc, alias, distinctDeps, mcsBuilder));
                     continue;
                 }
             }
 
-            // if this is a source column, then results are eligible for aliasing
+            // if this is a SourceColumn, then results are eligible for aliasing
             final Consumer<ColumnSource<?>> maybeCreateAlias = realColumn == null ? NOOP
                     : cs -> resultAlias.put(realColumn.getSourceName(), cs);
 
@@ -229,7 +228,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                 case SELECT_STATIC: {
                     // We need to call newDestInstance because only newDestInstance has the knowledge to endow our
                     // created array with the proper componentType (in the case of Vectors).
-                    final WritableColumnSource<?> scs = sourceTable.isFlat() || context.flatResult
+                    final WritableColumnSource<?> scs = parentIsFlat || context.flatResult
                             ? sc.newFlatDestInstance(targetDestinationCapacity)
                             : sc.newDestInstance(targetDestinationCapacity);
                     maybeCreateAlias.accept(scs);
@@ -326,11 +325,9 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         return false;
     }
 
-    private static boolean shouldPreserve(
-            final SelectColumn sc,
-            final ColumnSource<?> columnSource) {
+    private static boolean shouldPreserve(final ColumnSource<?> columnSource) {
         return columnSource instanceof InMemoryColumnSource && ((InMemoryColumnSource) columnSource).isInMemory()
-                && !Vector.class.isAssignableFrom(sc.getReturnedType());
+                && !Vector.class.isAssignableFrom(columnSource.getType());
     }
 
     /** The layers that make up this analyzer. */
@@ -365,7 +362,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         /** The sources that are available to the analyzer, including parent columns, in result key space. */
         private final Map<String, ColumnSource<?>> allSourcesInResultKeySpace;
         /** The sources that are explicitly defined to the analyzer, including preserved parent columns. */
-        private final Map<String, ColumnSource<?>> selectedSources = new HashMap<>();
+        private final Map<String, ColumnSource<?>> newSources = new HashMap<>();
         /** The sources that are published to the child table. */
         private final Map<String, ColumnSource<?>> publishedSources = new LinkedHashMap<>();
         /** A mapping from result column name to the layer index that created it. */
@@ -385,10 +382,10 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         private int redirectionLayer = -1;
 
         AnalyzerContext(
-                final QueryTable sourceTable,
+                final QueryTable parentTable,
                 final boolean publishTheseSources,
                 final boolean flatResult) {
-            final Map<String, ColumnSource<?>> sources = sourceTable.getColumnSourceMap();
+            final Map<String, ColumnSource<?>> sources = parentTable.getColumnSourceMap();
 
             this.flatResult = flatResult;
 
@@ -407,7 +404,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             } else {
                 allSourcesInResultKeySpace = new HashMap<>();
 
-                final RowRedirection rowRedirection = new WrappedRowSetRowRedirection(sourceTable.getRowSet());
+                final RowRedirection rowRedirection = new WrappedRowSetRowRedirection(parentTable.getRowSet());
                 allSources.forEach((name, cs) -> allSourcesInResultKeySpace.put(name,
                         RedirectedColumnSource.maybeRedirect(rowRedirection, cs)));
             }
@@ -430,7 +427,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             if (flatResult) {
                 layer.populateColumnSources(allSourcesInResultKeySpace);
             }
-            layer.populateColumnSources(selectedSources);
+            layer.populateColumnSources(newSources);
             layer.populateColumnSources(publishedSources);
 
             layers.add(layer);
@@ -478,7 +475,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
                 } else if (!allSources.containsKey(dep)) {
                     // we should have blown up during initDef if this is the case
                     throw new IllegalStateException("Column " + dep + " not found in any layer of the analyzer");
-                } else if (!selectedSources.containsKey(dep)) {
+                } else if (!newSources.containsKey(dep)) {
                     // this is a preserved parent column
                     mcsBuilder.setAll(dep);
                 }
@@ -520,12 +517,12 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
         /**
          * @return the column sources explicitly created by the analyzer
          */
-        public Map<String, ColumnSource<?>> getSelectedColumnSources() {
-            return selectedSources;
+        public Map<String, ColumnSource<?>> getNewColumnSources() {
+            return newSources;
         }
 
         /**
-         * @return the column sources that are published to the child table
+         * @return the column sources that are published through the child table
          */
         public Map<String, ColumnSource<?>> getPublishedColumnSources() {
             // Note that if we have a shift column that we forcefully publish all columns.
@@ -598,13 +595,13 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
          * Shift columns introduce intermediary table operations. This method applies remaining work to the result built
          * so far.
          *
-         * @param sourceTable the source table
+         * @param parentTable the source table
          * @param resultSoFar the intermediate result
          * @param updateFlavor the update flavor
          * @return the final result
          */
         public QueryTable applyShiftsAndRemainingColumns(
-                final @NotNull QueryTable sourceTable,
+                final @NotNull QueryTable parentTable,
                 @NotNull QueryTable resultSoFar,
                 final UpdateFlavor updateFlavor) {
             if (shiftColumn != null) {
@@ -613,19 +610,19 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
             }
 
             // shift columns may introduce modifies that are not present in the original table; set these before using
-            if (sourceTable.isRefreshing()) {
-                if (shiftColumn == null && sourceTable.isAddOnly()) {
+            if (parentTable.isRefreshing()) {
+                if (shiftColumn == null && parentTable.isAddOnly()) {
                     resultSoFar.setAttribute(Table.ADD_ONLY_TABLE_ATTRIBUTE, true);
                 }
-                if ((shiftColumn == null || !shiftColumnHasPositiveOffset) && sourceTable.isAppendOnly()) {
+                if ((shiftColumn == null || !shiftColumnHasPositiveOffset) && parentTable.isAppendOnly()) {
                     // note if the shift offset is non-positive, then this result is still append-only
                     resultSoFar.setAttribute(Table.APPEND_ONLY_TABLE_ATTRIBUTE, true);
                 }
-                if (sourceTable.hasAttribute(Table.TEST_SOURCE_TABLE_ATTRIBUTE)) {
+                if (parentTable.hasAttribute(Table.TEST_SOURCE_TABLE_ATTRIBUTE)) {
                     // be convenient for test authors by propagating the test source table attribute
                     resultSoFar.setAttribute(Table.TEST_SOURCE_TABLE_ATTRIBUTE, true);
                 }
-                if (sourceTable.isBlink()) {
+                if (parentTable.isBlink()) {
                     // blink tables, although possibly not useful, can have shift columns
                     resultSoFar.setAttribute(Table.BLINK_TABLE_ATTRIBUTE, true);
                 }

@@ -71,7 +71,6 @@ import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.vector.Vector;
 import org.apache.commons.lang3.mutable.Mutable;
-import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -1498,7 +1497,7 @@ public class QueryTable extends BaseTable<QueryTable> {
      */
     public SelectValidationResult validateSelect(final SelectColumn... selectColumns) {
         final SelectColumn[] clones = SelectColumn.copyFrom(selectColumns);
-        SelectAndViewAnalyzer.AnalyzerContext analyzerContext = SelectAndViewAnalyzer.create(
+        SelectAndViewAnalyzer.AnalyzerContext analyzerContext = SelectAndViewAnalyzer.createContext(
                 this, SelectAndViewAnalyzer.Mode.SELECT_STATIC, getModifiedColumnSetForUpdates(), true,
                 false, clones);
         return new SelectValidationResult(analyzerContext.createAnalyzer(), clones);
@@ -1526,7 +1525,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                         }
                     }
                     final boolean publishTheseSources = flavor == Flavor.Update;
-                    final SelectAndViewAnalyzer.AnalyzerContext analyzerContext = SelectAndViewAnalyzer.create(
+                    final SelectAndViewAnalyzer.AnalyzerContext analyzerContext = SelectAndViewAnalyzer.createContext(
                             this, mode, getModifiedColumnSetForUpdates(), publishTheseSources, true,
                             selectColumns);
 
@@ -1557,23 +1556,10 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         new SelectAndViewAnalyzer.UpdateHelper(emptyRowSet, fakeUpdate)) {
 
                             try {
-                                final MutableBoolean errorOccurred = new MutableBoolean();
-
                                 analyzer.applyUpdate(
                                         fakeUpdate, emptyRowSet, updateHelper, jobScheduler, liveResultCapture,
-                                        () -> {
-                                            if (errorOccurred.booleanValue()) {
-                                                return;
-                                            }
-                                            waitForResult.complete(null);
-                                        },
-                                        err -> {
-                                            if (errorOccurred.booleanValue()) {
-                                                return;
-                                            }
-                                            errorOccurred.setTrue();
-                                            waitForResult.completeExceptionally(err);
-                                        });
+                                        () -> waitForResult.complete(null),
+                                        waitForResult::completeExceptionally);
                             } catch (Exception e) {
                                 waitForResult.completeExceptionally(e);
                             }
@@ -1611,7 +1597,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                                 resultTable.setFlat();
                             }
                             propagateDataIndexes(processedColumns, resultTable);
-                            for (final ColumnSource<?> columnSource : analyzerContext.getSelectedColumnSources()
+                            for (final ColumnSource<?> columnSource : analyzerContext.getNewColumnSources()
                                     .values()) {
                                 if (columnSource instanceof PossiblyImmutableColumnSource) {
                                     ((PossiblyImmutableColumnSource) columnSource).setImmutable();
@@ -1778,7 +1764,7 @@ public class QueryTable extends BaseTable<QueryTable> {
                             initializeWithSnapshot(humanReadablePrefix, sc, (usePrev, beforeClockValue) -> {
                                 final boolean publishTheseSources = flavor == Flavor.UpdateView;
                                 final SelectAndViewAnalyzer.AnalyzerContext analyzerContext =
-                                        SelectAndViewAnalyzer.create(
+                                        SelectAndViewAnalyzer.createContext(
                                                 this, SelectAndViewAnalyzer.Mode.VIEW_EAGER,
                                                 getModifiedColumnSetForUpdates(), publishTheseSources, true,
                                                 viewColumns);
@@ -1869,9 +1855,10 @@ public class QueryTable extends BaseTable<QueryTable> {
                     sizeForInstrumentation(), () -> {
                         checkInitiateOperation();
 
-                        final SelectAndViewAnalyzer.AnalyzerContext analyzerContext = SelectAndViewAnalyzer.create(
-                                this, SelectAndViewAnalyzer.Mode.VIEW_LAZY,
-                                getModifiedColumnSetForUpdates(), true, true, selectColumns);
+                        final SelectAndViewAnalyzer.AnalyzerContext analyzerContext =
+                                SelectAndViewAnalyzer.createContext(
+                                        this, SelectAndViewAnalyzer.Mode.VIEW_LAZY,
+                                        getModifiedColumnSetForUpdates(), true, true, selectColumns);
                         final SelectColumn[] processedColumns = analyzerContext.getProcessedColumns()
                                 .toArray(SelectColumn[]::new);
                         final QueryTable result = new QueryTable(

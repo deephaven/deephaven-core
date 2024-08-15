@@ -181,7 +181,10 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         try {
             final QueryLanguageParser.Result result = FormulaAnalyzer.parseFormula(
                     formulaString, columnDefinitionMap, Collections.emptyMap(),
-                    compilationRequestProcessor.getQueryScopeVariables());
+                    compilationRequestProcessor.getQueryScopeVariables(),
+                    compilationRequestProcessor.getPackageImports(),
+                    compilationRequestProcessor.getClassImports(),
+                    compilationRequestProcessor.getStaticImports());
             analyzedFormula = FormulaAnalyzer.analyze(formulaString, columnDefinitionMap, result);
             hasConstantValue = result.isConstantValueExpression();
             formulaShiftColPair = result.getFormulaShiftColPair();
