@@ -6,6 +6,7 @@ package io.deephaven.parquet.table.pagestore.topage;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.parquet.base.PageMaterializerFactory;
+import io.deephaven.parquet.base.materializers.IntFromBooleanMaterializer;
 import io.deephaven.parquet.base.materializers.IntFromUnsignedByteMaterializer;
 import io.deephaven.parquet.base.materializers.IntFromUnsignedShortMaterializer;
 import io.deephaven.parquet.base.materializers.IntMaterializer;
@@ -33,12 +34,20 @@ public class ToIntPage<ATTR extends Any> implements ToPage<ATTR, int[]> {
         return FROM_UNSIGNED_BYTE;
     }
 
+    public static <ARRT extends Any> ToIntPage<ARRT> createFromBoolean(final Class<?> nativeType) {
+        verifyNativeType(nativeType);
+        // noinspection unchecked
+        return FROM_BOOLEAN;
+    }
+
     @SuppressWarnings("rawtypes")
     private static final ToIntPage FROM_INT = new ToIntPage<>(IntMaterializer.FACTORY);
     @SuppressWarnings("rawtypes")
     private static final ToIntPage FROM_UNSIGNED_SHORT = new ToIntPage<>(IntFromUnsignedShortMaterializer.FACTORY);
     @SuppressWarnings("rawtypes")
     private static final ToIntPage FROM_UNSIGNED_BYTE = new ToIntPage<>(IntFromUnsignedByteMaterializer.FACTORY);
+    @SuppressWarnings("rawtypes")
+    private static final ToIntPage FROM_BOOLEAN = new ToIntPage<>(IntFromBooleanMaterializer.FACTORY);
 
     private static void verifyNativeType(final Class<?> nativeType) {
         if (nativeType == null || int.class.equals(nativeType)) {

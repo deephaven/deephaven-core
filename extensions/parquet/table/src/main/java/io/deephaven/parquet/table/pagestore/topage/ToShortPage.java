@@ -6,6 +6,7 @@ package io.deephaven.parquet.table.pagestore.topage;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.parquet.base.PageMaterializerFactory;
+import io.deephaven.parquet.base.materializers.ShortFromBooleanMaterializer;
 import io.deephaven.parquet.base.materializers.ShortFromUnsignedByteMaterializer;
 import io.deephaven.parquet.base.materializers.ShortMaterializer;
 import org.jetbrains.annotations.NotNull;
@@ -26,10 +27,18 @@ public class ToShortPage<ATTR extends Any> implements ToPage<ATTR, short[]> {
         return FROM_UNSIGNED_BYTE;
     }
 
+    public static <ATTR extends Any> ToShortPage<ATTR> createFromBoolean(final Class<?> nativeType) {
+        verifyNativeType(nativeType);
+        // noinspection unchecked
+        return FROM_BOOLEAN;
+    }
+
     @SuppressWarnings("rawtypes")
     private static final ToShortPage FROM_SHORT = new ToShortPage<>(ShortMaterializer.FACTORY);
     @SuppressWarnings("rawtypes")
     private static final ToShortPage FROM_UNSIGNED_BYTE = new ToShortPage<>(ShortFromUnsignedByteMaterializer.FACTORY);
+    @SuppressWarnings("rawtypes")
+    private static final ToShortPage FROM_BOOLEAN = new ToShortPage<>(ShortFromBooleanMaterializer.FACTORY);
 
     private static void verifyNativeType(final Class<?> nativeType) {
         if (nativeType == null || short.class.equals(nativeType)) {

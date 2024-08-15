@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.util.Map;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.charToByte;
-import static io.deephaven.replication.ReplicatePrimitiveCode.charToDouble;
 import static io.deephaven.replication.ReplicatePrimitiveCode.charToFloat;
 import static io.deephaven.replication.ReplicatePrimitiveCode.replaceAll;
 
@@ -27,7 +26,6 @@ public class ReplicateToPage {
 
     public static void main(String... args) throws IOException {
         charToFloat(TASK, TO_CHAR_PAGE_PATH, null, "interface");
-        charToDouble(TASK, TO_CHAR_PAGE_PATH, null, "interface");
         charToByte(TASK, TO_CHAR_PAGE_PATH, (Map<String, Long>) null, "interface");
 
         // LocalDateTime -> LocalTime

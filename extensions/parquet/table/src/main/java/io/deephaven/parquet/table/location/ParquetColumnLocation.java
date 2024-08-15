@@ -370,10 +370,22 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                 final PrimitiveType.PrimitiveTypeName typeName = type.getPrimitiveTypeName();
                 switch (typeName) {
                     case BOOLEAN:
-                        toPage = ToBooleanAsBytePage.create(pageType);
+                        if (pageType.equals(Boolean.class)) {
+                            toPage = ToBooleanAsBytePage.create(pageType);
+                        } else if (pageType.equals(short.class)) {
+                            toPage = ToShortPage.createFromBoolean(pageType);
+                        } else if (pageType.equals(int.class)) {
+                            toPage = ToIntPage.createFromBoolean(pageType);
+                        } else if (pageType.equals(long.class)) {
+                            toPage = ToLongPage.createFromBoolean(pageType);
+                        }
                         break;
                     case INT32:
-                        toPage = ToIntPage.create(pageType);
+                        if (pageType.equals(int.class)) {
+                            toPage = ToIntPage.create(pageType);
+                        } else if (pageType.equals(long.class)) {
+                            toPage = ToLongPage.createFromInt(pageType);
+                        }
                         break;
                     case INT64:
                         toPage = ToLongPage.create(pageType);
@@ -385,7 +397,11 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                         toPage = ToDoublePage.create(pageType);
                         break;
                     case FLOAT:
-                        toPage = ToFloatPage.create(pageType);
+                        if (pageType.equals(float.class)) {
+                            toPage = ToFloatPage.create(pageType);
+                        } else if (pageType.equals(double.class)) {
+                            toPage = ToDoublePage.createFromFloat(pageType);
+                        }
                         break;
                     case BINARY:
                     case FIXED_LEN_BYTE_ARRAY:
@@ -415,7 +431,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             if (toPage == null) {
                 throw new TableDataException(
                         "Unsupported parquet column type " + type.getPrimitiveTypeName() +
-                                " with logical type " + logicalTypeAnnotation);
+                                " with logical type " + logicalTypeAnnotation + " and page type " + pageType);
             }
 
             if (specialTypeName == ColumnTypeInfo.SpecialType.StringSet) {
@@ -525,7 +541,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
                 }
             } else {
                 switch (intLogicalType.getBitWidth()) {
-                    case 8: // Test these
+                    case 8:
                         if (pageType.equals(char.class)) {
                             return Optional.of(ToCharPage.create(pageType));
                         } else if (pageType.equals(short.class)) {
