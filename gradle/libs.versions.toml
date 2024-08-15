@@ -51,7 +51,7 @@ javax-validation = "1.0.0.GA"
 jdom2 = "2.0.6.1"
 jetbrains = "24.1.0"
 jetty = "11.0.20"
-jpy = "0.17.0"
+jpy = "0.18.0"
 jsinterop = "2.0.2"
 # google is annoying, and have different versions released for the same groupId
 jsinterop-base = "1.0.1"
