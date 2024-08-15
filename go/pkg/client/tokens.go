@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"github.com/apache/arrow/go/v8/arrow/flight"
 	configpb2 "github.com/deephaven/deephaven-core/go/internal/proto/config"
+	sessionpb2 "github.com/deephaven/deephaven-core/go/internal/proto/session"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/protobuf/proto"
 	"log"
 	"strconv"
 	"sync"
@@ -124,13 +126,21 @@ func (tr *tokenManager) Close() error {
 func newTokenManager(ctx context.Context, fs *flightStub, cfg configpb2.ConfigServiceClient, authType string, authToken string) (*tokenManager, error) {
 	authString := makeAuthString(authType, authToken)
 
-	handshakeClient, err := fs.handshake(withAuth(ctx, authString))
+	handshakeClient, err := fs.handshake(ctx)
 
 	if err != nil {
 		return nil, err
 	}
 
-	tkn, err := requestToken(handshakeClient, &flight.HandshakeRequest{Payload: []byte(authString)})
+	war := sessionpb2.WrappedAuthenticationRequest{
+		Type:    authType,
+		Payload: []byte(authToken),
+	}
+	payload, err := proto.Marshal(&war)
+	if err != nil {
+		return nil, err
+	}
+	tkn, err := requestToken(handshakeClient, &flight.HandshakeRequest{Payload: []byte(payload)})
 
 	if err != nil {
 		return nil, err
