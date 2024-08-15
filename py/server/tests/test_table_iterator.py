@@ -22,7 +22,7 @@ class TableIteratorTestCase(BaseTestCase):
             test_table = read_csv("tests/data/test_table.csv")
             total_read_size = 0
             for d in test_table.iter_chunk_dict(chunk_size=10):
-                self.assertEqual(len(d), len(test_table.columns))
+                self.assertEqual(len(d), len(test_table.definition))
                 for col in test_table.columns:
                     self.assertIn(col.name, d)
                     self.assertEqual(d[col.name].dtype, col.data_type.np_type)
@@ -36,7 +36,7 @@ class TableIteratorTestCase(BaseTestCase):
             test_table.await_update()
             total_read_size = 0
             for d in test_table.iter_chunk_dict(chunk_size=100):
-                self.assertEqual(len(d), len(test_table.columns))
+                self.assertEqual(len(d), len(test_table.definition))
                 for col in test_table.columns:
                     self.assertIn(col.name, d)
                     self.assertEqual(d[col.name].dtype, col.data_type.np_type)
@@ -65,7 +65,7 @@ class TableIteratorTestCase(BaseTestCase):
             test_table = read_csv("tests/data/test_table.csv")
             total_read_size = 0
             for d in test_table.iter_dict():
-                self.assertEqual(len(d), len(test_table.columns))
+                self.assertEqual(len(d), len(test_table.definition))
                 for col in test_table.columns:
                     self.assertIn(col.name, d)
                     self.assertTrue(np.can_cast(col.data_type.np_type, np.dtype(type(d[col.name]))))
@@ -77,7 +77,7 @@ class TableIteratorTestCase(BaseTestCase):
             test_table.await_update()
             total_read_size = 0
             for d in test_table.iter_dict():
-                self.assertEqual(len(d), len(test_table.columns))
+                self.assertEqual(len(d), len(test_table.definition))
                 for col in test_table.columns:
                     self.assertIn(col.name, d)
                     v_type = type(d[col.name])
@@ -108,7 +108,7 @@ class TableIteratorTestCase(BaseTestCase):
             test_table = read_csv("tests/data/test_table.csv")
             t_iter = test_table.iter_chunk_dict(chunk_size=10)
             for d in t_iter:
-                self.assertEqual(len(d), len(test_table.columns))
+                self.assertEqual(len(d), len(test_table.definition))
                 for col in test_table.columns:
                     self.assertIn(col.name, d)
                     self.assertEqual(d[col.name].dtype, col.data_type.np_type)
@@ -159,7 +159,7 @@ class TableIteratorTestCase(BaseTestCase):
             test_table = read_csv("tests/data/test_table.csv")
             t_iter = test_table.iter_dict()
             for d in t_iter:
-                self.assertEqual(len(d), len(test_table.columns))
+                self.assertEqual(len(d), len(test_table.definition))
                 for col in test_table.columns:
                     self.assertIn(col.name, d)
                     self.assertTrue(np.can_cast(col.data_type.np_type, np.dtype(type(d[col.name]))))
@@ -232,7 +232,7 @@ class TableIteratorTestCase(BaseTestCase):
 
         with self.subTest("Chunks"):
             for d in test_table.iter_chunk_dict(chunk_size=10):
-                self.assertEqual(len(d), len(test_table.columns))
+                self.assertEqual(len(d), len(test_table.definition))
                 for col in test_table.columns:
                     self.assertIn(col.name, d)
                     self.assertEqual(dtypes.from_np_dtype(d[col.name].dtype).np_type, col.data_type.np_type)
@@ -240,7 +240,7 @@ class TableIteratorTestCase(BaseTestCase):
 
         with self.subTest("Rows"):
             for d in test_table.iter_dict():
-                self.assertEqual(len(d), len(test_table.columns))
+                self.assertEqual(len(d), len(test_table.definition))
                 for col in test_table.columns:
                     self.assertIn(col.name, d)
                     v_type = type(d[col.name])
@@ -258,7 +258,7 @@ class TableIteratorTestCase(BaseTestCase):
             test_table = read_csv("tests/data/test_table.csv")
             total_read_size = 0
             for d in test_table.iter_chunk_tuple(chunk_size=10):
-                self.assertEqual(len(d), len(test_table.columns))
+                self.assertEqual(len(d), len(test_table.definition))
                 for i, col in enumerate(test_table.columns):
                     self.assertEqual(col.name, d._fields[i])
                     self.assertEqual(d[i].dtype, col.data_type.np_type)
@@ -272,7 +272,7 @@ class TableIteratorTestCase(BaseTestCase):
             test_table.await_update()
             total_read_size = 0
             for d in test_table.iter_chunk_tuple(chunk_size=100):
-                self.assertEqual(len(d), len(test_table.columns))
+                self.assertEqual(len(d), len(test_table.definition))
                 for i, col in enumerate(test_table.columns):
                     self.assertEqual(col.name, d._fields[i])
                     self.assertEqual(d[i].dtype, col.data_type.np_type)
@@ -301,7 +301,7 @@ class TableIteratorTestCase(BaseTestCase):
             test_table = read_csv("tests/data/test_table.csv")
             total_read_size = 0
             for d in test_table.iter_tuple():
-                self.assertEqual(len(d), len(test_table.columns))
+                self.assertEqual(len(d), len(test_table.definition))
                 for i, col in enumerate(test_table.columns):
                     self.assertEqual(col.name, d._fields[i])
                     self.assertTrue(np.can_cast(col.data_type.np_type, np.dtype(type(d[i]))))
@@ -313,7 +313,7 @@ class TableIteratorTestCase(BaseTestCase):
             test_table.await_update()
             total_read_size = 0
             for d in test_table.iter_tuple():
-                self.assertEqual(len(d), len(test_table.columns))
+                self.assertEqual(len(d), len(test_table.definition))
                 for i, col in enumerate(test_table.columns):
                     self.assertEqual(col.name, d._fields[i])
                     v_type = type(d[i])

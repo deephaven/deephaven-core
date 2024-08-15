@@ -104,7 +104,7 @@ class TableListenerTestCase(BaseTestCase):
         for change in changes:
             self.assertTrue(isinstance(change, dict))
             if not cols:
-                cols = [col.name for col in self.test_table.columns]
+                cols = self.test_table.column_names
             for col in cols:
                 self.assertIn(col, change.keys())
                 self.assertTrue(isinstance(change[col], numpy.ndarray))
@@ -274,8 +274,7 @@ class TableListenerTestCase(BaseTestCase):
         ]
         t = new_table(cols=cols)
         self.assertEqual(t.size, 2)
-        col_defs = {c.name: c.data_type for c in t.columns}
-        dep_table = input_table(col_defs=col_defs)
+        dep_table = input_table(col_defs=t.definition)
 
         def listener_func(update, is_replay):
             table_update_recorder.record(update, is_replay)
