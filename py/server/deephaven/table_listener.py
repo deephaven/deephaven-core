@@ -197,7 +197,7 @@ class TableListener(ABC):
         ...
 
     def on_error(self, e: Exception) -> None:
-        """The callback method on a listener object that prints out the received error.
+        """The callback method on a listener object that handles the received error. The default implementation simply prints the error.
 
         Args:
             e (Exception): the exception that occurred during the listener's execution.
@@ -447,7 +447,7 @@ class MergedListener(ABC):
         ...
 
     def on_error(self, e: Exception) -> None:
-        """ The callback method on a listener object that prints out the received error.
+        """ The callback method on a listener object that handles the received error. The default implementation simply prints the error.
 
         Args:
             e (Exception): the exception that occurred during the listener's execution.
