@@ -11,27 +11,27 @@ import io.deephaven.parquet.base.PageMaterializer;
 import io.deephaven.parquet.base.PageMaterializerFactory;
 import org.apache.parquet.column.values.ValuesReader;
 
-public class IntMaterializer extends IntMaterializerBase implements PageMaterializer {
+public class LongFromBooleanMaterializer extends LongMaterializerBase implements PageMaterializer {
 
     public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
-            return new IntMaterializer(dataReader, (int) nullValue, numValues);
+            return new LongFromBooleanMaterializer(dataReader, (long) nullValue, numValues);
         }
 
         @Override
         public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
-            return new IntMaterializer(dataReader, numValues);
+            return new LongFromBooleanMaterializer(dataReader, numValues);
         }
     };
 
     private final ValuesReader dataReader;
 
-    private IntMaterializer(ValuesReader dataReader, int numValues) {
+    private LongFromBooleanMaterializer(ValuesReader dataReader, int numValues) {
         this(dataReader, 0, numValues);
     }
 
-    private IntMaterializer(ValuesReader dataReader, int nullValue, int numValues) {
+    private LongFromBooleanMaterializer(ValuesReader dataReader, long nullValue, int numValues) {
         super(nullValue, numValues);
         this.dataReader = dataReader;
     }
@@ -39,7 +39,7 @@ public class IntMaterializer extends IntMaterializerBase implements PageMaterial
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = dataReader.readInteger();
+            data[ii] = dataReader.readBoolean() ? 1 : 0;
         }
     }
 }
