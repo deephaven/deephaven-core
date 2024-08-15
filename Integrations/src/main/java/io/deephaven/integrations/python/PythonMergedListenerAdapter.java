@@ -56,7 +56,7 @@ public class PythonMergedListenerAdapter extends MergedListener {
             @Nullable NotificationQueue.Dependency[] dependencies,
             @Nullable String listenerDescription,
             @NotNull PyObject pyListener,
-            @Nullable PyObject pyOnFailureCallback) {
+            @NotNull PyObject pyOnFailureCallback) {
         super(Arrays.asList(recorders), Arrays.asList(dependencies), listenerDescription, null);
         Arrays.stream(recorders).forEach(rec -> rec.setMergedListener(this));
         this.pyListenerCallable = PythonUtils.pyMergeListenerFunc(pyListener);
@@ -68,7 +68,7 @@ public class PythonMergedListenerAdapter extends MergedListener {
             @Nullable NotificationQueue.Dependency[] dependencies,
             @Nullable String listenerDescription,
             @NotNull PyObject pyListener,
-            @Nullable PyObject pyOnFailureCallback) {
+            @NotNull PyObject pyOnFailureCallback) {
         if (recorders.length < 2) {
             throw new IllegalArgumentException("At least two listener recorders must be provided");
         }

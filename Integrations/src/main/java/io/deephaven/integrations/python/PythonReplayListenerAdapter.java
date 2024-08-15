@@ -19,6 +19,7 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ScriptApi;
+import org.jetbrains.annotations.NotNull;
 import org.jpy.PyObject;
 
 import javax.annotation.Nullable;
@@ -52,8 +53,13 @@ public class PythonReplayListenerAdapter extends InstrumentedTableUpdateListener
      * @param pyListener Python listener object.
      * @param dependencies The tables that must be satisfied before this listener is executed.
      */
-    public static PythonReplayListenerAdapter create(@Nullable String description, Table source, boolean retain,
-            PyObject pyListener, @Nullable PyObject pyOnFailureCallback, NotificationQueue.Dependency... dependencies) {
+    public static PythonReplayListenerAdapter create(
+            @Nullable String description,
+            @NotNull Table source,
+            boolean retain,
+            @NotNull PyObject pyListener,
+            @NotNull PyObject pyOnFailureCallback,
+            @Nullable NotificationQueue.Dependency... dependencies) {
         final UpdateGraph updateGraph = source.getUpdateGraph(dependencies);
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             return new PythonReplayListenerAdapter(description, source, retain, pyListener, pyOnFailureCallback,
@@ -61,8 +67,13 @@ public class PythonReplayListenerAdapter extends InstrumentedTableUpdateListener
         }
     }
 
-    private PythonReplayListenerAdapter(@Nullable String description, Table source, boolean retain, PyObject pyListener,
-            @Nullable PyObject pyOnFailureCallback, NotificationQueue.Dependency... dependencies) {
+    private PythonReplayListenerAdapter(
+            @Nullable String description,
+            @NotNull Table source,
+            boolean retain,
+            @NotNull PyObject pyListener,
+            @NotNull PyObject pyOnFailureCallback,
+            @Nullable NotificationQueue.Dependency... dependencies) {
         super(description, source, retain);
         this.dependencies = dependencies;
         this.pyListenerCallable = PythonUtils.pyListenerFunc(pyListener);
