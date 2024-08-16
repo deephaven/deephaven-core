@@ -116,6 +116,8 @@ public class PythonMergedListenerAdapter extends MergedListener {
                 // and continue with the original exception.
                 log.error().append("Python on_error callback failed: ").append(e2).endl();
             }
+        } else {
+            log.error().append("Python on_error callback is None: ").append(ExceptionUtils.getStackTrace(error)).endl();
         }
     }
 }

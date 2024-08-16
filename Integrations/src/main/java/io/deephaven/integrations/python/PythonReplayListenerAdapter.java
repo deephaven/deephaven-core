@@ -108,6 +108,9 @@ public class PythonReplayListenerAdapter extends InstrumentedTableUpdateListener
                 // and continue with the original exception.
                 log.error().append("Python on_error callback failed: ").append(e).endl();
             }
+        } else {
+            log.error().append("Python on_error callback is None: ")
+                    .append(ExceptionUtils.getStackTrace(originalException)).endl();
         }
         super.onFailureInternal(originalException, sourceEntry);
     }

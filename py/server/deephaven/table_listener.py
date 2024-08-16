@@ -23,6 +23,7 @@ _JTableUpdate = jpy.get_type("io.deephaven.engine.table.TableUpdate")
 _JListenerRecorder = jpy.get_type("io.deephaven.engine.table.impl.ListenerRecorder")
 _JPythonMergedListenerAdapter = jpy.get_type("io.deephaven.integrations.python.PythonMergedListenerAdapter")
 
+_DEFAULT_ON_ERROR_CALLBACK = lambda e : print(f"An error occurred during listener execution: {e}")
 
 class TableUpdate(JObjectWrapper):
     """A TableUpdate object represents a table update event.  It contains the added, removed, and modified rows in the
@@ -205,9 +206,6 @@ class TableListener(ABC):
         print(f"An error occurred during listener execution: {self}, {e}")
 
 
-def _default_on_error(e: Exception) -> None:
-    print(f"An error occurred during listener execution: {e}")
-
 def _listener_wrapper(table: Table):
     """A decorator to wrap a user listener function or on_update method to receive the numpy-converted Table updates.
 
@@ -224,7 +222,6 @@ def _listener_wrapper(table: Table):
         return wrapper
 
     return decorator
-
 
 def _wrap_listener_func(t: Table, listener: Callable[[TableUpdate, bool], None]):
     n_params = len(signature(listener).parameters)
@@ -247,6 +244,7 @@ def _error_callback_wrapper(callback: Callable[[Exception], None]):
         callback(RuntimeError(e))
 
     return wrapper
+
 
 class TableListenerHandle(JObjectWrapper):
     """A handle to manage a table listener's lifecycle."""
@@ -287,11 +285,10 @@ class TableListenerHandle(JObjectWrapper):
                 and then add the result tables as dependencies to the listener so that they can be safely read in it.
             on_error (Callable[[Exception], None]): a callback function to be invoked when an error occurs during the
                 listener's execution. It should only be set when the listener is a function, not when it is an instance
-                of TableListener. Defaults to None. When None, a default callback function will be provided that simply
+                of TableListener. When the listener is a TableListener, TableListener.on_error will be used.
+                Defaults to None. When None, a default callback function will be provided that simply
                 prints out the received exception. If the callback function itself raises an exception, the new exception
                 will be logged in the Deephaven server log and will not be further processed by the server.
-
-
 
         Raises:
             DHError
@@ -313,7 +310,7 @@ class TableListenerHandle(JObjectWrapper):
             if on_error:
                 on_error_callback = _error_callback_wrapper(on_error)
             else:
-                on_error_callback = _error_callback_wrapper(_default_on_error)
+                on_error_callback = _error_callback_wrapper(_DEFAULT_ON_ERROR_CALLBACK)
         else:
             raise DHError(message="listener is neither callable nor TableListener object")
 
@@ -390,10 +387,10 @@ def listen(t: Table, listener: Union[Callable[[TableUpdate, bool], None], TableL
             and then add the result tables as dependencies to the listener so that they can be safely read in it.
         on_error (Callable[[Exception], None]): a callback function to be invoked when an error occurs during the
             listener's execution. It should only be set when the listener is a function, not when it is an instance
-            of TableListener. Defaults to None. When None, a default callback function will be provided that simply
+            of TableListener. When the listener is a TableListener, TableListener.on_error will be used.
+            Defaults to None. When None, a default callback function will be provided that simply
             prints out the received exception. If the callback function itself raises an exception, the new exception
             will be logged in the Deephaven server log and will not be further processed by the server.
-
 
     Returns:
         a TableListenerHandle
@@ -499,10 +496,10 @@ class MergedListenerHandle(JObjectWrapper):
                 and then add the result tables as dependencies to the listener so that they can be safely read in it.
             on_error (Callable[[Exception], None]): a callback function to be invoked when an error occurs during the
                 listener's execution. It should only be set when the listener is a function, not when it is an instance
-                of MergedListener. Defaults to None. When None, a default callback function will be provided that simply
+                of MergedListener. When the listener is a MergedListener, MergedListener.on_error will be used.
+                Defaults to None. When None, a default callback function will be provided that simply
                 prints out the received exception. If the callback function itself raises an exception, the new exception
                 will be logged in the Deephaven server log and will not be further processed by the server.
-
 
         Raises:
             DHError
@@ -525,7 +522,7 @@ class MergedListenerHandle(JObjectWrapper):
             if on_error:
                 on_error_callback = _error_callback_wrapper(on_error)
             else:
-                on_error_callback = _error_callback_wrapper(_default_on_error)
+                on_error_callback = _error_callback_wrapper(_DEFAULT_ON_ERROR_CALLBACK)
         else:
             raise DHError(message="listener is neither callable nor MergedListener object")
 
@@ -625,7 +622,8 @@ def merged_listen(tables: Sequence[Table], listener: Union[Callable[[Dict[Table,
             and then add the result tables as dependencies to the listener so that they can be safely read in it.
         on_error (Callable[[Exception], None]): a callback function to be invoked when an error occurs during the
             listener's execution. It should only be set when the listener is a function, not when it is an instance
-            of MergedListener. Defaults to None. When None, a default callback function will be provided that simply
+            of MergedListener. When the listener is a MergedListener, MergedListener.on_error will be used.
+            Defaults to None. When None, a default callback function will be provided that simply
             prints out the received exception. If the callback function itself raises an exception, the new exception
             will be logged in the Deephaven server log and will not be further processed by the server.
     """
