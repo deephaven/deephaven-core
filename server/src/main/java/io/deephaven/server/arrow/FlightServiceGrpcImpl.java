@@ -3,6 +3,8 @@
 //
 package io.deephaven.server.arrow;
 
+import com.github.f4b6a3.uuid.UuidCreator;
+import com.github.f4b6a3.uuid.exception.InvalidUuidException;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteStringAccess;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -27,6 +29,7 @@ import io.deephaven.auth.AuthContext;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
+import org.apache.arrow.flight.auth2.Auth2Constants;
 import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.flight.impl.FlightServiceGrpc;
 import org.jetbrains.annotations.NotNull;
@@ -35,8 +38,10 @@ import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ScheduledExecutorService;
 
 @Singleton
@@ -126,6 +131,17 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                 auth = login(BasicAuthMarshaller.AUTH_TYPE, protocolVersion, payload, handshakeResponseListener);
                 if (auth.isEmpty()) {
                     final WrappedAuthenticationRequest req = WrappedAuthenticationRequest.parseFrom(payload);
+                    // If the auth request is bearer, the v1 auth might be trying to renew an existing session
+                    if (req.getType().equals(Auth2Constants.BEARER_PREFIX.trim())) {
+                        try {
+                            UUID uuid = UuidCreator.fromString(req.getPayload().toString(StandardCharsets.US_ASCII));
+                            SessionState session = sessionService.getSessionForToken(uuid);
+                            respondWithAuthTokenBin(session);
+                            return;
+                        } catch (IllegalArgumentException | InvalidUuidException ignored) {}
+                    }
+
+                    // Attempt to log in with the given type and token
                     auth = login(req.getType(), protocolVersion, req.getPayload(), handshakeResponseListener);
                 }
             } catch (final AuthenticationException | InvalidProtocolBufferException err) {
