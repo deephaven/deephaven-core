@@ -23,7 +23,7 @@ _JTableUpdate = jpy.get_type("io.deephaven.engine.table.TableUpdate")
 _JListenerRecorder = jpy.get_type("io.deephaven.engine.table.impl.ListenerRecorder")
 _JPythonMergedListenerAdapter = jpy.get_type("io.deephaven.integrations.python.PythonMergedListenerAdapter")
 
-_DEFAULT_ON_ERROR_CALLBACK = lambda e : print(f"An error occurred during listener execution: {e}")
+_DEFAULT_ON_ERROR_CALLBACK = lambda e : print(f"An error occurred during table update processing: {e}")
 
 class TableUpdate(JObjectWrapper):
     """A TableUpdate object represents a table update event.  It contains the added, removed, and modified rows in the
@@ -203,7 +203,7 @@ class TableListener(ABC):
         Args:
             e (Exception): the exception that occurred during the listener's execution.
         """
-        print(f"An error occurred during listener execution: {self}, {e}")
+        print(f"An error occurred during table update processing: {self}, {e}")
 
 
 def _listener_wrapper(table: Table):
@@ -449,7 +449,7 @@ class MergedListener(ABC):
         Args:
             e (Exception): the exception that occurred during the listener's execution.
         """
-        print(f"An error occurred during listener execution: {self}, {e}")
+        print(f"An error occurred during talbe update processing: {self}, {e}")
 
 
 class MergedListenerHandle(JObjectWrapper):
