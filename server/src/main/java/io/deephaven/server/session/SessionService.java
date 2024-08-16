@@ -350,7 +350,8 @@ public class SessionService {
         int offset = token.indexOf(' ');
         final String key = token.substring(0, offset < 0 ? token.length() : offset);
         final String payload = offset < 0 ? "" : token.substring(offset + 1);
-        // Use the auth type to look up a handler
+        // Use the auth type to look up a handler. If this happens to be Bearer, this gives a chance for an auth handler
+        // to claim that type
         AuthenticationRequestHandler handler = authRequestHandlers.get(key);
         if (handler != null) {
             Optional<AuthContext> s = handler.login(payload, SessionServiceGrpcImpl::insertCallHeader);
@@ -358,6 +359,7 @@ public class SessionService {
                 return newSession(s.get());
             }
         }
+        // If nothing succeeded or errored yet, and we found a key in the bearer value, try that next
         if (bearerKey != null) {
             handler = authRequestHandlers.get(bearerKey);
             if (handler != null) {
@@ -368,6 +370,7 @@ public class SessionService {
             }
         }
 
+        // No more options, log an error and return
         log.info().append("No AuthenticationRequestHandler registered for type ").append(key).endl();
         throw new AuthenticationException();
     }
