@@ -449,7 +449,7 @@ class MergedListener(ABC):
         Args:
             e (Exception): the exception that occurred during the listener's execution.
         """
-        print(f"An error occurred during talbe update processing: {self}, {e}")
+        print(f"An error occurred during table update processing: {self}, {e}")
 
 
 class MergedListenerHandle(JObjectWrapper):
