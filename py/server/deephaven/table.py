@@ -816,6 +816,16 @@ class Table(JObjectWrapper):
         """Returns a new version of this table with a flat row set, i.e. from 0 to number of rows - 1."""
         return Table(j_table=self.j_table.flatten())
 
+    def remove_blink(self) -> Table:
+        """Returns a new version of this table without specialized blink table aggregation semantics."""
+        if self.is_blink:
+            try:
+                return Table(j_table=self.j_table.removeBlink())
+            except Exception as e:
+                raise DHError(e, "failed to remove blink table semantics.") from e
+        else:
+            raise RuntimeError("Table is not a blink table, so blink table semantics cannot be removed.")
+
     def snapshot(self) -> Table:
         """Returns a static snapshot table.
 

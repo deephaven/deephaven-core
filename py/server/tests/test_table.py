@@ -930,6 +930,12 @@ class TableTestCase(BaseTestCase):
         self.assertEqual(len(attrs), len(rt_attrs) + 1)
         self.assertIn("BlinkTable", set(attrs.keys()) - set(rt_attrs.keys()))
 
+    def test_remove_blink(self):
+        t_blink = time_table("PT1s", blink_table=True).update("X = ii")
+        t_no_blink = t_blink.remove_blink()
+        self.assertEqual(t_blink.is_blink, True)
+        self.assertEqual(t_no_blink.is_blink, False)
+
     def test_grouped_column_as_arg(self):
         t1 = empty_table(100).update(
             ["id = i % 10", "Person = random() > 0.5 ? true : random() > 0.5 ? false : true"]).sort(
