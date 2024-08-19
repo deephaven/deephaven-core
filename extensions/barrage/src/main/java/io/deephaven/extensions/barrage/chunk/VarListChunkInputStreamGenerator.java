@@ -46,11 +46,17 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
 
         final Class<?> myType = type.getComponentType();
         final Class<?> myComponentType = myType != null ? myType.getComponentType() : null;
-        ChunkType chunkType = ChunkType.fromElementType(myType);
-        if (chunkType == ChunkType.Boolean) {
-            // the internal payload is in bytes (to handle nulls), but the wire format is packed bits
+
+        final ChunkType chunkType;
+        if (myType == boolean.class || myType == Boolean.class) {
+            // Note: Internally booleans are passed around as bytes, but the wire format is packed bits.
             chunkType = ChunkType.Byte;
+        } else if (myType != null && !myType.isPrimitive()) {
+            chunkType = ChunkType.Object;
+        } else {
+            chunkType = ChunkType.fromElementType(myType);
         }
+
         final ArrayExpansionKernel kernel = ArrayExpansionKernel.makeExpansionKernel(chunkType, myType);
         offsets = WritableIntChunk.makeWritableChunk(chunk.size() + 1);
 

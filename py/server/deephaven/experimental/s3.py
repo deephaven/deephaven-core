@@ -21,14 +21,14 @@ except Exception:
     _JS3Instructions = None
 
 """
-    This module is useful for reading files stored in S3-compatible APIs.
+    This module is useful for reading from and writing to S3-compatible APIs.
     Importing this module requires the S3 specific deephaven extensions (artifact name deephaven-extensions-s3) to be
     included in the package. This is an opt-out functionality included by default. If not included, importing this
     module will fail to find the java types.
 """
 class S3Instructions(JObjectWrapper):
     """
-    S3Instructions provides specialized instructions for reading from S3-compatible APIs.
+    S3Instructions provides specialized instructions for reading from and writing to S3-compatible APIs.
     """
 
     j_object_type = _JS3Instructions or type(None)
@@ -45,7 +45,9 @@ class S3Instructions(JObjectWrapper):
                  access_key_id: Optional[str] = None,
                  secret_access_key: Optional[str] = None,
                  anonymous_access: bool = False,
-                 endpoint_override: Optional[str] = None):
+                 endpoint_override: Optional[str] = None,
+                 write_part_size: Optional[int] = None,
+                 num_concurrent_write_parts: Optional[int] = None):
 
         """
         Initializes the instructions.
@@ -76,6 +78,14 @@ class S3Instructions(JObjectWrapper):
                 anonymous access. Can't be combined with other credentials. By default, is False.
             endpoint_override (str): the endpoint to connect to. Callers connecting to AWS do not typically need to set
                 this; it is most useful when connecting to non-AWS, S3-compatible APIs.
+            write_part_size (int): Writes to S3 are done in parts or chunks, and this value determines the size of each
+                part (in bytes). The default value is 10485760 (= 10 MiB) and minimum allowed part size is 5 MiB.
+                Setting a higher value may increase throughput, but may also increase memory usage.
+                Note that the maximum number of parts allowed for a single file is 10,000. Therefore, for 10 MiB part
+                size, the maximum size of a single file that can be written is roughly 100k MiB (or about 98 GiB).
+            num_concurrent_write_parts (int): the maximum number of parts that can be uploaded concurrently when writing
+                to S3 without blocking, defaults to 64. Setting a higher value may increase throughput, but may also
+                increase memory usage.
 
         Raises:
             DHError: If unable to build the instructions object.
@@ -119,6 +129,12 @@ class S3Instructions(JObjectWrapper):
 
             if endpoint_override is not None:
                 builder.endpointOverride(endpoint_override)
+
+            if write_part_size is not None:
+                builder.writePartSize(write_part_size)
+
+            if num_concurrent_write_parts is not None:
+                builder.numConcurrentWriteParts(num_concurrent_write_parts)
 
             self._j_object = builder.build()
         except Exception as e:

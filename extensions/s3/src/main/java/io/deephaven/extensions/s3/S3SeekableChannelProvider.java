@@ -11,6 +11,7 @@ import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.channel.Channels;
+import io.deephaven.util.channel.CompletableOutputStream;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.jetbrains.annotations.NotNull;
@@ -28,7 +29,6 @@ import java.lang.ref.SoftReference;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -130,8 +130,9 @@ final class S3SeekableChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public SeekableByteChannel getWriteChannel(@NotNull final Path path, final boolean append) {
-        throw new UnsupportedOperationException("Writing to S3 is currently unsupported");
+    public CompletableOutputStream getOutputStream(@NotNull final URI uri, final int bufferSizeHint) {
+        // bufferSizeHint is unused because s3 output stream is buffered internally into parts
+        return new S3CompletableOutputStream(uri, s3AsyncClient, s3Instructions);
     }
 
     @Override
