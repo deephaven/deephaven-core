@@ -133,7 +133,7 @@ public class JsTotalsTableConfig {
         if (source.has("operationMap")) {
             operationMap = source.getAsAny("operationMap").cast();
             operationMap.forEach(key -> {
-                operationMap.get(key).forEach((value, index, array) -> {
+                operationMap.get(key).forEach((value, index) -> {
                     checkOperation(Js.cast(value));
                     return null;
                 });
@@ -237,9 +237,9 @@ public class JsTotalsTableConfig {
         Map<String, LinkedHashSet<String>> aggs = new HashMap<>();
         List<String> colsNeedingCompoundNames = new ArrayList<>();
         Set<String> seenColNames = new HashSet<>();
-        groupBy.forEach((col, p1, p2) -> seenColNames.add(Js.cast(col)));
+        groupBy.forEach((col, p1) -> seenColNames.add(Js.cast(col)));
         this.operationMap.forEach(colName -> {
-            this.operationMap.get(colName).forEach((agg, index, arr) -> {
+            this.operationMap.get(colName).forEach((agg, index) -> {
                 if (!JsAggregationOperation.canAggregateType(agg, columnTypes.get(colName))) {
                     // skip this column. to follow DHE's behavior
                     return null;
@@ -272,7 +272,7 @@ public class JsTotalsTableConfig {
                     AggregationCount count = new AggregationCount();
                     count.setColumnName("Count");
                     agg.setCount(count);
-                    aggColumns.forEach((p0, p1, p2) -> {
+                    aggColumns.forEach((p0, p1) -> {
                         String colName = p0.split("=")[0].trim();
                         customColumns.push(colName + " = Count");
                         return null;
@@ -296,7 +296,7 @@ public class JsTotalsTableConfig {
                     columns.setSpec(spec);
                     columns.setMatchPairsList(aggColumns);
                     agg.setColumns(columns);
-                    aggColumns.forEach((p0, p1, p2) -> {
+                    aggColumns.forEach((p0, p1) -> {
                         String colName = p0.split("=")[0].trim();
                         customColumns.push(colName + "= `` + " + colName);
                         return null;

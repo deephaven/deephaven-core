@@ -2,14 +2,6 @@ plugins {
     id 'io.deephaven.project.register'
 }
 
-configurations {
-    implementation.extendsFrom dhBenchmarkSupport
-
-    testImplementation.extendsFrom fishIoTest
-
-    testRuntimeOnly.extendsFrom fishDataGenerator
-}
-
 sourceSets {
     main {
         java {
@@ -30,16 +22,19 @@ dependencies {
     implementation project(':Base')
     implementation project(':engine-table')
     implementation project(':extensions-parquet-table')
+    implementation project(':extensions-parquet-base')
     implementation project(':Configuration')
-    implementation 'org.openjdk.jmh:jmh-core:1.20'
+    implementation libs.jmh.core
 
-    testImplementation TestTools.projectDependency(project, 'Util')
-    testImplementation TestTools.projectDependency(project, 'engine-table')
+    implementation libs.univocity.parsers
+
+    testImplementation project(':engine-test-utils')
+    testImplementation project(path: ':Base', configuration: 'tests')
 
     testRuntimeOnly project(path: ':configs')
     testRuntimeOnly project(path: ':test-configs')
     testRuntimeOnly project(':Numerics')
 
     testRuntimeOnly project(':log-to-slf4j')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly libs.slf4j.simple
 }

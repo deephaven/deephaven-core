@@ -4,7 +4,7 @@ on:
   push:
     branches: [ 'main', 'release/v*' ]
   pull_request:
-    branches: [ main ]
+    branches: [ 'main', 'rc/v*' ]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -13,6 +13,8 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-22.04
+    permissions:
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,6 +32,9 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Set JAVA_HOME
         run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
@@ -49,20 +54,12 @@ jobs:
 
       - name: Build all artifacts, publish to Maven Local
         if: ${{ !startsWith(github.ref, 'refs/heads/release/v') }}
-        uses: burrunan/gradle-cache-action@v1
-        with:
-          job-id: publish-local
-          arguments: server-netty-app:build server-jetty-app:build py-server:build py-embedded-server:build py-client:build web-client-api:types:build publishToMavenLocal
-          gradle-version: wrapper
+        run: ./gradlew server-netty-app:build server-jetty-app:build py-server:build py-embedded-server:build py-client:build py-client-ticking:build web-client-api:types:build publishToMavenLocal
 
       - name: Build all artifacts, publish to Sonatype for staging to Maven Central
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
-        uses: burrunan/gradle-cache-action@v1
-        with:
-          job-id: publish
-          # We need to be explicit here about no parallelism to ensure we don't create disjointed staging repositories.
-          arguments: --no-parallel server-netty-app:build server-jetty-app:build py-server:build py-client:build py-embedded-server:build web-client-api:types:build publish
-          gradle-version: wrapper
+        # We need to be explicit here about no parallelism to ensure we don't create disjointed staging repositories.
+        run: ./gradlew --no-parallel server-netty-app:build server-jetty-app:build py-server:build py-embedded-server:build py-client:build py-client-ticking:build web-client-api:types:build publish
         env:
           ORG_GRADLE_PROJECT_ossrhUsername: ${{ secrets.SONATYPE_USERNAME }}
           ORG_GRADLE_PROJECT_ossrhPassword: ${{ secrets.SONATYPE_PASSWORD }}
@@ -80,14 +77,13 @@ jobs:
             py/server/build/wheel/
             py/embedded-server/build/wheel/
             py/client/build/wheel/
+            py/client-ticking/build/wheel/
             web/client-api/types/build/*.tgz
 
       - name: Publish deephaven-core to PyPi
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          user: __token__
-          password: ${{ secrets.DEEPHAVENCORE_PYPI_TOKEN }}
           packages_dir: py/server/build/wheel/
         continue-on-error: true
 
@@ -95,8 +91,6 @@ jobs:
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          user: __token__
-          password: ${{ secrets.DEEPHAVENSERVER_PYPI_TOKEN }}
           packages_dir: py/embedded-server/build/wheel/
         continue-on-error: true
 
@@ -104,9 +98,14 @@ jobs:
         if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          user: __token__
-          password: ${{ secrets.PYDEEPHAVEN_PYPI_TOKEN }}
           packages_dir: py/client/build/wheel/
+        continue-on-error: true
+
+      - name: Publish pydeephaven-ticking to PyPi
+        if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages_dir: py/client-ticking/build/wheel/
         continue-on-error: true
 
       - name: Publish @deephaven/jsapi-types to npmjs

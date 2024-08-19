@@ -26,25 +26,31 @@ import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.sources.RowKeyColumnSource;
 import io.deephaven.engine.table.impl.sources.UnionRedirection;
 import io.deephaven.engine.table.impl.verify.TableAssertions;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.QueryTableTestBase.TableComparator;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.gui.table.filters.Condition;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReflexiveUse;
+import io.deephaven.util.datastructures.CachingSupplier;
 import junit.framework.TestCase;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -57,12 +63,10 @@ import static io.deephaven.engine.testutil.TstUtils.*;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.printTableUpdates;
 import static io.deephaven.engine.testutil.testcase.RefreshingTableTestCase.simulateShiftAwareStep;
 import static io.deephaven.engine.util.TableTools.*;
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.*;
 
 public abstract class QueryTableWhereTest {
-    private Logger log = LoggerFactory.getLogger(QueryTableWhereTest.class);
+    private final Logger log = LoggerFactory.getLogger(QueryTableWhereTest.class);
 
     @Rule
     public final EngineCleanup base = new EngineCleanup();
@@ -232,26 +236,49 @@ public abstract class QueryTableWhereTest {
 
     @Test
     public void testWhereInDependency() {
-        testWhereInDependencyInternal(false, false);
+        testWhereInDependencyInternal(false, false, true, true);
+        testWhereInDependencyInternal(false, false, true, false);
+        testWhereInDependencyInternal(false, false, false, true);
+        testWhereInDependencyInternal(false, false, false, false);
     }
 
     @Test
     public void testWhereInDependencyIndexed() {
-        testWhereInDependencyInternal(true, false);
-        testWhereInDependencyInternal(false, true);
-        testWhereInDependencyInternal(true, true);
+        testWhereInDependencyInternal(true, false, true, true);
+        testWhereInDependencyInternal(true, false, true, false);
+        testWhereInDependencyInternal(true, false, false, true);
+        testWhereInDependencyInternal(true, false, false, false);
+
+        testWhereInDependencyInternal(false, true, true, true);
+        testWhereInDependencyInternal(false, true, true, false);
+        testWhereInDependencyInternal(false, true, false, true);
+        testWhereInDependencyInternal(false, true, false, false);
+
+        testWhereInDependencyInternal(true, true, true, true);
+        testWhereInDependencyInternal(true, true, true, false);
+        testWhereInDependencyInternal(true, true, false, true);
+        testWhereInDependencyInternal(true, true, false, false);
     }
 
-    private void testWhereInDependencyInternal(boolean filterIndexed, boolean setIndexed) {
-        final QueryTable tableToFilter = testRefreshingTable(i(10, 11, 12, 13, 14, 15).toTracking(),
-                col("A", 1, 2, 3, 4, 5, 6), col("B", 2, 4, 6, 8, 10, 12), col("C", 'a', 'b', 'c', 'd', 'e', 'f'));
+    private void testWhereInDependencyInternal(
+            boolean filterIndexed,
+            boolean setIndexed,
+            boolean sourceRefreshing,
+            boolean setRefreshing) {
+
+        final QueryTable tableToFilter = sourceRefreshing
+                ? testRefreshingTable(i(10, 11, 12, 13, 14, 15).toTracking(), col("A", 1, 2, 3, 4, 5, 6),
+                        col("B", 2, 4, 6, 8, 10, 12), col("C", 'a', 'b', 'c', 'd', 'e', 'f'))
+                : testTable(i(10, 11, 12, 13, 14, 15).toTracking(), col("A", 1, 2, 3, 4, 5, 6),
+                        col("B", 2, 4, 6, 8, 10, 12), col("C", 'a', 'b', 'c', 'd', 'e', 'f'));
         if (filterIndexed) {
             DataIndexer.getOrCreateDataIndex(tableToFilter, "A");
             DataIndexer.getOrCreateDataIndex(tableToFilter, "B");
         }
 
-        final QueryTable setTable = testRefreshingTable(i(100, 101, 102).toTracking(),
-                col("A", 1, 2, 3), col("B", 2, 4, 6));
+        final QueryTable setTable = setRefreshing
+                ? testRefreshingTable(i(100, 101, 102).toTracking(), col("A", 1, 2, 3), col("B", 2, 4, 6))
+                : testTable(i(100, 101, 102).toTracking(), col("A", 1, 2, 3), col("B", 2, 4, 6));
         final Table setTable1 = setTable.where("A > 2");
         final Table setTable2 = setTable.where("B > 6");
         if (setIndexed) {
@@ -280,17 +307,28 @@ public abstract class QueryTableWhereTest {
             TestCase.assertTrue(composed.satisfied(updateGraph.clock().currentStep()));
         });
 
-        updateGraph.runWithinUnitTestCycle(() -> {
-            addToTable(setTable, i(103), col("A", 5), col("B", 8));
-            setTable.notifyListeners(i(103), i(), i());
-        });
+        if (setRefreshing) {
+            updateGraph.runWithinUnitTestCycle(() -> {
+                addToTable(setTable, i(103), col("A", 5), col("B", 8));
+                setTable.notifyListeners(i(103), i(), i());
+            });
 
-        TableTools.show(composed);
+            TableTools.show(composed);
 
-        final Table expected =
-                TableTools.newTable(intCol("A", 3, 4, 5), intCol("B", 6, 8, 10), charCol("C", 'c', 'd', 'e'));
+            final Table expected =
+                    TableTools.newTable(intCol("A", 3, 4, 5), intCol("B", 6, 8, 10), charCol("C", 'c', 'd', 'e'));
 
-        assertTableEquals(composed, expected);
+            assertTableEquals(composed, expected);
+        }
+    }
+
+    @Test
+    public void testWhereInOptimalIndexSelectionWithNoneAvailable() {
+        final Table lhs = emptyTable(10).update("Part=ii % 2 == 0 ? `Apple` : `Pie`", "Hello=ii", "Goodbye = `A`+ii");
+        DataIndexer.getOrCreateDataIndex(lhs, "Part");
+        final Table rhs = emptyTable(2).update("Hello=ii", "Goodbye = `A`+ii");
+        final Table result = lhs.whereIn(rhs, "Goodbye");
+        assertTableEquals(lhs.head(2), result);
     }
 
     @Test
@@ -307,9 +345,9 @@ public abstract class QueryTableWhereTest {
                 () -> filteredTable.whereNotIn(setTable, "X"));
         show(result);
         assertEquals(3, result.size());
-        assertEquals(asList("A", "B", "C"), asList((String[]) DataAccessHelpers.getColumn(result, "X").getDirect()));
+        assertArrayEquals(new String[] {"A", "B", "C"}, ColumnVectors.ofObject(result, "X", String.class).toArray());
         assertEquals(2, resultInverse.size());
-        assertEquals(asList("D", "E"), asList((String[]) DataAccessHelpers.getColumn(resultInverse, "X").getDirect()));
+        assertArrayEquals(new String[] {"D", "E"}, ColumnVectors.ofObject(resultInverse, "X", String.class).toArray());
 
         updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(filteredTable, i(6), col("X", "A"));
@@ -317,10 +355,10 @@ public abstract class QueryTableWhereTest {
         });
         show(result);
         assertEquals(4, result.size());
-        assertEquals(asList("A", "B", "C", "A"),
-                asList((String[]) DataAccessHelpers.getColumn(result, "X").getDirect()));
+        assertArrayEquals(new String[] {"A", "B", "C", "A"},
+                ColumnVectors.ofObject(result, "X", String.class).toArray());
         assertEquals(2, resultInverse.size());
-        assertEquals(asList("D", "E"), asList((String[]) DataAccessHelpers.getColumn(resultInverse, "X").getDirect()));
+        assertArrayEquals(new String[] {"D", "E"}, ColumnVectors.ofObject(resultInverse, "X", String.class).toArray());
 
         updateGraph.runWithinUnitTestCycle(() -> {
             addToTable(setTable, i(7), col("X", "D"));
@@ -328,10 +366,10 @@ public abstract class QueryTableWhereTest {
         });
         showWithRowSet(result);
         assertEquals(5, result.size());
-        assertEquals(asList("A", "B", "C", "D", "A"),
-                asList((String[]) DataAccessHelpers.getColumn(result, "X").getDirect()));
+        assertArrayEquals(new String[] {"A", "B", "C", "D", "A"},
+                ColumnVectors.ofObject(result, "X", String.class).toArray());
         assertEquals(1, resultInverse.size());
-        assertEquals(asList("E"), asList((String[]) DataAccessHelpers.getColumn(resultInverse, "X").getDirect()));
+        assertArrayEquals(new String[] {"E"}, ColumnVectors.ofObject(resultInverse, "X", String.class).toArray());
 
         // Real modification to set table, followed by spurious modification to set table
         IntStream.range(0, 2).forEach(ri -> {
@@ -341,27 +379,45 @@ public abstract class QueryTableWhereTest {
             });
             showWithRowSet(result);
             assertEquals(4, result.size());
-            assertEquals(asList("A", "B", "C", "A"),
-                    asList((String[]) DataAccessHelpers.getColumn(result, "X").getDirect()));
+            assertArrayEquals(new String[] {"A", "B", "C", "A"},
+                    ColumnVectors.ofObject(result, "X", String.class).toArray());
             assertEquals(2, resultInverse.size());
-            assertEquals(asList("D", "E"),
-                    asList((String[]) DataAccessHelpers.getColumn(resultInverse, "X").getDirect()));
+            assertArrayEquals(new String[] {"D", "E"},
+                    ColumnVectors.ofObject(resultInverse, "X", String.class).toArray());
         });
     }
 
     @Test
     public void testWhereDynamicInIncremental() {
-        testWhereDynamicIncrementalInternal(false, false);
+        testWhereDynamicIncrementalInternal(false, false, true, true);
+        testWhereDynamicIncrementalInternal(false, false, true, false);
+        testWhereDynamicIncrementalInternal(false, false, false, true);
+        testWhereDynamicIncrementalInternal(false, false, false, false);
     }
 
     @Test
     public void testWhereDynamicInIncrementalIndexed() {
-        testWhereDynamicIncrementalInternal(true, false);
-        testWhereDynamicIncrementalInternal(false, true);
-        testWhereDynamicIncrementalInternal(true, true);
+        testWhereDynamicIncrementalInternal(true, false, true, true);
+        testWhereDynamicIncrementalInternal(true, false, true, false);
+        testWhereDynamicIncrementalInternal(true, false, false, true);
+        testWhereDynamicIncrementalInternal(true, false, false, false);
+
+        testWhereDynamicIncrementalInternal(false, true, true, true);
+        testWhereDynamicIncrementalInternal(false, true, true, false);
+        testWhereDynamicIncrementalInternal(false, true, false, true);
+        testWhereDynamicIncrementalInternal(false, true, false, false);
+
+        testWhereDynamicIncrementalInternal(true, true, true, true);
+        testWhereDynamicIncrementalInternal(true, true, true, false);
+        testWhereDynamicIncrementalInternal(true, true, false, true);
+        testWhereDynamicIncrementalInternal(true, true, false, false);
     }
 
-    private static void testWhereDynamicIncrementalInternal(boolean filterIndexed, boolean setIndexed) {
+    private static void testWhereDynamicIncrementalInternal(
+            boolean filterIndexed,
+            boolean setIndexed,
+            boolean sourceRefreshing,
+            boolean setRefreshing) {
         final ColumnInfo<?, ?>[] setInfo;
         final ColumnInfo<?, ?>[] filteredInfo;
 
@@ -372,7 +428,7 @@ public abstract class QueryTableWhereTest {
         final String[] columnNames =
                 new String[] {"Sym", "intCol", "doubleCol", "charCol", "byteCol", "floatCol", "longCol", "shortCol"};
 
-        final QueryTable setTable = getTable(setSize, random, setInfo = initColumnInfos(
+        final QueryTable setTable = getTable(setRefreshing, setSize, random, setInfo = initColumnInfos(
                 columnNames,
                 new SetGenerator<>("aa", "bb"),
                 new IntGenerator(0, 10),
@@ -393,16 +449,17 @@ public abstract class QueryTableWhereTest {
             DataIndexer.getOrCreateDataIndex(setTable, "Sym", "intCol");
         }
 
-        final QueryTable filteredTable = getTable(filteredSize, random, filteredInfo = initColumnInfos(
-                columnNames,
-                new SetGenerator<>("aa", "bb", "cc", "dd"),
-                new IntGenerator(0, 20),
-                new DoubleGenerator(0, 100),
-                new CharGenerator('a', 'z'),
-                new ByteGenerator((byte) 0, (byte) 127),
-                new SetGenerator<>(1.0f, 2.0f, 3.3f, null, 4.4f, 5.5f, 6.6f),
-                new LongGenerator(1500, 2500),
-                new ShortGenerator((short) 400, (short) 700)));
+        final QueryTable filteredTable = getTable(sourceRefreshing, filteredSize, random,
+                filteredInfo = initColumnInfos(
+                        columnNames,
+                        new SetGenerator<>("aa", "bb", "cc", "dd"),
+                        new IntGenerator(0, 20),
+                        new DoubleGenerator(0, 100),
+                        new CharGenerator('a', 'z'),
+                        new ByteGenerator((byte) 0, (byte) 127),
+                        new SetGenerator<>(1.0f, 2.0f, 3.3f, null, 4.4f, 5.5f, 6.6f),
+                        new LongGenerator(1500, 2500),
+                        new ShortGenerator((short) 400, (short) 700)));
 
         if (filterIndexed) {
             // Add an index on every column but "doubleCol"
@@ -436,31 +493,42 @@ public abstract class QueryTableWhereTest {
                 EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "floatCol")),
         };
 
+        validate(en);
+
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         for (int step = 0; step < 100; step++) {
             final boolean modSet = random.nextInt(10) < 1;
             final boolean modFiltered = random.nextBoolean();
 
-            updateGraph.runWithinUnitTestCycle(() -> {
-                if (modSet) {
-                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
-                            setSize, random, setTable, setInfo);
-                }
-            });
-            validate(en);
+            if (setRefreshing) {
+                updateGraph.runWithinUnitTestCycle(() -> {
+                    if (modSet) {
+                        GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
+                                setSize, random, setTable, setInfo);
+                    }
+                });
+                validate(en);
+            }
 
-            updateGraph.runWithinUnitTestCycle(() -> {
-                if (modFiltered) {
-                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
-                            filteredSize, random, filteredTable, filteredInfo);
-                }
-            });
-            validate(en);
+            if (sourceRefreshing) {
+                updateGraph.runWithinUnitTestCycle(() -> {
+                    if (modFiltered) {
+                        GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
+                                filteredSize, random, filteredTable, filteredInfo);
+                    }
+                });
+                validate(en);
+            }
         }
     }
 
     @Test
-    public void testWhereInDynamicPartialIndexed() {
+    public void testWhereInDynamicPartial() {
+        testWhereInDynamicPartialIndexedInternal(true);
+        testWhereInDynamicPartialIndexedInternal(false);
+    }
+
+    private void testWhereInDynamicPartialIndexedInternal(final boolean setRefreshing) {
         final ColumnInfo<?, ?>[] setInfo;
         final ColumnInfo<?, ?>[] filteredInfo;
 
@@ -471,7 +539,7 @@ public abstract class QueryTableWhereTest {
         final String[] columnNames =
                 new String[] {"Sym", "intCol", "doubleCol", "charCol", "byteCol", "floatCol", "longCol", "shortCol"};
 
-        final QueryTable setTable = getTable(setSize, random, setInfo = initColumnInfos(
+        final QueryTable setTable = getTable(setRefreshing, setSize, random, setInfo = initColumnInfos(
                 columnNames,
                 new SetGenerator<>("aa", "bb"),
                 new IntGenerator(0, 10),
@@ -495,26 +563,56 @@ public abstract class QueryTableWhereTest {
 
         DataIndexer.getOrCreateDataIndex(filteredTable, "Sym");
         DataIndexer.getOrCreateDataIndex(filteredTable, "Sym", "charCol");
+        DataIndexer.getOrCreateDataIndex(filteredTable, "Sym", "charCol", "longCol");
+        DataIndexer.getOrCreateDataIndex(filteredTable, "Sym", "charCol", "longCol", "shortCol");
 
         final EvalNugget[] en = new EvalNugget[] {
                 EvalNugget.from(() -> filteredTable.whereIn(setTable, "Sym", "intCol")),
                 EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "Sym", "intCol")),
+
+                EvalNugget.from(() -> filteredTable.whereIn(setTable, "intCol", "Sym")),
+                EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "intCol", "Sym")),
+
                 EvalNugget.from(() -> filteredTable.whereIn(setTable, "Sym", "charCol", "intCol")),
                 EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "Sym", "charCol", "intCol")),
+
+                EvalNugget.from(() -> filteredTable.whereIn(setTable, "intCol", "charCol", "Sym")),
+                EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "intCol", "charCol", "Sym")),
+
+                EvalNugget.from(() -> filteredTable.whereIn(setTable, "Sym", "charCol", "longCol", "byteCol")),
+                EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "Sym", "charCol", "longCol", "byteCol")),
+
+                EvalNugget.from(() -> filteredTable.whereIn(setTable, "charCol", "Sym", "byteCol", "longCol")),
+                EvalNugget.from(() -> filteredTable.whereNotIn(setTable, "charCol", "Sym", "byteCol", "longCol")),
+
+                EvalNugget.from(
+                        () -> filteredTable.whereIn(setTable, "Sym", "charCol", "longCol", "shortCol", "byteCol")),
+                EvalNugget.from(
+                        () -> filteredTable.whereNotIn(setTable, "Sym", "charCol", "longCol", "shortCol", "byteCol")),
+
+                EvalNugget.from(
+                        () -> filteredTable.whereIn(setTable, "charCol", "Sym", "byteCol", "longCol", "shortCol")),
+                EvalNugget.from(
+                        () -> filteredTable.whereNotIn(setTable, "charCol", "Sym", "byteCol", "longCol", "shortCol")),
+
         };
+
+        validate(en);
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
         for (int step = 0; step < 100; step++) {
             final boolean modSet = random.nextInt(10) < 1;
             final boolean modFiltered = random.nextBoolean();
 
-            updateGraph.runWithinUnitTestCycle(() -> {
-                if (modSet) {
-                    GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
-                            setSize, random, setTable, setInfo);
-                }
-            });
-            validate(en);
+            if (setRefreshing) {
+                updateGraph.runWithinUnitTestCycle(() -> {
+                    if (modSet) {
+                        GenerateTableUpdates.generateShiftAwareTableUpdates(GenerateTableUpdates.DEFAULT_PROFILE,
+                                setSize, random, setTable, setInfo);
+                    }
+                });
+                validate(en);
+            }
 
             updateGraph.runWithinUnitTestCycle(() -> {
                 if (modFiltered) {
@@ -1060,6 +1158,19 @@ public abstract class QueryTableWhereTest {
     }
 
     @Test
+    public void testZonedDateRangeFilter() {
+        final ZonedDateTime startTime = DateTimeUtils.parseZonedDateTime("2021-04-23T09:30 NY");
+        final ZonedDateTime[] array = new ZonedDateTime[10];
+        for (int ii = 0; ii < array.length; ++ii) {
+            array[ii] = DateTimeUtils.plus(startTime, 60_000_000_000L * ii);
+        }
+        final Table table = TableTools.newTable(col("ZDT", array));
+        showWithRowSet(table);
+
+        testRangeFilterHelper(table, "ZDT", array[5]);
+    }
+
+    @Test
     public void testInstantRangeFilter() {
         final Instant startTime = DateTimeUtils.parseInstant("2021-04-23T09:30 NY");
         final Instant[] array = new Instant[10];
@@ -1069,11 +1180,7 @@ public abstract class QueryTableWhereTest {
         final Table table = TableTools.newTable(col("DT", array));
         showWithRowSet(table);
 
-        final Table sorted = table.sort("DT");
-        final Table backwards = table.sort("DT");
-
-        assertTableEquals(sorted.where("DT < '" + array[5] + "'"), sorted.where("ii < 5"));
-        assertTableEquals(backwards.where("DT < '" + array[5] + "'"), backwards.where("ii < 5"));
+        testRangeFilterHelper(table, "DT", array[5]);
     }
 
     @Test
@@ -1091,22 +1198,26 @@ public abstract class QueryTableWhereTest {
         final Table table = TableTools.newTable(charCol("CH", array));
         showWithRowSet(table);
 
-        final Table sorted = table.sort("CH");
-        final Table backwards = table.sort("CH");
+        testRangeFilterHelper(table, "CH", array[5]);
+    }
+
+    private <T> void testRangeFilterHelper(Table table, String name, T mid) {
+        final Table sorted = table.sort(name);
+        final Table backwards = table.sort(name);
 
         showWithRowSet(sorted);
-        log.debug().append("Pivot: " + array[5]).endl();
+        log.debug().append("Pivot: " + mid).endl();
 
-        final Table rangeFiltered = sorted.where("CH < '" + array[5] + "'");
-        final Table standardFiltered = sorted.where("'" + array[5] + "' > CH");
+        final Table rangeFiltered = sorted.where(name + " < '" + mid + "'");
+        final Table standardFiltered = sorted.where("'" + mid + "' > " + name);
 
         showWithRowSet(rangeFiltered);
         showWithRowSet(standardFiltered);
         assertTableEquals(rangeFiltered, standardFiltered);
-        assertTableEquals(backwards.where("CH < '" + array[5] + "'"), backwards.where("'" + array[5] + "' > CH"));
-        assertTableEquals(backwards.where("CH <= '" + array[5] + "'"), backwards.where("'" + array[5] + "' >= CH"));
-        assertTableEquals(backwards.where("CH > '" + array[5] + "'"), backwards.where("'" + array[5] + "' < CH"));
-        assertTableEquals(backwards.where("CH >= '" + array[5] + "'"), backwards.where("'" + array[5] + "' <= CH"));
+        assertTableEquals(backwards.where(name + " < '" + mid + "'"), backwards.where("'" + mid + "' > " + name));
+        assertTableEquals(backwards.where(name + " <= '" + mid + "'"), backwards.where("'" + mid + "' >= " + name));
+        assertTableEquals(backwards.where(name + " > '" + mid + "'"), backwards.where("'" + mid + "' < " + name));
+        assertTableEquals(backwards.where(name + " >= '" + mid + "'"), backwards.where("'" + mid + "' <= " + name));
     }
 
     @Test
@@ -1179,8 +1290,8 @@ public abstract class QueryTableWhereTest {
         }
 
         assertEquals(1_000_000, result.size());
-        assertEquals(6_000_000L, DataAccessHelpers.getColumn(result, "A").getLong(0));
-        assertEquals(6_999_999L, DataAccessHelpers.getColumn(result, "A").getLong(result.size() - 1));
+        assertEquals(6_000_000L, result.getColumnSource("A").getLong(result.getRowSet().firstRowKey()));
+        assertEquals(6_999_999L, result.getColumnSource("A").getLong(result.getRowSet().get(result.size() - 1)));
     }
 
     @Test
@@ -1191,8 +1302,8 @@ public abstract class QueryTableWhereTest {
         final Table result = source.where("A >= 6_000_000L", "A < 7_000_000L");
 
         assertEquals(1_000_000, result.size());
-        assertEquals(6_000_000L, DataAccessHelpers.getColumn(result, "A").getLong(0));
-        assertEquals(6_999_999L, DataAccessHelpers.getColumn(result, "A").getLong(result.size() - 1));
+        assertEquals(6_000_000L, result.getColumnSource("A").getLong(result.getRowSet().firstRowKey()));
+        assertEquals(6_999_999L, result.getColumnSource("A").getLong(result.getRowSet().get(result.size() - 1)));
     }
 
     @Test
@@ -1210,8 +1321,9 @@ public abstract class QueryTableWhereTest {
         Table sorted = result.sort("A");
         show(sorted);
 
-        Assert.geq(DataAccessHelpers.getColumn(sorted, "A").getLong(0), "lowest value", 600, "600");
-        Assert.leq(DataAccessHelpers.getColumn(sorted, "A").getLong(result.size() - 1), "highest value", 699, "699");
+        Assert.geq(sorted.getColumnSource("A").getLong(sorted.getRowSet().firstRowKey()), "lowest value", 600, "600");
+        Assert.leq(sorted.getColumnSource("A").getLong(sorted.getRowSet().get(result.size() - 1)), "highest value", 699,
+                "699");
     }
 
     @Test
@@ -1256,5 +1368,283 @@ public abstract class QueryTableWhereTest {
 
         // The where result should have failed, because the filter expression is invalid for the new data.
         Assert.eqTrue(whereResult.isFailed(), "whereResult.isFailed()");
+    }
+
+    @Test
+    public void testMatchFilterFallback() {
+        final Table table = emptyTable(10).update("X=i");
+        ExecutionContext.getContext().getQueryScope().putParam("var1", 10);
+        ExecutionContext.getContext().getQueryScope().putParam("var2", 20);
+
+        final MutableBoolean called = new MutableBoolean(false);
+        final MatchFilter filter = new MatchFilter(
+                new CachingSupplier<>(() -> {
+                    called.setValue(true);
+                    return (ConditionFilter) ConditionFilter.createConditionFilter("var1 != var2");
+                }),
+                MatchFilter.CaseSensitivity.IgnoreCase, MatchFilter.MatchType.Inverted, "var1", "var2");
+
+        final Table result = table.where(filter);
+        assertTableEquals(table, result);
+
+        Assert.eqTrue(called.booleanValue(), "called.booleanValue()");
+    }
+
+    @Test
+    public void testRangeFilterFallback() {
+        final Table table = emptyTable(10).update("X=i");
+        ExecutionContext.getContext().getQueryScope().putParam("var1", 10);
+        ExecutionContext.getContext().getQueryScope().putParam("var2", 20);
+
+        final RangeFilter filter = new RangeFilter(
+                "0", Condition.LESS_THAN, "var2", "0 < var2", FormulaParserConfiguration.parser);
+
+        final Table result = table.where(filter);
+        assertTableEquals(table, result);
+
+        final WhereFilter realFilter = filter.getRealFilter();
+        Assert.eqTrue(realFilter instanceof ConditionFilter, "realFilter instanceof ConditionFilter");
+    }
+
+    @Test
+    public void testEnsureColumnsTakePrecedence() {
+        final Table table = emptyTable(10).update("X=i", "Y=i%2");
+        ExecutionContext.getContext().getQueryScope().putParam("Y", 5);
+
+        {
+            final Table r1 = table.where("X == Y");
+            final Table r2 = table.where("Y == X");
+            Assert.equals(r1.getRowSet(), "r1.getRowSet()", RowSetFactory.flat(2));
+            assertTableEquals(r1, r2);
+        }
+
+        {
+            final Table r1 = table.where("X >= Y");
+            final Table r2 = table.where("Y <= X");
+            Assert.equals(r1.getRowSet(), "r1.getRowSet()", RowSetFactory.flat(10));
+            assertTableEquals(r1, r2);
+        }
+
+        {
+            final Table r1 = table.where("X > Y");
+            final Table r2 = table.where("Y < X");
+            Assert.equals(r1.getRowSet(), "r1.getRowSet()", RowSetFactory.fromRange(2, 9));
+            assertTableEquals(r1, r2);
+        }
+
+        {
+            final Table r1 = table.where("X < Y");
+            final Table r2 = table.where("Y > X");
+            Assert.equals(r1.getRowSet(), "r1.getRowSet()", RowSetFactory.empty());
+            assertTableEquals(r1, r2);
+        }
+
+        {
+            final Table r1 = table.where("X <= Y");
+            final Table r2 = table.where("Y >= X");
+            Assert.equals(r1.getRowSet(), "r1.getRowSet()", RowSetFactory.flat(2));
+            assertTableEquals(r1, r2);
+        }
+    }
+
+    @Test
+    public void testEnsureColumnArraysTakePrecedence() {
+        final Table table = emptyTable(10).update("X = i", "Y = ii == 1 ? 5 : -1");
+        ExecutionContext.getContext().getQueryScope().putParam("Y_", new int[] {0, 4, 0});
+
+        {
+            final Table result = table.where("X == Y_[1]");
+            Assert.equals(result.getRowSet(), "result.getRowSet()", RowSetFactory.fromKeys(5));
+
+            // check that the mirror matches the expected result
+            final Table mResult = table.where("Y_[1] == X");
+            assertTableEquals(result, mResult);
+        }
+
+        {
+            final Table result = table.where("X < Y_[1]");
+            Assert.equals(result.getRowSet(), "result.getRowSet()", RowSetFactory.flat(5));
+
+            // check that the mirror matches the expected result
+            final Table mResult = table.where("Y_[1] > X");
+            assertTableEquals(result, mResult);
+        }
+
+        // note that array access doesn't match the RangeFilter/MatchFilter regex, so let's try to override the
+        // array access with a type that would otherwise work.
+        ExecutionContext.getContext().getQueryScope().putParam("Y_", 4);
+        try {
+            table.where("X == Y_");
+            // noinspection ThrowableNotThrown
+            Assert.statementNeverExecuted();
+        } catch (IllegalArgumentException expected) {
+
+        }
+    }
+
+    @Test
+    public void testIntToByteCoercion() {
+        final Table table = emptyTable(11).update("X = ii % 2 == 0 ? (byte) ii : null");
+        final Class<Object> colType = table.getDefinition().getColumn("X").getDataType();
+        Assert.eq(colType, "colType", byte.class);
+
+        ExecutionContext.getContext().getQueryScope().putParam("real_null", null);
+        ExecutionContext.getContext().getQueryScope().putParam("val_null", QueryConstants.NULL_INT);
+        ExecutionContext.getContext().getQueryScope().putParam("val_5", 5);
+
+        final Table real_null_result = table.where("X == real_null");
+        final Table null_result = table.where("X == val_null");
+        Assert.eq(null_result.size(), "null_result.size()", 5);
+        assertTableEquals(real_null_result, null_result);
+
+        final Table range_result = table.where("X >= val_5");
+        Assert.eq(range_result.size(), "range_result.size()", 3);
+    }
+
+    @Test
+    public void testIntToShortCoercion() {
+        final Table table = emptyTable(11).update("X= ii % 2 == 0 ? (short) ii : null");
+        final Class<Object> colType = table.getDefinition().getColumn("X").getDataType();
+        Assert.eq(colType, "colType", short.class);
+
+        ExecutionContext.getContext().getQueryScope().putParam("real_null", null);
+        ExecutionContext.getContext().getQueryScope().putParam("val_null", QueryConstants.NULL_INT);
+        ExecutionContext.getContext().getQueryScope().putParam("val_5", 5);
+
+        final Table real_null_result = table.where("X == real_null");
+        final Table null_result = table.where("X == val_null");
+        Assert.eq(null_result.size(), "null_result.size()", 5);
+        assertTableEquals(real_null_result, null_result);
+
+        final Table range_result = table.where("X >= val_5");
+        Assert.eq(range_result.size(), "range_result.size()", 3);
+    }
+
+    @Test
+    public void testLongToIntCoercion() {
+        final Table table = emptyTable(11).update("X= ii % 2 == 0 ? (int) ii : null");
+        final Class<Object> colType = table.getDefinition().getColumn("X").getDataType();
+        Assert.eq(colType, "colType", int.class);
+
+        ExecutionContext.getContext().getQueryScope().putParam("real_null", null);
+        ExecutionContext.getContext().getQueryScope().putParam("val_null", QueryConstants.NULL_LONG);
+        ExecutionContext.getContext().getQueryScope().putParam("val_5", 5L);
+
+        final Table real_null_result = table.where("X == real_null");
+        final Table null_result = table.where("X == val_null");
+        Assert.eq(null_result.size(), "null_result.size()", 5);
+        assertTableEquals(real_null_result, null_result);
+
+        final Table range_result = table.where("X >= val_5");
+        Assert.eq(range_result.size(), "range_result.size()", 3);
+    }
+
+    @Test
+    public void testIntToLongCoercion() {
+        final Table table = emptyTable(11).update("X= ii % 2 == 0 ? ii : null");
+        final Class<Object> colType = table.getDefinition().getColumn("X").getDataType();
+        Assert.eq(colType, "colType", long.class);
+
+        ExecutionContext.getContext().getQueryScope().putParam("real_null", null);
+        ExecutionContext.getContext().getQueryScope().putParam("val_null", QueryConstants.NULL_INT);
+        ExecutionContext.getContext().getQueryScope().putParam("val_5", 5);
+
+        final Table real_null_result = table.where("X == real_null");
+        final Table null_result = table.where("X == val_null");
+        Assert.eq(null_result.size(), "null_result.size()", 5);
+        assertTableEquals(real_null_result, null_result);
+
+        final Table range_result = table.where("X >= val_5");
+        Assert.eq(range_result.size(), "range_result.size()", 3);
+    }
+
+    @Test
+    public void testIntToFloatCoercion() {
+        final Table table = emptyTable(11).update("X= ii % 2 == 0 ? (float) ii : null");
+        final Class<Object> colType = table.getDefinition().getColumn("X").getDataType();
+        Assert.eq(colType, "colType", float.class);
+
+        ExecutionContext.getContext().getQueryScope().putParam("real_null", null);
+        ExecutionContext.getContext().getQueryScope().putParam("val_null", QueryConstants.NULL_INT);
+        ExecutionContext.getContext().getQueryScope().putParam("val_5", 5);
+
+        final Table real_null_result = table.where("X == real_null");
+        final Table null_result = table.where("X == val_null");
+        Assert.eq(null_result.size(), "null_result.size()", 5);
+        assertTableEquals(real_null_result, null_result);
+
+        final Table range_result = table.where("X >= val_5");
+        Assert.eq(range_result.size(), "range_result.size()", 3);
+    }
+
+    @Test
+    public void testIntToDoubleCoercion() {
+        final Table table = emptyTable(11).update("X= ii % 2 == 0 ? (double) ii : null");
+        final Class<Object> colType = table.getDefinition().getColumn("X").getDataType();
+        Assert.eq(colType, "colType", double.class);
+
+        ExecutionContext.getContext().getQueryScope().putParam("real_null", null);
+        ExecutionContext.getContext().getQueryScope().putParam("val_null", QueryConstants.NULL_INT);
+        ExecutionContext.getContext().getQueryScope().putParam("val_5", 5);
+
+        final Table real_null_result = table.where("X == real_null");
+        final Table null_result = table.where("X == val_null");
+        Assert.eq(null_result.size(), "null_result.size()", 5);
+        assertTableEquals(real_null_result, null_result);
+
+        final Table range_result = table.where("X >= val_5");
+        Assert.eq(range_result.size(), "range_result.size()", 3);
+    }
+
+    @Test
+    public void testBigIntegerCoercion() {
+        ExecutionContext.getContext().getQueryLibrary().importClass(BigInteger.class);
+
+        final Table table = emptyTable(11).update("X= ii % 2 == 0 ? BigInteger.valueOf(ii) : null");
+        final Class<Object> colType = table.getDefinition().getColumn("X").getDataType();
+        Assert.eq(colType, "colType", BigInteger.class);
+
+        ExecutionContext.getContext().getQueryScope().putParam("real_null", null);
+        ExecutionContext.getContext().getQueryScope().putParam("val_null", QueryConstants.NULL_INT);
+        ExecutionContext.getContext().getQueryScope().putParam("val_5", 5);
+
+        final Table real_null_result = table.where("X == real_null");
+        final Table null_result = table.where("X == val_null");
+        Assert.eq(null_result.size(), "null_result.size()", 5);
+        assertTableEquals(real_null_result, null_result);
+
+        final Table range_result = table.where("X >= val_5");
+        Assert.eq(range_result.size(), "range_result.size()", 3);
+
+        // let's also test BigDecimal -> BigInteger conversion; note that conversion does not round
+        ExecutionContext.getContext().getQueryScope().putParam("bd_5", BigDecimal.valueOf(5.8));
+        final Table bd_result = table.where("X >= bd_5");
+        assertTableEquals(range_result, bd_result);
+    }
+
+    @Test
+    public void testBigDecimalCoercion() {
+        ExecutionContext.getContext().getQueryLibrary().importClass(BigDecimal.class);
+
+        final Table table = emptyTable(11).update("X= ii % 2 == 0 ? BigDecimal.valueOf(ii) : null");
+        final Class<Object> colType = table.getDefinition().getColumn("X").getDataType();
+        Assert.eq(colType, "colType", BigDecimal.class);
+
+        ExecutionContext.getContext().getQueryScope().putParam("real_null", null);
+        ExecutionContext.getContext().getQueryScope().putParam("val_null", QueryConstants.NULL_INT);
+        ExecutionContext.getContext().getQueryScope().putParam("val_5", 5);
+
+        final Table real_null_result = table.where("X == real_null");
+        final Table null_result = table.where("X == val_null");
+        Assert.eq(null_result.size(), "null_result.size()", 5);
+        assertTableEquals(real_null_result, null_result);
+
+        final Table range_result = table.where("X >= val_5");
+        Assert.eq(range_result.size(), "range_result.size()", 3);
+
+        // let's also test BigInteger -> BigDecimal conversion
+        ExecutionContext.getContext().getQueryScope().putParam("bi_5", BigInteger.valueOf(5));
+        final Table bi_result = table.where("X >= bi_5");
+        assertTableEquals(range_result, bi_result);
     }
 }

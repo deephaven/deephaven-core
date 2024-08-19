@@ -4,17 +4,17 @@ plugins {
 }
 
 dependencies {
-    implementation project(':java-client-flight-dagger')
+    implementation project(':java-client-flight')
     implementation project(':java-client-example-utilities')
 
-    implementation "io.deephaven.barrage:barrage-format:0.6.0"
+    implementation libs.deephaven.barrage.format
 
-    Classpaths.inheritJUnitPlatform(project)
-    Classpaths.inheritAssertJ(project)
-    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation libs.assertj
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
 
-    Classpaths.inheritSlf4j(project, 'slf4j-api', 'implementation')
-    Classpaths.inheritLogbackClassic(project)
+    implementation libs.slf4j.api
+    runtimeOnly libs.logback.classic
 }
 
 test {
@@ -50,6 +50,7 @@ application.applicationDistribution.into('bin') {
     from(createApplication('do-put-table', 'io.deephaven.client.examples.DoPutTable'))
 
     from(createApplication('add-to-input-table', 'io.deephaven.client.examples.AddToInputTable'))
+    from(createApplication('add-to-blink-table', 'io.deephaven.client.examples.AddToBlinkTable'))
     from(createApplication('kv-input-table', 'io.deephaven.client.examples.KeyValueInputTable'))
 
     from(createApplication('get-table', 'io.deephaven.client.examples.GetDirectTable'))

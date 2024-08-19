@@ -63,23 +63,23 @@ public class DoubleRangeFilter extends AbstractRangeFilter {
                 (double) (positiveOrZero ? parsed + offset : parsed - offset), positiveOrZero, !positiveOrZero);
     }
 
-    static WhereFilter makeDoubleRangeFilter(String columnName, Condition condition, String value) {
+    static WhereFilter makeDoubleRangeFilter(String columnName, Condition condition, double value) {
         switch (condition) {
             case LESS_THAN:
-                return lt(columnName, Double.parseDouble(value));
+                return lt(columnName, value);
             case LESS_THAN_OR_EQUAL:
-                return leq(columnName, Double.parseDouble(value));
+                return leq(columnName, value);
             case GREATER_THAN:
-                return gt(columnName, Double.parseDouble(value));
+                return gt(columnName, value);
             case GREATER_THAN_OR_EQUAL:
-                return geq(columnName, Double.parseDouble(value));
+                return geq(columnName, value);
             default:
-                throw new IllegalArgumentException("RangeConditionFilter does not support condition " + condition);
+                throw new IllegalArgumentException("RangeFilter does not support condition " + condition);
         }
     }
 
     @Override
-    public void init(TableDefinition tableDefinition) {
+    public void init(@NotNull final TableDefinition tableDefinition) {
         if (chunkFilter != null) {
             return;
         }

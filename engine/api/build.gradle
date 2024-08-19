@@ -17,14 +17,24 @@ dependencies {
     api project(':engine-rowset')
 
     implementation project(':DataStructures')
-    implementation depTrove3
+    implementation libs.trove
 
-    Classpaths.inheritImmutables(project)
-    Classpaths.inheritGuava(project)
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables.value
 
-    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+    implementation libs.guava
 
+    compileOnly libs.google.findbugs.jsr305
+
+    testImplementation project(':engine-test-utils')
     testImplementation TestTools.projectDependency(project, 'engine-table')
+    testImplementation TestTools.projectDependency(project, 'engine-vector')
+    testImplementation libs.commons.lang3
 
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    testImplementation libs.junit4
+
+    testRuntimeOnly project(':log-to-slf4j')
+    testRuntimeOnly project(':configs')
+    testRuntimeOnly project(':test-configs')
+    testRuntimeOnly libs.slf4j.simple
 }

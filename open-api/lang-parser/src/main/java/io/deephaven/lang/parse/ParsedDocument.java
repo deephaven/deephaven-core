@@ -3,7 +3,6 @@
 //
 package io.deephaven.lang.parse;
 
-import io.deephaven.base.Lazy;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.lang.generated.*;
@@ -11,6 +10,7 @@ import io.deephaven.proto.backplane.script.grpc.CompletionItem;
 import io.deephaven.proto.backplane.script.grpc.DocumentRange;
 import io.deephaven.proto.backplane.script.grpc.Position;
 import io.deephaven.proto.backplane.script.grpc.TextEdit;
+import io.deephaven.util.datastructures.CachingSupplier;
 import io.deephaven.web.shared.fu.MappedIterable;
 
 import java.util.*;
@@ -100,7 +100,7 @@ public class ParsedDocument {
     private static final Pattern NEW_LINE_PATTERN = Pattern.compile("\\r?\\n");
     private final ChunkerDocument doc;
 
-    private final Lazy<Set<ChunkerStatement>> statements;
+    private final CachingSupplier<Set<ChunkerStatement>> statements;
     private final String src;
     private String errorSource;
     private ParseException error;
@@ -112,7 +112,7 @@ public class ParsedDocument {
         this.src = document;
         computedPositions = new ConcurrentHashMap<>(4);
         assignments = new ConcurrentHashMap<>(12);
-        statements = new Lazy<>(() -> {
+        statements = new CachingSupplier<>(() -> {
             final LinkedHashSet<ChunkerStatement> stmts = new LinkedHashSet<>();
             doc.childrenAccept(new ChunkerDefaultVisitor() {
                 @Override

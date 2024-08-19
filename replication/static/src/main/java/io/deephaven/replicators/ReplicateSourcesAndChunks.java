@@ -1098,7 +1098,7 @@ public class ReplicateSourcesAndChunks {
                 "                   data[segment][destOffset + jj] = converter.applyAsLong(chunk.get(offset + jj));",
                 "               }"));
         permuted = replaceRegion(permuted, "conditionalCopy", Arrays.asList(
-                "                final int chunkOffset = destOffset.intValue();",
+                "                final int chunkOffset = destOffset.get();",
                 "                long[] baseInput = (long[]) getBlock(blockNo);",
                 "                long[] overInput = (long[]) getPrevBlock(blockNo);",
                 "",

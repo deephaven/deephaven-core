@@ -5,7 +5,6 @@ package io.deephaven.extensions.barrage.chunk.array;
 
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.ObjectChunk;
@@ -13,8 +12,6 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
-
-import java.lang.reflect.Array;
 
 public class ObjectArrayExpansionKernel implements ArrayExpansionKernel {
 
@@ -83,14 +80,12 @@ public class ObjectArrayExpansionKernel implements ArrayExpansionKernel {
         int lenRead = 0;
         for (int i = 0; i < itemsInBatch; ++i) {
             final int rowLen = perElementLengthDest.get(i + 1) - perElementLengthDest.get(i);
-            if (rowLen == 0) {
-                result.set(outOffset + i, CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
-            } else {
-                final Object[] row = (Object[]) Array.newInstance(componentType, rowLen);
+            final Object[] row = (Object[]) ArrayReflectUtil.newInstance(componentType, rowLen);
+            if (rowLen != 0) {
                 typedSource.copyToArray(lenRead, row, 0, rowLen);
                 lenRead += rowLen;
-                result.set(outOffset + i, row);
             }
+            result.set(outOffset + i, row);
         }
 
         // noinspection unchecked

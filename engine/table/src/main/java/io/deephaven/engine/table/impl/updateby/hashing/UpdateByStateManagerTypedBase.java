@@ -19,7 +19,7 @@ import io.deephaven.engine.table.impl.sources.immutable.ImmutableIntArraySource;
 import io.deephaven.engine.table.impl.util.TypedHasherUtil;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.engine.table.impl.util.TypedHasherUtil.getKeyChunks;
@@ -181,7 +181,26 @@ public abstract class UpdateByStateManagerTypedBase extends UpdateByStateManager
         return new ProbeContext(buildSources, (int) Math.min(maxSize, CHUNK_SIZE));
     }
 
-    protected void newAlternate() {
+    /**
+     * After creating the new alternate key states, advise the derived classes, so they can cast them to the typed
+     * versions of the column source and adjust the derived class pointers.
+     */
+    protected abstract void adviseNewAlternate();
+
+    private void setupNewAlternate(int oldTableSize) {
+        Assert.eqZero(rehashPointer, "rehashPointer");
+
+        for (int ii = 0; ii < mainKeySources.length; ++ii) {
+            alternateKeySources[ii] = mainKeySources[ii];
+            mainKeySources[ii] = InMemoryColumnSource.getImmutableMemoryColumnSource(tableSize,
+                    alternateKeySources[ii].getType(), alternateKeySources[ii].getComponentType());
+            mainKeySources[ii].ensureCapacity(tableSize);
+        }
+        alternateTableSize = oldTableSize;
+        if (numEntries > 0) {
+            rehashPointer = alternateTableSize;
+        }
+
         alternateStateSource = stateSource;
         stateSource = new ImmutableIntArraySource();
         stateSource.ensureCapacity(tableSize);
@@ -228,7 +247,7 @@ public abstract class UpdateByStateManagerTypedBase extends UpdateByStateManager
                 final long entriesAdded = numEntries - oldEntries;
                 // if we actually added anything, then take away from the "equity" we've built up rehashing, otherwise
                 // don't penalize this build call with additional rehashing
-                bc.rehashCredits.subtract(entriesAdded);
+                bc.rehashCredits.subtract(Math.toIntExact(entriesAdded));
 
                 bc.resetSharedContexts();
             }
@@ -274,7 +293,7 @@ public abstract class UpdateByStateManagerTypedBase extends UpdateByStateManager
     public boolean doRehash(boolean fullRehash, MutableInt rehashCredits, int nextChunkSize,
             WritableIntChunk<RowKeys> outputPositions) {
         if (rehashPointer > 0) {
-            final int requiredRehash = nextChunkSize - rehashCredits.intValue();
+            final int requiredRehash = nextChunkSize - rehashCredits.get();
             if (requiredRehash <= 0) {
                 return false;
             }
@@ -300,8 +319,8 @@ public abstract class UpdateByStateManagerTypedBase extends UpdateByStateManager
         }
 
         // we can't give the caller credit for rehashes with the old table, we need to begin migrating things again
-        if (rehashCredits.intValue() > 0) {
-            rehashCredits.setValue(0);
+        if (rehashCredits.get() > 0) {
+            rehashCredits.set(0);
         }
 
         if (fullRehash) {
@@ -316,20 +335,9 @@ public abstract class UpdateByStateManagerTypedBase extends UpdateByStateManager
             return false;
         }
 
-        Assert.eqZero(rehashPointer, "rehashPointer");
 
-        for (int ii = 0; ii < mainKeySources.length; ++ii) {
-            alternateKeySources[ii] = mainKeySources[ii];
-            mainKeySources[ii] = InMemoryColumnSource.getImmutableMemoryColumnSource(tableSize,
-                    alternateKeySources[ii].getType(), alternateKeySources[ii].getComponentType());
-            mainKeySources[ii].ensureCapacity(tableSize);
-        }
-        alternateTableSize = oldTableSize;
-        if (numEntries > 0) {
-            rehashPointer = alternateTableSize;
-        }
-
-        newAlternate();
+        setupNewAlternate(oldTableSize);
+        adviseNewAlternate();
 
         return true;
     }

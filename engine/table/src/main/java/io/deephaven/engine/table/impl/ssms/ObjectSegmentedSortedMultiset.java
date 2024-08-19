@@ -10,6 +10,7 @@ package io.deephaven.engine.table.impl.ssms;
 import gnu.trove.set.hash.THashSet;
 
 import java.util.Objects;
+import io.deephaven.util.compare.ObjectComparisons;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Any;
@@ -24,7 +25,8 @@ import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.annotations.VisibleForTesting;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableLong;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -97,8 +99,8 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
                 && (leq(nextValue = valuesToInsert.get(ripos), maxInsert) || lastLeaf)) {
             if (gt(leafValues[rlpos], nextValue)) {
                 // we're not going to find nextValue in this leaf, so we skip over it
-                valuesToInsert.set(wipos.intValue(), nextValue);
-                counts.set(wipos.intValue(), counts.get(ripos));
+                valuesToInsert.set(wipos.get(), nextValue);
+                counts.set(wipos.get(), counts.get(ripos));
                 wipos.increment();
                 ripos++;
             } else {
@@ -114,9 +116,9 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
                             : upperBound(valuesToInsert, ripos, valuesToInsert.size(), maxInsert);
 
                     // noinspection unchecked
-                    valuesToInsert.copyFromTypedChunk((WritableObjectChunk) valuesToInsert, ripos, wipos.intValue(),
+                    valuesToInsert.copyFromTypedChunk((WritableObjectChunk) valuesToInsert, ripos, wipos.get(),
                             lastInsert - ripos);
-                    counts.copyFromTypedChunk(counts, ripos, wipos.intValue(), lastInsert - ripos);
+                    counts.copyFromTypedChunk(counts, ripos, wipos.get(), lastInsert - ripos);
                     wipos.add(lastInsert - ripos);
                     ripos = lastInsert;
                 }
@@ -407,7 +409,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             final MutableInt wipos = new MutableInt(0);
             final int ripos = insertExistingIntoLeaf(valuesToInsert, counts, 0, wipos, size, directoryValues,
                     directoryCount, null, true);
-            maybeCompact(valuesToInsert, counts, ripos, wipos.intValue());
+            maybeCompact(valuesToInsert, counts, ripos, wipos.get());
             return;
         }
 
@@ -427,7 +429,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
                 break;
             }
         }
-        maybeCompact(valuesToInsert, counts, ripos, wipos.intValue());
+        maybeCompact(valuesToInsert, counts, ripos, wipos.get());
     }
 
     private void insert(WritableObjectChunk<Object, ? extends Values> valuesToInsert, WritableIntChunk<ChunkLengths> counts) {
@@ -877,10 +879,10 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             final int consumed = removeFromLeaf(removeContext, valuesToRemove, counts, 0, valuesToRemove.size(),
                     directoryValues, directoryCount, sz);
             assert consumed == valuesToRemove.size();
-            if (sz.intValue() == 0) {
+            if (sz.get() == 0) {
                 clear();
             } else {
-                size = sz.intValue();
+                size = sz.get();
             }
         } else {
             removeContext.ensureLeafCount((leafCount + 1) / 2);
@@ -896,9 +898,9 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
                 final MutableInt sz = new MutableInt(leafSizes[nextLeaf]);
                 rpos = removeFromLeaf(removeContext, valuesToRemove, counts, rpos, valuesToRemove.size(),
                         leafValues[nextLeaf], leafCounts[nextLeaf], sz);
-                size -= leafSizes[nextLeaf] - sz.intValue();
-                leafSizes[nextLeaf] = sz.intValue();
-                if (sz.intValue() == 0) {
+                size -= leafSizes[nextLeaf] - sz.get();
+                leafSizes[nextLeaf] = sz.get();
+                if (sz.get() == 0) {
                     cl = markLeafForRemoval(removeContext, nextLeaf, cl);
                 } else {
                     // we figure out if we can be pulled back into the prior leaf
@@ -1101,8 +1103,8 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         int cl = -1;
         while (ripos < end) {
             final Object removeValue = valuesToRemove.get(ripos);
-            rlpos = upperBound(leafValues, rlpos, sz.intValue(), removeValue);
-            if (rlpos == sz.intValue()) {
+            rlpos = upperBound(leafValues, rlpos, sz.get(), removeValue);
+            if (rlpos == sz.get()) {
                 break;
             }
             leafCounts[rlpos] -= counts.get(ripos);
@@ -1132,12 +1134,12 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
                 }
             }
         }
-        if (cl == 0 && removeContext.compactionLengths[0] == sz.intValue()) {
+        if (cl == 0 && removeContext.compactionLengths[0] == sz.get()) {
             // we've removed everything, so no need to compact
-            sz.setValue(0);
+            sz.set(0);
             return ripos;
         }
-        final int removed = compactValues(removeContext, leafValues, leafCounts, sz.intValue(), cl);
+        final int removed = compactValues(removeContext, leafValues, leafCounts, sz.get(), cl);
         sz.subtract(removed);
         return ripos;
     }
@@ -1524,15 +1526,15 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             return;
         }
 
-        final MutableInt remaining = new MutableInt(count);
-        final MutableInt leftOverMutable = new MutableInt();
+        final MutableLong remaining = new MutableLong(count);
+        final MutableLong leftOverMutable = new MutableLong();
         int totalUniqueToMove = 0;
         int partialUnique = 0;
         int rleaf = 0;
         if (leafCount == 1) {
             // we need to move this many entries (the last one may be partial)
             totalUniqueToMove = countFront(directoryCount, size, remaining, leftOverMutable);
-            if (remaining.intValue() > 0) {
+            if (remaining.get() > 0) {
                 throw new IllegalStateException();
             }
             if (totalUniqueToMove == size) {
@@ -1542,7 +1544,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
                 partialUnique = totalUniqueToMove;
             }
         } else {
-            while (remaining.intValue() > 0) {
+            while (remaining.get() > 0) {
                 final int uniqueToMove = countFront(leafCounts[rleaf], leafSizes[rleaf], remaining, leftOverMutable);
                 totalUniqueToMove += uniqueToMove;
                 if (uniqueToMove == leafSizes[rleaf]) {
@@ -1554,7 +1556,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         }
         final boolean appendToExtra = destination.prepareAppend(partialUnique, rleaf);
 
-        final int leftOver = leftOverMutable.intValue();
+        final long leftOver = leftOverMutable.get();
         if (rleaf > 0) {
             int wleaf = destination.leafCount;
             // we can move full leaves to start
@@ -1902,15 +1904,15 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         return extraLeafCount > 0;
     }
 
-    private static int countFront(long[] counts, int sz, MutableInt valuesToMove, MutableInt leftOvers) {
-        leftOvers.setValue(0);
+    private static int countFront(long[] counts, int sz, MutableLong valuesToMove, MutableLong leftOvers) {
+        leftOvers.set(0);
         int rpos = 0;
         // figure out how many values we must move
-        while (valuesToMove.intValue() > 0 && rpos < sz) {
+        while (valuesToMove.get() > 0 && rpos < sz) {
             final long slotCount = counts[rpos];
-            if (valuesToMove.intValue() < slotCount) {
-                leftOvers.setValue(slotCount - valuesToMove.intValue());
-                valuesToMove.setValue(0);
+            if (valuesToMove.get() < slotCount) {
+                leftOvers.set(slotCount - valuesToMove.get());
+                valuesToMove.set(0);
             } else {
                 valuesToMove.subtract(slotCount);
             }
@@ -1958,8 +1960,8 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             return;
         }
 
-        final MutableInt remaining = new MutableInt(count);
-        final MutableInt leftOverMutable = new MutableInt();
+        final MutableLong remaining = new MutableLong(count);
+        final MutableLong leftOverMutable = new MutableLong();
         int totalUniqueToMove = 0;
         int slotsInPartialLeaf = 0;
         int completeLeavesToMove = 0;
@@ -1967,9 +1969,9 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         if (leafCount == 1) {
             // we need to move this many entries (the last one may be partial)
             totalUniqueToMove = countBack(directoryCount, size, remaining, leftOverMutable);
-            Assert.eqZero(remaining.intValue(), "remaining.intValue()");
+            Assert.eqZero(remaining.get(), "remaining.get()");
             Assert.leq(totalUniqueToMove, "totalUniqueToMove", count, "count");
-            if (totalUniqueToMove == size && remaining.intValue() == 0) {
+            if (totalUniqueToMove == size) {
                 // we are moving the entire leaf
                 completeLeavesToMove = 1;
                 slotsInPartialLeaf = 0;
@@ -1978,7 +1980,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
                 slotsInPartialLeaf = totalUniqueToMove;
             }
         } else {
-            while (remaining.intValue() > 0) {
+            while (remaining.get() > 0) {
                 final int uniqueToMove = countBack(leafCounts[rleaf], leafSizes[rleaf], remaining, leftOverMutable);
                 Assert.leq(totalUniqueToMove, "totalUniqueToMove", count, "count");
                 totalUniqueToMove += uniqueToMove;
@@ -1991,7 +1993,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
             }
         }
 
-        final int leftOver = leftOverMutable.intValue();
+        final long leftOver = leftOverMutable.get();
 
         final boolean extraLeaf = destination.preparePrepend(slotsInPartialLeaf, completeLeavesToMove);
         if (slotsInPartialLeaf > 0) {
@@ -2145,15 +2147,15 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
         }
     }
 
-    private static int countBack(long[] counts, int sz, MutableInt valuesToMove, MutableInt leftOvers) {
-        leftOvers.setValue(0);
+    private static int countBack(long[] counts, int sz, MutableLong valuesToMove, MutableLong leftOvers) {
+        leftOvers.set(0);
         int rpos = sz;
         // figure out how many values we must move
-        while (valuesToMove.intValue() > 0 && rpos > 0) {
+        while (valuesToMove.get() > 0 && rpos > 0) {
             final long slotCount = counts[--rpos];
-            if (valuesToMove.intValue() < slotCount) {
-                leftOvers.setValue(slotCount - valuesToMove.intValue());
-                valuesToMove.setValue(0);
+            if (valuesToMove.get() < slotCount) {
+                leftOvers.set(slotCount - valuesToMove.get());
+                valuesToMove.set(0);
             } else {
                 valuesToMove.subtract(slotCount);
             }

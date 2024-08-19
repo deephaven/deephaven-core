@@ -3,21 +3,25 @@
 //
 package io.deephaven.parquet.base;
 
+import io.deephaven.util.channel.CachedChannelProvider;
 import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import org.apache.parquet.format.*;
 import org.apache.parquet.format.ColumnOrder;
 import org.apache.parquet.format.Type;
 import org.apache.parquet.schema.*;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
+import static io.deephaven.parquet.base.ParquetUtils.MAGIC;
 import static io.deephaven.base.FileUtils.convertToURI;
 
 /**
@@ -26,8 +30,6 @@ import static io.deephaven.base.FileUtils.convertToURI;
  */
 public class ParquetFileReader {
     private static final int FOOTER_LENGTH_SIZE = 4;
-    private static final String MAGIC_STR = "PAR1";
-    static final byte[] MAGIC = MAGIC_STR.getBytes(StandardCharsets.US_ASCII);
     public static final String FILE_URI_SCHEME = "file";
 
     public final FileMetaData fileMetaData;
@@ -40,25 +42,51 @@ public class ParquetFileReader {
     private final MessageType type;
 
     /**
-     * Create a new ParquetFileReader for the provided source.
+     * Make a {@link ParquetFileReader} for the supplied {@link File}. Wraps {@link IOException} as
+     * {@link UncheckedIOException}.
      *
-     * @param source The source path or URI for the parquet file or the parquet metadata file
+     * @param parquetFile The parquet file or the parquet metadata file
      * @param channelsProvider The {@link SeekableChannelsProvider} to use for reading the file
+     * @return The new {@link ParquetFileReader}
      */
-    public ParquetFileReader(final String source, final SeekableChannelsProvider channelsProvider)
-            throws IOException {
-        this(convertToURI(source, false), channelsProvider);
+    public static ParquetFileReader create(
+            @NotNull final File parquetFile,
+            @NotNull final SeekableChannelsProvider channelsProvider) {
+        try {
+            return new ParquetFileReader(convertToURI(parquetFile, false), channelsProvider);
+        } catch (final IOException e) {
+            throw new UncheckedIOException("Failed to create Parquet file reader: " + parquetFile, e);
+        }
+    }
+
+    /**
+     * Make a {@link ParquetFileReader} for the supplied {@link URI}. Wraps {@link IOException} as
+     * {@link UncheckedIOException}.
+     *
+     * @param parquetFileURI The URI for the parquet file or the parquet metadata file
+     * @param channelsProvider The {@link SeekableChannelsProvider} to use for reading the file
+     * @return The new {@link ParquetFileReader}
+     */
+    public static ParquetFileReader create(
+            @NotNull final URI parquetFileURI,
+            @NotNull final SeekableChannelsProvider channelsProvider) {
+        try {
+            return new ParquetFileReader(parquetFileURI, channelsProvider);
+        } catch (final IOException e) {
+            throw new UncheckedIOException("Failed to create Parquet file reader: " + parquetFileURI, e);
+        }
     }
 
     /**
      * Create a new ParquetFileReader for the provided source.
      *
      * @param parquetFileURI The URI for the parquet file or the parquet metadata file
-     * @param channelsProvider The {@link SeekableChannelsProvider} to use for reading the file
+     * @param provider The {@link SeekableChannelsProvider} to use for reading the file
      */
-    public ParquetFileReader(final URI parquetFileURI, final SeekableChannelsProvider channelsProvider)
-            throws IOException {
-        this.channelsProvider = channelsProvider;
+    private ParquetFileReader(
+            @NotNull final URI parquetFileURI,
+            @NotNull final SeekableChannelsProvider provider) throws IOException {
+        this.channelsProvider = CachedChannelProvider.create(provider, 1 << 7);
         if (!parquetFileURI.getRawPath().endsWith(".parquet") && FILE_URI_SCHEME.equals(parquetFileURI.getScheme())) {
             // Construct a new file URI for the parent directory
             rootURI = convertToURI(new File(parquetFileURI).getParentFile(), true);
@@ -67,17 +95,22 @@ public class ParquetFileReader {
             rootURI = parquetFileURI;
         }
         try (
-                final SeekableChannelContext context = channelsProvider.makeContext();
+                final SeekableChannelContext context = channelsProvider.makeSingleUseContext();
                 final SeekableByteChannel ch = channelsProvider.getReadChannel(context, parquetFileURI)) {
-            positionToFileMetadata(parquetFileURI, ch);
-            try (final InputStream in = channelsProvider.getInputStream(ch)) {
+            final int footerLength = positionToFileMetadata(parquetFileURI, ch);
+            try (final InputStream in = channelsProvider.getInputStream(ch, footerLength)) {
                 fileMetaData = Util.readFileMetaData(in);
             }
         }
         type = fromParquetSchema(fileMetaData.schema, fileMetaData.column_orders);
     }
 
-    private static void positionToFileMetadata(URI parquetFileURI, SeekableByteChannel readChannel) throws IOException {
+    /**
+     * Read the footer length and position the channel to the start of the footer.
+     *
+     * @return The length of the footer
+     */
+    private static int positionToFileMetadata(URI parquetFileURI, SeekableByteChannel readChannel) throws IOException {
         final long fileLen = readChannel.size();
         if (fileLen < MAGIC.length + FOOTER_LENGTH_SIZE + MAGIC.length) { // MAGIC + data + footer +
             // footerIndex + MAGIC
@@ -101,6 +134,7 @@ public class ParquetFileReader {
                     "corrupted file: the footer index is not within the file: " + footerIndex);
         }
         readChannel.position(footerIndex);
+        return footerLength;
     }
 
     private static int makeLittleEndianInt(byte b0, byte b1, byte b2, byte b3) {
@@ -197,7 +231,7 @@ public class ParquetFileReader {
 
     /**
      * Create a {@link RowGroupReader} object for provided row group number
-     * 
+     *
      * @param version The "version" string from deephaven specific parquet metadata, or null if it's not present.
      */
     public RowGroupReader getRowGroup(final int groupNumber, final String version) {
@@ -263,18 +297,18 @@ public class ParquetFileReader {
                         columnOrders, columnCount);
             }
 
+            final LogicalTypeAnnotation logicalType;
             if (schemaElement.isSetLogicalType()) {
-                ((Types.Builder) childBuilder).as(getLogicalTypeAnnotation(schemaElement.logicalType));
+                logicalType = getLogicalTypeAnnotation(schemaElement.logicalType);
+                ((Types.Builder) childBuilder).as(logicalType);
+            } else {
+                logicalType = null;
             }
 
             if (schemaElement.isSetConverted_type()) {
                 final LogicalTypeAnnotation originalType = getLogicalTypeAnnotation(
-                        schemaElement.converted_type, schemaElement.logicalType, schemaElement);
-                final LogicalTypeAnnotation newOriginalType = schemaElement.isSetLogicalType()
-                        && getLogicalTypeAnnotation(schemaElement.logicalType) != null
-                                ? getLogicalTypeAnnotation(schemaElement.logicalType)
-                                : null;
-                if (!originalType.equals(newOriginalType)) {
+                        schemaElement.converted_type, schemaElement);
+                if (!originalType.equals(logicalType)) {
                     ((Types.Builder) childBuilder).as(originalType);
                 }
             }
@@ -302,7 +336,9 @@ public class ParquetFileReader {
         }
     }
 
-    static LogicalTypeAnnotation getLogicalTypeAnnotation(LogicalType type) throws ParquetFileReaderException {
+    @Nullable
+    private static LogicalTypeAnnotation getLogicalTypeAnnotation(@NotNull final LogicalType type)
+            throws ParquetFileReaderException {
         switch (type.getSetField()) {
             case MAP:
                 return LogicalTypeAnnotation.mapType();
@@ -372,8 +408,9 @@ public class ParquetFileReader {
         return org.apache.parquet.schema.ColumnOrder.undefined();
     }
 
-    private static LogicalTypeAnnotation getLogicalTypeAnnotation(final ConvertedType convertedType,
-            final LogicalType logicalType, final SchemaElement schemaElement) throws ParquetFileReaderException {
+    private static LogicalTypeAnnotation getLogicalTypeAnnotation(
+            final ConvertedType convertedType,
+            final SchemaElement schemaElement) throws ParquetFileReaderException {
         switch (convertedType) {
             case UTF8:
                 return LogicalTypeAnnotation.stringType();
@@ -397,12 +434,13 @@ public class ParquetFileReader {
             case TIME_MICROS:
                 return LogicalTypeAnnotation.timeType(true, LogicalTypeAnnotation.TimeUnit.MICROS);
             case TIMESTAMP_MILLIS:
-                // Converted type doesn't have isAdjustedToUTC parameter, so use the information from logical type
-                return LogicalTypeAnnotation.timestampType(isAdjustedToUTC(logicalType),
-                        LogicalTypeAnnotation.TimeUnit.MILLIS);
+                // TIMESTAMP_MILLIS is always adjusted to UTC
+                // ref: https://github.com/apache/parquet-format/blob/master/LogicalTypes.md
+                return LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.MILLIS);
             case TIMESTAMP_MICROS:
-                return LogicalTypeAnnotation.timestampType(isAdjustedToUTC(logicalType),
-                        LogicalTypeAnnotation.TimeUnit.MICROS);
+                // TIMESTAMP_MICROS is always adjusted to UTC
+                // ref: https://github.com/apache/parquet-format/blob/master/LogicalTypes.md
+                return LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.MICROS);
             case INTERVAL:
                 return LogicalTypeAnnotation.IntervalLogicalTypeAnnotation.getInstance();
             case INT_8:
@@ -433,7 +471,7 @@ public class ParquetFileReader {
 
     /**
      * Helper method to determine if a logical type is adjusted to UTC.
-     * 
+     *
      * @param logicalType the logical type to check
      * @return true if the logical type is a timestamp adjusted to UTC, false otherwise
      */

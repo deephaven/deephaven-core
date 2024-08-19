@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.Selectable;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -15,6 +14,7 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
+import io.deephaven.util.type.ArrayTypeUtils;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -38,10 +38,10 @@ public class DeferredViewTableTest {
         final DeferredViewTable deferredTable = new DeferredViewTable(
                 resultDef,
                 "test",
-                new DeferredViewTable.SimpleTableReference(sourceTable),
-                CollectionUtil.ZERO_LENGTH_STRING_ARRAY,
+                new DeferredViewTable.TableReference(sourceTable),
+                ArrayTypeUtils.EMPTY_STRING_ARRAY,
                 viewColumns,
-                WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY);
+                WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY);
 
         final Table resultTable = deferredTable.coalesce();
         final Table expectedTable = sourceTable.update(Arrays.asList(viewColumns));
@@ -66,10 +66,10 @@ public class DeferredViewTableTest {
         final DeferredViewTable deferredTable = new DeferredViewTable(
                 resultDef,
                 "test",
-                new DeferredViewTable.SimpleTableReference(sourceTable),
-                CollectionUtil.ZERO_LENGTH_STRING_ARRAY,
+                new DeferredViewTable.TableReference(sourceTable),
+                ArrayTypeUtils.EMPTY_STRING_ARRAY,
                 SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
-                WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY);
+                WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY);
 
         Assert.eq(deferredTable.isRefreshing(), "deferredTable.isRefreshing()", sourceRefreshing, "sourceRefreshing");
     }
@@ -89,8 +89,8 @@ public class DeferredViewTableTest {
         final DeferredViewTable deferredTable = new DeferredViewTable(
                 resultDef,
                 "test",
-                new DeferredViewTable.SimpleTableReference(sourceTable),
-                CollectionUtil.ZERO_LENGTH_STRING_ARRAY,
+                new DeferredViewTable.TableReference(sourceTable),
+                ArrayTypeUtils.EMPTY_STRING_ARRAY,
                 SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY,
                 whereFilters);
 
@@ -109,10 +109,10 @@ public class DeferredViewTableTest {
         final DeferredViewTable deferredTable = new DeferredViewTable(
                 resultDef,
                 "test",
-                new DeferredViewTable.SimpleTableReference(sourceTable),
-                CollectionUtil.ZERO_LENGTH_STRING_ARRAY,
+                new DeferredViewTable.TableReference(sourceTable),
+                ArrayTypeUtils.EMPTY_STRING_ARRAY,
                 viewColumns,
-                WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY);
+                WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY);
 
         final Class<?> resultType = deferredTable.coalesce().getDefinition().getColumn("X").getDataType();
         Assert.eq(resultType, "resultType", int.class, "int.class");

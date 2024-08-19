@@ -11,5 +11,6 @@ dependencies {
 
     implementation project(':engine-base')
 
-    Classpaths.inheritAutoService(project)
+    compileOnly libs.autoservice
+    annotationProcessor libs.autoservice.compiler
 }

@@ -11,7 +11,7 @@ import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 
 public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSequence {
 
@@ -106,7 +106,7 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
     }
 
     @Override
-    public Iterator getRowSequenceIterator() {
+    public RowSequence.Iterator getRowSequenceIterator() {
         return new Iterator();
     }
 
@@ -179,7 +179,7 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
 
     @Override
     public void close() {
-        closeRowSequenceAsChunkImpl();
+        super.close();
         clear();
     }
 
@@ -187,7 +187,7 @@ public class ShiftedRowSequence extends RowSequenceAsChunkImpl implements RowSeq
     public long rangesCountUpperBound() {
         final MutableInt mi = new MutableInt(0);
         wrappedOK.forAllRowKeyRanges((final long start, final long end) -> mi.increment());
-        return mi.intValue();
+        return mi.get();
     }
 
     private void shiftIndicesChunk(WritableLongChunk<? super OrderedRowKeys> chunkToFill) {

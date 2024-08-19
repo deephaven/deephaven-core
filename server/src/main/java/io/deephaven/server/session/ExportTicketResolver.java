@@ -55,7 +55,7 @@ public class ExportTicketResolver extends TicketResolverBase {
                     }
 
                     throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
-                            "Could not resolve '" + logId + "': flight '" + descriptor.toString() + " does not exist");
+                            "Could not resolve '" + logId + "': flight '" + descriptor + "' not found");
                 });
     }
 

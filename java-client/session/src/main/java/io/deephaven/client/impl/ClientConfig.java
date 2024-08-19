@@ -3,7 +3,7 @@
 //
 package io.deephaven.client.impl;
 
-import io.deephaven.annotations.BuildableStyle;
+import io.deephaven.annotations.CopyableStyle;
 import io.deephaven.ssl.config.SSLConfig;
 import io.deephaven.uri.DeephavenTarget;
 import org.immutables.value.Value.Default;
@@ -13,10 +13,10 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * The client configuration.
+ * The client configuration encapsulates the configuration to created a {@link io.grpc.ManagedChannel}.
  */
 @Immutable
-@BuildableStyle
+@CopyableStyle
 public abstract class ClientConfig {
 
     public static final int DEFAULT_MAX_INBOUND_MESSAGE_SIZE = 100 * 1024 * 1024;
@@ -36,7 +36,9 @@ public abstract class ClientConfig {
     public abstract Optional<SSLConfig> ssl();
 
     /**
-     * The user agent.
+     * The user-agent.
+     *
+     * @see <a href="https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md#user-agents">grpc user-agents</a>
      */
     public abstract Optional<String> userAgent();
 
@@ -57,6 +59,16 @@ public abstract class ClientConfig {
     public int maxInboundMessageSize() {
         return DEFAULT_MAX_INBOUND_MESSAGE_SIZE;
     }
+
+    /**
+     * Returns or creates a client config with {@link #ssl()} as {@code ssl}.
+     */
+    public abstract ClientConfig withSsl(SSLConfig ssl);
+
+    /**
+     * Returns or creates a client config with {@link #userAgent()} as {@code userAgent}.
+     */
+    public abstract ClientConfig withUserAgent(String userAgent);
 
     public interface Builder {
 

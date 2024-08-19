@@ -5,14 +5,12 @@
 
 import jpy
 
-from typing import Callable, Dict, Optional, Tuple
+from typing import Callable, Dict, Optional, Tuple, Union, List
 
 from deephaven._wrapper import JObjectWrapper
-from deephaven.column import Column
-from deephaven.dtypes import DType
 from deephaven.execution_context import get_exec_ctx
 from deephaven.jcompat import j_lambda, j_runnable
-from deephaven.table import Table
+from deephaven.table import Table, TableDefinition, TableDefinitionLike
 from deephaven.update_graph import UpdateGraph
 
 _JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
@@ -75,7 +73,7 @@ class TablePublisher(JObjectWrapper):
 
 def table_publisher(
     name: str,
-    col_defs: Dict[str, DType],
+    col_defs: TableDefinitionLike,
     on_flush_callback: Optional[Callable[[TablePublisher], None]] = None,
     on_shutdown_callback: Optional[Callable[[], None]] = None,
     update_graph: Optional[UpdateGraph] = None,
@@ -85,7 +83,7 @@ def table_publisher(
 
     Args:
         name (str): the name, used for logging
-        col_defs (Dict[str, DType]): the column definitions for the resulting blink table
+        col_defs (TableDefinitionLike): the table definition for the resulting blink table
         on_flush_callback (Optional[Callable[[TablePublisher], None]]): the on-flush callback, if present, is called
             once at the beginning of each update graph cycle. This is a pattern that allows publishers to add any data
             they may have been batching. Do note though, this blocks the update cycle from proceeding, so
@@ -107,12 +105,7 @@ def table_publisher(
 
     j_table_publisher = _JTablePublisher.of(
         name,
-        _JTableDefinition.of(
-            [
-                Column(name=name, data_type=dtype).j_column_definition
-                for name, dtype in col_defs.items()
-            ]
-        ),
+        TableDefinition(col_defs).j_table_definition,
         j_lambda(adapt_callback, _JConsumer, None) if on_flush_callback else None,
         j_runnable(on_shutdown_callback) if on_shutdown_callback else None,
         (update_graph or get_exec_ctx().update_graph).j_update_graph,

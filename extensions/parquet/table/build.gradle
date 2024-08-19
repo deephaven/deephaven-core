@@ -4,6 +4,9 @@ plugins {
 }
 import io.deephaven.tools.docker.Architecture
 
+evaluationDependsOn Docker.registryProject('localstack')
+evaluationDependsOn Docker.registryProject('minio')
+
 description 'Parquet Table: Integrating Engine tables with Parquet'
 
 
@@ -21,41 +24,52 @@ dependencies {
     api project(':engine-api')
     api project(':engine-stringset')
     api project(':engine-table')
+    api project(':codec-api')
 
     implementation project(':extensions-parquet-base')
-    Classpaths.inheritParquetHadoop(project)
+    implementation libs.parquet.hadoop
 
     implementation project(':engine-base')
     implementation project(':extensions-csv')
     implementation project(':log-factory')
     implementation project(':Configuration')
-    implementation depCommonsLang3
+    implementation project(':Util')
+    implementation project(':codec-builtin')
+    implementation project(':codec-cache')
 
-    Classpaths.inheritCommonsText(project, 'implementation')
+    implementation libs.commons.lang3
+    implementation libs.commons.text
+    implementation libs.commons.compress
 
-    Classpaths.inheritJacksonPlatform(project)
-    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
-    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8'
+    implementation platform(libs.jackson.bom)
+    implementation libs.jackson.dataformat.yaml
+    implementation libs.jackson.datatype.jdk8
 
-    Classpaths.inheritImmutables(project)
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables.value
 
-    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+    compileOnly libs.google.findbugs.jsr305
 
     testImplementation project(':base-test-utils')
     testImplementation project(':engine-test-utils')
-    testImplementation TestTools.projectDependency(project, 'engine-context')
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+
+    testImplementation TestTools.projectDependency(project, 'extensions-s3')
+    testImplementation libs.junit4
+
+    testImplementation libs.testcontainers
+    testImplementation libs.testcontainers.junit.jupiter
+    testImplementation libs.testcontainers.localstack
+    testImplementation libs.testcontainers.minio
 
     testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),
             project(path: ':test-configs')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly libs.slf4j.simple
 
     runtimeOnly project(':extensions-trackedfile')
-    testImplementation project(':extensions-s3')
 
     brotliTestImplementation project(':extensions-parquet-table')
-    brotliTestImplementation('com.github.rdblue:brotli-codec:0.1.1')
+    brotliTestImplementation(libs.rdblue.brotli.codec)
     brotliTestRuntimeOnly project(':log-to-slf4j'),
                          project(path: ':configs'),
                          project(path: ':test-configs')
@@ -70,3 +84,9 @@ if (Architecture.fromHost() == Architecture.AMD64) {
 }
 
 TestTools.addEngineOutOfBandTest(project)
+
+testOutOfBand.dependsOn Docker.registryTask(project, 'localstack')
+testOutOfBand.systemProperty 'testcontainers.localstack.image', Docker.localImageName('localstack')
+
+testOutOfBand.dependsOn Docker.registryTask(project, 'minio')
+testOutOfBand.systemProperty 'testcontainers.minio.image', Docker.localImageName('minio')

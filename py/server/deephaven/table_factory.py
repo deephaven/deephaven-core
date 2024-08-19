@@ -5,7 +5,7 @@
 """ This module provides various ways to make a Deephaven table. """
 
 import datetime
-from typing import Callable, List, Dict, Any, Union, Sequence, Tuple, Mapping
+from typing import Callable, List, Dict, Any, Union, Sequence, Tuple, Mapping, Optional
 
 import jpy
 import numpy as np
@@ -13,23 +13,23 @@ import pandas as pd
 
 from deephaven import execution_context, DHError, time
 from deephaven._wrapper import JObjectWrapper
-from deephaven.column import InputColumn, Column
+from deephaven.column import InputColumn
 from deephaven.dtypes import DType, Duration, Instant
 from deephaven.execution_context import ExecutionContext
 from deephaven.jcompat import j_lambda, j_list_to_list, to_sequence
-from deephaven.table import Table
+from deephaven.table import Table, TableDefinition, TableDefinitionLike
 from deephaven.update_graph import auto_locking_ctx
 
 _JTableFactory = jpy.get_type("io.deephaven.engine.table.TableFactory")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 _JDynamicTableWriter = jpy.get_type("io.deephaven.engine.table.impl.util.DynamicTableWriter")
-_JBaseArrayBackedInputTable = jpy.get_type("io.deephaven.engine.table.impl.util.BaseArrayBackedInputTable")
 _JAppendOnlyArrayBackedInputTable = jpy.get_type(
     "io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedInputTable")
 _JKeyedArrayBackedInputTable = jpy.get_type("io.deephaven.engine.table.impl.util.KeyedArrayBackedInputTable")
 _JTableDefinition = jpy.get_type("io.deephaven.engine.table.TableDefinition")
 _JTable = jpy.get_type("io.deephaven.engine.table.Table")
 _J_INPUT_TABLE_ATTRIBUTE = _JTable.INPUT_TABLE_ATTRIBUTE
+_J_InputTableUpdater = jpy.get_type("io.deephaven.engine.util.input.InputTableUpdater")
 _JRingTableTools = jpy.get_type("io.deephaven.engine.table.impl.sources.ring.RingTableTools")
 _JSupplier = jpy.get_type('java.util.function.Supplier')
 _JFunctionGeneratedTableFactory = jpy.get_type("io.deephaven.engine.table.impl.util.FunctionGeneratedTableFactory")
@@ -235,13 +235,14 @@ class InputTable(Table):
 
     Users should always create InputTables through factory methods rather than directly from the constructor.
     """
-    j_object_type = _JBaseArrayBackedInputTable
 
     def __init__(self, j_table: jpy.JType):
         super().__init__(j_table)
         self.j_input_table = self.j_table.getAttribute(_J_INPUT_TABLE_ATTRIBUTE)
         if not self.j_input_table:
             raise DHError("the provided table input is not suitable for input tables.")
+        if not _J_InputTableUpdater.jclass.isInstance(self.j_input_table):
+            raise DHError("the provided table's InputTable attribute type is not of InputTableUpdater type.")
 
     def add(self, table: Table) -> None:
         """Synchronously writes rows from the provided table to this input table. If this is a keyed input table, added rows with keys
@@ -284,7 +285,7 @@ class InputTable(Table):
         return j_list_to_list(self.j_input_table.getValueNames())
 
 
-def input_table(col_defs: Dict[str, DType] = None, init_table: Table = None,
+def input_table(col_defs: Optional[TableDefinitionLike] = None, init_table: Table = None,
                 key_cols: Union[str, Sequence[str]] = None) -> InputTable:
     """Creates an in-memory InputTable from either column definitions or an initial table. When key columns are
     provided, the InputTable will be keyed, otherwise it will be append-only.
@@ -297,7 +298,7 @@ def input_table(col_defs: Dict[str, DType] = None, init_table: Table = None,
     The keyed input table has keys for each row and supports addition/deletion/modification of rows by the keys.
 
     Args:
-        col_defs (Dict[str, DType]): the column definitions
+        col_defs (Optional[TableDefinitionLike]): the table definition
         init_table (Table): the initial table
         key_cols (Union[str, Sequence[str]): the name(s) of the key column(s)
 
@@ -315,8 +316,7 @@ def input_table(col_defs: Dict[str, DType] = None, init_table: Table = None,
             raise ValueError("both column definitions and init table are provided.")
 
         if col_defs:
-            j_arg_1 = _JTableDefinition.of(
-                [Column(name=n, data_type=t).j_column_definition for n, t in col_defs.items()])
+            j_arg_1 = TableDefinition(col_defs).j_table_definition
         else:
             j_arg_1 = init_table.j_table
 

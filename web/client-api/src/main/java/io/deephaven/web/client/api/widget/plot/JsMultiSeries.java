@@ -84,7 +84,7 @@ public class JsMultiSeries {
 
             seriesInstance.setDataSourcesList(
                     descriptor.getDataSourcesList()
-                            .map((multiSeriesSource, p1, p2) -> {
+                            .map((multiSeriesSource, p1) -> {
                                 SourceDescriptor sourceDescriptor = new SourceDescriptor();
                                 sourceDescriptor.setColumnName(multiSeriesSource.getColumnName());
                                 sourceDescriptor.setAxisId(multiSeriesSource.getAxisId());

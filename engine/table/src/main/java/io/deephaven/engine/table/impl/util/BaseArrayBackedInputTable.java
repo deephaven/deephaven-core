@@ -171,7 +171,7 @@ abstract class BaseArrayBackedInputTable extends UpdatableTable {
         String error;
 
         private PendingChange(@NotNull Table table, boolean delete) {
-            Assert.holdsLock(pendingChanges, "pendingChanges");
+            Assert.assertion(Thread.holdsLock(pendingChanges), "Thread.holdsLock(pendingChanges)");
             Assert.neqNull(table, "table");
             this.table = table;
             this.delete = delete;
@@ -306,18 +306,23 @@ abstract class BaseArrayBackedInputTable extends UpdatableTable {
             if (updateGraph.currentThreadProcessesUpdates()) {
                 throw new UnsupportedOperationException("Attempted to make a blocking input table edit from a listener "
                         + "or notification. This is unsupported, because it will block the update graph from making "
-                        + "progress.");
+                        + "progress and hang indefinitely.");
+            }
+            if (updateGraph.sharedLock().isHeldByCurrentThread()) {
+                throw new UnsupportedOperationException("Attempted to make a blocking input table edit while holding "
+                        + "the update graph's shared lock. This is unsupported, because it will block the update graph "
+                        + "from making progress and hang indefinitely.");
             }
         }
 
         private void checkAsyncEditSafety(@NotNull final Table changeData) {
             if (changeData.isRefreshing()
-                    && updateGraph.currentThreadProcessesUpdates()
-                    && !changeData.satisfied(updateGraph.clock().currentStep())) {
+                    && changeData.getUpdateGraph().currentThreadProcessesUpdates()
+                    && !changeData.satisfied(changeData.getUpdateGraph().clock().currentStep())) {
                 throw new UnsupportedOperationException("Attempted to make an asynchronous input table edit from a "
-                        + "listener or notification before the change data table is satisfied on the current cycle. "
-                        + "This is unsupported, because it may block the update graph from making progress or produce "
-                        + "inconsistent results.");
+                        + "listener or notification before the table of data to add or delete is satisfied on the "
+                        + "current cycle. This is unsupported, because it may block the update graph from making "
+                        + "progress or produce inconsistent results.");
             }
         }
 
@@ -343,21 +348,5 @@ abstract class BaseArrayBackedInputTable extends UpdatableTable {
                 }
             }
         }
-
-        @NotNull
-        private Map<String, WritableColumnSource<Object>> buildSourcesMap(int capacity,
-                List<ColumnDefinition<?>> columnDefinitions) {
-            final Map<String, WritableColumnSource<Object>> sources = new LinkedHashMap<>();
-            for (final ColumnDefinition<?> columnDefinition : columnDefinitions) {
-                WritableColumnSource<?> cs = ArrayBackedColumnSource.getMemoryColumnSource(
-                        capacity, columnDefinition.getDataType());
-                // noinspection unchecked
-                final WritableColumnSource<Object> memoryColumnSource = (WritableColumnSource<Object>) cs;
-                memoryColumnSource.ensureCapacity(capacity);
-                sources.put(columnDefinition.getName(), memoryColumnSource);
-            }
-            return sources;
-        }
-
     }
 }

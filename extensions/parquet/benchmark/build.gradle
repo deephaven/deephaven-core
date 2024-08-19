@@ -14,14 +14,14 @@ sourceSets {
 }
 
 dependencies {
-    testImplementation project(':extensions-parquet-table'),
-            project(':engine-table'),
-            project(':BenchmarkSupport'),
-            TestTools.projectDependency(project, 'engine-rowset'),
-            TestTools.projectDependency(project, 'engine-table')
+    testImplementation project(':extensions-parquet-table')
+    testImplementation project(':engine-table')
+    testImplementation project(':BenchmarkSupport')
+    testImplementation TestTools.projectDependency(project, 'engine-rowset')
+    testImplementation TestTools.projectDependency(project, 'engine-table')
 
-    testAnnotationProcessor 'org.openjdk.jmh:jmh-generator-annprocess:1.21'
-    testCompileOnly 'org.openjdk.jmh:jmh-generator-annprocess:1.21'
+    testAnnotationProcessor libs.jmh.generator.annprocess
+    testCompileOnly libs.jmh.generator.annprocess
 
     testRuntimeOnly project(path: ':configs')
     testRuntimeOnly project(path: ':test-configs')

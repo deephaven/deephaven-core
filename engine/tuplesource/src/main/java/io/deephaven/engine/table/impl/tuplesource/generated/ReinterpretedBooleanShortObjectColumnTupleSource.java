@@ -85,6 +85,11 @@ public class ReinterpretedBooleanShortObjectColumnTupleSource extends AbstractTu
         );
     }
 
+    @Override
+    public final int tupleLength() {
+        return 3;
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public final <ELEMENT_TYPE> void exportElement(@NotNull final ByteShortObjectTuple tuple, final int elementIndex, @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationRowKey) {
@@ -118,6 +123,20 @@ public class ReinterpretedBooleanShortObjectColumnTupleSource extends AbstractTu
     }
 
     @Override
+    public final void exportAllTo(final Object @NotNull [] dest, @NotNull final ByteShortObjectTuple tuple) {
+        dest[0] = BooleanUtils.byteAsBoolean(tuple.getFirstElement());
+        dest[1] = TypeUtils.box(tuple.getSecondElement());
+        dest[2] = tuple.getThirdElement();
+    }
+
+    @Override
+    public final void exportAllTo(final Object @NotNull [] dest, @NotNull final ByteShortObjectTuple tuple, final int @NotNull [] map) {
+        dest[map[0]] = BooleanUtils.byteAsBoolean(tuple.getFirstElement());
+        dest[map[1]] = TypeUtils.box(tuple.getSecondElement());
+        dest[map[2]] = tuple.getThirdElement();
+    }
+
+    @Override
     public final Object exportElementReinterpreted(@NotNull final ByteShortObjectTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
             return TypeUtils.box(tuple.getFirstElement());
@@ -130,6 +149,20 @@ public class ReinterpretedBooleanShortObjectColumnTupleSource extends AbstractTu
         }
         throw new IllegalArgumentException("Bad elementIndex for 3 element tuple: " + elementIndex);
     }
+    @Override
+    public final void exportAllReinterpretedTo(final Object @NotNull [] dest, @NotNull final ByteShortObjectTuple tuple) {
+        dest[0] = TypeUtils.box(tuple.getFirstElement());
+        dest[1] = TypeUtils.box(tuple.getSecondElement());
+        dest[2] = tuple.getThirdElement();
+    }
+
+    @Override
+    public final void exportAllReinterpretedTo(final Object @NotNull [] dest, @NotNull final ByteShortObjectTuple tuple, final int @NotNull [] map) {
+        dest[map[0]] = TypeUtils.box(tuple.getFirstElement());
+        dest[map[1]] = TypeUtils.box(tuple.getSecondElement());
+        dest[map[2]] = tuple.getThirdElement();
+    }
+
 
     @Override
     protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {

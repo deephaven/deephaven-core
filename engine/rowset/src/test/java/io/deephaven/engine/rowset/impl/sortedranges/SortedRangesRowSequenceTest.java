@@ -10,7 +10,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.impl.RowSequenceTestBase;
 import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
 import io.deephaven.engine.testutil.rowset.RowSetTstUtils;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.junit.Test;
 
 public class SortedRangesRowSequenceTest extends RowSequenceTestBase {
@@ -106,12 +106,12 @@ public class SortedRangesRowSequenceTest extends RowSequenceTestBase {
             final long[] expected = new long[] {5, 6, 7, 8, 9, 15, 20, 21, 22, 23, 24};
             final MutableInt i = new MutableInt(0);
             rs.forEachRowKey((final long v) -> {
-                final int j = i.intValue();
+                final int j = i.get();
                 assertEquals("v==" + v + " && j==" + j, expected[j], v);
                 i.increment();
                 return true;
             });
-            assertEquals(expected.length, i.intValue());
+            assertEquals(expected.length, i.get());
         }
     }
 

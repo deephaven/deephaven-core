@@ -3,6 +3,9 @@
 //
 package io.deephaven.engine.table.impl.sources.ring;
 
+import io.deephaven.base.ArrayUtil;
+import io.deephaven.base.MathUtil;
+import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
@@ -43,6 +46,7 @@ public class RingTableTools {
      * @return the ring table
      */
     public static Table of(Table parent, int capacity, boolean initialize) {
+        Require.leq(capacity, "capacity", ArrayUtil.MAX_ARRAY_SIZE);
         return QueryPerformanceRecorder.withNugget("RingTableTools.of", () -> {
             final BaseTable<?> baseTable = (BaseTable<?>) parent.coalesce();
             final OperationSnapshotControl snapshotControl =
@@ -56,7 +60,7 @@ public class RingTableTools {
      * re-indexed, with an additional {@link Table#tail(long)} to restructure for {@code capacity}.
      *
      * <p>
-     * Logically equivalent to {@code of(parent, Integer.highestOneBit(capacity - 1) << 1, initialize).tail(capacity)}.
+     * Logically equivalent to {@code of(parent, MathUtil.roundUpPowerOf2(capacity), initialize).tail(capacity)}.
      *
      * <p>
      * This setup may be useful when consumers need to maximize random access fill speed from a ring table.
@@ -66,11 +70,12 @@ public class RingTableTools {
      * @param initialize if the resulting table should source initial data from the snapshot of {@code parent}
      * @return the ring table
      * @see #of(Table, int, boolean)
+     * @see MathUtil#roundUpPowerOf2(int)
      */
     public static Table of2(Table parent, int capacity, boolean initialize) {
+        Require.leq(capacity, "capacity", MathUtil.MAX_POWER_OF_2);
         return QueryPerformanceRecorder.withNugget("RingTableTools.of2", () -> {
-            // todo: there is probably a better way to do this
-            final int capacityPowerOf2 = capacity == 1 ? 1 : Integer.highestOneBit(capacity - 1) << 1;
+            final int capacityPowerOf2 = MathUtil.roundUpPowerOf2(capacity);
             final BaseTable<?> baseTable = (BaseTable<?>) parent.coalesce();
             final OperationSnapshotControl snapshotControl =
                     baseTable.createSnapshotControlIfRefreshing(OperationSnapshotControl::new);

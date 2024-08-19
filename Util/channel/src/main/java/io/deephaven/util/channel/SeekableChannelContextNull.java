@@ -3,6 +3,17 @@
 //
 package io.deephaven.util.channel;
 
+import io.deephaven.util.SafeCloseable;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.function.Supplier;
+
 enum SeekableChannelContextNull implements SeekableChannelContext {
-    NULL_CONTEXT_INSTANCE
+    NULL_CONTEXT_INSTANCE;
+
+    @Override
+    @Nullable
+    public <T extends SafeCloseable> T getCachedResource(final String key, final Supplier<T> resourceFactory) {
+        return null;
+    }
 }

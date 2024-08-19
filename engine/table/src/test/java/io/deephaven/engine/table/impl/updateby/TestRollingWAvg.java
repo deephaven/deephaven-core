@@ -8,10 +8,9 @@ import io.deephaven.api.updateby.UpdateByControl;
 import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
@@ -20,6 +19,8 @@ import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.annotations.TestUseOnly;
+import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.vector.DoubleVector;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ShortVector;
@@ -120,260 +121,262 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         R apply(T1 val1, T2 val2);
     }
 
-    final BiFunction<ObjectVector<BigInteger>, DoubleVector, BigDecimal> wavgBigIntDouble =
-            (bigIntegerObjectVector, doubleVector) -> {
-                if (bigIntegerObjectVector == null || doubleVector == null) {
-                    return null;
+    @SuppressWarnings("unused") // Functions used via QueryLibrary
+    @VisibleForTesting
+    @TestUseOnly
+    public static class Helpers {
+
+        public static BigDecimal wavgBigIntDouble(ObjectVector<BigInteger> bigIntegerObjectVector,
+                DoubleVector doubleVector) {
+            if (bigIntegerObjectVector == null || doubleVector == null) {
+                return null;
+            }
+
+            BigDecimal weightValueSum = new BigDecimal(0);
+            BigDecimal weightSum = new BigDecimal(0);
+            long count = 0;
+
+            final long n = bigIntegerObjectVector.size();
+
+            for (long i = 0; i < n; i++) {
+                final BigInteger val = bigIntegerObjectVector.get(i);
+                final double weightVal = doubleVector.get(i);
+                if (!isNull(val) && !isNull(weightVal)) {
+                    final BigDecimal decVal = new BigDecimal(val);
+                    final BigDecimal weightDecVal = BigDecimal.valueOf(weightVal);
+
+                    final BigDecimal weightedVal = decVal.multiply(weightDecVal, mathContextDefault);
+                    weightValueSum = weightValueSum.add(weightedVal, mathContextDefault);
+                    weightSum = weightSum.add(weightDecVal, mathContextDefault);
+                    count++;
                 }
+            }
+            if (count == 0) {
+                return null;
+            }
+            return weightValueSum.divide(weightSum, mathContextDefault);
+        }
 
-                BigDecimal weightValueSum = new BigDecimal(0);
-                BigDecimal weightSum = new BigDecimal(0);
-                long count = 0;
+        public static BigDecimal wavgBigIntShort(ObjectVector<BigInteger> valueVector, ShortVector weightVector) {
+            if (valueVector == null || weightVector == null) {
+                return null;
+            }
 
-                final long n = bigIntegerObjectVector.size();
+            BigDecimal weightValueSum = new BigDecimal(0);
+            BigDecimal weightSum = new BigDecimal(0);
+            long count = 0;
 
-                for (long i = 0; i < n; i++) {
-                    final BigInteger val = bigIntegerObjectVector.get(i);
-                    final double weightVal = doubleVector.get(i);
-                    if (!isNull(val) && !isNull(weightVal)) {
-                        final BigDecimal decVal = new BigDecimal(val);
-                        final BigDecimal weightDecVal = BigDecimal.valueOf(weightVal);
+            final long n = valueVector.size();
 
-                        final BigDecimal weightedVal = decVal.multiply(weightDecVal, mathContextDefault);
-                        weightValueSum = weightValueSum.add(weightedVal, mathContextDefault);
-                        weightSum = weightSum.add(weightDecVal, mathContextDefault);
-                        count++;
-                    }
+            for (long i = 0; i < n; i++) {
+                final BigInteger val = valueVector.get(i);
+                final short weightVal = weightVector.get(i);
+                if (!isNull(val) && !isNull(weightVal)) {
+                    final BigDecimal decVal = new BigDecimal(val);
+                    final BigDecimal weightDecVal = BigDecimal.valueOf(weightVal);
+
+                    final BigDecimal weightedVal = decVal.multiply(weightDecVal, mathContextDefault);
+                    weightValueSum = weightValueSum.add(weightedVal, mathContextDefault);
+                    weightSum = weightSum.add(weightDecVal, mathContextDefault);
+                    count++;
                 }
-                if (count == 0) {
-                    return null;
+            }
+            if (count == 0) {
+                return null;
+            }
+            return weightValueSum.divide(weightSum, mathContextDefault);
+        }
+
+        public static BigDecimal wavgBigIntBigInt(ObjectVector<BigInteger> valueVector,
+                ObjectVector<BigInteger> weightVector) {
+            if (valueVector == null || weightVector == null) {
+                return null;
+            }
+
+            BigDecimal weightValueSum = new BigDecimal(0);
+            BigDecimal weightSum = new BigDecimal(0);
+            long count = 0;
+
+            final long n = valueVector.size();
+
+            for (long i = 0; i < n; i++) {
+                final BigInteger val = valueVector.get(i);
+                final BigInteger weightVal = weightVector.get(i);
+                if (!isNull(val) && !isNull(weightVal)) {
+                    final BigDecimal decVal = new BigDecimal(val);
+                    final BigDecimal weightDecVal = new BigDecimal(weightVal);
+
+                    final BigDecimal weightedVal = decVal.multiply(weightDecVal, mathContextDefault);
+                    weightValueSum = weightValueSum.add(weightedVal, mathContextDefault);
+                    weightSum = weightSum.add(weightDecVal, mathContextDefault);
+                    count++;
                 }
-                return weightValueSum.divide(weightSum, mathContextDefault);
-            };
+            }
+            if (count == 0 || weightSum.equals(BigDecimal.ZERO)) {
+                return null;
+            }
+            return weightValueSum.divide(weightSum, mathContextDefault);
+        }
 
-    final BiFunction<ObjectVector<BigInteger>, ShortVector, BigDecimal> wavgBigIntShort =
-            (valueVector, weightVector) -> {
-                if (valueVector == null || weightVector == null) {
-                    return null;
+        public static BigDecimal wavgBigIntBigDec(ObjectVector<BigInteger> valueVector,
+                ObjectVector<BigDecimal> weightVector) {
+            if (valueVector == null || weightVector == null) {
+                return null;
+            }
+
+            BigDecimal weightValueSum = new BigDecimal(0);
+            BigDecimal weightSum = new BigDecimal(0);
+            long count = 0;
+
+            final long n = valueVector.size();
+
+            for (long i = 0; i < n; i++) {
+                final BigInteger val = valueVector.get(i);
+                final BigDecimal weightVal = weightVector.get(i);
+                if (!isNull(val) && !isNull(weightVal)) {
+                    final BigDecimal decVal = new BigDecimal(val);
+
+                    final BigDecimal weightedVal = decVal.multiply(weightVal, mathContextDefault);
+                    weightValueSum = weightValueSum.add(weightedVal, mathContextDefault);
+                    weightSum = weightSum.add(weightVal, mathContextDefault);
+                    count++;
                 }
+            }
+            if (count == 0 || weightSum.equals(BigDecimal.ZERO)) {
+                return null;
+            }
+            return weightValueSum.divide(weightSum, mathContextDefault);
+        }
 
-                BigDecimal weightValueSum = new BigDecimal(0);
-                BigDecimal weightSum = new BigDecimal(0);
-                long count = 0;
+        public static BigDecimal wavgBigDecDouble(ObjectVector<BigDecimal> valueVector, DoubleVector weightVector) {
+            if (valueVector == null || weightVector == null) {
+                return null;
+            }
 
-                final long n = valueVector.size();
+            BigDecimal weightValueSum = new BigDecimal(0);
+            BigDecimal weightSum = new BigDecimal(0);
+            long count = 0;
 
-                for (long i = 0; i < n; i++) {
-                    final BigInteger val = valueVector.get(i);
-                    final short weightVal = weightVector.get(i);
-                    if (!isNull(val) && !isNull(weightVal)) {
-                        final BigDecimal decVal = new BigDecimal(val);
-                        final BigDecimal weightDecVal = BigDecimal.valueOf(weightVal);
+            final long n = valueVector.size();
 
-                        final BigDecimal weightedVal = decVal.multiply(weightDecVal, mathContextDefault);
-                        weightValueSum = weightValueSum.add(weightedVal, mathContextDefault);
-                        weightSum = weightSum.add(weightDecVal, mathContextDefault);
-                        count++;
-                    }
+            for (long i = 0; i < n; i++) {
+                final BigDecimal val = valueVector.get(i);
+                final double weightVal = weightVector.get(i);
+                if (!isNull(val) && !isNull(weightVal)) {
+                    final BigDecimal weightDecVal = BigDecimal.valueOf(weightVal);
+
+                    final BigDecimal weightedVal = val.multiply(weightDecVal, mathContextDefault);
+                    weightValueSum = weightValueSum.add(weightedVal, mathContextDefault);
+                    weightSum = weightSum.add(weightDecVal, mathContextDefault);
+                    count++;
                 }
-                if (count == 0) {
-                    return null;
+            }
+            if (count == 0 || weightSum.equals(BigDecimal.ZERO)) {
+                return null;
+            }
+            return weightValueSum.divide(weightSum, mathContextDefault);
+        }
+
+        public static BigDecimal wavgBigDecShort(ObjectVector<BigDecimal> valueVector, ShortVector weightVector) {
+            if (valueVector == null || weightVector == null) {
+                return null;
+            }
+
+            BigDecimal weightValueSum = new BigDecimal(0);
+            BigDecimal weightSum = new BigDecimal(0);
+            long count = 0;
+
+            final long n = valueVector.size();
+
+            for (long i = 0; i < n; i++) {
+                final BigDecimal val = valueVector.get(i);
+                final short weightVal = weightVector.get(i);
+                if (!isNull(val) && !isNull(weightVal)) {
+                    final BigDecimal weightDecVal = BigDecimal.valueOf(weightVal);
+
+                    final BigDecimal weightedVal = val.multiply(weightDecVal, mathContextDefault);
+                    weightValueSum = weightValueSum.add(weightedVal, mathContextDefault);
+                    weightSum = weightSum.add(weightDecVal, mathContextDefault);
+                    count++;
                 }
-                return weightValueSum.divide(weightSum, mathContextDefault);
-            };
+            }
+            if (count == 0 || weightSum.equals(BigDecimal.ZERO)) {
+                return null;
+            }
+            return weightValueSum.divide(weightSum, mathContextDefault);
+        }
 
-    final BiFunction<ObjectVector<BigInteger>, ObjectVector<BigInteger>, BigDecimal> wavgBigIntBigInt =
-            (valueVector, weightVector) -> {
-                if (valueVector == null || weightVector == null) {
-                    return null;
+        public static BigDecimal wavgBigDecBigInt(ObjectVector<BigDecimal> valueVector,
+                ObjectVector<BigInteger> weightVector) {
+            if (valueVector == null || weightVector == null) {
+                return null;
+            }
+
+            BigDecimal weightValueSum = new BigDecimal(0);
+            BigDecimal weightSum = new BigDecimal(0);
+            long count = 0;
+
+            final long n = valueVector.size();
+
+            for (long i = 0; i < n; i++) {
+                final BigDecimal val = valueVector.get(i);
+                final BigInteger weightVal = weightVector.get(i);
+                if (!isNull(val) && !isNull(weightVal)) {
+                    final BigDecimal weightDecVal = new BigDecimal(weightVal);
+
+                    final BigDecimal weightedVal = val.multiply(weightDecVal, mathContextDefault);
+                    weightValueSum = weightValueSum.add(weightedVal, mathContextDefault);
+                    weightSum = weightSum.add(weightDecVal, mathContextDefault);
+                    count++;
                 }
+            }
+            if (count == 0 || weightSum.equals(BigDecimal.ZERO)) {
+                return null;
+            }
+            return weightValueSum.divide(weightSum, mathContextDefault);
+        }
 
-                BigDecimal weightValueSum = new BigDecimal(0);
-                BigDecimal weightSum = new BigDecimal(0);
-                long count = 0;
+        public static BigDecimal wavgBigDecBigDec(ObjectVector<BigDecimal> valueVector,
+                ObjectVector<BigDecimal> weightVector) {
+            if (valueVector == null || weightVector == null) {
+                return null;
+            }
 
-                final long n = valueVector.size();
+            BigDecimal weightValueSum = new BigDecimal(0);
+            BigDecimal weightSum = new BigDecimal(0);
+            long count = 0;
 
-                for (long i = 0; i < n; i++) {
-                    final BigInteger val = valueVector.get(i);
-                    final BigInteger weightVal = weightVector.get(i);
-                    if (!isNull(val) && !isNull(weightVal)) {
-                        final BigDecimal decVal = new BigDecimal(val);
-                        final BigDecimal weightDecVal = new BigDecimal(weightVal);
+            final long n = valueVector.size();
 
-                        final BigDecimal weightedVal = decVal.multiply(weightDecVal, mathContextDefault);
-                        weightValueSum = weightValueSum.add(weightedVal, mathContextDefault);
-                        weightSum = weightSum.add(weightDecVal, mathContextDefault);
-                        count++;
-                    }
+            for (long i = 0; i < n; i++) {
+                final BigDecimal val = valueVector.get(i);
+                final BigDecimal weightVal = weightVector.get(i);
+                if (!isNull(val) && !isNull(weightVal)) {
+                    final BigDecimal weightedVal = val.multiply(weightVal, mathContextDefault);
+                    weightValueSum = weightValueSum.add(weightedVal, mathContextDefault);
+                    weightSum = weightSum.add(weightVal, mathContextDefault);
+                    count++;
                 }
-                if (count == 0 || weightSum.equals(BigDecimal.ZERO)) {
-                    return null;
-                }
-                return weightValueSum.divide(weightSum, mathContextDefault);
-            };
-
-    final BiFunction<ObjectVector<BigInteger>, ObjectVector<BigDecimal>, BigDecimal> wavgBigIntBigDec =
-            (valueVector, weightVector) -> {
-                if (valueVector == null || weightVector == null) {
-                    return null;
-                }
-
-                BigDecimal weightValueSum = new BigDecimal(0);
-                BigDecimal weightSum = new BigDecimal(0);
-                long count = 0;
-
-                final long n = valueVector.size();
-
-                for (long i = 0; i < n; i++) {
-                    final BigInteger val = valueVector.get(i);
-                    final BigDecimal weightVal = weightVector.get(i);
-                    if (!isNull(val) && !isNull(weightVal)) {
-                        final BigDecimal decVal = new BigDecimal(val);
-
-                        final BigDecimal weightedVal = decVal.multiply(weightVal, mathContextDefault);
-                        weightValueSum = weightValueSum.add(weightedVal, mathContextDefault);
-                        weightSum = weightSum.add(weightVal, mathContextDefault);
-                        count++;
-                    }
-                }
-                if (count == 0 || weightSum.equals(BigDecimal.ZERO)) {
-                    return null;
-                }
-                return weightValueSum.divide(weightSum, mathContextDefault);
-            };
-
-    final BiFunction<ObjectVector<BigDecimal>, DoubleVector, BigDecimal> wavgBigDecDouble =
-            (valueVector, weightVector) -> {
-                if (valueVector == null || weightVector == null) {
-                    return null;
-                }
-
-                BigDecimal weightValueSum = new BigDecimal(0);
-                BigDecimal weightSum = new BigDecimal(0);
-                long count = 0;
-
-                final long n = valueVector.size();
-
-                for (long i = 0; i < n; i++) {
-                    final BigDecimal val = valueVector.get(i);
-                    final double weightVal = weightVector.get(i);
-                    if (!isNull(val) && !isNull(weightVal)) {
-                        final BigDecimal weightDecVal = BigDecimal.valueOf(weightVal);
-
-                        final BigDecimal weightedVal = val.multiply(weightDecVal, mathContextDefault);
-                        weightValueSum = weightValueSum.add(weightedVal, mathContextDefault);
-                        weightSum = weightSum.add(weightDecVal, mathContextDefault);
-                        count++;
-                    }
-                }
-                if (count == 0 || weightSum.equals(BigDecimal.ZERO)) {
-                    return null;
-                }
-                return weightValueSum.divide(weightSum, mathContextDefault);
-            };
-
-    final BiFunction<ObjectVector<BigDecimal>, ShortVector, BigDecimal> wavgBigDecShort =
-            (valueVector, weightVector) -> {
-                if (valueVector == null || weightVector == null) {
-                    return null;
-                }
-
-                BigDecimal weightValueSum = new BigDecimal(0);
-                BigDecimal weightSum = new BigDecimal(0);
-                long count = 0;
-
-                final long n = valueVector.size();
-
-                for (long i = 0; i < n; i++) {
-                    final BigDecimal val = valueVector.get(i);
-                    final short weightVal = weightVector.get(i);
-                    if (!isNull(val) && !isNull(weightVal)) {
-                        final BigDecimal weightDecVal = BigDecimal.valueOf(weightVal);
-
-                        final BigDecimal weightedVal = val.multiply(weightDecVal, mathContextDefault);
-                        weightValueSum = weightValueSum.add(weightedVal, mathContextDefault);
-                        weightSum = weightSum.add(weightDecVal, mathContextDefault);
-                        count++;
-                    }
-                }
-                if (count == 0 || weightSum.equals(BigDecimal.ZERO)) {
-                    return null;
-                }
-                return weightValueSum.divide(weightSum, mathContextDefault);
-            };
-
-    final BiFunction<ObjectVector<BigDecimal>, ObjectVector<BigInteger>, BigDecimal> wavgBigDecBigInt =
-            (valueVector, weightVector) -> {
-                if (valueVector == null || weightVector == null) {
-                    return null;
-                }
-
-                BigDecimal weightValueSum = new BigDecimal(0);
-                BigDecimal weightSum = new BigDecimal(0);
-                long count = 0;
-
-                final long n = valueVector.size();
-
-                for (long i = 0; i < n; i++) {
-                    final BigDecimal val = valueVector.get(i);
-                    final BigInteger weightVal = weightVector.get(i);
-                    if (!isNull(val) && !isNull(weightVal)) {
-                        final BigDecimal weightDecVal = new BigDecimal(weightVal);
-
-                        final BigDecimal weightedVal = val.multiply(weightDecVal, mathContextDefault);
-                        weightValueSum = weightValueSum.add(weightedVal, mathContextDefault);
-                        weightSum = weightSum.add(weightDecVal, mathContextDefault);
-                        count++;
-                    }
-                }
-                if (count == 0 || weightSum.equals(BigDecimal.ZERO)) {
-                    return null;
-                }
-                return weightValueSum.divide(weightSum, mathContextDefault);
-            };
-
-    final BiFunction<ObjectVector<BigDecimal>, ObjectVector<BigDecimal>, BigDecimal> wavgBigDecBigDec =
-            (valueVector, weightVector) -> {
-                if (valueVector == null || weightVector == null) {
-                    return null;
-                }
-
-                BigDecimal weightValueSum = new BigDecimal(0);
-                BigDecimal weightSum = new BigDecimal(0);
-                long count = 0;
-
-                final long n = valueVector.size();
-
-                for (long i = 0; i < n; i++) {
-                    final BigDecimal val = valueVector.get(i);
-                    final BigDecimal weightVal = weightVector.get(i);
-                    if (!isNull(val) && !isNull(weightVal)) {
-                        final BigDecimal weightedVal = val.multiply(weightVal, mathContextDefault);
-                        weightValueSum = weightValueSum.add(weightedVal, mathContextDefault);
-                        weightSum = weightSum.add(weightVal, mathContextDefault);
-                        count++;
-                    }
-                }
-                if (count == 0 || weightSum.equals(BigDecimal.ZERO)) {
-                    return null;
-                }
-                return weightValueSum.divide(weightSum, mathContextDefault);
-            };
+            }
+            if (count == 0 || weightSum.equals(BigDecimal.ZERO)) {
+                return null;
+            }
+            return weightValueSum.divide(weightSum, mathContextDefault);
+        }
+    }
 
     private void doTestStaticBigNumbers(final QueryTable t,
             final int prevTicks,
             final int fwdTicks,
             final boolean bucketed,
             final String weightCol,
-            final BiFunction bigIntFunction,
-            final BiFunction bigDecFunction) {
-        QueryScope.addParam("wavgBigInt", bigIntFunction);
-        QueryScope.addParam("wavgBigDec", bigDecFunction);
+            final String bigIntFunction,
+            final String bigDecFunction) {
+        ExecutionContext.getContext().getQueryLibrary().importStatic(Helpers.class);
 
         final String[] updateCols = new String[] {
-                String.format("bigIntCol=wavgBigInt.apply(bigIntCol, %s)", weightCol),
-                String.format("bigDecimalCol=wavgBigDec.apply(bigDecimalCol, %s)", weightCol),
+                String.format("bigIntCol=%s(bigIntCol, %s)", bigIntFunction, weightCol),
+                String.format("bigDecimalCol=%s(bigDecimalCol, %s)", bigDecFunction, weightCol),
         };
 
         final Table actual;
@@ -381,38 +384,35 @@ public class TestRollingWAvg extends BaseUpdateByTest {
         if (bucketed) {
             actual = t.updateBy(
                     UpdateByOperation.RollingWAvg(prevTicks, fwdTicks, weightCol, "bigIntCol", "bigDecimalCol"), "Sym");
-            expected = t
-                    .updateBy(UpdateByOperation.RollingGroup(prevTicks, fwdTicks, "bigIntCol", "bigDecimalCol",
-                            weightCol), "Sym")
+            expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, fwdTicks, "bigIntCol", "bigDecimalCol",
+                    weightCol), "Sym")
                     .update(updateCols);
         } else {
-            actual =
-                    t.updateBy(UpdateByOperation.RollingWAvg(prevTicks, fwdTicks, weightCol, "bigIntCol",
-                            "bigDecimalCol"));
-            expected =
-                    t.updateBy(UpdateByOperation.RollingGroup(prevTicks, fwdTicks, "bigIntCol", "bigDecimalCol",
-                            weightCol))
-                            .update(updateCols);
+            actual = t.updateBy(UpdateByOperation.RollingWAvg(prevTicks, fwdTicks, weightCol, "bigIntCol",
+                    "bigDecimalCol"));
+            expected = t.updateBy(UpdateByOperation.RollingGroup(prevTicks, fwdTicks, "bigIntCol", "bigDecimalCol",
+                    weightCol))
+                    .update(updateCols);
         }
 
-        BigDecimal[] biActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
-        Object[] biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
+        BigDecimal[] biActual = ColumnVectors.ofObject(actual, "bigIntCol", BigDecimal.class).toArray();
+        BigDecimal[] biExpected = ColumnVectors.ofObject(expected, "bigIntCol", BigDecimal.class).toArray();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
             BigDecimal actualVal = biActual[ii];
-            BigDecimal expectedVal = (BigDecimal) biExpected[ii];
+            BigDecimal expectedVal = biExpected[ii];
 
             Assert.eqTrue(fuzzyEquals(actualVal, expectedVal), "values match");
         }
 
-        BigDecimal[] bdActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
-        Object[] bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
+        BigDecimal[] bdActual = ColumnVectors.ofObject(actual, "bigDecimalCol", BigDecimal.class).toArray();
+        BigDecimal[] bdExpected = ColumnVectors.ofObject(expected, "bigDecimalCol", BigDecimal.class).toArray();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
             BigDecimal actualVal = bdActual[ii];
-            BigDecimal expectedVal = (BigDecimal) bdExpected[ii];
+            BigDecimal expectedVal = bdExpected[ii];
 
             Assert.eqTrue(fuzzyEquals(actualVal, expectedVal), "values match");
         }
@@ -423,14 +423,13 @@ public class TestRollingWAvg extends BaseUpdateByTest {
             final Duration postTime,
             final boolean bucketed,
             final String weightCol,
-            final BiFunction bigIntFunction,
-            final BiFunction bigDecFunction) {
-        QueryScope.addParam("wavgBigInt", bigIntFunction);
-        QueryScope.addParam("wavgBigDec", bigDecFunction);
+            final String bigIntFunction,
+            final String bigDecFunction) {
+        ExecutionContext.getContext().getQueryLibrary().importStatic(Helpers.class);
 
         final String[] updateCols = new String[] {
-                String.format("bigIntCol=wavgBigInt.apply(bigIntCol, %s)", weightCol),
-                String.format("bigDecimalCol=wavgBigDec.apply(bigDecimalCol, %s)", weightCol),
+                String.format("bigIntCol=%s(bigIntCol, %s)", bigIntFunction, weightCol),
+                String.format("bigDecimalCol=%s(bigDecimalCol, %s)", bigDecFunction, weightCol),
         };
 
         final Table actual;
@@ -439,10 +438,10 @@ public class TestRollingWAvg extends BaseUpdateByTest {
             actual = t.updateBy(
                     UpdateByOperation.RollingWAvg("ts", prevTime, postTime, weightCol, "bigIntCol", "bigDecimalCol"),
                     "Sym");
-            expected =
-                    t.updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol",
+            expected = t
+                    .updateBy(UpdateByOperation.RollingGroup("ts", prevTime, postTime, "bigIntCol", "bigDecimalCol",
                             weightCol), "Sym")
-                            .update(updateCols);
+                    .update(updateCols);
         } else {
             actual = t.updateBy(
                     UpdateByOperation.RollingWAvg("ts", prevTime, postTime, weightCol, "bigIntCol", "bigDecimalCol"));
@@ -452,24 +451,24 @@ public class TestRollingWAvg extends BaseUpdateByTest {
                             .update(updateCols);
         }
 
-        BigDecimal[] biActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigIntCol").getDirect();
-        Object[] biExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigIntCol").getDirect();
+        BigDecimal[] biActual = ColumnVectors.ofObject(actual, "bigIntCol", BigDecimal.class).toArray();
+        BigDecimal[] biExpected = ColumnVectors.ofObject(expected, "bigIntCol", BigDecimal.class).toArray();
 
         Assert.eq(biActual.length, "array length", biExpected.length);
         for (int ii = 0; ii < biActual.length; ii++) {
             BigDecimal actualVal = biActual[ii];
-            BigDecimal expectedVal = (BigDecimal) biExpected[ii];
+            BigDecimal expectedVal = biExpected[ii];
 
             Assert.eqTrue(fuzzyEquals(actualVal, expectedVal), "values match");
         }
 
-        BigDecimal[] bdActual = (BigDecimal[]) DataAccessHelpers.getColumn(actual, "bigDecimalCol").getDirect();
-        Object[] bdExpected = (Object[]) DataAccessHelpers.getColumn(expected, "bigDecimalCol").getDirect();
+        BigDecimal[] bdActual = ColumnVectors.ofObject(actual, "bigDecimalCol", BigDecimal.class).toArray();
+        BigDecimal[] bdExpected = ColumnVectors.ofObject(expected, "bigDecimalCol", BigDecimal.class).toArray();
 
         Assert.eq(bdActual.length, "array length", bdExpected.length);
         for (int ii = 0; ii < bdActual.length; ii++) {
             BigDecimal actualVal = bdActual[ii];
-            BigDecimal expectedVal = (BigDecimal) bdExpected[ii];
+            BigDecimal expectedVal = bdExpected[ii];
 
             Assert.eqTrue(fuzzyEquals(actualVal, expectedVal), "values match");
         }
@@ -516,7 +515,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
                 actual.dropColumns(weightCol),
                 TableDiff.DiffItems.DoublesExact, TableDiff.DiffItems.DoubleFraction);
 
-        doTestStaticBigNumbers(t, prevTicks, fwdTicks, bucketed, weightCol, wavgBigIntDouble, wavgBigDecDouble);
+        doTestStaticBigNumbers(t, prevTicks, fwdTicks, bucketed, weightCol, "wavgBigIntDouble", "wavgBigDecDouble");
 
         ///////////////////////////////////////////////////////////////////////////
 
@@ -553,7 +552,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
                 actual.dropColumns(weightCol),
                 TableDiff.DiffItems.DoublesExact, TableDiff.DiffItems.DoubleFraction);
 
-        doTestStaticBigNumbers(t, prevTicks, fwdTicks, bucketed, weightCol, wavgBigIntShort, wavgBigDecShort);
+        doTestStaticBigNumbers(t, prevTicks, fwdTicks, bucketed, weightCol, "wavgBigIntShort", "wavgBigDecShort");
 
         ///////////////////////////////////////////////////////////////////////////
 
@@ -565,7 +564,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
                 new TestDataGenerator[] {
                         new BigIntegerGenerator(BigInteger.valueOf(-10), BigInteger.valueOf(10), .1)}).t;
 
-        doTestStaticBigNumbers(t, prevTicks, fwdTicks, bucketed, weightCol, wavgBigIntBigInt, wavgBigDecBigInt);
+        doTestStaticBigNumbers(t, prevTicks, fwdTicks, bucketed, weightCol, "wavgBigIntBigInt", "wavgBigDecBigInt");
 
         weightCol = "bigDecWeightCol";
         t = createTestTable(STATIC_TABLE_SIZE, bucketed, false, false, 0x31313131,
@@ -573,7 +572,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
                 new TestDataGenerator[] {
                         new BigDecimalGenerator(BigInteger.valueOf(1), BigInteger.valueOf(2), 5, .1)}).t;
 
-        doTestStaticBigNumbers(t, prevTicks, fwdTicks, bucketed, weightCol, wavgBigIntBigDec, wavgBigDecBigDec);
+        doTestStaticBigNumbers(t, prevTicks, fwdTicks, bucketed, weightCol, "wavgBigIntBigDec", "wavgBigDecBigDec");
     }
 
     private void doTestStaticTimed(boolean bucketed, Duration prevTime, Duration postTime) {
@@ -618,7 +617,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
                 actual.dropColumns(weightCol),
                 TableDiff.DiffItems.DoublesExact, TableDiff.DiffItems.DoubleFraction);
 
-        doTestStaticTimedBigNumbers(t, prevTime, postTime, bucketed, weightCol, wavgBigIntDouble, wavgBigDecDouble);
+        doTestStaticTimedBigNumbers(t, prevTime, postTime, bucketed, weightCol, "wavgBigIntDouble", "wavgBigDecDouble");
 
         ///////////////////////////////////////////////////////////////////////////
 
@@ -658,7 +657,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
                 actual.dropColumns(weightCol),
                 TableDiff.DiffItems.DoublesExact, TableDiff.DiffItems.DoubleFraction);
 
-        doTestStaticTimedBigNumbers(t, prevTime, postTime, bucketed, weightCol, wavgBigIntShort, wavgBigDecShort);
+        doTestStaticTimedBigNumbers(t, prevTime, postTime, bucketed, weightCol, "wavgBigIntShort", "wavgBigDecShort");
 
         ///////////////////////////////////////////////////////////////////////////
 
@@ -671,7 +670,7 @@ public class TestRollingWAvg extends BaseUpdateByTest {
                         DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
                         new BigIntegerGenerator(BigInteger.valueOf(-10), BigInteger.valueOf(10), .1)}).t;
 
-        doTestStaticTimedBigNumbers(t, prevTime, postTime, bucketed, weightCol, wavgBigIntBigInt, wavgBigDecBigInt);
+        doTestStaticTimedBigNumbers(t, prevTime, postTime, bucketed, weightCol, "wavgBigIntBigInt", "wavgBigDecBigInt");
 
         weightCol = "bigDecWeightCol";
         t = createTestTable(STATIC_TABLE_SIZE, bucketed, false, false, 0x31313131,
@@ -680,7 +679,15 @@ public class TestRollingWAvg extends BaseUpdateByTest {
                         DateTimeUtils.parseInstant("2022-03-09T16:30:00.000 NY")),
                         new BigDecimalGenerator(BigInteger.valueOf(1), BigInteger.valueOf(2), 5, .1)}).t;
 
-        doTestStaticTimedBigNumbers(t, prevTime, postTime, bucketed, weightCol, wavgBigIntBigDec, wavgBigDecBigDec);
+        doTestStaticTimedBigNumbers(t, prevTime, postTime, bucketed, weightCol, "wavgBigIntBigDec", "wavgBigDecBigDec");
+    }
+
+    @Test
+    public void testStaticZeroKeyAllNullVector() {
+        final int prevTicks = 1;
+        final int postTicks = 0;
+
+        doTestStatic(false, prevTicks, postTicks);
     }
 
     @Test

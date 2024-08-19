@@ -17,7 +17,7 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.engine.table.impl.ssms.IntSegmentedSortedMultiset;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 
 import static io.deephaven.util.QueryConstants.NULL_INT;
 
@@ -74,9 +74,9 @@ public class IntPercentileTypeHelper implements SsmChunkedPercentileOperator.Per
         final long hiCount = ssmLo.getMaxCount();
         if (result > startPosition && IntComparisons.eq(asIntChunk.get(result - 1), hiValue)
                 && counts.get(result - 1) > hiCount) {
-            leftOvers.setValue((int) (counts.get(result - 1) - hiCount));
+            leftOvers.set((int) (counts.get(result - 1) - hiCount));
         } else {
-            leftOvers.setValue(0);
+            leftOvers.set(0);
         }
 
         return result - startPosition;
@@ -107,7 +107,7 @@ public class IntPercentileTypeHelper implements SsmChunkedPercentileOperator.Per
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final int testValue = valuesToSearch.get(mid);
-            final boolean moveHi = gt(testValue, searchValue);
+            final boolean moveHi = IntComparisons.gt(testValue, searchValue);
             if (moveHi) {
                 hi = mid;
             } else {
@@ -116,13 +116,5 @@ public class IntPercentileTypeHelper implements SsmChunkedPercentileOperator.Per
         }
 
         return hi;
-    }
-
-    private static int doComparison(int lhs, int rhs) {
-        return IntComparisons.compare(lhs, rhs);
-    }
-
-    private static boolean gt(int lhs, int rhs) {
-        return doComparison(lhs, rhs) > 0;
     }
 }

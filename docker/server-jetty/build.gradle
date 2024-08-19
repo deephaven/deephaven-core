@@ -67,7 +67,7 @@ def buildDockerClosure = { String base, String server ->
         dependsOn prepareDocker
         inputDir.set context
         inputs.files Docker.registryFiles(project, base)
-        buildArgs.put('BASE', "deephaven/${base}:local-build")
+        buildArgs.put('BASE', Docker.localImageName(base))
         buildArgs.put('SERVER', server)
         buildArgs.put('DEEPHAVEN_VERSION', project.version)
     }

@@ -7,14 +7,13 @@ plugins {
     id 'io.deephaven.project.register'
 }
 
-apply from: "$rootDir/gradle/web-common.gradle"
-
 dependencies {
+    implementation project(':Util')
     api project(':open-api-shared-fu')
     implementation project(':log-factory')
     api project(':proto:proto-backplane-grpc')
+    implementation libs.javaparser.core
 }
-Classpaths.inheritJavaParser(project, 'implementation')
 
 // All javacc plugin configuration disabled to avoid weird IntelliJ breakage
 // when we try to manually patch the plugin.  Will reinstate once upstream

@@ -158,7 +158,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
 
             // Without modifying this.columns (copied and frozen), make sure our key columns are present
             // in the list of columns that we will copy data for the viewport
-            keyColumns.forEach((col, p1, p2) -> {
+            keyColumns.forEach((col, p1) -> {
                 if (this.columns.indexOf(col) == -1) {
                     columns[columns.length] = col;
                 }
@@ -359,6 +359,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     private Column rowExpandedCol;
     private final Column actionCol;
     private final JsArray<Column> groupedColumns;
+    private JsLayoutHints layoutHints;
 
     // The source JsTable behind the original HierarchicalTable, lazily built at this time
     private final JsLazy<Promise<JsTable>> sourceTable;
@@ -566,8 +567,8 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         keyTableColumns.push(rowDepthCol);
         keyTableColumns.push(actionCol);
         keyTable = connection.newTable(
-                Js.uncheckedCast(keyTableColumns.map((p0, p1, p2) -> p0.getName())),
-                Js.uncheckedCast(keyTableColumns.map((p0, p1, p2) -> p0.getType())),
+                Js.uncheckedCast(keyTableColumns.map((p0, p1) -> p0.getName())),
+                Js.uncheckedCast(keyTableColumns.map((p0, p1) -> p0.getType())),
                 keyTableData,
                 null,
                 null);
@@ -803,7 +804,7 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
         }
         columnsBitset.set(rowDepthCol.getIndex());
         columnsBitset.set(rowExpandedCol.getIndex());
-        keyColumns.forEach((p0, p1, p2) -> {
+        keyColumns.forEach((p0, p1) -> {
             columnsBitset.set(p0.getIndex());
             return null;
         });
@@ -1080,6 +1081,25 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
     @JsNullable
     public String getDescription() {
         return tableDefinition.getAttributes().getDescription();
+    }
+
+    @JsProperty
+    @JsNullable
+    public JsLayoutHints getLayoutHints() {
+        if (layoutHints == null) {
+            createLayoutHints();
+        }
+        return layoutHints;
+    }
+
+    private void createLayoutHints() {
+        String hintsString = tableDefinition.getAttributes().getLayoutHints();
+        JsLayoutHints jsHints = new JsLayoutHints();
+        if (hintsString == null) {
+            layoutHints = null;
+        } else {
+            layoutHints = jsHints.parse(hintsString);
+        }
     }
 
     /**

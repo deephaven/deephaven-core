@@ -17,6 +17,7 @@ import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperat
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 public class DoubleCumSumOperator extends BaseDoubleUpdateByOperator {
 
@@ -37,12 +38,10 @@ public class DoubleCumSumOperator extends BaseDoubleUpdateByOperator {
             Assert.eq(count, "push count", 1);
 
             // read the value from the values chunk
-            final double currentVal = doubleValueChunk.get(pos);
+            final double val = doubleValueChunk.get(pos);
 
-            if (curVal == NULL_DOUBLE) {
-                curVal = currentVal;
-            } else if (currentVal != NULL_DOUBLE) {
-                curVal += currentVal;
+            if (val != NULL_DOUBLE) {
+                curVal = curVal == NULL_DOUBLE ? val : curVal + val;
             }
         }
     }

@@ -5,7 +5,7 @@
 import unittest
 from time import sleep
 import datetime
-import zoneinfo
+import sys
 import pandas as pd
 import numpy as np
 
@@ -119,10 +119,12 @@ class TimeTestCase(BaseTestCase):
             to_j_time_zone(dt)
             self.fail("Expected DHError")
 
-        dttz = zoneinfo.ZoneInfo("America/New_York")
-        dt = datetime.datetime(2022, 7, 7, 14, 21, 17, 123456, tzinfo=dttz)
-        self.assertEqual(to_j_time_zone(dttz), to_j_time_zone("America/New_York"))
-        self.assertEqual(to_j_time_zone(dt), to_j_time_zone("America/New_York"))
+        if sys.version_info >= (3, 9):
+            import zoneinfo
+            dttz = zoneinfo.ZoneInfo("America/New_York")
+            dt = datetime.datetime(2022, 7, 7, 14, 21, 17, 123456, tzinfo=dttz)
+            self.assertEqual(to_j_time_zone(dttz), to_j_time_zone("America/New_York"))
+            self.assertEqual(to_j_time_zone(dt), to_j_time_zone("America/New_York"))
 
         with self.assertRaises(TypeError):
             to_j_time_zone(False)
@@ -628,6 +630,20 @@ class TimeTestCase(BaseTestCase):
         with self.assertRaises(TypeError):
             to_np_timedelta64(False)
             self.fail("Expected TypeError")
+
+    # endregion
+
+    # region: Utilities
+
+    def test_simple_date_format(self):
+        s = "12/10/2021 14:21:17 CST"
+        i = _JDateTimeUtils.parseInstant("2021-12-10T14:21:17 CT")
+        sdf = simple_date_format("MM/dd/yyyy HH:mm:ss z")
+        self.assertEqual(sdf.parse(s).toInstant(), i)
+
+        with self.assertRaises(DHError):
+            simple_date_format("junk")
+            self.fail("Expected DHError")
 
     # endregion
 

@@ -25,7 +25,7 @@ final class LongRingChunkSource extends AbstractRingChunkSource<Long, long[], Lo
     }
 
     public LongRingChunkSource(int capacity) {
-        super(long.class, capacity);
+        super(new long[capacity]);
     }
 
     @Override

@@ -5,7 +5,6 @@ package io.deephaven.engine.util;
 
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.*;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -13,10 +12,10 @@ import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.sources.UnionRedirection;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.DoubleGenerator;
 import io.deephaven.engine.testutil.generator.IntGenerator;
@@ -28,6 +27,8 @@ import io.deephaven.engine.updategraph.LogicalClockImpl;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.type.ArrayTypeUtils;
+import io.deephaven.vector.IntVector;
 import junit.framework.TestCase;
 import org.junit.Assert;
 import org.junit.Before;
@@ -44,6 +45,7 @@ import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Unit tests for {@link TableTools}.
@@ -66,8 +68,8 @@ public class TestTableTools {
         table2 = testRefreshingTable(TstUtils.i(1, 3, 5, 10, 20, 30, 31, 32, 33).toTracking(),
                 col("StringKeys1", "key1", "key1", "key1", "key1", "key2", "key2", "key2", "key2", "key2"),
                 col("GroupedInts1", 1, 1, 2, 2, 2, 3, 3, 3, 3));
-        emptyTable = testRefreshingTable(col("StringKeys", (Object) CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
-                col("GroupedInts", (Object) CollectionUtil.ZERO_LENGTH_BYTE_ARRAY));
+        emptyTable = testRefreshingTable(col("StringKeys", (Object) ArrayTypeUtils.EMPTY_STRING_ARRAY),
+                col("GroupedInts", (Object) ArrayTypeUtils.EMPTY_BYTE_ARRAY));
     }
 
     @Test
@@ -152,70 +154,69 @@ public class TestTableTools {
         TableTools.show(t_3_4_filtered);
         TableTools.show(t_all);
 
-        Assert.assertEquals(t_all.size(), 3);
-        assertArrayEquals((Object[]) DataAccessHelpers.getColumn(t_all, "Col").getDirect(),
-                new String[] {"A", "B", "D"});
+        assertEquals(t_all.size(), 3);
+        assertArrayEquals(new String[] {"A", "B", "D"}, ColumnVectors.ofObject(t_all, "Col", String.class).toArray());
     }
 
     @Test
     public void testDiff() {
-        Assert.assertEquals(
+        assertEquals(
                 "Column x different from the expected set, first difference at row 1 encountered 2 expected null\n",
                 TableTools.diff(TableTools.newTable(intCol("x", 1, 2, 3)),
                         TableTools.newTable(intCol("x", 1, NULL_INT, NULL_INT)), 10));
-        Assert.assertEquals(
+        assertEquals(
                 "Column x different from the expected set, first difference at row 1 encountered null expected 2\n",
                 TableTools.diff(TableTools.newTable(intCol("x", 1, NULL_INT, NULL_INT)),
                         TableTools.newTable(intCol("x", 1, 2, 3)), 10));
 
-        Assert.assertEquals("",
+        assertEquals("",
                 TableTools.diff(TableTools.newTable(col("x", 1, 2, 3)), TableTools.newTable(col("x", 1, 2, 3)), 10));
-        Assert.assertEquals(
+        assertEquals(
                 "Column x different from the expected set, first difference at row 1 encountered 2.0 expected null\n",
                 TableTools.diff(TableTools.newTable(col("x", 1.0, 2.0, 3.0)),
                         TableTools.newTable(col("x", 1.0, null, null)), 10));
-        Assert.assertEquals(
+        assertEquals(
                 "Column x different from the expected set, first difference at row 1 encountered null expected 2.0\n",
                 TableTools.diff(TableTools.newTable(col("x", 1.0, null, null)),
                         TableTools.newTable(col("x", 1.0, 2.0, 3.0)), 10));
-        Assert.assertEquals(
+        assertEquals(
                 "Column x different from the expected set, first difference at row 1 encountered 2.0E-12 expected null\n",
                 TableTools.diff(TableTools.newTable(col("x", 0.000000000001, 0.000000000002, 0.000000000003)),
                         TableTools.newTable(col("x", 0.000000000001, null, null)), 10));
-        Assert.assertEquals(
+        assertEquals(
                 "Column x different from the expected set, first difference at row 1 encountered 2.0E-12 expected null\n",
                 TableTools.diff(TableTools.newTable(col("x", 0.000000000001, 0.000000000002, 0.000000000003)),
                         TableTools.newTable(col("x", 0.000000000002, null, null)), 10,
                         EnumSet.of(TableDiff.DiffItems.DoublesExact)));
-        Assert.assertEquals(
+        assertEquals(
                 "Column x different from the expected set, first difference at row 0 encountered 1.0E-12 expected 2.0E-12 (difference = 1.0E-12)\n",
                 TableTools.diff(TableTools.newTable(col("x", 0.000000000001, 0.000000000002, 0.000000000003)),
                         TableTools.newTable(col("x", 0.000000000002, null, null)), 10));
 
-        Assert.assertEquals(
+        assertEquals(
                 "Column x different from the expected set, first difference at row 1 encountered null expected 2.0\n",
                 TableTools.diff(TableTools.newTable(floatCol("x", 1.0f, NULL_FLOAT, NULL_FLOAT)),
                         TableTools.newTable(floatCol("x", 1.0f, 2.0f, 3.0f)), 10));
-        Assert.assertEquals("", TableTools.diff(TableTools.newTable(floatCol("x", 1, 2, 3)),
+        assertEquals("", TableTools.diff(TableTools.newTable(floatCol("x", 1, 2, 3)),
                 TableTools.newTable(floatCol("x", 1.0f, 2.0f, 3.0f)), 10));
-        Assert.assertEquals(
+        assertEquals(
                 "Column x different from the expected set, first difference at row 1 encountered 2.0 expected null\n",
                 TableTools.diff(TableTools.newTable(floatCol("x", 1.0f, 2.0f, 3.0f)),
                         TableTools.newTable(floatCol("x", 1.0f, NULL_FLOAT, NULL_FLOAT)), 10));
-        Assert.assertEquals(
+        assertEquals(
                 "Column x different from the expected set, first difference at row 1 encountered null expected 2.0\n",
                 TableTools.diff(TableTools.newTable(floatCol("x", 1.0f, NULL_FLOAT, NULL_FLOAT)),
                         TableTools.newTable(floatCol("x", 1.0f, 2.0f, 3.0f)), 10));
-        Assert.assertEquals(
+        assertEquals(
                 "Column x different from the expected set, first difference at row 1 encountered 2.0E-12 expected null\n",
                 TableTools.diff(TableTools.newTable(floatCol("x", 0.000000000001f, 0.000000000002f, 0.000000000003f)),
                         TableTools.newTable(floatCol("x", 0.000000000001f, NULL_FLOAT, NULL_FLOAT)), 10));
-        Assert.assertEquals(
+        assertEquals(
                 "Column x different from the expected set, first difference at row 1 encountered 2.0E-12 expected null\n",
                 TableTools.diff(TableTools.newTable(floatCol("x", 0.000000000001f, 0.000000000002f, 0.000000000003f)),
                         TableTools.newTable(floatCol("x", 0.000000000002f, NULL_FLOAT, NULL_FLOAT)), 10,
                         EnumSet.of(TableDiff.DiffItems.DoublesExact)));
-        Assert.assertEquals(
+        assertEquals(
                 "Column x different from the expected set, first difference at row 0 encountered 1.0E-12 expected 2.0E-12 (difference = 1.0E-12)\n",
                 TableTools.diff(TableTools.newTable(floatCol("x", 0.000000000001f, 0.000000000002f, 0.000000000003f)),
                         TableTools.newTable(floatCol("x", 0.000000000002f, NULL_FLOAT, NULL_FLOAT)), 10));
@@ -262,45 +263,40 @@ public class TestTableTools {
 
         // Test whether we're rounding all columns properly
         Table roundedColumns = TableTools.roundDecimalColumns(table);
-        Assert.assertArrayEquals((String[]) DataAccessHelpers.getColumn(roundedColumns, "String").getDirect(),
-                (String[]) DataAccessHelpers.getColumn(table, "String").getDirect());
-        Assert.assertArrayEquals((int[]) DataAccessHelpers.getColumn(roundedColumns, "Int").getDirect(),
-                (int[]) DataAccessHelpers.getColumn(table, "Int").getDirect());
-        Assert.assertEquals(Math.round((double) DataAccessHelpers.getColumn(table, "Double").get(0)),
-                DataAccessHelpers.getColumn(roundedColumns, "Double").get(0));
-        Assert.assertEquals(Math.round((double) DataAccessHelpers.getColumn(table, "Double").get(1)),
-                DataAccessHelpers.getColumn(roundedColumns, "Double").get(1));
-        Assert.assertEquals(Math.round((double) DataAccessHelpers.getColumn(table, "Double").get(2)),
-                DataAccessHelpers.getColumn(roundedColumns, "Double").get(2));
+        assertEquals(ColumnVectors.of(roundedColumns, "String"), ColumnVectors.of(table, "String"));
+        assertEquals(ColumnVectors.of(roundedColumns, "Int"), ColumnVectors.of(table, "Int"));
+        assertEquals(Math.round(table.getColumnSource("Double").getDouble(table.getRowSet().get(0))),
+                roundedColumns.getColumnSource("Double").getLong(roundedColumns.getRowSet().get(0)));
+        assertEquals(Math.round(table.getColumnSource("Double").getDouble(table.getRowSet().get(1))),
+                roundedColumns.getColumnSource("Double").getLong(roundedColumns.getRowSet().get(1)));
+        assertEquals(Math.round(table.getColumnSource("Double").getDouble(table.getRowSet().get(2))),
+                roundedColumns.getColumnSource("Double").getLong(roundedColumns.getRowSet().get(2)));
         // Cast these cause the DB rounds floats to longs
-        Assert.assertEquals((long) Math.round((float) DataAccessHelpers.getColumn(table, "Float").get(0)),
-                DataAccessHelpers.getColumn(roundedColumns, "Float").get(0));
-        Assert.assertEquals((long) Math.round((float) DataAccessHelpers.getColumn(table, "Float").get(1)),
-                DataAccessHelpers.getColumn(roundedColumns, "Float").get(1));
-        Assert.assertEquals((long) Math.round((float) DataAccessHelpers.getColumn(table, "Float").get(2)),
-                DataAccessHelpers.getColumn(roundedColumns, "Float").get(2));
+        assertEquals(Math.round(table.getColumnSource("Float").getFloat(table.getRowSet().get(0))),
+                roundedColumns.getColumnSource("Float").getLong(roundedColumns.getRowSet().get(0)));
+        assertEquals(Math.round(table.getColumnSource("Float").getFloat(table.getRowSet().get(1))),
+                roundedColumns.getColumnSource("Float").getLong(roundedColumns.getRowSet().get(1)));
+        assertEquals(Math.round(table.getColumnSource("Float").getFloat(table.getRowSet().get(2))),
+                roundedColumns.getColumnSource("Float").getLong(roundedColumns.getRowSet().get(2)));
 
         // Test whether it works when we specify the columns, by comparing to the validated results from before
-        Table specificRoundedColums = TableTools.roundDecimalColumns(table, "Double", "Float");
-        Assert.assertArrayEquals((String[]) DataAccessHelpers.getColumn(roundedColumns, "String").getDirect(),
-                (String[]) DataAccessHelpers.getColumn(specificRoundedColums, "String").getDirect());
-        Assert.assertArrayEquals((int[]) DataAccessHelpers.getColumn(roundedColumns, "Int").getDirect(),
-                (int[]) DataAccessHelpers.getColumn(specificRoundedColums, "Int").getDirect());
-        Assert.assertArrayEquals((long[]) DataAccessHelpers.getColumn(roundedColumns, "Double").getDirect(),
-                (long[]) DataAccessHelpers.getColumn(specificRoundedColums, "Double").getDirect());
-        Assert.assertArrayEquals((long[]) DataAccessHelpers.getColumn(roundedColumns, "Float").getDirect(),
-                (long[]) DataAccessHelpers.getColumn(specificRoundedColums, "Float").getDirect());
+        Table specificRoundedColumns = TableTools.roundDecimalColumns(table, "Double", "Float");
+        assertEquals(ColumnVectors.ofObject(roundedColumns, "String", String.class),
+                ColumnVectors.ofObject(specificRoundedColumns, "String", String.class));
+        assertEquals(ColumnVectors.ofInt(roundedColumns, "Int"), ColumnVectors.ofInt(specificRoundedColumns, "Int"));
+        assertEquals(ColumnVectors.ofLong(roundedColumns, "Double"),
+                ColumnVectors.ofLong(specificRoundedColumns, "Double"));
+        assertEquals(ColumnVectors.ofLong(roundedColumns, "Float"),
+                ColumnVectors.ofLong(specificRoundedColumns, "Float"));
 
         // Test whether it works properly when we specify what NOT to round
         Table onlyOneRoundedColumn = TableTools.roundDecimalColumnsExcept(table, "Float");
-        Assert.assertArrayEquals((String[]) DataAccessHelpers.getColumn(roundedColumns, "String").getDirect(),
-                (String[]) DataAccessHelpers.getColumn(onlyOneRoundedColumn, "String").getDirect());
-        Assert.assertArrayEquals((int[]) DataAccessHelpers.getColumn(table, "Int").getDirect(),
-                (int[]) DataAccessHelpers.getColumn(onlyOneRoundedColumn, "Int").getDirect());
-        Assert.assertArrayEquals((long[]) DataAccessHelpers.getColumn(roundedColumns, "Double").getDirect(),
-                (long[]) DataAccessHelpers.getColumn(onlyOneRoundedColumn, "Double").getDirect());
-        Assert.assertArrayEquals((float[]) DataAccessHelpers.getColumn(table, "Float").getDirect(),
-                (float[]) DataAccessHelpers.getColumn(onlyOneRoundedColumn, "Float").getDirect(), 0.0f);
+        assertEquals(ColumnVectors.ofObject(roundedColumns, "String", String.class),
+                ColumnVectors.ofObject(onlyOneRoundedColumn, "String", String.class));
+        assertEquals(ColumnVectors.ofInt(table, "Int"), ColumnVectors.ofInt(onlyOneRoundedColumn, "Int"));
+        assertEquals(ColumnVectors.ofLong(roundedColumns, "Double"),
+                ColumnVectors.ofLong(onlyOneRoundedColumn, "Double"));
+        assertEquals(ColumnVectors.ofFloat(table, "Float"), ColumnVectors.ofFloat(onlyOneRoundedColumn, "Float"));
 
 
         try { // Make sure we complain if you try to round the unroundable
@@ -327,24 +323,23 @@ public class TestTableTools {
 
         // make sure both columns are in fact Instant columns
         final Table meta = table.meta();
-        Assert.assertEquals(Instant.class.getCanonicalName(), DataAccessHelpers.getColumn(meta, "DataType").get(0));
-        Assert.assertEquals(Instant.class.getCanonicalName(), DataAccessHelpers.getColumn(meta, "DataType").get(1));
+        assertEquals(Instant.class.getCanonicalName(), meta.getColumnSource("DataType", String.class).get(0));
+        assertEquals(Instant.class.getCanonicalName(), meta.getColumnSource("DataType", String.class).get(1));
 
         // make sure this doesn't crash
         showWithRowSet(table);
 
         // validate column1 (backed with Instant objects)
-        Assert.assertEquals(data[0], DataAccessHelpers.getColumn(table, 0).get(0));
-        Assert.assertEquals(data[1], DataAccessHelpers.getColumn(table, 0).get(1));
-        Assert.assertEquals(data[2], DataAccessHelpers.getColumn(table, 0).get(2));
+        final String column1Name = table.getDefinition().getColumns().get(0).getName();
+        assertArrayEquals(data, ColumnVectors.ofObject(table, column1Name, Instant.class).toArray());
 
         // validate column2 (backed with longs, but should be get-able as Instants as well)
-        Assert.assertEquals(data[0], DataAccessHelpers.getColumn(table, 1).get(0));
-        Assert.assertEquals(data[1], DataAccessHelpers.getColumn(table, 1).get(1));
-        Assert.assertEquals(data[2], DataAccessHelpers.getColumn(table, 1).get(2));
-        Assert.assertEquals(longData[0], DataAccessHelpers.getColumn(table, 1).getLong(0));
-        Assert.assertEquals(longData[1], DataAccessHelpers.getColumn(table, 1).getLong(1));
-        Assert.assertEquals(longData[2], DataAccessHelpers.getColumn(table, 1).getLong(2));
+        final String column2Name = table.getDefinition().getColumns().get(1).getName();
+        final ColumnSource<Instant> column2Source = table.getColumnSource(column2Name, Instant.class);
+        assertArrayEquals(data, ColumnVectors.ofObject(table, column2Name, Instant.class).toArray());
+        assertEquals(longData[0], column2Source.getLong(table.getRowSet().get(0)));
+        assertEquals(longData[1], column2Source.getLong(table.getRowSet().get(1)));
+        assertEquals(longData[2], column2Source.getLong(table.getRowSet().get(2)));
     }
 
     @Test
@@ -595,7 +590,7 @@ public class TestTableTools {
             else
                 result = TableTools.merge(result, table1);
 
-            Assert.assertEquals(table1.size() * (ii + 1), result.size());
+            assertEquals(table1.size() * (ii + 1), result.size());
 
             for (int jj = 0; jj <= ii; ++jj)
                 tableRangesAreEqual(table1, result, 0, table1.size() * jj, table1.size());
@@ -610,7 +605,7 @@ public class TestTableTools {
                         .view("StringKeys");
         Table merge2 = TableTools.merge(merge1, table1.view("StringKeys"));
 
-        Assert.assertEquals(table1.size() * 2 + table2.size(), merge2.size());
+        assertEquals(table1.size() * 2 + table2.size(), merge2.size());
 
         tableRangesAreEqual(table1.view("StringKeys"), merge1, 0, 0, table1.size());
         tableRangesAreEqual(table1.view("StringKeys"), merge2, 0, 0, table1.size());
@@ -635,7 +630,7 @@ public class TestTableTools {
                 result = TableTools.merge(result, table1).updateView("GroupedInts=GroupedInts+1")
                         .updateView("GroupedInts=GroupedInts-1");
 
-            Assert.assertEquals(table1.size() * (ii + 1), result.size());
+            assertEquals(table1.size() * (ii + 1), result.size());
         }
 
         for (int jj = 0; jj < numRecursions; ++jj) {
@@ -899,13 +894,13 @@ public class TestTableTools {
                             ? resCol.getPrevChunk(resContext, resRowSet).asIntChunk()
                             : resCol.getChunk(resContext, resRowSet).asIntChunk();
 
-                    Assert.assertEquals(numElements, origContent.size());
-                    Assert.assertEquals(3 * numElements, resContent.size());
+                    assertEquals(numElements, origContent.size());
+                    assertEquals(3 * numElements, resContent.size());
 
                     for (int ii = 0; ii < numElements; ++ii) {
-                        Assert.assertEquals(origContent.get(ii), resContent.get(ii));
-                        Assert.assertEquals(origContent.get(ii), resContent.get(ii + numElements) - 1);
-                        Assert.assertEquals(origContent.get(ii), resContent.get(ii + 2 * numElements) - 1);
+                        assertEquals(origContent.get(ii), resContent.get(ii));
+                        assertEquals(origContent.get(ii), resContent.get(ii + numElements) - 1);
+                        assertEquals(origContent.get(ii), resContent.get(ii + 2 * numElements) - 1);
                     }
                 }
             }
@@ -955,8 +950,8 @@ public class TestTableTools {
                             ? resCol.getPrevChunk(resContext, rowSet).asIntChunk()
                             : resCol.getChunk(resContext, rowSet).asIntChunk();
 
-                    Assert.assertEquals(0, origContent.size());
-                    Assert.assertEquals(0, resContent.size());
+                    assertEquals(0, origContent.size());
+                    assertEquals(0, resContent.size());
                 }
             }
         };
@@ -972,19 +967,19 @@ public class TestTableTools {
 
         Table emptyTable2 = TableTools.emptyTable(2).update("col=1");
         TestCase.assertEquals(2, emptyTable2.size());
-        DataColumn<?> dataColumn = DataAccessHelpers.getColumn(emptyTable2, "col");
-        TestCase.assertEquals(2, dataColumn.size());
-        TestCase.assertEquals(1, dataColumn.get(0));
-        TestCase.assertEquals(1, dataColumn.get(1));
+        IntVector columnVector = ColumnVectors.ofInt(emptyTable2, "col");
+        TestCase.assertEquals(2, columnVector.size());
+        TestCase.assertEquals(1, columnVector.get(0));
+        TestCase.assertEquals(1, columnVector.get(1));
 
         TableTools.show(emptyTable2);
 
         Table emptyTable3 = TableTools.emptyTable(2).updateView("col=1");
         TestCase.assertEquals(2, emptyTable3.size());
-        dataColumn = DataAccessHelpers.getColumn(emptyTable3, "col");
-        TestCase.assertEquals(2, dataColumn.size());
-        TestCase.assertEquals(1, dataColumn.get(0));
-        TestCase.assertEquals(1, dataColumn.get(1));
+        columnVector = ColumnVectors.ofInt(emptyTable3, "col");
+        TestCase.assertEquals(2, columnVector.size());
+        TestCase.assertEquals(1, columnVector.get(0));
+        TestCase.assertEquals(1, columnVector.get(1));
 
         TableTools.show(emptyTable3);
     }

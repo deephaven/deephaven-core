@@ -3,11 +3,14 @@
 //
 package io.deephaven.engine.rowset.impl;
 
+import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
+
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 
 public abstract class RowSequenceAsChunkImpl implements RowSequence {
 
@@ -18,7 +21,7 @@ public abstract class RowSequenceAsChunkImpl implements RowSequence {
 
     private void makeKeyIndicesChunk() {
         final int isize = intSize();
-        keyIndicesChunk = WritableLongChunk.makeWritableChunk(isize);
+        keyIndicesChunk = ChunkPoolReleaseTracking.untracked(() -> WritableLongChunk.makeWritableChunk(isize));
     }
 
     protected long runsUpperBound() {
@@ -40,7 +43,7 @@ public abstract class RowSequenceAsChunkImpl implements RowSequence {
 
     private void makeKeyRangesChunk(final int size) {
         final WritableLongChunk<OrderedRowKeyRanges> chunk =
-                WritableLongChunk.makeWritableChunk(size);
+                ChunkPoolReleaseTracking.untracked(() -> WritableLongChunk.makeWritableChunk(size));
         keyRangesChunk = chunk;
     }
 
@@ -55,7 +58,7 @@ public abstract class RowSequenceAsChunkImpl implements RowSequence {
                     keyIndicesChunk.setSize(keyIndicesChunk.capacity());
                     fillRowKeyChunk(keyIndicesChunk);
                 } else {
-                    keyIndicesChunk.close();
+                    ChunkPoolReleaseTracking.untracked(keyIndicesChunk::close);
                     keyIndicesChunk = null;
                 }
             }
@@ -80,7 +83,7 @@ public abstract class RowSequenceAsChunkImpl implements RowSequence {
                 if (keyRangesChunk.capacity() >= size) {
                     fillRowKeyRangesChunk(keyRangesChunk);
                 } else {
-                    keyRangesChunk.close();
+                    ChunkPoolReleaseTracking.untracked(keyRangesChunk::close);
                     keyRangesChunk = null;
                 }
             }
@@ -99,17 +102,24 @@ public abstract class RowSequenceAsChunkImpl implements RowSequence {
     abstract public long rangesCountUpperBound();
 
     @Override
+    @OverridingMethodsMustInvokeSuper
     public void close() {
         closeRowSequenceAsChunkImpl();
     }
 
+    /**
+     * Close any resources associated with this RowSequenceAsChunkImpl. This is the implementation for {@link #close()
+     * close}, made available for subclasses that have a need to release parent class resources independently of their
+     * own {@link #close() close} implementation. Most uses should prefer to {@link #invalidateRowSequenceAsChunkImpl()
+     * invalidate}, instead.
+     */
     protected final void closeRowSequenceAsChunkImpl() {
         if (keyIndicesChunk != null) {
-            keyIndicesChunk.close();
+            ChunkPoolReleaseTracking.untracked(keyIndicesChunk::close);
             keyIndicesChunk = null;
         }
         if (keyRangesChunk != null) {
-            keyRangesChunk.close();
+            ChunkPoolReleaseTracking.untracked(keyRangesChunk::close);
             keyRangesChunk = null;
         }
     }

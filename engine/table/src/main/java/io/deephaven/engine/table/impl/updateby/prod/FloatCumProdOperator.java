@@ -9,16 +9,17 @@ import io.deephaven.chunk.FloatChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.MatchPair;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
-import io.deephaven.engine.table.impl.updateby.internal.BaseFloatUpdateByOperator;
+import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 
-public class FloatCumProdOperator extends BaseFloatUpdateByOperator {
+public class FloatCumProdOperator extends BaseDoubleUpdateByOperator {
     // region extra-fields
     // endregion extra-fields
 
-    protected class Context extends BaseFloatUpdateByOperator.Context {
+    protected class Context extends BaseDoubleUpdateByOperator.Context {
         public FloatChunk<? extends Values> floatValueChunk;
 
         protected Context(final int chunkSize) {
@@ -37,7 +38,7 @@ public class FloatCumProdOperator extends BaseFloatUpdateByOperator {
             final float val = floatValueChunk.get(pos);
 
             if (val != NULL_FLOAT) {
-                curVal = curVal == NULL_FLOAT ? val : curVal * val;
+                curVal = curVal == NULL_DOUBLE ? val : curVal * val;
             }
         }
     }

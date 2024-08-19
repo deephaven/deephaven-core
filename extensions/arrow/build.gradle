@@ -9,21 +9,20 @@ dependencies {
     api project(':engine-table')
 
     implementation project(':Configuration')
-    implementation depCommonsLang3
+    implementation libs.commons.lang3
 
-    Classpaths.inheritArrow(project, 'arrow-format', 'implementation')
-    Classpaths.inheritArrow(project, 'arrow-vector', 'implementation')
-    Classpaths.inheritArrow(project, 'arrow-compression', 'implementation')
+    implementation libs.arrow.format
+    implementation libs.arrow.vector
+    implementation libs.arrow.compression
 
-    testImplementation TestTools.projectDependency(project, 'engine-table'),
-            TestTools.projectDependency(project, 'Util')
+    testImplementation TestTools.projectDependency(project, 'engine-table')
 
-    Classpaths.inheritSlf4j(project, 'slf4j-api', 'implementation')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    implementation libs.slf4j.api
+    testRuntimeOnly libs.slf4j.simple
     testRuntimeOnly project(':log-to-slf4j')
 
-    Classpaths.inheritJUnitPlatform(project)
-    Classpaths.inheritAssertJ(project)
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.assertj
 }
 
 apply plugin: 'io.deephaven.java-open-nio'

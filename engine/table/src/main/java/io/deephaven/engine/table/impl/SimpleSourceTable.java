@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.DeferredViewTable.TableReference;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.locations.TableLocationProvider;
 import io.deephaven.engine.table.impl.select.SelectColumn;
@@ -60,6 +61,6 @@ public class SimpleSourceTable extends SourceTable<SimpleSourceTable> {
     protected final Table redefine(TableDefinition newDefinitionExternal, TableDefinition newDefinitionInternal,
             SelectColumn[] viewColumns) {
         return new DeferredViewTable(newDefinitionExternal, description + "-redefined",
-                new QueryTableReference(redefine(newDefinitionInternal)), new String[0], viewColumns, null);
+                new TableReference(redefine(newDefinitionInternal)), new String[0], viewColumns, null);
     }
 }

@@ -7,7 +7,7 @@ import gnu.trove.list.array.TShortArrayList;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.DataInput;
@@ -20,19 +20,21 @@ import java.util.function.LongConsumer;
  */
 public class ExternalizableRowSetUtils {
 
-    private static final byte SHORT_VALUE = 1;
-    private static final byte INT_VALUE = 2;
-    private static final byte LONG_VALUE = 3;
-    private static final byte BYTE_VALUE = 4;
+    // @formatter:off
+    private static final byte SHORT_VALUE = 0b00000001;
+    private static final byte INT_VALUE   = 0b00000010;
+    private static final byte LONG_VALUE  = 0b00000011;
+    private static final byte BYTE_VALUE  = 0b00000100;
 
-    private static final byte VALUE_MASK = 7;
+    private static final byte VALUE_MASK  = 0b00000111;
 
-    private static final byte OFFSET = 8;
-    private static final byte SHORT_ARRAY = 16;
-    private static final byte BYTE_ARRAY = 24;
-    private static final byte END = 32;
+    private static final byte OFFSET      = 0b00001000;
+    private static final byte SHORT_ARRAY = 0b00010000;
+    private static final byte BYTE_ARRAY  = 0b00011000;
+    private static final byte END         = 0b00100000;
 
-    private static final byte CMD_MASK = 0x78;
+    private static final byte CMD_MASK    = 0b00111000;
+    // @formatter:on
 
     /**
      * Write a {@link RowSet} to {@code out}.
@@ -62,76 +64,115 @@ public class ExternalizableRowSetUtils {
 
     private static long appendWithOffsetDelta(@NotNull final DataOutput out, @NotNull final TShortArrayList shorts,
             final long offset, final long value, final boolean negate) throws IOException {
-        if (value >= offset + Short.MAX_VALUE) {
+        final long delta = value - offset;
+        if (delta >= Short.MAX_VALUE) {
             flushShorts(out, shorts);
-
-            final long newValue = value - offset;
-            writeValue(out, OFFSET, negate ? -newValue : newValue);
+            writeValue(out, OFFSET, negate ? -delta : delta);
             return value;
         }
         if (negate) {
-            shorts.add((short) -(value - offset));
+            shorts.add((short) -delta);
         } else {
-            shorts.add((short) (value - offset));
+            shorts.add((short) delta);
         }
         return value;
     }
 
-
     private static void flushShorts(@NotNull final DataOutput out, @NotNull final TShortArrayList shorts)
             throws IOException {
-        for (int offset = 0; offset < shorts.size();) {
-            int byteCount = 0;
-            while (offset + byteCount < shorts.size() && (shorts.getQuick(offset + byteCount) < Byte.MAX_VALUE
-                    && shorts.getQuick(offset + byteCount) > Byte.MIN_VALUE)) {
-                byteCount++;
+        final int size = shorts.size();
+        int writtenCount = 0;
+        int consecutiveTrailingBytes = 0;
+        for (int nextShortIndex = 0; nextShortIndex < size; ++nextShortIndex) {
+            final short nextShort = shorts.getQuick(nextShortIndex);
+            if (nextShort <= Byte.MAX_VALUE && nextShort >= Byte.MIN_VALUE) {
+                // nextShort can fit into a byte
+                ++consecutiveTrailingBytes;
+                continue;
             }
-            if (byteCount > 3 || byteCount + offset == shorts.size()) {
-                if (byteCount == 1) {
-                    writeValue(out, OFFSET, shorts.getQuick(offset));
-                } else {
-                    writeValue(out, BYTE_ARRAY, byteCount);
-                    for (int ii = offset; ii < offset + byteCount; ++ii) {
-                        out.writeByte(shorts.getQuick(ii));
-                    }
-                }
-
-                offset += byteCount;
-            } else {
-                int shortCount = byteCount;
-                int consecutiveBytes = 0;
-                while (shortCount + consecutiveBytes + offset < shorts.size()) {
-                    final short shortValue = shorts.getQuick(offset + shortCount + consecutiveBytes);
-                    final boolean requiresShort = (shortValue >= Byte.MAX_VALUE || shortValue <= Byte.MIN_VALUE);
-                    if (!requiresShort) {
-                        consecutiveBytes++;
-                    } else {
-                        consecutiveBytes = 0;
-                        shortCount += consecutiveBytes;
-                        shortCount++;
-                    }
-                    if (consecutiveBytes > 3) {
-                        // switch to byte mode
-                        break;
-                    }
-                }
-                // if we have a small number of trailing bytes, tack them onto the end
-                if (consecutiveBytes > 0 && consecutiveBytes <= 3
-                        && (offset + shortCount + consecutiveBytes == shorts.size())) {
-                    shortCount += consecutiveBytes;
-                }
-                if (shortCount >= 2) {
-                    writeValue(out, SHORT_ARRAY, shortCount);
-                    for (int ii = offset; ii < offset + shortCount; ++ii) {
-                        out.writeShort(shorts.getQuick(ii));
-                    }
-                } else if (shortCount == 1) {
-                    writeValue(out, OFFSET, shorts.getQuick(offset));
-                }
-                offset += shortCount;
+            // nextShort doesn't fit into a byte, so we've found the end of a (possibly-empty) sequence of bytes
+            if (shouldWriteBytes(consecutiveTrailingBytes)) {
+                // Write a possibly-empty prefix of shorts, followed by the consecutive bytes we found. Note that we're
+                // not writing the short that triggered the end of the byte sequence; it will join the next sequence.
+                final int shortCount = nextShortIndex - writtenCount - consecutiveTrailingBytes;
+                writeShortsThenBytes(out, shorts, writtenCount, shortCount, consecutiveTrailingBytes);
+                writtenCount = nextShortIndex;
             }
+            // Now we have at least one short, and no trailing bytes
+            consecutiveTrailingBytes = 0;
         }
+
+        // Write the remaining possibly-empty sequence of shorts, followed by any trailing consecutive bytes
+        final int shortCount = size - writtenCount - consecutiveTrailingBytes;
+        writeShortsThenBytes(out, shorts, writtenCount, shortCount, consecutiveTrailingBytes);
         shorts.resetQuick();
+    }
+
+    private static boolean shouldWriteBytes(final int byteCount) {
+        /*
+         * @formatter:off
+         * =============================================================================================================
+         * Why do we use 4 as the size cutoff for writing a byte sequence?
+         * =============================================================================================================
+         *
+         * First, we consider the direct cost savings by writing bytes instead of appending them to a sequence of
+         *  shorts:
+         *
+         * -------------------------------------------------------------------------------------------------------------
+         * byteCount | output bytes                                          | saved output bytes
+         * -------------------------------------------------------------------------------------------------------------
+         *         1 | 2 (1 command byte, 1 value byte)                      | 0
+         *         2 | 4 (1 command byte, 1 length byte, 2 value bytes)      | 0
+         *     N > 3 | 2 + N (1 command byte, 1 length byte, N values bytes) | 1 + N - 3
+         *     N = 3 | 2 + 3 (1 command byte, 1 length byte, 3 value bytes)  | 1
+         *     N = 4 | 2 + 4 (1 command byte, 1 length byte, 4 value bytes)  | 2
+         * -------------------------------------------------------------------------------------------------------------
+         *
+         * This would seem to argue for splitting at 3 bytes, but we need to consider the impact of splitting a
+         * sequence of shorts unless our byte sequence is at the beginning or end of the overall sequence. We need only
+         * "pay" for one side, since that's the "extra" cost imposed by writing our byte sequence as bytes:
+         *
+         * -------------------------------------------------------------------------------------------------------------
+         *        shortCount | extra output bytes (excludes value bytes)
+         * -------------------------------------------------------------------------------------------------------------
+         *                 1 | 1 (1 command byte)
+         *             2-127 | 2 (1 command byte, 1 length byte)
+         *         128-32767 | 3 (1 command byte, 2 length bytes)
+         *  32768-2147483647 | 5 (1 command byte, 4 length bytes)
+         *       2147483647+ | 9 (1 command byte, 8 length bytes)
+         * -------------------------------------------------------------------------------------------------------------
+         *
+         * We could build a complex checker that perfectly minimizes the total number of bytes written, but given the
+         * number of shorts we're amortizing over at 128+, I'm inclined to keep this simple and just split at 4 bytes.
+         *
+         * =============================================================================================================
+         * At the end of our overall sequence it's never worse to write bytes if we have them, so we always write bytes.
+         * =============================================================================================================
+         * @formatter:on
+         */
+        return byteCount >= 4;
+    }
+
+    private static void writeShortsThenBytes(@NotNull final DataOutput out, @NotNull final TShortArrayList shorts,
+            int index, final int shortCount, final int byteCount) throws IOException {
+        if (shortCount == 1) {
+            writeValue(out, OFFSET, shorts.getQuick(index++));
+        } else if (shortCount > 1) {
+            writeValue(out, SHORT_ARRAY, shortCount);
+            final int shortLimit = index + shortCount;
+            do {
+                out.writeShort(shorts.getQuick(index++));
+            } while (index < shortLimit);
+        }
+        if (byteCount == 1) {
+            writeValue(out, OFFSET, shorts.getQuick(index)); // Note, no increment, to avoid unused assignment
+        } else if (byteCount > 1) {
+            writeValue(out, BYTE_ARRAY, byteCount);
+            final int byteLimit = index + byteCount;
+            do {
+                out.writeByte(shorts.getQuick(index++));
+            } while (index < byteLimit);
+        }
     }
 
     private static void writeValue(@NotNull final DataOutput out, final byte command, final long value)
@@ -157,15 +198,15 @@ public class ExternalizableRowSetUtils {
 
         final MutableLong pending = new MutableLong(-1);
         final LongConsumer consume = v -> {
-            final long s = pending.longValue();
+            final long s = pending.get();
             if (s == -1) {
-                pending.setValue(v);
+                pending.set(v);
             } else if (v < 0) {
                 builder.appendRange(s, -v);
-                pending.setValue(-1);
+                pending.set(-1);
             } else {
                 builder.appendKey(s);
-                pending.setValue(v);
+                pending.set(v);
             }
         };
 
@@ -204,8 +245,8 @@ public class ExternalizableRowSetUtils {
             }
         } while (true);
 
-        if (pending.longValue() >= 0) {
-            builder.appendKey(pending.longValue());
+        if (pending.get() >= 0) {
+            builder.appendKey(pending.get());
         }
 
         return builder.build();

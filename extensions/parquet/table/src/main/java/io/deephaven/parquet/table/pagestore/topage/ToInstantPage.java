@@ -3,65 +3,74 @@
 //
 package io.deephaven.parquet.table.pagestore.topage;
 
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Any;
+import io.deephaven.parquet.base.PageMaterializerFactory;
+import io.deephaven.parquet.base.materializers.InstantNanosFromInt96Materializer;
+import io.deephaven.parquet.base.materializers.InstantNanosFromMicrosMaterializer;
+import io.deephaven.parquet.base.materializers.InstantNanosFromMillisMaterializer;
+import io.deephaven.parquet.base.materializers.LongMaterializer;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ObjectVectorDirect;
-import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Instant;
-import java.util.function.LongFunction;
-import java.util.function.LongUnaryOperator;
 
-public abstract class ToInstantPage<ATTR extends Any> extends ToLongPage<ATTR> {
+import static io.deephaven.util.QueryConstants.NULL_LONG_BOXED;
 
-    @SuppressWarnings("rawtypes")
-    private static final ToInstantPage MILLIS_INSTANCE = new ToInstantPageFromMillis();
-    @SuppressWarnings("rawtypes")
-    private static final ToInstantPage MICROS_INSTANCE = new ToInstantPageFromMicros();
-    @SuppressWarnings("rawtypes")
-    private static final ToInstantPage NANOS_INSTANCE = new ToInstantPageFromNanos();
+public class ToInstantPage<ATTR extends Any> implements ToPage<ATTR, long[]> {
 
-    @SuppressWarnings("unchecked")
-    public static <ATTR extends Any> ToPage<ATTR, Instant[]> create(@NotNull final Class<?> nativeType,
-            final LogicalTypeAnnotation.TimeUnit unit) {
-        if (Instant.class.equals(nativeType)) {
-            switch (unit) {
-                case MILLIS:
-                    return MILLIS_INSTANCE;
-                case MICROS:
-                    return MICROS_INSTANCE;
-                case NANOS:
-                    return NANOS_INSTANCE;
-                default:
-                    throw new IllegalArgumentException("Unsupported unit=" + unit);
-            }
-        }
-
-        throw new IllegalArgumentException(
-                "The native type foran Instant column is " + nativeType.getCanonicalName());
+    public static <ATTR extends Any> ToPage<ATTR, Instant[]> createFromMillis(final Class<?> nativeType) {
+        verifyNativeType(nativeType);
+        // noinspection unchecked
+        return FROM_MILLIS;
     }
 
-    protected ToInstantPage() {}
-
-    protected static ObjectVector<Instant> makeVectorHelper(final long[] result,
-            final LongFunction<Instant> unitToTime) {
-        Instant[] to = new Instant[result.length];
-
-        for (int i = 0; i < result.length; ++i) {
-            to[i] = unitToTime.apply(result[i]);
-        }
-        return new ObjectVectorDirect<>(to);
+    public static <ATTR extends Any> ToPage<ATTR, Instant[]> createFromMicros(final Class<?> nativeType) {
+        verifyNativeType(nativeType);
+        // noinspection unchecked
+        return FROM_MICROS;
     }
 
-    protected static long[] convertResultHelper(@NotNull final Object result, final LongUnaryOperator unitToNanos) {
-        final long[] resultLongs = (long[]) result;
-        final int resultLength = resultLongs.length;
-        for (int ri = 0; ri < resultLength; ++ri) {
-            resultLongs[ri] = unitToNanos.applyAsLong(resultLongs[ri]);
+    public static <ATTR extends Any> ToPage<ATTR, Instant[]> createFromNanos(final Class<?> nativeType) {
+        verifyNativeType(nativeType);
+        // noinspection unchecked
+        return FROM_NANOS;
+    }
+
+    public static <ATTR extends Any> ToPage<ATTR, Instant[]> createFromInt96(final Class<?> nativeType) {
+        verifyNativeType(nativeType);
+        // noinspection unchecked
+        return FROM_INT96;
+    }
+
+    @SuppressWarnings("rawtypes")
+    private static final ToPage FROM_MILLIS = new ToInstantPage<>(InstantNanosFromMillisMaterializer.FACTORY);
+    @SuppressWarnings("rawtypes")
+    private static final ToPage FROM_MICROS = new ToInstantPage<>(InstantNanosFromMicrosMaterializer.FACTORY);
+    @SuppressWarnings("rawtypes")
+    private static final ToPage FROM_NANOS = new ToInstantPage<>(LongMaterializer.FACTORY);
+    @SuppressWarnings("rawtypes")
+    private static final ToPage FROM_INT96 = new ToInstantPage<>(InstantNanosFromInt96Materializer.FACTORY);
+
+    private static void verifyNativeType(final Class<?> nativeType) {
+        if (nativeType != null && !Instant.class.equals(nativeType)) {
+            throw new IllegalArgumentException(
+                    "The native type for an Instant column is " + nativeType.getCanonicalName());
         }
-        return resultLongs;
+    }
+
+    private final PageMaterializerFactory pageMaterializerFactory;
+
+    private ToInstantPage(@NotNull final PageMaterializerFactory pageMaterializerFactory) {
+        this.pageMaterializerFactory = pageMaterializerFactory;
+    }
+
+    @Override
+    @NotNull
+    public final Class<Long> getNativeType() {
+        return long.class;
     }
 
     @Override
@@ -70,37 +79,32 @@ public abstract class ToInstantPage<ATTR extends Any> extends ToLongPage<ATTR> {
         return Instant.class;
     }
 
-    private static final class ToInstantPageFromNanos<ATTR extends Any> extends ToInstantPage<ATTR> {
-        @Override
-        @NotNull
-        public ObjectVector<Instant> makeVector(long[] result) {
-            return makeVectorHelper(result, DateTimeUtils::epochNanosToInstant);
-        }
+    @Override
+    @NotNull
+    public final ChunkType getChunkType() {
+        return ChunkType.Long;
     }
 
-    private static final class ToInstantPageFromMicros<ATTR extends Any> extends ToInstantPage<ATTR> {
-        @Override
-        @NotNull
-        public ObjectVector<Instant> makeVector(long[] result) {
-            return makeVectorHelper(result, DateTimeUtils::epochMicrosToInstant);
-        }
-
-        @Override
-        public long[] convertResult(@NotNull final Object result) {
-            return convertResultHelper(result, DateTimeUtils::microsToNanos);
-        }
+    @Override
+    @NotNull
+    public final Object nullValue() {
+        return NULL_LONG_BOXED;
     }
 
-    private static final class ToInstantPageFromMillis<ATTR extends Any> extends ToInstantPage<ATTR> {
-        @Override
-        @NotNull
-        public ObjectVector<Instant> makeVector(long[] result) {
-            return makeVectorHelper(result, DateTimeUtils::epochMillisToInstant);
-        }
+    @Override
+    @NotNull
+    public final PageMaterializerFactory getPageMaterializerFactory() {
+        return pageMaterializerFactory;
+    }
 
-        @Override
-        public long[] convertResult(@NotNull final Object result) {
-            return convertResultHelper(result, DateTimeUtils::millisToNanos);
+    @Override
+    @NotNull
+    public ObjectVector<Instant> makeVector(long[] result) {
+        final Instant[] to = new Instant[result.length];
+
+        for (int i = 0; i < result.length; ++i) {
+            to[i] = DateTimeUtils.epochNanosToInstant(result[i]);
         }
+        return new ObjectVectorDirect<>(to);
     }
 }

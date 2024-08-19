@@ -17,7 +17,7 @@ import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.engine.table.impl.ssms.ByteSegmentedSortedMultiset;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 
 import static io.deephaven.util.QueryConstants.NULL_BYTE;
 
@@ -74,9 +74,9 @@ public class BytePercentileTypeHelper implements SsmChunkedPercentileOperator.Pe
         final long hiCount = ssmLo.getMaxCount();
         if (result > startPosition && ByteComparisons.eq(asByteChunk.get(result - 1), hiValue)
                 && counts.get(result - 1) > hiCount) {
-            leftOvers.setValue((int) (counts.get(result - 1) - hiCount));
+            leftOvers.set((int) (counts.get(result - 1) - hiCount));
         } else {
-            leftOvers.setValue(0);
+            leftOvers.set(0);
         }
 
         return result - startPosition;
@@ -107,7 +107,7 @@ public class BytePercentileTypeHelper implements SsmChunkedPercentileOperator.Pe
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final byte testValue = valuesToSearch.get(mid);
-            final boolean moveHi = gt(testValue, searchValue);
+            final boolean moveHi = ByteComparisons.gt(testValue, searchValue);
             if (moveHi) {
                 hi = mid;
             } else {
@@ -116,13 +116,5 @@ public class BytePercentileTypeHelper implements SsmChunkedPercentileOperator.Pe
         }
 
         return hi;
-    }
-
-    private static int doComparison(byte lhs, byte rhs) {
-        return ByteComparisons.compare(lhs, rhs);
-    }
-
-    private static boolean gt(byte lhs, byte rhs) {
-        return doComparison(lhs, rhs) > 0;
     }
 }

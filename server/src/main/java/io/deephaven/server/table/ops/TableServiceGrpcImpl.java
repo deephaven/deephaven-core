@@ -27,10 +27,10 @@ import io.deephaven.server.session.TicketRouter;
 import io.deephaven.server.table.ExportedTableUpdateListener;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.mutable.MutableInt;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
@@ -459,13 +459,13 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                         final String columnName = request.getColumnName();
                         final Class<?> dataType = table.getDefinition().getColumn(columnName).getDataType();
                         final Object seekValue = getSeekValue(request.getSeekValue(), dataType);
-                        final Long result = table.apply(new SeekRow(
+                        final long result = new SeekRow(
                                 request.getStartingRow(),
                                 columnName,
                                 seekValue,
                                 request.getInsensitive(),
                                 request.getContains(),
-                                request.getIsBackward()));
+                                request.getIsBackward()).seek(table);
                         SeekRowResponse.Builder rowResponse = SeekRowResponse.newBuilder();
                         safelyComplete(responseObserver, rowResponse.setResultRow(result).build());
                     });

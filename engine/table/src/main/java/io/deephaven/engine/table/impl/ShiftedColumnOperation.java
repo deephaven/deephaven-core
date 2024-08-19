@@ -15,7 +15,7 @@ import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.sources.ShiftedColumnSource;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -131,8 +131,7 @@ public class ShiftedColumnOperation {
             final BaseTable.ListenerImpl listener = new BaseTable.ListenerImpl("propagateUpdates", source, result) {
                 @Override
                 public void onUpdate(TableUpdate upstream) {
-                    final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
-                    downstream.modifiedColumnSet = downstreamColumnSet;
+                    final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream, downstreamColumnSet);
                     mcsTransformer.clearAndTransform(
                             upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
 
@@ -240,12 +239,12 @@ public class ShiftedColumnOperation {
                 final long dirtyEnd;
 
                 if (shift > 0) {
-                    dirtyStart = Math.max(minKeyAllowed.longValue(), s - shift);
+                    dirtyStart = Math.max(minKeyAllowed.get(), s - shift);
                     dirtyEnd = s - 1;
-                    minKeyAllowed.setValue(e + 1);
+                    minKeyAllowed.set(e + 1);
                 } else {
-                    final long pEnd = prevRangeEnd.longValue();
-                    prevRangeEnd.setValue(e);
+                    final long pEnd = prevRangeEnd.get();
+                    prevRangeEnd.set(e);
                     if (pEnd == -1) {
                         return;
                     }
@@ -261,7 +260,7 @@ public class ShiftedColumnOperation {
         }
 
         // if we were looking ahead, we need to process the last range
-        final long pEnd = prevRangeEnd.longValue();
+        final long pEnd = prevRangeEnd.get();
         if (shift < 0 && pEnd != -1 && pEnd + 1 < sourceRowSet.size()) {
             final long dirtyStart = pEnd + 1;
             final long dirtyEnd = pEnd - shift;

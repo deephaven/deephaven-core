@@ -17,6 +17,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.UpdateGraph;
@@ -154,7 +155,9 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
                     .append(": Error detected in subscription: ")
                     .append(t).endl();
 
-            resultTable.handleBarrageError(t);
+            final String label = TableSpecLabeler.of(tableHandle.export().table());
+            resultTable.handleBarrageError(new TableDataException(
+                    String.format("Barrage subscription error for %s (%s)", logName, label), t));
             cleanup();
         }
 
@@ -387,7 +390,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
 
         @Override
         public BarrageMessage parse(final InputStream stream) {
-            return streamReader.safelyParseFrom(options, null, columnChunkTypes, columnTypes, componentTypes, stream);
+            return streamReader.safelyParseFrom(options, columnChunkTypes, columnTypes, componentTypes, stream);
         }
     }
 

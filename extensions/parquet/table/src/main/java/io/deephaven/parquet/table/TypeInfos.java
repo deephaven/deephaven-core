@@ -116,6 +116,10 @@ public class TypeInfos {
         return new ImmutablePair<>(SerializableCodec.class.getName(), null);
     }
 
+    /**
+     * Get the precision and scale for a given big decimal column. If already cached, fetch it directly, else compute it
+     * by scanning the entire column and store the values in the cache.
+     */
     public static PrecisionAndScale getPrecisionAndScale(
             @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache,
             @NotNull final String columnName,
@@ -171,9 +175,13 @@ public class TypeInfos {
             final RowSet rowSet,
             final Map<String, ? extends ColumnSource<?>> columnSourceMap,
             @NotNull final ParquetInstructions instructions) {
-        final Class<?> dataType = column.getDataType();
-        if (BigDecimal.class.equals(dataType)) {
+        if (BigDecimal.class.equals(column.getDataType())) {
             return bigDecimalTypeInfo(computedCache, column, rowSet, columnSourceMap);
+        }
+        if (BigDecimal.class.equals(column.getComponentType())) {
+            throw new UnsupportedOperationException("Writing arrays/vector columns for big decimals is currently not " +
+                    "supported");
+            // TODO(deephaven-core#4612): Add support for this
         }
         return lookupTypeInfo(column, instructions);
     }
@@ -407,6 +415,8 @@ public class TypeInfos {
      * We will encode BigIntegers as Decimal types. Parquet has no special type for BigIntegers, but we can maintain
      * external compatibility by encoding them as fixed length decimals of scale 1. Internally, we'll record that we
      * wrote this as a decimal, so we can properly decode it back to BigInteger.
+     *
+     * @see ParquetSchemaReader
      */
     private enum BigIntegerType implements TypeInfo {
         INSTANCE;

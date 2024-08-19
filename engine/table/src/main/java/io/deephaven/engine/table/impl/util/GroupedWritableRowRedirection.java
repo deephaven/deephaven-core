@@ -10,7 +10,7 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.ResettableWritableLongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.RowSet;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -118,7 +118,7 @@ public class GroupedWritableRowRedirection implements WritableRowRedirection {
             outerRowKeys.forAllRowKeyRanges((begin, end) -> {
                 while (begin <= end) {
                     // figure out which group we belong to, based on the first key in the range
-                    int slot = Arrays.binarySearch(groupSizes, lastSlot.intValue(), groupSizes.length, begin);
+                    int slot = Arrays.binarySearch(groupSizes, lastSlot.get(), groupSizes.length, begin);
                     if (slot < 0) {
                         slot = ~slot;
                     } else {
@@ -126,7 +126,7 @@ public class GroupedWritableRowRedirection implements WritableRowRedirection {
                         slot += 1;
                     }
                     // for the next one we should not search the beginning of the array
-                    lastSlot.setValue(slot);
+                    lastSlot.set(slot);
 
                     // for the first key, we have an offset of 0; for other keys we need to offset the key
                     final long beginKeyWithOffset = slot == 0 ? begin : begin - groupSizes[slot - 1];
@@ -136,8 +136,8 @@ public class GroupedWritableRowRedirection implements WritableRowRedirection {
 
                     final WritableLongChunk<? super RowKeys> chunkToFill = resettableKeys.resetFromTypedChunk(
                             innerRowKeysTyped,
-                            outputPosition.intValue(),
-                            innerRowKeysTyped.size() - outputPosition.intValue());
+                            outputPosition.get(),
+                            innerRowKeysTyped.size() - outputPosition.get());
                     if (beginKeyWithOffset > 0 || (beginKeyWithOffset + size < groups[slot].size())) {
                         try (RowSequence rowSequenceByPosition =
                                 groups[slot].getRowSequenceByPosition(beginKeyWithOffset, size)) {

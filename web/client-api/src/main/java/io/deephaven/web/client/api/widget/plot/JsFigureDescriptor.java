@@ -50,7 +50,7 @@ public class JsFigureDescriptor {
         this();
 
         JsArray<Object> charts = JsData.getRequiredProperty(source, "charts").cast();
-        this.charts = Js.uncheckedCast(charts.map((chartSource, index, all) -> {
+        this.charts = Js.uncheckedCast(charts.map((chartSource, index) -> {
             if (chartSource instanceof JsChartDescriptor) {
                 return (JsChartDescriptor) chartSource;
             } else {
@@ -70,9 +70,9 @@ public class JsFigureDescriptor {
     @JsIgnore
     public JsArray<JsTable> getTables() {
         Set<JsTable> tableSet = new HashSet<>();
-        charts.forEach((chart, i1, a1) -> {
-            chart.series.forEach((series, i2, a2) -> {
-                series.dataSources.forEach((source, i3, a3) -> {
+        charts.forEach((chart, i1) -> {
+            chart.series.forEach((series, i2) -> {
+                series.dataSources.forEach((source, i3) -> {
                     tableSet.add(source.table);
                     return null;
                 });

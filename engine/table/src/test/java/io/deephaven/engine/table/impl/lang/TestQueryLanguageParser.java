@@ -4,20 +4,20 @@
 package io.deephaven.engine.table.impl.lang;
 
 import groovy.lang.Closure;
-import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.Pair;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.context.*;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser.QueryLanguageParseException;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.util.PropertySaver;
 import io.deephaven.engine.util.PyCallableWrapper;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.type.TypeUtils;
-import io.deephaven.utils.test.PropertySaver;
 import io.deephaven.vector.Vector;
 import io.deephaven.vector.*;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -3178,7 +3178,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         final Map<String, Object> possibleParams;
         final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
         if (!(queryScope instanceof PoisonedQueryScope)) {
-            possibleParams = queryScope.toMap((name, value) -> NameValidator.isValidQueryParameterName(name));
+            possibleParams = QueryCompilerRequestProcessor.newFormulaImportsSupplier().get().getQueryScopeVariables();
         } else {
             possibleParams = null;
         }
@@ -3188,7 +3188,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
                         variables, variableParameterizedTypes, possibleParams, null,
                         true,
                         verifyIdempotence,
-                        PyCallableWrapperDummyImpl.class.getName()).getResult();
+                        PyCallableWrapperDummyImpl.class.getName(), null).getResult();
 
         assertEquals(resultType, result.getType());
         assertEquals(resultExpression, result.getConvertedExpression());

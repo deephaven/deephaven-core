@@ -5,13 +5,12 @@ package io.deephaven.engine.table.impl.perf;
 
 import io.deephaven.chunk.util.pools.ChunkPoolInstrumentation;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.updategraph.UpdateGraphLock;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.function.ThrowingRunnable;
 import io.deephaven.util.profiling.ThreadProfiler;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.BufferedReader;
@@ -66,7 +65,7 @@ public abstract class QueryPerformanceRecorderState {
             throw new UncheckedIOException("Error reading file " + propVal, e);
         }
 
-        PACKAGE_FILTERS = filters.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        PACKAGE_FILTERS = filters.toArray(String[]::new);
     }
 
     private QueryPerformanceRecorderState() {
@@ -126,7 +125,7 @@ public abstract class QueryPerformanceRecorderState {
         } finally {
             final long endThreadAllocatedBytes = ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes();
             final MutableLong poolAllocatedBytesForCurrentThread = POOL_ALLOCATED_BYTES.get();
-            poolAllocatedBytesForCurrentThread.setValue(plus(poolAllocatedBytesForCurrentThread.longValue(),
+            poolAllocatedBytesForCurrentThread.set(plus(poolAllocatedBytesForCurrentThread.get(),
                     minus(endThreadAllocatedBytes, startThreadAllocatedBytes)));
         }
     }
@@ -138,7 +137,7 @@ public abstract class QueryPerformanceRecorderState {
      * @return The total bytes of pool-allocated memory attributed to this thread.
      */
     static long getPoolAllocatedBytesForCurrentThread() {
-        return POOL_ALLOCATED_BYTES.get().longValue();
+        return POOL_ALLOCATED_BYTES.get().get();
     }
 
     /**

@@ -17,13 +17,13 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TableDefaults;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.updateby.em.BaseBigNumberEMOperator;
 import io.deephaven.engine.table.impl.updateby.em.BasePrimitiveEMOperator;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.generator.CharGenerator;
@@ -51,7 +51,7 @@ import static io.deephaven.time.DateTimeUtils.*;
 import static io.deephaven.util.QueryConstants.*;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.fail;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.Assert.assertThrows;
 
 @Category(OutOfBandTest.class)
 public class TestEmMinMax extends BaseUpdateByTest {
@@ -65,7 +65,7 @@ public class TestEmMinMax extends BaseUpdateByTest {
     };
     final BaseBigNumberEMOperator.EmFunction bdMaxFunction = (prev, cur, alpha, oneMinusAlpha) -> {
         final BigDecimal decayedVal = prev.multiply(alpha, mathContextDefault);
-        return decayedVal.compareTo(cur) == 1
+        return decayedVal.compareTo(cur) > 0
                 ? decayedVal
                 : cur;
     };
@@ -76,7 +76,7 @@ public class TestEmMinMax extends BaseUpdateByTest {
     };
     final BaseBigNumberEMOperator.EmFunction bdMinFunction = (prev, cur, alpha, oneMinusAlpha) -> {
         final BigDecimal decayedVal = prev.multiply(alpha, mathContextDefault);
-        return decayedVal.compareTo(cur) == -1
+        return decayedVal.compareTo(cur) < 0
                 ? decayedVal
                 : cur;
     };
@@ -119,7 +119,7 @@ public class TestEmMinMax extends BaseUpdateByTest {
                 .onNullValue(BadDataBehavior.RESET)
                 .onNanValue(BadDataBehavior.RESET).build();
 
-        final Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(t, "ts").getDirect();
+        final Instant[] ts = ColumnVectors.ofObject(t, "ts", Instant.class).toArray();
         final long[] timestamps = new long[t.intSize()];
         for (int i = 0; i < t.intSize(); i++) {
             timestamps[i] = epochNanos(ts[i]);
@@ -131,12 +131,12 @@ public class TestEmMinMax extends BaseUpdateByTest {
         Table actualReset = t.updateBy(UpdateByOperation.EmMin(resetControl, 100, columns));
 
         for (String col : columns) {
-            final Class colType = DataAccessHelpers.getColumn(t, col).getType();
-            assertWithEmTicks(skipControl, 100, DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(actualSkip, col).getDirect(),
+            final Class<?> colType = t.getDefinition().getColumn(col).getDataType();
+            assertWithEmTicks(skipControl, 100, ColumnVectors.of(t, col).toArray(),
+                    ColumnVectors.of(actualSkip, col).toArray(),
                     colType, doubleMinFunction, bdMinFunction);
-            assertWithEmTicks(resetControl, 100, DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(actualReset, col).getDirect(),
+            assertWithEmTicks(resetControl, 100, ColumnVectors.of(t, col).toArray(),
+                    ColumnVectors.of(actualReset, col).toArray(),
                     colType, doubleMinFunction, bdMinFunction);
         }
 
@@ -144,12 +144,12 @@ public class TestEmMinMax extends BaseUpdateByTest {
         Table actualResetTime = t.updateBy(UpdateByOperation.EmMin(resetControl, "ts", 10 * MINUTE, columns));
 
         for (String col : columns) {
-            final Class colType = DataAccessHelpers.getColumn(t, col).getType();
-            assertWithEmTime(skipControl, 10 * MINUTE, timestamps, DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(actualSkipTime, col).getDirect(),
+            final Class<?> colType = t.getDefinition().getColumn(col).getDataType();
+            assertWithEmTime(skipControl, 10 * MINUTE, timestamps, ColumnVectors.of(t, col).toArray(),
+                    ColumnVectors.of(actualSkipTime, col).toArray(),
                     colType, doubleMinFunction, bdMinFunction);
-            assertWithEmTime(resetControl, 10 * MINUTE, timestamps, DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(actualResetTime, col).getDirect(),
+            assertWithEmTime(resetControl, 10 * MINUTE, timestamps, ColumnVectors.of(t, col).toArray(),
+                    ColumnVectors.of(actualResetTime, col).toArray(),
                     colType, doubleMinFunction, bdMinFunction);
         }
 
@@ -159,12 +159,12 @@ public class TestEmMinMax extends BaseUpdateByTest {
         actualReset = t.updateBy(UpdateByOperation.EmMax(resetControl, 100, columns));
 
         for (String col : columns) {
-            final Class colType = DataAccessHelpers.getColumn(t, col).getType();
-            assertWithEmTicks(skipControl, 100, DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(actualSkip, col).getDirect(),
+            final Class<?> colType = t.getDefinition().getColumn(col).getDataType();
+            assertWithEmTicks(skipControl, 100, ColumnVectors.of(t, col).toArray(),
+                    ColumnVectors.of(actualSkip, col).toArray(),
                     colType, doubleMaxFunction, bdMaxFunction);
-            assertWithEmTicks(resetControl, 100, DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(actualReset, col).getDirect(),
+            assertWithEmTicks(resetControl, 100, ColumnVectors.of(t, col).toArray(),
+                    ColumnVectors.of(actualReset, col).toArray(),
                     colType, doubleMaxFunction, bdMaxFunction);
         }
 
@@ -172,12 +172,12 @@ public class TestEmMinMax extends BaseUpdateByTest {
         actualResetTime = t.updateBy(UpdateByOperation.EmMax(resetControl, "ts", 10 * MINUTE, columns));
 
         for (String col : columns) {
-            final Class colType = DataAccessHelpers.getColumn(t, col).getType();
-            assertWithEmTime(skipControl, 10 * MINUTE, timestamps, DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(actualSkipTime, col).getDirect(),
+            final Class<?> colType = t.getDefinition().getColumn(col).getDataType();
+            assertWithEmTime(skipControl, 10 * MINUTE, timestamps, ColumnVectors.of(t, col).toArray(),
+                    ColumnVectors.of(actualSkipTime, col).toArray(),
                     colType, doubleMaxFunction, bdMaxFunction);
-            assertWithEmTime(resetControl, 10 * MINUTE, timestamps, DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(actualResetTime, col).getDirect(),
+            assertWithEmTime(resetControl, 10 * MINUTE, timestamps, ColumnVectors.of(t, col).toArray(),
+                    ColumnVectors.of(actualResetTime, col).toArray(),
                     colType, doubleMaxFunction, bdMaxFunction);
         }
     }
@@ -221,9 +221,9 @@ public class TestEmMinMax extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOpSkip, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                final Class colType = DataAccessHelpers.getColumn(source, col).getType();
-                assertWithEmTicks(skipControl, 100, DataAccessHelpers.getColumn(source, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col).getDirect(),
+                final Class<?> colType = source.getDefinition().getColumn(col).getDataType();
+                assertWithEmTicks(skipControl, 100, ColumnVectors.of(source, col).toArray(),
+                        ColumnVectors.of(actual, col).toArray(),
                         colType, doubleMinFunction, bdMinFunction);
             });
             return source;
@@ -231,9 +231,9 @@ public class TestEmMinMax extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOpReset, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                final Class colType = DataAccessHelpers.getColumn(source, col).getType();
-                assertWithEmTicks(resetControl, 100, DataAccessHelpers.getColumn(source, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col).getDirect(),
+                final Class<?> colType = source.getDefinition().getColumn(col).getDataType();
+                assertWithEmTicks(resetControl, 100, ColumnVectors.of(source, col).toArray(),
+                        ColumnVectors.of(actual, col).toArray(),
                         colType, doubleMinFunction, bdMinFunction);
             });
             return source;
@@ -248,16 +248,16 @@ public class TestEmMinMax extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOpSkipTime, (source, actual) -> {
             final int sourceSize = source.intSize();
-            final Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(source, "ts").getDirect();
+            final Instant[] ts = ColumnVectors.ofObject(source, "ts", Instant.class).toArray();;
             final long[] timestamps = new long[sourceSize];
             for (int i = 0; i < sourceSize; i++) {
                 timestamps[i] = epochNanos(ts[i]);
             }
             Arrays.stream(columns).forEach(col -> {
-                final Class colType = DataAccessHelpers.getColumn(source, col).getType();
+                final Class<?> colType = source.getDefinition().getColumn(col).getDataType();
                 assertWithEmTime(skipControl, 10 * MINUTE, timestamps,
-                        DataAccessHelpers.getColumn(source, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col).getDirect(),
+                        ColumnVectors.of(source, col).toArray(),
+                        ColumnVectors.of(actual, col).toArray(),
                         colType, doubleMinFunction, bdMinFunction);
             });
             return source;
@@ -265,16 +265,16 @@ public class TestEmMinMax extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOpResetTime, (source, actual) -> {
             final int sourceSize = source.intSize();
-            final Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(source, "ts").getDirect();
+            final Instant[] ts = ColumnVectors.ofObject(source, "ts", Instant.class).toArray();;
             final long[] timestamps = new long[sourceSize];
             for (int i = 0; i < sourceSize; i++) {
                 timestamps[i] = epochNanos(ts[i]);
             }
             Arrays.stream(columns).forEach(col -> {
-                final Class colType = DataAccessHelpers.getColumn(source, col).getType();
+                final Class<?> colType = source.getDefinition().getColumn(col).getDataType();
                 assertWithEmTime(resetControl, 10 * MINUTE, timestamps,
-                        DataAccessHelpers.getColumn(source, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col).getDirect(),
+                        ColumnVectors.of(source, col).toArray(),
+                        ColumnVectors.of(actual, col).toArray(),
                         colType, doubleMinFunction, bdMinFunction);
             });
             return source;
@@ -291,9 +291,9 @@ public class TestEmMinMax extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOpSkip, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                final Class colType = DataAccessHelpers.getColumn(source, col).getType();
-                assertWithEmTicks(skipControl, 100, DataAccessHelpers.getColumn(source, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col).getDirect(),
+                final Class<?> colType = source.getDefinition().getColumn(col).getDataType();
+                assertWithEmTicks(skipControl, 100, ColumnVectors.of(source, col).toArray(),
+                        ColumnVectors.of(actual, col).toArray(),
                         colType, doubleMaxFunction, bdMaxFunction);
             });
             return source;
@@ -301,9 +301,9 @@ public class TestEmMinMax extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOpReset, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                final Class colType = DataAccessHelpers.getColumn(source, col).getType();
-                assertWithEmTicks(resetControl, 100, DataAccessHelpers.getColumn(source, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col).getDirect(),
+                final Class<?> colType = source.getDefinition().getColumn(col).getDataType();
+                assertWithEmTicks(resetControl, 100, ColumnVectors.of(source, col).toArray(),
+                        ColumnVectors.of(actual, col).toArray(),
                         colType, doubleMaxFunction, bdMaxFunction);
             });
             return source;
@@ -318,16 +318,16 @@ public class TestEmMinMax extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOpSkipTime, (source, actual) -> {
             final int sourceSize = source.intSize();
-            final Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(source, "ts").getDirect();
+            final Instant[] ts = ColumnVectors.ofObject(source, "ts", Instant.class).toArray();;
             final long[] timestamps = new long[sourceSize];
             for (int i = 0; i < sourceSize; i++) {
                 timestamps[i] = epochNanos(ts[i]);
             }
             Arrays.stream(columns).forEach(col -> {
-                final Class colType = DataAccessHelpers.getColumn(source, col).getType();
+                final Class<?> colType = source.getDefinition().getColumn(col).getDataType();
                 assertWithEmTime(skipControl, 10 * MINUTE, timestamps,
-                        DataAccessHelpers.getColumn(source, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col).getDirect(),
+                        ColumnVectors.of(source, col).toArray(),
+                        ColumnVectors.of(actual, col).toArray(),
                         colType, doubleMaxFunction, bdMaxFunction);
             });
             return source;
@@ -335,16 +335,16 @@ public class TestEmMinMax extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOpResetTime, (source, actual) -> {
             final int sourceSize = source.intSize();
-            final Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(source, "ts").getDirect();
+            final Instant[] ts = ColumnVectors.ofObject(source, "ts", Instant.class).toArray();;
             final long[] timestamps = new long[sourceSize];
             for (int i = 0; i < sourceSize; i++) {
                 timestamps[i] = epochNanos(ts[i]);
             }
             Arrays.stream(columns).forEach(col -> {
-                final Class colType = DataAccessHelpers.getColumn(source, col).getType();
+                final Class<?> colType = source.getDefinition().getColumn(col).getDataType();
                 assertWithEmTime(resetControl, 10 * MINUTE, timestamps,
-                        DataAccessHelpers.getColumn(source, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col).getDirect(),
+                        ColumnVectors.of(source, col).toArray(),
+                        ColumnVectors.of(actual, col).toArray(),
                         colType, doubleMaxFunction, bdMaxFunction);
             });
             return source;
@@ -511,10 +511,11 @@ public class TestEmMinMax extends BaseUpdateByTest {
     }
 
     private void testThrowsInternal(TableDefaults table) {
-        assertThrows(TableDataException.class,
+        assertThrows(
+                "Encountered negative delta time during EMS processing",
+                TableDataException.class,
                 () -> table.updateBy(UpdateByOperation.EmMin(
-                        OperationControl.builder().build(), "ts", 100)),
-                "Encountered negative delta time during EMS processing");
+                        OperationControl.builder().build(), "ts", 100)));
     }
 
     @Test
@@ -881,7 +882,7 @@ public class TestEmMinMax extends BaseUpdateByTest {
                 .onNullValue(BadDataBehavior.RESET)
                 .onNanValue(BadDataBehavior.RESET).build();
 
-        final Instant[] ts = (Instant[]) DataAccessHelpers.getColumn(t, "ts").getDirect();
+        final Instant[] ts = ColumnVectors.ofObject(t, "ts", Instant.class).toArray();
         final long[] timestamps = new long[t.intSize()];
         for (int i = 0; i < t.intSize(); i++) {
             timestamps[i] = epochNanos(ts[i]);
@@ -1176,7 +1177,7 @@ public class TestEmMinMax extends BaseUpdateByTest {
             final long ticks,
             @NotNull final Object expected,
             @NotNull final Object actual,
-            final Class type,
+            final Class<?> type,
             final BasePrimitiveEMOperator.EmFunction doubleFunction,
             final BaseBigNumberEMOperator.EmFunction bdFunction) {
         if (expected instanceof byte[]) {
@@ -1220,7 +1221,7 @@ public class TestEmMinMax extends BaseUpdateByTest {
             @NotNull final long[] timestamps,
             @NotNull final Object expected,
             @NotNull final Object actual,
-            final Class type,
+            final Class<?> type,
             final BasePrimitiveEMOperator.EmFunction doubleFunction,
             final BaseBigNumberEMOperator.EmFunction bdFunction) {
 

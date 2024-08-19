@@ -5,20 +5,9 @@ package io.deephaven.csv;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.Pair;
-import io.deephaven.chunk.ByteChunk;
-import io.deephaven.chunk.CharChunk;
-import io.deephaven.chunk.Chunk;
-import io.deephaven.chunk.DoubleChunk;
-import io.deephaven.chunk.FloatChunk;
-import io.deephaven.chunk.IntChunk;
-import io.deephaven.chunk.LongChunk;
-import io.deephaven.chunk.ObjectChunk;
-import io.deephaven.chunk.ShortChunk;
-import io.deephaven.chunk.WritableByteChunk;
-import io.deephaven.chunk.WritableChunk;
-import io.deephaven.chunk.WritableIntChunk;
-import io.deephaven.chunk.WritableLongChunk;
-import io.deephaven.chunk.WritableShortChunk;
+import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.csv.CsvSpecs.Builder;
 import io.deephaven.csv.reading.CsvReader;
@@ -28,38 +17,22 @@ import io.deephaven.csv.sinks.SinkFactory;
 import io.deephaven.csv.sinks.Source;
 import io.deephaven.csv.tokenization.Tokenizer.CustomTimeZoneParser;
 import io.deephaven.csv.util.CsvReaderException;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
-import io.deephaven.engine.table.ChunkSink;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.DataColumn;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.DataAccessHelpers;
-import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
-import io.deephaven.engine.table.impl.sources.BooleanArraySource;
-import io.deephaven.engine.table.impl.sources.ByteArraySource;
-import io.deephaven.engine.table.impl.sources.CharacterArraySource;
-import io.deephaven.engine.table.impl.sources.DoubleArraySource;
-import io.deephaven.engine.table.impl.sources.FloatArraySource;
-import io.deephaven.engine.table.impl.sources.InstantArraySource;
-import io.deephaven.engine.table.impl.sources.IntegerArraySource;
-import io.deephaven.engine.table.impl.sources.LongArraySource;
-import io.deephaven.engine.table.impl.sources.ObjectArraySource;
-import io.deephaven.engine.table.impl.sources.ShortArraySource;
+import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.util.PathUtil;
-import io.deephaven.engine.util.TableTools;
 import io.deephaven.io.streams.BzipFileOutputStream;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.BooleanUtils;
-import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ScriptApi;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedWriter;
@@ -86,6 +59,10 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
+
+import static io.deephaven.engine.util.TableTools.NULL_STRING;
+import static io.deephaven.util.QueryConstants.*;
 
 /**
  * Utilities for reading and writing CSV files to and from {@link Table}s
@@ -124,7 +101,6 @@ public class CsvTools {
      *
      * @param path the path
      * @return the table
-     * @throws IOException if an I/O exception occurs
      * @see #readCsv(String, CsvSpecs)
      */
     @ScriptApi
@@ -138,7 +114,6 @@ public class CsvTools {
      *
      * @param stream an InputStream providing access to the CSV data.
      * @return a Deephaven Table object
-     * @throws IOException if the InputStream cannot be read
      * @see #readCsv(InputStream, CsvSpecs)
      */
     @ScriptApi
@@ -151,7 +126,6 @@ public class CsvTools {
      *
      * @param url the url
      * @return the table
-     * @throws IOException if an I/O exception occurs
      * @see #readCsv(URL, CsvSpecs)
      */
     @ScriptApi
@@ -168,7 +142,6 @@ public class CsvTools {
      *
      * @param path the file path
      * @return the table
-     * @throws IOException if an I/O exception occurs
      * @see #readCsv(Path, CsvSpecs)
      */
     @ScriptApi
@@ -189,7 +162,6 @@ public class CsvTools {
      * @param path the path
      * @param specs the csv specs
      * @return the table
-     * @throws IOException if an I/O exception occurs
      * @see #readCsv(URL, CsvSpecs)
      * @see #readCsv(Path, CsvSpecs)
      */
@@ -238,7 +210,6 @@ public class CsvTools {
      * @param specs the csv specs
      * @return the table
      * @throws CsvReaderException If some CSV reading error occurs.
-     * @throws IOException if the URL cannot be opened.
      */
     @ScriptApi
     public static Table readCsv(URL url, CsvSpecs specs) throws CsvReaderException {
@@ -260,7 +231,6 @@ public class CsvTools {
      * @param specs the csv specs
      * @return the table
      * @throws CsvReaderException If some CSV reading error occurs.
-     * @throws IOException if an I/O exception occurs
      * @see PathUtil#open(Path)
      */
     @ScriptApi
@@ -328,7 +298,6 @@ public class CsvTools {
      * @param format an Apache Commons CSV format name to be used to parse the CSV, or a single non-newline character to
      *        use as a delimiter.
      * @return a Deephaven Table object
-     * @throws IOException if the InputStream cannot be read
      * @deprecated See {@link #readCsv(InputStream, CsvSpecs)}
      */
     @ScriptApi
@@ -348,7 +317,6 @@ public class CsvTools {
      * @param is an InputStream providing access to the CSV data.
      * @param separator a char to use as the delimiter value when parsing the file.
      * @return a Deephaven Table object
-     * @throws IOException if the InputStream cannot be read
      * @deprecated See {@link #readCsv(InputStream, CsvSpecs)}
      */
     @ScriptApi
@@ -558,7 +526,7 @@ public class CsvTools {
 
         if (columns.length == 0) {
             List<String> columnNames = sources[0].getDefinition().getColumnNames();
-            columns = columnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            columns = columnNames.toArray(String[]::new);
         }
 
         writeCsvHeader(out, fieldSeparator, columns);
@@ -672,11 +640,12 @@ public class CsvTools {
 
         if (columns == null || columns.length == 0) {
             List<String> columnNames = source.getDefinition().getColumnNames();
-            columns = columnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            columns = columnNames.toArray(String[]::new);
         }
 
         writeCsvHeader(out, separator, columns);
         writeCsvContents(source, out, timeZone, progress, nullsAsEmpty, separator, columns);
+        out.write(System.lineSeparator());
 
         out.close();
     }
@@ -703,12 +672,13 @@ public class CsvTools {
      */
     @ScriptApi
     public static void writeCsvHeader(Writer out, char separator, String... columns) throws IOException {
-        for (int i = 0; i < columns.length; i++) {
-            String column = columns[i];
-            if (i > 0) {
+        final String separatorStr = String.valueOf(separator);
+        for (int ci = 0; ci < columns.length; ci++) {
+            String column = columns[ci];
+            if (ci > 0) {
                 out.write(separator);
             }
-            out.write(column);
+            out.write(separatorCsvEscape(column, separatorStr));
         }
     }
 
@@ -872,12 +842,9 @@ public class CsvTools {
         if (colNames.length == 0) {
             return;
         }
-        final DataColumn[] cols = new DataColumn[colNames.length];
-        for (int c = 0; c < colNames.length; ++c) {
-            cols[c] = DataAccessHelpers.getColumn(source, colNames[c]);
-        }
-        final long size = cols[0].size();
-        writeCsvContentsSeq(out, timeZone, cols, size, nullsAsEmpty, separator, progress);
+        final ColumnSource<?>[] cols =
+                Arrays.stream(colNames).map(source::getColumnSource).toArray(ColumnSource[]::new);
+        writeCsvContentsSeq(out, timeZone, source.getRowSet(), cols, nullsAsEmpty, separator, progress);
     }
 
     /**
@@ -897,12 +864,12 @@ public class CsvTools {
     }
 
     /**
-     * Writes an array of Deephaven DataColumns out as a CSV file.
+     * Writes Deephaven columns out as a CSV file.
      *
      * @param out a Writer to which the header should be written
      * @param timeZone a time zone constant relative to which date time data should be adjusted
-     * @param cols an array of Deephaven DataColumns to be written
-     * @param size the size of the DataColumns
+     * @param rows a RowSet containing the row keys to be written
+     * @param cols an array of ColumnSources to be written
      * @param nullsAsEmpty if nulls should be written as blank instead of '(null)'
      * @param separator the delimiter for the CSV
      * @param progress a procedure that implements BiConsumer, and takes a progress Integer and a total size Integer to
@@ -912,37 +879,326 @@ public class CsvTools {
     private static void writeCsvContentsSeq(
             final Writer out,
             final ZoneId timeZone,
-            final DataColumn[] cols,
-            final long size,
+            final RowSet rows,
+            final ColumnSource<?>[] cols,
             final boolean nullsAsEmpty,
             final char separator,
             @Nullable final BiConsumer<Long, Long> progress) throws IOException {
+        if (rows.isEmpty()) {
+            return;
+        }
         try (final SafeCloseable ignored =
-                QueryPerformanceRecorder.getInstance().getNugget("CsvTools.writeCsvContentsSeq()")) {
-            String separatorStr = String.valueOf(separator);
-            for (long i = 0; i < size; i++) {
-                for (int j = 0; j < cols.length; j++) {
-                    if (j > 0) {
-                        out.write(separatorStr);
-                    } else {
-                        out.write("\n");
+                QueryPerformanceRecorder.getInstance().getNugget("CsvTools.writeCsvContentsSeq()");
+                final CsvRowFormatter formatter = new CsvRowFormatter(timeZone, nullsAsEmpty,
+                        String.valueOf(separator), System.lineSeparator(), cols)) {
+            formatter.writeRows(out, rows, progress);
+        }
+    }
+
+    private static final class CsvRowFormatter implements Context {
+
+        private static final int CHUNK_CAPACITY = ArrayBackedColumnSource.BLOCK_SIZE;
+
+        private final ZoneId timeZone;
+        private final String separator;
+        private final String lineSeparator;
+        private final String nullValue;
+        private final SharedContext sharedContext;
+        private final ColumnFormatter<?>[] columnFormatters;
+
+        private CsvRowFormatter(
+                @NotNull final ZoneId timeZone,
+                final boolean nullsAsEmpty,
+                final String separator,
+                final String lineSeparator,
+                @NotNull final ColumnSource<?>... columns) {
+            this.timeZone = timeZone;
+            this.separator = separator;
+            this.lineSeparator = lineSeparator;
+            nullValue = separatorCsvEscape(nullsAsEmpty ? "" : NULL_STRING, separator);
+            sharedContext = columns.length > 1 ? SharedContext.makeSharedContext() : null;
+            columnFormatters = Arrays.stream(columns).map(this::makeColumnFormatter).toArray(ColumnFormatter[]::new);
+        }
+
+        private synchronized void writeRows(
+                @NotNull final Writer writer,
+                @NotNull final RowSequence rows,
+                @Nullable final BiConsumer<Long, Long> progress) throws IOException {
+            final long totalSize = rows.size();
+            long rowsWritten = 0;
+            try (final RowSequence.Iterator rowsIterator = rows.getRowSequenceIterator()) {
+                while (rowsIterator.hasMore()) {
+                    final RowSequence sliceRows = rowsIterator.getNextRowSequenceWithLength(CHUNK_CAPACITY);
+                    final int sliceSize = sliceRows.intSize();
+                    for (final ColumnFormatter<?> columnFormatter : columnFormatters) {
+                        columnFormatter.fill(sliceRows);
                     }
-                    final Object o = cols[j].get(i);
-                    if (o instanceof String) {
-                        out.write("" + separatorCsvEscape((String) o, separatorStr));
-                    } else if (o instanceof Instant) {
-                        final ZonedDateTime zdt = ZonedDateTime.ofInstant((Instant) o, timeZone);
-                        out.write(separatorCsvEscape(
-                                zdt.toLocalDateTime().toString() + zdt.getOffset().toString(), separatorStr));
-                    } else {
-                        out.write(nullsAsEmpty
-                                ? separatorCsvEscape(o == null ? "" : o.toString(), separatorStr)
-                                : separatorCsvEscape(TableTools.nullToNullString(o), separatorStr));
+                    for (int sri = 0; sri < sliceSize; ++sri) {
+                        for (int ci = 0; ci < columnFormatters.length; ++ci) {
+                            if (ci == 0) {
+                                // Writing our line separator at the beginning, rather than the end, seems like an
+                                // unusual choice, but the code has behaved this way for some time. Maybe related to
+                                // the multi-table writing functionality and `tableSeparator`?
+                                writer.write(lineSeparator);
+                            } else {
+                                writer.write(separator);
+                            }
+                            columnFormatters[ci].write(writer, sri);
+                        }
+                    }
+                    if (sharedContext != null) {
+                        sharedContext.reset();
+                    }
+                    if (progress != null) {
+                        progress.accept(rowsWritten += sliceSize, totalSize);
                     }
                 }
-                if (progress != null) {
-                    progress.accept(i, size);
+            }
+        }
+
+        @Override
+        public void close() {
+            SafeCloseable.closeAll(Stream.concat(Stream.of(sharedContext), Arrays.stream(columnFormatters)));
+        }
+
+        private ColumnFormatter<?> makeColumnFormatter(@NotNull final ColumnSource<?> source) {
+            final Class<?> type = source.getType();
+            if (type == char.class || type == Character.class) {
+                Assert.eq(source.getChunkType(), "source.getChunkType()", ChunkType.Char, "ChunkType.Char");
+                return new CharColumnFormatter(source);
+            }
+            if (type == byte.class || type == Byte.class) {
+                Assert.eq(source.getChunkType(), "source.getChunkType()", ChunkType.Byte, "ChunkType.Byte");
+                return new ByteColumnFormatter(source);
+            }
+            if (type == short.class || type == Short.class) {
+                Assert.eq(source.getChunkType(), "source.getChunkType()", ChunkType.Short, "ChunkType.Short");
+                return new ShortColumnFormatter(source);
+            }
+            if (type == int.class || type == Integer.class) {
+                Assert.eq(source.getChunkType(), "source.getChunkType()", ChunkType.Int, "ChunkType.Int");
+                return new IntColumnFormatter(source);
+            }
+            if (type == long.class || type == Long.class) {
+                Assert.eq(source.getChunkType(), "source.getChunkType()", ChunkType.Long, "ChunkType.Long");
+                return new LongColumnFormatter(source);
+            }
+            if (type == float.class || type == Float.class) {
+                Assert.eq(source.getChunkType(), "source.getChunkType()", ChunkType.Float, "ChunkType.Float");
+                return new FloatColumnFormatter(source);
+            }
+            if (type == double.class || type == Double.class) {
+                Assert.eq(source.getChunkType(), "source.getChunkType()", ChunkType.Double, "ChunkType.Double");
+                return new DoubleColumnFormatter(source);
+            }
+            Assert.eq(source.getChunkType(), "source.getChunkType()", ChunkType.Object, "ChunkType.Object");
+            if (type == Instant.class) {
+                return new InstantColumnFormatter(source);
+            }
+            if (type == ZonedDateTime.class) {
+                return new ZonedDateTimeColumnFormatter(source);
+            }
+            return new ObjectColumnFormatter(source);
+        }
+
+        private abstract class ColumnFormatter<CHUNK_CLASS extends Chunk<? extends Any>> implements Context {
+
+            private final ChunkSource<? extends Any> source;
+            private final ChunkSource.GetContext getContext;
+
+            CHUNK_CLASS values;
+
+            private ColumnFormatter(@NotNull final ChunkSource<? extends Any> source) {
+                this.source = source;
+                this.getContext = source.makeGetContext(CHUNK_CAPACITY, sharedContext);
+            }
+
+            @Override
+            public void close() {
+                getContext.close();
+            }
+
+            private void fill(@NotNull final RowSequence rows) {
+                // noinspection unchecked
+                values = (CHUNK_CLASS) source.getChunk(getContext, rows);
+            }
+
+            abstract void write(@NotNull Writer writer, int offset) throws IOException;
+
+            void writeNull(@NotNull final Writer writer) throws IOException {
+                writer.write(nullValue);
+            }
+        }
+
+        private final class CharColumnFormatter extends ColumnFormatter<CharChunk<? extends Any>> {
+
+            private CharColumnFormatter(@NotNull final ChunkSource<? extends Any> source) {
+                super(source);
+            }
+
+            @Override
+            void write(@NotNull final Writer writer, final int offset) throws IOException {
+                final char value = values.get(offset);
+                if (value == NULL_CHAR) {
+                    writeNull(writer);
+                    return;
                 }
+                writer.write(separatorCsvEscape(String.valueOf(value), separator));
+            }
+        }
+
+        private final class ByteColumnFormatter extends ColumnFormatter<ByteChunk<? extends Any>> {
+
+            private ByteColumnFormatter(@NotNull final ChunkSource<? extends Any> source) {
+                super(source);
+            }
+
+            @Override
+            void write(@NotNull final Writer writer, final int offset) throws IOException {
+                final byte value = values.get(offset);
+                if (value == NULL_BYTE) {
+                    writeNull(writer);
+                    return;
+                }
+                writer.write(separatorCsvEscape(Byte.toString(value), separator));
+            }
+        }
+
+        private final class ShortColumnFormatter extends ColumnFormatter<ShortChunk<? extends Any>> {
+
+            private ShortColumnFormatter(@NotNull final ChunkSource<? extends Any> source) {
+                super(source);
+            }
+
+            @Override
+            void write(@NotNull final Writer writer, final int offset) throws IOException {
+                final short value = values.get(offset);
+                if (value == NULL_SHORT) {
+                    writeNull(writer);
+                    return;
+                }
+                writer.write(separatorCsvEscape(Short.toString(value), separator));
+            }
+        }
+
+        private final class IntColumnFormatter extends ColumnFormatter<IntChunk<? extends Any>> {
+
+            private IntColumnFormatter(@NotNull final ChunkSource<? extends Any> source) {
+                super(source);
+            }
+
+            @Override
+            void write(@NotNull final Writer writer, final int offset) throws IOException {
+                final int value = values.get(offset);
+                if (value == NULL_INT) {
+                    writeNull(writer);
+                    return;
+                }
+                writer.write(separatorCsvEscape(Integer.toString(value), separator));
+            }
+        }
+
+        private final class LongColumnFormatter extends ColumnFormatter<LongChunk<? extends Any>> {
+
+            private LongColumnFormatter(@NotNull final ChunkSource<? extends Any> source) {
+                super(source);
+            }
+
+            @Override
+            void write(@NotNull final Writer writer, final int offset) throws IOException {
+                final long value = values.get(offset);
+                if (value == NULL_LONG) {
+                    writeNull(writer);
+                    return;
+                }
+                writer.write(separatorCsvEscape(Long.toString(value), separator));
+            }
+        }
+
+        private final class FloatColumnFormatter extends ColumnFormatter<FloatChunk<? extends Any>> {
+
+            private FloatColumnFormatter(@NotNull final ChunkSource<? extends Any> source) {
+                super(source);
+            }
+
+            @Override
+            void write(@NotNull final Writer writer, final int offset) throws IOException {
+                final float value = values.get(offset);
+                if (value == NULL_FLOAT) {
+                    writeNull(writer);
+                    return;
+                }
+                writer.write(separatorCsvEscape(Float.toString(value), separator));
+            }
+        }
+
+        private final class DoubleColumnFormatter extends ColumnFormatter<DoubleChunk<? extends Any>> {
+
+            private DoubleColumnFormatter(@NotNull final ChunkSource<? extends Any> source) {
+                super(source);
+            }
+
+            @Override
+            void write(@NotNull final Writer writer, final int offset) throws IOException {
+                final double value = values.get(offset);
+                if (value == NULL_DOUBLE) {
+                    writeNull(writer);
+                    return;
+                }
+                writer.write(separatorCsvEscape(Double.toString(value), separator));
+            }
+        }
+
+        private final class ObjectColumnFormatter extends ColumnFormatter<ObjectChunk<?, ? extends Any>> {
+
+            private ObjectColumnFormatter(@NotNull final ChunkSource<? extends Any> source) {
+                super(source);
+            }
+
+            @Override
+            void write(@NotNull final Writer writer, final int offset) throws IOException {
+                final Object value = values.get(offset);
+                if (value == null) {
+                    writeNull(writer);
+                    return;
+                }
+                writer.write(separatorCsvEscape(value.toString(), separator));
+            }
+        }
+
+        private final class InstantColumnFormatter extends ColumnFormatter<ObjectChunk<Instant, ? extends Any>> {
+
+            private InstantColumnFormatter(@NotNull final ChunkSource<? extends Any> source) {
+                super(source);
+            }
+
+            @Override
+            void write(@NotNull final Writer writer, final int offset) throws IOException {
+                final Instant value = values.get(offset);
+                if (value == null) {
+                    writeNull(writer);
+                    return;
+                }
+                final ZonedDateTime zdt = ZonedDateTime.ofInstant(value, timeZone);
+                writer.write(separatorCsvEscape(zdt.toLocalDateTime().toString() + zdt.getOffset(), separator));
+            }
+        }
+
+        private final class ZonedDateTimeColumnFormatter
+                extends ColumnFormatter<ObjectChunk<ZonedDateTime, ? extends Any>> {
+
+            private ZonedDateTimeColumnFormatter(@NotNull final ChunkSource<? extends Any> source) {
+                super(source);
+            }
+
+            @Override
+            void write(@NotNull final Writer writer, final int offset) throws IOException {
+                final ZonedDateTime value = values.get(offset);
+                if (value == null) {
+                    writeNull(writer);
+                    return;
+                }
+                writer.write(separatorCsvEscape(value.toLocalDateTime().toString() + value.getOffset(), separator));
             }
         }
     }
@@ -1055,7 +1311,7 @@ public class CsvTools {
         protected void nullFlagsToValues(final char[] values, final boolean[] isNull, final int size) {
             for (int ii = 0; ii < size; ++ii) {
                 if (isNull[ii]) {
-                    values[ii] = QueryConstants.NULL_CHAR;
+                    values[ii] = NULL_CHAR;
                 }
             }
         }
@@ -1085,7 +1341,7 @@ public class CsvTools {
         protected void nullFlagsToValues(final byte[] values, final boolean[] isNull, final int size) {
             for (int ii = 0; ii != size; ++ii) {
                 if (isNull[ii]) {
-                    values[ii] = QueryConstants.NULL_BYTE;
+                    values[ii] = NULL_BYTE;
                 }
             }
         }
@@ -1093,7 +1349,7 @@ public class CsvTools {
         @Override
         protected void valuesToNullFlags(final byte[] values, final boolean[] isNull, final int size) {
             for (int ii = 0; ii < size; ++ii) {
-                isNull[ii] = values[ii] == QueryConstants.NULL_BYTE;
+                isNull[ii] = values[ii] == NULL_BYTE;
             }
         }
     }
@@ -1107,7 +1363,7 @@ public class CsvTools {
         protected void nullFlagsToValues(final short[] values, final boolean[] isNull, final int size) {
             for (int ii = 0; ii != size; ++ii) {
                 if (isNull[ii]) {
-                    values[ii] = QueryConstants.NULL_SHORT;
+                    values[ii] = NULL_SHORT;
                 }
             }
         }
@@ -1115,7 +1371,7 @@ public class CsvTools {
         @Override
         protected void valuesToNullFlags(final short[] values, final boolean[] isNull, final int size) {
             for (int ii = 0; ii < size; ++ii) {
-                isNull[ii] = values[ii] == QueryConstants.NULL_SHORT;
+                isNull[ii] = values[ii] == NULL_SHORT;
             }
         }
     }
@@ -1129,7 +1385,7 @@ public class CsvTools {
         protected void nullFlagsToValues(final int[] values, final boolean[] isNull, final int size) {
             for (int ii = 0; ii != size; ++ii) {
                 if (isNull[ii]) {
-                    values[ii] = QueryConstants.NULL_INT;
+                    values[ii] = NULL_INT;
                 }
             }
         }
@@ -1137,7 +1393,7 @@ public class CsvTools {
         @Override
         protected void valuesToNullFlags(final int[] values, final boolean[] isNull, final int size) {
             for (int ii = 0; ii < size; ++ii) {
-                isNull[ii] = values[ii] == QueryConstants.NULL_INT;
+                isNull[ii] = values[ii] == NULL_INT;
             }
         }
     }
@@ -1151,7 +1407,7 @@ public class CsvTools {
         protected void nullFlagsToValues(final long[] values, final boolean[] isNull, final int size) {
             for (int ii = 0; ii != size; ++ii) {
                 if (isNull[ii]) {
-                    values[ii] = QueryConstants.NULL_LONG;
+                    values[ii] = NULL_LONG;
                 }
             }
         }
@@ -1159,7 +1415,7 @@ public class CsvTools {
         @Override
         protected void valuesToNullFlags(final long[] values, final boolean[] isNull, final int size) {
             for (int ii = 0; ii < size; ++ii) {
-                isNull[ii] = values[ii] == QueryConstants.NULL_LONG;
+                isNull[ii] = values[ii] == NULL_LONG;
             }
         }
 
@@ -1174,7 +1430,7 @@ public class CsvTools {
         protected void nullFlagsToValues(final float[] values, final boolean[] isNull, final int size) {
             for (int ii = 0; ii != size; ++ii) {
                 if (isNull[ii]) {
-                    values[ii] = QueryConstants.NULL_FLOAT;
+                    values[ii] = NULL_FLOAT;
                 }
             }
         }
@@ -1189,7 +1445,7 @@ public class CsvTools {
         protected void nullFlagsToValues(final double[] values, final boolean[] isNull, final int size) {
             for (int ii = 0; ii != size; ++ii) {
                 if (isNull[ii]) {
-                    values[ii] = QueryConstants.NULL_DOUBLE;
+                    values[ii] = NULL_DOUBLE;
                 }
             }
         }
@@ -1219,7 +1475,7 @@ public class CsvTools {
         protected void nullFlagsToValues(final long[] values, final boolean[] isNull, final int size) {
             for (int ii = 0; ii != size; ++ii) {
                 if (isNull[ii]) {
-                    values[ii] = QueryConstants.NULL_LONG;
+                    values[ii] = NULL_LONG;
                 }
             }
         }
@@ -1227,16 +1483,16 @@ public class CsvTools {
 
     private static SinkFactory makeMySinkFactory() {
         return SinkFactory.of(
-                MyByteSink::new, QueryConstants.NULL_BYTE_BOXED,
-                MyShortSink::new, QueryConstants.NULL_SHORT_BOXED,
-                MyIntSink::new, QueryConstants.NULL_INT_BOXED,
-                MyLongSink::new, QueryConstants.NULL_LONG_BOXED,
-                MyFloatSink::new, QueryConstants.NULL_FLOAT_BOXED,
-                MyDoubleSink::new, QueryConstants.NULL_DOUBLE_BOXED,
+                MyByteSink::new, NULL_BYTE_BOXED,
+                MyShortSink::new, NULL_SHORT_BOXED,
+                MyIntSink::new, NULL_INT_BOXED,
+                MyLongSink::new, NULL_LONG_BOXED,
+                MyFloatSink::new, NULL_FLOAT_BOXED,
+                MyDoubleSink::new, NULL_DOUBLE_BOXED,
                 MyBooleanAsByteSink::new,
-                MyCharSink::new, QueryConstants.NULL_CHAR,
+                MyCharSink::new, NULL_CHAR,
                 MyStringSink::new, null,
-                MyInstantAsLongSink::new, QueryConstants.NULL_LONG,
-                MyInstantAsLongSink::new, QueryConstants.NULL_LONG);
+                MyInstantAsLongSink::new, NULL_LONG,
+                MyInstantAsLongSink::new, NULL_LONG);
     }
 }

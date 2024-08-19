@@ -56,7 +56,7 @@ setup(
     keywords='Deephaven Development',
     python_requires='>=3.8',
     install_requires=[
-        'jpy>=0.15.0',
+        'jpy>=0.18.0',
         'deephaven-plugin>=0.6.0',
         'numpy',
         'pandas>=1.5.0',
@@ -68,7 +68,7 @@ setup(
         'numba; python_version < "3.13"',
     ],
     extras_require={
-        "autocomplete": ["jedi==0.18.2"],
+        "autocomplete": ["jedi==0.19.1"],
     },
     entry_points={
         'deephaven.plugin': ['registration_cls = deephaven.pandasplugin:PandasPluginRegistration']

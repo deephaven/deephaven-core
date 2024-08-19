@@ -10,8 +10,8 @@ package io.deephaven.engine.table.impl.by;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.chunk.IntChunk;
+import io.deephaven.util.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableDouble;
-import org.apache.commons.lang3.mutable.MutableInt;
 
 public class SumIntChunk {
     private SumIntChunk() {} // static use only

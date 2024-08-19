@@ -6,12 +6,13 @@ plugins {
 dependencies {
 
     implementation project(':Base')
-    implementation depTrove3
-    compileOnlyApi depAnnotations
-    implementation depCommonsLang3
+    implementation libs.trove
+    compileOnlyApi libs.jetbrains.annotations
+    implementation libs.commons.lang3
 
-    api 'io.deephaven:hash:0.1.0'
+    api libs.deephaven.hash
 
-    Classpaths.inheritJUnitClassic(project, 'implementation')
-    Classpaths.inheritJMock(project, 'implementation')
+    api libs.junit4
+    api libs.jmock.junit4
+    api libs.jmock.imposters
 }

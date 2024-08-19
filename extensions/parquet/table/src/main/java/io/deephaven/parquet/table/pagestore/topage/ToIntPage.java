@@ -5,25 +5,62 @@ package io.deephaven.parquet.table.pagestore.topage;
 
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Any;
+import io.deephaven.parquet.base.PageMaterializerFactory;
+import io.deephaven.parquet.base.materializers.IntFromBooleanMaterializer;
+import io.deephaven.parquet.base.materializers.IntFromUnsignedByteMaterializer;
+import io.deephaven.parquet.base.materializers.IntFromUnsignedShortMaterializer;
+import io.deephaven.parquet.base.materializers.IntMaterializer;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_INT_BOXED;
 
 public class ToIntPage<ATTR extends Any> implements ToPage<ATTR, int[]> {
 
-    private static final ToIntPage INSTANCE = new ToIntPage<>();
-
     public static <ATTR extends Any> ToIntPage<ATTR> create(Class<?> nativeType) {
-        if (nativeType == null || int.class.equals(nativeType)) {
-            // noinspection unchecked
-            return INSTANCE;
-        }
+        verifyNativeType(nativeType);
+        // noinspection unchecked
+        return FROM_INT;
+    }
 
+    public static <ATTR extends Any> ToIntPage<ATTR> createFromUnsignedShort(final Class<?> nativeType) {
+        verifyNativeType(nativeType);
+        // noinspection unchecked
+        return FROM_UNSIGNED_SHORT;
+    }
+
+    public static <ATTR extends Any> ToIntPage<ATTR> createFromUnsignedByte(final Class<?> nativeType) {
+        verifyNativeType(nativeType);
+        // noinspection unchecked
+        return FROM_UNSIGNED_BYTE;
+    }
+
+    public static <ARRT extends Any> ToIntPage<ARRT> createFromBoolean(final Class<?> nativeType) {
+        verifyNativeType(nativeType);
+        // noinspection unchecked
+        return FROM_BOOLEAN;
+    }
+
+    @SuppressWarnings("rawtypes")
+    private static final ToIntPage FROM_INT = new ToIntPage<>(IntMaterializer.FACTORY);
+    @SuppressWarnings("rawtypes")
+    private static final ToIntPage FROM_UNSIGNED_SHORT = new ToIntPage<>(IntFromUnsignedShortMaterializer.FACTORY);
+    @SuppressWarnings("rawtypes")
+    private static final ToIntPage FROM_UNSIGNED_BYTE = new ToIntPage<>(IntFromUnsignedByteMaterializer.FACTORY);
+    @SuppressWarnings("rawtypes")
+    private static final ToIntPage FROM_BOOLEAN = new ToIntPage<>(IntFromBooleanMaterializer.FACTORY);
+
+    private static void verifyNativeType(final Class<?> nativeType) {
+        if (nativeType == null || int.class.equals(nativeType)) {
+            return;
+        }
         throw new IllegalArgumentException("The native type for a Int column is " + nativeType.getCanonicalName());
     }
 
-    @SuppressWarnings("WeakerAccess")
-    ToIntPage() {}
+    private final PageMaterializerFactory pageMaterializerFactory;
+
+    private ToIntPage(@NotNull final PageMaterializerFactory pageMaterializerFactory) {
+        this.pageMaterializerFactory = pageMaterializerFactory;
+    }
 
     @Override
     @NotNull
@@ -41,5 +78,11 @@ public class ToIntPage<ATTR extends Any> implements ToPage<ATTR, int[]> {
     @NotNull
     public final Object nullValue() {
         return NULL_INT_BOXED;
+    }
+
+    @Override
+    @NotNull
+    public final PageMaterializerFactory getPageMaterializerFactory() {
+        return pageMaterializerFactory;
     }
 }

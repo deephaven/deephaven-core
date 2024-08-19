@@ -10,19 +10,18 @@ import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.hashing.ChunkEquals;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.rowset.RowKeyRangeShiftCallback;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
-import io.deephaven.engine.table.impl.util.ShiftData;
+import io.deephaven.engine.rowset.RowSetShiftCallback;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
 import io.deephaven.vector.*;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -219,8 +218,7 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
                 return;
             }
 
-            final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
-            resultTable.notifyListeners(downstream);
+            resultTable.notifyListeners(upstream.acquire());
         }
     }
 
@@ -327,7 +325,7 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
         columnInfos = ciBuilder.toArray(new ColumnInfo[0]);
     }
 
-    private class ColumnInfo implements RowSetShiftData.Callback, SafeCloseable {
+    private class ColumnInfo implements RowKeyRangeShiftCallback, SafeCloseable {
         final String name;
         final boolean isPrimitive;
         final ModifiedColumnSet modifiedColumnSet;
@@ -353,7 +351,7 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
             this.isPrimitive = source.getType().isPrimitive();
             this.expectedSource =
                     SparseArrayColumnSource.getSparseMemoryColumnSource(source.getType(), source.getComponentType());
-            Assert.eqTrue(this.expectedSource instanceof ShiftData.RowSetShiftCallback,
+            Assert.eqTrue(this.expectedSource instanceof RowSetShiftCallback,
                     "expectedSource instanceof ShiftData.RowSetShiftCallback");
 
             this.chunkEquals = ChunkEquals.makeEqual(source.getChunkType());
@@ -403,8 +401,7 @@ public class TableUpdateValidator implements QueryTable.Operation<QueryTable> {
 
         @Override
         public void shift(final long beginRange, final long endRange, final long shiftDelta) {
-            ((ShiftData.RowSetShiftCallback) expectedSource).shift(
-                    rowSet.subSetByKeyRange(beginRange, endRange), shiftDelta);
+            ((RowSetShiftCallback) expectedSource).shift(rowSet.subSetByKeyRange(beginRange, endRange), shiftDelta);
         }
 
         public void remove(final RowSet toRemove) {

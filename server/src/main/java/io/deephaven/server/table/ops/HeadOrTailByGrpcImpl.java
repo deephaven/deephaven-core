@@ -6,7 +6,6 @@ package io.deephaven.server.table.ops;
 import com.google.rpc.Code;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
@@ -55,7 +54,7 @@ public abstract class HeadOrTailByGrpcImpl extends GrpcTableOperation<HeadOrTail
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
         final Table parent = sourceTables.get(0).get();
         final String[] columnSpecs =
-                request.getGroupByColumnSpecsList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+                request.getGroupByColumnSpecsList().toArray(String[]::new);
         final SelectColumn[] expressions = SelectColumnFactory.getExpressions(columnSpecs);
 
         // note: we don't use the output from validateColumnExpressions because the headBy/tailBy

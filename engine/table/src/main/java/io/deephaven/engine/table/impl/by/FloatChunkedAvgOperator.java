@@ -10,7 +10,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.DoubleArraySource;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -18,6 +18,7 @@ import java.util.Map;
 
 import static io.deephaven.engine.table.impl.by.RollupConstants.*;
 import static io.deephaven.engine.util.NullSafeAddition.plusDouble;
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 class FloatChunkedAvgOperator extends FpChunkedNonNormalCounter implements IterativeChunkedAggregationOperator {
     private final String name;
@@ -78,13 +79,13 @@ class FloatChunkedAvgOperator extends FpChunkedNonNormalCounter implements Itera
         final double sum = SumFloatChunk.sumFloatChunk(values, chunkStart, chunkSize, chunkNormalCount, chunkNanCount,
                 chunkInfinityCount, chunkMinusInfinityCount);
 
-        final long totalNormal = nonNullCounter.addNonNullUnsafe(destination, chunkNormalCount.intValue());
-        final long totalNanCount = updateNanCount(destination, chunkNanCount.intValue());
-        final long totalPositiveInfinityCount = updatePositiveInfinityCount(destination, chunkInfinityCount.intValue());
+        final long totalNormal = nonNullCounter.addNonNullUnsafe(destination, chunkNormalCount.get());
+        final long totalNanCount = updateNanCount(destination, chunkNanCount.get());
+        final long totalPositiveInfinityCount = updatePositiveInfinityCount(destination, chunkInfinityCount.get());
         final long totalNegativeInfinityCount =
-                updateNegativeInfinityCount(destination, chunkMinusInfinityCount.intValue());
+                updateNegativeInfinityCount(destination, chunkMinusInfinityCount.get());
 
-        if (chunkNormalCount.intValue() > 0) {
+        if (chunkNormalCount.get() > 0) {
             final double newSum = plusDouble(runningSum.getUnsafe(destination), sum);
             runningSum.set(destination, newSum);
             updateResultWithNewSum(destination, totalNormal, totalNanCount, totalPositiveInfinityCount,
@@ -104,20 +105,20 @@ class FloatChunkedAvgOperator extends FpChunkedNonNormalCounter implements Itera
 
         final double sum = SumFloatChunk.sumFloatChunk(values, chunkStart, chunkSize, chunkNormalCount, chunkNanCount,
                 chunkInfinityCount, chunkMinusInfinityCount);
-        if (chunkNormalCount.intValue() == 0 && chunkNanCount.intValue() == 0 && chunkInfinityCount.intValue() == 0
-                && chunkMinusInfinityCount.intValue() == 0) {
+        if (chunkNormalCount.get() == 0 && chunkNanCount.get() == 0 && chunkInfinityCount.get() == 0
+                && chunkMinusInfinityCount.get() == 0) {
             return false;
         }
 
-        final long totalNormal = nonNullCounter.addNonNull(destination, -chunkNormalCount.intValue());
-        final long totalNanCount = updateNanCount(destination, -chunkNanCount.intValue());
+        final long totalNormal = nonNullCounter.addNonNull(destination, -chunkNormalCount.get());
+        final long totalNanCount = updateNanCount(destination, -chunkNanCount.get());
         final long totalPositiveInfinityCount =
-                updatePositiveInfinityCount(destination, -chunkInfinityCount.intValue());
+                updatePositiveInfinityCount(destination, -chunkInfinityCount.get());
         final long totalNegativeInfinityCount =
-                updateNegativeInfinityCount(destination, -chunkMinusInfinityCount.intValue());
+                updateNegativeInfinityCount(destination, -chunkMinusInfinityCount.get());
 
         final double newSum;
-        if (chunkNormalCount.intValue() > 0) {
+        if (chunkNormalCount.get() > 0) {
             newSum = plusDouble(runningSum.getUnsafe(destination), -sum);
             runningSum.set(destination, newSum);
             updateResultWithNewSum(destination, totalNormal, totalNanCount, totalPositiveInfinityCount,
@@ -137,6 +138,8 @@ class FloatChunkedAvgOperator extends FpChunkedNonNormalCounter implements Itera
             resultColumn.set(destination, Double.POSITIVE_INFINITY);
         } else if (totalNegativeInfinityCount > 0) {
             resultColumn.set(destination, Double.NEGATIVE_INFINITY);
+        } else if (totalNormal == 0) {
+            resultColumn.set(destination, NULL_DOUBLE);
         } else {
             resultColumn.set(destination, newSum / totalNormal);
         }
@@ -144,12 +147,14 @@ class FloatChunkedAvgOperator extends FpChunkedNonNormalCounter implements Itera
 
     private void updateResultSumUnchanged(long destination, long totalNormal, long totalNanCount,
             long totalInfinityCount, long totalNegativeInfinityCount) {
-        if (totalNanCount > 0 || totalNormal == 0 || (totalInfinityCount > 0 && totalNegativeInfinityCount > 0)) {
+        if (totalNanCount > 0 || (totalInfinityCount > 0 && totalNegativeInfinityCount > 0)) {
             resultColumn.set(destination, Double.NaN);
         } else if (totalInfinityCount > 0) {
             resultColumn.set(destination, Double.POSITIVE_INFINITY);
         } else if (totalNegativeInfinityCount > 0) {
             resultColumn.set(destination, Double.NEGATIVE_INFINITY);
+        } else if (totalNormal == 0) {
+            resultColumn.set(destination, NULL_DOUBLE);
         } else {
             resultColumn.set(destination, runningSum.getUnsafe(destination) / totalNormal);
         }

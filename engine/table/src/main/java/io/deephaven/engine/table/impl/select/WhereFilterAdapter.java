@@ -241,17 +241,40 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
                 this.lhs = Objects.requireNonNull(lhs);
             }
 
-            private WhereFilter matchOrRange(Object rhs) {
+            // The String vs non-String cases are separated out, as it's necessary in the RangeFilter case to
+            // wrap String literals with quotes (as that's what RangeFilter expects wrt parsing). MatchFilter
+            // allows us to pass in the already parsed Object (otherwise, if we were passing strValues we would need to
+            // wrap them)
+
+            private WhereFilter matchOrRange(Object rhsLiteral) {
+                // TODO(deephaven-core#3730): More efficient io.deephaven.api.filter.FilterComparison to RangeFilter
                 switch (preferred.operator()) {
                     case EQUALS:
-                        return new MatchFilter(lhs.name(), rhs);
+                        return new MatchFilter(MatchType.Regular, lhs.name(), rhsLiteral);
                     case NOT_EQUALS:
-                        return new MatchFilter(MatchType.Inverted, lhs.name(), rhs);
+                        return new MatchFilter(MatchType.Inverted, lhs.name(), rhsLiteral);
                     case LESS_THAN:
                     case LESS_THAN_OR_EQUAL:
                     case GREATER_THAN:
                     case GREATER_THAN_OR_EQUAL:
-                        return range(rhs.toString());
+                        return range(rhsLiteral);
+                    default:
+                        throw new IllegalStateException("Unexpected operator " + original.operator());
+                }
+            }
+
+            private WhereFilter matchOrRange(String rhsLiteral) {
+                // TODO(deephaven-core#3730): More efficient io.deephaven.api.filter.FilterComparison to RangeFilter
+                switch (preferred.operator()) {
+                    case EQUALS:
+                        return new MatchFilter(MatchType.Regular, lhs.name(), rhsLiteral);
+                    case NOT_EQUALS:
+                        return new MatchFilter(MatchType.Inverted, lhs.name(), rhsLiteral);
+                    case LESS_THAN:
+                    case LESS_THAN_OR_EQUAL:
+                    case GREATER_THAN:
+                    case GREATER_THAN_OR_EQUAL:
+                        return range(rhsLiteral);
                     default:
                         throw new IllegalStateException("Unexpected operator " + original.operator());
                 }
@@ -307,7 +330,7 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
             public WhereFilter visit(boolean rhs) {
                 switch (preferred.operator()) {
                     case EQUALS:
-                        return new MatchFilter(lhs.name(), rhs);
+                        return new MatchFilter(MatchType.Regular, lhs.name(), rhs);
                     case NOT_EQUALS:
                         return new MatchFilter(MatchType.Inverted, lhs.name(), rhs);
                     case LESS_THAN:
@@ -345,17 +368,34 @@ class WhereFilterAdapter implements Filter.Visitor<WhereFilter> {
                 return original();
             }
 
-            private RangeConditionFilter range(String rhsValue) {
+            private RangeFilter range(Object rhsLiteral) {
                 // TODO(deephaven-core#3730): More efficient io.deephaven.api.filter.FilterComparison to RangeFilter
+                final String rhsLiteralAsStr = rhsLiteral.toString();
                 switch (preferred.operator()) {
                     case LESS_THAN:
-                        return new RangeConditionFilter(lhs.name(), Condition.LESS_THAN, rhsValue);
+                        return new RangeFilter(lhs.name(), Condition.LESS_THAN, rhsLiteralAsStr);
                     case LESS_THAN_OR_EQUAL:
-                        return new RangeConditionFilter(lhs.name(), Condition.LESS_THAN_OR_EQUAL, rhsValue);
+                        return new RangeFilter(lhs.name(), Condition.LESS_THAN_OR_EQUAL, rhsLiteralAsStr);
                     case GREATER_THAN:
-                        return new RangeConditionFilter(lhs.name(), Condition.GREATER_THAN, rhsValue);
+                        return new RangeFilter(lhs.name(), Condition.GREATER_THAN, rhsLiteralAsStr);
                     case GREATER_THAN_OR_EQUAL:
-                        return new RangeConditionFilter(lhs.name(), Condition.GREATER_THAN_OR_EQUAL, rhsValue);
+                        return new RangeFilter(lhs.name(), Condition.GREATER_THAN_OR_EQUAL, rhsLiteralAsStr);
+                }
+                throw new IllegalStateException("Unexpected");
+            }
+
+            private RangeFilter range(String rhsLiteral) {
+                // TODO(deephaven-core#3730): More efficient io.deephaven.api.filter.FilterComparison to RangeFilter
+                final String quotedRhsLiteral = '"' + rhsLiteral + '"';
+                switch (preferred.operator()) {
+                    case LESS_THAN:
+                        return new RangeFilter(lhs.name(), Condition.LESS_THAN, quotedRhsLiteral);
+                    case LESS_THAN_OR_EQUAL:
+                        return new RangeFilter(lhs.name(), Condition.LESS_THAN_OR_EQUAL, quotedRhsLiteral);
+                    case GREATER_THAN:
+                        return new RangeFilter(lhs.name(), Condition.GREATER_THAN, quotedRhsLiteral);
+                    case GREATER_THAN_OR_EQUAL:
+                        return new RangeFilter(lhs.name(), Condition.GREATER_THAN_OR_EQUAL, quotedRhsLiteral);
                 }
                 throw new IllegalStateException("Unexpected");
             }

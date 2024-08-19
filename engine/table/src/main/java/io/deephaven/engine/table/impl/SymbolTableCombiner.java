@@ -43,7 +43,7 @@ import org.jetbrains.annotations.NotNull;
 
 // region extra imports
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableLong;
 // endregion extra imports
 
 import static io.deephaven.util.SafeCloseable.closeAll;
@@ -259,7 +259,7 @@ class SymbolTableCombiner
 
         final MutableLong position = new MutableLong();
         rowSet.forAllRowKeys((long ll) -> {
-            final int uniqueIdentifier = resultIdentifiers.getInt(position.longValue());
+            final int uniqueIdentifier = resultIdentifiers.getInt(position.get());
             position.increment();
             symbolMapper.set(idSource.getLong(ll), uniqueIdentifier);
         });
@@ -1240,7 +1240,7 @@ class SymbolTableCombiner
 
         final MutableLong position = new MutableLong();
         symbolTable.getRowSet().forAllRowKeys((long ll) -> {
-            final int uniqueIdentifier = resultIdentifiers.getInt(position.longValue());
+            final int uniqueIdentifier = resultIdentifiers.getInt(position.get());
             position.increment();
             symbolMapper.set(idSource.getLong(ll), uniqueIdentifier);
         });

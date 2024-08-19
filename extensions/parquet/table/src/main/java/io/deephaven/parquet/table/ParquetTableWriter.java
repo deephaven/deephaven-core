@@ -3,62 +3,59 @@
 //
 package io.deephaven.parquet.table;
 
+import io.deephaven.api.SortColumn;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.SortedColumnsAttribute;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.select.NullSelectColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.parquet.base.ColumnWriter;
+import io.deephaven.parquet.base.NullParquetMetadataFileWriter;
+import io.deephaven.parquet.base.ParquetMetadataFileWriter;
 import io.deephaven.parquet.base.ParquetFileWriter;
+import io.deephaven.parquet.base.ParquetUtils;
 import io.deephaven.parquet.base.RowGroupWriter;
-import io.deephaven.parquet.table.metadata.CodecInfo;
-import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
-import io.deephaven.parquet.table.metadata.DataIndexInfo;
-import io.deephaven.parquet.table.metadata.TableInfo;
+import io.deephaven.parquet.table.metadata.*;
 import io.deephaven.parquet.table.transfer.ArrayAndVectorTransfer;
 import io.deephaven.parquet.table.transfer.StringDictionary;
 import io.deephaven.parquet.table.transfer.TransferObject;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.annotations.VisibleForTesting;
-import io.deephaven.util.channel.SeekableChannelsProviderLoader;
+import io.deephaven.util.channel.CompletableOutputStream;
 import io.deephaven.vector.Vector;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.parquet.bytes.HeapByteBufferAllocator;
 import org.apache.parquet.column.statistics.Statistics;
+import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Types;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.net.URI;
 import java.nio.IntBuffer;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 
-import static io.deephaven.base.FileUtils.convertToURI;
+import static io.deephaven.parquet.base.ParquetUtils.METADATA_KEY;
 
 /**
  * API for writing DH tables in parquet format
  */
 public class ParquetTableWriter {
-
-    public static final String METADATA_KEY = "deephaven";
-
     public static final String GROUPING_KEY_COLUMN_NAME = "dh_key";
     public static final String GROUPING_BEGIN_POS_COLUMN_NAME = "dh_begin_pos";
     public static final String GROUPING_END_POS_COLUMN_NAME = "dh_end_pos";
 
     public static final String INDEX_ROW_SET_COLUMN_NAME = "dh_row_set";
 
-    public static final String PARQUET_FILE_EXTENSION = ".parquet";
 
     /**
      * Helper struct used to pass information about where to write the index files
@@ -67,32 +64,29 @@ public class ParquetTableWriter {
         /**
          * Names of the indexing key columns
          */
-        final String[] indexColumnNames;
+        final List<String> indexColumnNames;
         /**
          * Parquet names of the indexing key columns
          */
         final String[] parquetColumnNames;
         /**
-         * File path to be added in the index metadata of main parquet file
+         * Destination for writing the index file
          */
-        final File metadataFilePath;
-
+        final URI dest;
         /**
-         * Destination path for writing the index file. The two filenames can differ because we write index files to
-         * shadow file paths first and then place them at the final path once the write is complete. The metadata should
-         * always hold the accurate path.
+         * Output stream to write the index file
          */
-        final File destFile;
+        final CompletableOutputStream destOutputStream;
 
         IndexWritingInfo(
-                final String[] indexColumnNames,
+                final List<String> indexColumnNames,
                 final String[] parquetColumnNames,
-                final File metadataFilePath,
-                final File destFile) {
+                final URI dest,
+                final CompletableOutputStream destOutputStream) {
             this.indexColumnNames = indexColumnNames;
             this.parquetColumnNames = parquetColumnNames;
-            this.metadataFilePath = metadataFilePath;
-            this.destFile = destFile;
+            this.dest = dest;
+            this.destOutputStream = destOutputStream;
         }
     }
 
@@ -102,22 +96,31 @@ public class ParquetTableWriter {
      * @param t The table to write
      * @param definition Table definition
      * @param writeInstructions Write instructions for customizations while writing
-     * @param destPathName The destination path
+     * @param dest The destination URI to write to
+     * @param destOutputStream The output stream to write to dest, should be marked as
+     *        {@link CompletableOutputStream#done()} once writing is finished
      * @param incomingMeta A map of metadata values to be stores in the file footer
      * @param indexInfoList Arrays containing the column names for indexes to persist as sidecar tables. Indexes that
      *        are specified but missing will be computed on demand.
-     * @throws SchemaMappingException Error creating a parquet table schema for the given table (likely due to
-     *         unsupported types)
+     * @param metadataFileWriter The writer for the {@value ParquetUtils#METADATA_FILE_NAME} and
+     *        {@value ParquetUtils#COMMON_METADATA_FILE_NAME} files
+     * @param computedCache When we need to perform some computation depending on column data to make a decision
+     *        impacting both schema and written data, we store results in computedCache to avoid having to calculate
+     *        twice. An example is the necessary precision and scale for a BigDecimal column written as a decimal
+     *        logical type.
+     *
      * @throws IOException For file writing related errors
      */
     static void write(
             @NotNull final Table t,
             @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions writeInstructions,
-            @NotNull final String destPathName,
+            @NotNull final URI dest,
+            @NotNull final CompletableOutputStream destOutputStream,
             @NotNull final Map<String, String> incomingMeta,
-            @Nullable final List<ParquetTableWriter.IndexWritingInfo> indexInfoList)
-            throws SchemaMappingException, IOException {
+            @Nullable final List<ParquetTableWriter.IndexWritingInfo> indexInfoList,
+            @NotNull final ParquetMetadataFileWriter metadataFileWriter,
+            @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache) throws IOException {
         if (t.isRefreshing()) {
             /*
              * We mustn't write inconsistent tables or data indexes. This check is "basic". Snapshotting logic here
@@ -129,51 +132,49 @@ public class ParquetTableWriter {
         }
 
         final TableInfo.Builder tableInfoBuilder = TableInfo.builder();
-        List<File> cleanupFiles = null;
-        try {
-            if (indexInfoList != null) {
-                cleanupFiles = new ArrayList<>(indexInfoList.size());
-                final Path destDirPath = Paths.get(destPathName).getParent();
-                for (final ParquetTableWriter.IndexWritingInfo info : indexInfoList) {
-                    try (final SafeCloseable ignored = t.isRefreshing() ? LivenessScopeStack.open() : null) {
-                        // This will retrieve an existing index if one exists, or create a new one if not
-                        final BasicDataIndex dataIndex = Optional
-                                .ofNullable(DataIndexer.getDataIndex(t, info.indexColumnNames))
-                                .or(() -> Optional.of(DataIndexer.getOrCreateDataIndex(t, info.indexColumnNames)))
-                                .get()
-                                .transform(DataIndexTransformer.builder().invertRowSet(t.getRowSet()).build());
-                        final Table indexTable = dataIndex.table();
+        if (indexInfoList != null) {
+            final URI destDir = dest.resolve(".");
+            for (final ParquetTableWriter.IndexWritingInfo info : indexInfoList) {
+                try (final SafeCloseable ignored = t.isRefreshing() ? LivenessScopeStack.open() : null) {
+                    // This will retrieve an existing index if one exists, or create a new one if not
+                    final BasicDataIndex dataIndex = Optional
+                            .ofNullable(DataIndexer.getDataIndex(t, info.indexColumnNames))
+                            .or(() -> Optional.of(DataIndexer.getOrCreateDataIndex(t, info.indexColumnNames)))
+                            .get()
+                            .transform(DataIndexTransformer.builder().invertRowSet(t.getRowSet()).build());
+                    final Table indexTable = dataIndex.table().sort(info.indexColumnNames.toArray(new String[0]));
+                    final TableInfo.Builder indexTableInfoBuilder = TableInfo.builder().addSortingColumns(
+                            info.indexColumnNames.stream()
+                                    .map(cn -> SortColumnInfo.of(cn, SortColumnInfo.SortDirection.Ascending))
+                                    .toArray(SortColumnInfo[]::new));
 
-                        cleanupFiles.add(info.destFile);
-                        tableInfoBuilder.addDataIndexes(DataIndexInfo.of(
-                                destDirPath.relativize(info.metadataFilePath.toPath()).toString(),
-                                info.parquetColumnNames));
-                        final ParquetInstructions writeInstructionsToUse;
-                        if (INDEX_ROW_SET_COLUMN_NAME.equals(dataIndex.rowSetColumnName())) {
-                            writeInstructionsToUse = writeInstructions;
-                        } else {
-                            writeInstructionsToUse = new ParquetInstructions.Builder(writeInstructions)
-                                    .addColumnNameMapping(INDEX_ROW_SET_COLUMN_NAME, dataIndex.rowSetColumnName())
-                                    .build();
-                        }
-                        write(indexTable, indexTable.getDefinition(), writeInstructionsToUse,
-                                info.destFile.getAbsolutePath(), Collections.emptyMap(), TableInfo.builder());
+                    tableInfoBuilder.addDataIndexes(DataIndexInfo.of(
+                            destDir.relativize(info.dest).getPath(),
+                            info.parquetColumnNames));
+                    final ParquetInstructions writeInstructionsToUse;
+                    if (INDEX_ROW_SET_COLUMN_NAME.equals(dataIndex.rowSetColumnName())) {
+                        writeInstructionsToUse = writeInstructions;
+                    } else {
+                        writeInstructionsToUse = new ParquetInstructions.Builder(writeInstructions)
+                                .addColumnNameMapping(INDEX_ROW_SET_COLUMN_NAME, dataIndex.rowSetColumnName())
+                                .build();
                     }
+                    write(indexTable, indexTable.getDefinition(), writeInstructionsToUse, info.dest,
+                            info.destOutputStream, Collections.emptyMap(), indexTableInfoBuilder,
+                            NullParquetMetadataFileWriter.INSTANCE, computedCache);
                 }
             }
-            write(t, definition, writeInstructions, destPathName, incomingMeta, tableInfoBuilder);
-        } catch (Exception e) {
-            if (cleanupFiles != null) {
-                for (final File cleanupFile : cleanupFiles) {
-                    try {
-                        // noinspection ResultOfMethodCallIgnored
-                        cleanupFile.delete();
-                    } catch (Exception ignored) {
-                    }
-                }
-            }
-            throw e;
         }
+
+        // SortedColumnsAttribute effectively only stores (zero or more) individual columns by which the table is
+        // sorted, rather than ordered sets expressing multi-column sorts. Given that mismatch, we can only reflect
+        // a single column sort in the metadata at this time.
+        final List<SortColumn> sortedColumns = SortedColumnsAttribute.getSortedColumns(t);
+        if (!sortedColumns.isEmpty()) {
+            tableInfoBuilder.addSortingColumns(SortColumnInfo.of(sortedColumns.get(0)));
+        }
+        write(t, definition, writeInstructions, dest, destOutputStream, incomingMeta,
+                tableInfoBuilder, metadataFileWriter, computedCache);
     }
 
     /**
@@ -182,32 +183,37 @@ public class ParquetTableWriter {
      * @param table The table to write
      * @param definition The table definition
      * @param writeInstructions Write instructions for customizations while writing
-     * @param path The destination path
+     * @param dest The destination URI to write to
+     * @param destOutputStream The output stream to write to dest, should be marked as
+     *        {@link CompletableOutputStream#done()} once writing is finished
      * @param tableMeta A map of metadata values to be stores in the file footer
-     * @param tableInfoBuilder A partially-constructed builder for the metadata object
-     * @throws SchemaMappingException Error creating a parquet table schema for the given table (likely due to
-     *         unsupported types)
+     * @param tableInfoBuilder A partially constructed builder for the metadata object
+     * @param metadataFileWriter The writer for the {@value ParquetUtils#METADATA_FILE_NAME} and
+     *        {@value ParquetUtils#COMMON_METADATA_FILE_NAME} files
+     * @param computedCache Per column cache tags
      * @throws IOException For file writing related errors
      */
-    public static void write(
+    private static void write(
             @NotNull final Table table,
             @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions writeInstructions,
-            @NotNull final String path,
+            @NotNull final URI dest,
+            @NotNull final CompletableOutputStream destOutputStream,
             @NotNull final Map<String, String> tableMeta,
-            @NotNull final TableInfo.Builder tableInfoBuilder) throws SchemaMappingException, IOException {
+            @NotNull final TableInfo.Builder tableInfoBuilder,
+            @NotNull final ParquetMetadataFileWriter metadataFileWriter,
+            @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache) throws IOException {
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
             final Table t = pretransformTable(table, definition);
             final TrackingRowSet tableRowSet = t.getRowSet();
             final Map<String, ? extends ColumnSource<?>> columnSourceMap = t.getColumnSourceMap();
-            // When we need to perform some computation depending on column data to make a decision impacting both
-            // schema and written data, we store results in computedCache to avoid having to calculate twice.
-            // An example is the necessary precision and scale for a BigDecimal column writen as decimal logical type.
-            final Map<String, Map<ParquetCacheTags, Object>> computedCache = new HashMap<>();
-            final ParquetFileWriter parquetFileWriter = getParquetFileWriter(computedCache, definition, tableRowSet,
-                    columnSourceMap, path, writeInstructions, tableMeta, tableInfoBuilder);
-            // Given the transformation, do not use the original table's "definition" for writing
-            write(t, writeInstructions, parquetFileWriter, computedCache);
+            try (final ParquetFileWriter parquetFileWriter = getParquetFileWriter(computedCache, definition,
+                    tableRowSet, columnSourceMap, dest, destOutputStream, writeInstructions, tableMeta,
+                    tableInfoBuilder, metadataFileWriter)) {
+                // Given the transformation, do not use the original table's "definition" for writing
+                write(t, writeInstructions, parquetFileWriter, computedCache);
+            }
+            destOutputStream.done();
         }
     }
 
@@ -242,8 +248,25 @@ public class ParquetTableWriter {
                 }
             }
         }
+    }
 
-        parquetFileWriter.close();
+    /**
+     * Get the parquet schema for a table
+     *
+     * @param table the input table
+     * @param definition the definition to use for creating the schema
+     * @param instructions write instructions for the file
+     * @return the parquet schema
+     */
+    static MessageType getSchemaForTable(@NotNull final Table table,
+            @NotNull final TableDefinition definition,
+            @NotNull final ParquetInstructions instructions) {
+        if (definition.numColumns() == 0) {
+            throw new IllegalArgumentException("Table definition must have at least one column");
+        }
+        final Table pretransformTable = pretransformTable(table, definition);
+        return MappedSchema.create(new HashMap<>(), definition, pretransformTable.getRowSet(),
+                pretransformTable.getColumnSourceMap(), instructions).getParquetSchema();
     }
 
     /**
@@ -290,14 +313,16 @@ public class ParquetTableWriter {
      * Create a {@link ParquetFileWriter} for writing the table to disk.
      *
      * @param computedCache Per column cache tags
-     * @param definition the writable definition
-     * @param tableRowSet the row set being written
-     * @param columnSourceMap the columns of the table
-     * @param path the destination to write to
-     * @param writeInstructions write instructions for the file
-     * @param tableMeta metadata to include in the parquet metadata
-     * @param tableInfoBuilder a builder for accumulating per-column information to construct the deephaven metadata
-     *
+     * @param definition The writable definition
+     * @param tableRowSet The row set being written
+     * @param columnSourceMap The columns of the table
+     * @param dest The destination URI to write to
+     * @param destOutputStream The output stream to write to dest
+     * @param writeInstructions Write instructions for the file
+     * @param tableMeta Metadata to include in the parquet metadata
+     * @param tableInfoBuilder Builder for accumulating per-column information to construct the deephaven metadata
+     * @param metadataFileWriter The writer for the {@value ParquetUtils#METADATA_FILE_NAME} and
+     *        {@value ParquetUtils#COMMON_METADATA_FILE_NAME} files
      * @return a new file writer
      */
     @NotNull
@@ -306,10 +331,12 @@ public class ParquetTableWriter {
             @NotNull final TableDefinition definition,
             @NotNull final RowSet tableRowSet,
             @NotNull final Map<String, ? extends ColumnSource<?>> columnSourceMap,
-            @NotNull final String path,
+            @NotNull final URI dest,
+            @NotNull final OutputStream destOutputStream,
             @NotNull final ParquetInstructions writeInstructions,
             @NotNull final Map<String, String> tableMeta,
-            @NotNull final TableInfo.Builder tableInfoBuilder) throws IOException {
+            @NotNull final TableInfo.Builder tableInfoBuilder,
+            @NotNull final ParquetMetadataFileWriter metadataFileWriter) throws IOException {
 
         // First, map the TableDefinition to a parquet Schema
         final MappedSchema mappedSchema =
@@ -351,21 +378,18 @@ public class ParquetTableWriter {
 
         final Map<String, String> extraMetaData = new HashMap<>(tableMeta);
         extraMetaData.put(METADATA_KEY, tableInfoBuilder.build().serializeToJSON());
-        return new ParquetFileWriter(path,
-                SeekableChannelsProviderLoader.getInstance().fromServiceLoader(convertToURI(path, false), null),
-                writeInstructions.getTargetPageSize(),
+        return new ParquetFileWriter(dest, destOutputStream, writeInstructions.getTargetPageSize(),
                 new HeapByteBufferAllocator(), mappedSchema.getParquetSchema(),
-                writeInstructions.getCompressionCodecName(), extraMetaData);
+                writeInstructions.getCompressionCodecName(), extraMetaData, metadataFileWriter);
     }
 
-    @VisibleForTesting
-    static <DATA_TYPE> void writeColumnSource(
+    private static <DATA_TYPE> void writeColumnSource(
             @NotNull final RowSet tableRowSet,
             @NotNull final ParquetInstructions writeInstructions,
             @NotNull final RowGroupWriter rowGroupWriter,
             @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache,
             @NotNull final String columnName,
-            @NotNull ColumnSource<DATA_TYPE> columnSource) throws IllegalAccessException, IOException {
+            @NotNull final ColumnSource<DATA_TYPE> columnSource) throws IllegalAccessException, IOException {
         try (final ColumnWriter columnWriter = rowGroupWriter.addColumn(
                 writeInstructions.getParquetColumnNameFromColumnNameOrDefault(columnName))) {
             boolean usedDictionary = false;
@@ -382,8 +406,8 @@ public class ParquetTableWriter {
     /**
      * Makes a copy of the given buffer
      */
-    private static IntBuffer makeCopy(IntBuffer orig) {
-        IntBuffer copy = IntBuffer.allocate(orig.capacity());
+    private static IntBuffer makeCopy(final IntBuffer orig) {
+        final IntBuffer copy = IntBuffer.allocate(orig.capacity());
         copy.put(orig).flip();
         return copy;
     }
@@ -481,9 +505,9 @@ public class ParquetTableWriter {
         try (final TransferObject<?> transferObject = TransferObject.create(
                 tableRowSet, writeInstructions, computedCache, columnName, columnSource)) {
             final Statistics<?> statistics = columnWriter.getStats();
-            boolean writeVectorPages = (transferObject instanceof ArrayAndVectorTransfer);
+            final boolean writeVectorPages = (transferObject instanceof ArrayAndVectorTransfer);
             do {
-                int numValuesBuffered = transferObject.transferOnePageToBuffer();
+                final int numValuesBuffered = transferObject.transferOnePageToBuffer();
                 if (writeVectorPages) {
                     columnWriter.addVectorPage(transferObject.getBuffer(), transferObject.getRepeatCount(),
                             numValuesBuffered, statistics);

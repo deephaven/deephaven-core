@@ -13,11 +13,11 @@ import io.deephaven.engine.table.impl.util.EngineMetrics;
 import io.deephaven.engine.table.impl.util.ServerStateTracker;
 import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
-import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.server.appmode.ApplicationInjector;
+import io.deephaven.server.session.SessionFactoryCreator;
 import io.deephaven.server.config.ServerConfig;
 import io.deephaven.server.log.LogInit;
 import io.deephaven.server.plugin.PluginRegistration;
@@ -29,6 +29,8 @@ import io.deephaven.uri.resolver.UriResolver;
 import io.deephaven.uri.resolver.UriResolvers;
 import io.deephaven.uri.resolver.UriResolversInstance;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.annotations.InternalUseOnly;
+import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.process.ShutdownManager;
@@ -37,7 +39,9 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Provider;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -53,6 +57,35 @@ public class DeephavenApiServer {
             Configuration.getInstance().getLongForClassWithDefault(
                     DeephavenApiServer.class, "checkScopeChangesIntervalMillis", 100);
 
+    private static DeephavenApiServer INSTANCE;
+
+    @InternalUseOnly
+    public static DeephavenApiServer getInstance() {
+        synchronized (DeephavenApiServer.class) {
+            return Objects.requireNonNull(INSTANCE);
+        }
+    }
+
+    private static void setInstance(DeephavenApiServer instance) {
+        Objects.requireNonNull(instance);
+        synchronized (DeephavenApiServer.class) {
+            if (INSTANCE != null) {
+                throw new IllegalStateException();
+            }
+            INSTANCE = instance;
+        }
+    }
+
+    private static void clearInstance(DeephavenApiServer expected) {
+        Objects.requireNonNull(expected);
+        synchronized (DeephavenApiServer.class) {
+            if (INSTANCE != expected) {
+                throw new IllegalStateException();
+            }
+            INSTANCE = null;
+        }
+    }
+
     private final GrpcServer server;
     private final UpdateGraph ug;
     private final LogInit logInit;
@@ -66,6 +99,7 @@ public class DeephavenApiServer {
     private final Map<String, AuthenticationRequestHandler> authenticationHandlers;
     private final Provider<ExecutionContext> executionContextProvider;
     private final ServerConfig serverConfig;
+    private final SessionFactoryCreator sessionFactoryCreator;
 
     @Inject
     public DeephavenApiServer(
@@ -81,7 +115,8 @@ public class DeephavenApiServer {
             final SessionService sessionService,
             final Map<String, AuthenticationRequestHandler> authenticationHandlers,
             final Provider<ExecutionContext> executionContextProvider,
-            final ServerConfig serverConfig) {
+            final ServerConfig serverConfig,
+            final SessionFactoryCreator sessionFactoryCreator) {
         this.server = server;
         this.ug = ug;
         this.logInit = logInit;
@@ -95,6 +130,7 @@ public class DeephavenApiServer {
         this.authenticationHandlers = authenticationHandlers;
         this.executionContextProvider = executionContextProvider;
         this.serverConfig = serverConfig;
+        this.sessionFactoryCreator = sessionFactoryCreator;
     }
 
     @VisibleForTesting
@@ -107,7 +143,6 @@ public class DeephavenApiServer {
         return sessionService;
     }
 
-
     /**
      * Starts the various server components, and returns without blocking. Shutdown is mediated by the ShutdownManager,
      * who will call the gRPC server to shut it down when the process is itself shutting down.
@@ -117,6 +152,7 @@ public class DeephavenApiServer {
      * @throws ClassNotFoundException thrown if a class can't be found while finding and running an application.
      */
     public DeephavenApiServer run() throws IOException, ClassNotFoundException, TimeoutException {
+        setInstance(this);
 
         // Prevent new gRPC calls from being started
         ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.FIRST,
@@ -129,17 +165,16 @@ public class DeephavenApiServer {
         // Finally, wait for the http server to be finished stopping
         ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.LAST, () -> {
             try {
-                server.stopWithTimeout(10, TimeUnit.SECONDS);
+                final Duration duration = serverConfig.shutdownTimeout();
+                server.stopWithTimeout(duration.toNanos(), TimeUnit.NANOSECONDS);
                 server.join();
+                clearInstance(DeephavenApiServer.this);
             } catch (final InterruptedException ignored) {
             }
         });
 
         log.info().append("Configuring logging...").endl();
         logInit.run();
-
-        log.info().append("Creating/Clearing Script Cache...").endl();
-        AbstractScriptSession.createScriptCache();
 
         for (BusinessCalendar calendar : calendars.get()) {
             Calendars.addCalendar(calendar);
@@ -200,8 +235,8 @@ public class DeephavenApiServer {
         server.join();
     }
 
-
     void startForUnitTests() throws Exception {
+        setInstance(this);
         pluginRegistration.registerAll();
         applicationInjector.run();
         executionContextProvider.get().getQueryLibrary().updateVersionString("DEFAULT");
@@ -210,7 +245,23 @@ public class DeephavenApiServer {
         server.start();
     }
 
+    void teardownForUnitTests() throws InterruptedException {
+        try {
+            server.stopWithTimeout(5, TimeUnit.SECONDS);
+            server.join();
+        } finally {
+            clearInstance(this);
+        }
+    }
+
+    @VisibleForTesting
     public UpdateGraph getUpdateGraph() {
         return ug;
+    }
+
+    @InternalUseOnly
+    @ScriptApi
+    public SessionFactoryCreator sessionFactoryCreator() {
+        return sessionFactoryCreator;
     }
 }

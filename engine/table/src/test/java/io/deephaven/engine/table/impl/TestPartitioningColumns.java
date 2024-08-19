@@ -12,6 +12,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.dataindex.DataIndexUtils;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
+import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
 import io.deephaven.engine.table.iterators.ChunkedColumnIterator;
 import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
@@ -128,7 +129,8 @@ public class TestPartitioningColumns {
         TstUtils.assertTableEquals(expected, result);
 
         final List<WhereFilter> filters = input.getDefinition().getColumnStream()
-                .map(cd -> new MatchFilter(cd.getName(), (Object) null)).collect(Collectors.toList());
+                .map(cd -> new MatchFilter(MatchType.Regular, cd.getName(), (Object) null))
+                .collect(Collectors.toList());
         TstUtils.assertTableEquals(expected.where(Filter.and(filters)), result.where(Filter.and(filters)));
 
         TstUtils.assertTableEquals(expected.selectDistinct(), result.selectDistinct());
@@ -178,12 +180,6 @@ public class TestPartitioningColumns {
 
                 @Override
                 public boolean exists() {
-                    throw new UnsupportedOperationException();
-                }
-
-                @Nullable
-                @Override
-                public <METADATA_TYPE> METADATA_TYPE getMetadata(@NotNull final ColumnDefinition<?> columnDefinition) {
                     throw new UnsupportedOperationException();
                 }
 
@@ -239,7 +235,8 @@ public class TestPartitioningColumns {
         }
 
         @Override
-        protected @Nullable BasicDataIndex loadDataIndex(@NotNull final String... columns) {
+        @Nullable
+        public BasicDataIndex loadDataIndex(@NotNull final String... columns) {
             throw new UnsupportedOperationException();
         }
     }

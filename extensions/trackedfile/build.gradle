@@ -11,8 +11,10 @@ dependencies {
     implementation project(':Base')
     implementation project(':Util')
     implementation project(':engine-table')
+    implementation project(':log-factory')
 
-    compileOnly depAnnotations
+    compileOnly libs.jetbrains.annotations
 
-    Classpaths.inheritAutoService(project)
+    compileOnly libs.autoservice
+    annotationProcessor libs.autoservice.compiler
 }

@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.*;
@@ -17,7 +16,7 @@ import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.sources.BitShiftingColumnSource;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -207,7 +206,7 @@ public class ColumnsToRowsTransform {
             final String[] sourceColumns = new String[sourceColumnCount];
             final MutableInt columnIndex = new MutableInt();
             final ModifiedColumnSet modifyAll = querySource
-                    .newModifiedColumnSet(expandSet.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                    .newModifiedColumnSet(expandSet.toArray(String[]::new));
             final ModifiedColumnSet[] modifyOneRow = new ModifiedColumnSet[labels.length];
             // noinspection unchecked
             final List<String>[] sourcesForRow = new ArrayList[labels.length];
@@ -217,23 +216,23 @@ public class ColumnsToRowsTransform {
             }
 
             querySource.getColumnSourceMap().forEach((name, cs) -> {
-                sourceColumns[columnIndex.intValue()] = name;
+                sourceColumns[columnIndex.get()] = name;
                 if (allTransposeSet.contains(name)) {
                     for (int cc = 0; cc < transposeSet.size(); ++cc) {
                         if (transposeSet.get(cc).contains(name)) {
-                            resultColumnSets[columnIndex.intValue()] = result.newModifiedColumnSet(valueColumns[cc]);
+                            resultColumnSets[columnIndex.get()] = result.newModifiedColumnSet(valueColumns[cc]);
                             sourcesForRow[transposeIndex[cc]++].add(name);
                         }
                     }
                 } else {
-                    resultColumnSets[columnIndex.intValue()] = result.newModifiedColumnSet(name);
+                    resultColumnSets[columnIndex.get()] = result.newModifiedColumnSet(name);
                 }
                 columnIndex.increment();
             });
 
             for (int cc = 0; cc < labels.length; ++cc) {
                 modifyOneRow[cc] = querySource
-                        .newModifiedColumnSet(sourcesForRow[cc].toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                        .newModifiedColumnSet(sourcesForRow[cc].toArray(String[]::new));
             }
 
             final ModifiedColumnSet.Transformer transformer =
@@ -355,7 +354,7 @@ public class ColumnsToRowsTransform {
             final WritableObjectChunk<String, ?> objectChunk = destination.asWritableObjectChunk();
             destination.setSize(rowSequence.intSize());
             rowSequence.forAllRowKeys(idx -> {
-                objectChunk.set(outputPosition.intValue(), getLabel(idx));
+                objectChunk.set(outputPosition.get(), getLabel(idx));
                 outputPosition.increment();
             });
         }
@@ -582,7 +581,7 @@ public class ColumnsToRowsTransform {
             rowSequence.forAllRowKeys(idx -> {
                 final int sourceColumn = (int) (idx & mask);
                 final long sourceIndex = idx >> bits;
-                context.outputPositions[sourceColumn].add(outputPosition.intValue());
+                context.outputPositions[sourceColumn].add(outputPosition.get());
                 outputPosition.increment();
                 context.innerKeys[sourceColumn].add(sourceIndex);
             });

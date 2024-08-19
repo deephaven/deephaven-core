@@ -26,10 +26,10 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableIntArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableObjectArraySource;
 import io.deephaven.engine.table.impl.updateby.hashing.UpdateByStateManagerTypedBase;
+import io.deephaven.util.mutable.MutableInt;
 import java.lang.Object;
 import java.lang.Override;
 import java.util.Arrays;
-import org.apache.commons.lang3.mutable.MutableInt;
 
 final class UpdateByHasherObjectInt extends UpdateByStateManagerTypedBase {
     private ImmutableObjectArraySource mainKeySource0;
@@ -72,12 +72,12 @@ final class UpdateByHasherObjectInt extends UpdateByStateManagerTypedBase {
             int tableLocation = firstTableLocation;
             MAIN_SEARCH: while (true) {
                 int rowState = stateSource.getUnsafe(tableLocation);
-                if (rowState == EMPTY_RIGHT_VALUE) {
+                if (isStateEmpty(rowState)) {
                     final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
                     int alternateTableLocation = firstAlternateTableLocation;
                     while (alternateTableLocation < rehashPointer) {
                         rowState = alternateStateSource.getUnsafe(alternateTableLocation);
-                        if (rowState == EMPTY_RIGHT_VALUE) {
+                        if (isStateEmpty(rowState)) {
                             break;
                         } else if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0) && eq(alternateKeySource1.getUnsafe(alternateTableLocation), k1)) {
                             // map the existing bucket to this chunk position;
@@ -123,7 +123,7 @@ final class UpdateByHasherObjectInt extends UpdateByStateManagerTypedBase {
             boolean found = false;
             int tableLocation = firstTableLocation;
             int rowState;
-            while ((rowState = stateSource.getUnsafe(tableLocation)) != EMPTY_RIGHT_VALUE) {
+            while (!isStateEmpty(rowState = stateSource.getUnsafe(tableLocation))) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0) && eq(mainKeySource1.getUnsafe(tableLocation), k1)) {
                     // map the existing bucket to this chunk position;
                     outputPositions.set(chunkPosition, rowState);
@@ -138,7 +138,7 @@ final class UpdateByHasherObjectInt extends UpdateByStateManagerTypedBase {
                 boolean alternateFound = false;
                 if (firstAlternateTableLocation < rehashPointer) {
                     int alternateTableLocation = firstAlternateTableLocation;
-                    while ((rowState = alternateStateSource.getUnsafe(alternateTableLocation)) != EMPTY_RIGHT_VALUE) {
+                    while (!isStateEmpty(rowState = alternateStateSource.getUnsafe(alternateTableLocation))) {
                         if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0) && eq(alternateKeySource1.getUnsafe(alternateTableLocation), k1)) {
                             // map the existing bucket (from alternate) to this chunk position;
                             outputPositions.set(chunkPosition, rowState);
@@ -163,17 +163,21 @@ final class UpdateByHasherObjectInt extends UpdateByStateManagerTypedBase {
         return hash;
     }
 
+    private static boolean isStateEmpty(int state) {
+        return state == EMPTY_RIGHT_VALUE;
+    }
+
     private boolean migrateOneLocation(int locationToMigrate,
             WritableIntChunk<RowKeys> outputPositions) {
         final int currentStateValue = alternateStateSource.getUnsafe(locationToMigrate);
-        if (currentStateValue == EMPTY_RIGHT_VALUE) {
+        if (isStateEmpty(currentStateValue)) {
             return false;
         }
         final Object k0 = alternateKeySource0.getUnsafe(locationToMigrate);
         final int k1 = alternateKeySource1.getUnsafe(locationToMigrate);
         final int hash = hash(k0, k1);
         int destinationTableLocation = hashToTableLocation(hash);
-        while (stateSource.getUnsafe(destinationTableLocation) != EMPTY_RIGHT_VALUE) {
+        while (!isStateEmpty(stateSource.getUnsafe(destinationTableLocation))) {
             destinationTableLocation = nextTableLocation(destinationTableLocation);
         }
         mainKeySource0.set(destinationTableLocation, k0);
@@ -197,8 +201,7 @@ final class UpdateByHasherObjectInt extends UpdateByStateManagerTypedBase {
     }
 
     @Override
-    protected void newAlternate() {
-        super.newAlternate();
+    protected void adviseNewAlternate() {
         this.mainKeySource0 = (ImmutableObjectArraySource)super.mainKeySources[0];
         this.alternateKeySource0 = (ImmutableObjectArraySource)super.alternateKeySources[0];
         this.mainKeySource1 = (ImmutableIntArraySource)super.mainKeySources[1];
@@ -215,7 +218,7 @@ final class UpdateByHasherObjectInt extends UpdateByStateManagerTypedBase {
     @Override
     protected void migrateFront(WritableIntChunk<RowKeys> outputPositions) {
         int location = 0;
-        while (migrateOneLocation(location++, outputPositions));
+        while (migrateOneLocation(location++, outputPositions) && location < alternateTableSize);
     }
 
     @Override
@@ -232,7 +235,7 @@ final class UpdateByHasherObjectInt extends UpdateByStateManagerTypedBase {
         stateSource.setArray(destState);
         for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket) {
             final int currentStateValue = originalStateArray[sourceBucket];
-            if (currentStateValue == EMPTY_RIGHT_VALUE) {
+            if (isStateEmpty(currentStateValue)) {
                 continue;
             }
             final Object k0 = originalKeyArray0[sourceBucket];
@@ -241,7 +244,7 @@ final class UpdateByHasherObjectInt extends UpdateByStateManagerTypedBase {
             final int firstDestinationTableLocation = hashToTableLocation(hash);
             int destinationTableLocation = firstDestinationTableLocation;
             while (true) {
-                if (destState[destinationTableLocation] == EMPTY_RIGHT_VALUE) {
+                if (isStateEmpty(destState[destinationTableLocation])) {
                     destKeyArray0[destinationTableLocation] = k0;
                     destKeyArray1[destinationTableLocation] = k1;
                     destState[destinationTableLocation] = originalStateArray[sourceBucket];

@@ -4,6 +4,22 @@
 import io
 
 
+def _get_encoding_or_utf8(stream) -> str:
+    """
+    Helper to read the encoding from a stream. The stream implementation may or may not have an
+    encoding property, and if it has one it might be None - if absent or None, use utf8, otherwise
+    return the actual encoding value.
+
+    Known cases:
+     - "no encoding attr' - jpy doesn't include this attr for its built-in stdout/stderr impls
+     - "encoding attr is None" - xmlrunner has an attribute, but it has a None value
+     - other cases seem to provide a real value.
+    :param stream: the stream to ask for its encoding
+    :return: the encoding to use
+    """
+    return getattr(stream, 'encoding', 'UTF-8') or 'UTF-8'
+
+
 class TeeStream(io.TextIOBase):
     """TextIOBase subclass that splits output between a delegate instance and a set of lambdas.
 
@@ -14,10 +30,7 @@ class TeeStream(io.TextIOBase):
 
     @classmethod
     def split(cls, py_stream, java_stream):
-        if hasattr(py_stream, "encoding"):
-            encoding = py_stream.encoding
-        else:
-            encoding = 'UTF-8'
+        encoding = _get_encoding_or_utf8(py_stream)
         return TeeStream(
             orig_stream=py_stream,
             should_write_to_orig_stream=True,
@@ -28,10 +41,7 @@ class TeeStream(io.TextIOBase):
 
     @classmethod
     def redirect(cls, py_stream, java_stream):
-        if hasattr(py_stream, "encoding"):
-            encoding = py_stream.encoding
-        else:
-            encoding = 'UTF-8'
+        encoding = _get_encoding_or_utf8(py_stream)
         return TeeStream(
             orig_stream=py_stream,
             should_write_to_orig_stream=False,
@@ -72,10 +82,7 @@ class TeeStream(io.TextIOBase):
 
     @property
     def encoding(self):
-        if hasattr(self._stream, 'encoding') and self._stream.encoding is not None:
-            return self._stream.encoding
-        else:
-            return 'UTF-8'
+        return _get_encoding_or_utf8(self._stream)
 
     def write(self, string):
         self.write_func(string)

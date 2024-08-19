@@ -634,7 +634,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
     @JsMethod
     @SuppressWarnings("unusable-by-js")
     public JsArray<CustomColumn> applyCustomColumns(JsArray<CustomColumnArgUnionType> customColumns) {
-        String[] customColumnStrings = customColumns.map((item, index, array) -> {
+        String[] customColumnStrings = customColumns.map((item, index) -> {
             if (item.isString() || item.isCustomColumn()) {
                 return item.toString();
             }
@@ -1200,61 +1200,28 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }
 
+    // inheritDoc lets us implement the inherited method, but still keep docs for TS
     /**
-     * @deprecated a promise that will be resolved with a newly created table holding the results of the join operation.
-     *             The last parameter is optional, and if not specified or empty, all columns from the right table will
-     *             be added to the output. Callers are responsible for ensuring that there are no duplicates - a match
-     *             pair can be passed instead of a name to specify the new name for the column. Supported `joinType`
-     *             values (consult Deephaven's "Joining Data from Multiple Tables for more detail): "Join" <a href=
-     *             'https://docs.deephaven.io/latest/Content/writeQueries/tableOperations/joins.htm#Joining_Data_from_Multiple_Tables'>Joining_Data_from_Multiple_Tables</a>
-     *             "Natural" "AJ" "ReverseAJ" "ExactJoin" "LeftJoin"
-     * @param joinType
-     * @param rightTable
-     * @param columnsToMatch
-     * @param columnsToAdd
-     * @param asOfMatchRule
-     * @return Promise of dh.Table
+     * @inheritDoc
      */
     @Override
     @JsMethod
     @Deprecated
-    public Promise<JsTable> join(Object joinType, JoinableTable rightTable, JsArray<String> columnsToMatch,
-            @JsOptional @JsNullable JsArray<String> columnsToAdd, @JsOptional @JsNullable Object asOfMatchRule) {
-        if (joinType.equals("AJ") || joinType.equals("RAJ")) {
-            return asOfJoin(rightTable, columnsToMatch, columnsToAdd, (String) asOfMatchRule);
-        } else if (joinType.equals("CROSS_JOIN")) {
+    public Promise<JsTable> join(String joinType, JoinableTable rightTable, JsArray<String> columnsToMatch,
+            @JsOptional @JsNullable JsArray<String> columnsToAdd, @JsOptional @JsNullable String asOfMatchRule) {
+        if (joinType.equals("AJ") || joinType.equals("RAJ") || joinType.equals("ReverseAJ")) {
+            return asOfJoin(rightTable, columnsToMatch, columnsToAdd, asOfMatchRule);
+        } else if (joinType.equals("CROSS_JOIN") || joinType.equals("Join")) {
             return crossJoin(rightTable, columnsToMatch, columnsToAdd, null);
-        } else if (joinType.equals("EXACT_JOIN")) {
+        } else if (joinType.equals("EXACT_JOIN") || joinType.equals("ExactJoin")) {
             return exactJoin(rightTable, columnsToMatch, columnsToAdd);
-        } else if (joinType.equals("NATURAL_JOIN")) {
+        } else if (joinType.equals("NATURAL_JOIN") || joinType.equals("Natural")) {
             return naturalJoin(rightTable, columnsToMatch, columnsToAdd);
         } else {
             throw new IllegalArgumentException("Unsupported join type " + joinType);
         }
     }
 
-    /**
-     * a promise that will be resolved with the newly created table holding the results of the specified as-of join
-     * operation. The <b>columnsToAdd</b> parameter is optional, not specifying it will result in all columns from the
-     * right table being added to the output. The <b>asOfMatchRule</b> is optional, defaults to <b>LESS_THAN_EQUAL</b>
-     *
-     * <p>
-     * the allowed values are:
-     * </p>
-     *
-     * <ul>
-     * <li>LESS_THAN_EQUAL</li>
-     * <li>LESS_THAN</li>
-     * <li>GREATER_THAN_EQUAL</li>
-     * <li>GREATER_THAN</li>
-     * </ul>
-     *
-     * @param rightTable
-     * @param columnsToMatch
-     * @param columnsToAdd
-     * @param asOfMatchRule
-     * @return Promise og dh.Table
-     */
     @Override
     @JsMethod
     public Promise<JsTable> asOfJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
@@ -1280,23 +1247,10 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }
 
-    /**
-     * a promise that will be resolved with the newly created table holding the results of the specified cross join
-     * operation. The <b>columnsToAdd</b> parameter is optional, not specifying it will result in all columns from the
-     * right table being added to the output. The <b>reserveBits</b> optional parameter lets the client control how the
-     * key space is distributed between the rows in the two tables, see the Java <b>Table</b> class for details.
-     *
-     * @param rightTable
-     * @param columnsToMatch
-     * @param columnsToAdd
-     * @param reserve_bits
-     *
-     * @return Promise of dh.Table
-     */
     @Override
     @JsMethod
     public Promise<JsTable> crossJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
-            @JsOptional JsArray<String> columnsToAdd, @JsOptional Double reserve_bits) {
+            @JsOptional @JsNullable JsArray<String> columnsToAdd, @JsOptional @JsNullable Double reserveBits) {
         if (rightTable.state().getConnection() != workerConnection) {
             throw new IllegalStateException(
                     "Table argument passed to join is not from the same worker as current table");
@@ -1308,26 +1262,15 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
             request.setResultId(state.getHandle().makeTicket());
             request.setColumnsToMatchList(columnsToMatch);
             request.setColumnsToAddList(columnsToAdd);
-            if (reserve_bits != null) {
-                request.setReserveBits(reserve_bits);
+            if (reserveBits != null) {
+                request.setReserveBits(reserveBits);
             }
             workerConnection.tableServiceClient().crossJoinTables(request, metadata, c::apply);
-        }, "join(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + "," + reserve_bits + ")")
+        }, "join(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + "," + reserveBits + ")")
                 .refetch(this, workerConnection.metadata())
                 .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }
 
-    /**
-     * a promise that will be resolved with the newly created table holding the results of the specified exact join
-     * operation. The `columnsToAdd` parameter is optional, not specifying it will result in all columns from the right
-     * table being added to the output.
-     *
-     * @param rightTable
-     * @param columnsToMatch
-     * @param columnsToAdd
-     *
-     * @return Promise of dh.Table
-     */
     @Override
     @JsMethod
     public Promise<JsTable> exactJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
@@ -1349,17 +1292,6 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }
 
-    /**
-     * a promise that will be resolved with the newly created table holding the results of the specified natural join
-     * operation. The <b>columnsToAdd</b> parameter is optional, not specifying it will result in all columns from the
-     * right table being added to the output.
-     *
-     * @param rightTable
-     * @param columnsToMatch
-     * @param columnsToAdd
-     *
-     * @return Promise of dh.Table
-     */
     @Override
     @JsMethod
     public Promise<JsTable> naturalJoin(JoinableTable rightTable, JsArray<String> columnsToMatch,
@@ -1585,7 +1517,17 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
         }
     }
 
-    public Promise<JsTable> downsample(LongWrapper[] zoomRange, int pixelCount, String xCol, String[] yCols) {
+    /**
+     * Get a downsampled version of the table. Currently only supports downsampling with an Instant or long `xCol`.
+     *
+     * @param zoomRange The visible range as `[start, end]` or null to always use all data.
+     * @param pixelCount The width of the visible area in pixels.
+     * @param xCol The name of the X column to downsample. Must be an Instant or long.
+     * @param yCols The names of the Y columns to downsample.
+     * @return A promise that resolves to the downsampled table.
+     */
+    public Promise<JsTable> downsample(LongWrapper[] zoomRange, int pixelCount, String xCol,
+            String[] yCols) {
         JsLog.info("downsample", zoomRange, pixelCount, xCol, yCols);
         final String fetchSummary = "downsample(" + Arrays.toString(zoomRange) + ", " + pixelCount + ", " + xCol + ", "
                 + Arrays.toString(yCols) + ")";
@@ -1786,7 +1728,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
                 return;
             }
             JsArray<Column> viewportColumns =
-                    getColumns().filter((item, index, all) -> debounce.columns.get(item.getIndex()));
+                    getColumns().filter((item, index) -> debounce.columns.get(item.getIndex()));
             ViewportData data = new ViewportData(debounce.includedRows, debounce.dataColumns, viewportColumns,
                     currentState.getRowFormatColumn() == null ? NO_ROW_FORMAT_COLUMN
                             : currentState.getRowFormatColumn().getIndex(),

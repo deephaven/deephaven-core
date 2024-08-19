@@ -7,13 +7,15 @@ import io.deephaven.api.updateby.UpdateByOperation;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
-import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.function.Numeric;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -45,10 +47,33 @@ public class TestCumMinMax extends BaseUpdateByTest {
             if ("boolCol".equals(col)) {
                 continue;
             }
-            assertWithCumMin(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(result, col + "Min").getDirect());
-            assertWithCumMax(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(result, col + "Max").getDirect());
+            assertWithCumMin(ColumnVectors.of(t, col).toArray(), ColumnVectors.of(result, col + "Min").toArray());
+            assertWithCumMax(ColumnVectors.of(t, col).toArray(), ColumnVectors.of(result, col + "Max").toArray());
+        }
+    }
+
+    @Test
+    public void testStaticZeroKeyAllNulls() {
+        final QueryTable t = createTestTableAllNull(100000, false, false, false, 0x31313131,
+                ArrayTypeUtils.EMPTY_STRING_ARRAY, new TestDataGenerator[0]).t;
+
+        final Table result = t.updateBy(List.of(
+                UpdateByOperation.CumMin("byteColMin=byteCol", "shortColMin=shortCol", "intColMin=intCol",
+                        "longColMin=longCol", "floatColMin=floatCol", "doubleColMin=doubleCol",
+                        "bigIntColMin=bigIntCol", "bigDecimalColMin=bigDecimalCol"),
+                UpdateByOperation.CumMax("byteColMax=byteCol", "shortColMax=shortCol", "intColMax=intCol",
+                        "longColMax=longCol", "floatColMax=floatCol", "doubleColMax=doubleCol",
+                        "bigIntColMax=bigIntCol", "bigDecimalColMax=bigDecimalCol")));
+        for (String col : t.getDefinition().getColumnNamesArray()) {
+            if ("boolCol".equals(col)) {
+                continue;
+            }
+            assertWithCumMin(
+                    ColumnVectors.of(t, col).toArray(),
+                    ColumnVectors.of(result, col + "Min").toArray());
+            assertWithCumMax(
+                    ColumnVectors.of(t, col).toArray(),
+                    ColumnVectors.of(result, col + "Max").toArray());
         }
     }
 
@@ -86,10 +111,12 @@ public class TestCumMinMax extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOp, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                assertWithCumMin(DataAccessHelpers.getColumn(source, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col + "Min").getDirect());
-                assertWithCumMax(DataAccessHelpers.getColumn(source, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col + "Max").getDirect());
+                assertWithCumMin(
+                        ColumnVectors.of(source, col).toArray(),
+                        ColumnVectors.of(actual, col + "Min").toArray());
+                assertWithCumMax(
+                        ColumnVectors.of(source, col).toArray(),
+                        ColumnVectors.of(actual, col + "Max").toArray());
             });
             return source;
         });

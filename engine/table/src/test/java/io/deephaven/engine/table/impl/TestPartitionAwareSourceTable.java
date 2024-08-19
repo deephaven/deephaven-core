@@ -5,13 +5,13 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.perf.PerformanceEntry;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.TestErrorNotification;
 import io.deephaven.engine.testutil.TestNotification;
@@ -26,6 +26,8 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.qst.column.Column;
+import io.deephaven.util.type.ArrayTypeUtils;
+import io.deephaven.vector.ObjectVector;
 import org.jetbrains.annotations.NotNull;
 import org.jmock.api.Invocation;
 import org.jmock.lib.action.CustomAction;
@@ -612,10 +614,10 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
         });
         final Table result = SUT.selectDistinct(PARTITIONING_COLUMN_DEFINITION.getName());
         assertIsSatisfied();
-        final DataColumn<String> distinctDateColumn =
-                DataAccessHelpers.getColumn(result, PARTITIONING_COLUMN_DEFINITION.getName());
-        assertEquals(expectedDistinctDates.length, distinctDateColumn.size());
-        final String[] distinctDates = (String[]) distinctDateColumn.getDirect();
+        final String columnName = PARTITIONING_COLUMN_DEFINITION.getName();
+        final ObjectVector<String> distinctDatesVector = ColumnVectors.ofObject(result, columnName, String.class);
+        assertEquals(expectedDistinctDates.length, distinctDatesVector.size());
+        final String[] distinctDates = distinctDatesVector.toArray();
         Arrays.sort(expectedDistinctDates);
         Arrays.sort(distinctDates);
         assertArrayEquals(expectedDistinctDates, distinctDates);
@@ -695,7 +697,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
             }
         });
         assertRowSetEquals(expectedRowSet, SUT.where(INTEGER_COLUMN_DEFINITION.getName() + ">0")
-                .where(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getRowSet());
+                .where(ArrayTypeUtils.EMPTY_STRING_ARRAY).getRowSet());
         assertIsSatisfied();
     }
 

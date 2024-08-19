@@ -24,13 +24,16 @@ using deephaven::dhcore::ticking::TickingCallback;
 using deephaven::dhcore::utility::MakeReservedVector;
 using deephaven::dhcore::utility::separatedList;
 using deephaven::dhcore::utility::VerboseCast;
-using deephaven::client::arrowutil::ArrowInt8ColumnSource;
-using deephaven::client::arrowutil::ArrowInt16ColumnSource;
-using deephaven::client::arrowutil::ArrowInt32ColumnSource;
-using deephaven::client::arrowutil::ArrowInt64ColumnSource;
-using deephaven::client::arrowutil::ArrowBooleanColumnSource;
-using deephaven::client::arrowutil::ArrowDateTimeColumnSource;
-using deephaven::client::arrowutil::ArrowStringColumnSource;
+using deephaven::client::arrowutil::BooleanArrowColumnSource;
+using deephaven::client::arrowutil::CharArrowColumnSource;
+using deephaven::client::arrowutil::DateTimeArrowColumnSource;
+using deephaven::client::arrowutil::DoubleArrowColumnSource;
+using deephaven::client::arrowutil::FloatArrowColumnSource;
+using deephaven::client::arrowutil::Int8ArrowColumnSource;
+using deephaven::client::arrowutil::Int16ArrowColumnSource;
+using deephaven::client::arrowutil::Int32ArrowColumnSource;
+using deephaven::client::arrowutil::Int64ArrowColumnSource;
+using deephaven::client::arrowutil::StringArrowColumnSource;
 using deephaven::client::utility::Executor;
 using deephaven::client::utility::OkOrThrow;
 using deephaven::client::server::Server;
@@ -211,7 +214,7 @@ void UpdateProcessor::RunUntilCancelled(std::shared_ptr<UpdateProcessor> self) {
   try {
     self->RunForeverHelper();
   } catch (...) {
-    // If the thread was been cancelled via explicit user action, then swallow all errors.
+    // If the thread has been cancelled via explicit user action, then swallow all errors.
     if (!self->cancelled_) {
       self->callback_->OnFailure(std::current_exception());
     }
@@ -225,6 +228,11 @@ void UpdateProcessor::RunForeverHelper() {
   while (true) {
     auto chunk = fsr_->Next();
     OkOrThrow(DEEPHAVEN_LOCATION_EXPR(chunk));
+    if (chunk->data == nullptr) {
+      // Stream ended. This is abnormal for Deephaven.
+      const char *message = "Unexpected end of stream";
+      throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
+    }
     const auto &cols = chunk->data->columns();
     auto column_sources = MakeReservedVector<std::shared_ptr<ColumnSource>>(cols.size());
     auto sizes = MakeReservedVector<size_t>(cols.size());
@@ -253,45 +261,69 @@ OwningBuffer::OwningBuffer(std::vector<uint8_t> data) :
 OwningBuffer::~OwningBuffer() = default;
 
 struct ArrayToColumnSourceVisitor final : public arrow::ArrayVisitor {
-  explicit ArrayToColumnSourceVisitor(std::shared_ptr<arrow::Array> storage) : storage_(std::move(storage)) {}
+  explicit ArrayToColumnSourceVisitor(const std::shared_ptr<arrow::Array> &array) : array_(array) {}
 
-  arrow::Status Visit(const arrow::Int8Array &array) final {
-    result_ = ArrowInt8ColumnSource::Create(std::move(storage_), &array);
+  arrow::Status Visit(const arrow::Int8Array &/*array*/) final {
+    auto typed_array = std::dynamic_pointer_cast<arrow::Int8Array>(array_);
+    result_ = Int8ArrowColumnSource::OfArrowArray(std::move(typed_array));
     return arrow::Status::OK();
   }
 
-  arrow::Status Visit(const arrow::Int16Array &array) final {
-    result_ = ArrowInt16ColumnSource::Create(std::move(storage_), &array);
+  arrow::Status Visit(const arrow::Int16Array &/*array*/) final {
+    auto typed_array = std::dynamic_pointer_cast<arrow::Int16Array>(array_);
+    result_ = Int16ArrowColumnSource::OfArrowArray(std::move(typed_array));
     return arrow::Status::OK();
   }
 
-  arrow::Status Visit(const arrow::Int32Array &array) final {
-    result_ = ArrowInt32ColumnSource::Create(std::move(storage_), &array);
+  arrow::Status Visit(const arrow::Int32Array &/*array*/) final {
+    auto typed_array = std::dynamic_pointer_cast<arrow::Int32Array>(array_);
+    result_ = Int32ArrowColumnSource::OfArrowArray(std::move(typed_array));
     return arrow::Status::OK();
   }
 
-  arrow::Status Visit(const arrow::Int64Array &array) final {
-    result_ = ArrowInt64ColumnSource::Create(std::move(storage_), &array);
+  arrow::Status Visit(const arrow::Int64Array &/*array*/) final {
+    auto typed_array = std::dynamic_pointer_cast<arrow::Int64Array>(array_);
+    result_ = Int64ArrowColumnSource::OfArrowArray(std::move(typed_array));
     return arrow::Status::OK();
   }
 
-  arrow::Status Visit(const arrow::BooleanArray &array) final {
-    result_ = ArrowBooleanColumnSource::Create(std::move(storage_), &array);
+  arrow::Status Visit(const arrow::FloatArray &/*array*/) final {
+    auto typed_array = std::dynamic_pointer_cast<arrow::FloatArray>(array_);
+    result_ = FloatArrowColumnSource::OfArrowArray(std::move(typed_array));
     return arrow::Status::OK();
   }
 
-  arrow::Status Visit(const arrow::StringArray &array) final {
-    result_ = ArrowStringColumnSource::Create(std::move(storage_), &array);
+  arrow::Status Visit(const arrow::DoubleArray &/*array*/) final {
+    auto typed_array = std::dynamic_pointer_cast<arrow::DoubleArray>(array_);
+    result_ = DoubleArrowColumnSource::OfArrowArray(std::move(typed_array));
     return arrow::Status::OK();
   }
 
-  arrow::Status Visit(const arrow::TimestampArray &array) final {
-    result_ = ArrowDateTimeColumnSource::Create(std::move(storage_), &array);
+  arrow::Status Visit(const arrow::BooleanArray &/*array*/) final {
+    auto typed_array = std::dynamic_pointer_cast<arrow::BooleanArray>(array_);
+    result_ = BooleanArrowColumnSource::OfArrowArray(std::move(typed_array));
     return arrow::Status::OK();
   }
 
-  // We keep a shared_ptr to the arrow array in order to keep the underlying storage alive.
-  std::shared_ptr<arrow::Array> storage_;
+  arrow::Status Visit(const arrow::UInt16Array &/*array*/) final {
+    auto typed_array = std::dynamic_pointer_cast<arrow::UInt16Array>(array_);
+    result_ = CharArrowColumnSource::OfArrowArray(std::move(typed_array));
+    return arrow::Status::OK();
+  }
+
+  arrow::Status Visit(const arrow::StringArray &/*array*/) final {
+    auto typed_array = std::dynamic_pointer_cast<arrow::StringArray>(array_);
+    result_ = StringArrowColumnSource::OfArrowArray(std::move(typed_array));
+    return arrow::Status::OK();
+  }
+
+  arrow::Status Visit(const arrow::TimestampArray &/*array*/) final {
+    auto typed_array = std::dynamic_pointer_cast<arrow::TimestampArray>(array_);
+    result_ = DateTimeArrowColumnSource::OfArrowArray(std::move(typed_array));
+    return arrow::Status::OK();
+  }
+
+  const std::shared_ptr<arrow::Array> &array_;
   std::shared_ptr<ColumnSource> result_;
 };
 

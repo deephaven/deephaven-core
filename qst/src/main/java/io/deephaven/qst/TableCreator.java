@@ -7,14 +7,17 @@ import io.deephaven.api.TableOperations;
 import io.deephaven.qst.column.Column;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.InputTable;
+import io.deephaven.qst.table.MultiJoinInput;
 import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TicketTable;
 import io.deephaven.qst.table.TimeTable;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Stream;
 
 /**
@@ -97,6 +100,14 @@ public interface TableCreator<TABLE> {
      * @return the input table
      */
     TABLE of(InputTable inputTable);
+
+    /**
+     * Creates a multi join table.
+     *
+     * @param inputs the inputs
+     * @return the multi join table
+     */
+    TABLE multiJoin(List<MultiJoinInput<TABLE>> inputs);
 
     /**
      * Merges the given {@code tables}.
@@ -245,18 +256,21 @@ public interface TableCreator<TABLE> {
     }
 
     /**
-     * Equivalent to {@code of(TicketTable.of(ticket))}.
+     * Create a ticket table with the UTF-8 bytes from the {@code ticket} string. Equivalent to
+     * {@code of(TicketTable.of(ticket.getBytes(StandardCharsets.UTF_8)))}.
      *
      * @param ticket the ticket string
      * @return the ticket table
-     * @see TicketTable#of(String)
+     * @see TicketTable#of(byte[])
+     * @deprecated prefer {@link #ticket(byte[])} or other explicit methods on {@link TicketTable}
      */
+    @Deprecated
     default TABLE ticket(String ticket) {
-        return of(TicketTable.of(ticket));
+        return of(TicketTable.of(ticket.getBytes(StandardCharsets.UTF_8)));
     }
 
     /**
-     * Equivalent to {@code of(TicketTable.of(ticket))}.
+     * Create a ticket table with the {@code ticket} bytes. Equivalent to {@code of(TicketTable.of(ticket))}.
      *
      * @param ticket the ticket
      * @return the ticket table

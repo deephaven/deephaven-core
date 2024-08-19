@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -60,6 +61,13 @@ import java.util.function.Function;
 public final class SessionImpl extends SessionBase {
     private static final Logger log = LoggerFactory.getLogger(SessionImpl.class);
 
+    /**
+     * Creates a session. Closing the session does <b>not</b> close the underlying channel.
+     *
+     * @param config the config
+     * @return the session
+     * @throws InterruptedException if the thread is interrupted
+     */
     public static SessionImpl create(SessionImplConfig config) throws InterruptedException {
         final Authentication authentication =
                 Authentication.authenticate(config.channel(), config.authenticationTypeAndValue());
@@ -110,6 +118,9 @@ public final class SessionImpl extends SessionBase {
     private final BearerHandler bearerHandler;
     private final ExportTicketCreator exportTicketCreator;
     private final ScheduledFuture<?> pingJob;
+
+    /** Cache the close future, so we only close once. */
+    private CompletableFuture<Void> closeFuture;
 
     private SessionImpl(SessionImplConfig config, DeephavenChannel bearerChannel, Duration pingFrequency,
             BearerHandler bearerHandler) {
@@ -300,14 +311,19 @@ public final class SessionImpl extends SessionBase {
             log.warn("Timed out waiting for session close");
         } catch (ExecutionException e) {
             log.error("Exception waiting for session close", e);
+        } catch (CancellationException e) {
+            log.warn("Close cancelled", e);
         }
     }
 
     @Override
-    public CompletableFuture<Void> closeFuture() {
-        pingJob.cancel(false);
-        HandshakeRequest handshakeRequest = HandshakeRequest.getDefaultInstance();
-        return UnaryGrpcFuture.ignoreResponse(handshakeRequest, channel().session()::closeSession);
+    public synchronized CompletableFuture<Void> closeFuture() {
+        if (closeFuture == null) {
+            pingJob.cancel(false);
+            HandshakeRequest handshakeRequest = HandshakeRequest.getDefaultInstance();
+            closeFuture = UnaryGrpcFuture.ignoreResponse(handshakeRequest, channel().session()::closeSession);
+        }
+        return closeFuture;
     }
 
     @Override

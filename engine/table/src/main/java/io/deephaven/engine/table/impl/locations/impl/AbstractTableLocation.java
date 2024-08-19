@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl.locations.impl;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.BasicDataIndex;
 import io.deephaven.engine.table.impl.util.FieldUtils;
 import io.deephaven.engine.util.string.StringUtils;
@@ -12,6 +11,7 @@ import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
+import io.deephaven.util.annotations.InternalUseOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -196,7 +196,7 @@ public abstract class AbstractTableLocation
                 if (localReference != null && (localIndex = localReference.get()) != null) {
                     return localIndex;
                 }
-                localIndex = loadDataIndex(columns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                localIndex = loadDataIndex(columns.toArray(String[]::new));
                 indexReference = localIndex == null ? NO_INDEX_SENTINEL : new SoftReference<>(localIndex);
                 return localIndex;
             }
@@ -223,7 +223,10 @@ public abstract class AbstractTableLocation
      *
      * @param columns The columns to load an index for
      * @return The data index, or {@code null} if none exists
+     * @apiNote This method is {@code public} for use in delegating implementations, and should not be called directly
+     *          otherwise.
      */
+    @InternalUseOnly
     @Nullable
-    protected abstract BasicDataIndex loadDataIndex(@NotNull String... columns);
+    public abstract BasicDataIndex loadDataIndex(@NotNull String... columns);
 }

@@ -15,8 +15,8 @@ import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.*;
-import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableLong;
 
 import java.util.Collections;
 import java.util.Map;
@@ -47,12 +47,12 @@ class LongChunkedWeightedSumOperator implements IterativeChunkedAggregationOpera
             IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
         final Context context = (Context) bucketedContext;
-        final LongChunk<? extends Values> doubleValues = context.toLongCast.apply(values);
+        final LongChunk<? extends Values> longValues = context.toLongCast.apply(values);
         final LongChunk<? extends Values> weightValues = weightOperator.getAddedWeights();
         Assert.neqNull(weightValues, "weightValues");
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
-            stateModified.set(ii, addChunk(doubleValues, weightValues, startPosition, length.get(ii),
+            stateModified.set(ii, addChunk(longValues, weightValues, startPosition, length.get(ii),
                     destinations.get(startPosition)));
         }
     }
@@ -63,12 +63,12 @@ class LongChunkedWeightedSumOperator implements IterativeChunkedAggregationOpera
             IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
         final Context context = (Context) bucketedContext;
-        final LongChunk<? extends Values> doubleValues = context.prevToLongCast.apply(values);
+        final LongChunk<? extends Values> longValues = context.prevToLongCast.apply(values);
         final LongChunk<? extends Values> weightValues = weightOperator.getRemovedWeights();
         Assert.neqNull(weightValues, "weightValues");
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
-            stateModified.set(ii, removeChunk(doubleValues, weightValues, startPosition, length.get(ii),
+            stateModified.set(ii, removeChunk(longValues, weightValues, startPosition, length.get(ii),
                     destinations.get(startPosition)));
         }
     }
@@ -94,18 +94,18 @@ class LongChunkedWeightedSumOperator implements IterativeChunkedAggregationOpera
     public boolean addChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
             LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         final Context context = (Context) singletonContext;
-        final LongChunk<? extends Values> doubleValues = context.toLongCast.apply(values);
+        final LongChunk<? extends Values> longValues = context.toLongCast.apply(values);
         final LongChunk<? extends Values> weightValues = weightOperator.getAddedWeights();
-        return addChunk(doubleValues, weightValues, 0, values.size(), destination);
+        return addChunk(longValues, weightValues, 0, values.size(), destination);
     }
 
     @Override
     public boolean removeChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
             LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         final Context context = (Context) singletonContext;
-        final LongChunk<? extends Values> doubleValues = context.prevToLongCast.apply(values);
+        final LongChunk<? extends Values> longValues = context.prevToLongCast.apply(values);
         final LongChunk<? extends Values> weightValues = weightOperator.getRemovedWeights();
-        return removeChunk(doubleValues, weightValues, 0, values.size(), destination);
+        return removeChunk(longValues, weightValues, 0, values.size(), destination);
     }
 
     @Override
@@ -122,19 +122,19 @@ class LongChunkedWeightedSumOperator implements IterativeChunkedAggregationOpera
                 newDoubleValues.size(), destination);
     }
 
-    private static void sumChunks(LongChunk<? extends Values> doubleValues, LongChunk<? extends Values> weightValues,
+    private static void sumChunks(LongChunk<? extends Values> longValues, LongChunk<? extends Values> weightValues,
             int start,
             int length,
             MutableInt normalOut,
             MutableLong weightedSumOut) {
-        long normal = 0;
+        int normal = 0;
         long weightedSum = 0;
 
         for (int ii = 0; ii < length; ++ii) {
-            final double weight = weightValues.get(start + ii);
-            final double component = doubleValues.get(start + ii);
+            final long weight = weightValues.get(start + ii);
+            final long component = longValues.get(start + ii);
 
-            if (weight == QueryConstants.NULL_DOUBLE || component == QueryConstants.NULL_DOUBLE) {
+            if (weight == QueryConstants.NULL_LONG || component == QueryConstants.NULL_LONG) {
                 continue;
             }
 
@@ -142,8 +142,8 @@ class LongChunkedWeightedSumOperator implements IterativeChunkedAggregationOpera
             weightedSum += weight * component;
         }
 
-        normalOut.setValue(normal);
-        weightedSumOut.setValue(weightedSum);
+        normalOut.set(normal);
+        weightedSumOut.set(weightedSum);
     }
 
     private boolean addChunk(LongChunk<? extends Values> longValues, LongChunk<? extends Values> weightValues,
@@ -153,8 +153,8 @@ class LongChunkedWeightedSumOperator implements IterativeChunkedAggregationOpera
 
         sumChunks(longValues, weightValues, start, length, normalOut, weightedSumOut);
 
-        final long newNormal = normalOut.intValue();
-        final long newWeightedSum = weightedSumOut.longValue();
+        final int newNormal = normalOut.get();
+        final long newWeightedSum = weightedSumOut.get();
 
         final long totalNormal;
         final long existingNormal = normalCount.getUnsafe(destination);
@@ -172,21 +172,21 @@ class LongChunkedWeightedSumOperator implements IterativeChunkedAggregationOpera
                 weightedSum.set(destination, totalWeightedSum);
             }
 
-            final double existingResult = resultColumn.getAndSetUnsafe(destination, totalWeightedSum);
+            final long existingResult = resultColumn.getAndSetUnsafe(destination, totalWeightedSum);
             return totalWeightedSum != existingResult;
         }
         return false;
     }
 
-    private boolean removeChunk(LongChunk<? extends Values> doubleValues, LongChunk<? extends Values> weightValues,
+    private boolean removeChunk(LongChunk<? extends Values> longValues, LongChunk<? extends Values> weightValues,
             int start, int length, long destination) {
         final MutableInt normalOut = new MutableInt();
         final MutableLong weightedSumOut = new MutableLong();
 
-        sumChunks(doubleValues, weightValues, start, length, normalOut, weightedSumOut);
+        sumChunks(longValues, weightValues, start, length, normalOut, weightedSumOut);
 
-        final int newNormal = normalOut.intValue();
-        final long newWeightedSum = weightedSumOut.longValue();
+        final int newNormal = normalOut.get();
+        final long newWeightedSum = weightedSumOut.get();
 
         final long totalNormal;
         final long existingNormal = normalCount.getUnsafe(destination);
@@ -231,13 +231,13 @@ class LongChunkedWeightedSumOperator implements IterativeChunkedAggregationOpera
 
         sumChunks(prevDoubleValues, prevWeightValues, start, length, normalOut, weightedSumOut);
 
-        final int prevNormal = normalOut.intValue();
-        final long prevWeightedSum = weightedSumOut.longValue();
+        final int prevNormal = normalOut.get();
+        final long prevWeightedSum = weightedSumOut.get();
 
         sumChunks(newDoubleValues, newWeightValues, start, length, normalOut, weightedSumOut);
 
-        final int newNormal = normalOut.intValue();
-        final long newWeightedSum = weightedSumOut.longValue();
+        final int newNormal = normalOut.get();
+        final long newWeightedSum = weightedSumOut.get();
 
         final long totalNormal;
         final long existingNormal = normalCount.getUnsafe(destination);
@@ -256,12 +256,12 @@ class LongChunkedWeightedSumOperator implements IterativeChunkedAggregationOpera
                 weightedSum.set(destination, totalWeightedSum);
             }
 
-            final double existingResult = resultColumn.getAndSetUnsafe(destination, totalWeightedSum);
+            final long existingResult = resultColumn.getAndSetUnsafe(destination, totalWeightedSum);
             return totalWeightedSum != existingResult;
         } else {
             if (prevNormal > 0) {
                 weightedSum.set(destination, 0L);
-                resultColumn.set(destination, QueryConstants.NULL_DOUBLE);
+                resultColumn.set(destination, QueryConstants.NULL_LONG);
                 return true;
             }
             return false;

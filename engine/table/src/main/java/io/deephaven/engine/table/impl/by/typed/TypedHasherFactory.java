@@ -11,6 +11,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.hashing.CharChunkHasher;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryCompilerRequest;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
@@ -34,10 +35,8 @@ import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.immutable.*;
 import io.deephaven.engine.table.impl.updateby.hashing.TypedUpdateByFactory;
 import io.deephaven.engine.table.impl.updateby.hashing.UpdateByStateManagerTypedBase;
-import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.CharComparisons;
-import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import javax.lang.model.element.Modifier;
@@ -59,8 +58,8 @@ public class TypedHasherFactory {
      * Produce a hasher for the given base class and column sources.
      *
      * @param <T> the base class
-     * @param baseClass the base class (e.g. {@link StaticChunkedOperatorAggregationStateManagerTypedBase} that the
-     *        generated hasher extends from
+     * @param baseClass the base class (e.g. {@link IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase}
+     *        that the generated hasher extends from
      * @param tableKeySources the key sources
      * @param originalKeySources
      * @param tableSize the initial table size
@@ -79,25 +78,15 @@ public class TypedHasherFactory {
     public static <T> HasherConfig<T> hasherConfigForBase(Class<T> baseClass) {
         final HasherConfig.Builder<T> builder = new HasherConfig.Builder<>(baseClass);
 
-        if (baseClass.equals(StaticChunkedOperatorAggregationStateManagerTypedBase.class)) {
-            configureAggregation(builder);
-            builder.classPrefix("StaticAggHasher").packageMiddle("staticagg");
-            builder.overflowOrAlternateStateName("overflowOutputPosition");
-            builder.openAddressed(false);
-        } else if (baseClass.equals(StaticChunkedOperatorAggregationStateManagerOpenAddressedBase.class)) {
+        if (baseClass.equals(StaticChunkedOperatorAggregationStateManagerOpenAddressedBase.class)) {
             configureAggregation(builder);
             builder.classPrefix("StaticAggOpenHasher").packageMiddle("staticopenagg");
-            builder.openAddressed(true).openAddressedAlternate(false);
+            builder.openAddressedAlternate(false);
             builder.moveMainFull(TypedAggregationFactory::staticAggMoveMain);
             builder.addBuild(
                     new HasherConfig.BuildSpec("build", "outputPosition", false, true,
-                            TypedAggregationFactory::buildFound,
+                            true, TypedAggregationFactory::buildFound,
                             TypedAggregationFactory::buildInsert));
-        } else if (baseClass.equals(IncrementalChunkedOperatorAggregationStateManagerTypedBase.class)) {
-            configureAggregation(builder);
-            builder.classPrefix("IncrementalAggHasher").packageMiddle("incagg");
-            builder.openAddressed(false);
-            builder.overflowOrAlternateStateName("overflowOutputPosition");
         } else if (baseClass.equals(IncrementalChunkedOperatorAggregationStateManagerOpenAddressedBase.class)) {
             configureAggregation(builder);
             builder.classPrefix("IncrementalAggOpenHasher").packageMiddle("incopenagg");
@@ -106,15 +95,11 @@ public class TypedHasherFactory {
             builder.moveMainAlternate(TypedAggregationFactory::incAggMoveMain);
             builder.alwaysMoveMain(true);
 
-            final ClassName rowKeyType = ClassName.get(RowKeys.class);
-            final ParameterizedTypeName emptiedChunkType =
-                    ParameterizedTypeName.get(ClassName.get(WritableIntChunk.class), rowKeyType);
-
             builder.addProbe(new HasherConfig.ProbeSpec("probe", "outputPosition", false,
                     TypedAggregationFactory::probeFound, TypedAggregationFactory::probeMissing));
 
             builder.addBuild(new HasherConfig.BuildSpec("build", "outputPosition", false, true,
-                    TypedAggregationFactory::buildFound, TypedAggregationFactory::buildInsertIncremental));
+                    true, TypedAggregationFactory::buildFound, TypedAggregationFactory::buildInsertIncremental));
         } else if (baseClass.equals(StaticNaturalJoinStateManagerTypedBase.class)) {
             builder.classPrefix("StaticNaturalJoinHasher").packageGroup("naturaljoin").packageMiddle("staticopen")
                     .openAddressedAlternate(false)
@@ -124,7 +109,7 @@ public class TypedHasherFactory {
                     .supportRehash(false);
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromLeftSide", "rightSideSentinel",
-                    false, true, TypedNaturalJoinFactory::staticBuildLeftFound,
+                    false, true, true, TypedNaturalJoinFactory::staticBuildLeftFound,
                     TypedNaturalJoinFactory::staticBuildLeftInsert,
                     ParameterSpec.builder(TypeName.get(IntegerArraySource.class), "leftHashSlots").build(),
                     ParameterSpec.builder(long.class, "hashSlotOffset").build()));
@@ -136,7 +121,7 @@ public class TypedHasherFactory {
                     ParameterSpec.builder(long.class, "redirectionOffset").build()));
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromRightSide", "rightSideSentinel",
-                    true, true, TypedNaturalJoinFactory::staticBuildRightFound,
+                    true, true, true, TypedNaturalJoinFactory::staticBuildRightFound,
                     TypedNaturalJoinFactory::staticBuildRightInsert));
 
             builder.addProbe(new HasherConfig.ProbeSpec("decorateWithRightSide", "existingStateValue",
@@ -156,7 +141,7 @@ public class TypedHasherFactory {
                     .rehashFullSetup(TypedNaturalJoinFactory::rightIncrementalRehashSetup);
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromLeftSide", "leftRowSetForState",
-                    true, true, TypedNaturalJoinFactory::rightIncrementalBuildLeftFound,
+                    true, true, true, TypedNaturalJoinFactory::rightIncrementalBuildLeftFound,
                     TypedNaturalJoinFactory::rightIncrementalBuildLeftInsert));
 
             builder.addProbe(new HasherConfig.ProbeSpec("addRightSide", null, true,
@@ -195,9 +180,11 @@ public class TypedHasherFactory {
             builder.classPrefix("IncrementalNaturalJoinHasher").packageGroup("naturaljoin")
                     .packageMiddle("incopen")
                     .openAddressedAlternate(true)
+                    .supportTombstones(true)
                     .stateType(long.class).mainStateName("mainRightRowKey")
                     .overflowOrAlternateStateName("alternateRightRowKey")
                     .emptyStateName("EMPTY_RIGHT_STATE")
+                    .tombstoneStateName("TOMBSTONE_RIGHT_STATE")
                     .includeOriginalSources(true)
                     .supportRehash(true)
                     .addExtraPartialRehashParameter(modifiedSlotTrackerParam)
@@ -207,13 +194,12 @@ public class TypedHasherFactory {
                     .rehashFullSetup(TypedNaturalJoinFactory::incrementalRehashSetup);
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromLeftSide", "rightRowKeyForState",
-                    true, false, TypedNaturalJoinFactory::incrementalBuildLeftFound,
+                    true, false, false, TypedNaturalJoinFactory::incrementalBuildLeftFound,
                     TypedNaturalJoinFactory::incrementalBuildLeftInsert));
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromRightSide", "existingRightRowKey", true,
-                    false, TypedNaturalJoinFactory::incrementalRightFound,
+                    false, false, TypedNaturalJoinFactory::incrementalRightFound,
                     TypedNaturalJoinFactory::incrementalRightInsert));
-
 
             builder.addProbe(new HasherConfig.ProbeSpec("removeRight", "existingRightRowKey", true,
                     TypedNaturalJoinFactory::incrementalRemoveRightFound,
@@ -221,7 +207,7 @@ public class TypedHasherFactory {
                     modifiedSlotTrackerParam));
 
             builder.addBuild(new HasherConfig.BuildSpec("addRightSide", "existingRightRowKey", true,
-                    true, TypedNaturalJoinFactory::incrementalRightFoundUpdate,
+                    true, true, TypedNaturalJoinFactory::incrementalRightFoundUpdate,
                     TypedNaturalJoinFactory::incrementalRightInsertUpdate,
                     modifiedSlotTrackerParam));
 
@@ -239,12 +225,12 @@ public class TypedHasherFactory {
                     modifiedSlotTrackerParam, probeContextParam));
 
             builder.addBuild(new HasherConfig.BuildSpec("addLeftSide", "rightRowKeyForState", true,
-                    true, TypedNaturalJoinFactory::incrementalLeftFoundUpdate,
+                    true, true, TypedNaturalJoinFactory::incrementalLeftFoundUpdate,
                     TypedNaturalJoinFactory::incrementalLeftInsertUpdate,
                     ParameterSpec.builder(TypeName.get(LongArraySource.class), "leftRedirections").build(),
                     ParameterSpec.builder(long.class, "leftRedirectionOffset").build()));
 
-            builder.addProbe(new HasherConfig.ProbeSpec("removeLeft", null, true,
+            builder.addProbe(new HasherConfig.ProbeSpec("removeLeft", "rightState", true,
                     TypedNaturalJoinFactory::incrementalRemoveLeftFound,
                     TypedNaturalJoinFactory::incrementalRemoveLeftMissing));
 
@@ -265,17 +251,17 @@ public class TypedHasherFactory {
                     .rehashFullSetup(TypedAsOfJoinFactory::staticRehashSetup);
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromLeftSide", "rightSideSentinel",
-                    true, true, TypedAsOfJoinFactory::staticBuildLeftFound,
+                    true, true, true, TypedAsOfJoinFactory::staticBuildLeftFound,
                     TypedAsOfJoinFactory::staticBuildLeftInsert));
 
             builder.addProbe(new HasherConfig.ProbeSpec("decorateLeftSide", null, true,
                     TypedAsOfJoinFactory::staticProbeDecorateLeftFound, null,
                     ParameterSpec.builder(TypeName.get(IntegerArraySource.class), "hashSlots").build(),
-                    ParameterSpec.builder(MutableLong.class, "hashSlotOffset").build(),
+                    ParameterSpec.builder(MutableInt.class, "hashSlotOffset").build(),
                     ParameterSpec.builder(RowSetBuilderRandom.class, "foundBuilder").build()));
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromRightSide", "rightSideSentinel",
-                    true, true, TypedAsOfJoinFactory::staticBuildRightFound,
+                    true, true, true, TypedAsOfJoinFactory::staticBuildRightFound,
                     TypedAsOfJoinFactory::staticBuildRightInsert));
 
             builder.addProbe(new HasherConfig.ProbeSpec("decorateWithRightSide", null,
@@ -299,11 +285,11 @@ public class TypedHasherFactory {
                     .rehashFullSetup(TypedAsOfJoinFactory::rightIncrementalRehashSetup);
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromLeftSide", "rowState",
-                    true, true, TypedAsOfJoinFactory::rightIncrementalBuildLeftFound,
+                    true, true, true, TypedAsOfJoinFactory::rightIncrementalBuildLeftFound,
                     TypedAsOfJoinFactory::rightIncrementalBuildLeftInsert, sequentialBuilders));
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromRightSide", "rowState", true,
-                    true, TypedAsOfJoinFactory::rightIncrementalRightFound,
+                    true, true, TypedAsOfJoinFactory::rightIncrementalRightFound,
                     TypedAsOfJoinFactory::rightIncrementalRightInsert, sequentialBuilders));
 
             builder.addProbe(new HasherConfig.ProbeSpec("probeRightSide", "rowState",
@@ -332,7 +318,7 @@ public class TypedHasherFactory {
                     .rehashFullSetup(TypedUpdateByFactory::incrementalRehashSetup);
 
             builder.addBuild(new HasherConfig.BuildSpec("buildHashTable", "rowState",
-                    true, true, TypedUpdateByFactory::incrementalBuildLeftFound,
+                    true, true, true, TypedUpdateByFactory::incrementalBuildLeftFound,
                     TypedUpdateByFactory::incrementalBuildLeftInsert, outputPositionOffset, outputPositions));
 
             builder.addProbe(new HasherConfig.ProbeSpec("probeHashTable", "rowState",
@@ -351,7 +337,7 @@ public class TypedHasherFactory {
 
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromTable", "slotValue",
-                    true, true, TypedMultiJoinFactory::staticBuildLeftFound,
+                    true, true, true, TypedMultiJoinFactory::staticBuildLeftFound,
                     TypedMultiJoinFactory::staticBuildLeftInsert,
                     ParameterSpec.builder(TypeName.get(LongArraySource.class), "tableRedirSource").build(),
                     ParameterSpec.builder(long.class, "tableNumber").build()));
@@ -380,7 +366,7 @@ public class TypedHasherFactory {
 
             builder.addBuild(new HasherConfig.BuildSpec("buildFromTable", "slotValue",
                     true, true,
-                    TypedMultiJoinFactory::incrementalBuildLeftFound,
+                    true, TypedMultiJoinFactory::incrementalBuildLeftFound,
                     TypedMultiJoinFactory::incrementalBuildLeftInsert,
                     tableRedirSourceParam,
                     tableNumberParam,
@@ -442,25 +428,10 @@ public class TypedHasherFactory {
             ColumnSource<?>[] originalKeySources, int tableSize,
             double maximumLoadFactor, double targetLoadFactor) {
         if (USE_PREGENERATED_HASHERS) {
-            if (hasherConfig.baseClass.equals(StaticChunkedOperatorAggregationStateManagerTypedBase.class)) {
-                // noinspection unchecked
-                T pregeneratedHasher = (T) io.deephaven.engine.table.impl.by.typed.staticagg.gen.TypedHashDispatcher
-                        .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                if (pregeneratedHasher != null) {
-                    return pregeneratedHasher;
-                }
-            } else if (hasherConfig.baseClass
+            if (hasherConfig.baseClass
                     .equals(StaticChunkedOperatorAggregationStateManagerOpenAddressedBase.class)) {
                 // noinspection unchecked
                 T pregeneratedHasher = (T) io.deephaven.engine.table.impl.by.typed.staticopenagg.gen.TypedHashDispatcher
-                        .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
-                if (pregeneratedHasher != null) {
-                    return pregeneratedHasher;
-                }
-            } else if (hasherConfig.baseClass
-                    .equals(IncrementalChunkedOperatorAggregationStateManagerTypedBase.class)) {
-                // noinspection unchecked
-                T pregeneratedHasher = (T) io.deephaven.engine.table.impl.by.typed.incagg.gen.TypedHashDispatcher
                         .dispatch(tableKeySources, originalKeySources, tableSize, maximumLoadFactor, targetLoadFactor);
                 if (pregeneratedHasher != null) {
                     return pregeneratedHasher;
@@ -566,12 +537,18 @@ public class TypedHasherFactory {
         final String javaString =
                 Arrays.stream(javaStrings).filter(s -> !s.startsWith("package ")).collect(Collectors.joining("\n"));
 
-        final Class<?> clazz = ExecutionContext.getContext().getQueryCompiler().compile(className, javaString,
-                "io.deephaven.engine.table.impl.by.typed." + hasherConfig.packageMiddle + ".gen");
+        final Class<?> clazz = ExecutionContext.getContext().getQueryCompiler().compile(QueryCompilerRequest.builder()
+                .description("TypedHasherFactory: " + className)
+                .className(className)
+                .classBody(javaString)
+                .packageNameRoot("io.deephaven.engine.table.impl.by.typed." + hasherConfig.packageMiddle + ".gen")
+                .build());
+
         if (!hasherConfig.baseClass.isAssignableFrom(clazz)) {
             throw new IllegalStateException("Generated class is not a " + hasherConfig.baseClass.getCanonicalName());
         }
 
+        // noinspection unchecked
         final Class<? extends T> castedClass = (Class<? extends T>) clazz;
 
         T retVal;
@@ -604,7 +581,7 @@ public class TypedHasherFactory {
     public static <T> JavaFile generateHasher(final HasherConfig<T> hasherConfig,
             final ChunkType[] chunkTypes,
             final String className,
-            Optional<Modifier> visibility) {
+            final Optional<Modifier> visibility) {
         final String packageName = packageName(hasherConfig);
         final TypeSpec.Builder hasherBuilder =
                 TypeSpec.classBuilder(className).addModifiers(Modifier.FINAL).superclass(hasherConfig.baseClass);
@@ -612,40 +589,31 @@ public class TypedHasherFactory {
 
         hasherBuilder.addMethod(createConstructor(hasherConfig, chunkTypes, hasherBuilder));
 
-        if (hasherConfig.openAddressed) {
-            hasherBuilder.addMethod(createNextTableLocationMethod(false));
-            if (hasherConfig.openAddressedAlternate) {
-                hasherBuilder.addMethod(createNextTableLocationMethod(true));
-            }
-            hasherConfig.builds.forEach(
-                    bs -> hasherBuilder.addMethod(createBuildMethodForOpenAddressed(hasherConfig, bs, chunkTypes)));
-            hasherConfig.probes.forEach(
-                    ps -> hasherBuilder.addMethod(createProbeMethodForOpenAddressed(hasherConfig, ps, chunkTypes)));
-        } else {
-            hasherBuilder.addMethod(createBuildMethodForOverflow(hasherConfig, chunkTypes));
-            hasherBuilder.addMethod(createProbeMethodForOverflow(hasherConfig, chunkTypes));
+        hasherBuilder.addMethod(createNextTableLocationMethod(false));
+        if (hasherConfig.openAddressedAlternate) {
+            hasherBuilder.addMethod(createNextTableLocationMethod(true));
         }
+        hasherConfig.builds.forEach(
+                bs -> hasherBuilder.addMethod(createBuildMethodForOpenAddressed(hasherConfig, bs, chunkTypes)));
+        hasherConfig.probes.forEach(
+                ps -> hasherBuilder.addMethod(createProbeMethodForOpenAddressed(hasherConfig, ps, chunkTypes)));
         hasherBuilder.addMethod(createHashMethod(chunkTypes));
 
-        if (hasherConfig.openAddressed) {
-            if (hasherConfig.openAddressedAlternate) {
-                hasherBuilder.addMethod(createMigrateLocationMethod(hasherConfig, chunkTypes));
-                hasherBuilder.addMethod(createRehashInternalPartialMethod(hasherConfig, chunkTypes));
-                hasherBuilder.addMethod(createNewAlternateMethod(hasherConfig, chunkTypes));
-                hasherBuilder.addMethod(createClearAlternateMethod(hasherConfig, chunkTypes));
-                hasherBuilder.addMethod(createMigrateFront(hasherConfig));
-            }
-            if (hasherConfig.supportRehash) {
-                hasherBuilder.addMethod(createRehashInternalFullMethod(hasherConfig, chunkTypes));
-            }
-        } else {
-            hasherBuilder.addMethod(createRehashBucketMethod(hasherConfig, chunkTypes));
-            hasherBuilder.addMethod(createMaybeMoveMainBucket(hasherConfig, chunkTypes));
+        hasherBuilder.addMethod(createIsEmptyMethod(hasherConfig));
+        if (hasherConfig.supportTombstones) {
+            hasherBuilder.addMethod(createIsDeletedMethod(hasherConfig));
+        }
+        if (hasherConfig.openAddressedAlternate) {
+            hasherBuilder.addMethod(createMigrateLocationMethod(hasherConfig, chunkTypes));
+            hasherBuilder.addMethod(createRehashInternalPartialMethod(hasherConfig, chunkTypes));
+            hasherBuilder.addMethod(createNewAlternateMethod(hasherConfig, chunkTypes));
+            hasherBuilder.addMethod(createClearAlternateMethod(hasherConfig, chunkTypes));
+            hasherBuilder.addMethod(createMigrateFront(hasherConfig));
+        }
+        if (hasherConfig.supportRehash) {
+            hasherBuilder.addMethod(createRehashInternalFullMethod(hasherConfig, chunkTypes));
         }
 
-        if (!hasherConfig.openAddressed) {
-            hasherBuilder.addMethod(createFindOverflow(chunkTypes));
-        }
         hasherConfig.extraMethods.forEach(em -> hasherBuilder.addMethod(em.apply(hasherConfig, chunkTypes)));
 
         final TypeSpec hasher = hasherBuilder.build();
@@ -688,16 +656,11 @@ public class TypedHasherFactory {
     private static <T> MethodSpec createConstructor(HasherConfig<T> hasherConfig, ChunkType[] chunkTypes,
             TypeSpec.Builder hasherBuilder) {
         CodeBlock.Builder constructorCodeBuilder = CodeBlock.builder();
-        if (hasherConfig.openAddressed) {
-            if (hasherConfig.includeOriginalSources) {
-                constructorCodeBuilder
-                        .addStatement("super(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor)");
-            } else {
-                constructorCodeBuilder.addStatement("super(tableKeySources, tableSize, maximumLoadFactor)");
-            }
-        } else {
+        if (hasherConfig.includeOriginalSources) {
             constructorCodeBuilder
-                    .addStatement("super(tableKeySources, tableSize, maximumLoadFactor, targetLoadFactor)");
+                    .addStatement("super(tableKeySources, originalTableKeySources, tableSize, maximumLoadFactor)");
+        } else {
+            constructorCodeBuilder.addStatement("super(tableKeySources, tableSize, maximumLoadFactor)");
         }
         addKeySourceFields(hasherConfig, chunkTypes, hasherBuilder, constructorCodeBuilder);
 
@@ -718,141 +681,18 @@ public class TypedHasherFactory {
 
         final List<FieldSpec> keySources = new ArrayList<>();
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
-            final Class<?> type =
-                    hasherConfig.openAddressed ? flatSourceType(chunkTypes[ii]) : arraySourceType(chunkTypes[ii]);
+            final Class<?> type = flatSourceType(chunkTypes[ii]);
             keySources.add(
                     FieldSpec.builder(type, "mainKeySource" + ii).addModifiers(modifiers)
                             .build());
             constructorCodeBuilder.addStatement("this.mainKeySource$L = ($T) super.mainKeySources[$L]", ii, type, ii);
-            if (hasherConfig.openAddressed) {
-                constructorCodeBuilder.addStatement("this.mainKeySource$L.ensureCapacity(tableSize)", ii);
-                if (hasherConfig.openAddressedAlternate) {
-                    keySources.add(FieldSpec.builder(type, "alternateKeySource" + ii)
-                            .addModifiers(modifiers).build());
-                }
-            } else {
-                keySources.add(FieldSpec.builder(type, "overflowKeySource" + ii)
+            constructorCodeBuilder.addStatement("this.mainKeySource$L.ensureCapacity(tableSize)", ii);
+            if (hasherConfig.openAddressedAlternate) {
+                keySources.add(FieldSpec.builder(type, "alternateKeySource" + ii)
                         .addModifiers(modifiers).build());
-                constructorCodeBuilder.addStatement("this.overflowKeySource$L = ($T) super.overflowKeySources[$L]", ii,
-                        type, ii);
             }
         }
         keySources.forEach(hasherBuilder::addField);
-    }
-
-    @NotNull
-    private static MethodSpec createFindOverflow(ChunkType[] chunkTypes) {
-        final MethodSpec.Builder builder =
-                MethodSpec.methodBuilder("findOverflow").addParameter(HashHandler.class, "handler");
-        for (int ii = 0; ii < chunkTypes.length; ++ii) {
-            builder.addParameter(elementType(chunkTypes[ii]), "k" + ii);
-        }
-
-        builder.addParameter(int.class, "chunkPosition").addParameter(int.class, "overflowLocation")
-                .returns(boolean.class).addModifiers(Modifier.PRIVATE)
-                .beginControlFlow("while (overflowLocation != $T.NULL_INT)", QueryConstants.class)
-                .beginControlFlow("if (" + getEqualsStatementOverflow(chunkTypes) + ")")
-                .addStatement("handler.doOverflowFound(overflowLocation, chunkPosition)")
-                .addStatement("return true")
-                .endControlFlow()
-                .addStatement("overflowLocation = overflowOverflowLocationSource.getUnsafe(overflowLocation)")
-                .endControlFlow()
-                .addStatement("return false");
-        return builder.build();
-    }
-
-    @NotNull
-    private static MethodSpec createMaybeMoveMainBucket(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes) {
-        MethodSpec.Builder builder =
-                MethodSpec.methodBuilder("maybeMoveMainBucket").addParameter(HashHandler.class, "handler")
-                        .addParameter(int.class, "sourceBucket").addParameter(int.class, "destBucket")
-                        .addParameter(int.class, "bucketsToAdd").returns(int.class).addModifiers(Modifier.PRIVATE);
-
-        for (int ii = 0; ii < chunkTypes.length; ++ii) {
-            final Class<?> element = elementType(chunkTypes[ii]);
-            builder.addStatement("final $T k$L = mainKeySource$L.getUnsafe(sourceBucket)", element, ii, ii);
-        }
-        builder.addStatement("final int hash = hash("
-                + IntStream.range(0, chunkTypes.length).mapToObj(x -> "k" + x).collect(Collectors.joining(", ")) + ")");
-        builder.addStatement("final int location = hashToTableLocation(tableHashPivot + bucketsToAdd, hash)");
-        builder.addStatement("final int mainInsertLocation");
-        builder.beginControlFlow("if (location == sourceBucket)");
-        builder.addStatement("mainInsertLocation = destBucket");
-        builder.addStatement("$L.set(destBucket, $L)", hasherConfig.mainStateName, hasherConfig.emptyStateName);
-        builder.nextControlFlow("else");
-        builder.addStatement("mainInsertLocation = sourceBucket");
-        builder.addStatement("$L.set(destBucket, $L.getUnsafe(sourceBucket))", hasherConfig.mainStateName,
-                hasherConfig.mainStateName);
-        builder.addStatement("$L.set(sourceBucket, $L)", hasherConfig.mainStateName, hasherConfig.emptyStateName);
-        for (int ii = 0; ii < chunkTypes.length; ++ii) {
-            builder.addStatement("mainKeySource$L.set(destBucket, k$L)", ii, ii);
-            builder.addStatement("mainKeySource$L.set(sourceBucket, $L)", ii, elementNull(chunkTypes[ii]));
-        }
-        builder.addStatement("handler.doMoveMain(sourceBucket, destBucket)");
-        builder.endControlFlow();
-        builder.addStatement("return mainInsertLocation");
-
-        return builder
-                .build();
-    }
-
-    @NotNull
-    private static MethodSpec createRehashBucketMethod(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes) {
-        final CodeBlock.Builder builder = CodeBlock.builder();
-
-        builder.addStatement("final int position = $L.getUnsafe(sourceBucket)", hasherConfig.mainStateName);
-        builder.beginControlFlow("if (position == $L)", hasherConfig.emptyStateName);
-        builder.addStatement("return");
-        builder.endControlFlow();
-
-        builder.addStatement(
-                "int mainInsertLocation = maybeMoveMainBucket(handler, sourceBucket, destBucket, bucketsToAdd)");
-        builder.addStatement("int overflowLocation = mainOverflowLocationSource.getUnsafe(sourceBucket)");
-        builder.addStatement("mainOverflowLocationSource.set(sourceBucket, QueryConstants.NULL_INT)");
-        builder.addStatement("mainOverflowLocationSource.set(destBucket, QueryConstants.NULL_INT)");
-
-        builder.beginControlFlow("while (overflowLocation != QueryConstants.NULL_INT)");
-        builder.addStatement(
-                "final int nextOverflowLocation = overflowOverflowLocationSource.getUnsafe(overflowLocation)");
-        for (int ii = 0; ii < chunkTypes.length; ++ii) {
-            builder.addStatement("final $T overflowKey$L = overflowKeySource$L.getUnsafe(overflowLocation)",
-                    elementType(chunkTypes[ii]), ii, ii);
-        }
-        builder.addStatement("final int overflowHash = hash(" + IntStream.range(0, chunkTypes.length)
-                .mapToObj(x -> "overflowKey" + x).collect(Collectors.joining(", ")) + ")");
-        builder.addStatement(
-                "final int overflowTableLocation = hashToTableLocation(tableHashPivot + bucketsToAdd, overflowHash)");
-        builder.beginControlFlow("if (overflowTableLocation == mainInsertLocation)");
-        for (int ii = 0; ii < chunkTypes.length; ++ii) {
-            builder.addStatement("mainKeySource$L.set(mainInsertLocation, overflowKey$L)", ii, ii);
-        }
-        builder.addStatement("$L.set(mainInsertLocation, $L.getUnsafe(overflowLocation))", hasherConfig.mainStateName,
-                hasherConfig.overflowOrAlternateStateName);
-        builder.addStatement("handler.doPromoteOverflow(overflowLocation, mainInsertLocation)");
-        builder.addStatement("$L.set(overflowLocation, QueryConstants.NULL_INT)",
-                hasherConfig.overflowOrAlternateStateName);
-
-        // key source loop
-        for (int ii = 0; ii < chunkTypes.length; ++ii) {
-            builder.addStatement("overflowKeySource$L.set(overflowLocation, $L)", ii, elementNull(chunkTypes[ii]));
-        }
-
-        builder.addStatement("freeOverflowLocation(overflowLocation)");
-        builder.addStatement("mainInsertLocation = -1");
-        builder.nextControlFlow("else");
-        builder.addStatement(
-                "final int oldOverflowLocation = mainOverflowLocationSource.getUnsafe(overflowTableLocation)");
-        builder.addStatement("mainOverflowLocationSource.set(overflowTableLocation, overflowLocation)");
-        builder.addStatement("overflowOverflowLocationSource.set(overflowLocation, oldOverflowLocation)");
-        builder.endControlFlow();
-        builder.addStatement("overflowLocation = nextOverflowLocation");
-        builder.endControlFlow();
-
-        return MethodSpec.methodBuilder("rehashBucket").addParameter(HashHandler.class, "handler")
-                .addParameter(int.class, "sourceBucket").addParameter(int.class, "destBucket")
-                .addParameter(int.class, "bucketsToAdd").returns(void.class).addModifiers(Modifier.PROTECTED)
-                .addCode(builder.build())
-                .addAnnotation(Override.class).build();
     }
 
     // this rehash internal method is not incremental, which makes us nervous about using it for incremental updates
@@ -901,7 +741,7 @@ public class TypedHasherFactory {
             builder.addStatement("final $T currentStateValue = ($T)originalStateArray[sourceBucket]",
                     hasherConfig.stateType, hasherConfig.stateType);
         }
-        builder.beginControlFlow("if (currentStateValue == $L)", hasherConfig.emptyStateName);
+        builder.beginControlFlow("if (isStateEmpty(currentStateValue))");
         builder.addStatement("continue");
         builder.endControlFlow();
 
@@ -914,7 +754,12 @@ public class TypedHasherFactory {
         builder.addStatement("final int firstDestinationTableLocation = hashToTableLocation(hash)");
         builder.addStatement("int destinationTableLocation = firstDestinationTableLocation");
         builder.beginControlFlow("while (true)");
-        builder.beginControlFlow("if (destState[destinationTableLocation] == $L)", hasherConfig.emptyStateName);
+        if (hasherConfig.stateType.isPrimitive()) {
+            builder.beginControlFlow("if (isStateEmpty(destState[destinationTableLocation]))");
+        } else {
+            builder.beginControlFlow("if (isStateEmpty(($T)destState[destinationTableLocation]))",
+                    hasherConfig.stateType);
+        }
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             builder.addStatement("destKeyArray$L[destinationTableLocation] = k$L", ii, ii);
         }
@@ -952,14 +797,10 @@ public class TypedHasherFactory {
         // ensure the capacity for everything
         builder.addStatement("int rehashedEntries = 0");
         builder.beginControlFlow("while (rehashPointer > 0 && rehashedEntries < entriesToRehash)");
-        final String extraParamNames;
-        if (hasherConfig.extraPartialRehashParameters.size() > 0) {
-            extraParamNames = ", " + hasherConfig.extraPartialRehashParameters.stream().map(ps -> ps.name)
-                    .collect(Collectors.joining(", "));
-        } else {
-            extraParamNames = "";
-        }
-        builder.beginControlFlow("if (migrateOneLocation(--rehashPointer" + extraParamNames + "))");
+        final String extraParamNames = getExtraMigrateParams(hasherConfig.extraPartialRehashParameters);
+        final String deletedParam = hasherConfig.supportTombstones ? ", false" : "";
+
+        builder.beginControlFlow("if (migrateOneLocation(--rehashPointer" + deletedParam + extraParamNames + "))");
         builder.addStatement("rehashedEntries++");
         builder.endControlFlow();
         builder.endControlFlow();
@@ -979,15 +820,13 @@ public class TypedHasherFactory {
     private static MethodSpec createNewAlternateMethod(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes) {
         final CodeBlock.Builder builder = CodeBlock.builder();
 
-        builder.addStatement("super.newAlternate()");
-
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             final Class<?> sourceType = flatSourceType(chunkTypes[ii]);
             builder.addStatement("this.mainKeySource$L = ($T)super.mainKeySources[$L]", ii, sourceType, ii);
             builder.addStatement("this.alternateKeySource$L = ($T)super.alternateKeySources[$L]", ii, sourceType, ii);
         }
 
-        return MethodSpec.methodBuilder("newAlternate")
+        return MethodSpec.methodBuilder("adviseNewAlternate")
                 .returns(void.class).addModifiers(Modifier.PROTECTED)
                 .addCode(builder.build())
                 .addAnnotation(Override.class).build();
@@ -1016,9 +855,17 @@ public class TypedHasherFactory {
 
         builder.addStatement("final $T currentStateValue = $L.getUnsafe(locationToMigrate)", hasherConfig.stateType,
                 hasherConfig.overflowOrAlternateStateName);
-        builder.beginControlFlow("if (currentStateValue == $L)", hasherConfig.emptyStateName);
+        builder.beginControlFlow("if (isStateEmpty(currentStateValue))");
         builder.addStatement("return false");
         builder.endControlFlow();
+        if (hasherConfig.supportTombstones) {
+            builder.beginControlFlow("if (isStateDeleted(currentStateValue))");
+            builder.addStatement("alternateEntries--");
+            builder.addStatement("$L.set(locationToMigrate, $L)", hasherConfig.overflowOrAlternateStateName,
+                    hasherConfig.emptyStateName);
+            builder.addStatement("return trueOnDeletedEntry");
+            builder.endControlFlow();
+        }
 
         for (int ii = 0; ii < chunkTypes.length; ++ii) {
             final Class<?> element = elementType(chunkTypes[ii]);
@@ -1029,8 +876,15 @@ public class TypedHasherFactory {
 
         builder.addStatement("int destinationTableLocation = hashToTableLocation(hash)");
 
-        builder.beginControlFlow("while ($L.getUnsafe(destinationTableLocation) != $L)", hasherConfig.mainStateName,
-                hasherConfig.emptyStateName);
+        if (hasherConfig.supportTombstones) {
+            builder.addStatement("$T candidateState", hasherConfig.stateType);
+            builder.beginControlFlow(
+                    "while (!isStateEmpty(candidateState = $L.getUnsafe(destinationTableLocation)) && !isStateDeleted(candidateState))",
+                    hasherConfig.mainStateName);
+        } else {
+            builder.beginControlFlow("while (!isStateEmpty($L.getUnsafe(destinationTableLocation)))",
+                    hasherConfig.mainStateName);
+        }
         builder.addStatement("destinationTableLocation = nextTableLocation(destinationTableLocation)");
         builder.endControlFlow();
 
@@ -1039,8 +893,13 @@ public class TypedHasherFactory {
         builder.addStatement("return true");
 
         final MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("migrateOneLocation")
-                .returns(boolean.class).addModifiers(Modifier.PRIVATE).addParameter(int.class, "locationToMigrate")
+                .returns(boolean.class).addModifiers(Modifier.PRIVATE)
+                .addParameter(int.class, "locationToMigrate")
                 .addCode(builder.build());
+
+        if (hasherConfig.supportTombstones) {
+            methodBuilder.addParameter(boolean.class, "trueOnDeletedEntry");
+        }
 
         hasherConfig.extraPartialRehashParameters.forEach(methodBuilder::addParameter);
 
@@ -1053,15 +912,13 @@ public class TypedHasherFactory {
 
         builder.addStatement("int location = 0");
 
-        final String extraParamNames;
-        if (hasherConfig.extraPartialRehashParameters.size() > 0) {
-            extraParamNames = ", " + hasherConfig.extraPartialRehashParameters.stream().map(ps -> ps.name)
-                    .collect(Collectors.joining(", "));
-        } else {
-            extraParamNames = "";
-        }
+        final String extraParamNames = getExtraMigrateParams(hasherConfig.extraPartialRehashParameters);
 
-        builder.addStatement("while (migrateOneLocation(location++" + extraParamNames + "))");
+        final String deletedParam = hasherConfig.supportTombstones ? ", true" : "";
+
+        builder.addStatement(
+                "while (migrateOneLocation(location++" + deletedParam + extraParamNames
+                        + ") && location < alternateTableSize)");
 
         final MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("migrateFront")
                 .addModifiers(Modifier.PROTECTED)
@@ -1069,6 +926,51 @@ public class TypedHasherFactory {
                 .addCode(builder.build());
 
         hasherConfig.extraPartialRehashParameters.forEach(methodBuilder::addParameter);
+
+        return methodBuilder.build();
+    }
+
+    private static @NotNull String getExtraMigrateParams(List<ParameterSpec> hasherConfig) {
+        final String extraParamNames;
+        if (!hasherConfig.isEmpty()) {
+            extraParamNames = ", " + hasherConfig.stream().map(ps -> ps.name)
+                    .collect(Collectors.joining(", "));
+        } else {
+            extraParamNames = "";
+        }
+        return extraParamNames;
+    }
+
+    /**
+     * The isStateEmpty method indicates that the state is empty, for probe iteration.
+     */
+    private static MethodSpec createIsEmptyMethod(HasherConfig<?> hasherConfig) {
+        final CodeBlock.Builder builder = CodeBlock.builder();
+
+        builder.addStatement("return state == $L", hasherConfig.emptyStateName);
+
+        final MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("isStateEmpty")
+                .addModifiers(Modifier.STATIC, Modifier.PRIVATE)
+                .returns(boolean.class)
+                .addParameter(hasherConfig.stateType, "state")
+                .addCode(builder.build());
+
+        return methodBuilder.build();
+    }
+
+    /**
+     * The isStateDeleted method indicates that the state is deleted, for probe iteration.
+     */
+    private static MethodSpec createIsDeletedMethod(HasherConfig<?> hasherConfig) {
+        final CodeBlock.Builder builder = CodeBlock.builder();
+
+        builder.addStatement("return state == $L", hasherConfig.tombstoneStateName);
+
+        final MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("isStateDeleted")
+                .addModifiers(Modifier.STATIC, Modifier.PRIVATE)
+                .returns(boolean.class)
+                .addParameter(hasherConfig.stateType, "state")
+                .addCode(builder.build());
 
         return methodBuilder.build();
     }
@@ -1086,63 +988,13 @@ public class TypedHasherFactory {
         hasherConfig.moveMainAlternate.accept(builder);
         builder.addStatement("$L.set($L, $L)", hasherConfig.overflowOrAlternateStateName, sourceLocation,
                 hasherConfig.emptyStateName);
-    }
-
-    @NotNull
-    private static MethodSpec createBuildMethodForOverflow(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes) {
-        final CodeBlock.Builder builder = CodeBlock.builder();
-        for (int ii = 0; ii < chunkTypes.length; ++ii) {
-            final ClassName chunkName =
-                    ClassName.get(CharChunk.class.getPackageName(), chunkTypes[ii].name() + "Chunk");
-            final ClassName valuesName = ClassName.get(Values.class);
-            final ParameterizedTypeName chunkTypeName = chunkTypes[ii] == ChunkType.Object
-                    ? ParameterizedTypeName.get(chunkName, ClassName.get(Object.class), valuesName)
-                    : ParameterizedTypeName.get(chunkName, valuesName);
-            builder.addStatement("final $T keyChunk$L = sourceKeyChunks[$L].as$LChunk()", chunkTypeName, ii, ii,
-                    chunkTypes[ii].name());
+        // with tombstone support, we must track the entries and the alternateEntriest separately
+        if (hasherConfig.supportTombstones) {
+            builder.beginControlFlow("if (!isStateDeleted(candidateState))");
+            builder.addStatement("numEntries++");
+            builder.endControlFlow();
+            builder.addStatement("alternateEntries--");
         }
-        builder.addStatement("final int chunkSize = keyChunk0.size()");
-        builder.beginControlFlow("for (int chunkPosition = 0; chunkPosition < chunkSize; ++chunkPosition)");
-        for (int ii = 0; ii < chunkTypes.length; ++ii) {
-            final Class<?> element = elementType(chunkTypes[ii]);
-            builder.addStatement("final $T k$L = keyChunk$L.get(chunkPosition)", element, ii, ii);
-        }
-        builder.addStatement("final int hash = hash("
-                + IntStream.range(0, chunkTypes.length).mapToObj(x -> "k" + x).collect(Collectors.joining(", ")) + ")");
-        builder.addStatement("final int tableLocation = hashToTableLocation(tableHashPivot, hash)");
-        builder.beginControlFlow("if ($L.getUnsafe(tableLocation) == $L)", hasherConfig.mainStateName,
-                hasherConfig.emptyStateName);
-        builder.addStatement("numEntries++");
-        for (int ii = 0; ii < chunkTypes.length; ++ii) {
-            builder.addStatement("mainKeySource$L.set(tableLocation, k$L)", ii, ii);
-        }
-        builder.addStatement("handler.doMainInsert(tableLocation, chunkPosition)");
-        builder.nextControlFlow("else if (" + getEqualsStatement(chunkTypes) + ")");
-        builder.addStatement("handler.doMainFound(tableLocation, chunkPosition)");
-        builder.nextControlFlow("else");
-        builder.addStatement("int overflowLocation = mainOverflowLocationSource.getUnsafe(tableLocation)");
-        builder.beginControlFlow("if (!findOverflow(handler, "
-                + IntStream.range(0, chunkTypes.length).mapToObj(x -> "k" + x).collect(Collectors.joining(", "))
-                + ", chunkPosition, overflowLocation))");
-        builder.addStatement("final int newOverflowLocation = allocateOverflowLocation()");
-        for (int ii = 0; ii < chunkTypes.length; ++ii) {
-            builder.addStatement("overflowKeySource$L.set(newOverflowLocation, k$L)", ii, ii);
-        }
-        builder.addStatement("mainOverflowLocationSource.set(tableLocation, newOverflowLocation)");
-        builder.addStatement("overflowOverflowLocationSource.set(newOverflowLocation, overflowLocation)");
-        builder.addStatement("numEntries++");
-        builder.addStatement("handler.doOverflowInsert(newOverflowLocation, chunkPosition)");
-        builder.endControlFlow();
-        builder.endControlFlow();
-        builder.endControlFlow();
-
-
-        return MethodSpec.methodBuilder("build")
-                .addParameter(HashHandler.class, "handler")
-                .addParameter(RowSequence.class, "rowSequence")
-                .addParameter(Chunk[].class, "sourceKeyChunks")
-                .returns(void.class).addModifiers(Modifier.PROTECTED).addCode(builder.build())
-                .addAnnotation(Override.class).build();
     }
 
     @NotNull
@@ -1207,11 +1059,21 @@ public class TypedHasherFactory {
             builder.addStatement("$L = $L.getUnsafe($L)", buildSpec.stateValueName,
                     hasherConfig.overflowOrAlternateStateName, tableLocationName);
         } else {
+            if (hasherConfig.supportTombstones && buildSpec.checkDeletions) {
+                builder.addStatement("int firstDeletedLocation = -1");
+            }
             builder.beginControlFlow((hasherConfig.openAddressedAlternate ? "MAIN_SEARCH: " : "") + "while (true)");
             builder.addStatement("$T $L = $L.getUnsafe($L)", hasherConfig.stateType, buildSpec.stateValueName,
                     hasherConfig.mainStateName, tableLocationName);
         }
-        builder.beginControlFlow("if ($L == $L)", buildSpec.stateValueName, hasherConfig.emptyStateName);
+
+        if (!alternate && hasherConfig.supportTombstones && buildSpec.checkDeletions) {
+            builder.beginControlFlow("if (firstDeletedLocation < 0 && isStateDeleted($L))", buildSpec.stateValueName);
+            builder.addStatement("firstDeletedLocation = $L", tableLocationName);
+            builder.endControlFlow();
+        }
+
+        builder.beginControlFlow("if (isStateEmpty($L))", buildSpec.stateValueName);
 
         if (hasherConfig.openAddressedAlternate && !alternate && buildSpec.allowAlternates) {
             // we might need to do an alternative build here
@@ -1219,15 +1081,21 @@ public class TypedHasherFactory {
         }
 
         if (!alternate) {
-            builder.addStatement("numEntries++");
-            for (int ii = 0; ii < chunkTypes.length; ++ii) {
-                builder.addStatement("mainKeySource$L.set($L, k$L)", ii, tableLocationName, ii);
-            }
-            buildSpec.insert.accept(hasherConfig, chunkTypes, builder);
+            doInsertion(hasherConfig, buildSpec, chunkTypes, builder, tableLocationName, true);
         }
         builder.addStatement("break");
-        builder.nextControlFlow("else if ("
-                + (alternate ? getEqualsStatementAlternate(chunkTypes) : getEqualsStatement(chunkTypes)) + ")");
+        final String keyEqualsExpression =
+                alternate ? getEqualsStatementAlternate(chunkTypes) : getEqualsStatement(chunkTypes);
+        builder.nextControlFlow("else if (" + keyEqualsExpression + ")");
+        if (hasherConfig.supportTombstones && buildSpec.checkDeletions) {
+            builder.beginControlFlow("if (isStateDeleted($L))", buildSpec.stateValueName);
+            // we can terminate our probe here, and insert into the firstDeleted location (or here)
+            if (!alternate) {
+                doInsertion(hasherConfig, buildSpec, chunkTypes, builder, tableLocationName, false);
+            }
+            builder.addStatement("break");
+            builder.endControlFlow();
+        }
         buildSpec.found.accept(hasherConfig, alternate, builder);
         if (alternate) {
             builder.addStatement("break MAIN_SEARCH");
@@ -1244,6 +1112,51 @@ public class TypedHasherFactory {
                 firstTableLocationName, firstTableLocationName);
         builder.endControlFlow();
         builder.endControlFlow();
+    }
+
+    /**
+     * @param hasherConfig the hasher spec
+     * @param buildSpec the spec for the specific builder
+     * @param chunkTypes the types of our chunks
+     * @param builder the method builder we are adding to
+     * @param tableLocationName the name of the table location
+     * @param checkForDeletedLocation true if we need to check the firstDeletedLocation variable, false if are sure that
+     *        it is set and we do not need to check it
+     */
+    private static void doInsertion(HasherConfig<?> hasherConfig,
+            HasherConfig.BuildSpec buildSpec,
+            ChunkType[] chunkTypes,
+            CodeBlock.Builder builder,
+            String tableLocationName,
+            boolean checkForDeletedLocation) {
+        if (hasherConfig.supportTombstones) {
+            // set to the first available location
+            if (buildSpec.checkDeletions) {
+                if (checkForDeletedLocation) {
+                    builder.beginControlFlow("if (firstDeletedLocation >= 0)");
+                }
+                builder.addStatement("tableLocation = firstDeletedLocation");
+                if (checkForDeletedLocation) {
+                    builder.nextControlFlow("else");
+                    builder.addStatement("numEntries++");
+                    builder.endControlFlow();
+                }
+            } else {
+                builder.addStatement("numEntries++");
+            }
+            builder.addStatement("liveEntries++");
+        } else {
+            builder.addStatement("numEntries++");
+        }
+        doInsertCommon(hasherConfig, buildSpec, chunkTypes, builder, tableLocationName);
+    }
+
+    private static void doInsertCommon(HasherConfig<?> hasherConfig, HasherConfig.BuildSpec buildSpec,
+            ChunkType[] chunkTypes, CodeBlock.Builder builder, String tableLocationName) {
+        for (int ii = 0; ii < chunkTypes.length; ++ii) {
+            builder.addStatement("mainKeySource$L.set($L, k$L)", ii, tableLocationName, ii);
+        }
+        buildSpec.insert.accept(hasherConfig, chunkTypes, builder);
     }
 
     private static MethodSpec createProbeMethodForOpenAddressed(HasherConfig<?> hasherConfig, HasherConfig.ProbeSpec ps,
@@ -1304,31 +1217,49 @@ public class TypedHasherFactory {
         if (foundBlockRequired) {
             builder.addStatement("boolean $L = false", foundName);
         }
+        if (hasherConfig.supportTombstones && !alternate) {
+            builder.addStatement("boolean searchAlternate = true");
+        }
 
         if (alternate) {
             builder.beginControlFlow("if ($L < rehashPointer)", firstTableLocationName);
         }
         builder.addStatement("int $L = $L", tableLocationName, firstTableLocationName);
 
-
-        if (!alternate && ps.stateValueName != null) {
-            builder.addStatement("$T $L", hasherConfig.stateType, ps.stateValueName);
+        final String stateValueName;
+        if (ps.stateValueName != null) {
+            stateValueName = ps.stateValueName;
+        } else if (hasherConfig.supportTombstones) {
+            stateValueName = "stateValue";
+        } else {
+            stateValueName = null;
+        }
+        if (!alternate && stateValueName != null) {
+            builder.addStatement("$T $L", hasherConfig.stateType, stateValueName);
         }
 
         final String stateSourceName =
                 alternate ? hasherConfig.overflowOrAlternateStateName : hasherConfig.mainStateName;
-        if (ps.stateValueName == null) {
-            builder.beginControlFlow("while ($L.getUnsafe($L) != $L)",
-                    stateSourceName, tableLocationName,
-                    hasherConfig.emptyStateName);
+        if (stateValueName == null) {
+            builder.beginControlFlow("while (!isStateEmpty($L.getUnsafe($L)))",
+                    stateSourceName, tableLocationName);
         } else {
-            builder.beginControlFlow("while (($L = $L.getUnsafe($L)) != $L)", ps.stateValueName,
-                    stateSourceName, tableLocationName,
-                    hasherConfig.emptyStateName);
+            builder.beginControlFlow("while (!isStateEmpty($L = $L.getUnsafe($L)))", stateValueName,
+                    stateSourceName, tableLocationName);
         }
 
-        builder.beginControlFlow(
-                "if (" + (alternate ? getEqualsStatementAlternate(chunkTypes) : getEqualsStatement(chunkTypes)) + ")");
+        final String equalsStatement =
+                alternate ? getEqualsStatementAlternate(chunkTypes) : getEqualsStatement(chunkTypes);
+        builder.beginControlFlow("if (" + equalsStatement + ")");
+        if (hasherConfig.supportTombstones) {
+            builder.beginControlFlow("if (isStateDeleted($L))", stateValueName);
+            if (!alternate) {
+                // never going to find it now
+                builder.addStatement("searchAlternate = false");
+            }
+            builder.addStatement("break");
+            builder.endControlFlow();
+        }
         ps.found.accept(hasherConfig, alternate, builder);
         if (foundBlockRequired) {
             builder.addStatement("$L = true", foundName);
@@ -1345,61 +1276,22 @@ public class TypedHasherFactory {
 
         if (foundBlockRequired) {
             builder.beginControlFlow("if (!$L)", foundName);
+            if (hasherConfig.supportTombstones && !alternate) {
+                builder.beginControlFlow("if (!searchAlternate)");
+                ps.missing.accept(builder);
+                builder.nextControlFlow("else");
+            }
             if (hasherConfig.openAddressedAlternate && !alternate) {
                 doProbeSearch(hasherConfig, ps, chunkTypes, builder, true);
             } else {
                 ps.missing.accept(builder);
             }
+            if (hasherConfig.supportTombstones && !alternate) {
+                builder.endControlFlow();
+            }
             builder.endControlFlow();
         }
     }
-
-    @NotNull
-    private static MethodSpec createProbeMethodForOverflow(HasherConfig<?> hasherConfig, ChunkType[] chunkTypes) {
-        final CodeBlock.Builder builder = CodeBlock.builder();
-        for (int ii = 0; ii < chunkTypes.length; ++ii) {
-            final ClassName chunkName =
-                    ClassName.get(CharChunk.class.getPackageName(), chunkTypes[ii].name() + "Chunk");
-            final ClassName valuesName = ClassName.get(Values.class);
-            final ParameterizedTypeName chunkTypeName = chunkTypes[ii] == ChunkType.Object
-                    ? ParameterizedTypeName.get(chunkName, ClassName.get(Object.class), valuesName)
-                    : ParameterizedTypeName.get(chunkName, valuesName);
-            builder.addStatement("final $T keyChunk$L = sourceKeyChunks[$L].as$LChunk()", chunkTypeName, ii, ii,
-                    chunkTypes[ii].name());
-        }
-        builder.addStatement("final int chunkSize = keyChunk0.size()");
-        builder.beginControlFlow("for (int chunkPosition = 0; chunkPosition < chunkSize; ++chunkPosition)");
-        for (int ii = 0; ii < chunkTypes.length; ++ii) {
-            final Class<?> element = elementType(chunkTypes[ii]);
-            builder.addStatement("final $T k$L = keyChunk$L.get(chunkPosition)", element, ii, ii);
-        }
-        builder.addStatement("final int hash = hash("
-                + IntStream.range(0, chunkTypes.length).mapToObj(x -> "k" + x).collect(Collectors.joining(", ")) + ")");
-        builder.addStatement("final int tableLocation = hashToTableLocation(tableHashPivot, hash)");
-        builder.beginControlFlow("if ($L.getUnsafe(tableLocation) == $L)", hasherConfig.mainStateName,
-                hasherConfig.emptyStateName);
-        builder.addStatement("handler.doMissing(chunkPosition)");
-        builder.nextControlFlow("else if (" + getEqualsStatement(chunkTypes) + ")");
-        builder.addStatement("handler.doMainFound(tableLocation, chunkPosition)");
-        builder.nextControlFlow("else");
-        builder.addStatement("int overflowLocation = mainOverflowLocationSource.getUnsafe(tableLocation)");
-        builder.beginControlFlow("if (!findOverflow(handler, "
-                + IntStream.range(0, chunkTypes.length).mapToObj(x -> "k" + x).collect(Collectors.joining(", "))
-                + ", chunkPosition, overflowLocation))");
-        builder.addStatement("handler.doMissing(chunkPosition)");
-        builder.endControlFlow();
-        builder.endControlFlow();
-        builder.endControlFlow();
-
-        return MethodSpec.methodBuilder("probe")
-                .addParameter(HashHandler.class, "handler")
-                .addParameter(RowSequence.class, "rowSequence")
-                .addParameter(Chunk[].class, "sourceKeyChunks")
-                .returns(void.class).addModifiers(Modifier.PROTECTED).addCode(builder.build())
-                .addAnnotation(Override.class).build();
-    }
-
-
 
     @NotNull
     private static MethodSpec createHashMethod(ChunkType[] chunkTypes) {
@@ -1434,39 +1326,8 @@ public class TypedHasherFactory {
                 .collect(Collectors.joining(" && "));
     }
 
-    @NotNull
-    public static String getEqualsStatementOverflow(ChunkType[] chunkTypes) {
-        return IntStream.range(0, chunkTypes.length)
-                .mapToObj(x -> "eq(overflowKeySource" + x + ".getUnsafe(overflowLocation), k" + x + ")")
-                .collect(Collectors.joining(" && "));
-    }
-
     private static ClassName chunkHasherByChunkType(ChunkType chunkType) {
         return ClassName.get(CharChunkHasher.class.getPackageName(), chunkType.name() + "ChunkHasher");
-    }
-
-    static Class<? extends ArrayBackedColumnSource> arraySourceType(ChunkType chunkType) {
-        switch (chunkType) {
-            default:
-            case Boolean:
-                throw new IllegalArgumentException();
-            case Char:
-                return CharacterArraySource.class;
-            case Byte:
-                return ByteArraySource.class;
-            case Short:
-                return ShortArraySource.class;
-            case Int:
-                return IntegerArraySource.class;
-            case Long:
-                return LongArraySource.class;
-            case Float:
-                return FloatArraySource.class;
-            case Double:
-                return DoubleArraySource.class;
-            case Object:
-                return ObjectArraySource.class;
-        }
     }
 
     static Class<? extends ColumnSource> flatSourceType(ChunkType chunkType) {
@@ -1514,24 +1375,6 @@ public class TypedHasherFactory {
                 return double.class;
             case Object:
                 return Object.class;
-        }
-    }
-
-    private static String elementNull(ChunkType chunkType) {
-        switch (chunkType) {
-            default:
-            case Boolean:
-                throw new IllegalArgumentException();
-            case Char:
-            case Byte:
-            case Short:
-            case Int:
-            case Long:
-            case Float:
-            case Double:
-                return "QueryConstants.NULL_" + chunkType.name().toUpperCase();
-            case Object:
-                return "null";
         }
     }
 }

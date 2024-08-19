@@ -626,7 +626,10 @@ public class SessionState {
             }
         }
 
-        private boolean isNonExport() {
+        /**
+         * @return if this export is a session-less non-export
+         */
+        public boolean isNonExport() {
             return exportId == NON_EXPORT_ID;
         }
 
@@ -1138,6 +1141,7 @@ public class SessionState {
             if (!(caughtException instanceof StatusRuntimeException)) {
                 caughtException = null;
             }
+            queryPerformanceRecorder = null;
         }
 
         /**
@@ -1320,6 +1324,40 @@ public class SessionState {
         void onError(final StatusRuntimeException notification);
     }
 
+    /**
+     * Convert an {@link ExportErrorGrpcHandler} to an {@link ExportErrorHandler}.
+     * <p>
+     * gRPC's error handlers are designed to consume {@link StatusRuntimeException} objects. Exports can fail for a
+     * variety of reasons, and the {@link ExportErrorHandler} is designed to richly communicate export failures. This
+     * method is the glue between the two error handling APIs; enabling export error propagation to gRPC clients.
+     *
+     * @param errorHandler the gRPC specific error handler
+     * @return the generalized error handler
+     */
+    public static SessionState.ExportErrorHandler toErrorHandler(final ExportErrorGrpcHandler errorHandler) {
+        return (resultState, errorContext, cause, dependentExportId) -> {
+            if (cause instanceof StatusRuntimeException) {
+                errorHandler.onError((StatusRuntimeException) cause);
+                return;
+            }
+
+            final String dependentStr = dependentExportId == null ? ""
+                    : (" (related parent export id: " + dependentExportId + ")");
+            if (cause == null) {
+                if (resultState == ExportNotification.State.CANCELLED) {
+                    errorHandler.onError(Exceptions.statusRuntimeException(Code.CANCELLED,
+                            "Export is cancelled" + dependentStr));
+                } else {
+                    errorHandler.onError(Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                            "Export in state " + resultState + dependentStr));
+                }
+            } else {
+                errorHandler.onError(Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                        "Details Logged w/ID '" + errorContext + "'" + dependentStr));
+            }
+        };
+    }
+
     public class ExportBuilder<T> {
         private final int exportId;
         private final ExportObject<T> export;
@@ -1415,27 +1453,7 @@ public class SessionState {
          * @return this builder
          */
         public ExportBuilder<T> onErrorHandler(final ExportErrorGrpcHandler errorHandler) {
-            return onError(((resultState, errorContext, cause, dependentExportId) -> {
-                if (cause instanceof StatusRuntimeException) {
-                    errorHandler.onError((StatusRuntimeException) cause);
-                    return;
-                }
-
-                final String dependentStr = dependentExportId == null ? ""
-                        : (" (related parent export id: " + dependentExportId + ")");
-                if (cause == null) {
-                    if (resultState == ExportNotification.State.CANCELLED) {
-                        errorHandler.onError(Exceptions.statusRuntimeException(Code.CANCELLED,
-                                "Export is cancelled" + dependentStr));
-                    } else {
-                        errorHandler.onError(Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                                "Export in state " + resultState + dependentStr));
-                    }
-                } else {
-                    errorHandler.onError(Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                            "Details Logged w/ID '" + errorContext + "'" + dependentStr));
-                }
-            }));
+            return onError(toErrorHandler(errorHandler));
         }
 
         /**
@@ -1449,7 +1467,7 @@ public class SessionState {
          * @param streamObserver the streamObserver to be notified of any error
          * @return this builder
          */
-        public ExportBuilder<T> onError(StreamObserver<?> streamObserver) {
+        public ExportBuilder<T> onError(final StreamObserver<?> streamObserver) {
             return onErrorHandler(statusRuntimeException -> {
                 safelyError(streamObserver, statusRuntimeException);
             });

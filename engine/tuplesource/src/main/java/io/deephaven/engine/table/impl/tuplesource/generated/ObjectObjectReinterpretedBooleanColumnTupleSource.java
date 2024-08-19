@@ -84,6 +84,11 @@ public class ObjectObjectReinterpretedBooleanColumnTupleSource extends AbstractT
         );
     }
 
+    @Override
+    public final int tupleLength() {
+        return 3;
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public final <ELEMENT_TYPE> void exportElement(@NotNull final ObjectObjectByteTuple tuple, final int elementIndex, @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationRowKey) {
@@ -117,6 +122,20 @@ public class ObjectObjectReinterpretedBooleanColumnTupleSource extends AbstractT
     }
 
     @Override
+    public final void exportAllTo(final Object @NotNull [] dest, @NotNull final ObjectObjectByteTuple tuple) {
+        dest[0] = tuple.getFirstElement();
+        dest[1] = tuple.getSecondElement();
+        dest[2] = BooleanUtils.byteAsBoolean(tuple.getThirdElement());
+    }
+
+    @Override
+    public final void exportAllTo(final Object @NotNull [] dest, @NotNull final ObjectObjectByteTuple tuple, final int @NotNull [] map) {
+        dest[map[0]] = tuple.getFirstElement();
+        dest[map[1]] = tuple.getSecondElement();
+        dest[map[2]] = BooleanUtils.byteAsBoolean(tuple.getThirdElement());
+    }
+
+    @Override
     public final Object exportElementReinterpreted(@NotNull final ObjectObjectByteTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
             return tuple.getFirstElement();
@@ -129,6 +148,20 @@ public class ObjectObjectReinterpretedBooleanColumnTupleSource extends AbstractT
         }
         throw new IllegalArgumentException("Bad elementIndex for 3 element tuple: " + elementIndex);
     }
+    @Override
+    public final void exportAllReinterpretedTo(final Object @NotNull [] dest, @NotNull final ObjectObjectByteTuple tuple) {
+        dest[0] = tuple.getFirstElement();
+        dest[1] = tuple.getSecondElement();
+        dest[2] = TypeUtils.box(tuple.getThirdElement());
+    }
+
+    @Override
+    public final void exportAllReinterpretedTo(final Object @NotNull [] dest, @NotNull final ObjectObjectByteTuple tuple, final int @NotNull [] map) {
+        dest[map[0]] = tuple.getFirstElement();
+        dest[map[1]] = tuple.getSecondElement();
+        dest[map[2]] = TypeUtils.box(tuple.getThirdElement());
+    }
+
 
     @Override
     protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {

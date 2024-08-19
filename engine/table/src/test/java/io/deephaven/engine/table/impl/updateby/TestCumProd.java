@@ -8,19 +8,20 @@ import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.api.updateby.UpdateByOperation;
-import io.deephaven.engine.table.impl.DataAccessHelpers;
 import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
 import io.deephaven.engine.testutil.GenerateTableUpdates;
 import io.deephaven.engine.testutil.EvalNugget;
 import io.deephaven.engine.testutil.TstUtils;
+import io.deephaven.engine.testutil.generator.TestDataGenerator;
 import io.deephaven.function.Numeric;
 import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -47,9 +48,26 @@ public class TestCumProd extends BaseUpdateByTest {
             if ("boolCol".equals(col)) {
                 continue;
             }
-            assertWithCumProd(DataAccessHelpers.getColumn(t, col).getDirect(),
-                    DataAccessHelpers.getColumn(result, col).getDirect(),
-                    DataAccessHelpers.getColumn(result, col).getType());
+            assertWithCumProd(
+                    ColumnVectors.of(t, col).toArray(),
+                    ColumnVectors.of(result, col).toArray(),
+                    result.getDefinition().getColumn(col).getDataType());
+        }
+    }
+
+    @Test
+    public void testStaticZeroKeyAllNulls() {
+        final QueryTable t = createTestTableAllNull(100000, false, false, false, 0x31313131,
+                ArrayTypeUtils.EMPTY_STRING_ARRAY, new TestDataGenerator[0]).t;
+        final Table result = t.updateBy(UpdateByOperation.CumProd());
+        for (String col : t.getDefinition().getColumnNamesArray()) {
+            if ("boolCol".equals(col)) {
+                continue;
+            }
+            assertWithCumProd(
+                    ColumnVectors.of(t, col).toArray(),
+                    ColumnVectors.of(result, col).toArray(),
+                    result.getDefinition().getColumn(col).getDataType());
         }
     }
 
@@ -58,7 +76,7 @@ public class TestCumProd extends BaseUpdateByTest {
     // region Bucketed Tests
 
     @Test
-    public void testNullOnBucketChange() throws IOException {
+    public void testNullOnBucketChange() {
         final TableDefaults t = testTable(stringCol("Sym", "A", "A", "B", "B"),
                 byteCol("ByteVal", (byte) 1, (byte) 2, NULL_BYTE, (byte) 3),
                 shortCol("ShortVal", (short) 1, (short) 2, NULL_SHORT, (short) 3),
@@ -105,9 +123,10 @@ public class TestCumProd extends BaseUpdateByTest {
 
         preOp.partitionedTransform(postOp, (source, actual) -> {
             Arrays.stream(columns).forEach(col -> {
-                assertWithCumProd(DataAccessHelpers.getColumn(source, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col).getDirect(),
-                        DataAccessHelpers.getColumn(actual, col).getType());
+                assertWithCumProd(
+                        ColumnVectors.of(source, col).toArray(),
+                        ColumnVectors.of(actual, col).toArray(),
+                        actual.getDefinition().getColumn(col).getDataType());
             });
             return source;
         });
@@ -321,7 +340,7 @@ public class TestCumProd extends BaseUpdateByTest {
         } else if (expected instanceof long[]) {
             assertArrayEquals(Numeric.cumprod((long[]) expected), (long[]) actual);
         } else if (expected instanceof float[]) {
-            assertArrayEquals(Numeric.cumprod((float[]) expected), (float[]) actual, .001f);
+            assertArrayEquals(Numeric.cumprod((float[]) expected), (double[]) actual, .001f);
         } else if (expected instanceof double[]) {
             assertArrayEquals(Numeric.cumprod((double[]) expected), (double[]) actual, .001d);
         } else {

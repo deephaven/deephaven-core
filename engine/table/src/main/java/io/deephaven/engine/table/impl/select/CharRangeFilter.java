@@ -47,23 +47,23 @@ public class CharRangeFilter extends AbstractRangeFilter {
         }
     }
 
-    static WhereFilter makeCharRangeFilter(String columnName, Condition condition, String value) {
+    static WhereFilter makeCharRangeFilter(String columnName, Condition condition, char value) {
         switch (condition) {
             case LESS_THAN:
-                return lt(columnName, RangeConditionFilter.parseCharFilter(value));
+                return lt(columnName, value);
             case LESS_THAN_OR_EQUAL:
-                return leq(columnName, RangeConditionFilter.parseCharFilter(value));
+                return leq(columnName, value);
             case GREATER_THAN:
-                return gt(columnName, RangeConditionFilter.parseCharFilter(value));
+                return gt(columnName, value);
             case GREATER_THAN_OR_EQUAL:
-                return geq(columnName, RangeConditionFilter.parseCharFilter(value));
+                return geq(columnName, value);
             default:
-                throw new IllegalArgumentException("RangeConditionFilter does not support condition " + condition);
+                throw new IllegalArgumentException("RangeFilter does not support condition " + condition);
         }
     }
 
     @Override
-    public void init(TableDefinition tableDefinition) {
+    public void init(@NotNull final TableDefinition tableDefinition) {
         if (chunkFilter != null) {
             return;
         }

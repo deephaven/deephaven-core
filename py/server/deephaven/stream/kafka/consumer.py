@@ -9,11 +9,11 @@ from warnings import warn
 
 from deephaven import dtypes
 from deephaven._wrapper import JObjectWrapper
-from deephaven.column import Column
+from deephaven.column import col_def
 from deephaven.dherror import DHError
 from deephaven.dtypes import DType
 from deephaven.jcompat import j_hashmap, j_properties, j_array_list
-from deephaven.table import Table, PartitionedTable
+from deephaven.table import Table, TableDefinition, TableDefinitionLike, PartitionedTable
 
 _JKafkaTools = jpy.get_type("io.deephaven.kafka.KafkaTools")
 _JKafkaTools_Consume = jpy.get_type("io.deephaven.kafka.KafkaTools$Consume")
@@ -427,13 +427,13 @@ def avro_spec(
         raise DHError(e, "failed to create a Kafka key/value spec") from e
 
 
-def json_spec(col_defs: Union[Dict[str, DType], List[Tuple[str, DType]]], mapping: Dict = None) -> KeyValueSpec:
+def json_spec(col_defs: Union[TableDefinitionLike, List[Tuple[str, DType]]], mapping: Dict = None) -> KeyValueSpec:
     """Creates a spec for how to use JSON data when consuming a Kafka stream to a Deephaven table.
 
     Args:
-        col_defs (Union[Dict[str, DType], List[Tuple[str, DType]]): the column definitions, either a map of column
-            names and Deephaven types, or a list of tuples with two elements, a string for column name and a Deephaven
-            type for column data type.
+        col_defs (Union[TableDefinitionLike, List[Tuple[str, DType]]): the table definition, preferably specified as
+            TableDefinitionLike. A list of tuples with two elements, a string for column name and a Deephaven type for
+            column data type also works, but is deprecated for removal.
         mapping (Dict): a dict mapping JSON fields to column names defined in the col_defs
             argument.  Fields starting with a '/' character are interpreted as a JSON Pointer (see RFC 6901,
             ISSN: 2070-1721 for details, essentially nested fields are represented like "/parent/nested").
@@ -448,10 +448,20 @@ def json_spec(col_defs: Union[Dict[str, DType], List[Tuple[str, DType]]], mappin
         DHError
     """
     try:
-        if isinstance(col_defs, dict):
-            col_defs = [Column(k, v).j_column_definition for k, v in col_defs.items()]
+        try:
+            table_def = TableDefinition(col_defs)
+        except DHError:
+            table_def = None
+
+        if table_def:
+            col_defs = [col.j_column_definition for col in table_def.values()]
         else:
-            col_defs = [Column(*t).j_column_definition for t in col_defs]
+            warn(
+                'json_spec col_defs for List[Tuple[str, DType]] is deprecated for removal, prefer TableDefinitionLike',
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            col_defs = [col_def(*t).j_column_definition for t in col_defs]
 
         if mapping is None:
             return KeyValueSpec(j_spec=_JKafkaTools_Consume.jsonSpec(col_defs))
@@ -483,3 +493,19 @@ def simple_spec(col_name: str, data_type: DType = None) -> KeyValueSpec:
         )
     except Exception as e:
         raise DHError(e, "failed to create a Kafka key/value spec") from e
+
+
+def object_processor_spec(provider: jpy.JType) -> KeyValueSpec:
+    """Creates a kafka key-value spec implementation from a named object processor provider. It must be capable of
+    supporting a byte array.
+
+    Args:
+         provider (jpy.JType): the named object processor provider
+
+    Returns:
+        a KeyValueSpec
+
+    Raises:
+        DHError
+    """
+    return KeyValueSpec(j_spec=_JKafkaTools_Consume.objectProcessorSpec(provider))

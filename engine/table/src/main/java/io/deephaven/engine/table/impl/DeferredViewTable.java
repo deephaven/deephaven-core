@@ -5,16 +5,15 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.Selectable;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.base.reference.SimpleReference;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.table.impl.select.MatchFilter;
-import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.impl.select.*;
+import io.deephaven.util.type.ArrayTypeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -42,20 +41,22 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
         super(definition, description);
         this.tableReference = tableReference;
         this.deferredDropColumns =
-                deferredDropColumns == null ? CollectionUtil.ZERO_LENGTH_STRING_ARRAY : deferredDropColumns;
+                deferredDropColumns == null ? ArrayTypeUtils.EMPTY_STRING_ARRAY : deferredDropColumns;
         this.deferredViewColumns =
                 deferredViewColumns == null ? SelectColumn.ZERO_LENGTH_SELECT_COLUMN_ARRAY : deferredViewColumns;
         final TableDefinition parentDefinition = tableReference.getDefinition();
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
         SelectAndViewAnalyzer.initializeSelectColumns(
-                parentDefinition.getColumnNameMap(), this.deferredViewColumns);
-        this.deferredFilters = deferredFilters == null ? WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY : deferredFilters;
+                parentDefinition.getColumnNameMap(), this.deferredViewColumns, compilationProcessor);
+        this.deferredFilters = deferredFilters == null ? WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY : deferredFilters;
         for (final WhereFilter sf : this.deferredFilters) {
-            sf.init(parentDefinition);
+            sf.init(parentDefinition, compilationProcessor);
             if (sf instanceof LivenessReferent && sf.isRefreshing()) {
                 manage((LivenessReferent) sf);
                 setRefreshing(true);
             }
         }
+        compilationProcessor.compile();
 
         // we really only expect one of these things to be set!
         final boolean haveDrop = this.deferredDropColumns.length > 0;
@@ -78,48 +79,51 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
     @Override
     public Table where(Filter filter) {
         final WhereFilter[] whereFilters = WhereFilter.fromInternal(filter);
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
         for (WhereFilter f : whereFilters) {
-            f.init(definition);
+            f.init(definition, compilationProcessor);
         }
+        compilationProcessor.compile();
         return getResultTableWithWhere(whereFilters);
     }
 
     private Table getResultTableWithWhere(WhereFilter... whereFilters) {
-        if (getCoalesced() != null) {
-            return coalesce().where(Filter.and(whereFilters));
+        {
+            final Table coalesced = getCoalesced();
+            if (Liveness.verifyCachedObjectForReuse(coalesced)) {
+                return coalesced.where(Filter.and(whereFilters));
+            }
         }
 
-        final WhereFilter[] allFilters = Stream.concat(Arrays.stream(deferredFilters), Arrays.stream(whereFilters))
-                .map(WhereFilter::copy).toArray(WhereFilter[]::new);
+        final WhereFilter[] allFilters = Stream.concat(
+                Arrays.stream(deferredFilters).map(WhereFilter::copy),
+                Arrays.stream(whereFilters))
+                .toArray(WhereFilter[]::new);
 
-        TableReference.TableAndRemainingFilters tableAndRemainingFilters;
         if (allFilters.length == 0) {
-            tableAndRemainingFilters = tableReference.getWithWhere();
-            Table result = tableAndRemainingFilters.table;
+            Table result = tableReference.get();
             result = applyDeferredViews(result);
-            result = result.where(Filter.and(tableAndRemainingFilters.remainingFilters));
             copyAttributes((BaseTable<?>) result, CopyAttributeOperation.Coalesce);
             setCoalesced(result);
             return result;
         }
 
-        PreAndPostFilters preAndPostFilters = applyFilterRenamings(allFilters);
-        tableAndRemainingFilters = tableReference.getWithWhere(preAndPostFilters.preViewFilters);
+        final PreAndPostFilters preAndPostFilters = applyFilterRenamings(allFilters);
+        final TableReference.TableAndRemainingFilters tableAndRemainingFilters =
+                tableReference.getWithWhere(preAndPostFilters.preViewFilters);
 
         Table localResult = tableAndRemainingFilters.table;
-        if (localResult instanceof DeferredViewTable) {
-            localResult = ((DeferredViewTable) localResult)
-                    .getResultTableWithWhere(tableAndRemainingFilters.remainingFilters);
-        } else {
-            localResult =
-                    localResult.where(Filter.and(WhereFilter.copyFrom(tableAndRemainingFilters.remainingFilters)));
+        if (tableAndRemainingFilters.remainingFilters.length != 0) {
+            localResult = localResult.where(Filter.and(tableAndRemainingFilters.remainingFilters));
         }
 
         localResult = applyDeferredViews(localResult);
         if (preAndPostFilters.postViewFilters.length > 0) {
             localResult = localResult.where(Filter.and(preAndPostFilters.postViewFilters));
         }
+
         if (whereFilters.length == 0) {
+            // The result is effectively the same as if we called doCoalesce()
             copyAttributes((BaseTable<?>) localResult, CopyAttributeOperation.Coalesce);
             setCoalesced(localResult);
         }
@@ -127,9 +131,6 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
     }
 
     private Table applyDeferredViews(Table result) {
-        if (result instanceof DeferredViewTable) {
-            result = result.coalesce();
-        }
         if (deferredDropColumns.length > 0) {
             result = result.dropColumns(deferredDropColumns);
         }
@@ -189,8 +190,9 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
             }
         }
 
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
         for (final WhereFilter filter : filters) {
-            filter.init(definition);
+            filter.init(definition, compilationProcessor);
 
             final boolean isPostView = Stream.of(filter.getColumns(), filter.getColumnArrays())
                     .flatMap(Collection::stream)
@@ -208,34 +210,41 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
             if (myRenames.isEmpty()) {
                 preViewFilters.add(filter);
             } else if (filter instanceof MatchFilter) {
-                MatchFilter matchFilter = (MatchFilter) filter;
+                final MatchFilter matchFilter = (MatchFilter) filter;
                 Assert.assertion(myRenames.size() == 1, "Match Filters should only use one column!");
-                String newName = myRenames.get(matchFilter.getColumnName());
-                Assert.neqNull(newName, "newName");
-                preViewFilters.add(matchFilter.renameFilter(newName));
+                final WhereFilter newFilter = matchFilter.renameFilter(myRenames);
+                newFilter.init(tableReference.getDefinition(), compilationProcessor);
+                preViewFilters.add(newFilter);
             } else if (filter instanceof ConditionFilter) {
-                ConditionFilter conditionFilter = (ConditionFilter) filter;
-                preViewFilters.add(conditionFilter.renameFilter(myRenames));
+                final ConditionFilter conditionFilter = (ConditionFilter) filter;
+                final ConditionFilter newFilter = conditionFilter.renameFilter(myRenames);
+                newFilter.init(tableReference.getDefinition(), compilationProcessor);
+                preViewFilters.add(newFilter);
             } else {
                 postViewFilters.add(filter);
             }
         }
+        compilationProcessor.compile();
 
-        return new PreAndPostFilters(preViewFilters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY),
-                postViewFilters.toArray(WhereFilter.ZERO_LENGTH_SELECT_FILTER_ARRAY));
+        return new PreAndPostFilters(preViewFilters.toArray(WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY),
+                postViewFilters.toArray(WhereFilter.ZERO_LENGTH_WHERE_FILTER_ARRAY));
     }
 
     @Override
     protected Table doCoalesce() {
         Table result;
         if (deferredFilters.length > 0) {
-            PreAndPostFilters preAndPostFilters = applyFilterRenamings(deferredFilters);
-
-            TableReference.TableAndRemainingFilters tarf =
+            final PreAndPostFilters preAndPostFilters = applyFilterRenamings(WhereFilter.copyFrom(deferredFilters));
+            final TableReference.TableAndRemainingFilters tarf =
                     tableReference.getWithWhere(preAndPostFilters.preViewFilters);
             result = tarf.table;
-            result = result.where(Filter.and(tarf.remainingFilters));
-            result = result.where(Filter.and(preAndPostFilters.postViewFilters));
+            if (tarf.remainingFilters.length != 0) {
+                result = result.where(Filter.and(tarf.remainingFilters));
+            }
+            result = applyDeferredViews(result);
+            if (preAndPostFilters.postViewFilters.length > 0) {
+                result = result.where(Filter.and(preAndPostFilters.postViewFilters));
+            }
         } else {
             result = tableReference.get();
             result = applyDeferredViews(result);
@@ -247,8 +256,11 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
     @Override
     public Table selectDistinct(Collection<? extends Selectable> columns) {
         /* If the cachedResult table has already been created, we can just use that. */
-        if (getCoalesced() != null) {
-            return coalesce().selectDistinct(columns);
+        {
+            final Table coalesced = getCoalesced();
+            if (Liveness.verifyCachedObjectForReuse(coalesced)) {
+                return coalesced.selectDistinct(columns);
+            }
         }
 
         /* If we have any manual filters, then we must coalesce the table. */
@@ -271,7 +283,7 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
 
     @Override
     protected DeferredViewTable copy() {
-        final DeferredViewTable result = new DeferredViewTable(definition, description, new SimpleTableReference(this),
+        final DeferredViewTable result = new DeferredViewTable(definition, description, new TableReference(this),
                 null, null, null);
         LiveAttributeMap.copyAttributes(this, result, ak -> true);
         return result;
@@ -285,24 +297,27 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
             newView[cdi] = new SourceColumn(cDefs.get(cdi).getName());
         }
         return new DeferredViewTable(newDefinition, description + "-redefined",
-                new SimpleTableReference(this), null, newView, null);
+                new TableReference(this), null, newView, null);
     }
 
     @Override
     protected Table redefine(TableDefinition newDefinitionExternal, TableDefinition newDefinitionInternal,
             SelectColumn[] viewColumns) {
         return new DeferredViewTable(newDefinitionExternal, description + "-redefined",
-                new SimpleTableReference(this), null, viewColumns, null);
+                new TableReference(this), null, viewColumns, null);
     }
 
     /**
      * The table reference hides the table underlying table from us.
      */
-    public static abstract class TableReference extends LivenessArtifact implements SimpleReference<Table> {
+    public static class TableReference extends LivenessArtifact {
+
+        protected final Table table;
 
         private final boolean isRefreshing;
 
         TableReference(Table t) {
+            this.table = t;
             isRefreshing = t.isRefreshing();
             if (isRefreshing) {
                 manage(t);
@@ -320,11 +335,13 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
 
         /**
          * Returns the table in a form that the user can run queries on it. This may be as simple as returning a
-         * reference, but for amorphous tables, this means we need to do the work to instantiate it.
+         * reference, but for uncoalesced tables, this means we need to do the work to instantiate it.
          *
          * @return the table
          */
-        public abstract Table get();
+        public Table get() {
+            return table.coalesce();
+        }
 
         /**
          * Get the definition, without instantiating the table.
@@ -332,14 +349,9 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
          * @return the definition of the table
          */
 
-        public abstract TableDefinition getDefinition();
-
-        /**
-         * What size should the uninitialized table return.
-         *
-         * @return the size
-         */
-        public abstract long getSize();
+        public TableDefinition getDefinition() {
+            return table.getDefinition();
+        }
 
         public static class TableAndRemainingFilters {
 
@@ -353,8 +365,8 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
         }
 
         /**
-         * Get the table in a form that the user can run queries on it. All of the filters that can be run efficiently
-         * should be run before instantiating the full table should be run. Other filters are returned in the
+         * Get the table in a form that the user can run queries on it. All the filters that can be run efficiently
+         * should be run before coalescing the full table should be run. Other filters are returned in the
          * remainingFilters field.
          *
          * @param whereFilters filters to maybe apply before returning the table
@@ -365,43 +377,15 @@ public class DeferredViewTable extends RedefinableTable<DeferredViewTable> {
         }
 
         /**
-         * If possible to execute a selectDistinct without instantiating the full table, then do so. Otherwise return
+         * If possible to execute a selectDistinct without instantiating the full table, then do so. Otherwise, return
          * null.
          *
          * @param columns the columns to selectDistinct
-         * @return null if the operation can not be performed on an uninstantiated table, otherwise a new table with the
+         * @return null if the operation can not be performed on an uncoalesced table, otherwise a new table with the
          *         distinct values from strColumns.
          */
         public Table selectDistinctInternal(Collection<? extends Selectable> columns) {
             return null;
-        }
-
-        @Override
-        public final void clear() {}
-    }
-
-    public static class SimpleTableReference extends TableReference {
-
-        private final Table table;
-
-        public SimpleTableReference(Table table) {
-            super(table);
-            this.table = table;
-        }
-
-        @Override
-        public long getSize() {
-            return QueryConstants.NULL_LONG;
-        }
-
-        @Override
-        public TableDefinition getDefinition() {
-            return table.getDefinition();
-        }
-
-        @Override
-        public Table get() {
-            return table;
         }
     }
 }

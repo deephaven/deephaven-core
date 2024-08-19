@@ -8,15 +8,12 @@ import io.airlift.compress.gzip.JdkGzipCodec;
 import io.airlift.compress.lz4.Lz4Codec;
 import io.airlift.compress.lzo.LzoCodec;
 import io.airlift.compress.zstd.ZstdCodec;
-import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.compress.CodecPool;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.CompressionCodecFactory;
-import org.apache.hadoop.io.compress.CompressionInputStream;
 import org.apache.hadoop.io.compress.Compressor;
 import org.apache.hadoop.io.compress.Decompressor;
-import org.apache.parquet.bytes.BytesInput;
 import org.apache.parquet.hadoop.codec.SnappyCodec;
 import org.apache.parquet.hadoop.codec.Lz4RawCodec;
 import org.apache.parquet.hadoop.metadata.CompressionCodecName;
@@ -66,7 +63,7 @@ public class DeephavenCompressorAdapterFactory {
                 // Use the Parquet LZ4_RAW codec, which internally uses aircompressor
                 Lz4RawCodec.class, CompressionCodecName.LZ4_RAW,
 
-                // The rest of these are aircompressor codecs which have fast / pure java implementations
+                // The rest of these are aircompressor codecs that have fast / pure java implementations
                 JdkGzipCodec.class, CompressionCodecName.GZIP,
                 LzoCodec.class, CompressionCodecName.LZO,
                 Lz4Codec.class, CompressionCodecName.LZ4,
@@ -75,7 +72,7 @@ public class DeephavenCompressorAdapterFactory {
         final CompressionCodecFactory factory = new CompressionCodecFactory(conf);
         final Map<String, CompressionCodecName> codecToNames =
                 new HashMap<>(CompressionCodecName.values().length + explicitConfig.size());
-        for (CompressionCodecName value : CompressionCodecName.values()) {
+        for (final CompressionCodecName value : CompressionCodecName.values()) {
             final String name = value.getHadoopCompressionCodecClassName();
             if (name != null) {
                 codecToNames.put(name, value);
@@ -91,32 +88,31 @@ public class DeephavenCompressorAdapterFactory {
         private final CompressionCodec compressionCodec;
         private final CompressionCodecName compressionCodecName;
 
-        private boolean innerCompressorPooled;
+        private boolean canCreateCompressorObject;
+        private volatile boolean canCreateDecompressorObject;
         private Compressor innerCompressor;
 
-        CodecWrappingCompressorAdapter(CompressionCodec compressionCodec,
-                CompressionCodecName compressionCodecName) {
+        CodecWrappingCompressorAdapter(final CompressionCodec compressionCodec,
+                final CompressionCodecName compressionCodecName) {
             this.compressionCodec = Objects.requireNonNull(compressionCodec);
             this.compressionCodecName = Objects.requireNonNull(compressionCodecName);
+            // We start with the assumption that we can create compressor/decompressor objects and update these flags
+            // later if we fail to create them.
+            canCreateCompressorObject = true;
+            canCreateDecompressorObject = true;
         }
 
         @Override
-        public OutputStream compress(OutputStream os) throws IOException {
-            if (innerCompressor == null) {
+        public OutputStream compress(final OutputStream os) throws IOException {
+            if (innerCompressor == null && canCreateCompressorObject) {
+                // Following will get a new compressor from the pool, or create a new one, if possible.
                 innerCompressor = CodecPool.getCompressor(compressionCodec);
-                innerCompressorPooled = innerCompressor != null;
-                if (!innerCompressorPooled) {
-                    // Some compressors are allowed to declare they cannot be pooled. If we fail to get one
-                    // then fall back on just creating a new one to hang on to.
-                    innerCompressor = compressionCodec.createCompressor();
-                }
-
-                if (innerCompressor == null) {
-                    return compressionCodec.createOutputStream(os);
-                }
-
-                innerCompressor.reset();
+                canCreateCompressorObject = (innerCompressor != null);
             }
+            if (!canCreateCompressorObject) {
+                return compressionCodec.createOutputStream(os);
+            }
+            innerCompressor.reset();
             return compressionCodec.createOutputStream(os, innerCompressor);
         }
 
@@ -126,29 +122,36 @@ public class DeephavenCompressorAdapterFactory {
         }
 
         @Override
-        public BytesInput decompress(InputStream inputStream, int compressedSize, int uncompressedSize)
-                throws IOException {
-            final Decompressor decompressor = CodecPool.getDecompressor(compressionCodec);
-            if (decompressor != null) {
-                // It is permitted for a decompressor to be null, otherwise we want to reset() it to
-                // be ready for a new stream.
-                // Note that this strictly shouldn't be necessary, since returnDecompressor will reset
-                // it as well, but this is the pattern copied from CodecFactory.decompress.
-                decompressor.reset();
+        public InputStream decompress(
+                final InputStream inputStream,
+                final int compressedSize,
+                final int uncompressedSize,
+                final ResourceCache decompressorCache) throws IOException {
+            final Decompressor decompressor;
+            if (canCreateDecompressorObject) {
+                // Currently, we only cache a single decompressor object inside the holder. If needed in the future, we
+                // can cache multiple decompressor objects based on the codec name.
+                final DecompressorHolder decompressorHolder = decompressorCache.get(DecompressorHolder::new);
+                if (decompressorHolder.holdsDecompressor(compressionCodecName)) {
+                    decompressor = decompressorHolder.getDecompressor();
+                    decompressor.reset();
+                } else {
+                    decompressor = CodecPool.getDecompressor(compressionCodec);
+                    // Not resetting decompressor here since it's either a new instance or was reset when previously
+                    // returned to the pool
+                    if (decompressor == null) {
+                        canCreateCompressorObject = false;
+                    } else {
+                        decompressorHolder.setDecompressor(compressionCodecName, decompressor);
+                    }
+                }
+            } else {
+                decompressor = null;
             }
-
-            try {
-                // Note that we don't close this, we assume the caller will close their input stream when ready,
-                // and this won't need to be closed.
-                InputStream buffered = ByteStreams.limit(IOUtils.buffer(inputStream), compressedSize);
-                CompressionInputStream decompressed = compressionCodec.createInputStream(buffered, decompressor);
-                return BytesInput.copy(BytesInput.from(decompressed, uncompressedSize));
-            } finally {
-                // Always return it, the pool will decide if it should be reused or not.
-                // CodecFactory has no logic around only returning after successful streams,
-                // and the instance appears to leak otherwise.
-                CodecPool.returnDecompressor(decompressor);
-            }
+            // Note that we don't want the caller to close the decompressed stream because doing so may return the
+            // decompressor to the pool.
+            final InputStream limitedInputStream = ByteStreams.limit(inputStream, compressedSize);
+            return new InputStreamNoClose(compressionCodec.createInputStream(limitedInputStream, decompressor));
         }
 
         @Override
@@ -160,15 +163,15 @@ public class DeephavenCompressorAdapterFactory {
 
         @Override
         public void close() {
-            if (innerCompressor != null && innerCompressorPooled) {
+            if (innerCompressor != null) {
                 CodecPool.returnCompressor(innerCompressor);
             }
         }
     }
 
     private static Configuration configurationWithCodecClasses(
-            Collection<Class<? extends CompressionCodec>> codecClasses) {
-        Configuration conf = new Configuration();
+            final Collection<Class<? extends CompressionCodec>> codecClasses) {
+        final Configuration conf = new Configuration();
         CompressionCodecFactory.setCodecClasses(conf, new ArrayList<>(codecClasses));
         return conf;
     }
@@ -176,8 +179,8 @@ public class DeephavenCompressorAdapterFactory {
     private final CompressionCodecFactory compressionCodecFactory;
     private final Map<String, CompressionCodecName> codecClassnameToCodecName;
 
-    private DeephavenCompressorAdapterFactory(CompressionCodecFactory compressionCodecFactory,
-            Map<String, CompressionCodecName> codecClassnameToCodecName) {
+    private DeephavenCompressorAdapterFactory(final CompressionCodecFactory compressionCodecFactory,
+            final Map<String, CompressionCodecName> codecClassnameToCodecName) {
         this.compressionCodecFactory = Objects.requireNonNull(compressionCodecFactory);
         this.codecClassnameToCodecName = Objects.requireNonNull(codecClassnameToCodecName);
     }

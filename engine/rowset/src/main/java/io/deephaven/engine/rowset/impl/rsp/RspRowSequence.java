@@ -15,7 +15,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.impl.RowSequenceAsChunkImpl;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableLong;
 
 public class RspRowSequence extends RowSequenceAsChunkImpl {
     private RspArray arr;
@@ -59,16 +59,12 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
 
     @Override
     public void close() {
-        closeRspRowSequence();
-    }
-
-    protected final void closeRspRowSequence() {
         if (arr == null) {
             return;
         }
         arr.release();
         arr = null;
-        closeRowSequenceAsChunkImpl();
+        super.close();
     }
 
     private RspRowSequence(final RspArray arr) {
@@ -134,12 +130,12 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
         this.cardBeforeStartIdx = cardBeforeStartIdx;
         this.cardBeforeEndIdx = cardBeforeEndIdx;
         this.firstKey = firstKey;
-        closeRowSequenceAsChunkImpl();
+        invalidateRowSequenceAsChunkImpl();
         lastKey = -1;
     }
 
     @Override
-    public Iterator getRowSequenceIterator() {
+    public RowSequence.Iterator getRowSequenceIterator() {
         return new Iterator(this);
     }
 
@@ -249,9 +245,8 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
         return true;
     }
 
-    // Note unlike RowSet.Iterator, this Iterator will /not/ automatically release its underlying RowSequence
-    // representation
-    // when iteration is exhausted. The API for OK.Iterator makes that impossible.
+    // Note: Unlike RowSet.Iterator, this Iterator will /not/ automatically release its underlying RowSequence
+    // representation when iteration is exhausted. The API for RowSequence.Iterator makes that impossible.
     static class Iterator implements RowSequence.Iterator {
         private static class RSWrapper extends RspRowSequence {
             RSWrapper(final RspArray arr) {
@@ -264,9 +259,8 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
                     throw new IllegalStateException();
                 }
                 // We purposely /do not/ close the RspRowSequence part as it will get reused.
-                // The API doc for Iterator states that clients should /never/ call close. So that we eneded up here
-                // means
-                // there is some kind of bug.
+                // The API doc for Iterator states that clients should /never/ call close. So that we ended up here
+                // means there is some kind of bug.
                 closeRowSequenceAsChunkImpl();
             }
         }
@@ -389,13 +383,13 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
             int i = fromIndex;
             while (true) {
                 if (i == arr.size - 1) {
-                    prevCardMu.setValue(prevCard);
+                    prevCardMu.set(prevCard);
                     return i;
                 }
                 final long spanCard = arr.getSpanCardinalityAtIndex(i);
                 final long card = prevCard + spanCard;
                 if (cardTarget <= card) {
-                    prevCardMu.setValue(prevCard);
+                    prevCardMu.set(prevCard);
                     return i;
                 }
                 ++i;
@@ -433,7 +427,7 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
                     currEndOffset = currStartOffset + boundedNumberOfKeys - 1;
                 } else {
                     currCardBeforeEndIdx =
-                            (prevCardMu != null) ? prevCardMu.longValue() : arr.cardinalityBeforeWithAcc(currEndIdx);
+                            (prevCardMu != null) ? prevCardMu.get() : arr.cardinalityBeforeWithAcc(currEndIdx);
                     final long spanCardAtStartIdx = arr.getSpanCardinalityAtIndexMaybeAcc(currStartIdx);
                     final long cardAtStartIdx = currCardBeforeStartIdx + spanCardAtStartIdx;
                     final long firstSpanCount = spanCardAtStartIdx - currStartOffset;
@@ -473,7 +467,7 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
             currEndIdx =
                     endIndex(currStartIdx, currStartOffset, currCardBeforeStartIdx, boundedNumberOfKeys, prevCardMu);
             currCardBeforeEndIdx =
-                    (prevCardMu != null) ? prevCardMu.longValue() : arr.cardinalityBeforeWithAcc(currEndIdx);
+                    (prevCardMu != null) ? prevCardMu.get() : arr.cardinalityBeforeWithAcc(currEndIdx);
             final long keysBeforeLastSpan =
                     keysAvailableInStartSpan + currCardBeforeEndIdx - currCardBeforeStartIdx
                             - currStartIdxSpanCardinality;

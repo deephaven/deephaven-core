@@ -278,7 +278,7 @@ public class WorkerConnection {
                             }),
                             info.getConnectOptions().then(options -> {
                                 // set other specified headers, if any
-                                JsObject.keys(options.headers).forEach((key, index, arr) -> {
+                                JsObject.keys(options.headers).forEach((key, index) -> {
                                     metadata.set(key, options.headers.get(key));
                                     return null;
                                 });
@@ -496,7 +496,6 @@ public class WorkerConnection {
                         info.fireEvent(EVENT_REFRESH_TOKEN_UPDATED, init);
                     }
                 }
-                handshake.end();
             });
             handshake.onStatus(status -> {
                 if (status.isOk()) {
@@ -526,6 +525,7 @@ public class WorkerConnection {
             });
 
             handshake.send(new HandshakeRequest());
+            handshake.end();
         });
     }
 
@@ -1399,7 +1399,7 @@ public class WorkerConnection {
                         }
                     }
                 }
-            } else {
+            } else if (state.isRunning()) {
                 List<TableSubscriptionRequest> vps = new ArrayList<>();
                 state.forActiveSubscriptions((table, subscription) -> {
                     assert table.isActive(state) : "Inactive table has a viewport still attached";

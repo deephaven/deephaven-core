@@ -10,7 +10,6 @@ import io.deephaven.chunk.ResettableWritableIntChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
@@ -29,8 +28,8 @@ import io.deephaven.engine.util.PrintListener;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseable;
-import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.experimental.categories.Category;
 
@@ -310,7 +309,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
             final MutableInt numSteps) {
         final int leftSize = (int) Math.ceil(Math.sqrt(size));
 
-        final int maxSteps = numSteps.intValue();
+        final int maxSteps = numSteps.get();
         final Random random = new Random(seed);
 
         final int numGroups = (int) Math.max(4, Math.ceil(Math.sqrt(leftSize)));
@@ -341,9 +340,9 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
                 EvalNugget.from(() -> doLeftOuterJoin(leftTicking, rightStatic)),
         };
 
-        for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
+        for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
             if (printTableUpdates) {
-                System.out.println("Size = " + size + ", seed=" + seed + ", step = " + numSteps.intValue());
+                System.out.println("Size = " + size + ", seed=" + seed + ", step = " + numSteps.get());
             }
             // left size is sqrt right table size; which is a good update size for the right table
             final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
@@ -359,7 +358,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
                             random, rightTicking, rightColumns);
                 }
             });
-            TstUtils.validate(ctxt + " step == " + numSteps.getValue(), en);
+            TstUtils.validate(ctxt + " step == " + numSteps.get(), en);
         }
     }
 
@@ -1232,13 +1231,13 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         }
 
         final QueryTable left = (QueryTable) TableTools.newTable(
-                stringCol("sharedKey", leftKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
+                stringCol("sharedKey", leftKeys.toArray(String[]::new)),
                 longCol("leftData", leftData.toArray()));
         if (leftTicking) {
             left.setRefreshing(true);
         }
         final QueryTable right = (QueryTable) TableTools.newTable(
-                stringCol("sharedKey", rightKeys.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)),
+                stringCol("sharedKey", rightKeys.toArray(String[]::new)),
                 longCol("rightData", rightData.toArray()));
         if (rightTicking) {
             right.setRefreshing(true);
@@ -1269,24 +1268,24 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
             final long leftId = leftColumn.getLong(ii);
             final long rightId = rightColumn.getLong(ii);
             if (lastSharedKey.getValue() != null && lastSharedKey.getValue().equals(sharedKey)) {
-                Assert.leq(lastLeftId.longValue(), "lastLeftId.longValue()", leftId, "leftId");
-                if (lastLeftId.longValue() == leftId) {
-                    Assert.lt(lastRightId.longValue(), "lastRightId.longValue()", rightId, "rightId");
+                Assert.leq(lastLeftId.get(), "lastLeftId.longValue()", leftId, "leftId");
+                if (lastLeftId.get() == leftId) {
+                    Assert.lt(lastRightId.get(), "lastRightId.longValue()", rightId, "rightId");
                 }
             } else {
                 lastSharedKey.setValue(sharedKey);
-                lastLeftId.setValue(leftId);
+                lastLeftId.set(leftId);
             }
-            lastRightId.setValue(rightId);
+            lastRightId.set(rightId);
 
             final MutableLong remainingCount = expectedByKey.get(sharedKey);
             Assert.neqNull(remainingCount, "remainingCount");
-            Assert.gtZero(remainingCount.longValue(), "remainingCount.longValue()");
+            Assert.gtZero(remainingCount.get(), "remainingCount.longValue()");
             remainingCount.decrement();
         });
 
         for (final Map.Entry<String, MutableLong> entry : expectedByKey.entrySet()) {
-            Assert.eqZero(entry.getValue().longValue(), "entry.getValue().longValue");
+            Assert.eqZero(entry.getValue().get(), "entry.getValue().longValue");
         }
     }
 
@@ -1497,7 +1496,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
 
     protected void testIncrementalWithKeyColumns(final String ctxt, final int initialSize, final int seed,
             final boolean useArrays, final MutableInt numSteps, JoinControl joinControl) {
-        final int maxSteps = numSteps.intValue();
+        final int maxSteps = numSteps.get();
         final Random random = new Random(seed);
 
         final int numGroups = (int) Math.max(4, Math.ceil(Math.sqrt(initialSize)));
@@ -1534,8 +1533,8 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         }
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
-            System.out.println("Seed = " + seed + ", size = " + initialSize + ", step = " + numSteps.intValue());
+        for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
+            System.out.println("Seed = " + seed + ", size = " + initialSize + ", step = " + numSteps.get());
 
             updateGraph.runWithinUnitTestCycle(() -> {
                 final int stepInstructions = random.nextInt();
@@ -1549,7 +1548,7 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
                 }
             });
 
-            TstUtils.validate(ctxt + " step == " + numSteps.getValue(), en);
+            TstUtils.validate(ctxt + " step == " + numSteps.get(), en);
         }
     }
 
@@ -1607,43 +1606,43 @@ public abstract class QueryTableLeftOuterJoinTestBase extends QueryTableTestBase
         }
 
         final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
-        for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
-            final long rightOffset = numSteps.getValue();
+        for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
+            final long rightOffset = numSteps.get();
 
             updateGraph.runWithinUnitTestCycle(() -> {
-                addToTable(leftTicking, i(numSteps.getValue()), longCol("intCol", numSteps.getValue()));
+                addToTable(leftTicking, i(numSteps.get()), longCol("intCol", numSteps.get()));
                 TableUpdateImpl up = new TableUpdateImpl();
                 up.shifted = RowSetShiftData.EMPTY;
-                up.added = i(numSteps.getValue());
+                up.added = i(numSteps.get());
                 up.removed = i();
                 up.modified = i();
                 up.modifiedColumnSet = ModifiedColumnSet.ALL;
                 leftTicking.notifyListeners(up);
 
-                final long[] data = new long[numSteps.getValue() + 1];
-                for (int i = 0; i <= numSteps.getValue(); ++i) {
+                final long[] data = new long[numSteps.get() + 1];
+                for (int i = 0; i <= numSteps.get(); ++i) {
                     data[i] = i;
                 }
-                addToTable(rightTicking, RowSetFactory.fromRange(rightOffset, rightOffset + numSteps.getValue()),
+                addToTable(rightTicking, RowSetFactory.fromRange(rightOffset, rightOffset + numSteps.get()),
                         longCol("intCol", data));
                 TstUtils.removeRows(rightTicking, i(rightOffset - 1));
 
                 up = new TableUpdateImpl();
                 final RowSetShiftData.Builder shifted = new RowSetShiftData.Builder();
-                shifted.shiftRange(0, numSteps.getValue() + rightOffset, 1);
+                shifted.shiftRange(0, numSteps.get() + rightOffset, 1);
                 up.shifted = shifted.build();
-                up.added = i(rightOffset + numSteps.getValue());
+                up.added = i(rightOffset + numSteps.get());
                 up.removed = i();
-                if (numSteps.getValue() == 0) {
+                if (numSteps.get() == 0) {
                     up.modified = RowSetFactory.empty();
                 } else {
-                    up.modified = RowSetFactory.fromRange(rightOffset, rightOffset + numSteps.getValue() - 1);
+                    up.modified = RowSetFactory.fromRange(rightOffset, rightOffset + numSteps.get() - 1);
                 }
                 up.modifiedColumnSet = ModifiedColumnSet.ALL;
                 rightTicking.notifyListeners(up);
             });
 
-            TstUtils.validate(" step == " + numSteps.getValue(), en);
+            TstUtils.validate(" step == " + numSteps.get(), en);
         }
     }
 

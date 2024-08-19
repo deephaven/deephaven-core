@@ -20,7 +20,7 @@ import io.deephaven.kafka.ingest.KeyOrValueProcessor;
 import io.deephaven.kafka.publish.JsonKeyOrValueSerializer;
 import io.deephaven.kafka.publish.KeyOrValueSerializer;
 import io.deephaven.stream.StreamChunkUtils;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.apache.kafka.common.serialization.Deserializer;
 import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.common.serialization.StringDeserializer;

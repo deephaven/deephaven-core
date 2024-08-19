@@ -37,6 +37,7 @@ import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.time.calendar.StaticCalendarMethods;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.util.type.TypeUtils;
@@ -51,7 +52,6 @@ import org.codehaus.groovy.tools.GroovyClass;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import javax.tools.JavaFileObject;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -60,8 +60,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -69,6 +67,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -82,11 +81,12 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     private static final Logger log = LoggerFactory.getLogger(GroovyDeephavenSession.class);
 
     public static final String SCRIPT_TYPE = "Groovy";
-    private static final String PACKAGE = QueryCompiler.DYNAMIC_GROOVY_CLASS_PREFIX;
+    private static final String PACKAGE = QueryCompilerImpl.DYNAMIC_CLASS_PREFIX;
     private static final String SCRIPT_PREFIX = "io.deephaven.engine.util.Script";
 
     private static final String DEFAULT_SCRIPT_PATH = Configuration.getInstance()
             .getStringWithDefault("GroovyDeephavenSession.defaultScriptPath", ".");
+    private static final String DEFAULT_SCRIPT_PREFIX = "Script";
 
     private static final boolean INCLUDE_DEFAULT_IMPORTS_IN_LOADED_GROOVY =
             Configuration.getInstance()
@@ -127,67 +127,116 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     private final ScriptFinder scriptFinder;
 
     /** Contains imports to be applied to commands run in the console */
-    private final ImportCustomizer consoleImports = new ImportCustomizer();
+    private final ImportCustomizer consoleImports;
     /** Contains imports to be applied to .groovy files loaded from the classpath */
-    private final ImportCustomizer loadedGroovyScriptImports = new ImportCustomizer();
+    private final ImportCustomizer loadedGroovyScriptImports;
 
-    private final Set<String> dynamicClasses = new HashSet<>();
-    private final Map<String, Object> bindingBackingMap = Collections.synchronizedMap(new LinkedHashMap<>());
-    private final GroovyShell groovyShell;
+    private final Set<String> dynamicClasses;
+    private final Map<String, Object> bindingBackingMap;
 
-    private int counter;
-    private String script = "Script";
+    private static class DeephavenGroovyShell extends GroovyShell {
+        private final AtomicInteger counter = new AtomicInteger();
+        private volatile String scriptPrefix = DEFAULT_SCRIPT_PREFIX;
 
-    private String getNextScriptClassName() {
-        return script + "_" + (counter + 1);
+        DeephavenGroovyShell(
+                final GroovyClassLoader loader,
+                final Binding binding,
+                final CompilerConfiguration config) {
+            super(loader, binding, config);
+        }
+
+        @Override
+        protected String generateScriptName() {
+            return scriptPrefix + "_" + (counter.incrementAndGet()) + ".groovy";
+        }
+
+        private String getNextScriptClassName() {
+            return scriptPrefix + "_" + (counter.get() + 1);
+        }
+
+        public SafeCloseable setScriptPrefix(final String newPrefix) {
+            scriptPrefix = newPrefix;
+            return () -> {
+                scriptPrefix = newPrefix;
+            };
+        }
     }
 
-    public GroovyDeephavenSession(
+    private final DeephavenGroovyShell groovyShell;
+
+    public static GroovyDeephavenSession of(
             final UpdateGraph updateGraph,
             final OperationInitializer operationInitializer,
             final ObjectTypeLookup objectTypeLookup,
             final RunScripts runScripts) throws IOException {
-        this(updateGraph, operationInitializer, objectTypeLookup, null, runScripts);
+        return GroovyDeephavenSession.of(updateGraph, operationInitializer, objectTypeLookup, null, runScripts);
     }
 
-    public GroovyDeephavenSession(
+    public static GroovyDeephavenSession of(
             final UpdateGraph updateGraph,
             final OperationInitializer operationInitializer,
             ObjectTypeLookup objectTypeLookup,
             @Nullable final Listener changeListener,
-            final RunScripts runScripts)
-            throws IOException {
-        super(updateGraph, operationInitializer, objectTypeLookup, changeListener);
+            final RunScripts runScripts) throws IOException {
+
+        final ImportCustomizer consoleImports = new ImportCustomizer();
+        final ImportCustomizer loadedGroovyScriptImports = new ImportCustomizer();
 
         addDefaultImports(consoleImports);
         if (INCLUDE_DEFAULT_IMPORTS_IN_LOADED_GROOVY) {
-            addDefaultImports(this.loadedGroovyScriptImports);
+            addDefaultImports(loadedGroovyScriptImports);
         }
+
+        final File classCacheDirectory = AbstractScriptSession.newClassCacheLocation().toFile();
 
         // Specify a classloader to read from the classpath, with script imports
         CompilerConfiguration scriptConfig = new CompilerConfiguration();
         scriptConfig.getCompilationCustomizers().add(loadedGroovyScriptImports);
-        scriptConfig.setTargetDirectory(executionContext.getQueryCompiler().getFakeClassDestination());
+        scriptConfig.setTargetDirectory(classCacheDirectory);
         GroovyClassLoader scriptClassLoader = new GroovyClassLoader(STATIC_LOADER, scriptConfig);
 
         // Specify a configuration for compiling/running console commands for custom imports
         CompilerConfiguration consoleConfig = new CompilerConfiguration();
         consoleConfig.getCompilationCustomizers().add(consoleImports);
-        consoleConfig.setTargetDirectory(executionContext.getQueryCompiler().getFakeClassDestination());
+        consoleConfig.setTargetDirectory(classCacheDirectory);
 
+        Map<String, Object> bindingBackingMap = Collections.synchronizedMap(new LinkedHashMap<>());
         Binding binding = new Binding(bindingBackingMap);
-        groovyShell = new GroovyShell(scriptClassLoader, binding, consoleConfig) {
-            protected synchronized String generateScriptName() {
-                return GroovyDeephavenSession.this.generateScriptName();
-            }
-        };
+        DeephavenGroovyShell groovyShell = new DeephavenGroovyShell(scriptClassLoader, binding, consoleConfig);
+
+
+        return new GroovyDeephavenSession(updateGraph, operationInitializer, objectTypeLookup, changeListener,
+                runScripts, classCacheDirectory, consoleImports, loadedGroovyScriptImports, bindingBackingMap,
+                groovyShell);
+    }
+
+    private GroovyDeephavenSession(
+            final UpdateGraph updateGraph,
+            final OperationInitializer operationInitializer,
+            ObjectTypeLookup objectTypeLookup,
+            @Nullable final Listener changeListener,
+            final RunScripts runScripts,
+            final File classCacheDirectory,
+            final ImportCustomizer consoleImports,
+            final ImportCustomizer loadedGroovyScriptImports,
+            final Map<String, Object> bindingBackingMap,
+            final DeephavenGroovyShell groovyShell)
+            throws IOException {
+        super(updateGraph, operationInitializer, objectTypeLookup, changeListener, classCacheDirectory,
+                groovyShell.getClassLoader());
 
         this.scriptFinder = new ScriptFinder(DEFAULT_SCRIPT_PATH);
 
+        this.consoleImports = consoleImports;
+        this.loadedGroovyScriptImports = loadedGroovyScriptImports;
+
+        this.dynamicClasses = new HashSet<>();
+        this.bindingBackingMap = bindingBackingMap;
+
+        this.groovyShell = groovyShell;
+
         groovyShell.setVariable("__groovySession", this);
         groovyShell.setVariable("DB_SCRIPT_PATH", DEFAULT_SCRIPT_PATH);
-
-        executionContext.getQueryCompiler().setParentClassLoader(getShell().getClassLoader());
 
         publishInitial();
 
@@ -199,7 +248,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
     /**
      * Adds the default imports that Groovy users assume to be present.
      */
-    private void addDefaultImports(ImportCustomizer imports) {
+    private static void addDefaultImports(ImportCustomizer imports) {
         // TODO (core#230): Remove large list of manual text-based consoleImports
         // NOTE: Don't add to this list without a compelling reason!!! Use the user script import if possible.
         imports.addImports(
@@ -244,10 +293,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 StaticCalendarMethods.class.getName());
     }
 
-    private String generateScriptName() {
-        return script + "_" + (++counter) + ".groovy";
-    }
-
     public static InputStream findScript(String relativePath) throws IOException {
         return new ScriptFinder(DEFAULT_SCRIPT_PATH).findScript(relativePath);
     }
@@ -287,10 +332,6 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         }
     }
 
-    private void evaluateCommand(String command) {
-        groovyShell.evaluate(command);
-    }
-
     @Override
     protected void evaluate(String command, String scriptName) {
         grepScriptImports(removeComments(command));
@@ -299,27 +340,22 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         final String lastCommand = fc.second;
         final String commandPrefix = fc.first;
 
-        final String oldScriptName = script;
-
-        try {
-            if (scriptName != null) {
-                script = scriptName.replaceAll("[^0-9A-Za-z_]", "_").replaceAll("(^[0-9])", "_$1");
-            }
-            final String currentScriptName = script;
+        final String currentScriptName = scriptName == null
+                ? DEFAULT_SCRIPT_PREFIX
+                : scriptName.replaceAll("[^0-9A-Za-z_]", "_").replaceAll("(^[0-9])", "_$1");
+        try (final SafeCloseable ignored = groovyShell.setScriptPrefix(currentScriptName)) {
 
             updateClassloader(lastCommand);
 
             try {
                 ExecutionContext.getContext().getUpdateGraph().exclusiveLock()
-                        .doLockedInterruptibly(() -> evaluateCommand(lastCommand));
+                        .doLockedInterruptibly(() -> groovyShell.evaluate(lastCommand));
             } catch (InterruptedException e) {
                 throw new CancellationException(e.getMessage() != null ? e.getMessage() : "Query interrupted",
                         maybeRewriteStackTrace(scriptName, currentScriptName, e, lastCommand, commandPrefix));
             } catch (Exception e) {
                 throw wrapAndRewriteStackTrace(scriptName, currentScriptName, e, lastCommand, commandPrefix);
             }
-        } finally {
-            script = oldScriptName;
         }
     }
 
@@ -617,25 +653,11 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 + "\n\n// this final true prevents Groovy from interpreting a trailing class definition as something to execute\n;\ntrue;\n");
     }
 
-    public static byte[] getDynamicClass(String name) {
-        return readClass(ExecutionContext.getContext().getQueryCompiler().getFakeClassDestination(), name);
-    }
-
-    private static byte[] readClass(final File rootDirectory, final String className) {
-        final String resourceName = className.replace('.', '/') + JavaFileObject.Kind.CLASS.extension;
-        final Path path = new File(rootDirectory, resourceName).toPath();
-        try {
-            return Files.readAllBytes(path);
-        } catch (IOException e) {
-            throw new RuntimeException("Error reading path " + path + " for className " + className, e);
-        }
-    }
-
     private void updateClassloader(String currentCommand) {
-        final String name = getNextScriptClassName();
+        final String name = groovyShell.getNextScriptClassName();
 
         CompilerConfiguration config = new CompilerConfiguration(CompilerConfiguration.DEFAULT);
-        config.setTargetDirectory(executionContext.getQueryCompiler().getFakeClassDestination());
+        config.setTargetDirectory(classCacheDirectory);
         config.getCompilationCustomizers().add(consoleImports);
         final CompilationUnit cu = new CompilationUnit(config, null, groovyShell.getClassLoader());
         cu.addSource(name, currentCommand);
@@ -645,8 +667,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
         } catch (RuntimeException e) {
             throw new GroovyExceptionWrapper(e);
         }
-        final File dynamicClassDestination = ExecutionContext.getContext().getQueryCompiler().getFakeClassDestination();
-        if (dynamicClassDestination == null) {
+        if (classCacheDirectory == null) {
             return;
         }
         final List<GroovyClass> classes = cu.getClasses();
@@ -672,7 +693,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession<GroovySnapshot
                 }
 
                 try {
-                    QueryCompiler.writeClass(dynamicClassDestination, entry.getKey(), entry.getValue());
+                    QueryCompilerImpl.writeClass(classCacheDirectory, entry.getKey(), entry.getValue());
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }

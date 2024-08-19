@@ -5,7 +5,6 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.*;
@@ -93,9 +92,12 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
     @Override
     public SafeCloseable beginOperation(@NotNull final QueryTable parent) {
+        final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
+        Arrays.stream(whereFilters).forEach(filter -> filter.init(parent.getDefinition(), compilationProcessor));
+        compilationProcessor.compile();
+
         return Arrays.stream(whereFilters)
                 .map((final WhereFilter filter) -> {
-                    filter.init(parent.getDefinition());
                     // Ensure we gather the correct dependencies when building a snapshot control.
                     return filter.beginOperation(parent);
                 }).collect(SafeCloseableList.COLLECTOR);
@@ -298,7 +300,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
             this.filter = filter;
             this.name = name;
             this.possibleUpstreamModified =
-                    parent.newModifiedColumnSet(filter.getColumns().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+                    parent.newModifiedColumnSet(filter.getColumns().toArray(String[]::new));
         }
 
         @Override

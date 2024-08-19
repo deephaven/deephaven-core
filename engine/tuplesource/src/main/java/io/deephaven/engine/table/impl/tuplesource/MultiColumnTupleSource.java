@@ -34,7 +34,7 @@ final class MultiColumnTupleSource implements TupleSource<ArrayTuple>, DefaultCh
     }
 
     @Override
-    public final ArrayTuple createTuple(final long rowKey) {
+    public ArrayTuple createTuple(final long rowKey) {
         final int length = columnSources.length;
         final Object[] columnValues = new Object[length];
         for (int csi = 0; csi < length; ++csi) {
@@ -44,7 +44,7 @@ final class MultiColumnTupleSource implements TupleSource<ArrayTuple>, DefaultCh
     }
 
     @Override
-    public final ArrayTuple createPreviousTuple(final long rowKey) {
+    public ArrayTuple createPreviousTuple(final long rowKey) {
         final int length = columnSources.length;
         final Object[] columnValues = new Object[length];
         for (int csi = 0; csi < length; ++csi) {
@@ -54,7 +54,7 @@ final class MultiColumnTupleSource implements TupleSource<ArrayTuple>, DefaultCh
     }
 
     @Override
-    public final ArrayTuple createTupleFromValues(@NotNull final Object... values) {
+    public ArrayTuple createTupleFromValues(@NotNull final Object... values) {
         final int length = columnSources.length;
         final Object[] valuesCopy = new Object[length];
         System.arraycopy(values, 0, valuesCopy, 0, length);
@@ -62,13 +62,18 @@ final class MultiColumnTupleSource implements TupleSource<ArrayTuple>, DefaultCh
     }
 
     @Override
-    public final <ELEMENT_TYPE> void exportElement(@NotNull final ArrayTuple tuple, final int elementIndex,
+    public int tupleLength() {
+        return columnSources.length;
+    }
+
+    @Override
+    public <ELEMENT_TYPE> void exportElement(@NotNull final ArrayTuple tuple, final int elementIndex,
             @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationIndexKey) {
         writableSource.set(destinationIndexKey, tuple.getElement(elementIndex));
     }
 
     @Override
-    public Object exportElement(ArrayTuple tuple, int elementIndex) {
+    public Object exportElement(@NotNull ArrayTuple tuple, int elementIndex) {
         return tuple.getElement(elementIndex);
     }
 
@@ -177,12 +182,12 @@ final class MultiColumnTupleSource implements TupleSource<ArrayTuple>, DefaultCh
     }
 
     @Override
-    public GetContext makeGetContext(int chunkCapacity, SharedContext sharedContext) {
+    public ChunkSource.GetContext makeGetContext(int chunkCapacity, SharedContext sharedContext) {
         return new GetContext(chunkCapacity, columnSources);
     }
 
     @Override
-    public FillContext makeFillContext(int chunkCapacity, SharedContext sharedContext) {
+    public ChunkSource.FillContext makeFillContext(int chunkCapacity, SharedContext sharedContext) {
         return new FillContext(chunkCapacity, columnSources);
     }
 }

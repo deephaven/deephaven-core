@@ -16,7 +16,7 @@
 
 using deephaven::client::TableHandleManager;
 using deephaven::client::Client;
-using deephaven::client::utility::ConvertTicketToFlightDescriptor;
+using deephaven::client::utility::ArrowUtil;
 using deephaven::client::utility::OkOrThrow;
 using deephaven::client::utility::ValueOrThrow;
 
@@ -73,15 +73,15 @@ arrow::Status Doit(const TableHandleManager &manager, const std::string &csvfn) 
   arrow::flight::FlightCallOptions options;
   wrapper.AddHeaders(&options);
 
-  auto fd = ConvertTicketToFlightDescriptor(ticket);
+  auto fd = ArrowUtil::ConvertTicketToFlightDescriptor(ticket);
   auto res = wrapper.FlightClient()->DoPut(options, fd, arrow_table->schema());
   OkOrThrow(DEEPHAVEN_LOCATION_EXPR(res));
 
   const auto &src_columns = arrow_table->columns();
   const size_t ncols = src_columns.size();
-  const size_t nchunks = src_columns[0]->num_chunks();
+  const int nchunks = src_columns[0]->num_chunks();
   std::vector<std::shared_ptr<arrow::Array>> dest_columns(ncols);
-  for (size_t chunk_index = 0; chunk_index < nchunks; ++chunk_index) {
+  for (int chunk_index = 0; chunk_index < nchunks; ++chunk_index) {
     for (size_t col_index = 0; col_index < ncols; ++col_index) {
       dest_columns[col_index] = src_columns[col_index]->chunk(chunk_index);
     }

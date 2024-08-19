@@ -3,6 +3,7 @@
  */
 #include "deephaven/dhcore/utility/utility.h"
 
+#include <filesystem>
 #include <ostream>
 #include <string>
 #include <vector>
@@ -22,6 +23,7 @@ static_assert(FMT_VERSION >= 100000);
 namespace deephaven::dhcore::utility {
 
 namespace {
+
 const char kEncodeLookup[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 const char kPadCharacter = '=';
 }  // namespace
@@ -104,7 +106,7 @@ void TrueOrThrowHelper(const DebugInfo &debug_info) {
 
 std::string FormatDebugString(const char *func, const char *file, size_t line,
     const std::string &message) {
-  return fmt::format("{}@{}:{}: {}", func, file, line, message);
+  return fmt::format("{}: {}@{}:{}", message, func, file, line);
 }
 
 std::string GetWhat(std::exception_ptr eptr) {
@@ -144,8 +146,12 @@ TimePointToStr(
   return EpochMillisToStr(TimePointToEpochMillis(time_point));
 }
 
+std::string Basename(std::string_view path) {
+  return std::filesystem::path(path).filename().string();
+}
+
 #ifdef __GNUG__
-std::string demangle(const char* name) {
+std::string demangle(const char *name) {
   int status = -1;
   char *res = abi::__cxa_demangle(name, nullptr, nullptr, &status);
   std::string result = status == 0 ? res : name;
@@ -162,4 +168,13 @@ std::string demangle(const char* name) {
 std::string ObjectId(const std::string &class_short_name, void *this_ptr) {
   return fmt::format("{}({})", class_short_name, this_ptr);
 }
+
+std::string ReadPasswordFromStdinNoEcho() {
+  SetStdinEcho(false);
+  std::string password;
+  std::cin >> password;
+  SetStdinEcho(true);
+  return password;
+}
+
 }  // namespace deephaven::dhcore::utility

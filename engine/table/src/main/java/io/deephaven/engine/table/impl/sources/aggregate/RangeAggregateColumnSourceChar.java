@@ -11,7 +11,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.vector.CharVectorColumnWrapper;
+import io.deephaven.engine.table.vectors.CharVectorColumnWrapper;
 import io.deephaven.vector.CharVector;
 import io.deephaven.vector.CharVectorSlice;
 import org.jetbrains.annotations.NotNull;

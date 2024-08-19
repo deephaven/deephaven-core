@@ -3,8 +3,9 @@
 //
 package io.deephaven.extensions.s3;
 
-import io.deephaven.configuration.Configuration;
-import org.immutables.value.Value;
+import io.deephaven.annotations.CopyableStyle;
+import io.deephaven.base.log.LogOutput;
+import io.deephaven.base.log.LogOutputAppendable;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
@@ -20,35 +21,39 @@ import java.util.Optional;
  * documented in this class may change in the future. As such, callers may wish to explicitly set the values.
  */
 @Immutable
-// Almost the same as BuildableStyle, but has copy-ability to support withReadAheadCount
-@Value.Style(visibility = Value.Style.ImplementationVisibility.PACKAGE,
-        defaults = @Value.Immutable(copy = true),
-        strictBuilder = true,
-        weakInterning = true,
-        jdkOnly = true)
-public abstract class S3Instructions {
+@CopyableStyle
+public abstract class S3Instructions implements LogOutputAppendable {
 
-    private final static int DEFAULT_MAX_CONCURRENT_REQUESTS = 50;
-    private final static int DEFAULT_READ_AHEAD_COUNT = 1;
+    private static final int DEFAULT_MAX_CONCURRENT_REQUESTS = 256;
+    private static final int DEFAULT_READ_AHEAD_COUNT = 32;
+    private static final int DEFAULT_FRAGMENT_SIZE = 1 << 16; // 64 KiB
+    private static final int MIN_FRAGMENT_SIZE = 8 << 10; // 8 KiB
+    private static final Duration DEFAULT_CONNECTION_TIMEOUT = Duration.ofSeconds(2);
+    private static final Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(2);
+    private static final int DEFAULT_NUM_CONCURRENT_WRITE_PARTS = 64;
 
-    private final static String MAX_FRAGMENT_SIZE_CONFIG_PARAM = "S3.maxFragmentSize";
-    final static int MAX_FRAGMENT_SIZE =
-            Configuration.getInstance().getIntegerWithDefault(MAX_FRAGMENT_SIZE_CONFIG_PARAM, 5 << 20); // 5 MiB
-    private final static int DEFAULT_FRAGMENT_SIZE = MAX_FRAGMENT_SIZE;
-    private final static int SINGLE_USE_FRAGMENT_SIZE_DEFAULT = Math.min(65536, MAX_FRAGMENT_SIZE); // 64 KiB
-    private final static int MIN_FRAGMENT_SIZE = 8 << 10; // 8 KiB
-    private final static int DEFAULT_MAX_CACHE_SIZE = 32;
-    private final static Duration DEFAULT_CONNECTION_TIMEOUT = Duration.ofSeconds(2);
-    private final static Duration DEFAULT_READ_TIMEOUT = Duration.ofSeconds(2);
+    /**
+     * We set default part size to 10 MiB. The maximum number of parts allowed is 10,000. This means maximum size of a
+     * single file that we can write is roughly 100k MiB (or about 98 GiB). For uploading larger files, user would need
+     * to set a larger part size.
+     *
+     * @see <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/qfacts.html">Amazon S3 User Guide</a>
+     */
+    private static final int DEFAULT_WRITE_PART_SIZE = 10 << 20; // 10 MiB
+    static final int MIN_WRITE_PART_SIZE = 5 << 20; // 5 MiB
+
+    static final S3Instructions DEFAULT = builder().build();
 
     public static Builder builder() {
         return ImmutableS3Instructions.builder();
     }
 
     /**
-     * The region name to use when reading or writing to S3.
+     * The region name to use when reading or writing to S3. If not provided, the region name is picked by the AWS SDK
+     * from 'aws.region' system property, "AWS_REGION" environment variable, the {user.home}/.aws/credentials or
+     * {user.home}/.aws/config files, or from EC2 metadata service, if running in EC2.
      */
-    public abstract String regionName();
+    public abstract Optional<String> regionName();
 
     /**
      * The maximum number of concurrent requests to make to S3, defaults to {@value #DEFAULT_MAX_CONCURRENT_REQUESTS}.
@@ -69,25 +74,13 @@ public abstract class S3Instructions {
     }
 
     /**
-     * The maximum byte size of each fragment to read from S3, defaults to the value of config parameter
-     * {@value MAX_FRAGMENT_SIZE_CONFIG_PARAM}, or 5 MiB if unset. Must be between 8 KiB and the value of config
-     * parameter {@value MAX_FRAGMENT_SIZE_CONFIG_PARAM}. If there are fewer bytes remaining in the file, the fetched
-     * fragment can be smaller.
+     * The maximum byte size of each fragment to read from S3, defaults to {@value DEFAULT_FRAGMENT_SIZE}, must be
+     * larger than {@value MIN_FRAGMENT_SIZE}. If there are fewer bytes remaining in the file, the fetched fragment can
+     * be smaller.
      */
     @Default
     public int fragmentSize() {
         return DEFAULT_FRAGMENT_SIZE;
-    }
-
-    /**
-     * The maximum number of fragments to cache in memory, defaults to
-     * {@code Math.max(1 + readAheadCount(), DEFAULT_MAX_CACHE_SIZE)}, which is at least
-     * {@value #DEFAULT_MAX_CACHE_SIZE}. This caching is done at the deephaven layer for faster access to recently read
-     * fragments. Must be greater than or equal to {@code 1 + readAheadCount()}.
-     */
-    @Default
-    public int maxCacheSize() {
-        return Math.max(1 + readAheadCount(), DEFAULT_MAX_CACHE_SIZE);
     }
 
     /**
@@ -118,6 +111,33 @@ public abstract class S3Instructions {
     }
 
     /**
+     * The size of each part (in bytes) to upload when writing to S3, defaults to {@value #DEFAULT_WRITE_PART_SIZE}. The
+     * minimum allowed part size is {@value #MIN_WRITE_PART_SIZE}. Setting a higher value may increase throughput, but
+     * may also increase memory usage. Note that the maximum number of parts allowed for a single file is 10,000.
+     * Therefore, for {@value #DEFAULT_WRITE_PART_SIZE} part size, the maximum size of a single file that can be written
+     * is {@value #DEFAULT_WRITE_PART_SIZE} * 10,000 bytes.
+     */
+    @Default
+    public int writePartSize() {
+        return DEFAULT_WRITE_PART_SIZE;
+    }
+
+    /**
+     * The maximum number of parts that can be uploaded concurrently when writing to S3 without blocking. Setting a
+     * higher value may increase throughput, but may also increase memory usage. Defaults to
+     * {@value #DEFAULT_NUM_CONCURRENT_WRITE_PARTS}.
+     */
+    @Default
+    public int numConcurrentWriteParts() {
+        return DEFAULT_NUM_CONCURRENT_WRITE_PARTS;
+    }
+
+    @Override
+    public LogOutput append(final LogOutput logOutput) {
+        return logOutput.append(toString());
+    }
+
+    /**
      * The endpoint to connect to. Callers connecting to AWS do not typically need to set this; it is most useful when
      * connecting to non-AWS, S3-compatible APIs.
      *
@@ -134,8 +154,6 @@ public abstract class S3Instructions {
 
         Builder fragmentSize(int fragmentSize);
 
-        Builder maxCacheSize(int maxCacheSize);
-
         Builder connectionTimeout(Duration connectionTimeout);
 
         Builder readTimeout(Duration connectionTimeout);
@@ -143,6 +161,10 @@ public abstract class S3Instructions {
         Builder credentials(Credentials credentials);
 
         Builder endpointOverride(URI endpointOverride);
+
+        Builder writePartSize(int writePartSize);
+
+        Builder numConcurrentWriteParts(int numConcurrentWriteParts);
 
         default Builder endpointOverride(String endpointOverride) {
             return endpointOverride(URI.create(endpointOverride));
@@ -153,16 +175,10 @@ public abstract class S3Instructions {
 
     abstract S3Instructions withReadAheadCount(int readAheadCount);
 
-    abstract S3Instructions withFragmentSize(int fragmentSize);
-
-    abstract S3Instructions withMaxCacheSize(int maxCacheSize);
-
     @Lazy
     S3Instructions singleUse() {
         final int readAheadCount = Math.min(DEFAULT_READ_AHEAD_COUNT, readAheadCount());
-        return withReadAheadCount(readAheadCount)
-                .withFragmentSize(Math.min(SINGLE_USE_FRAGMENT_SIZE_DEFAULT, fragmentSize()))
-                .withMaxCacheSize(readAheadCount + 1);
+        return withReadAheadCount(readAheadCount);
     }
 
     @Check
@@ -180,22 +196,10 @@ public abstract class S3Instructions {
     }
 
     @Check
-    final void boundsCheckMaxFragmentSize() {
+    final void boundsCheckMinFragmentSize() {
         if (fragmentSize() < MIN_FRAGMENT_SIZE) {
             throw new IllegalArgumentException("fragmentSize(=" + fragmentSize() + ") must be >= " + MIN_FRAGMENT_SIZE +
                     " bytes");
-        }
-        if (fragmentSize() > MAX_FRAGMENT_SIZE) {
-            throw new IllegalArgumentException("fragmentSize(=" + fragmentSize() + ") must be <= " + MAX_FRAGMENT_SIZE +
-                    " bytes");
-        }
-    }
-
-    @Check
-    final void boundsCheckMaxCacheSize() {
-        if (maxCacheSize() < readAheadCount() + 1) {
-            throw new IllegalArgumentException("maxCacheSize(=" + maxCacheSize() + ") must be >= 1 + " +
-                    "readAheadCount(=" + readAheadCount() + ")");
         }
     }
 
@@ -204,6 +208,31 @@ public abstract class S3Instructions {
         if (!(credentials() instanceof AwsSdkV2Credentials)) {
             throw new IllegalArgumentException(
                     "credentials() must be created via provided io.deephaven.extensions.s3.Credentials methods");
+        }
+    }
+
+    @Check
+    final void boundsCheckWritePartSize() {
+        if (writePartSize() < MIN_WRITE_PART_SIZE) {
+            throw new IllegalArgumentException(
+                    "writePartSize(=" + writePartSize() + ") must be >= " + MIN_WRITE_PART_SIZE + " MiB");
+        }
+    }
+
+    @Check
+    final void boundsCheckMinNumConcurrentWriteParts() {
+        if (numConcurrentWriteParts() < 1) {
+            throw new IllegalArgumentException(
+                    "numConcurrentWriteParts(=" + numConcurrentWriteParts() + ") must be >= 1");
+        }
+    }
+
+    @Check
+    final void boundsCheckMaxNumConcurrentWriteParts() {
+        if (numConcurrentWriteParts() > maxConcurrentRequests()) {
+            throw new IllegalArgumentException(
+                    "numConcurrentWriteParts(=" + numConcurrentWriteParts() + ") must be <= " +
+                            "maxConcurrentRequests(=" + maxConcurrentRequests() + ")");
         }
     }
 

@@ -13,32 +13,29 @@ import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
-import io.deephaven.chunk.WritableLongChunk;
-import io.deephaven.chunk.WritableObjectChunk;
-import io.deephaven.chunk.util.pools.PoolableChunk;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.extensions.barrage.chunk.array.ArrayExpansionKernel;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.DataInput;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Iterator;
-import java.util.PrimitiveIterator;
 
 public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGenerator<ObjectChunk<T, Values>> {
     private static final String DEBUG_NAME = "VarListChunkInputStreamGenerator";
 
+    private final Factory factory;
     private final Class<T> type;
 
     private WritableIntChunk<ChunkPositions> offsets;
     private ChunkInputStreamGenerator innerGenerator;
 
-    VarListChunkInputStreamGenerator(final Class<T> type, final ObjectChunk<T, Values> chunk, final long rowOffset) {
+    VarListChunkInputStreamGenerator(ChunkInputStreamGenerator.Factory factory, final Class<T> type,
+            final ObjectChunk<T, Values> chunk, final long rowOffset) {
         super(chunk, 0, rowOffset);
+        this.factory = factory;
         this.type = type;
     }
 
@@ -49,31 +46,32 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
 
         final Class<?> myType = type.getComponentType();
         final Class<?> myComponentType = myType != null ? myType.getComponentType() : null;
-        ChunkType chunkType = ChunkType.fromElementType(myType);
-        if (chunkType == ChunkType.Boolean) {
-            // the internal payload is in bytes (to handle nulls), but the wire format is packed bits
+
+        final ChunkType chunkType;
+        if (myType == boolean.class || myType == Boolean.class) {
+            // Note: Internally booleans are passed around as bytes, but the wire format is packed bits.
             chunkType = ChunkType.Byte;
+        } else if (myType != null && !myType.isPrimitive()) {
+            chunkType = ChunkType.Object;
+        } else {
+            chunkType = ChunkType.fromElementType(myType);
         }
+
         final ArrayExpansionKernel kernel = ArrayExpansionKernel.makeExpansionKernel(chunkType, myType);
         offsets = WritableIntChunk.makeWritableChunk(chunk.size() + 1);
 
         final WritableChunk<Values> innerChunk = kernel.expand(chunk, offsets);
-        innerGenerator = ChunkInputStreamGenerator.makeInputStreamGenerator(
-                chunkType, myType, myComponentType, innerChunk, 0);
+        innerGenerator = factory.makeInputStreamGenerator(chunkType, myType, myComponentType, innerChunk, 0);
     }
 
     @Override
-    public void close() {
-        if (REFERENCE_COUNT_UPDATER.decrementAndGet(this) == 0) {
-            if (chunk instanceof PoolableChunk) {
-                ((PoolableChunk) chunk).close();
-            }
-            if (offsets != null) {
-                offsets.close();
-            }
-            if (innerGenerator != null) {
-                innerGenerator.close();
-            }
+    protected void onReferenceCountAtZero() {
+        super.onReferenceCountAtZero();
+        if (offsets != null) {
+            offsets.close();
+        }
+        if (innerGenerator != null) {
+            innerGenerator.close();
         }
     }
 
@@ -233,91 +231,5 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
         }
     }
 
-    static <T> WritableObjectChunk<T, Values> extractChunkFromInputStream(
-            final StreamReaderOptions options,
-            final Class<T> type,
-            final Iterator<FieldNodeInfo> fieldNodeIter,
-            final PrimitiveIterator.OfLong bufferInfoIter,
-            final DataInput is,
-            final WritableChunk<Values> outChunk,
-            final int outOffset,
-            final int totalRows) throws IOException {
-
-        final FieldNodeInfo nodeInfo = fieldNodeIter.next();
-        final long validityBuffer = bufferInfoIter.nextLong();
-        final long offsetsBuffer = bufferInfoIter.nextLong();
-
-        final Class<?> componentType = type.getComponentType();
-        final Class<?> innerComponentType = componentType != null ? componentType.getComponentType() : null;
-
-        final ChunkType chunkType;
-        if (componentType == boolean.class || componentType == Boolean.class) {
-            // Note: Internally booleans are passed around as bytes, but the wire format is packed bits.
-            chunkType = ChunkType.Byte;
-        } else {
-            chunkType = ChunkType.fromElementType(componentType);
-        }
-
-        if (nodeInfo.numElements == 0) {
-            try (final WritableChunk<Values> ignored = ChunkInputStreamGenerator.extractChunkFromInputStream(
-                    options, chunkType, componentType, innerComponentType, fieldNodeIter,
-                    bufferInfoIter, is, null, 0, 0)) {
-                return WritableObjectChunk.makeWritableChunk(nodeInfo.numElements);
-            }
-        }
-
-        final WritableObjectChunk<T, Values> chunk;
-        final int numValidityLongs = (nodeInfo.numElements + 63) / 64;
-        try (final WritableLongChunk<Values> isValid = WritableLongChunk.makeWritableChunk(numValidityLongs);
-                final WritableIntChunk<ChunkPositions> offsets =
-                        WritableIntChunk.makeWritableChunk(nodeInfo.numElements + 1)) {
-            // Read validity buffer:
-            int jj = 0;
-            for (; jj < Math.min(numValidityLongs, validityBuffer / 8); ++jj) {
-                isValid.set(jj, is.readLong());
-            }
-            final long valBufRead = jj * 8L;
-            if (valBufRead < validityBuffer) {
-                is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, validityBuffer - valBufRead));
-            }
-            // we support short validity buffers
-            for (; jj < numValidityLongs; ++jj) {
-                isValid.set(jj, -1); // -1 is bit-wise representation of all ones
-            }
-            // consumed entire validity buffer by here
-
-            // Read offsets:
-            final long offBufRead = (nodeInfo.numElements + 1L) * Integer.BYTES;
-            if (offsetsBuffer < offBufRead) {
-                throw new IllegalStateException("offset buffer is too short for the expected number of elements");
-            }
-            for (int i = 0; i < nodeInfo.numElements + 1; ++i) {
-                offsets.set(i, is.readInt());
-            }
-            if (offBufRead < offsetsBuffer) {
-                is.skipBytes(LongSizedDataStructure.intSize(DEBUG_NAME, offsetsBuffer - offBufRead));
-            }
-
-            final ArrayExpansionKernel kernel = ArrayExpansionKernel.makeExpansionKernel(chunkType, componentType);
-            try (final WritableChunk<Values> inner = ChunkInputStreamGenerator.extractChunkFromInputStream(
-                    options, chunkType, componentType, innerComponentType,
-                    fieldNodeIter, bufferInfoIter, is, null, 0, 0)) {
-                chunk = kernel.contract(inner, offsets, outChunk, outOffset, totalRows);
-
-                long nextValid = 0;
-                for (int ii = 0; ii < nodeInfo.numElements; ++ii) {
-                    if ((ii % 64) == 0) {
-                        nextValid = isValid.get(ii / 64);
-                    }
-                    if ((nextValid & 0x1) == 0x0) {
-                        chunk.set(outOffset + ii, null);
-                    }
-                    nextValid >>= 1;
-                }
-            }
-        }
-
-        return chunk;
-    }
 }
 

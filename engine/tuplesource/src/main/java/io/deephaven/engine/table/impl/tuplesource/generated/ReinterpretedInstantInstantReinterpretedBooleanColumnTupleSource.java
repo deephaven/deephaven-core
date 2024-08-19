@@ -87,6 +87,11 @@ public class ReinterpretedInstantInstantReinterpretedBooleanColumnTupleSource ex
         );
     }
 
+    @Override
+    public final int tupleLength() {
+        return 3;
+    }
+
     @SuppressWarnings("unchecked")
     @Override
     public final <ELEMENT_TYPE> void exportElement(@NotNull final LongLongByteTuple tuple, final int elementIndex, @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationRowKey) {
@@ -120,6 +125,20 @@ public class ReinterpretedInstantInstantReinterpretedBooleanColumnTupleSource ex
     }
 
     @Override
+    public final void exportAllTo(final Object @NotNull [] dest, @NotNull final LongLongByteTuple tuple) {
+        dest[0] = DateTimeUtils.epochNanosToInstant(tuple.getFirstElement());
+        dest[1] = DateTimeUtils.epochNanosToInstant(tuple.getSecondElement());
+        dest[2] = BooleanUtils.byteAsBoolean(tuple.getThirdElement());
+    }
+
+    @Override
+    public final void exportAllTo(final Object @NotNull [] dest, @NotNull final LongLongByteTuple tuple, final int @NotNull [] map) {
+        dest[map[0]] = DateTimeUtils.epochNanosToInstant(tuple.getFirstElement());
+        dest[map[1]] = DateTimeUtils.epochNanosToInstant(tuple.getSecondElement());
+        dest[map[2]] = BooleanUtils.byteAsBoolean(tuple.getThirdElement());
+    }
+
+    @Override
     public final Object exportElementReinterpreted(@NotNull final LongLongByteTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
             return TypeUtils.box(tuple.getFirstElement());
@@ -132,6 +151,20 @@ public class ReinterpretedInstantInstantReinterpretedBooleanColumnTupleSource ex
         }
         throw new IllegalArgumentException("Bad elementIndex for 3 element tuple: " + elementIndex);
     }
+    @Override
+    public final void exportAllReinterpretedTo(final Object @NotNull [] dest, @NotNull final LongLongByteTuple tuple) {
+        dest[0] = TypeUtils.box(tuple.getFirstElement());
+        dest[1] = DateTimeUtils.epochNanosToInstant(tuple.getSecondElement());
+        dest[2] = TypeUtils.box(tuple.getThirdElement());
+    }
+
+    @Override
+    public final void exportAllReinterpretedTo(final Object @NotNull [] dest, @NotNull final LongLongByteTuple tuple, final int @NotNull [] map) {
+        dest[map[0]] = TypeUtils.box(tuple.getFirstElement());
+        dest[map[1]] = DateTimeUtils.epochNanosToInstant(tuple.getSecondElement());
+        dest[map[2]] = TypeUtils.box(tuple.getThirdElement());
+    }
+
 
     @Override
     protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<? extends Values> [] chunks) {

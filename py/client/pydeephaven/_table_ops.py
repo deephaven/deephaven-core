@@ -606,17 +606,24 @@ class AggregateAllOp(TableOp):
 
 
 class CreateInputTableOp(TableOp):
-    def __init__(self, schema: pa.schema, init_table: Any, key_cols: List[str] = None):
+    def __init__(self, schema: pa.schema, init_table: Any, key_cols: List[str] = None, blink: bool = False):
+        if blink and key_cols:
+            raise ValueError("key columns are not supported for blink input tables.")
+
         self.schema = schema
         self.init_table = init_table
         self.key_cols = key_cols
+        self.blink = blink
 
     @classmethod
     def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub) -> Any:
         return table_service_stub.CreateInputTable
 
     def make_grpc_request(self, result_id, source_id) -> Any:
-        if self.key_cols:
+        if self.blink:
+            blink_ = table_pb2.CreateInputTableRequest.InputTableKind.Blink()
+            input_table_kind = table_pb2.CreateInputTableRequest.InputTableKind(blink=blink_)
+        elif self.key_cols:
             key_backed = table_pb2.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked(
                 key_columns=self.key_cols)
             input_table_kind = table_pb2.CreateInputTableRequest.InputTableKind(in_memory_key_backed=key_backed)

@@ -38,7 +38,7 @@ FROM ghcr.io/deephaven/server:latest
 RUN pip install deephaven-plugin-matplotlib
 ```
 
-After building, you need to specify using that build in your `docker-compose`. Do this by modifying the existing a `docker-compose.yml` file and replace the web and server definitions with the following:
+After building, you need to specify using that build in your `docker compose`. Do this by modifying the existing a `docker-compose.yml` file and replace the web and server definitions with the following:
 ```yaml
 services:
   server:
@@ -66,7 +66,7 @@ When you're done, your directory structure should look like:
     └── Dockerfile
 ```
 
-Everything's ready to go! Now you just need to run `docker-compose up` as normal, and you will be using your custom image with your JS plugins installed. See what you can create!
+Everything's ready to go! Now you just need to run `docker compose up` as normal, and you will be using your custom image with your JS plugins installed. See what you can create!
 
 ## JS Plugin Development
 

@@ -9,6 +9,7 @@
 
 #include <arrow/array.h>
 #include <arrow/scalar.h>
+#include "deephaven/client/arrowutil/arrow_client_table.h"
 #include "deephaven/client/flight.h"
 #include "deephaven/client/impl/aggregate_impl.h"
 #include "deephaven/client/impl/client_impl.h"
@@ -22,14 +23,17 @@
 
 using io::deephaven::proto::backplane::grpc::ComboAggregateRequest;
 using io::deephaven::proto::backplane::grpc::Ticket;
-using deephaven::client::server::Server;
+using deephaven::client::arrowutil::ArrowClientTable;
 using deephaven::client::impl::AggregateComboImpl;
 using deephaven::client::impl::AggregateImpl;
 using deephaven::client::impl::ClientImpl;
 using deephaven::client::impl::UpdateByOperationImpl;
+using deephaven::client::server::Server;
 using deephaven::client::subscription::SubscriptionHandle;
 using deephaven::client::utility::Executor;
 using deephaven::client::utility::OkOrThrow;
+using deephaven::client::utility::ValueOrThrow;
+using deephaven::dhcore::clienttable::ClientTable;
 using deephaven::dhcore::clienttable::Schema;
 using deephaven::dhcore::utility::GetWhat;
 using deephaven::dhcore::utility::MakeReservedVector;
@@ -176,9 +180,9 @@ Aggregate createAggForMatchPairs(ComboAggregateRequest::AggType aggregate_type,
 }  // namespace
 
 Aggregate::Aggregate() = default;
-Aggregate::Aggregate(const Aggregate &other) noexcept = default;
+Aggregate::Aggregate(const Aggregate &other) = default;
 Aggregate::Aggregate(Aggregate &&other) noexcept = default;
-Aggregate &Aggregate::operator=(const Aggregate &other) noexcept = default;
+Aggregate &Aggregate::operator=(const Aggregate &other) = default;
 Aggregate &Aggregate::operator=(Aggregate &&other) noexcept = default;
 Aggregate::~Aggregate() = default;
 
@@ -279,6 +283,8 @@ AggregateCombo AggregateCombo::Create(std::vector<Aggregate> vec) {
 }
 
 AggregateCombo::AggregateCombo(std::shared_ptr<impl::AggregateComboImpl> impl) : impl_(std::move(impl)) {}
+AggregateCombo::AggregateCombo(const deephaven::client::AggregateCombo &other) = default;
+AggregateCombo &AggregateCombo::operator=(const AggregateCombo &other) = default;
 AggregateCombo::AggregateCombo(AggregateCombo &&other) noexcept = default;
 AggregateCombo &AggregateCombo::operator=(AggregateCombo &&other) noexcept = default;
 AggregateCombo::~AggregateCombo() = default;
@@ -399,11 +405,6 @@ TableHandle TableHandle::MedianBy(std::vector<std::string> column_specs) const {
 TableHandle TableHandle::PercentileBy(double percentile, bool avg_median,
     std::vector<std::string> column_specs) const {
   auto qt_impl = impl_->PercentileBy(percentile, avg_median, std::move(column_specs));
-  return TableHandle(std::move(qt_impl));
-}
-
-TableHandle TableHandle::PercentileBy(double percentile, std::vector<std::string> column_specs) const {
-  auto qt_impl = impl_->PercentileBy(percentile, std::move(column_specs));
   return TableHandle(std::move(qt_impl));
 }
 
@@ -546,6 +547,16 @@ std::shared_ptr<arrow::flight::FlightStreamReader> TableHandle::GetFlightStreamR
   return GetManager().CreateFlightWrapper().GetFlightStreamReader(*this);
 }
 
+std::shared_ptr<arrow::Table> TableHandle::ToArrowTable() const {
+  auto res = GetFlightStreamReader()->ToTable();
+  return ValueOrThrow(DEEPHAVEN_LOCATION_EXPR(std::move(res)));
+}
+
+std::shared_ptr<ClientTable> TableHandle::ToClientTable() const {
+  auto at = ToArrowTable();
+  return ArrowClientTable::Create(std::move(at));
+}
+
 std::shared_ptr<SubscriptionHandle> TableHandle::Subscribe(
     std::shared_ptr<TickingCallback> callback) {
   return impl_->Subscribe(std::move(callback));
@@ -557,8 +568,8 @@ TableHandle::Subscribe(onTickCallback_t on_tick, void *on_tick_user_data,
   return impl_->Subscribe(on_tick, on_tick_user_data, on_error, on_error_user_data);
 }
 
-void TableHandle::Unsubscribe(std::shared_ptr<SubscriptionHandle> callback) {
-  impl_->Unsubscribe(std::move(callback));
+void TableHandle::Unsubscribe(const std::shared_ptr<SubscriptionHandle> &handle) {
+  impl_->Unsubscribe(handle);
 }
 
 const std::string &TableHandle::GetTicketAsString() const {

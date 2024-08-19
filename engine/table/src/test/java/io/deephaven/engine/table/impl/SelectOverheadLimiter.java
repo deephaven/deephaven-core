@@ -4,7 +4,6 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -12,7 +11,6 @@ import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.table.impl.sources.SwitchColumnSource;
 import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
 import io.deephaven.util.annotations.VisibleForTesting;
@@ -141,8 +139,8 @@ public class SelectOverheadLimiter {
                     rowSet.remove(upstream.removed());
                     upstream.shifted().apply(rowSet);
                     rowSet.insert(upstream.added());
-                    final TableUpdateImpl copy = TableUpdateImpl.copy(upstream);
-                    copy.modifiedColumnSet = result.getModifiedColumnSetForUpdates();
+                    final TableUpdateImpl copy =
+                            TableUpdateImpl.copy(upstream, result.getModifiedColumnSetForUpdates());
                     flatTransformer.clearAndTransform(upstream.modifiedColumnSet(), copy.modifiedColumnSet());
                     result.notifyListeners(copy);
                     return;
@@ -157,8 +155,8 @@ public class SelectOverheadLimiter {
                 rowSet.insert(upstream.added());
 
                 if (overheadTracker.overhead() <= permittedOverhead) {
-                    final TableUpdateImpl copy = TableUpdateImpl.copy(upstream);
-                    copy.modifiedColumnSet = result.getModifiedColumnSetForUpdates();
+                    final TableUpdateImpl copy =
+                            TableUpdateImpl.copy(upstream, result.getModifiedColumnSetForUpdates());
                     inputTransformer.clearAndTransform(upstream.modifiedColumnSet(), copy.modifiedColumnSet());
                     result.notifyListeners(copy);
                     return;
