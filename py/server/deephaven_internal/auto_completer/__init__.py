@@ -19,6 +19,14 @@ later, we may add slow mode, which uses both static and interpreted completion m
 from ._completer import Completer, Mode
 from jedi import preload_module, Interpreter
 
+
+"""
+For Python 3.9 and 3.10, there is a bug in recursion which can result in a segfault. Lowering this
+limit to 2000 or less seems to mitigate it.
+"""
+MAX_RECURSION_LIMIT = 2000
+
+
 jedi_settings = Completer()
 # warm jedi up a little. We could probably off-thread this.
 preload_module("deephaven")

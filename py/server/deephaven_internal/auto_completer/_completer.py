@@ -6,6 +6,9 @@ from enum import Enum
 from typing import Any, Union, List
 from jedi import Interpreter, Script
 from jedi.api.classes import Completion, Signature
+from importlib.metadata import version
+import sys
+import warnings
 
 
 class Mode(Enum):
@@ -80,6 +83,7 @@ class Completer:
         except ImportError:
             self.__can_jedi = False
             self.mode = Mode.OFF
+        self.recursion_limit_already_warned = False
 
     @property
     def mode(self) -> Mode:
@@ -135,6 +139,7 @@ class Completer:
         Modeled after Jedi language server
         https://github.com/pappasam/jedi-language-server/blob/main/jedi_language_server/server.py#L189
         """
+        self.check_recursion_limit()
         if not self._versions[uri] == version:
             # if you aren't the newest completion, you get nothing, quickly
             return []
@@ -253,3 +258,36 @@ class Completer:
             hoverstring += '\n---\n' + wrap_plaintext(raw_docstring)
 
         return hoverstring.strip()
+
+    def check_recursion_limit(self):
+        """
+        Tests for python+jedi+numpy versions that are susceptible to a RecursionError/segfault issue, and lowers
+        the recursion limit, warning if the limit is raised externally
+        """
+        if not sys.version.startswith('3.9.') and not sys.version.startswith('3.10.'):
+            return
+
+        if not self.__can_jedi:
+            return
+
+        # numpy is a required dependency, tested for jedi above
+        if not version('numpy').startswith('2.0') or not version('jedi') == '0.19.1':
+            return
+
+        from . import MAX_RECURSION_LIMIT
+
+        if sys.getrecursionlimit() <= MAX_RECURSION_LIMIT:
+            return
+
+        sys.setrecursionlimit(MAX_RECURSION_LIMIT)
+
+        if not self.recursion_limit_already_warned:
+            self.recursion_limit_already_warned = True
+            warnings.warn(f"""Recursion limit has been set to {MAX_RECURSION_LIMIT} to avoid a known segfault in Python related to RecursionErrors.
+This limit will be set to {MAX_RECURSION_LIMIT} whenever autocomplete takes place to avoid this. Other steps you can
+take to avoid this:
+ * Use numpy 1.x
+ * Use Python 3.8 or 3.11+
+ * When available, use a newer version of Jedi
+ * Disable autocomplete
+See https://github.com/deephaven/deephaven-core/issues/5878 for more information.""")
