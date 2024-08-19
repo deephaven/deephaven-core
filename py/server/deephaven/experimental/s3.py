@@ -1,16 +1,13 @@
 #
 # Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
-import datetime
 from typing import Optional, Union
 
 import jpy
-import numpy as np
-import pandas as pd
 
-from deephaven import time, DHError
+from deephaven import DHError
 from deephaven._wrapper import JObjectWrapper
-from deephaven.dtypes import Duration
+from deephaven.time import DurationLike, to_j_duration
 
 # If we move S3 to a permanent module, we should remove this try/except block and just import the types directly.
 try:
@@ -38,10 +35,8 @@ class S3Instructions(JObjectWrapper):
                  max_concurrent_requests: Optional[int] = None,
                  read_ahead_count: Optional[int] = None,
                  fragment_size: Optional[int] = None,
-                 connection_timeout: Union[
-                     Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta, None] = None,
-                 read_timeout: Union[
-                     Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta, None] = None,
+                 connection_timeout: Optional[DurationLike] = None,
+                 read_timeout: Optional[DurationLike] = None,
                  access_key_id: Optional[str] = None,
                  secret_access_key: Optional[str] = None,
                  anonymous_access: bool = False,
@@ -111,10 +106,10 @@ class S3Instructions(JObjectWrapper):
                 builder.fragmentSize(fragment_size)
 
             if connection_timeout is not None:
-                builder.connectionTimeout(time.to_j_duration(connection_timeout))
+                builder.connectionTimeout(to_j_duration(connection_timeout))
 
             if read_timeout is not None:
-                builder.readTimeout(time.to_j_duration(read_timeout))
+                builder.readTimeout(to_j_duration(read_timeout))
 
             if ((access_key_id is not None and secret_access_key is None) or
                     (access_key_id is None and secret_access_key is not None)):

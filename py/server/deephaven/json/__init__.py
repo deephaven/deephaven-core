@@ -64,7 +64,7 @@ from typing import Dict, List, Union, Tuple, Optional, Literal, Any
 
 from deephaven import dtypes
 from deephaven._wrapper import JObjectWrapper
-from deephaven.time import to_j_instant
+from deephaven.time import InstantLike, to_j_instant
 from deephaven._jpy import strict_cast
 
 
@@ -1000,14 +1000,13 @@ def string_val(
     return JsonValue(builder.build())
 
 
-# TODO(deephaven-core#5269): Create deephaven.time time-type aliases
 def instant_val(
     allow_missing: bool = True,
     allow_null: bool = True,
     number_format: Literal[None, "s", "ms", "us", "ns"] = None,
     allow_decimal: bool = False,
-    on_missing: Optional[Any] = None,
-    on_null: Optional[Any] = None,
+    on_missing: Optional[InstantLike] = None,
+    on_null: Optional[InstantLike] = None,
 ) -> JsonValue:
     """Creates an Instant value. For example, the JSON string
 
@@ -1048,8 +1047,8 @@ def instant_val(
             the epoch. When not set, a JSON string in the ISO-8601 format is expected.
         allow_decimal (bool): if the Instant value is allowed to be a JSON decimal type, default is False. Only valid
             when number_format is specified.
-        on_missing (Optional[Any]): the value to use when the JSON value is missing and allow_missing is True, default is None.
-        on_null (Optional[Any]): the value to use when the JSON value is null and allow_null is True, default is None.
+        on_missing (Optional[InstantLike]): the value to use when the JSON value is missing and allow_missing is True, default is None.
+        on_null (Optional[InstantLike]): the value to use when the JSON value is null and allow_null is True, default is None.
 
     Returns:
         the Instant value
