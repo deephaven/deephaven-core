@@ -21,7 +21,7 @@ public class FilteredTableDataService extends AbstractTableDataService {
 
     private static final String IMPLEMENTATION_NAME = FilteredTableDataService.class.getSimpleName();
 
-    protected final TableDataService serviceToFilter;
+    private final TableDataService serviceToFilter;
     private final LocationKeyFilter locationKeyFilter;
 
     @FunctionalInterface
@@ -65,14 +65,14 @@ public class FilteredTableDataService extends AbstractTableDataService {
         return new TableLocationProviderImpl(serviceToFilter.getTableLocationProvider(tableKey));
     }
 
-    protected class TableLocationProviderImpl implements TableLocationProvider {
+    private class TableLocationProviderImpl implements TableLocationProvider {
 
-        protected final TableLocationProvider inputProvider;
+        private final TableLocationProvider inputProvider;
 
         private final String implementationName;
         private final Map<Listener, FilteringListener> listeners = new WeakHashMap<>();
 
-        protected TableLocationProviderImpl(@NotNull final TableLocationProvider inputProvider) {
+        private TableLocationProviderImpl(@NotNull final TableLocationProvider inputProvider) {
             this.inputProvider = inputProvider;
             implementationName = "Filtered-" + inputProvider.getImplementationName();
         }

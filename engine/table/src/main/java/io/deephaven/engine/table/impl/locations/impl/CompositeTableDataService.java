@@ -23,7 +23,7 @@ public class CompositeTableDataService extends AbstractTableDataService {
 
     private static final String IMPLEMENTATION_NAME = CompositeTableDataService.class.getSimpleName();
 
-    protected final ServiceSelector serviceSelector;
+    private final ServiceSelector serviceSelector;
 
     public interface ServiceSelector {
 
@@ -78,14 +78,14 @@ public class CompositeTableDataService extends AbstractTableDataService {
         return new TableLocationProviderImpl(services, tableKey);
     }
 
-    protected class TableLocationProviderImpl implements TableLocationProvider {
+    private class TableLocationProviderImpl implements TableLocationProvider {
 
         private final ImmutableTableKey tableKey;
 
-        protected final List<TableLocationProvider> inputProviders;
+        private final List<TableLocationProvider> inputProviders;
         private final String implementationName;
 
-        protected TableLocationProviderImpl(@NotNull final TableDataService[] inputServices,
+        private TableLocationProviderImpl(@NotNull final TableDataService[] inputServices,
                 @NotNull final TableKey tableKey) {
             this.tableKey = tableKey.makeImmutable();
             inputProviders = Arrays.stream(inputServices).map(s -> s.getTableLocationProvider(this.tableKey))
