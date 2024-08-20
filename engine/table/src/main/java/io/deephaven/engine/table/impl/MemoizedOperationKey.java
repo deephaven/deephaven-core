@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.ColumnName;
@@ -54,6 +54,16 @@ public abstract class MemoizedOperationKey {
         @Override
         boolean attributesCompatible(Map<String, Object> oldAttributes, Map<String, Object> newAttributes) {
             return true;
+        }
+
+        @Override
+        abstract BaseTable.CopyAttributeOperation copyType();
+    }
+
+    abstract static class BlinkIncompatibleMemoizedOperationKey extends MemoizedOperationKey {
+        @Override
+        boolean attributesCompatible(Map<String, Object> oldAttributes, Map<String, Object> newAttributes) {
+            return BlinkTableTools.hasBlink(oldAttributes) == BlinkTableTools.hasBlink(newAttributes);
         }
 
         @Override
@@ -360,7 +370,7 @@ public abstract class MemoizedOperationKey {
         }
     }
 
-    private static class AggBy extends AttributeAgnosticMemoizedOperationKey {
+    private static class AggBy extends BlinkIncompatibleMemoizedOperationKey {
 
         private final List<? extends Aggregation> aggregations;
         private final boolean preserveEmpty;
@@ -442,7 +452,7 @@ public abstract class MemoizedOperationKey {
         }
     }
 
-    private static class Rollup extends AttributeAgnosticMemoizedOperationKey {
+    private static class Rollup extends BlinkIncompatibleMemoizedOperationKey {
 
         private final AggBy aggBy;
         private final boolean includeConstituents;

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.extensions.barrage.chunk;
 
 import com.google.common.io.LittleEndianDataOutputStream;
@@ -13,10 +13,9 @@ import io.deephaven.chunk.util.pools.ChunkPoolConstants;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.deephaven.chunk.util.pools.PoolableChunk;
 import io.deephaven.engine.rowset.RowSet;
-import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -55,7 +54,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             offsets = WritableLongChunk.makeWritableChunk(size);
             byteChunks = new ArrayList<>();
 
-            // create an initial chunk for data storage.  it might not be needed, but eliminates testing on every
+            // create an initial chunk for data storage. it might not be needed, but eliminates testing on every
             // write operation and the costs for creating and disposing from the pool are minimal
             byteChunks.add(activeChunk = WritableByteChunk.makeWritableChunk(BYTE_CHUNK_SIZE));
         }
@@ -67,11 +66,11 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
         /**
          * Writes the specified byte to the underlying {@code ByteChunk}.
          *
-         * @param   b   the byte to be written.
+         * @param b the byte to be written.
          */
         public synchronized void write(int b) throws IOException {
             // do the write
-            activeChunk.set(activeChunkByteCount++, (byte)b);
+            activeChunk.set(activeChunkByteCount++, (byte) b);
 
             // increment the offset
             writtenTotalByteCount += 1;
@@ -84,15 +83,14 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
         }
 
         /**
-         * Writes {@code len} bytes from the specified byte array
-         * starting at offset {@code off} to the underlying {@code ByteChunk}.
+         * Writes {@code len} bytes from the specified byte array starting at offset {@code off} to the underlying
+         * {@code ByteChunk}.
          *
-         * @param   b     the data.
-         * @param   off   the start offset in the data.
-         * @param   len   the number of bytes to write.
-         * @throws  IndexOutOfBoundsException if {@code off} is negative,
-         * {@code len} is negative, or {@code len} is greater than
-         * {@code b.length - off}
+         * @param b the data.
+         * @param off the start offset in the data.
+         * @param len the number of bytes to write.
+         * @throws IndexOutOfBoundsException if {@code off} is negative, {@code len} is negative, or {@code len} is
+         *         greater than {@code b.length - off}
          */
         public synchronized void write(@NotNull byte[] b, int off, int len) throws IOException {
             int remaining = len;
@@ -147,8 +145,8 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
 
             long startBytePos = offsets.get(sPos);
             while (remainingBytes > 0) {
-                final int chunkIdx = (int)(startBytePos / BYTE_CHUNK_SIZE);
-                final int byteIdx = (int)(startBytePos % BYTE_CHUNK_SIZE);
+                final int chunkIdx = (int) (startBytePos / BYTE_CHUNK_SIZE);
+                final int byteIdx = (int) (startBytePos % BYTE_CHUNK_SIZE);
 
                 final ByteChunk<?> chunk = byteChunks.get(chunkIdx);
 
@@ -191,8 +189,8 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
     }
 
     VarBinaryChunkInputStreamGenerator(final ObjectChunk<T, Values> chunk,
-                                       final long rowOffset,
-                                       final Appender<T> appendItem) {
+            final long rowOffset,
+            final Appender<T> appendItem) {
         super(chunk, 0, rowOffset);
         this.appendItem = appendItem;
     }
@@ -215,20 +213,16 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
     }
 
     @Override
-    public void close() {
-        if (REFERENCE_COUNT_UPDATER.decrementAndGet(this) == 0) {
-            if (chunk instanceof PoolableChunk) {
-                ((PoolableChunk) chunk).close();
-            }
-            if (byteStorage != null) {
-                byteStorage.close();
-            }
+    protected void onReferenceCountAtZero() {
+        super.onReferenceCountAtZero();
+        if (byteStorage != null) {
+            byteStorage.close();
         }
     }
 
     @Override
     public DrainableColumn getInputStream(final StreamReaderOptions options, @Nullable final RowSet subset)
-                throws IOException {
+            throws IOException {
         computePayload();
         return new ObjectChunkInputStream(options, subset);
     }
@@ -281,11 +275,11 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             subset.forAllRowKeyRanges((s, e) -> {
                 numPayloadBytes.add(byteStorage.getPayloadSize((int) s, (int) e));
             });
-            final long payloadExtended = numPayloadBytes.longValue() & REMAINDER_MOD_8_MASK;
+            final long payloadExtended = numPayloadBytes.get() & REMAINDER_MOD_8_MASK;
             if (payloadExtended > 0) {
                 numPayloadBytes.add(8 - payloadExtended);
             }
-            listener.noteLogicalBuffer(numPayloadBytes.longValue());
+            listener.noteLogicalBuffer(numPayloadBytes.get());
         }
 
         @Override
@@ -307,7 +301,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
                         totalCachedSize.add((e - s + 1) * Integer.BYTES);
 
                         // account for payload
-                        totalCachedSize.add(byteStorage.getPayloadSize((int)s, (int)e));
+                        totalCachedSize.add(byteStorage.getPayloadSize((int) s, (int) e));
                     });
                 }
 
@@ -315,7 +309,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
                     // then we must also align offset array
                     totalCachedSize.add(Integer.BYTES);
                 }
-                cachedSize = LongSizedDataStructure.intSize(DEBUG_NAME, totalCachedSize.longValue());
+                cachedSize = LongSizedDataStructure.intSize(DEBUG_NAME, totalCachedSize.get());
             }
             return cachedSize;
         }
@@ -362,8 +356,9 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             final MutableInt logicalSize = new MutableInt();
             subset.forAllRowKeys((idx) -> {
                 try {
-                    logicalSize.add(byteStorage.getPayloadSize((int) idx, (int) idx));
-                    dos.writeInt(logicalSize.intValue());
+                    logicalSize.add(LongSizedDataStructure.intSize("int cast",
+                            byteStorage.getPayloadSize((int) idx, (int) idx)));
+                    dos.writeInt(logicalSize.get());
                 } catch (final IOException e) {
                     throw new UncheckedDeephavenException("couldn't drain data to OutputStream", e);
                 }
@@ -384,7 +379,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
                     throw new UncheckedDeephavenException("couldn't drain data to OutputStream", err);
                 }
             });
-            bytesWritten += payloadLen.longValue();
+            bytesWritten += payloadLen.get();
 
             final long bytesExtended = bytesWritten & REMAINDER_MOD_8_MASK;
             if (bytesExtended > 0) {
@@ -396,7 +391,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
         }
     }
 
-    static <T> WritableObjectChunk<T, Values> extractChunkFromInputStream(
+    public static <T> WritableObjectChunk<T, Values> extractChunkFromInputStream(
             final DataInput is,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final PrimitiveIterator.OfLong bufferInfoIter,
@@ -425,7 +420,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
 
         final int numValidityWords = (numElements + 63) / 64;
         try (final WritableLongChunk<Values> isValid = WritableLongChunk.makeWritableChunk(numValidityWords);
-             final WritableIntChunk<Values> offsets = WritableIntChunk.makeWritableChunk(numElements + 1)) {
+                final WritableIntChunk<Values> offsets = WritableIntChunk.makeWritableChunk(numElements + 1)) {
             // Read validity buffer:
             int jj = 0;
             for (; jj < Math.min(numValidityWords, validityBuffer / 8); ++jj) {

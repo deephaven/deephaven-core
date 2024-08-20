@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.util.channel;
 
 import io.deephaven.base.RAPriQueue;
@@ -13,11 +13,12 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * {@link SeekableChannelsProvider Channel provider} that will cache a bounded number of unused channels.
@@ -56,7 +57,15 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     private final RAPriQueue<PerPathPool> releasePriority =
             new RAPriQueue<>(8, PerPathPool.RAPQ_ADAPTER, PerPathPool.class);
 
-    public CachedChannelProvider(@NotNull final SeekableChannelsProvider wrappedProvider,
+    public static CachedChannelProvider create(@NotNull final SeekableChannelsProvider wrappedProvider,
+            final int maximumPooledCount) {
+        if (wrappedProvider instanceof CachedChannelProvider) {
+            throw new IllegalArgumentException("Cannot wrap a CachedChannelProvider in another CachedChannelProvider");
+        }
+        return new CachedChannelProvider(wrappedProvider, maximumPooledCount);
+    }
+
+    private CachedChannelProvider(@NotNull final SeekableChannelsProvider wrappedProvider,
             final int maximumPooledCount) {
         this.wrappedProvider = wrappedProvider;
         this.maximumPooledCount = Require.gtZero(maximumPooledCount, "maximumPooledCount");
@@ -68,14 +77,23 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
+    public SeekableChannelContext makeSingleUseContext() {
+        return wrappedProvider.makeSingleUseContext();
+    }
+
+    @Override
     public boolean isCompatibleWith(@NotNull final SeekableChannelContext channelContext) {
         return wrappedProvider.isCompatibleWith(channelContext);
     }
 
     @Override
+    public boolean exists(@NotNull final URI uri) {
+        return wrappedProvider.exists(uri);
+    }
+
+    @Override
     public SeekableByteChannel getReadChannel(@NotNull final SeekableChannelContext channelContext,
-            @NotNull final URI uri)
-            throws IOException {
+            @NotNull final URI uri) throws IOException {
         final String uriString = uri.toString();
         final KeyedObjectHashMap<String, PerPathPool> channelPool = channelPools.get(ChannelType.Read);
         final CachedChannel result = tryGetPooledChannel(uriString, channelPool);
@@ -87,15 +105,24 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     }
 
     @Override
-    public SeekableByteChannel getWriteChannel(@NotNull final Path path, final boolean append) throws IOException {
-        final String pathKey = path.toAbsolutePath().toString();
-        final ChannelType channelType = append ? ChannelType.WriteAppend : ChannelType.Write;
-        final KeyedObjectHashMap<String, PerPathPool> channelPool = channelPools.get(channelType);
-        final CachedChannel result = tryGetPooledChannel(pathKey, channelPool);
-        return result == null
-                ? new CachedChannel(wrappedProvider.getWriteChannel(path, append), channelType, pathKey)
-                : result.position(append ? result.size() : 0); // The seek isn't really necessary for append; will be at
-                                                               // end no matter what.
+    public InputStream getInputStream(final SeekableByteChannel channel, final int sizeHint) throws IOException {
+        return wrappedProvider.getInputStream(channel, sizeHint);
+    }
+
+    @Override
+    public final CompletableOutputStream getOutputStream(@NotNull final URI uri, final int bufferSizeHint)
+            throws IOException {
+        return wrappedProvider.getOutputStream(uri, bufferSizeHint);
+    }
+
+    @Override
+    public Stream<URI> list(@NotNull final URI directory) throws IOException {
+        return wrappedProvider.list(directory);
+    }
+
+    @Override
+    public Stream<URI> walk(@NotNull final URI directory) throws IOException {
+        return wrappedProvider.walk(directory);
     }
 
     @Nullable
@@ -138,7 +165,7 @@ public class CachedChannelProvider implements SeekableChannelsProvider {
     }
 
     private long advanceClock() {
-        Assert.holdsLock(this, "this");
+        Assert.assertion(Thread.holdsLock(this), "Thread.holdsLock(this)");
         final long newClock = ++logicalClock;
         if (newClock > 0) {
             return newClock;

@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.rollingproduct;
 
 import io.deephaven.base.ringbuffer.AggregatingDoubleRingBuffer;
@@ -38,7 +41,7 @@ public class CharRollingProductOperator extends BaseDoubleUpdateByOperator {
                         } else if (a == NULL_DOUBLE) {
                             return b;
                         } else if (b == NULL_DOUBLE) {
-                            return  a;
+                            return a;
                         }
                         return a * b;
                     },
@@ -121,8 +124,8 @@ public class CharRollingProductOperator extends BaseDoubleUpdateByOperator {
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits
-            // region extra-constructor-args
-            // endregion extra-constructor-args
+    // region extra-constructor-args
+    // endregion extra-constructor-args
     ) {
         super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
         // region constructor
@@ -137,8 +140,8 @@ public class CharRollingProductOperator extends BaseDoubleUpdateByOperator {
                 timestampColumnName,
                 reverseWindowScaleUnits,
                 forwardWindowScaleUnits
-                // region extra-copy-args
-                // endregion extra-copy-args
+        // region extra-copy-args
+        // endregion extra-copy-args
         );
     }
 }

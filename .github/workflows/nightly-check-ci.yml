@@ -15,7 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         gradle-task: ['check', 'testSerial', 'testParallel', 'testOutOfBand']
-        test-jvm-version: ['11', '17', '21']
+        test-jvm-version: ['11', '17', '21', '22']
     if: ${{ github.repository_owner == 'deephaven' || github.event_name != 'schedule' }}
     runs-on: ubuntu-22.04
     concurrency:
@@ -48,6 +48,16 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
+      - name: Setup JDK 22
+        id: setup-java-22
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '22'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
       - name: Set JAVA_HOME
         run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
 
@@ -57,11 +67,7 @@ jobs:
           cat gradle.properties
 
       - name: Run gradle ${{ matrix.gradle-task }} on java ${{ matrix.test-jvm-version }}
-        uses: burrunan/gradle-cache-action@v1
-        with:
-          job-id: gradle-run
-          arguments: --scan --continue --rerun-tasks ${{ matrix.gradle-task }} -PtestRuntimeVersion=${{ matrix.test-jvm-version }}
-          gradle-version: wrapper
+        run: ./gradlew --scan --continue --rerun-tasks ${{ matrix.gradle-task }} -PtestRuntimeVersion=${{ matrix.test-jvm-version }}
 
       - name: Upload Test Results
         uses: actions/upload-artifact@v4
@@ -94,7 +100,7 @@ jobs:
           report_paths: '**/build/test-results/*/TEST-*.xml'
 
       - name: Slack Nightly Failure
-        uses: slackapi/slack-github-action@v1.24.0
+        uses: slackapi/slack-github-action@v1.26.0
         id: slack-nightly-failure
         if: ${{ failure() && github.repository_owner == 'deephaven' }}
         with:

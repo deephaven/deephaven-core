@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.base;
 
 import io.deephaven.util.QueryConstants;
@@ -24,7 +24,8 @@ import static org.apache.parquet.bytes.BytesInput.concat;
  * Plain encoding except for booleans
  */
 final class RleIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
-    private static final Logger LOG = LoggerFactory.getLogger(org.apache.parquet.column.values.plain.PlainValuesWriter.class);
+    private static final Logger LOG =
+            LoggerFactory.getLogger(org.apache.parquet.column.values.plain.PlainValuesWriter.class);
 
     private final RunLengthBitPackingHybridEncoder encoder;
     private final byte bitWidth;
@@ -53,7 +54,7 @@ final class RleIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
     @Override
     public BytesInput getBytes() {
         try {
-            byte[] bytesHeader = new byte[]{bitWidth};
+            byte[] bytesHeader = new byte[] {bitWidth};
             BytesInput rleEncodedBytes = encoder.toBytes();
             LOG.debug("rle encoded bytes {}", rleEncodedBytes.size());
             return concat(BytesInput.from(bytesHeader), rleEncodedBytes);
@@ -98,8 +99,8 @@ final class RleIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
 
     @Override
     public void writeBulk(@NotNull IntBuffer bulkValues,
-                          final int rowCount,
-                          @Nullable final Statistics<?> statistics) {
+            final int rowCount,
+            @Nullable final Statistics<?> statistics) {
         // Track statistics while we write the values.
         for (int i = 0; i < rowCount; i++) {
             final int v = bulkValues.get();
@@ -111,9 +112,9 @@ final class RleIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
     @NotNull
     @Override
     public WriteResult writeBulkFilterNulls(@NotNull IntBuffer bulkValues,
-                                            @NotNull RunLengthBitPackingHybridEncoder dlEncoder,
-                                            final int rowCount,
-                                            @NotNull final Statistics<?> statistics) throws IOException {
+            @NotNull RunLengthBitPackingHybridEncoder dlEncoder,
+            final int rowCount,
+            @NotNull final Statistics<?> statistics) throws IOException {
         while (bulkValues.hasRemaining()) {
             int v = bulkValues.get();
             if (v != QueryConstants.NULL_INT) {
@@ -130,8 +131,8 @@ final class RleIntChunkedWriter extends AbstractBulkValuesWriter<IntBuffer> {
 
     @Override
     public @NotNull WriteResult writeBulkVectorFilterNulls(@NotNull IntBuffer bulkValues,
-                                                           final int rowCount,
-                                                           @NotNull final Statistics<?> statistics) {
+            final int rowCount,
+            @NotNull final Statistics<?> statistics) {
         nullOffsets.clear();
         int i = 0;
         while (bulkValues.hasRemaining()) {

@@ -1,11 +1,11 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharDupCompactKernel and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit DoubleReverseDupCompactKernel and run "./gradlew replicateDupCompactKernel" to regenerate
+//
+// @formatter:off
+
 package io.deephaven.engine.table.impl.join.dupcompact;
 
 import io.deephaven.util.compare.DoubleComparisons;

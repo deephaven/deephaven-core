@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunkColumnSource and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharChunkColumnSource and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sources.chunkcolumnsource;
 
 import gnu.trove.list.array.TLongArrayList;
@@ -21,7 +20,7 @@ import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
-import org.apache.commons.lang3.mutable.MutableInt;
+import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -29,11 +28,12 @@ import java.util.ArrayList;
 /**
  * A column source backed by {@link DoubleChunk DoubleChunks}.
  * <p>
- * The address space of the column source is dense, with each chunk backing a contiguous set of indices.  The
- * {@link #getChunk(GetContext, RowSequence)}
- * call will return the backing chunk or a slice of the backing chunk if possible.
+ * The address space of the column source is dense, with each chunk backing a contiguous set of indices. The
+ * {@link #getChunk(GetContext, RowSequence)} call will return the backing chunk or a slice of the backing chunk if
+ * possible.
  */
-public class DoubleChunkColumnSource extends AbstractColumnSource<Double> implements ImmutableColumnSourceGetDefaults.ForDouble, ChunkColumnSource<Double> {
+public class DoubleChunkColumnSource extends AbstractColumnSource<Double>
+        implements ImmutableColumnSourceGetDefaults.ForDouble, ChunkColumnSource<Double> {
     private final ArrayList<WritableDoubleChunk<? extends Values>> data = new ArrayList<>();
     private final TLongArrayList firstOffsetForData;
     private long totalSize = 0;
@@ -63,7 +63,8 @@ public class DoubleChunkColumnSource extends AbstractColumnSource<Double> implem
     private final static class ChunkGetContext<ATTR extends Any> extends DefaultGetContext<ATTR> {
         private final ResettableDoubleChunk resettableDoubleChunk = ResettableDoubleChunk.makeResettableChunk();
 
-        public ChunkGetContext(final ChunkSource<ATTR> chunkSource, final int chunkCapacity, final SharedContext sharedContext) {
+        public ChunkGetContext(final ChunkSource<ATTR> chunkSource, final int chunkCapacity,
+                final SharedContext sharedContext) {
             super(chunkSource, chunkCapacity, sharedContext);
         }
 
@@ -103,12 +104,13 @@ public class DoubleChunkColumnSource extends AbstractColumnSource<Double> implem
     }
 
     @Override
-    public void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
+    public void fillChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination,
+            @NotNull final RowSequence rowSequence) {
         final MutableInt searchStartChunkIndex = new MutableInt(0);
         destination.setSize(0);
         rowSequence.forAllRowKeyRanges((s, e) -> {
             while (s <= e) {
-                final int chunkIndex = getChunkIndex(s, searchStartChunkIndex.intValue());
+                final int chunkIndex = getChunkIndex(s, searchStartChunkIndex.get());
                 final int offsetWithinChunk = (int) (s - firstOffsetForData.get(chunkIndex));
                 Assert.geqZero(offsetWithinChunk, "offsetWithinChunk");
                 final DoubleChunk<? extends Values> doubleChunk = data.get(chunkIndex);
@@ -123,14 +125,15 @@ public class DoubleChunkColumnSource extends AbstractColumnSource<Double> implem
                 s += length;
                 if (s <= e) {
                     // We have more of this range to gather from a subsequent chunk.
-                    searchStartChunkIndex.setValue(chunkIndex + 1);
+                    searchStartChunkIndex.set(chunkIndex + 1);
                 }
             }
         });
     }
 
     @Override
-    public void fillPrevChunk(@NotNull final FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
+    public void fillPrevChunk(@NotNull final FillContext context,
+            @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
         // immutable, so we can delegate to fill
         fillChunk(context, destination, rowSequence);
     }
@@ -148,7 +151,7 @@ public class DoubleChunkColumnSource extends AbstractColumnSource<Double> implem
     /**
      * Given a row key within this column's address space; return the chunk index that contains the row key.
      *
-     * @param start      the data row key to find the corresponding chunk for
+     * @param start the data row key to find the corresponding chunk for
      * @param startChunk the first chunk that may possibly contain start
      * @return the chunk index within data and offsets
      */

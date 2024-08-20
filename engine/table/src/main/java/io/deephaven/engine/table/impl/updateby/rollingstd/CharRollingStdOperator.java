@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.rollingstd;
 
 import io.deephaven.base.ringbuffer.AggregatingDoubleRingBuffer;
@@ -75,7 +78,7 @@ public class CharRollingStdOperator extends BaseDoubleUpdateByOperator {
                 if (val != NULL_CHAR) {
                     // Add the value and its square to the buffers.
                     valueBuffer.addUnsafe(val);
-                    valueSquareBuffer.addUnsafe((double)val * val);
+                    valueSquareBuffer.addUnsafe((double) val * val);
                 } else {
                     // Add null to the buffers and increment the count.
                     valueBuffer.addUnsafe(NULL_DOUBLE);
@@ -102,9 +105,14 @@ public class CharRollingStdOperator extends BaseDoubleUpdateByOperator {
 
         @Override
         public void writeToOutputChunk(int outIdx) {
-            if (valueBuffer.size() == 0) {
+            if (valueBuffer.isEmpty()) {
                 outputValues.set(outIdx, NULL_DOUBLE);
             } else {
+                if (nullCount == valueBuffer.size()) {
+                    outputValues.set(outIdx, NULL_DOUBLE);
+                    return;
+                }
+
                 final int count = valueBuffer.size() - nullCount;
 
                 if (count <= 1) {
@@ -158,8 +166,8 @@ public class CharRollingStdOperator extends BaseDoubleUpdateByOperator {
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits
-            // region extra-constructor-args
-            // endregion extra-constructor-args
+    // region extra-constructor-args
+    // endregion extra-constructor-args
     ) {
         super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
         // region constructor
@@ -174,8 +182,8 @@ public class CharRollingStdOperator extends BaseDoubleUpdateByOperator {
                 timestampColumnName,
                 reverseWindowScaleUnits,
                 forwardWindowScaleUnits
-                // region extra-copy-args
-                // endregion extra-copy-args
+        // region extra-copy-args
+        // endregion extra-copy-args
         );
     }
 }

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.configuration.Configuration;
@@ -25,7 +25,8 @@ import java.util.Map;
  * Iterative average operator.
  */
 class BigIntegerChunkedReVarOperator implements IterativeChunkedAggregationOperator {
-    private static final int SCALE = Configuration.getInstance().getIntegerWithDefault("BigIntegerStdOperator.scale", 10);
+    private static final int SCALE =
+            Configuration.getInstance().getIntegerWithDefault("BigIntegerStdOperator.scale", 10);
     private final ObjectArraySource<BigDecimal> resultColumn;
     private final String name;
     private final boolean std;
@@ -33,7 +34,8 @@ class BigIntegerChunkedReVarOperator implements IterativeChunkedAggregationOpera
     private final BigIntegerChunkedSumOperator sum2Sum;
     private final LongChunkedSumOperator nncSum;
 
-    BigIntegerChunkedReVarOperator(String name, boolean std, BigIntegerChunkedSumOperator sumSum, BigIntegerChunkedSumOperator sum2sum, LongChunkedSumOperator nncSum) {
+    BigIntegerChunkedReVarOperator(String name, boolean std, BigIntegerChunkedSumOperator sumSum,
+            BigIntegerChunkedSumOperator sum2sum, LongChunkedSumOperator nncSum) {
         this.name = name;
         this.std = std;
         this.sumSum = sumSum;
@@ -43,49 +45,67 @@ class BigIntegerChunkedReVarOperator implements IterativeChunkedAggregationOpera
     }
 
     @Override
-    public void addChunk(BucketedContext context, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
-        doBucketedUpdate((ReVarContext)context, destinations, startPositions, stateModified);
+    public void addChunk(BucketedContext context, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
+        doBucketedUpdate((ReVarContext) context, destinations, startPositions, stateModified);
     }
 
     @Override
-    public void removeChunk(BucketedContext context, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
-        doBucketedUpdate((ReVarContext)context, destinations, startPositions, stateModified);
+    public void removeChunk(BucketedContext context, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
+        doBucketedUpdate((ReVarContext) context, destinations, startPositions, stateModified);
     }
 
     @Override
-    public void modifyChunk(BucketedContext context, Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
-        doBucketedUpdate((ReVarContext)context, destinations, startPositions, stateModified);
+    public void modifyChunk(BucketedContext context, Chunk<? extends Values> previousValues,
+            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys,
+            IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
+        doBucketedUpdate((ReVarContext) context, destinations, startPositions, stateModified);
     }
 
     @Override
-    public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+    public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         return updateResult(destination);
     }
 
     @Override
-    public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+    public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         return updateResult(destination);
     }
 
     @Override
-    public boolean modifyChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
+    public boolean modifyChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> previousValues,
+            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
         return updateResult(destination);
     }
 
-    private void doBucketedUpdate(ReVarContext context, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, WritableBooleanChunk<Values> stateModified) {
+    private void doBucketedUpdate(ReVarContext context, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, WritableBooleanChunk<Values> stateModified) {
         try (final RowSequence destinationOk = context.destinationSequenceFromChunks(destinations, startPositions)) {
             updateResult(context, destinationOk, stateModified);
         }
     }
 
-    private void updateResult(ReVarContext reVarContext, RowSequence destinationOk, WritableBooleanChunk<Values> stateModified) {
-        final ObjectChunk<BigInteger, ? extends Values> sumSumChunk = sumSum.getChunk(reVarContext.sumSumContext, destinationOk).asObjectChunk();
-        final ObjectChunk<BigInteger, ? extends Values> sum2SumChunk = sum2Sum.getChunk(reVarContext.sum2SumContext, destinationOk).asObjectChunk();
-        final LongChunk<? extends Values> nncSumChunk = nncSum.getChunk(reVarContext.nncSumContext, destinationOk).asLongChunk();
+    private void updateResult(ReVarContext reVarContext, RowSequence destinationOk,
+            WritableBooleanChunk<Values> stateModified) {
+        final ObjectChunk<BigInteger, ? extends Values> sumSumChunk =
+                sumSum.getChunk(reVarContext.sumSumContext, destinationOk).asObjectChunk();
+        final ObjectChunk<BigInteger, ? extends Values> sum2SumChunk =
+                sum2Sum.getChunk(reVarContext.sum2SumContext, destinationOk).asObjectChunk();
+        final LongChunk<? extends Values> nncSumChunk =
+                nncSum.getChunk(reVarContext.nncSumContext, destinationOk).asLongChunk();
         final int size = reVarContext.keyIndices.size();
         final boolean ordered = reVarContext.ordered;
         for (int ii = 0; ii < size; ++ii) {
-            final boolean changed = updateResult(reVarContext.keyIndices.get(ii), sumSumChunk.get(ii), sum2SumChunk.get(ii), nncSumChunk.get(ii));
+            final boolean changed = updateResult(reVarContext.keyIndices.get(ii), sumSumChunk.get(ii),
+                    sum2SumChunk.get(ii), nncSumChunk.get(ii));
             stateModified.set(ordered ? ii : reVarContext.statePositions.get(ii), changed);
         }
     }
@@ -109,7 +129,9 @@ class BigIntegerChunkedReVarOperator implements IterativeChunkedAggregationOpera
                 newSum2 = BigInteger.ZERO;
             }
             final BigDecimal countMinus1 = BigDecimal.valueOf(nonNullCount - 1);
-            final BigDecimal variance = new BigDecimal(newSum2).subtract(new BigDecimal(newSum.pow(2)).divide(BigDecimal.valueOf(nonNullCount), RoundingMode.HALF_UP)).divide(countMinus1, RoundingMode.HALF_UP);
+            final BigDecimal variance = new BigDecimal(newSum2).subtract(
+                    new BigDecimal(newSum.pow(2)).divide(BigDecimal.valueOf(nonNullCount), RoundingMode.HALF_UP))
+                    .divide(countMinus1, RoundingMode.HALF_UP);
             final BigDecimal result = std ? BigDecimalUtils.sqrt(variance, SCALE) : variance;
             return !result.equals(resultColumn.getAndSetUnsafe(destination, result));
         }

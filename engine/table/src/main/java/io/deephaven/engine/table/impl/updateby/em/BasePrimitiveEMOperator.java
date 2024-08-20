@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.em;
 
 import io.deephaven.api.updateby.BadDataBehavior;
@@ -94,7 +97,8 @@ public abstract class BasePrimitiveEMOperator extends BaseDoubleUpdateByOperator
         ctx.lastStamp = firstUnmodifiedTimestamp;
     }
 
-    void handleBadData(@NotNull final Context ctx,
+    void handleBadData(
+            @NotNull final Context ctx,
             final boolean isNull,
             final boolean isNan) {
         boolean doReset = false;

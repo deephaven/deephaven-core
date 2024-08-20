@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.client.impl;
 
 import com.google.flatbuffers.FlatBufferBuilder;
@@ -15,6 +15,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.table.BarrageTable;
@@ -59,8 +60,6 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
     private final BarrageTable resultTable;
     private final CompletableFuture<Table> future;
-
-    private volatile BitSet expectedColumns;
 
     private volatile int connected = 1;
     private static final AtomicIntegerFieldUpdater<BarrageSnapshotImpl> CONNECTED_UPDATER =
@@ -160,8 +159,10 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
                     .append(": Error detected in snapshot: ")
                     .append(t).endl();
 
+            final String label = TableSpecLabeler.of(tableHandle.export().table());
             // this error will always be propagated to our CheckForCompletion#onError callback
-            resultTable.handleBarrageError(t);
+            resultTable.handleBarrageError(new TableDataException(
+                    String.format("Barrage snapshot error for %s (%s)", logName, label), t));
             cleanup();
         }
 
@@ -198,9 +199,6 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
             }
             alreadyUsed = true;
         }
-
-        // store this for streamreader parser
-        expectedColumns = columns;
 
         // Send the snapshot request:
         observer.onNext(FlightData.newBuilder()
@@ -317,7 +315,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
                 .build();
     }
 
-    private class BarrageDataMarshaller implements MethodDescriptor.Marshaller<BarrageMessage> {
+    private static class BarrageDataMarshaller implements MethodDescriptor.Marshaller<BarrageMessage> {
         private final BarrageSnapshotOptions options;
         private final ChunkType[] columnChunkTypes;
         private final Class<?>[] columnTypes;
@@ -345,8 +343,7 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
 
         @Override
         public BarrageMessage parse(final InputStream stream) {
-            return streamReader.safelyParseFrom(options, expectedColumns, columnChunkTypes, columnTypes, componentTypes,
-                    stream);
+            return streamReader.safelyParseFrom(options, columnChunkTypes, columnTypes, componentTypes, stream);
         }
     }
 
@@ -361,7 +358,6 @@ public class BarrageSnapshotImpl extends ReferenceCountedLivenessNode implements
             future.completeExceptionally(t);
         }
     }
-
 
     /**
      * The Completable Future is used to encapsulate the concept that the table is filled with requested data.

@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.rollingstd;
 
 import io.deephaven.base.ringbuffer.AggregatingObjectRingBuffer;
@@ -123,8 +126,7 @@ public class BigIntegerRollingStdOperator extends BaseObjectUpdateByOperator<Big
                 final BigDecimal variance = valueSquareSum.divide(biCountMinusOne, mathContext)
                         .subtract(valueSum.multiply(valueSum, mathContext)
                                 .divide(biCount, mathContext)
-                                .divide(biCountMinusOne, mathContext)
-                        );
+                                .divide(biCountMinusOne, mathContext));
                 final BigDecimal std = variance.sqrt(mathContext);
 
                 outputValues.set(outIdx, std);
@@ -152,7 +154,8 @@ public class BigIntegerRollingStdOperator extends BaseObjectUpdateByOperator<Big
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits,
             final MathContext mathContext) {
-        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true, BigDecimal.class);
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true,
+                BigDecimal.class);
         this.mathContext = mathContext;
     }
 

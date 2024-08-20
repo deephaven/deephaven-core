@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.api.expression.Expression;
@@ -8,11 +8,14 @@ import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.context.QueryCompiler;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.table.DataIndex;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.annotations.InternalUseOnly;
 import org.jetbrains.annotations.NotNull;
@@ -80,10 +83,12 @@ public interface WhereFilter extends Filter {
         void setIsRefreshing(boolean refreshing);
     }
 
-    WhereFilter[] ZERO_LENGTH_SELECT_FILTER_ARRAY = new WhereFilter[0];
+    WhereFilter[] ZERO_LENGTH_WHERE_FILTER_ARRAY = new WhereFilter[0];
 
     /**
      * Get the columns required by this select filter.
+     * <p>
+     * This filter must already be initialized before calling this method.
      *
      * @return the columns used as input by this select filter.
      */
@@ -91,19 +96,51 @@ public interface WhereFilter extends Filter {
 
     /**
      * Get the array columns required by this select filter.
+     * <p>
+     * This filter must already be initialized before calling this method.
      *
      * @return the columns used as array input by this select filter.
      */
     List<String> getColumnArrays();
 
     /**
-     * Initialize this select filter given the table definition
+     * Initialize this filter given the table definition. If this filter has already been initialized, this should be a
+     * no-op, or optionally validate that the table definition is compatible with previous initialization.
      *
      * @param tableDefinition the definition of the table that will be filtered
      * @apiNote Any {@link io.deephaven.engine.context.QueryLibrary}, {@link io.deephaven.engine.context.QueryScope}, or
      *          {@link QueryCompiler} usage needs to be resolved within init. Implementations must be idempotent.
      */
-    void init(TableDefinition tableDefinition);
+    void init(@NotNull TableDefinition tableDefinition);
+
+    /**
+     * Initialize this select filter given the table definition
+     *
+     * @param tableDefinition the definition of the table that will be filtered
+     * @param compilationProcessor the processor to use for compilation
+     * @apiNote Any {@link io.deephaven.engine.context.QueryLibrary}, {@link io.deephaven.engine.context.QueryScope}, or
+     *          {@link QueryCompiler} usage needs to be resolved within init. Implementations must be idempotent.
+     */
+    @SuppressWarnings("unused")
+    default void init(
+            @NotNull final TableDefinition tableDefinition,
+            @NotNull final QueryCompilerRequestProcessor compilationProcessor) {
+        init(tableDefinition);
+    }
+
+    /**
+     * Perform any operation-level initialization necessary using the {@link Table} that will be filtered with this
+     * WhereFilter, e.g. gathering {@link DataIndex data indexes}. This method will always be called exactly once,
+     * before gathering any dependencies or filtering data.
+     *
+     * @param sourceTable The {@link Table} that will be filtered with this WhereFilter
+     * @return A {@link SafeCloseable} that will be {@link SafeCloseable#close() closed} when the operation is complete,
+     *         whether successful or not
+     */
+    default SafeCloseable beginOperation(@NotNull final Table sourceTable) {
+        return () -> {
+        };
+    }
 
     /**
      * Validate that this {@code WhereFilter} is safe to use in the context of the provided sourceTable.
@@ -131,7 +168,10 @@ public interface WhereFilter extends Filter {
      */
     @NotNull
     WritableRowSet filter(
-            @NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table, boolean usePrev);
+            @NotNull RowSet selection,
+            @NotNull RowSet fullSet,
+            @NotNull Table table,
+            boolean usePrev);
 
     /**
      * Filter selection to only non-matching rows.
@@ -164,7 +204,10 @@ public interface WhereFilter extends Filter {
      */
     @NotNull
     default WritableRowSet filterInverse(
-            @NotNull RowSet selection, @NotNull RowSet fullSet, @NotNull Table table, boolean usePrev) {
+            @NotNull RowSet selection,
+            @NotNull RowSet fullSet,
+            @NotNull Table table,
+            boolean usePrev) {
         try (final WritableRowSet regular = filter(selection, fullSet, table, usePrev)) {
             return selection.minus(regular);
         }
@@ -216,17 +259,18 @@ public interface WhereFilter extends Filter {
     }
 
     /**
-     * Set the RecomputeListener that should be notified if results based on this filter must be recomputed.
+     * Set the {@link RecomputeListener} that should be notified if results based on this WhereFilter must be
+     * recomputed.
      *
-     * @param result the listener to notify.
+     * @param result The {@link RecomputeListener} to notify
      */
     void setRecomputeListener(RecomputeListener result);
 
     /**
      * The database system may automatically generate a filter, for example, when applying an ACL to a table. There are
      * certain operations which may bypass these filters.
-     *
-     * This function returns whether or not this filter is automated.
+     * <p>
+     * This function returns whether this filter is automated.
      *
      * @return true if this filter was automatically applied by the database system. False otherwise.
      */
@@ -235,7 +279,7 @@ public interface WhereFilter extends Filter {
     /**
      * The database system may automatically generate a filter, for example, when applying an ACL to a table. There are
      * certain operations which may bypass these filters.
-     *
+     * <p>
      * This function indicates that this filter is automated.
      *
      * @param value true if this filter was automatically applied by the database system. False otherwise.

@@ -1,23 +1,19 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.util;
 
 import com.github.f4b6a3.uuid.UuidCreator;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.FileUtils;
 import io.deephaven.configuration.CacheDir;
-import io.deephaven.engine.context.QueryCompiler;
-import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.*;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.PartitionedTable;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.context.QueryScope;
-import io.deephaven.engine.context.QueryScopeParam;
 import io.deephaven.engine.table.hierarchical.HierarchicalTable;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.OperationInitializer;
@@ -30,12 +26,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.function.Predicate;
+import java.util.*;
+import java.util.function.Function;
 
 import static io.deephaven.engine.table.Table.NON_DISPLAY_TABLE;
 
@@ -48,24 +42,33 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
     private static final Path CLASS_CACHE_LOCATION = CacheDir.get().resolve("script-session-classes");
 
-    public static void createScriptCache() {
-        final File classCacheDirectory = CLASS_CACHE_LOCATION.toFile();
-        createOrClearDirectory(classCacheDirectory);
+    protected static Path newClassCacheLocation() {
+        // TODO(deephaven-core#1713): Introduce instance-id concept
+        final UUID scriptCacheId = UuidCreator.getRandomBased();
+        final Path directory = CLASS_CACHE_LOCATION.resolve(UuidCreator.toString(scriptCacheId));
+        createOrClearDirectory(directory);
+        return directory;
     }
 
-    private static void createOrClearDirectory(final File directory) {
-        if (directory.exists()) {
-            FileUtils.deleteRecursively(directory);
+    public static void createScriptCache() {
+        createOrClearDirectory(CLASS_CACHE_LOCATION);
+    }
+
+    private static void createOrClearDirectory(final Path directory) {
+        if (Files.exists(directory)) {
+            FileUtils.deleteRecursively(directory.toFile());
         }
-        if (!directory.mkdirs()) {
+        try {
+            Files.createDirectories(directory);
+        } catch (IOException e) {
             throw new UncheckedDeephavenException(
-                    "Failed to create class cache directory " + directory.getAbsolutePath());
+                    "Failed to create class cache directory " + directory.toAbsolutePath(), e);
         }
     }
 
     private final ObjectTypeLookup objectTypeLookup;
     private final Listener changeListener;
-    private final File classCacheDirectory;
+    protected final File classCacheDirectory;
     private final ScriptSessionQueryScope queryScope;
 
     protected final ExecutionContext executionContext;
@@ -73,21 +76,28 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     private S lastSnapshot;
 
     protected AbstractScriptSession(
-            UpdateGraph updateGraph,
+            final UpdateGraph updateGraph,
             final OperationInitializer operationInitializer,
-            ObjectTypeLookup objectTypeLookup,
-            @Nullable Listener changeListener) {
+            final ObjectTypeLookup objectTypeLookup,
+            @Nullable final Listener changeListener) {
+        this(updateGraph, operationInitializer, objectTypeLookup, changeListener, newClassCacheLocation().toFile(),
+                Thread.currentThread().getContextClassLoader());
+    }
+
+    protected AbstractScriptSession(
+            final UpdateGraph updateGraph,
+            final OperationInitializer operationInitializer,
+            final ObjectTypeLookup objectTypeLookup,
+            @Nullable final Listener changeListener,
+            @NotNull final File classCacheDirectory,
+            @NotNull final ClassLoader parentClassLoader) {
         this.objectTypeLookup = objectTypeLookup;
         this.changeListener = changeListener;
 
-        // TODO(deephaven-core#1713): Introduce instance-id concept
-        final UUID scriptCacheId = UuidCreator.getRandomBased();
-        classCacheDirectory = CLASS_CACHE_LOCATION.resolve(UuidCreator.toString(scriptCacheId)).toFile();
-        createOrClearDirectory(classCacheDirectory);
+        this.classCacheDirectory = classCacheDirectory;
 
         queryScope = new ScriptSessionQueryScope();
-        final QueryCompiler compilerContext =
-                QueryCompiler.create(classCacheDirectory, Thread.currentThread().getContextClassLoader());
+        final QueryCompiler compilerContext = QueryCompilerImpl.create(classCacheDirectory, parentClassLoader);
 
         executionContext = ExecutionContext.newBuilder()
                 .markSystemic()
@@ -269,10 +279,9 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     /**
      * Retrieves all variable names present in the session's scope.
      *
-     * @param allowName a predicate to decide if a name should be in the returned immutable set
-     * @return an immutable set of variable names
+     * @return a caller-owned mutable set of variable names
      */
-    protected abstract Set<String> getVariableNames(Predicate<String> allowName);
+    protected abstract Set<String> getVariableNames();
 
     /**
      * Check if the scope has the given variable name.
@@ -292,13 +301,19 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
     protected abstract Object setVariable(String name, @Nullable Object value);
 
     /**
-     * Returns a mutable map with all known variables and their values. It is owned by the caller.
+     * Returns a mutable map with all known variables and their values.
+     * <p>
+     * Callers may want to pass in a valueMapper of {@link #unwrapObject(Object)} which would unwrap values before
+     * filtering. The returned map is owned by the caller.
      *
-     * @param predicate a predicate to decide if an entry should be included in the returned map
-     * @return a mutable map with all known variables and their values. As with {@link #getVariable(String)}, values may
-     *         need to be unwrapped.
+     * @param valueMapper a function to map the values
+     * @param filter a predicate to filter the map entries
+     * @return a caller-owned mutable map with all known variables and their mapped values. As with
+     *         {@link #getVariable(String)}, values may need to be unwrapped.
+     * @param <T> the type of the mapped values
      */
-    protected abstract Map<String, Object> getAllValues(@NotNull Predicate<Map.Entry<String, Object>> predicate);
+    protected abstract <T> Map<String, T> getAllValues(
+            @Nullable Function<Object, T> valueMapper, @NotNull QueryScope.ParamFilter<T> filter);
 
     // -----------------------------------------------------------------------------------------------------------------
     // ScriptSession-based QueryScope implementation, with no remote scope or object reflection support
@@ -314,41 +329,29 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
         @Override
         public Set<String> getParamNames() {
-            return getVariableNames(NameValidator::isValidQueryParameterName);
+            return getVariableNames();
         }
 
         @Override
         public boolean hasParamName(String name) {
-            return NameValidator.isValidQueryParameterName(name) && hasVariable(name);
+            return hasVariable(name);
         }
 
         @Override
         public <T> QueryScopeParam<T> createParam(final String name)
                 throws QueryScope.MissingVariableException {
-            if (!NameValidator.isValidQueryParameterName(name)) {
-                throw new QueryScope.MissingVariableException("Name " + name + " is invalid");
-            }
             return new QueryScopeParam<>(name, readParamValue(name));
         }
 
         @Override
         public <T> T readParamValue(final String name) throws QueryScope.MissingVariableException {
-            if (!NameValidator.isValidQueryParameterName(name)) {
-                throw new QueryScope.MissingVariableException("Name " + name + " is invalid");
-            }
-            // noinspection unchecked
-            return (T) getVariable(name);
+            return getVariable(name);
         }
 
         @Override
         public <T> T readParamValue(final String name, final T defaultValue) {
-            if (!NameValidator.isValidQueryParameterName(name)) {
-                return defaultValue;
-            }
-
             try {
-                // noinspection unchecked
-                return (T) getVariable(name);
+                return getVariable(name);
             } catch (MissingVariableException e) {
                 return defaultValue;
             }
@@ -356,7 +359,6 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
 
         @Override
         public <T> void putParam(final String name, final T value) {
-            NameValidator.validateQueryParameterName(name);
             if (value instanceof LivenessReferent && DynamicNode.notDynamicOrIsRefreshing(value)) {
                 manage((LivenessReferent) value);
             }
@@ -372,8 +374,15 @@ public abstract class AbstractScriptSession<S extends AbstractScriptSession.Snap
         }
 
         @Override
-        public Map<String, Object> toMap(@NotNull final Predicate<Map.Entry<String, Object>> predicate) {
-            return AbstractScriptSession.this.getAllValues(predicate);
+        public Map<String, Object> toMap(@NotNull final ParamFilter<Object> filter) {
+            return AbstractScriptSession.this.getAllValues(null, filter);
+        }
+
+        @Override
+        public <T> Map<String, T> toMap(
+                @NotNull final Function<Object, T> valueMapper,
+                @NotNull final ParamFilter<T> filter) {
+            return AbstractScriptSession.this.getAllValues(valueMapper, filter);
         }
 
         @Override

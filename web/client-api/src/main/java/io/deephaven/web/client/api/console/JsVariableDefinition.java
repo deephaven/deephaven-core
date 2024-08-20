@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api.console;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
@@ -29,7 +29,8 @@ public class JsVariableDefinition {
 
     public JsVariableDefinition(String type, String title, String id, String description) {
         // base64('s/' + str) starts with 'cy8' or 'cy9'
-        if (!id.startsWith("cy")) {
+        // base64('a/' + str) starts with 'YS8' or 'YS9'
+        if (!id.startsWith("cy") && !id.startsWith("YS")) {
             throw new IllegalArgumentException("Cannot create a VariableDefinition from a non-scope ticket");
         }
         this.type = type;

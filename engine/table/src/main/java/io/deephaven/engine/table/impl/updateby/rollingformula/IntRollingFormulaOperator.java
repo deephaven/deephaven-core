@@ -1,8 +1,10 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharRollingFormulaOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharRollingFormulaOperator and run "./gradlew replicateUpdateBy" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.updateby.rollingformula;
 
 import io.deephaven.base.ringbuffer.IntRingBuffer;
@@ -18,6 +20,7 @@ import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.MatchPair;
+import io.deephaven.engine.table.impl.QueryCompilerRequestProcessor;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.SingleValueColumnSource;
@@ -58,10 +61,12 @@ public class IntRollingFormulaOperator extends BaseRollingFormulaOperator {
             intWindowValues = new IntRingBuffer(BUFFER_INITIAL_CAPACITY, true);
 
             // Make a copy of the operator formula column.
-            final FormulaColumn formulaCopy = (FormulaColumn)formulaColumn.copy();
+            final FormulaColumn formulaCopy = (FormulaColumn) formulaColumn.copy();
 
             // Create a single value column source of the appropriate type for the formula column input.
-            final SingleValueColumnSource<IntVector> formulaInputSource = (SingleValueColumnSource<IntVector>) SingleValueColumnSource.getSingleValueColumnSource(inputVectorType);
+            final SingleValueColumnSource<IntVector> formulaInputSource =
+                    (SingleValueColumnSource<IntVector>) SingleValueColumnSource
+                            .getSingleValueColumnSource(inputVectorType);
             formulaInputSource.set(new IntRingBufferVectorWrapper(intWindowValues));
             formulaCopy.initInputs(RowSetFactory.flat(1).toTracking(),
                     Collections.singletonMap(PARAM_COLUMN_NAME, formulaInputSource));
@@ -159,11 +164,13 @@ public class IntRollingFormulaOperator extends BaseRollingFormulaOperator {
             @NotNull final String formula,
             @NotNull final String paramToken,
             @NotNull final Map<Class<?>, FormulaColumn> formulaColumnMap,
-            @NotNull final TableDefinition tableDef
-            // region extra-constructor-args
-            // endregion extra-constructor-args
+            @NotNull final TableDefinition tableDef,
+            @NotNull final QueryCompilerRequestProcessor compilationProcessor
+    // region extra-constructor-args
+    // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, formula, paramToken, formulaColumnMap, tableDef);
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, formula,
+                paramToken, formulaColumnMap, tableDef, compilationProcessor);
         // region constructor
         // endregion constructor
     }
@@ -177,10 +184,11 @@ public class IntRollingFormulaOperator extends BaseRollingFormulaOperator {
             final Class<?> vectorType,
             @NotNull final Map<Class<?>, FormulaColumn> formulaColumnMap,
             @NotNull final TableDefinition tableDef
-            // region extra-constructor-args
-            // endregion extra-constructor-args
+    // region extra-constructor-args
+    // endregion extra-constructor-args
     ) {
-        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, vectorType, formulaColumnMap, tableDef);
+        super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, vectorType,
+                formulaColumnMap, tableDef);
         // region constructor
         // endregion constructor
     }
@@ -195,8 +203,8 @@ public class IntRollingFormulaOperator extends BaseRollingFormulaOperator {
                 inputVectorType,
                 formulaColumnMap,
                 tableDef
-                // region extra-copy-args
-                // endregion extra-copy-args
+        // region extra-copy-args
+        // endregion extra-copy-args
         );
     }
 

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.qst.table;
 
 public abstract class TableVisitorGeneric<T> implements TableSpec.Visitor<T> {
@@ -155,5 +155,10 @@ public abstract class TableVisitorGeneric<T> implements TableSpec.Visitor<T> {
     @Override
     public T visit(DropColumnsTable dropColumnsTable) {
         return accept(dropColumnsTable);
+    }
+
+    @Override
+    public T visit(MultiJoinTable multiJoinTable) {
+        return accept(multiJoinTable);
     }
 }

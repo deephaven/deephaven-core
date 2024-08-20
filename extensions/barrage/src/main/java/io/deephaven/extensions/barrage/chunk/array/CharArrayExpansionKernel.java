@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.extensions.barrage.chunk.array;
 
 import io.deephaven.chunk.CharChunk;
@@ -20,7 +20,8 @@ public class CharArrayExpansionKernel implements ArrayExpansionKernel {
     public final static CharArrayExpansionKernel INSTANCE = new CharArrayExpansionKernel();
 
     @Override
-    public <T, A extends Any> WritableChunk<A> expand(final ObjectChunk<T, A> source, final WritableIntChunk<ChunkPositions> perElementLengthDest) {
+    public <T, A extends Any> WritableChunk<A> expand(final ObjectChunk<T, A> source,
+            final WritableIntChunk<ChunkPositions> perElementLengthDest) {
         if (source.size() == 0) {
             perElementLengthDest.setSize(0);
             return WritableCharChunk.makeWritableChunk(0);
@@ -81,13 +82,13 @@ public class CharArrayExpansionKernel implements ArrayExpansionKernel {
                 result.set(outOffset + i, ZERO_LEN_ARRAY);
             } else {
                 final char[] row = new char[rowLen];
-                typedSource.copyToArray(lenRead, row,0, rowLen);
+                typedSource.copyToArray(lenRead, row, 0, rowLen);
                 lenRead += rowLen;
                 result.set(outOffset + i, row);
             }
         }
 
-        //noinspection unchecked
-        return (WritableObjectChunk<T, A>)result;
+        // noinspection unchecked
+        return (WritableObjectChunk<T, A>) result;
     }
 }

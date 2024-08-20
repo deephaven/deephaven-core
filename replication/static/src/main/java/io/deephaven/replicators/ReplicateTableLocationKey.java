@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
 import java.io.IOException;
@@ -22,6 +22,7 @@ public class ReplicateTableLocationKey {
                 {"file", "uri"},
                 {"File", "URI"},
         };
-        replaceAll(FILE_TABLE_LOCATION_KEY_PATH, URI_TABLE_LOCATION_KEY_PATH, null, NO_EXCEPTIONS, pairs);
+        replaceAll("replicateTableLocationKey", FILE_TABLE_LOCATION_KEY_PATH, URI_TABLE_LOCATION_KEY_PATH, null,
+                NO_EXCEPTIONS, pairs);
     }
 }

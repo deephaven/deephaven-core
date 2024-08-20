@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api.widget.plot;
 
 import com.vertispan.tsdefs.annotations.TsInterface;
@@ -84,7 +84,7 @@ public class JsMultiSeries {
 
             seriesInstance.setDataSourcesList(
                     descriptor.getDataSourcesList()
-                            .map((multiSeriesSource, p1, p2) -> {
+                            .map((multiSeriesSource, p1) -> {
                                 SourceDescriptor sourceDescriptor = new SourceDescriptor();
                                 sourceDescriptor.setColumnName(multiSeriesSource.getColumnName());
                                 sourceDescriptor.setAxisId(multiSeriesSource.getAxisId());

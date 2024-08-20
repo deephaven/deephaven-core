@@ -1,20 +1,21 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.table.transfer;
 
- import io.deephaven.base.verify.Assert;
- import io.deephaven.engine.rowset.RowSequence;
- import io.deephaven.engine.table.ColumnSource;
- import org.apache.parquet.io.api.Binary;
- import org.jetbrains.annotations.NotNull;
+import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.table.ColumnSource;
+import org.apache.parquet.io.api.Binary;
+import org.jetbrains.annotations.NotNull;
 
- import java.util.Arrays;
- import java.util.function.Supplier;
+import java.util.Arrays;
+import java.util.function.Supplier;
 
 /**
  * Used as a base class of arrays/vectors of transfer objects for types like strings or big integers that need
  * specialized encoding.
+ * 
  * @param <COLUMN_TYPE> The type of the data in the column, could be an array/vector
  * @param <VALUE_TYPE> The type of the values in the array/vector
  */
@@ -37,7 +38,7 @@ abstract class ObjectArrayAndVectorTransfer<COLUMN_TYPE, VALUE_TYPE>
     private int encodedDataBufLen;
 
     ObjectArrayAndVectorTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSequence tableRowSet,
-                                 final int targetPageSize) {
+            final int targetPageSize) {
         super(columnSource, tableRowSet, targetPageSize, targetPageSize, new Binary[targetPageSize]);
         bufferedDataCount = 0;
         numBytesBuffered = 0;
@@ -67,7 +68,7 @@ abstract class ObjectArrayAndVectorTransfer<COLUMN_TYPE, VALUE_TYPE>
     }
 
     final void encodeDataForBufferingHelper(@NotNull final Supplier<VALUE_TYPE> objectSupplier, final int numObjects,
-                                            @NotNull final EncodedData<Binary[]> encodedData) {
+            @NotNull final EncodedData<Binary[]> encodedData) {
         // Allocate a new buffer if needed, or clear the existing one
         if (numObjects > encodedDataBuf.length) {
             encodedDataBuf = new Binary[numObjects];
@@ -98,7 +99,7 @@ abstract class ObjectArrayAndVectorTransfer<COLUMN_TYPE, VALUE_TYPE>
         if (force && (repeatCounts.position() != 0 || bufferedDataCount != 0)) {
             // This should never happen, because "force" is only set by the caller when adding the very first
             // array/vector
-            //noinspection ThrowableNotThrown
+            // noinspection ThrowableNotThrown
             Assert.statementNeverExecuted();
             return false;
         }

@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.em;
 
 import io.deephaven.api.updateby.BadDataBehavior;
@@ -8,6 +11,7 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.impl.MatchPair;
+import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -23,10 +27,11 @@ public class FloatEMOperator extends BasePrimitiveEMOperator {
         }
 
         @Override
-        public void accumulateCumulative(@NotNull RowSequence inputKeys,
-                                         Chunk<? extends Values>[] valueChunkArr,
-                                         LongChunk<? extends Values> tsChunk,
-                                         int len) {
+        public void accumulateCumulative(
+                @NotNull final RowSequence inputKeys,
+                @NotNull final Chunk<? extends Values>[] valueChunkArr,
+                final LongChunk<? extends Values> tsChunk,
+                final int len) {
             setValueChunks(valueChunkArr);
 
             // chunk processing
@@ -64,11 +69,15 @@ public class FloatEMOperator extends BasePrimitiveEMOperator {
                     } else if (isNullTime) {
                         // no change to curVal and lastStamp
                     } else if (curVal == NULL_DOUBLE) {
-                        // If the data looks good, and we have a null ema,  just accept the current value
+                        // If the data looks good, and we have a null computed value, accept the current value
                         curVal = input;
                         lastStamp = timestamp;
                     } else {
                         final long dt = timestamp - lastStamp;
+                        if (dt < 0) {
+                            // negative time deltas are not allowed, throw an exception
+                            throw new TableDataException("Timestamp values in UpdateBy operators must not decrease");
+                        }
                         if (dt != 0) {
                             final double alpha = Math.exp(-dt / reverseWindowScaleUnits);
                             final double oneMinusAlpha = 1.0 - alpha;
@@ -108,19 +117,19 @@ public class FloatEMOperator extends BasePrimitiveEMOperator {
     /**
      * An operator that computes an EMA from a float column using an exponential decay function.
      *
-     * @param pair                the {@link MatchPair} that defines the input/output for this operation
-     * @param affectingColumns    the names of the columns that affect this ema
-     * @param control             defines how to handle {@code null} input values.
+     * @param pair the {@link MatchPair} that defines the input/output for this operation
+     * @param affectingColumns the names of the columns that affect this ema
+     * @param control defines how to handle {@code null} input values.
      * @param timestampColumnName the name of the column containing timestamps for time-based calcuations
-     * @param windowScaleUnits      the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is measured in ticks, otherwise it is measured in nanoseconds
+     * @param windowScaleUnits the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is
+     *        measured in ticks, otherwise it is measured in nanoseconds
      */
     public FloatEMOperator(@NotNull final MatchPair pair,
-                           @NotNull final String[] affectingColumns,
-                           @NotNull final OperationControl control,
-                           @Nullable final String timestampColumnName,
-                           final double windowScaleUnits,
-                           @NotNull final EmFunction aggFunction
-    ) {
+            @NotNull final String[] affectingColumns,
+            @NotNull final OperationControl control,
+            @Nullable final String timestampColumnName,
+            final double windowScaleUnits,
+            @NotNull final EmFunction aggFunction) {
         super(pair, affectingColumns, control, timestampColumnName, windowScaleUnits, aggFunction);
     }
 

@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+/*
+ * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
  */
 #pragma once
 
@@ -92,7 +92,7 @@ public:
 
   [[nodiscard]]
   std::shared_ptr<ColumnSource> MakeColumnSource() const final {
-    return deephaven::client::immerutil::NumericImmerColumnSource<T>::Create(vec_);
+    return NumericImmerColumnSource<T>::Create(vec_);
   }
 
 private:
@@ -138,11 +138,11 @@ public:
 
   [[nodiscard]]
   std::shared_ptr<ColumnSource> MakeColumnSource() const final {
-    return deephaven::client::immerutil::GenericImmerColumnSource<T>::Create(data_, nulls_);
+    return GenericImmerColumnSource<T>::Create(data_, nulls_);
   }
 
 private:
   immer::flex_vector<T> data_;
   immer::flex_vector<bool> nulls_;
 };
-}  // namespace deephaven::client::immerutil
+}  // namespace deephaven::dhcore::immerutil

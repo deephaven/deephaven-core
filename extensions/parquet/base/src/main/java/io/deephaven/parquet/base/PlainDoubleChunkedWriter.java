@@ -1,11 +1,10 @@
-/*
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit PlainIntChunkedWriter and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit PlainIntChunkedWriter and run "./gradlew replicateParquetChunkedWriters" to regenerate
+//
+// @formatter:off
 package io.deephaven.parquet.base;
 
 import io.deephaven.util.QueryConstants;
@@ -91,8 +90,8 @@ final class PlainDoubleChunkedWriter extends AbstractBulkValuesWriter<DoubleBuff
 
     @Override
     public void writeBulk(@NotNull DoubleBuffer bulkValues,
-                          final int rowCount,
-                          @NotNull final Statistics<?> statistics) {
+            final int rowCount,
+            @NotNull final Statistics<?> statistics) {
         ensureCapacityFor(bulkValues);
         // Generate statistics before we perform the bulk write.
         for (int i = 0; i < rowCount; i++) {
@@ -104,9 +103,9 @@ final class PlainDoubleChunkedWriter extends AbstractBulkValuesWriter<DoubleBuff
     @NotNull
     @Override
     public WriteResult writeBulkFilterNulls(@NotNull final DoubleBuffer bulkValues,
-                                            @NotNull final RunLengthBitPackingHybridEncoder dlEncoder,
-                                            final int rowCount,
-                                            @NotNull final Statistics<?> statistics) throws IOException {
+            @NotNull final RunLengthBitPackingHybridEncoder dlEncoder,
+            final int rowCount,
+            @NotNull final Statistics<?> statistics) throws IOException {
         ensureCapacityFor(bulkValues);
         while (bulkValues.hasRemaining()) {
             final double v = bulkValues.get();
@@ -125,8 +124,8 @@ final class PlainDoubleChunkedWriter extends AbstractBulkValuesWriter<DoubleBuff
     @NotNull
     @Override
     public WriteResult writeBulkVectorFilterNulls(@NotNull final DoubleBuffer bulkValues,
-                                                  final int rowCount,
-                                                  @NotNull final Statistics<?> statistics) {
+            final int rowCount,
+            @NotNull final Statistics<?> statistics) {
         ensureCapacityFor(bulkValues);
         int i = 0;
         nullOffsets.clear();
@@ -158,7 +157,8 @@ final class PlainDoubleChunkedWriter extends AbstractBulkValuesWriter<DoubleBuff
         }
 
         if (requiredCapacity > MAXIMUM_TOTAL_CAPACITY) {
-            throw new IllegalStateException("Unable to write " + requiredCapacity + " values. (Maximum capacity: " + MAXIMUM_TOTAL_CAPACITY + ".)");
+            throw new IllegalStateException("Unable to write " + requiredCapacity + " values. (Maximum capacity: "
+                    + MAXIMUM_TOTAL_CAPACITY + ".)");
         }
 
         int newCapacity = currentCapacity;

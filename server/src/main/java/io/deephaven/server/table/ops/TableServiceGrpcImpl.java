@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.server.table.ops;
 
 import com.google.rpc.Code;
@@ -14,51 +14,9 @@ import io.deephaven.engine.table.impl.util.EngineMetrics;
 import io.deephaven.extensions.barrage.util.ExportUtil;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.proto.backplane.grpc.AggregateAllRequest;
-import io.deephaven.proto.backplane.grpc.AggregateRequest;
-import io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest;
-import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest;
-import io.deephaven.proto.backplane.grpc.AjRajTablesRequest;
-import io.deephaven.proto.backplane.grpc.BatchTableRequest;
+import io.deephaven.proto.backplane.grpc.*;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.OpCase;
-import io.deephaven.proto.backplane.grpc.ColumnStatisticsRequest;
-import io.deephaven.proto.backplane.grpc.ComboAggregateRequest;
-import io.deephaven.proto.backplane.grpc.CreateInputTableRequest;
-import io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest;
-import io.deephaven.proto.backplane.grpc.DropColumnsRequest;
-import io.deephaven.proto.backplane.grpc.EmptyTableRequest;
-import io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest;
-import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
-import io.deephaven.proto.backplane.grpc.ExportedTableUpdateMessage;
-import io.deephaven.proto.backplane.grpc.ExportedTableUpdatesRequest;
-import io.deephaven.proto.backplane.grpc.FetchTableRequest;
-import io.deephaven.proto.backplane.grpc.FilterTableRequest;
-import io.deephaven.proto.backplane.grpc.FlattenRequest;
-import io.deephaven.proto.backplane.grpc.HeadOrTailByRequest;
-import io.deephaven.proto.backplane.grpc.HeadOrTailRequest;
-import io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest;
-import io.deephaven.proto.backplane.grpc.Literal;
-import io.deephaven.proto.backplane.grpc.MergeTablesRequest;
-import io.deephaven.proto.backplane.grpc.MetaTableRequest;
-import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
-import io.deephaven.proto.backplane.grpc.RangeJoinTablesRequest;
-import io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest;
-import io.deephaven.proto.backplane.grpc.SeekRowRequest;
-import io.deephaven.proto.backplane.grpc.SeekRowResponse;
-import io.deephaven.proto.backplane.grpc.SelectDistinctRequest;
-import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
-import io.deephaven.proto.backplane.grpc.SnapshotTableRequest;
-import io.deephaven.proto.backplane.grpc.SnapshotWhenTableRequest;
-import io.deephaven.proto.backplane.grpc.SortTableRequest;
-import io.deephaven.proto.backplane.grpc.TableReference;
-import io.deephaven.proto.backplane.grpc.TableServiceGrpc;
-import io.deephaven.proto.backplane.grpc.Ticket;
-import io.deephaven.proto.backplane.grpc.TimeTableRequest;
-import io.deephaven.proto.backplane.grpc.UngroupRequest;
-import io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest;
-import io.deephaven.proto.backplane.grpc.UpdateByRequest;
-import io.deephaven.proto.backplane.grpc.WhereInRequest;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.server.grpc.GrpcErrorHelper;
@@ -69,13 +27,14 @@ import io.deephaven.server.session.TicketRouter;
 import io.deephaven.server.table.ExportedTableUpdateListener;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.mutable.MutableInt;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 import javax.inject.Inject;
+import java.lang.Object;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -352,6 +311,12 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
     }
 
     @Override
+    public void multiJoinTables(MultiJoinTablesRequest request,
+            StreamObserver<ExportedTableCreationResponse> responseObserver) {
+        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.MULTI_JOIN, request, responseObserver);
+    }
+
+    @Override
     public void rangeJoinTables(
             @NotNull final RangeJoinTablesRequest request,
             @NotNull final StreamObserver<ExportedTableCreationResponse> responseObserver) {
@@ -494,13 +459,13 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                         final String columnName = request.getColumnName();
                         final Class<?> dataType = table.getDefinition().getColumn(columnName).getDataType();
                         final Object seekValue = getSeekValue(request.getSeekValue(), dataType);
-                        final Long result = table.apply(new SeekRow(
+                        final long result = new SeekRow(
                                 request.getStartingRow(),
                                 columnName,
                                 seekValue,
                                 request.getInsensitive(),
                                 request.getContains(),
-                                request.getIsBackward()));
+                                request.getIsBackward()).seek(table);
                         SeekRowResponse.Builder rowResponse = SeekRowResponse.newBuilder();
                         safelyComplete(responseObserver, rowResponse.setResultRow(result).build());
                     });

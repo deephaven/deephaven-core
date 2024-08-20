@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api;
 
 import com.vertispan.tsdefs.annotations.TsTypeRef;
@@ -81,7 +84,7 @@ public class CoreClient extends HasEventHandling {
     public Promise<String[][]> getAuthConfigValues() {
         return ideConnection.getConnectOptions().then(options -> {
             BrowserHeaders metadata = new BrowserHeaders();
-            JsObject.keys(options.headers).forEach((key, index, arr) -> {
+            JsObject.keys(options.headers).forEach((key, index) -> {
                 metadata.set(key, options.headers.get(key));
                 return null;
             });

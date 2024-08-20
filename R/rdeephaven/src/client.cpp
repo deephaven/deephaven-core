@@ -540,12 +540,11 @@ public:
 
         std::shared_ptr<arrow::flight::FlightStreamReader> fsr = internal_tbl_hdl.GetFlightStreamReader();
 
-        std::vector<std::shared_ptr<arrow::RecordBatch>> empty_record_batches;
-        deephaven::client::utility::OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsr->ReadAll(&empty_record_batches)));
+        arrow::Result<arrow::RecordBatchVector> record_batches = fsr->ToRecordBatches();
 
-        std::shared_ptr<arrow::RecordBatchReader> record_batch_reader = arrow::RecordBatchReader::Make(empty_record_batches).ValueOrDie();
+        std::shared_ptr<arrow::RecordBatchReader> record_batch_reader = arrow::RecordBatchReader::Make(std::move(*record_batches)).ValueOrDie();
         ArrowArrayStream* stream_ptr = new ArrowArrayStream();
-        arrow::ExportRecordBatchReader(record_batch_reader, stream_ptr);
+        deephaven::client::utility::OkOrThrow(DEEPHAVEN_LOCATION_EXPR(arrow::ExportRecordBatchReader(record_batch_reader, stream_ptr)));
 
         // XPtr is needed here to ensure Rcpp can properly handle type casting, as it does not like raw pointers
         return Rcpp::XPtr<ArrowArrayStream>(stream_ptr, true);
@@ -705,23 +704,21 @@ public:
         auto schema = record_batch_reader.get()->schema();
 
         // write RecordBatchReader data to table on server with DoPut
-        std::unique_ptr<arrow::flight::FlightStreamWriter> fsw;
-        std::unique_ptr<arrow::flight::FlightMetadataReader> fmr;
 
         auto ticket = internal_tbl_hdl_mngr.NewTicket();
-        auto fd = deephaven::client::utility::ConvertTicketToFlightDescriptor(ticket);
+        auto fd = deephaven::client::utility::ArrowUtil::ConvertTicketToFlightDescriptor(ticket);
+        arrow::Result<arrow::flight::FlightClient::DoPutResult> r = wrapper.FlightClient()->DoPut(options, fd, schema);
 
-        deephaven::client::utility::OkOrThrow(DEEPHAVEN_LOCATION_EXPR(wrapper.FlightClient()->DoPut(options, fd, schema, &fsw, &fmr)));
         while(true) {
             std::shared_ptr<arrow::RecordBatch> this_batch;
             deephaven::client::utility::OkOrThrow(DEEPHAVEN_LOCATION_EXPR(record_batch_reader->ReadNext(&this_batch)));
             if (this_batch == nullptr) {
                 break;
             }
-            deephaven::client::utility::OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsw->WriteRecordBatch(*this_batch)));
+            deephaven::client::utility::OkOrThrow(DEEPHAVEN_LOCATION_EXPR(r->writer->WriteRecordBatch(*this_batch)));
         }
-        deephaven::client::utility::OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsw->DoneWriting()));
-        deephaven::client::utility::OkOrThrow(DEEPHAVEN_LOCATION_EXPR(fsw->Close()));
+        deephaven::client::utility::OkOrThrow(DEEPHAVEN_LOCATION_EXPR(r->writer->DoneWriting()));
+        deephaven::client::utility::OkOrThrow(DEEPHAVEN_LOCATION_EXPR(r->writer->Close()));
 
         auto new_tbl_hdl = internal_tbl_hdl_mngr.MakeTableHandleFromTicket(ticket);
         return new TableHandleWrapper(new_tbl_hdl);

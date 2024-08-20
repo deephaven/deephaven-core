@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.table.pagestore;
 
 import io.deephaven.base.verify.Require;
@@ -22,6 +22,7 @@ import io.deephaven.engine.page.PageStore;
 import io.deephaven.parquet.base.ColumnChunkReader;
 import io.deephaven.parquet.base.ColumnPageReader;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.channel.SeekableChannelContext.ContextHolder;
 import io.deephaven.vector.Vector;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -36,9 +37,9 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         implements PageStore<ATTR, ATTR, ChunkPage<ATTR>>, Page<ATTR>, SafeCloseable, Releasable {
 
     final PageCache<ATTR> pageCache;
-    private final ColumnChunkReader columnChunkReader;
+    final ColumnChunkReader columnChunkReader;
     private final long mask;
-    private final ToPage<ATTR, ?> toPage;
+    final ToPage<ATTR, ?> toPage;
 
     private final long numRows;
 
@@ -61,7 +62,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
     private static boolean canUseOffsetIndexBasedPageStore(
             @NotNull final ColumnChunkReader columnChunkReader,
             @NotNull final ColumnDefinition<?> columnDefinition) {
-        if (columnChunkReader.getOffsetIndex() == null) {
+        if (!columnChunkReader.hasOffsetIndex()) {
             return false;
         }
         final String version = columnChunkReader.getVersion();
@@ -107,8 +108,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         final ColumnChunkPageStore<ATTR> columnChunkPageStore = canUseOffsetIndex
                 ? new OffsetIndexBasedColumnChunkPageStore<>(pageCache, columnChunkReader, mask, toPage)
                 : new VariablePageSizeColumnChunkPageStore<>(pageCache, columnChunkReader, mask, toPage);
-        final ToPage<DictionaryKeys, long[]> dictionaryKeysToPage =
-                toPage.getDictionaryKeysToPage();
+        final ToPage<DictionaryKeys, long[]> dictionaryKeysToPage = toPage.getDictionaryKeysToPage();
         final ColumnChunkPageStore<DictionaryKeys> dictionaryKeysColumnChunkPageStore =
                 dictionaryKeysToPage == null ? null
                         : canUseOffsetIndex
@@ -210,7 +210,6 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
      */
     final SeekableChannelContext innerFillContext(@Nullable final FillContext context) {
         if (context != null) {
-            // Assuming PagingContextHolder is holding an object of ChannelContextWrapper
             final ChannelContextWrapper innerContext =
                     ((PagingContextHolder) context).updateInnerContext(this::fillContextUpdater);
             return innerContext.getChannelContext();
@@ -218,13 +217,17 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
         return SeekableChannelContext.NULL;
     }
 
+    final ContextHolder ensureContext(@Nullable final FillContext context) {
+        return SeekableChannelContext.ensureContext(columnChunkReader.getChannelsProvider(), innerFillContext(context));
+    }
+
     private <T extends FillContext> T fillContextUpdater(
             int chunkCapacity,
             @Nullable final SharedContext sharedContext,
             @Nullable final Context currentInnerContext) {
         final SeekableChannelsProvider channelsProvider = columnChunkReader.getChannelsProvider();
-        if (currentInnerContext != null) {
-            // Check if we can reuse the context object
+        if (currentInnerContext instanceof ChannelContextWrapper) {
+            // Check if we can reuse the channel context object
             final SeekableChannelContext channelContext =
                     ((ChannelContextWrapper) currentInnerContext).getChannelContext();
             if (channelsProvider.isCompatibleWith(channelContext)) {
@@ -232,7 +235,7 @@ public abstract class ColumnChunkPageStore<ATTR extends Any>
                 return (T) currentInnerContext;
             }
         }
-        // Create a new context object
+        // Create a new channel context object and a wrapper for holding it
         // noinspection unchecked
         return (T) new ChannelContextWrapper(chunkCapacity, sharedContext, channelsProvider.makeContext());
     }

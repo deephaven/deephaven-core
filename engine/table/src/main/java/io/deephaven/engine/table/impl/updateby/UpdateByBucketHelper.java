@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby;
 
 import io.deephaven.api.updateby.UpdateByControl;
@@ -16,7 +19,7 @@ import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.ssa.LongSegmentedSortedArray;
 import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedNode;
-import org.apache.commons.lang3.mutable.MutableLong;
+import io.deephaven.util.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -280,16 +283,16 @@ class UpdateByBucketHelper extends IntrusiveDoublyLinkedNode.Impl<UpdateByBucket
                 nullCount++;
                 continue;
             }
-            if (ts < lastTimestamp.longValue()) {
+            if (ts < lastTimestamp.get()) {
                 throw (new TableDataException(
-                        "updateBy time-based operators require non-descending timestamp values"));
+                        "Timestamp values in UpdateBy operators must not decrease"));
             }
 
             ssaValues.add(ts);
             ssaKeys.add(keysChunk.get(i));
 
             // store the current ts for comparison
-            lastTimestamp.setValue(ts);
+            lastTimestamp.set(ts);
         }
         return nullCount;
     }

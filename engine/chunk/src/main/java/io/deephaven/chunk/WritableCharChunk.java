@@ -1,9 +1,7 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.chunk;
-
-// @formatter:off
 
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
@@ -23,8 +21,6 @@ import java.nio.CharBuffer;
 
 import static io.deephaven.chunk.util.pools.ChunkPoolConstants.POOL_WRITABLE_CHUNKS;
 
-// @formatter:on
-
 /**
  * {@link WritableChunk} implementation for char data.
  */
@@ -34,7 +30,7 @@ public class WritableCharChunk<ATTR extends Any> extends CharChunk<ATTR> impleme
     private static final WritableCharChunk[] EMPTY_WRITABLE_CHAR_CHUNK_ARRAY = new WritableCharChunk[0];
 
     static <ATTR extends Any> WritableCharChunk<ATTR>[] getEmptyChunkArray() {
-        //noinspection unchecked
+        // noinspection unchecked
         return EMPTY_WRITABLE_CHAR_CHUNK_ARRAY;
     }
 
@@ -70,7 +66,9 @@ public class WritableCharChunk<ATTR extends Any> extends CharChunk<ATTR> impleme
         data[offset + index] = value;
     }
 
-    public final void add(char value) { data[offset + size++] = value; }
+    public final void add(char value) {
+        data[offset + size++] = value;
+    }
 
     @Override
     public WritableCharChunk<ATTR> slice(int offset, int capacity) {
@@ -113,7 +111,7 @@ public class WritableCharChunk<ATTR extends Any> extends CharChunk<ATTR> impleme
     // region fillWithBoxedValue
     @Override
     public final void fillWithBoxedValue(int offset, int size, Object value) {
-        fillWithValue(offset,size, TypeUtils.unbox((Character) value));
+        fillWithValue(offset, size, TypeUtils.unbox((Character) value));
     }
     // endregion fillWithBoxedValue
 
@@ -145,7 +143,7 @@ public class WritableCharChunk<ATTR extends Any> extends CharChunk<ATTR> impleme
 
     @Override
     public final void copyFromArray(Object srcArray, int srcOffset, int destOffset, int length) {
-        final char[] typedArray = (char[])srcArray;
+        final char[] typedArray = (char[]) srcArray;
         copyFromTypedArray(typedArray, srcOffset, destOffset, length);
     }
 
@@ -157,13 +155,13 @@ public class WritableCharChunk<ATTR extends Any> extends CharChunk<ATTR> impleme
             return;
         }
         if (ChunkHelpers.canCopyForward(src, srcOffset, data, destOffset, length)) {
-            //noinspection ManualArrayCopy
+            // noinspection ManualArrayCopy
             for (int ii = 0; ii < length; ++ii) {
                 data[netDestOffset + ii] = src[srcOffset + ii];
             }
             return;
         }
-        //noinspection ManualArrayCopy
+        // noinspection ManualArrayCopy
         for (int ii = length - 1; ii >= 0; --ii) {
             data[netDestOffset + ii] = src[srcOffset + ii];
         }
@@ -171,22 +169,26 @@ public class WritableCharChunk<ATTR extends Any> extends CharChunk<ATTR> impleme
 
     // region CopyFromBuffer
     @Override
-    public final void copyFromBuffer(@NotNull final Buffer srcBuffer, final int srcOffset, final int destOffset, final int length) {
+    public final void copyFromBuffer(@NotNull final Buffer srcBuffer, final int srcOffset, final int destOffset,
+            final int length) {
         final CharBuffer charSrcBuffer = (CharBuffer) srcBuffer;
         copyFromTypedBuffer(charSrcBuffer, srcOffset, destOffset, length);
     }
 
     /**
-     * <p>Fill a sub-range of this WritableCharChunk with values from a {@link CharBuffer}.
+     * <p>
+     * Fill a sub-range of this WritableCharChunk with values from a {@link CharBuffer}.
      *
-     * <p>See {@link #copyFromBuffer(Buffer, int, int, int)} for general documentation.
+     * <p>
+     * See {@link #copyFromBuffer(Buffer, int, int, int)} for general documentation.
      *
-     * @param srcBuffer  The source {@link CharBuffer}
-     * @param srcOffset  The absolute offset into {@code srcBuffer} to start copying from
+     * @param srcBuffer The source {@link CharBuffer}
+     * @param srcOffset The absolute offset into {@code srcBuffer} to start copying from
      * @param destOffset The offset into this chunk to start copying to
-     * @param length     The number of elements to copy
+     * @param length The number of elements to copy
      */
-    public final void copyFromTypedBuffer(@NotNull final CharBuffer srcBuffer, final int srcOffset, final int destOffset, final int length) {
+    public final void copyFromTypedBuffer(@NotNull final CharBuffer srcBuffer, final int srcOffset,
+            final int destOffset, final int length) {
         if (srcBuffer.hasArray()) {
             copyFromTypedArray(srcBuffer.array(), srcBuffer.arrayOffset() + srcOffset, destOffset, length);
         } else {
@@ -209,22 +211,22 @@ public class WritableCharChunk<ATTR extends Any> extends CharChunk<ATTR> impleme
         Arrays.sort(data, offset + start, offset + start + length);
 
         // region SortFixup
-        if(length <= 1) {
+        if (length <= 1) {
             return;
         }
 
         int foundLeft = Arrays.binarySearch(data, start, start + length, NULL_CHAR);
-        if(foundLeft < 0) {
+        if (foundLeft < 0) {
             return;
         }
 
         int foundRight = foundLeft;
-        while(foundLeft > start && data[foundLeft - 1] == NULL_CHAR) {
+        while (foundLeft > start && data[foundLeft - 1] == NULL_CHAR) {
             foundLeft--;
         }
 
         // If the nulls are already the leftmost thing, we are done.
-        if(foundLeft > 0) {
+        if (foundLeft > 0) {
             while (foundRight < start + length - 1 && data[foundRight + 1] == NULL_CHAR) {
                 foundRight++;
             }
@@ -238,12 +240,12 @@ public class WritableCharChunk<ATTR extends Any> extends CharChunk<ATTR> impleme
     // endregion sort
 
     @Override
-    public void close() {
-    }
+    public void close() {}
 
     // region downcast
-    public static <ATTR extends Any, ATTR_DERIV extends ATTR> WritableCharChunk<ATTR> upcast(WritableCharChunk<ATTR_DERIV> self) {
-        //noinspection unchecked
+    public static <ATTR extends Any, ATTR_DERIV extends ATTR> WritableCharChunk<ATTR> upcast(
+            WritableCharChunk<ATTR_DERIV> self) {
+        // noinspection unchecked
         return (WritableCharChunk<ATTR>) self;
     }
     // endregion downcast

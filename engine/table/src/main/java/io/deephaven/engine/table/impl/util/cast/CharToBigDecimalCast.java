@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.util.cast;
 
 import io.deephaven.chunk.CharChunk;
@@ -33,7 +33,8 @@ public class CharToBigDecimalCast implements ToBigDecimalCast {
         return result;
     }
 
-    public static <T2 extends Any> void castInto(CharChunk<? extends T2> input, WritableObjectChunk<BigDecimal, ? extends Any> result) {
+    public static <T2 extends Any> void castInto(CharChunk<? extends T2> input,
+            WritableObjectChunk<BigDecimal, ? extends Any> result) {
         final int size = input.size();
         for (int ii = 0; ii < size; ++ii) {
             final char value = input.get(ii);

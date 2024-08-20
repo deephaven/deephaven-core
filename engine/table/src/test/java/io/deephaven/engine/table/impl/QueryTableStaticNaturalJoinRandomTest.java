@@ -1,10 +1,9 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.TableOperationsDefaults;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.testutil.ColumnInfo;
 import io.deephaven.engine.testutil.QueryTableTestBase;
@@ -64,7 +63,7 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
             }
 
             final List<TestDataGenerator<String, String>> generatorList = Arrays.asList(uniqueStringGenerator,
-                    new SetGenerator<>(duplicateRights.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY)));
+                    new SetGenerator<>(duplicateRights.toArray(String[]::new)));
             rightGenerator = new CompositeGenerator<>(generatorList, 0.9);
             leftGenerator = new FromUniqueStringGenerator(uniqueStringGenerator, 0.5);
         } else if (dataType == ArrayTuple.class) {
@@ -85,7 +84,7 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
                         rightGenerator,
                         new IntGenerator()));
         final List<ColumnInfo.ColAttributes> leftKeyAttributes =
-                grouped ? Collections.singletonList(ColumnInfo.ColAttributes.Grouped)
+                grouped ? Collections.singletonList(ColumnInfo.ColAttributes.Indexed)
                         : Collections.emptyList();
         final QueryTable leftTable = getTable(false, leftSize, random,
                 initColumnInfos(new String[] {"JoinKey", "LeftSentinel"},

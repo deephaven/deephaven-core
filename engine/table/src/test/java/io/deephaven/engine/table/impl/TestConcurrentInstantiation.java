@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.snapshot.SnapshotWhenOptions.Flag;
@@ -17,9 +17,11 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.hierarchical.TreeTable;
 import io.deephaven.engine.table.impl.hierarchical.TreeTableFilter;
 import io.deephaven.engine.table.impl.hierarchical.TreeTableImpl;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.BooleanGenerator;
 import io.deephaven.engine.testutil.generator.DoubleGenerator;
@@ -33,8 +35,8 @@ import io.deephaven.gui.table.QuickFilterMode;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReflexiveUse;
+import io.deephaven.util.mutable.MutableInt;
 import junit.framework.TestCase;
-import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.junit.experimental.categories.Category;
@@ -55,8 +57,8 @@ import static org.junit.Assert.assertArrayEquals;
 
 @Category(OutOfBandTest.class)
 public class TestConcurrentInstantiation extends QueryTableTestBase {
-    private static final int TIMEOUT_LENGTH = 5;
-    private static final TimeUnit TIMEOUT_UNIT = TimeUnit.MINUTES;
+    private static final int TIMEOUT_LENGTH = 10;
+    private static final TimeUnit TIMEOUT_UNIT = TimeUnit.SECONDS;
 
     private ExecutorService pool;
     private ExecutorService dualPool;
@@ -102,8 +104,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         final Table rawSorted = pool.submit(callable).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
         TableTools.show(rawSorted);
 
-        assertArrayEquals(new int[] {1, 3, 4, 6, 9},
-                (int[]) DataAccessHelpers.getColumn(rawSorted, "Sentinel").getDirect());
+        assertArrayEquals(new int[] {1, 3, 4, 6, 9}, ColumnVectors.ofInt(rawSorted, "Sentinel").toArray());
 
         TstUtils.addToTable(source,
                 i(10),
@@ -141,7 +142,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         assertArrayEquals(
                 new int[] {1, 2, 3, 4, 6, 9, 10, 11, 12},
-                (int[]) DataAccessHelpers.getColumn(rawSorted, "Sentinel").getDirect());
+                ColumnVectors.ofInt(rawSorted, "Sentinel").toArray());
         assertTableEquals(rawSorted, table2);
         assertTableEquals(table2, table3);
         assertTableEquals(table3, table4);
@@ -296,8 +297,20 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
     public void testWhere() throws ExecutionException, InterruptedException, TimeoutException {
+        testWhereInternal(false);
+    }
+
+    public void testWhereIndexed() throws ExecutionException, InterruptedException, TimeoutException {
+        testWhereInternal(true);
+    }
+
+    private void testWhereInternal(final boolean indexed)
+            throws ExecutionException, InterruptedException, TimeoutException {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("x", 1, 2, 3), col("y", "a", "b", "c"), col("z", true, false, true));
+        if (indexed) {
+            DataIndexer.getOrCreateDataIndex(table, "z");
+        }
         final Table tableStart =
                 TstUtils.testRefreshingTable(i(2, 6).toTracking(),
                         col("x", 1, 3), col("y", "a", "c"), col("z", true, true));
@@ -374,24 +387,68 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
     public void testWhereDynamic() throws ExecutionException, InterruptedException, TimeoutException {
+        testWhereDynamicInternal(false, false);
+    }
 
+    public void testWhereDynamicIndexedSource() throws ExecutionException, InterruptedException, TimeoutException {
+        testWhereDynamicInternal(true, false);
+    }
+
+    public void testWhereDynamicIndexedSet() throws ExecutionException, InterruptedException, TimeoutException {
+        testWhereDynamicInternal(false, true);
+    }
+
+    public void testWhereDynamicIndexedBoth() throws ExecutionException, InterruptedException, TimeoutException {
+        testWhereDynamicInternal(true, true);
+    }
+
+    private void testWhereDynamicInternal(final boolean sourceIndexed, final boolean setIndexed)
+            throws ExecutionException, InterruptedException, TimeoutException {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("x", 1, 2, 3), col("y", "a", "b", "c"), col("z", true, false, true));
+        if (sourceIndexed) {
+            DataIndexer.getOrCreateDataIndex(table, "z");
+        }
         final Table tableStart = TstUtils.testRefreshingTable(i(2, 6).toTracking(),
                 col("x", 1, 3), col("y", "a", "c"), col("z", true, true));
         final Table testUpdate = TstUtils.testRefreshingTable(i(3, 6).toTracking(),
                 col("x", 4, 3), col("y", "d", "c"), col("z", true, true));
         final QueryTable whereTable = TstUtils.testRefreshingTable(i(0).toTracking(), col("z", true));
+        if (setIndexed) {
+            DataIndexer.getOrCreateDataIndex(whereTable, "z");
+        }
 
-        final DynamicWhereFilter filter = updateGraph.exclusiveLock().computeLocked(
-                () -> new DynamicWhereFilter(whereTable, true, MatchPairFactory.getExpressions("z")));
+        // This is something of a silly test, so we've "hacked" the DynamicWhereFilter instance to let us initialize
+        // its DataIndex ahead of the operation so that that the where can proceed without a lock.
+        // Normally, DynamicWhereFilter is only used from whereIn and whereNotIn, which are not concurrent operations.
+        final DynamicWhereFilter filter = updateGraph.sharedLock().computeLocked(
+                () -> {
+                    final DynamicWhereFilter result =
+                            new DynamicWhereFilter(whereTable, true, MatchPairFactory.getExpressions("z")) {
+                                private boolean begun;
+
+                                @Override
+                                public SafeCloseable beginOperation(@NotNull Table sourceTable) {
+                                    if (!begun) {
+                                        begun = true;
+                                        return super.beginOperation(sourceTable);
+                                    }
+                                    return () -> {
+                                    };
+                                }
+                            };
+                    // noinspection resource
+                    result.beginOperation(table);
+                    return result;
+                });
 
         updateGraph.startCycleForUnitTests(false);
 
         final Future<Table> future1 = dualPool.submit(() -> table.where(filter));
         try {
             future1.get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
-            fail("Filtering should be blocked on UGP");
+            fail("Filtering should be blocked on UGP because DynamicWhereFilter does not support previous filtering,"
+                    + " and so the first where will eventually try to do a locked snapshot");
         } catch (TimeoutException ignored) {
         }
         TstUtils.addToTable(table, i(2, 3), col("x", 1, 4), col("y", "a", "d"), col("z", false, true));
@@ -410,8 +467,21 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
     public void testSort() throws ExecutionException, InterruptedException, TimeoutException {
+        testSortInternal(false);
+    }
+
+    public void testSortIndexed() throws ExecutionException, InterruptedException, TimeoutException {
+        testSortInternal(true);
+    }
+
+    private void testSortInternal(final boolean indexed)
+            throws ExecutionException, InterruptedException, TimeoutException {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("x", 1, 2, 3), col("y", "a", "b", "c"));
+        if (indexed) {
+            DataIndexer.getOrCreateDataIndex(table, "x");
+        }
+
         final Table tableStart = TstUtils.testRefreshingTable(i(1, 2, 3).toTracking(),
                 col("x", 3, 2, 1), col("y", "c", "b", "a"));
         final Table tableUpdate = TstUtils.testRefreshingTable(i(1, 2, 3, 4).toTracking(),
@@ -432,6 +502,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         table.notifyListeners(i(3), i(), i());
         updateGraph.markSourcesRefreshedForUnitTests();
+
+        updateGraph.flushAllNormalNotificationsForUnitTests();
 
         final Table sort3 = pool.submit(() -> table.sortDescending("x")).get(TIMEOUT_LENGTH, TIMEOUT_UNIT);
 
@@ -621,7 +693,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         final int size = 100;
         final Random random = new Random(seed);
-        final int maxSteps = numSteps.intValue();
+        final int maxSteps = numSteps.get();
 
         final QueryTable table = getTable(size, random,
                 columnInfos = initColumnInfos(new String[] {"Sym", "intCol", "boolCol", "boolCol2", "doubleCol"},
@@ -697,8 +769,8 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                 showWithRowSet(table);
             }
 
-            for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
-                final int i = numSteps.intValue();
+            for (numSteps.set(0); numSteps.get() < maxSteps; numSteps.increment()) {
+                final int i = numSteps.get();
                 if (RefreshingTableTestCase.printTableUpdates) {
                     System.out.println("Step = " + i);
                 }
@@ -1228,8 +1300,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
             }
 
             // We only care about the silent version of this table, as it's just a vessel to tick and ensure that the
-            // resultant table
-            // is computed using the appropriate version.
+            // resultant table is computed using the appropriate version.
             final Table expected1 = updateGraph.exclusiveLock().computeLocked(
                     () -> function.apply(table.silent()).select());
             final Table expected2 = updateGraph.exclusiveLock()

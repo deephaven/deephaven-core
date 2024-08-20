@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.server.hierarchicaltable;
 
 import com.google.rpc.Code;
@@ -105,6 +105,10 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                                 aggregations, includeConstituents, groupByColumns);
 
                         final RollupTable transformedResult = authTransformation.transform(result);
+                        if (transformedResult == null) {
+                            throw Exceptions.statusRuntimeException(
+                                    Code.FAILED_PRECONDITION, "Not authorized to rollup hierarchical table");
+                        }
                         safelyComplete(responseObserver, RollupResponse.getDefaultInstance());
                         return transformedResult;
                     });
@@ -161,6 +165,10 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                                 identifierColumn.name(), parentIdentifierColumn.name());
 
                         final TreeTable transformedResult = authTransformation.transform(result);
+                        if (transformedResult == null) {
+                            throw Exceptions.statusRuntimeException(
+                                    Code.FAILED_PRECONDITION, "Not authorized to tree hierarchical table");
+                        }
                         safelyComplete(responseObserver, TreeResponse.getDefaultInstance());
                         return transformedResult;
                     });
@@ -262,6 +270,10 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         }
 
                         final HierarchicalTable<?> transformedResult = authTransformation.transform(result);
+                        if (transformedResult == null) {
+                            throw Exceptions.statusRuntimeException(
+                                    Code.FAILED_PRECONDITION, "Not authorized to apply to hierarchical table");
+                        }
                         safelyComplete(responseObserver, HierarchicalTableApplyResponse.getDefaultInstance());
                         return transformedResult;
                     });
@@ -423,6 +435,10 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         }
 
                         final HierarchicalTableView transformedResult = authTransformation.transform(result);
+                        if (transformedResult == null) {
+                            throw Exceptions.statusRuntimeException(
+                                    Code.FAILED_PRECONDITION, "Not authorized to view hierarchical table");
+                        }
                         safelyComplete(responseObserver, HierarchicalTableViewResponse.getDefaultInstance());
                         return transformedResult;
                     });
@@ -478,6 +494,11 @@ public class HierarchicalTableServiceGrpcImpl extends HierarchicalTableServiceGr
                         authWiring.checkPermissionExportSource(session.getAuthContext(), request, List.of(result));
 
                         final Table transformedResult = authTransformation.transform(result);
+                        if (transformedResult == null) {
+                            throw Exceptions.statusRuntimeException(
+                                    Code.FAILED_PRECONDITION,
+                                    "Not authorized to export source from hierarchical table");
+                        }
                         final ExportedTableCreationResponse response =
                                 ExportUtil.buildTableCreationResponse(request.getResultTableId(), transformedResult);
                         safelyComplete(responseObserver, response);

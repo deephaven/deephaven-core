@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.util.reference;
 
 import io.deephaven.base.reference.CleanupReference;
@@ -19,6 +19,29 @@ import java.lang.ref.ReferenceQueue;
  * Utility for draining a reference queue of {@link CleanupReference}s and invoking their cleanup methods.
  */
 public class CleanupReferenceProcessor {
+
+    @NotNull
+    public static CleanupReferenceProcessor getDefault() {
+        return Instance.DEFAULT.cleanupReferenceProcessor;
+    }
+
+    private enum Instance {
+        // @formatter:off
+        DEFAULT(new CleanupReferenceProcessor("default", 1000,
+                (l, r, e) -> l.warn()
+                        .append(Thread.currentThread().getName())
+                        .append(": Exception thrown from cleanup of ").append(Utils.REFERENT_FORMATTER, r)
+                        .append(": ").append(e)
+                        .endl())
+        );
+        // @formatter:on
+
+        private final CleanupReferenceProcessor cleanupReferenceProcessor;
+
+        Instance(@NotNull final CleanupReferenceProcessor cleanupReferenceProcessor) {
+            this.cleanupReferenceProcessor = Require.neqNull(cleanupReferenceProcessor, "cleanupReferenceProcessor");
+        }
+    }
 
     private static final Logger log = LoggerFactory.getLogger(CleanupReferenceProcessor.class);
 

@@ -1,0 +1,55 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+    id 'io.deephaven.hadoop-common-dependencies'
+}
+
+description 'Iceberg: Support to read iceberg catalogs.'
+
+dependencies {
+    api project(':engine-api')
+    api project(':engine-table')
+
+    implementation project(':engine-base')
+    implementation project(':log-factory')
+    implementation project(':Configuration')
+
+    compileOnly libs.autoservice
+    annotationProcessor libs.autoservice.compiler
+
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables.value
+
+    implementation libs.parquet.hadoop
+
+    implementation project(':extensions-parquet-base')
+    implementation project(':extensions-parquet-table')
+
+    api platform(libs.iceberg.bom)
+    api libs.iceberg.api
+    implementation libs.iceberg.core
+    implementation libs.iceberg.bundled.guava
+
+    implementation libs.hadoop.hdfs.client
+    // Also inherits hadoop-common, see io.deephaven.hadoop-common-dependencies
+
+    implementation libs.avro
+
+    implementation libs.commons.lang3
+
+    testImplementation libs.assertj
+
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly libs.junit.jupiter.engine
+    testRuntimeOnly libs.junit.platform.launcher
+
+    testImplementation libs.testcontainers
+    testImplementation libs.testcontainers.junit.jupiter
+    testImplementation libs.testcontainers.localstack
+    testImplementation libs.testcontainers.minio
+
+    testRuntimeOnly project(':test-configs')
+    testRuntimeOnly project(':log-to-slf4j')
+    testRuntimeOnly libs.slf4j.simple
+}

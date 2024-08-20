@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunkSoftPool and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharChunkSoftPool and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.chunk.util.pools;
 
 import io.deephaven.util.type.ArrayTypeUtils;
@@ -40,27 +39,25 @@ public final class ShortChunkSoftPool implements ShortChunkPool {
     private final SegmentedSoftPool<ResettableWritableShortChunk> resettableWritableShortChunks;
 
     ShortChunkSoftPool() {
-        //noinspection unchecked
+        // noinspection unchecked
         writableShortChunks = new SegmentedSoftPool[NUM_POOLED_CHUNK_CAPACITIES];
         for (int pcci = 0; pcci < NUM_POOLED_CHUNK_CAPACITIES; ++pcci) {
             final int chunkLog2Capacity = pcci + SMALLEST_POOLED_CHUNK_LOG2_CAPACITY;
             final int chunkCapacity = 1 << chunkLog2Capacity;
             writableShortChunks[pcci] = new SegmentedSoftPool<>(
                     SUB_POOL_SEGMENT_CAPACITY,
-                    () -> ChunkPoolInstrumentation.getAndRecord(() -> WritableShortChunk.makeWritableChunkForPool(chunkCapacity)),
-                    (final WritableShortChunk chunk) -> chunk.setSize(chunkCapacity)
-            );
+                    () -> ChunkPoolInstrumentation
+                            .getAndRecord(() -> WritableShortChunk.makeWritableChunkForPool(chunkCapacity)),
+                    (final WritableShortChunk chunk) -> chunk.setSize(chunkCapacity));
         }
         resettableShortChunks = new SegmentedSoftPool<>(
                 SUB_POOL_SEGMENT_CAPACITY,
                 () -> ChunkPoolInstrumentation.getAndRecord(ResettableShortChunk::makeResettableChunkForPool),
-                ResettableShortChunk::clear
-        );
+                ResettableShortChunk::clear);
         resettableWritableShortChunks = new SegmentedSoftPool<>(
                 SUB_POOL_SEGMENT_CAPACITY,
                 () -> ChunkPoolInstrumentation.getAndRecord(ResettableWritableShortChunk::makeResettableChunkForPool),
-                ResettableWritableShortChunk::clear
-        );
+                ResettableWritableShortChunk::clear);
     }
 
     @Override
@@ -82,7 +79,8 @@ public final class ShortChunkSoftPool implements ShortChunkPool {
             }
 
             @Override
-            public <ATTR extends Any> void giveResettableChunk(@NotNull final ResettableReadOnlyChunk<ATTR> resettableChunk) {
+            public <ATTR extends Any> void giveResettableChunk(
+                    @NotNull final ResettableReadOnlyChunk<ATTR> resettableChunk) {
                 giveResettableShortChunk(resettableChunk.asResettableShortChunk());
             }
 
@@ -92,7 +90,8 @@ public final class ShortChunkSoftPool implements ShortChunkPool {
             }
 
             @Override
-            public <ATTR extends Any> void giveResettableWritableChunk(@NotNull final ResettableWritableChunk<ATTR> resettableWritableChunk) {
+            public <ATTR extends Any> void giveResettableWritableChunk(
+                    @NotNull final ResettableWritableChunk<ATTR> resettableWritableChunk) {
                 giveResettableWritableShortChunk(resettableWritableChunk.asResettableWritableShortChunk());
             }
         };
@@ -101,18 +100,18 @@ public final class ShortChunkSoftPool implements ShortChunkPool {
     @Override
     public <ATTR extends Any> WritableShortChunk<ATTR> takeWritableShortChunk(final int capacity) {
         if (capacity == 0) {
-            //noinspection unchecked
+            // noinspection unchecked
             return (WritableShortChunk<ATTR>) EMPTY;
         }
         final int poolIndexForTake = getPoolIndexForTake(checkCapacityBounds(capacity));
         if (poolIndexForTake >= 0) {
-            //noinspection resource
+            // noinspection resource
             final WritableShortChunk result = writableShortChunks[poolIndexForTake].take();
             result.setSize(capacity);
-            //noinspection unchecked
+            // noinspection unchecked
             return ChunkPoolReleaseTracking.onTake(result);
         }
-        //noinspection unchecked
+        // noinspection unchecked
         return ChunkPoolReleaseTracking.onTake(WritableShortChunk.makeWritableChunkForPool(capacity));
     }
 
@@ -131,7 +130,7 @@ public final class ShortChunkSoftPool implements ShortChunkPool {
 
     @Override
     public <ATTR extends Any> ResettableShortChunk<ATTR> takeResettableShortChunk() {
-        //noinspection unchecked
+        // noinspection unchecked
         return ChunkPoolReleaseTracking.onTake(resettableShortChunks.take());
     }
 
@@ -142,12 +141,13 @@ public final class ShortChunkSoftPool implements ShortChunkPool {
 
     @Override
     public <ATTR extends Any> ResettableWritableShortChunk<ATTR> takeResettableWritableShortChunk() {
-        //noinspection unchecked
+        // noinspection unchecked
         return ChunkPoolReleaseTracking.onTake(resettableWritableShortChunks.take());
     }
 
     @Override
-    public void giveResettableWritableShortChunk(@NotNull final ResettableWritableShortChunk resettableWritableShortChunk) {
+    public void giveResettableWritableShortChunk(
+            @NotNull final ResettableWritableShortChunk resettableWritableShortChunk) {
         resettableWritableShortChunks.give(ChunkPoolReleaseTracking.onGive(resettableWritableShortChunk));
     }
 }

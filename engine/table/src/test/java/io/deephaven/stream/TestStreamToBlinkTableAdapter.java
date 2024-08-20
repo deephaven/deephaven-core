@@ -1,10 +1,9 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.stream;
 
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -19,6 +18,7 @@ import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.SimpleListener;
 import io.deephaven.chunk.*;
 import io.deephaven.util.BooleanUtils;
+import io.deephaven.util.type.ArrayTypeUtils;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
@@ -329,7 +329,7 @@ public class TestStreamToBlinkTableAdapter {
         TestCase.assertEquals(ModifiedColumnSet.EMPTY, listener.getUpdate().modifiedColumnSet());
 
         final Table expect1 = TableTools.newTable(
-                col("SA", new String[] {"Gagarin", "Tereshkova"}, CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
+                col("SA", new String[] {"Gagarin", "Tereshkova"}, ArrayTypeUtils.EMPTY_STRING_ARRAY),
                 col("IA", new int[] {1, 2, 3}, new int[] {4, 5, 6}));
         TstUtils.assertTableEquals(expect1, result);
 

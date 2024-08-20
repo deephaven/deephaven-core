@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.chunk.ChunkType;
@@ -195,6 +195,21 @@ public class ReinterpretUtils {
             }
         }
         return source;
+    }
+
+    /**
+     * Convert each source in {@code sources} to a primitive if possible.
+     *
+     * @param sources An array of the sources to potentially convert
+     * @return The primitive sources for each source in {@code sources}
+     */
+    @NotNull
+    public static ColumnSource<?>[] maybeConvertToPrimitive(@NotNull final ColumnSource<?>[] sources) {
+        final ColumnSource<?>[] result = new ColumnSource<?>[sources.length];
+        for (int ii = 0; ii < sources.length; ++ii) {
+            result[ii] = maybeConvertToPrimitive(sources[ii]);
+        }
+        return result;
     }
 
     /**

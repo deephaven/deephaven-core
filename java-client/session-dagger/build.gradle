@@ -8,15 +8,14 @@ description = 'The Deephaven client session dagger library'
 dependencies {
     api project(':java-client-session')
 
-    Classpaths.inheritGrpcPlatform(project, 'api')
-    api 'io.grpc:grpc-api'
+    api platform(libs.grpc.bom)
+    api libs.grpc.api
 
-    implementation project(':proto:proto-backplane-grpc')
+    implementation libs.dagger
+    annotationProcessor libs.dagger.compiler
 
-    Classpaths.inheritDagger(project)
-
-    Classpaths.inheritSlf4j(project, 'slf4j-api', 'implementation')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    implementation libs.slf4j.api
+    testRuntimeOnly libs.slf4j.simple
 
     // Unable to use newer junit here because of test-libs/junit-wall-4.11.jar
     /*
@@ -27,14 +26,19 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
     */
 
-    Classpaths.inheritAssertJ(project)
+    testImplementation libs.assertj
 
-    testImplementation TestTools.projectDependency(project, 'server')
+    testImplementation project(':server')
+    testImplementation project(':server-test-utils')
+    testImplementation project(':engine-test-utils')
+    testImplementation project(':Plot')
     testImplementation project(':java-client-flight')
     testImplementation project(':proto:proto-backplane-grpc-flight')
     testImplementation project(':plugin-echo')
+    testImplementation project(':plugin-figure')
     testImplementation project(':log-to-slf4j')
-    Classpaths.inheritAutoService(project, true)
+    testCompileOnly libs.autoservice
+    testAnnotationProcessor libs.autoservice.compiler
 }
 
 test {

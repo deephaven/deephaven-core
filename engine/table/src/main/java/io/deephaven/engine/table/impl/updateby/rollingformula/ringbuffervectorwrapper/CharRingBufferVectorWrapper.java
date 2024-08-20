@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.rollingformula.ringbuffervectorwrapper;
 
 import io.deephaven.base.ringbuffer.CharRingBuffer;
@@ -20,7 +23,7 @@ public class CharRingBufferVectorWrapper implements CharVector, RingBufferVector
 
     @Override
     public char get(long index) {
-        return ringBuffer.front((int)index);
+        return ringBuffer.front((int) index);
     }
 
     @Override

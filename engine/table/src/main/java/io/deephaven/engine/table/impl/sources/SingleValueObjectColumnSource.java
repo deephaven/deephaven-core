@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.engine.rowset.RowSequence;
@@ -10,19 +10,20 @@ import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 /**
  * ColumnSource implementation for columns of a single unique value.
  */
-public class SingleValueObjectColumnSource<DATA_TYPE> extends AbstractColumnSource<DATA_TYPE> implements ImmutableColumnSourceGetDefaults.ForObject<DATA_TYPE> {
+public class SingleValueObjectColumnSource<DATA_TYPE> extends AbstractColumnSource<DATA_TYPE>
+        implements ImmutableColumnSourceGetDefaults.ForObject<DATA_TYPE> {
 
     private final DATA_TYPE value;
 
     public SingleValueObjectColumnSource(DATA_TYPE value) {
-        //noinspection unchecked
-        super((Class<DATA_TYPE>)value.getClass());
+        // noinspection unchecked
+        super((Class<DATA_TYPE>) value.getClass());
         this.value = value;
     }
 
     @Override
     public DATA_TYPE get(long rowKey) {
-        if(rowKey == RowSequence.NULL_ROW_KEY) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
         return value;

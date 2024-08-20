@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.extensions.s3;
 
 public interface Credentials {
@@ -21,7 +21,14 @@ public interface Credentials {
      * @param accessKeyId the access key id, used to identify the user
      * @param secretAccessKey the secret access key, used to authenticate the user
      */
-    static Credentials basicCredentials(final String accessKeyId, final String secretAccessKey) {
+    static Credentials basic(final String accessKeyId, final String secretAccessKey) {
         return BasicCredentials.of(accessKeyId, secretAccessKey);
+    }
+
+    /**
+     * Anonymous credentials. This is useful when the S3 policy has been set to allow anonymous access.
+     */
+    static Credentials anonymous() {
+        return AnonymousCredentials.ANONYMOUS_CREDENTIALS;
     }
 }

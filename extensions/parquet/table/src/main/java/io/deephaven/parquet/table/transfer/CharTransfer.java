@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.table.transfer;
 
 import io.deephaven.chunk.CharChunk;
@@ -10,7 +10,8 @@ import io.deephaven.engine.table.ColumnSource;
 import org.jetbrains.annotations.NotNull;
 
 final class CharTransfer extends IntCastablePrimitiveTransfer<CharChunk<Values>> {
-    CharTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSet tableRowSet, final int targetPageSizeInBytes) {
+    CharTransfer(@NotNull final ColumnSource<?> columnSource, @NotNull final RowSet tableRowSet,
+            final int targetPageSizeInBytes) {
         super(columnSource, tableRowSet, targetPageSizeInBytes);
     }
 

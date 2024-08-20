@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources.immutable;
 
 import io.deephaven.chunk.LongChunk;
@@ -12,7 +12,6 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.sources.*;
-import io.deephaven.engine.table.impl.util.ShiftData;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
@@ -26,7 +25,7 @@ import static io.deephaven.util.QueryConstants.NULL_CHAR;
  */
 public class ImmutableConstantCharSource
         extends AbstractColumnSource<Character>
-        implements ImmutableColumnSourceGetDefaults.ForChar, ShiftData.ShiftCallback, InMemoryColumnSource,
+        implements ImmutableColumnSourceGetDefaults.ForChar, InMemoryColumnSource,
         RowKeyAgnosticChunkSource<Values> /* MIXIN_IMPLS */ {
 
     private final char value;
@@ -65,9 +64,6 @@ public class ImmutableConstantCharSource
     }
 
     @Override
-    public final void shift(final long start, final long end, final long offset) {}
-
-    @Override
     public void fillChunkUnordered(
             @NotNull FillContext context,
             @NotNull WritableChunk<? super Values> dest,
@@ -84,7 +80,7 @@ public class ImmutableConstantCharSource
             @NotNull FillContext context,
             @NotNull WritableChunk<? super Values> dest,
             @NotNull LongChunk<? extends RowKeys> keys) {
-        fillChunkUnordered(context , dest, keys);
+        fillChunkUnordered(context, dest, keys);
     }
 
     @Override

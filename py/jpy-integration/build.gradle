@@ -43,8 +43,6 @@ sourceSets {
 configurations {
   javaToPythonJar
 
-  testImplementation.extendsFrom junit
-
   javaToPythonImplementation.extendsFrom testImplementation
   pythonToJavaImplementation.extendsFrom testImplementation
 
@@ -57,6 +55,8 @@ dependencies {
   testImplementation project(':deephaven-jpy-ext')
   javaToPythonImplementation sourceSets.test.output
   pythonToJavaImplementation sourceSets.test.output
+
+  testImplementation libs.junit4
 }
 
 test {
@@ -115,9 +115,12 @@ Task pythonToJava = tasks.create 'unittestPythonToJava', {
 Closure<TaskProvider<Task>> gradleTestInDocker = { String taskName, SourceSet sourceSet ->
 
   def gradleWrapper = tasks.register("${taskName}GradleInit", Wrapper.class) { wrapper ->
-    wrapper.scriptFile "${buildDir}/template-project/gradlew"
-    wrapper.jarFile "${buildDir}/template-project/gradle/wrapper/gradle-wrapper.jar"
+
+    def templateProject = layout.buildDirectory.dir('template-project').get()
+    wrapper.scriptFile "${templateProject}/gradlew"
+    wrapper.jarFile "${templateProject}/gradle/wrapper/gradle-wrapper.jar"
     wrapper.gradleVersion '8.4'
+    wrapper.validateDistributionUrl.set false
   }
   return Docker.registerDockerTask(project, taskName) {
     copyIn {
@@ -139,7 +142,7 @@ Closure<TaskProvider<Task>> gradleTestInDocker = { String taskName, SourceSet so
     parentContainers = [project(':docker-runtime-base').tasks.findByName('buildDocker')] // deephaven/runtime-base
     dockerfile {
       // base image with default java, python, wheels
-      from 'deephaven/runtime-base:local-build'
+      from Docker.localImageName('runtime-base')
 
       // set up the project
       copyFile 'project', '/project'
@@ -169,9 +172,9 @@ Closure<TaskProvider<Task>> javaMainInDocker = { String taskName, String javaMai
       }
     }
     parentContainers = [project(':docker-runtime-base').tasks.findByName('buildDocker')] // deephaven/runtime-base
-    imageName = 'deephaven/jpy-integration-java-to-python-tests:local-build'
+    imageName = Docker.localImageName('jpy-integration-java-to-python-tests')
     dockerfile {
-      from 'deephaven/runtime-base:local-build'
+      from Docker.localImageName('runtime-base')
 
       copyFile 'classpath', '/classpath'
     }
@@ -219,10 +222,10 @@ Closure<TaskProvider<Task>> pyExec = { String taskName, List<String> command, bo
       }
     }
     parentContainers = [project(':docker-runtime-base').tasks.findByName('buildDocker')] // deephaven/runtime-base
-    imageName = 'deephaven/jpy-integration-python-to-java-tests:local-build'
+    imageName = Docker.localImageName('jpy-integration-python-to-java-tests')
     dockerfile {
       // set up the container, env vars - things that aren't likely to change
-      from 'deephaven/runtime-base:local-build'
+      from Docker.localImageName('runtime-base')
       runCommand '''set -eux; \\
                       pip3 install unittest-xml-reporting==3.0.4;\\
                       mkdir /out;'''

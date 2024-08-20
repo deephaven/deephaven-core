@@ -22,7 +22,6 @@ import org.gradle.api.file.CopySpec
 import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.TaskProvider
-import org.gradle.util.ConfigureUtil
 
 /**
  * Tools to make some common tasks in docker easier to use in gradle
@@ -72,13 +71,18 @@ class Docker {
     /**
      * DSL object to describe a docker task
      */
-    static class DockerTaskConfig {
+    abstract static class DockerTaskConfig {
 
         private Action<? super CopySpec> copyIn;
         private Action<? super Sync> copyOut;
         private File dockerfileFile;
         private Action<? super Dockerfile> dockerfileAction;
-        private TaskDependencies containerDependencies = new TaskDependencies();
+
+        /**
+         * Declares tasks that this group of tasks should depend on or be
+         * finalized by.
+         */
+        TaskDependencies containerDependencies = new TaskDependencies();
 
         /**
          * Files that need to be copied in to the image.
@@ -87,12 +91,6 @@ class Docker {
             copyIn = action;
             return this;
         }
-        /**
-         * Files that need to be copied in to the image.
-         */
-        DockerTaskConfig copyIn(Closure closure) {
-            return copyIn(ConfigureUtil.configureUsing(closure))
-        }
 
         /**
          * Resulting files to copy out from the containerOutPath.
@@ -100,12 +98,6 @@ class Docker {
         DockerTaskConfig copyOut(Action<? super Sync> action) {
             copyOut = action;
             return this;
-        }
-        /**
-         * Resulting files to copy out from the containerOutPath.
-         */
-        DockerTaskConfig copyOut(Closure closure) {
-            return copyOut(ConfigureUtil.configureUsing(closure))
         }
 
         /**
@@ -121,12 +113,6 @@ class Docker {
         DockerTaskConfig dockerfile(Action<? super Dockerfile> action) {
             this.dockerfileAction = action;
             return this;
-        }
-        /**
-         * Dockerfile to use. If not set, it is assumed that a dockerfile will be included in copyIn.
-         */
-        DockerTaskConfig dockerfile(Closure closure) {
-            dockerfile(ConfigureUtil.configureUsing(closure));
         }
 
         /**
@@ -208,7 +194,12 @@ class Docker {
      * @return a task provider for the Sync task that will produce the requested output
      */
     static TaskProvider<? extends Task> registerDockerTask(Project project, String taskName, Closure closure) {
-        return registerDockerTask(project, taskName, ConfigureUtil.configureUsing(closure))
+        return registerDockerTask(project, taskName, new Action<DockerTaskConfig>() {
+            @Override
+            void execute(DockerTaskConfig dockerTaskConfig) {
+                project.configure(dockerTaskConfig, closure)
+            }
+        })
     }
 
     /**
@@ -221,8 +212,8 @@ class Docker {
      */
     static TaskProvider<? extends Task> registerDockerTask(Project project, String taskName, Action<? super DockerTaskConfig> action) {
         // create instance, assign defaults
-        DockerTaskConfig cfg = new DockerTaskConfig();
-        cfg.imageName = "deephaven/${taskName.replaceAll(/\B[A-Z]/) { String str -> '-' + str }.toLowerCase()}:${LOCAL_BUILD_TAG}"
+        DockerTaskConfig cfg = project.objects.newInstance(DockerTaskConfig);
+        cfg.imageName = localImageName(taskName.replaceAll(/\B[A-Z]/) { String str -> '-' + str }.toLowerCase())
 
         // ask for more configuration
         action.execute(cfg)
@@ -576,7 +567,12 @@ class Docker {
     }
 
     static TaskProvider<? extends DockerBuildImage> registerDockerTwoPhaseImage(Project project, String baseName, String intermediate, Closure closure) {
-        return registerDockerTwoPhaseImage(project, baseName, intermediate, ConfigureUtil.configureUsing(closure))
+        return registerDockerTwoPhaseImage(project, baseName, intermediate, new Action<DockerBuildImage>() {
+            @Override
+            void execute(DockerBuildImage dockerBuildImage) {
+                project.configure(dockerBuildImage, closure)
+            }
+        })
     }
 
     static TaskProvider<? extends DockerBuildImage> registerDockerTwoPhaseImage(Project project, String baseName, String intermediate, Action<? super DockerBuildImage> action) {
@@ -586,19 +582,24 @@ class Docker {
             action.execute(buildImage)
             checkValidTwoPhase(buildImage)
             buildImage.target.set(intermediate)
-            buildImage.images.add("deephaven/${baseName}-${intermediate}:local-build".toString())
+            buildImage.images.add(localImageName("${baseName}-${intermediate}".toString()))
         }
 
         return registerDockerImage(project, "buildDocker-${baseName}") { DockerBuildImage buildImage ->
             action.execute(buildImage)
             checkValidTwoPhase(buildImage)
             buildImage.dependsOn(intermediateTask)
-            buildImage.images.add("deephaven/${baseName}:local-build".toString())
+            buildImage.images.add(localImageName(baseName))
         }
     }
 
     static TaskProvider<? extends DockerBuildImage> registerDockerImage(Project project, String taskName, Closure closure) {
-        return registerDockerImage(project, taskName, ConfigureUtil.configureUsing(closure))
+        return registerDockerImage(project, taskName, new Action<DockerBuildImage>() {
+            @Override
+            void execute(DockerBuildImage dockerBuildImage) {
+                project.configure(dockerBuildImage, closure)
+            }
+        })
     }
 
     static TaskProvider<? extends DockerBuildImage> registerDockerImage(Project project, String taskName, Action<? super DockerBuildImage> action) {
@@ -641,37 +642,6 @@ class Docker {
 
         return makeImage;
     }
-
-    static TaskProvider<? extends Task> buildPyWheel(Project project, String taskName, String imgName, String sourcePath) {
-        project.evaluationDependsOn(registryProject('python'))
-        return registerDockerTask(project, taskName) { DockerTaskConfig config ->
-            config.copyIn { Sync sync ->
-                sync.from(sourcePath) { CopySpec copySpec ->
-                    copySpec.exclude 'build', 'dist'
-                    copySpec.into 'src'
-                }
-            }
-            config.imageName = "${imgName}:local-build"
-            config.dockerfile { Dockerfile action ->
-                // set up the container, env vars - things that aren't likely to change
-                action.from 'deephaven/python:local-build as sources'
-                action.arg 'DEEPHAVEN_VERSION'
-                action.environmentVariable 'DEEPHAVEN_VERSION', project.version.toString()
-                action.workingDir '/usr/src/app'
-                action.copyFile '/src', '.'
-                action.from 'sources as build'
-                action.runCommand '''set -eux; \\
-                      test -n "${DEEPHAVEN_VERSION}";\\
-                      python setup.py bdist_wheel'''
-            }
-            config.parentContainers = [ registryTask(project, 'python') ]
-            config.containerOutPath='/usr/src/app/dist'
-            config.copyOut { Sync sync ->
-                sync.into "build/wheel${taskName}"
-            }
-        }
-    }
-
 
     static TaskProvider<? extends DockerBuildImage> registryRegister(Project project) {
 
@@ -764,7 +734,7 @@ class Docker {
         }
 
         def dockerfile = project.tasks.register('dockerfile', Dockerfile) { dockerfile ->
-            dockerfile.description = "Internal task: creates a dockerfile, to be (built) tagged as 'deephaven/${project.projectDir.name}:local-build'."
+            dockerfile.description = "Internal task: creates a dockerfile, to be (built) tagged as '${localImageName(project.projectDir.name)}'."
             dockerfile.from(imageId)
         }
 
@@ -783,10 +753,10 @@ class Docker {
             def dockerFileTask = dockerfile.get()
 
             build.group = 'Docker Registry'
-            build.description = "Creates 'deephaven/${project.projectDir.name}:local-build'."
+            build.description = "Creates '${localImageName(project.projectDir.name)}'."
             build.inputs.files dockerFileTask.outputs.files
             build.dockerFile.set dockerFileTask.outputs.files.singleFile
-            build.images.add("deephaven/${project.projectDir.name}:local-build".toString())
+            build.images.add(localImageName(project.projectDir.name))
             if (platform != null) {
                 build.platform.set platform
             }
@@ -799,6 +769,10 @@ class Docker {
 
     static Task registryTask(Project project, String name) {
         project.project(":docker-${name}").tasks.findByName('tagLocalBuild')
+    }
+
+    static String localImageName(String name) {
+        return "deephaven/${name}:${LOCAL_BUILD_TAG}".toString()
     }
 
     static FileCollection registryFiles(Project project, String name) {

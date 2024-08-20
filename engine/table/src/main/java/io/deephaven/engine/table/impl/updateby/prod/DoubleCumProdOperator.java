@@ -1,8 +1,10 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit FloatCumProdOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit FloatCumProdOperator and run "./gradlew replicateUpdateBy" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.updateby.prod;
 
 import io.deephaven.base.verify.Assert;
@@ -14,6 +16,7 @@ import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import io.deephaven.engine.table.impl.updateby.internal.BaseDoubleUpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
 public class DoubleCumProdOperator extends BaseDoubleUpdateByOperator {
@@ -46,10 +49,10 @@ public class DoubleCumProdOperator extends BaseDoubleUpdateByOperator {
 
     public DoubleCumProdOperator(
             @NotNull final MatchPair pair
-            // region extra-constructor-args
-            // endregion extra-constructor-args
+    // region extra-constructor-args
+    // endregion extra-constructor-args
     ) {
-        super(pair, new String[] { pair.rightColumn });
+        super(pair, new String[] {pair.rightColumn});
         // region constructor
         // endregion constructor
     }
@@ -58,8 +61,8 @@ public class DoubleCumProdOperator extends BaseDoubleUpdateByOperator {
     public UpdateByOperator copy() {
         return new DoubleCumProdOperator(
                 pair
-                // region extra-copy-args
-                // endregion extra-copy-args
+        // region extra-copy-args
+        // endregion extra-copy-args
         );
     }
 

@@ -1,8 +1,10 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharDeltaOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharDeltaOperator and run "./gradlew replicateUpdateBy" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.updateby.delta;
 
 import io.deephaven.api.updateby.DeltaControl;
@@ -58,10 +60,10 @@ public class ByteDeltaOperator extends BaseByteUpdateByOperator {
                 curVal = control.nullBehavior() == NullBehavior.NullDominates
                         ? NULL_BYTE
                         : (control.nullBehavior() == NullBehavior.ZeroDominates
-                            ? (byte)0
-                            : currentVal);
+                                ? (byte) 0
+                                : currentVal);
             } else {
-                curVal = (byte)(currentVal - lastVal);
+                curVal = (byte) (currentVal - lastVal);
             }
 
             lastVal = currentVal;
@@ -71,10 +73,10 @@ public class ByteDeltaOperator extends BaseByteUpdateByOperator {
     public ByteDeltaOperator(
             @NotNull final MatchPair pair,
             @NotNull final DeltaControl control
-            // region extra-constructor-args
-            // endregion extra-constructor-args
+    // region extra-constructor-args
+    // endregion extra-constructor-args
     ) {
-        super(pair, new String[] { pair.rightColumn });
+        super(pair, new String[] {pair.rightColumn});
         this.control = control;
         // region constructor
         // endregion constructor

@@ -1,10 +1,10 @@
 /*
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
  */
 #pragma once
 
 #include <string>
-#include <utility>  // std::pair
+#include <utility>
 #include <vector>
 
 namespace deephaven::client {
@@ -100,7 +100,7 @@ public:
    * @param pem a PEM encoded private key.
    * @return *this, to be used for chaining
    */
-  ClientOptions &SetClientPrivateKey(std::string client_cert_chain);
+  ClientOptions &SetClientPrivateKey(std::string client_private_key);
   /**
    * Adds an int-valued option for the configuration of the underlying gRPC channels.
    * See https://grpc.github.io/grpc/cpp/group__grpc__arg__keys.html for a list of available options.

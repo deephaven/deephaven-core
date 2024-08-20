@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+ * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
  */
 #include "deephaven/dhcore/ticking/immer_table_state.h"
 
@@ -51,6 +51,11 @@ public:
 
   [[nodiscard]]
   std::shared_ptr<ColumnSource> GetColumn(size_t column_index) const final {
+    if (column_index >= sources_.size()) {
+      auto message = fmt::format("Requested column index {} >= num columns {}", column_index,
+          sources_.size());
+      throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
+    }
     return sources_[column_index];
   }
 
@@ -93,7 +98,8 @@ std::shared_ptr<RowSequence> ImmerTableState::AddKeys(const RowSequence &rows_to
 }
 
 void ImmerTableState::AddData(const std::vector<std::shared_ptr<ColumnSource>> &src,
-    const std::vector<size_t> &begins, const std::vector<size_t> &ends, const RowSequence &rows_to_add_index_space) {
+    const std::vector<size_t> &begins, const std::vector<size_t> &ends,
+    const RowSequence &rows_to_add_index_space) {
   auto ncols = src.size();
   auto nrows = rows_to_add_index_space.Size();
     AssertAllSame(src.size(), begins.size(), ends.size());
@@ -278,8 +284,8 @@ struct FlexVectorFromSourceMaker final : public ColumnSourceVisitor {
   std::unique_ptr<AbstractFlexVectorBase> result_;
 };
 
-std::unique_ptr<AbstractFlexVectorBase> MakeFlexVectorFromColumnSource(const ColumnSource &source, size_t begin,
-                                                                       size_t end) {
+std::unique_ptr<AbstractFlexVectorBase> MakeFlexVectorFromColumnSource(const ColumnSource &source,
+    size_t begin, size_t end) {
   FlexVectorFromSourceMaker v;
   source.AcceptVisitor(&v);
   v.result_->InPlaceAppendSource(source, begin, end);

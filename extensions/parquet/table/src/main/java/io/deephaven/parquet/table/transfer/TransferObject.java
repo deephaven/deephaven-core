@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.table.transfer;
 
 import io.deephaven.engine.rowset.RowSet;
@@ -8,6 +8,8 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.CodecLookup;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.util.BigDecimalUtils;
+import io.deephaven.parquet.base.BigDecimalParquetBytesCodec;
+import io.deephaven.parquet.base.BigIntegerParquetBytesCodec;
 import io.deephaven.parquet.table.*;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.codec.ObjectCodec;
@@ -25,8 +27,8 @@ import java.time.LocalTime;
 import java.util.Map;
 
 /**
- * Classes that implement this interface are responsible for converting data from individual DH columns into buffers
- * to be written out to the Parquet file.
+ * Classes that implement this interface are responsible for converting data from individual DH columns into buffers to
+ * be written out to the Parquet file.
  *
  * @param <BUFFER_TYPE> The type of the buffer to be written out to the Parquet file
  */
@@ -47,7 +49,8 @@ public interface TransferObject<BUFFER_TYPE> extends SafeCloseable {
         if (columnType == Instant.class) {
             // noinspection unchecked
             final ColumnSource<DATA_TYPE> longColumnSource =
-                    (ColumnSource<DATA_TYPE>) ReinterpretUtils.instantToLongSource((ColumnSource<Instant>) columnSource);
+                    (ColumnSource<DATA_TYPE>) ReinterpretUtils
+                            .instantToLongSource((ColumnSource<Instant>) columnSource);
             return LongTransfer.create(longColumnSource, tableRowSet, instructions.getTargetPageSize());
         }
         if (columnType == double.class) {
@@ -59,7 +62,8 @@ public interface TransferObject<BUFFER_TYPE> extends SafeCloseable {
         if (columnType == Boolean.class) {
             // noinspection unchecked
             final ColumnSource<DATA_TYPE> byteColumnSource =
-                    (ColumnSource<DATA_TYPE>) ReinterpretUtils.booleanToByteSource((ColumnSource<Boolean>) columnSource);
+                    (ColumnSource<DATA_TYPE>) ReinterpretUtils
+                            .booleanToByteSource((ColumnSource<Boolean>) columnSource);
             return BooleanTransfer.create(byteColumnSource, tableRowSet, instructions.getTargetPageSize());
         }
         if (columnType == short.class) {
@@ -80,16 +84,16 @@ public interface TransferObject<BUFFER_TYPE> extends SafeCloseable {
             return new CodecTransfer<>(columnSource, codec, tableRowSet, instructions.getTargetPageSize());
         }
         if (columnType == BigDecimal.class) {
-                // noinspection unchecked
-                final ColumnSource<BigDecimal> bigDecimalColumnSource = (ColumnSource<BigDecimal>) columnSource;
-                final BigDecimalUtils.PrecisionAndScale precisionAndScale = TypeInfos.getPrecisionAndScale(
-                        computedCache, columnName, tableRowSet, () -> bigDecimalColumnSource);
-                final ObjectCodec<BigDecimal> codec = new BigDecimalParquetBytesCodec(
-                        precisionAndScale.precision, precisionAndScale.scale, -1);
-                return new CodecTransfer<>(bigDecimalColumnSource, codec, tableRowSet, instructions.getTargetPageSize());
+            // noinspection unchecked
+            final ColumnSource<BigDecimal> bigDecimalColumnSource = (ColumnSource<BigDecimal>) columnSource;
+            final BigDecimalUtils.PrecisionAndScale precisionAndScale = TypeInfos.getPrecisionAndScale(
+                    computedCache, columnName, tableRowSet, () -> bigDecimalColumnSource);
+            final ObjectCodec<BigDecimal> codec = new BigDecimalParquetBytesCodec(
+                    precisionAndScale.precision, precisionAndScale.scale);
+            return new CodecTransfer<>(bigDecimalColumnSource, codec, tableRowSet, instructions.getTargetPageSize());
         }
         if (columnType == BigInteger.class) {
-            return new CodecTransfer<>(columnSource, new BigIntegerParquetBytesCodec(-1), tableRowSet,
+            return new CodecTransfer<>(columnSource, new BigIntegerParquetBytesCodec(), tableRowSet,
                     instructions.getTargetPageSize());
         }
         if (columnType == LocalDate.class) {
@@ -102,7 +106,8 @@ public interface TransferObject<BUFFER_TYPE> extends SafeCloseable {
             return new LocalDateTimeTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
         }
 
-        @Nullable final Class<?> componentType = columnSource.getComponentType();
+        @Nullable
+        final Class<?> componentType = columnSource.getComponentType();
         if (columnType.isArray()) {
             if (componentType == int.class) {
                 return new IntArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
@@ -132,7 +137,7 @@ public interface TransferObject<BUFFER_TYPE> extends SafeCloseable {
                 return new StringArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
             if (componentType == BigInteger.class) {
-                return new CodecArrayTransfer<>(columnSource, new BigIntegerParquetBytesCodec(-1),
+                return new CodecArrayTransfer<>(columnSource, new BigIntegerParquetBytesCodec(),
                         tableRowSet, instructions.getTargetPageSize());
             }
             if (componentType == Instant.class) {
@@ -153,7 +158,7 @@ public interface TransferObject<BUFFER_TYPE> extends SafeCloseable {
             if (componentType == int.class) {
                 return new IntVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
-            if (componentType ==long.class) {
+            if (componentType == long.class) {
                 return new LongVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
             if (componentType == double.class) {
@@ -178,7 +183,7 @@ public interface TransferObject<BUFFER_TYPE> extends SafeCloseable {
                 return new StringVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
             if (componentType == BigInteger.class) {
-                return new CodecVectorTransfer<>(columnSource, new BigIntegerParquetBytesCodec(-1),
+                return new CodecVectorTransfer<>(columnSource, new BigIntegerParquetBytesCodec(),
                         tableRowSet, instructions.getTargetPageSize());
             }
             if (componentType == Instant.class) {
@@ -204,8 +209,10 @@ public interface TransferObject<BUFFER_TYPE> extends SafeCloseable {
     static <DATA_TYPE> @NotNull TransferObject<IntBuffer> createDictEncodedStringTransfer(
             @NotNull final RowSet tableRowSet, @NotNull final ColumnSource<DATA_TYPE> columnSource,
             final int targetPageSize, @NotNull final StringDictionary dictionary) {
-        @Nullable final Class<?> dataType = columnSource.getType();
-        @Nullable final Class<?> componentType = columnSource.getComponentType();
+        @Nullable
+        final Class<?> dataType = columnSource.getType();
+        @Nullable
+        final Class<?> componentType = columnSource.getComponentType();
         if (dataType == String.class) {
             return new DictEncodedStringTransfer(columnSource, tableRowSet, targetPageSize, dictionary);
         }
@@ -221,12 +228,12 @@ public interface TransferObject<BUFFER_TYPE> extends SafeCloseable {
 
     /**
      * Transfer one page size worth of fetched data into an internal buffer, which can then be accessed using
-     * {@link TransferObject#getBuffer()}. The target page size is passed in the constructor.
-     * For dictionary encoded string transfers, this method also updates the dictionary with the strings encountered.
+     * {@link TransferObject#getBuffer()}. The target page size is passed in the constructor. For dictionary encoded
+     * string transfers, this method also updates the dictionary with the strings encountered.
      *
-     * @return The number of fetched data entries copied into the buffer. This can be different from the total
-     * number of entries fetched in case of variable-width types (e.g. strings) when used with additional
-     * page size limits while copying.
+     * @return The number of fetched data entries copied into the buffer. This can be different from the total number of
+     *         entries fetched in case of variable-width types (e.g. strings) when used with additional page size limits
+     *         while copying.
      */
     int transferOnePageToBuffer();
 

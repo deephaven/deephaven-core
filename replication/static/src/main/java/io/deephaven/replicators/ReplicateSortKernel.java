@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.replicators;
 
 import io.deephaven.replication.ReplicationUtils;
@@ -15,12 +15,16 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Matcher;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 import static io.deephaven.replication.ReplicationUtils.*;
 
 public class ReplicateSortKernel {
+    private static final String TASK = "replicateSortKernel";
+
     public static void main(String[] args) throws IOException {
         replicateLongToInt();
         replicateLongToByte();
@@ -36,29 +40,29 @@ public class ReplicateSortKernel {
         doCharMegaMergeReplication(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/megamerge/CharLongMegaMergeKernel.java");
 
-        charToAllButBoolean(
+        charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/findruns/CharFindRunsKernel.java");
-        final String objectRunPath = charToObject(
+        final String objectRunPath = charToObject(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/findruns/CharFindRunsKernel.java");
         fixupObjectRuns(objectRunPath);
 
-        charToAllButBoolean(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/partition/CharPartitionKernel.java");
-        final String objectPartitionPath = charToObject(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/partition/CharPartitionKernel.java");
+        charToAllButBoolean(TASK,
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/sort/partition/CharPartitionKernel.java");
+        final String objectPartitionPath = charToObject(TASK,
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/sort/partition/CharPartitionKernel.java");
         fixupObjectPartition(objectPartitionPath);
 
-        charToAllButBoolean(
+        charToAllButBoolean(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/permute/CharPermuteKernel.java");
-        fixupObjectPermute(charToObject(
+        fixupObjectPermute(charToObject(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/permute/CharPermuteKernel.java"));
     }
 
     private static void doCharReplication(@NotNull final String sourceClassJavaPath) throws IOException {
         // replicate char to each of the other types
         final List<String> timsortPaths =
-                charToAllButBoolean(sourceClassJavaPath);
-        final String objectSortPath = charToObject(sourceClassJavaPath);
+                charToAllButBoolean(TASK, sourceClassJavaPath);
+        final String objectSortPath = charToObject(TASK, sourceClassJavaPath);
         timsortPaths.add(sourceClassJavaPath);
         timsortPaths.add(objectSortPath);
 
@@ -105,8 +109,8 @@ public class ReplicateSortKernel {
 
     private static void doCharMegaMergeReplication(String sourceClassJavaPath) throws IOException {
         // replicate char to each of the other types
-        final List<String> megaMergePaths = charToAllButBoolean(sourceClassJavaPath);
-        final String objectSortPath = charToObject(sourceClassJavaPath);
+        final List<String> megaMergePaths = charToAllButBoolean(TASK, sourceClassJavaPath);
+        final String objectSortPath = charToObject(TASK, sourceClassJavaPath);
         megaMergePaths.add(sourceClassJavaPath);
         megaMergePaths.add(objectSortPath);
 
@@ -124,21 +128,22 @@ public class ReplicateSortKernel {
     }
 
     private static void replicateLongToInt() throws IOException {
-        final String intSortKernelPath = longToInt(
+        final String intSortKernelPath = longToInt(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/LongSortKernel.java");
         fixupIntSortKernel(intSortKernelPath);
-        longToInt(
+        longToInt(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharLongTimsortKernel.java");
-        longToInt(
+        longToInt(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/radix/BooleanLongRadixSortKernel.java");
     }
 
     private static void replicateLongToByte() throws IOException {
-        final String byteSortKernelPath = longToByte(
+        final String byteSortKernelPath = longToByte(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/LongSortKernel.java");
         fixupByteSortKernel(byteSortKernelPath);
-        longToByte("engine/table/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharLongTimsortKernel.java");
-        longToByte(
+        longToByte(TASK,
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharLongTimsortKernel.java");
+        longToByte(TASK,
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/radix/BooleanLongRadixSortKernel.java");
     }
 
@@ -171,15 +176,21 @@ public class ReplicateSortKernel {
     private static void invertSense(String path, String descendingPath) throws IOException {
         final File file = new File(path);
 
-        final List<String> lines = ascendingNameToDescendingName(FileUtils.readLines(file, Charset.defaultCharset()));
+        final List<String> lines =
+                ascendingNameToDescendingName(path, FileUtils.readLines(file, Charset.defaultCharset()));
 
         FileUtils.writeLines(new File(descendingPath), invertComparisons(lines));
     }
 
     @NotNull
-    private static List<String> ascendingNameToDescendingName(List<String> lines) {
-        // we should skip the replicate header
-        return globalReplacements(3, lines, "TimsortKernel", "TimsortDescendingKernel", "\\BLongMegaMergeKernel",
+    private static List<String> ascendingNameToDescendingName(String sourceFile, List<String> lines) {
+
+        // Skip, re-add file header
+        lines = Stream.concat(
+                ReplicationUtils.fileHeaderStream(TASK, ReplicationUtils.className(sourceFile)),
+                lines.stream().dropWhile(line -> line.startsWith("//"))).collect(Collectors.toList());
+
+        return globalReplacements(lines, "TimsortKernel", "TimsortDescendingKernel", "\\BLongMegaMergeKernel",
                 "LongMegaMergeDescendingKernel");
     }
 
@@ -188,7 +199,7 @@ public class ReplicateSortKernel {
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
 
         if (!ascending) {
-            lines = ascendingNameToDescendingName(lines);
+            lines = ascendingNameToDescendingName(objectPath, lines);
         }
 
         lines = fixupChunkAttributes(lines);
@@ -201,7 +212,7 @@ public class ReplicateSortKernel {
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
 
         if (!ascending) {
-            lines = ascendingNameToDescendingName(lines);
+            lines = ascendingNameToDescendingName(objectPath, lines);
             lines = invertComparisons(lines);
         }
 
@@ -338,11 +349,7 @@ public class ReplicateSortKernel {
             }
         }
 
-        lines.addAll(insertionPoint, Arrays.asList(
-                "/* ---------------------------------------------------------------------------------------------------------------------",
-                " * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit " + oldName
-                        + " and regenerate",
-                " * ------------------------------------------------------------------------------------------------------------------ */"));
+        lines.add(insertionPoint, ReplicationUtils.fileHeaderString(TASK, oldName));
 
         FileUtils.writeLines(new File(newPath), lines);
     }
@@ -360,49 +367,47 @@ public class ReplicateSortKernel {
     }
 
     public static List<String> fixupObjectComparisons(List<String> lines, boolean ascending) {
-        final List<String> ascendingComparision = Arrays.asList(
+        final List<String> ascendingComparison = Arrays.asList(
                 "    // ascending comparison",
                 "    private static int doComparison(Object lhs, Object rhs) {",
-                "       if (lhs == rhs) {",
-                "            return 0;",
-                "        }",
-                "        if (lhs == null) {",
-                "            return -1;",
-                "        }",
-                "        if (rhs == null) {",
-                "            return 1;",
-                "        }",
-                "        //noinspection unchecked,rawtypes",
-                "        return ((Comparable)lhs).compareTo(rhs);",
-                "    }",
-                "");
-        final List<String> descendingComparision = Arrays.asList(
+                "        return ObjectComparisons.compare(lhs, rhs);",
+                "    }");
+        final List<String> descendingComparison = Arrays.asList(
                 "    // descending comparison",
                 "    private static int doComparison(Object lhs, Object rhs) {",
-                "        if (lhs == rhs) {",
-                "            return 0;",
-                "        }",
-                "        if (lhs == null) {",
-                "            return 1;",
-                "        }",
-                "        if (rhs == null) {",
-                "            return -1;",
-                "        }",
-                "        //noinspection unchecked,rawtypes",
-                "        return ((Comparable)rhs).compareTo(lhs);",
+                "        return ObjectComparisons.compare(rhs, lhs);",
                 "    }");
-
-        return addImport(simpleFixup(
-                replaceRegion(lines, "comparison functions", ascending ? ascendingComparision : descendingComparision),
-                "equality function", "lhs == rhs", "Objects.equals(lhs, rhs)"), "import java.util.Objects;");
+        lines = replaceRegion(lines, "comparison functions", ascending ? ascendingComparison : descendingComparison);
+        lines = simpleFixup(
+                lines,
+                "equality function", "lhs == rhs", "Objects.equals(lhs, rhs)");
+        return addImport(lines, "import java.util.Objects;", "import io.deephaven.util.compare.ObjectComparisons;");
     }
 
     public static List<String> invertComparisons(List<String> lines) {
         final List<String> descendingComment = Collections.singletonList(
                 "    // note that this is a descending kernel, thus the comparisons here are backwards (e.g., the lt function is in terms of the sort direction, so is implemented by gt)");
-        return insertRegion(
-                applyFixup(lines, "comparison functions", "(\\s+return )(.*compare.*;)",
-                        m -> Collections.singletonList(m.group(1) + "-1 * " + m.group(2))),
-                "comparison functions", descendingComment);
+        lines = applyFixup(lines, "comparison functions", "(\\s+return )(.*compare.*;)",
+                m -> Collections.singletonList(m.group(1) + "-1 * " + m.group(2)));
+        lines = applyFixup(lines, "comparison functions", "(\\s+return .*)(\\.gt\\(|\\.lt\\(|\\.geq\\(|\\.leq\\()(.*;)",
+                m -> Collections.singletonList(invertBooleanCompare(m)));
+        return insertRegion(lines, "comparison functions", descendingComment);
+    }
+
+    private static String invertBooleanCompare(Matcher matcher) {
+        // Note: we can't just return the boolean inverse; a compare inverse must handle three states, and those
+        // semantics must be preserved even though it's a boolean function.
+        switch (matcher.group(2)) {
+            case ".gt(":
+                return matcher.group(1) + ".lt(" + matcher.group(3);
+            case ".lt(":
+                return matcher.group(1) + ".gt(" + matcher.group(3);
+            case ".geq(":
+                return matcher.group(1) + ".leq(" + matcher.group(3);
+            case ".leq(":
+                return matcher.group(1) + ".geq(" + matcher.group(3);
+            default:
+                throw new IllegalStateException("Unexpected match: " + matcher.group(2));
+        }
     }
 }

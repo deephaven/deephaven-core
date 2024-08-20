@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -32,13 +32,13 @@ public abstract class AbstractRangeFilter extends WhereFilterImpl {
 
     /**
      * The chunkFilter can be applied to the columns native type.
-     *
+     * <p>
      * In practice, this is for non-reinterpretable DateTimes.
      */
     ChunkFilter chunkFilter;
     /**
-     * If the column can be be reinterpreted to a long, then we should prefer to use the longFilter instead.
-     *
+     * If the column can be reinterpreted to a long, then we should prefer to use the longFilter instead.
+     * <p>
      * In practice, this is used for reinterpretable DateTimes.
      */
     ChunkFilter longFilter;

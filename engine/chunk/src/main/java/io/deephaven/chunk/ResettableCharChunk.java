@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.chunk;
 
 import io.deephaven.chunk.attributes.Any;
@@ -47,7 +47,8 @@ public class ResettableCharChunk<ATTR_UPPER extends Any>
     }
 
     @Override
-    public <ATTR extends ATTR_UPPER> CharChunk<ATTR> resetFromChunk(Chunk<? extends ATTR> other, int offset, int capacity) {
+    public <ATTR extends ATTR_UPPER> CharChunk<ATTR> resetFromChunk(Chunk<? extends ATTR> other, int offset,
+            int capacity) {
         return resetFromTypedChunk(other.asCharChunk(), offset, capacity);
     }
 
@@ -68,7 +69,8 @@ public class ResettableCharChunk<ATTR_UPPER extends Any>
         return resetFromArray(ArrayTypeUtils.EMPTY_CHAR_ARRAY, 0, 0);
     }
 
-    public <ATTR extends ATTR_UPPER> CharChunk<ATTR> resetFromTypedChunk(CharChunk<? extends ATTR> other, int offset, int capacity) {
+    public <ATTR extends ATTR_UPPER> CharChunk<ATTR> resetFromTypedChunk(CharChunk<? extends ATTR> other, int offset,
+            int capacity) {
         ChunkHelpers.checkSliceArgs(other.size, offset, capacity);
         return resetFromTypedArray(other.data, other.offset + offset, capacity);
     }
@@ -83,6 +85,5 @@ public class ResettableCharChunk<ATTR_UPPER extends Any>
     }
 
     @Override
-    public void close() {
-    }
+    public void close() {}
 }

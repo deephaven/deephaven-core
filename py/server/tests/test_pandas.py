@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+# Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 #
 
 import unittest
@@ -235,7 +235,7 @@ class PandasTestCase(BaseTestCase):
                 ),
                 'pa_byte': pandas.Series([1, None], dtype='int8[pyarrow]'),
                 'py_string': pandas.Series(['text1', None], dtype=pd.StringDtype()),
-                'pa_byte1': pandas.Series(np.array([1, 255], dtype=np.int8)),
+                'pa_byte1': pandas.Series(np.array([1, 127], dtype=np.int8)),
             })
             dh_table = to_table(df)
             self.assertEqual(dh_table.to_string().count('null'), 5)

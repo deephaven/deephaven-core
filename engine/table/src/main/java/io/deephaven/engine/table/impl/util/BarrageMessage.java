@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.chunk.Chunk;
@@ -11,8 +11,9 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.util.SafeCloseable;
 
-import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 /**
@@ -31,14 +32,14 @@ public class BarrageMessage implements SafeCloseable {
         public RowSet rowsModified;
         public Class<?> type;
         public Class<?> componentType;
-        public ArrayList<Chunk<Values>> data;
+        public List<Chunk<Values>> data;
         public ChunkType chunkType;
     }
 
     public static class AddColumnData {
         public Class<?> type;
         public Class<?> componentType;
-        public ArrayList<Chunk<Values>> data;
+        public List<Chunk<Values>> data;
         public ChunkType chunkType;
     }
 
@@ -94,34 +95,30 @@ public class BarrageMessage implements SafeCloseable {
             rowsRemoved.close();
         }
         if (addColumnData != null) {
-            for (final BarrageMessage.AddColumnData acd : addColumnData) {
-                if (acd == null) {
-                    continue;
+            for (final AddColumnData acd : addColumnData) {
+                if (acd != null) {
+                    closeChunkData(acd.data);
                 }
-
-                for (Chunk<Values> chunk : acd.data) {
-                    if (chunk instanceof PoolableChunk) {
-                        ((PoolableChunk) chunk).close();
-                    }
-                }
-
-                acd.data.clear();
             }
         }
         if (modColumnData != null) {
             for (final ModColumnData mcd : modColumnData) {
-                if (mcd == null) {
-                    continue;
+                if (mcd != null) {
+                    closeChunkData(mcd.data);
                 }
-
-                for (Chunk<Values> chunk : mcd.data) {
-                    if (chunk instanceof PoolableChunk) {
-                        ((PoolableChunk) chunk).close();
-                    }
-                }
-
-                mcd.data.clear();
             }
         }
+    }
+
+    private static void closeChunkData(final Collection<Chunk<Values>> data) {
+        if (data.isEmpty()) {
+            return;
+        }
+        for (final Chunk<Values> chunk : data) {
+            if (chunk instanceof PoolableChunk) {
+                ((PoolableChunk) chunk).close();
+            }
+        }
+        data.clear();
     }
 }

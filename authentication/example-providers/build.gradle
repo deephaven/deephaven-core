@@ -4,10 +4,6 @@ plugins {
 
 project.subprojects { Project p ->
     p.plugins.apply('java-library')
-
-    // Combined, these next two lines will activate the JAVA_PUBLIC_SHADOW to all
-    // sub-projects, and in turn, apply the shadow plugin
-    p.setProperty('io.deephaven.project.ProjectType', 'JAVA_PUBLIC_SHADOW')
     p.plugins.apply('io.deephaven.project.register')
 
     p.dependencies {
@@ -21,5 +17,5 @@ project.subprojects { Project p ->
     p.tasks.findByName('assemble').dependsOn(p.tasks.named('shadowJar'))
 
     // Let projects be named consistently
-    p.archivesBaseName = "deephaven-${p.name}-authentication-provider"
+    p.base.archivesName = "deephaven-${p.name}-authentication-provider"
 }

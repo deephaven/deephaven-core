@@ -1,13 +1,12 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.*;
@@ -404,7 +403,7 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
         initializeNewRowSetPreviousValues(resultTable.getRowSet());
         return registeredWithHelper
                 ? new InputToResultModifiedColumnSetFactory(resultTable,
-                        resultAggregatedColumns.keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY))
+                        resultAggregatedColumns.keySet().toArray(String[]::new))
                 : null;
     }
 
@@ -431,9 +430,13 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
                 @NotNull final QueryTable resultTable,
                 @NotNull final String[] resultAggregatedColumnNames) {
             updateModifiedColumnSet = new ModifiedColumnSet(resultTable.getModifiedColumnSetForUpdates());
-            allResultColumns = resultTable.newModifiedColumnSet(resultAggregatedColumnNames);
+
             if (exposeRowSetsAs != null) {
-                allResultColumns.setAll(exposeRowSetsAs);
+                // resultAggregatedColumnNames may be empty (e.g. when the row set is the only result column)
+                allResultColumns = resultTable.newModifiedColumnSet(exposeRowSetsAs);
+                allResultColumns.setAll(resultAggregatedColumnNames);
+            } else {
+                allResultColumns = resultTable.newModifiedColumnSet(resultAggregatedColumnNames);
             }
             aggregatedColumnsTransformer = inputTable.newModifiedColumnSetTransformer(
                     inputColumnNames,

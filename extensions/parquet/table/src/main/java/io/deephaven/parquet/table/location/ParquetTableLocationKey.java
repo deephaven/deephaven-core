@@ -1,27 +1,30 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.table.location;
 
 import io.deephaven.engine.table.impl.locations.local.URITableLocationKey;
 import io.deephaven.parquet.table.ParquetInstructions;
-import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
-import io.deephaven.parquet.table.ParquetTableWriter;
 import io.deephaven.parquet.base.ParquetFileReader;
+import io.deephaven.util.channel.SeekableChannelsProvider;
+import io.deephaven.util.channel.SeekableChannelsProviderLoader;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.parquet.format.converter.ParquetMetadataConverter;
 import org.apache.parquet.format.RowGroup;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
+
+import static io.deephaven.parquet.base.ParquetUtils.PARQUET_FILE_EXTENSION;
+import static io.deephaven.base.FileUtils.convertToURI;
 
 /**
  * {@link TableLocationKey} implementation for use with data stored in the parquet format.
@@ -33,27 +36,13 @@ public class ParquetTableLocationKey extends URITableLocationKey {
     private ParquetFileReader fileReader;
     private ParquetMetadata metadata;
     private int[] rowGroupIndices;
-    private final ParquetInstructions readInstructions;
-
-    /**
-     * Construct a new ParquetTableLocationKey for the supplied {@code file} and {@code partitions}.
-     *
-     * @param file The parquet file that backs the keyed location. Will be adjusted to an absolute path.
-     * @param order Explicit ordering index, taking precedence over other fields
-     * @param partitions The table partitions enclosing the table location keyed by {@code this}. Note that if this
-     *        parameter is {@code null}, the location will be a member of no partitions. An ordered copy of the map will
-     *        be made, so the calling code is free to mutate the map after this call
-     * @param readInstructions the instructions for customizations while reading
-     */
-    public ParquetTableLocationKey(@NotNull final File file, final int order,
-            @Nullable final Map<String, Comparable<?>> partitions,
-            @NotNull final ParquetInstructions readInstructions) {
-        super(validateParquetFile(file), order, partitions);
-        this.readInstructions = readInstructions;
-    }
+    private SeekableChannelsProvider channelsProvider;
 
     /**
      * Construct a new ParquetTableLocationKey for the supplied {@code parquetFileUri} and {@code partitions}.
+     * <p>
+     * This constructor will create a new {@link SeekableChannelsProvider} for reading the file. If you have multiple
+     * location keys that should share a provider, use the other constructor and set the provider manually.
      *
      * @param parquetFileUri The parquet file that backs the keyed location. Will be adjusted to an absolute path.
      * @param order Explicit ordering index, taking precedence over other fields
@@ -65,17 +54,34 @@ public class ParquetTableLocationKey extends URITableLocationKey {
     public ParquetTableLocationKey(@NotNull final URI parquetFileUri, final int order,
             @Nullable final Map<String, Comparable<?>> partitions,
             @NotNull final ParquetInstructions readInstructions) {
-        super(validateParquetFile(parquetFileUri), order, partitions);
-        this.readInstructions = readInstructions;
+        this(parquetFileUri, order, partitions, readInstructions,
+                SeekableChannelsProviderLoader.getInstance().fromServiceLoader(parquetFileUri,
+                        readInstructions.getSpecialInstructions()));
     }
 
-    private static URI validateParquetFile(@NotNull final File file) {
-        return validateParquetFile(file.toURI());
+    /**
+     * Construct a new ParquetTableLocationKey for the supplied {@code parquetFileUri} and {@code partitions}.
+     *
+     * @param parquetFileUri The parquet file that backs the keyed location. Will be adjusted to an absolute path.
+     * @param order Explicit ordering index, taking precedence over other fields
+     * @param partitions The table partitions enclosing the table location keyed by {@code this}. Note that if this
+     *        parameter is {@code null}, the location will be a member of no partitions. An ordered copy of the map will
+     *        be made, so the calling code is free to mutate the map after this call
+     * @param readInstructions the instructions for customizations while reading
+     * @param channelsProvider the provider for reading the file
+     */
+    public ParquetTableLocationKey(@NotNull final URI parquetFileUri, final int order,
+            @Nullable final Map<String, Comparable<?>> partitions,
+            @NotNull final ParquetInstructions readInstructions,
+            @NotNull final SeekableChannelsProvider channelsProvider) {
+        super(validateParquetFile(parquetFileUri), order, partitions);
+        this.channelsProvider = channelsProvider;
     }
 
     private static URI validateParquetFile(@NotNull final URI parquetFileUri) {
-        if (!parquetFileUri.getRawPath().endsWith(ParquetTableWriter.PARQUET_FILE_EXTENSION)) {
-            throw new IllegalArgumentException("Parquet file must end in " + ParquetTableWriter.PARQUET_FILE_EXTENSION);
+        if (!parquetFileUri.getRawPath().endsWith(PARQUET_FILE_EXTENSION)) {
+            throw new IllegalArgumentException("Parquet file must end in " + PARQUET_FILE_EXTENSION + ", found: "
+                    + parquetFileUri.getRawPath());
         }
         return parquetFileUri;
     }
@@ -83,36 +89,6 @@ public class ParquetTableLocationKey extends URITableLocationKey {
     @Override
     public String getImplementationName() {
         return IMPLEMENTATION_NAME;
-    }
-
-    /**
-     * Returns {@code true} if a previous {@link ParquetFileReader} has been created, or if one was successfully created
-     * on-demand.
-     *
-     * <p>
-     * When {@code false}, this may mean that the file:
-     * <ol>
-     * <li>does not exist, or is otherwise inaccessible</li>
-     * <li>is in the process of being written, and is not yet a valid parquet file</li>
-     * <li>is _not_ a parquet file</li>
-     * <li>is a corrupt parquet file</li>
-     * </ol>
-     *
-     * Callers wishing to handle these cases more explicit may call
-     * {@link ParquetTools#getParquetFileReaderChecked(URI, ParquetInstructions)}.
-     *
-     * @return true if the file reader exists or was successfully created
-     */
-    public synchronized boolean verifyFileReader() {
-        if (fileReader != null) {
-            return true;
-        }
-        try {
-            fileReader = ParquetTools.getParquetFileReaderChecked(uri, readInstructions);
-        } catch (IOException e) {
-            return false;
-        }
-        return true;
     }
 
     /**
@@ -125,7 +101,7 @@ public class ParquetTableLocationKey extends URITableLocationKey {
         if (fileReader != null) {
             return fileReader;
         }
-        return fileReader = ParquetTools.getParquetFileReader(uri, readInstructions);
+        return fileReader = ParquetFileReader.create(uri, channelsProvider);
     }
 
     /**
@@ -188,8 +164,9 @@ public class ParquetTableLocationKey extends URITableLocationKey {
             // While it seems that row group *could* have column chunks splayed out into multiple files,
             // we're not expecting that in this code path. To support it, discovery tools should figure out
             // the row groups for a partition themselves and call setRowGroupReaders.
-            final String filePath = rowGroups.get(rgi).getColumns().get(0).getFile_path();
-            return filePath == null || new File(filePath).getAbsoluteFile().toURI().equals(uri);
+            final String filePath =
+                    FilenameUtils.separatorsToSystem(rowGroups.get(rgi).getColumns().get(0).getFile_path());
+            return filePath == null || convertToURI(filePath, false).equals(uri);
         }).toArray();
     }
 

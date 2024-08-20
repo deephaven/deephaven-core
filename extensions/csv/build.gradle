@@ -7,29 +7,29 @@ description 'CSV: Support to read and write engine tables from/to CSV'
 
 dependencies {
     api project(':engine-api')
-    api 'io.deephaven:deephaven-csv:0.12.0'
-    runtimeOnly 'io.deephaven:deephaven-csv-fast-double-parser:0.12.0'
+    api libs.deephaven.csv
+    runtimeOnly libs.deephaven.csv.fast.double.parser
 
     implementation project(':engine-table')
     implementation project(':engine-base')
-    implementation depTrove3
+    implementation libs.trove
 
-    Classpaths.inheritImmutables(project)
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables.value
 
-    Classpaths.inheritJUnitPlatform(project)
-    Classpaths.inheritAssertJ(project)
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.assertj
 
-    testImplementation depCommonsCompress
-    testImplementation depCommonsIo
-    testImplementation project(':engine-test-utils'),
-            TestTools.projectDependency(project, 'engine-base')
+    testImplementation libs.commons.compress
+    testImplementation libs.commons.io
+    testImplementation project(':engine-test-utils')
 
-    Classpaths.inheritJUnitClassic(project, 'testImplementation')
+    testImplementation libs.junit4
 
     testRuntimeOnly project(':log-to-slf4j'),
             project(path: ':configs'),
             project(path: ':test-configs')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly libs.slf4j.simple
 }
 
 TestTools.addEngineOutOfBandTest(project)

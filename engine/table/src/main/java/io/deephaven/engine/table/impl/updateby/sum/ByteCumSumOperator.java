@@ -1,8 +1,10 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharCumSumOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharCumSumOperator and run "./gradlew replicateUpdateBy" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.updateby.sum;
 
 import io.deephaven.base.verify.Assert;
@@ -41,7 +43,7 @@ public class ByteCumSumOperator extends BaseLongUpdateByOperator {
             // read the value from the values chunk
             final byte currentVal = byteValueChunk.get(pos);
 
-            if(curVal == NULL_LONG) {
+            if (curVal == NULL_LONG) {
                 curVal = currentVal == nullValue ? NULL_LONG : currentVal;
             } else if (currentVal != nullValue) {
                 curVal += currentVal;
@@ -50,11 +52,11 @@ public class ByteCumSumOperator extends BaseLongUpdateByOperator {
     }
 
     public ByteCumSumOperator(@NotNull final MatchPair pair
-                              // region extra-constructor-args
+    // region extra-constructor-args
             ,final byte nullValue
-                              // endregion extra-constructor-args
+    // endregion extra-constructor-args
     ) {
-        super(pair, new String[] { pair.rightColumn });
+        super(pair, new String[] {pair.rightColumn});
         // region constructor
         this.nullValue = nullValue;
         // endregion constructor
@@ -63,9 +65,9 @@ public class ByteCumSumOperator extends BaseLongUpdateByOperator {
     @Override
     public UpdateByOperator copy() {
         return new ByteCumSumOperator(pair
-              // region extra-copy-args
+        // region extra-copy-args
                 , nullValue
-              // endregion extra-copy-args
+        // endregion extra-copy-args
         );
     }
 

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api.widget;
 
 import com.vertispan.tsdefs.annotations.TsName;
@@ -145,7 +145,7 @@ public class JsWidget extends HasEventHandling implements ServerObject, WidgetMe
             messageStream.onData(res -> {
 
                 JsArray<JsWidgetExportedObject> responseObjects = res.getData().getExportedReferencesList()
-                        .map((p0, p1, p2) -> new JsWidgetExportedObject(connection, p0));
+                        .map((p0, p1) -> new JsWidgetExportedObject(connection, p0));
                 if (!hasFetched) {
                     response = res;
                     exportedObjects = responseObjects;

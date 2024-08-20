@@ -1,5 +1,9 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
@@ -7,7 +11,6 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.table.impl.locations.InvalidatedRegionException;
-import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocationRemovedException;
 import io.deephaven.engine.testutil.locations.DependentRegistrar;
 import io.deephaven.engine.testutil.locations.TableBackedTableLocationKey;
@@ -201,7 +204,7 @@ public class SourcePartitionedTableTest extends RefreshingTableTestCase {
             updateGraph.markSourcesRefreshedForUnitTests();
             registrar.run();
         }, false), errors -> errors.size() == 1 &&
-                FindExceptionCause.isOrCausedBy(errors.get(0), TableDataException.class).isPresent());
+                FindExceptionCause.isOrCausedBy(errors.get(0), AssertionFailure.class).isPresent());
         getUpdateErrors().clear();
 
         // Then delete it for real

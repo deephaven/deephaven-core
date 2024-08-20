@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.chunk.attributes.Values;
@@ -8,12 +8,9 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
-import io.deephaven.engine.table.impl.util.ShiftData;
-
-import static io.deephaven.util.QueryConstants.NULL_BYTE;
 
 public abstract class SingleValueColumnSource<T> extends AbstractColumnSource<T>
-        implements WritableColumnSource<T>, ChunkSink<Values>, ShiftData.ShiftCallback, InMemoryColumnSource,
+        implements WritableColumnSource<T>, ChunkSink<Values>, InMemoryColumnSource,
         RowKeyAgnosticChunkSource<Values> {
 
     protected transient long changeTime;
@@ -27,9 +24,6 @@ public abstract class SingleValueColumnSource<T> extends AbstractColumnSource<T>
     public final void startTrackingPrevValues() {
         isTrackingPrevValues = true;
     }
-
-    @Override
-    public void shift(long start, long end, long offset) {}
 
     public static <T> SingleValueColumnSource<T> getSingleValueColumnSource(Class<T> type) {
         SingleValueColumnSource<?> result;

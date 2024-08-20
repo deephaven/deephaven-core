@@ -1,12 +1,11 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.api.util;
 
 import javax.lang.model.SourceVersion;
 import java.util.*;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -96,9 +95,6 @@ public class NameValidator {
     private static final Set<String> QUERY_LANG_RESERVED_VARIABLE_NAMES =
             Stream.of("in", "not", "i", "ii", "k").collect(
                     Collectors.collectingAndThen(Collectors.toSet(), Collections::unmodifiableSet));
-
-    public static final Predicate<Map.Entry<String, Object>> VALID_QUERY_PARAMETER_MAP_ENTRY_PREDICATE =
-            e -> isValidQueryParameterName(e.getKey());
 
     public static String validateTableName(String name) {
         return Type.TABLE.validate(name);

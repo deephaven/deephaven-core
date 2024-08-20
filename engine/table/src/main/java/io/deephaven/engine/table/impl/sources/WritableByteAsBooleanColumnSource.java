@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.chunk.*;
@@ -16,7 +16,8 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Reinterpret result {@link ColumnSource} implementations that translates {@link byte} to {@code Boolean} values.
  */
-public class WritableByteAsBooleanColumnSource extends ByteAsBooleanColumnSource implements MutableColumnSourceGetDefaults.ForBoolean, WritableColumnSource<Boolean> {
+public class WritableByteAsBooleanColumnSource extends ByteAsBooleanColumnSource
+        implements MutableColumnSourceGetDefaults.ForBoolean, WritableColumnSource<Boolean> {
 
     private final WritableColumnSource<Byte> alternateColumnSource;
 
@@ -74,16 +75,20 @@ public class WritableByteAsBooleanColumnSource extends ByteAsBooleanColumnSource
     }
 
     @Override
-    public void fillFromChunk(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull RowSequence rowSequence) {
-        final ConvertingFillFromContext convertingFillFromContext = (ConvertingFillFromContext)context;
+    public void fillFromChunk(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
+            @NotNull RowSequence rowSequence) {
+        final ConvertingFillFromContext convertingFillFromContext = (ConvertingFillFromContext) context;
         convertingFillFromContext.convert(src.asObjectChunk());
-        alternateColumnSource.fillFromChunk(convertingFillFromContext.alternateFillFromContext, convertingFillFromContext.byteChunk, rowSequence);
+        alternateColumnSource.fillFromChunk(convertingFillFromContext.alternateFillFromContext,
+                convertingFillFromContext.byteChunk, rowSequence);
     }
 
     @Override
-    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<RowKeys> keys) {
-        final ConvertingFillFromContext convertingFillFromContext = (ConvertingFillFromContext)context;
+    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
+            @NotNull LongChunk<RowKeys> keys) {
+        final ConvertingFillFromContext convertingFillFromContext = (ConvertingFillFromContext) context;
         convertingFillFromContext.convert(src.asObjectChunk());
-        alternateColumnSource.fillFromChunkUnordered(convertingFillFromContext.alternateFillFromContext, convertingFillFromContext.byteChunk, keys);
+        alternateColumnSource.fillFromChunkUnordered(convertingFillFromContext.alternateFillFromContext,
+                convertingFillFromContext.byteChunk, keys);
     }
 }

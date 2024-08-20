@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api.storage;
 
 import elemental2.core.JsArray;
@@ -61,7 +64,8 @@ public class JsStorageService {
         req.setFilterGlob(glob);
         return Callbacks.<ListItemsResponse, Object>grpcUnaryPromise(c -> client().listItems(req, metadata(), c::apply))
                 .then(response -> Promise
-                        .resolve(response.getItemsList().map((item, i, arr) -> JsItemDetails.fromProto(item))));
+                        .resolve(response.getItemsList()
+                                .map((item, i) -> JsItemDetails.fromProto(response.getCanonicalPath(), item))));
     }
 
     /**

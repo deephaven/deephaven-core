@@ -1,13 +1,15 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.extensions.barrage.util;
 
+import com.google.flatbuffers.Constants;
 import com.google.flatbuffers.FlatBufferBuilder;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.base.ArrayUtil;
 import io.deephaven.base.ClassUtil;
 import io.deephaven.base.verify.Assert;
@@ -28,7 +30,6 @@ import io.deephaven.engine.updategraph.impl.PeriodicUpdateGraph;
 import io.deephaven.extensions.barrage.BarragePerformanceLog;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.BarrageStreamGenerator;
-import io.deephaven.extensions.barrage.BarrageStreamGeneratorImpl;
 import io.deephaven.extensions.barrage.chunk.vector.VectorExpansionKernel;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -44,6 +45,7 @@ import io.deephaven.util.type.TypeUtils;
 import io.deephaven.vector.Vector;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flatbuf.KeyValue;
+import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.util.Collections2;
 import org.apache.arrow.vector.types.TimeUnit;
 import org.apache.arrow.vector.types.Types;
@@ -56,6 +58,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Array;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -64,6 +68,8 @@ import java.time.LocalTime;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.function.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -87,11 +93,6 @@ public class BarrageUtil {
             Configuration.getInstance().getLongForClassWithDefault(BarrageUtil.class,
                     "maxSnapshotCellCount", Long.MAX_VALUE);
 
-    // year is 4 bytes, month is 1 byte, day is 1 byte
-    public static final ArrowType.FixedSizeBinary LOCAL_DATE_TYPE = new ArrowType.FixedSizeBinary(6);
-    // hour, minute, second are each one byte, nano is 4 bytes
-    public static final ArrowType.FixedSizeBinary LOCAL_TIME_TYPE = new ArrowType.FixedSizeBinary(7);
-
     /**
      * Note that arrow's wire format states that Timestamps without timezones are not UTC -- that they are no timezone
      * at all. It's very important that we mark these times as UTC.
@@ -102,13 +103,78 @@ public class BarrageUtil {
     /** The name of the attribute that indicates that a table is flat. */
     public static final String TABLE_ATTRIBUTE_IS_FLAT = "IsFlat";
 
-    private static final int ATTR_STRING_LEN_CUTOFF = 1024;
-
     private static final String ATTR_DH_PREFIX = "deephaven:";
     private static final String ATTR_ATTR_TAG = "attribute";
     private static final String ATTR_ATTR_TYPE_TAG = "attribute_type";
     private static final String ATTR_TYPE_TAG = "type";
     private static final String ATTR_COMPONENT_TYPE_TAG = "componentType";
+
+    private static final boolean ENFORCE_FLATBUFFER_VERSION_CHECK =
+            Configuration.getInstance().getBooleanWithDefault("barrage.version.check", true);
+
+    static {
+        verifyFlatbufferCompatibility(Message.class);
+        verifyFlatbufferCompatibility(BarrageMessageWrapper.class);
+    }
+
+    private static void verifyFlatbufferCompatibility(Class<?> clazz) {
+        try {
+            clazz.getMethod("ValidateVersion").invoke(null);
+        } catch (InvocationTargetException e) {
+            Throwable targetException = e.getTargetException();
+            if (targetException instanceof NoSuchMethodError) {
+                // Caused when the reflective method is found and cannot be used because the flatbuffer version doesn't
+                // match
+                String requiredVersion = extractFlatBufferVersion(targetException.getMessage())
+                        .orElseThrow(() -> new UncheckedDeephavenException(
+                                "FlatBuffers version mismatch, can't read expected version", targetException));
+                Optional<String> foundVersion = Arrays.stream(Constants.class.getDeclaredMethods())
+                        .map(Method::getName)
+                        .map(BarrageUtil::extractFlatBufferVersion)
+                        .filter(Optional::isPresent)
+                        .map(Optional::get)
+                        .findFirst();
+                String dependentLibrary = clazz.getPackage().getSpecificationTitle();
+                final String message;
+                if (foundVersion.isEmpty()) {
+                    message = "Library '" + dependentLibrary + "' requires FlatBuffer " + requiredVersion
+                            + ", cannot detect present version";
+                } else {
+                    message = "Library '" + dependentLibrary + "' requires FlatBuffer " + requiredVersion + ", found "
+                            + foundVersion.get();
+                }
+                if (ENFORCE_FLATBUFFER_VERSION_CHECK) {
+                    throw new UncheckedDeephavenException(message);
+                } else {
+                    log.warn().append(message).endl();
+                }
+            } else {
+                throw new UncheckedDeephavenException("Cannot validate flatbuffer compatibility, unexpected exception",
+                        targetException);
+            }
+        } catch (IllegalAccessException e) {
+            throw new UncheckedDeephavenException(
+                    "Cannot validate flatbuffer compatibility, " + clazz + "'s ValidateVersion() isn't accessible!", e);
+        } catch (NoSuchMethodException e) {
+            // Caused when the type isn't actually a flatbuffer Table (or the codegen format has changed)
+            throw new UncheckedDeephavenException(
+                    "Cannot validate flatbuffer compatibility, " + clazz + " is not a flatbuffer table!", e);
+        }
+    }
+
+    private static Optional<String> extractFlatBufferVersion(String method) {
+        Matcher matcher = Pattern.compile("FLATBUFFERS_([0-9]+)_([0-9]+)_([0-9]+)").matcher(method);
+
+        if (matcher.find()) {
+            if (Integer.valueOf(matcher.group(1)) <= 2) {
+                // semver, third decimal doesn't matter
+                return Optional.of(matcher.group(1) + "." + matcher.group(2) + ".x");
+            }
+            // "date" version, all three components should be shown
+            return Optional.of(matcher.group(1) + "." + matcher.group(2) + "." + matcher.group(3));
+        }
+        return Optional.empty();
+    }
 
     /**
      * These are the types that get special encoding but are otherwise not primitives. TODO (core#58): add custom
@@ -119,7 +185,9 @@ public class BarrageUtil {
             BigInteger.class,
             String.class,
             Instant.class,
-            Boolean.class));
+            Boolean.class,
+            LocalDate.class,
+            LocalTime.class));
 
     public static ByteString schemaBytesFromTable(@NotNull final Table table) {
         return schemaBytesFromTableDefinition(table.getDefinition(), table.getAttributes(), table.isFlat());
@@ -185,8 +253,7 @@ public class BarrageUtil {
             final Object val = entry.getValue();
             if (val instanceof Byte || val instanceof Short || val instanceof Integer ||
                     val instanceof Long || val instanceof Float || val instanceof Double ||
-                    val instanceof Character || val instanceof Boolean ||
-                    (val instanceof String && ((String) val).length() < ATTR_STRING_LEN_CUTOFF)) {
+                    val instanceof Character || val instanceof Boolean || val instanceof String) {
                 // Copy primitives as strings
                 putMetadata(metadata, ATTR_ATTR_TAG + "." + key, val.toString());
                 putMetadata(metadata, ATTR_ATTR_TYPE_TAG + "." + key, val.getClass().getCanonicalName());
@@ -314,26 +381,32 @@ public class BarrageUtil {
         metadata.put(ATTR_DH_PREFIX + key, value);
     }
 
-    private static boolean maybeConvertForTimeUnit(final TimeUnit unit, final ConvertedArrowSchema result,
-            final int i) {
+    private static boolean maybeConvertForTimeUnit(
+            final TimeUnit unit,
+            final ConvertedArrowSchema result,
+            final int columnOffset) {
         switch (unit) {
             case NANOSECOND:
                 return true;
             case MICROSECOND:
-                setConversionFactor(result, i, 1000);
+                setConversionFactor(result, columnOffset, 1000);
                 return true;
             case MILLISECOND:
-                setConversionFactor(result, i, 1000 * 1000);
+                setConversionFactor(result, columnOffset, 1000 * 1000);
                 return true;
             case SECOND:
-                setConversionFactor(result, i, 1000 * 1000 * 1000);
+                setConversionFactor(result, columnOffset, 1000 * 1000 * 1000);
                 return true;
             default:
                 return false;
         }
     }
 
-    private static Class<?> getDefaultType(final ArrowType arrowType, final ConvertedArrowSchema result, final int i) {
+    private static Class<?> getDefaultType(
+            final ArrowType arrowType,
+            final ConvertedArrowSchema result,
+            final int columnOffset,
+            final Class<?> explicitType) {
         final String exMsg = "Schema did not include `" + ATTR_DH_PREFIX + ATTR_TYPE_TAG + "` metadata for field ";
         switch (arrowType.getTypeID()) {
             case Int:
@@ -368,7 +441,7 @@ public class BarrageUtil {
             case Duration:
                 final ArrowType.Duration durationType = (ArrowType.Duration) arrowType;
                 final TimeUnit durationUnit = durationType.getUnit();
-                if (maybeConvertForTimeUnit(durationUnit, result, i)) {
+                if (maybeConvertForTimeUnit(durationUnit, result, columnOffset)) {
                     return long.class;
                 }
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
@@ -377,10 +450,12 @@ public class BarrageUtil {
                 final ArrowType.Timestamp timestampType = (ArrowType.Timestamp) arrowType;
                 final String tz = timestampType.getTimezone();
                 final TimeUnit timestampUnit = timestampType.getUnit();
-                if (tz == null || "UTC".equals(tz)) {
-                    if (maybeConvertForTimeUnit(timestampUnit, result, i)) {
-                        return Instant.class;
-                    }
+                boolean conversionSuccess = maybeConvertForTimeUnit(timestampUnit, result, columnOffset);
+                if ((tz == null || "UTC".equals(tz)) && conversionSuccess) {
+                    return Instant.class;
+                }
+                if (explicitType != null) {
+                    return explicitType;
                 }
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
                         " of timestampType(Timezone=" + tz +
@@ -400,6 +475,9 @@ public class BarrageUtil {
             case Utf8:
                 return java.lang.String.class;
             default:
+                if (explicitType != null) {
+                    return explicitType;
+                }
                 throw Exceptions.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
                         " of type " + arrowType.getTypeID().toString());
         }
@@ -434,12 +512,15 @@ public class BarrageUtil {
         }
     }
 
-    private static void setConversionFactor(final ConvertedArrowSchema result, final int i, final int factor) {
+    private static void setConversionFactor(
+            final ConvertedArrowSchema result,
+            final int columnOffset,
+            final int factor) {
         if (result.conversionFactors == null) {
             result.conversionFactors = new int[result.nCols];
             Arrays.fill(result.conversionFactors, 1);
         }
-        result.conversionFactors[i] = factor;
+        result.conversionFactors[columnOffset] = factor;
     }
 
     public static TableDefinition convertTableDefinition(final ExportedTableCreationResponse response) {
@@ -517,13 +598,14 @@ public class BarrageUtil {
                 }
             });
 
+            // this has side effects such as setting the conversion factor; must call even if dest type is well known
+            Class<?> defaultType = getDefaultType(getArrowType.apply(i), result, i, type.getValue());
+
             if (type.getValue() == null) {
-                Class<?> defaultType = getDefaultType(getArrowType.apply(i), result, i);
                 type.setValue(defaultType);
             } else if (type.getValue() == boolean.class || type.getValue() == Boolean.class) {
                 // check existing barrage clients that might be sending int8 instead of bool
                 // TODO (deephaven-core#3403) widen this check for better assurances
-                Class<?> defaultType = getDefaultType(getArrowType.apply(i), result, i);
                 Assert.eq(Boolean.class, "deephaven column type", defaultType, "arrow inferred type");
                 // force to boxed boolean to allow nullability in the column sources
                 type.setValue(Boolean.class);
@@ -600,7 +682,7 @@ public class BarrageUtil {
 
     private static boolean isTypeNativelySupported(final Class<?> typ) {
         if (typ.isPrimitive() || TypeUtils.isBoxedType(typ) || supportedTypes.contains(typ)
-                || Vector.class.isAssignableFrom(typ) || TypeUtils.isDateTime(typ)) {
+                || Vector.class.isAssignableFrom(typ) || Instant.class == typ || ZonedDateTime.class == typ) {
             return true;
         }
         if (typ.isArray()) {
@@ -657,10 +739,10 @@ public class BarrageUtil {
                     return Types.MinorType.LIST.getType();
                 }
                 if (type == LocalDate.class) {
-                    return LOCAL_DATE_TYPE;
+                    return Types.MinorType.DATEMILLI.getType();
                 }
                 if (type == LocalTime.class) {
-                    return LOCAL_TIME_TYPE;
+                    return Types.MinorType.TIMENANO.getType();
                 }
                 if (type == BigDecimal.class
                         || type == BigInteger.class) {
@@ -690,13 +772,13 @@ public class BarrageUtil {
     }
 
     public static void createAndSendStaticSnapshot(
-            BarrageStreamGenerator.Factory<BarrageStreamGeneratorImpl.View> streamGeneratorFactory,
+            BarrageStreamGenerator.Factory streamGeneratorFactory,
             BaseTable<?> table,
             BitSet columns,
             RowSet viewport,
             boolean reverseViewport,
             BarrageSnapshotOptions snapshotRequestOptions,
-            StreamObserver<BarrageStreamGeneratorImpl.View> listener,
+            StreamObserver<BarrageStreamGenerator.MessageView> listener,
             BarragePerformanceLog.SnapshotMetricsHelper metrics) {
         // start with small value and grow
         long snapshotTargetCellCount = MIN_SNAPSHOT_CELL_COUNT;
@@ -743,8 +825,7 @@ public class BarrageUtil {
                     // send out the data. Note that although a `BarrageUpdateMetaData` object will
                     // be provided with each unique snapshot, vanilla Flight clients will ignore
                     // these and see only an incoming stream of batches
-                    try (final BarrageStreamGenerator<BarrageStreamGeneratorImpl.View> bsg =
-                            streamGeneratorFactory.newGenerator(msg, metrics)) {
+                    try (final BarrageStreamGenerator bsg = streamGeneratorFactory.newGenerator(msg, metrics)) {
                         if (rsIt.hasMore()) {
                             listener.onNext(bsg.getSnapshotView(snapshotRequestOptions,
                                     snapshotViewport, false,
@@ -785,11 +866,11 @@ public class BarrageUtil {
     }
 
     public static void createAndSendSnapshot(
-            BarrageStreamGenerator.Factory<BarrageStreamGeneratorImpl.View> streamGeneratorFactory,
+            BarrageStreamGenerator.Factory streamGeneratorFactory,
             BaseTable<?> table,
             BitSet columns, RowSet viewport, boolean reverseViewport,
             BarrageSnapshotOptions snapshotRequestOptions,
-            StreamObserver<BarrageStreamGeneratorImpl.View> listener,
+            StreamObserver<BarrageStreamGenerator.MessageView> listener,
             BarragePerformanceLog.SnapshotMetricsHelper metrics) {
 
         // if the table is static and a full snapshot is requested, we can make and send multiple
@@ -816,8 +897,7 @@ public class BarrageUtil {
         msg.modColumnData = BarrageMessage.ZERO_MOD_COLUMNS; // no mod column data
 
         // translate the viewport to keyspace and make the call
-        try (final BarrageStreamGenerator<BarrageStreamGeneratorImpl.View> bsg =
-                streamGeneratorFactory.newGenerator(msg, metrics);
+        try (final BarrageStreamGenerator bsg = streamGeneratorFactory.newGenerator(msg, metrics);
                 final RowSet keySpaceViewport = viewport != null
                         ? msg.rowsAdded.subSetForPositions(viewport, reverseViewport)
                         : null) {

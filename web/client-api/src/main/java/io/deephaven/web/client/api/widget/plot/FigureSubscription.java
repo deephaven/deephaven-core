@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api.widget.plot;
 
 import elemental2.dom.CustomEvent;
@@ -252,7 +252,7 @@ public final class FigureSubscription {
             }
 
             TableSubscription sub = table.subscribe(
-                    table.getColumns().filter((c, index, all) -> this.requiredColumns.contains(c.getName())));
+                    table.getColumns().filter((c, index) -> this.requiredColumns.contains(c.getName())));
             // TODO, technically we can probably unsubscribe to the table at this point, since we're listening to the
             // subscription itself
 

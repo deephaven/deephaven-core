@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import gnu.trove.list.TLongList;
@@ -54,7 +57,7 @@ public class QueryTableWhereParallelTest extends QueryTableWhereTest {
             }
 
             @Override
-            public void init(TableDefinition tableDefinition) {}
+            public void init(@NotNull final TableDefinition tableDefinition) {}
 
             @NotNull
             @Override

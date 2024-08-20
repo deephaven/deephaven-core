@@ -1,14 +1,20 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.ssl.config;
 
 import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
 import io.deephaven.ssl.config.SSLConfig.ClientAuth;
 import org.junit.jupiter.api.Test;
 
+import javax.security.auth.x500.X500Principal;
+import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
@@ -85,6 +91,23 @@ public class SSLConfigTest {
     @Test
     void trustAll() throws IOException {
         check("trust-all.json", SSLConfig.builder().trust(TrustAll.of()).build());
+    }
+
+    @Test
+    void trustCustom() throws IOException, CertificateException {
+        // See server/dev-certs/README.md for information about server.chain.crt.
+        final TrustCustom custom;
+        try (final InputStream in = new BufferedInputStream(
+                Objects.requireNonNull(SSLConfigTest.class.getResourceAsStream("server.chain.crt")))) {
+            custom = TrustCustom.ofX509(in);
+        }
+        assertThat(custom.certificates()).hasSize(2);
+        assertThat(custom.certificates().get(0)).isInstanceOf(X509Certificate.class);
+        assertThat(((X509Certificate) custom.certificates().get(0)).getSubjectX500Principal())
+                .isEqualTo(new X500Principal("CN=localhost"));
+        assertThat(custom.certificates().get(1)).isInstanceOf(X509Certificate.class);
+        assertThat(((X509Certificate) custom.certificates().get(1)).getSubjectX500Principal())
+                .isEqualTo(new X500Principal("CN=deephaven-localhost-testing-ca"));
     }
 
     @Test

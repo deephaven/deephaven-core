@@ -1,8 +1,9 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.table.pagestore;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.Any;
@@ -11,6 +12,7 @@ import io.deephaven.util.channel.SeekableChannelContext;
 import io.deephaven.parquet.table.pagestore.topage.ToPage;
 import io.deephaven.parquet.base.ColumnChunkReader;
 import io.deephaven.parquet.base.ColumnPageReader;
+import io.deephaven.util.channel.SeekableChannelContext.ContextHolder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -45,7 +47,7 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
         columnPageReaders = new ColumnPageReader[INIT_ARRAY_SIZE];
         // TODO(deephaven-core#4836): We probably need a super-interface of Iterator to allow ourselves to set or clear
         // the inner fill context to be used by next.
-        columnPageReaderIterator = columnChunkReader.getPageIterator();
+        columnPageReaderIterator = columnChunkReader.getPageIterator(toPage.getPageMaterializerFactory());
 
         // noinspection unchecked
         pages = (WeakReference<PageCache.IntrusivePage<ATTR>>[]) new WeakReference[INIT_ARRAY_SIZE];
@@ -143,30 +145,35 @@ final class VariablePageSizeColumnChunkPageStore<ATTR extends Any> extends Colum
 
     @Override
     @NotNull
-    public ChunkPage<ATTR> getPageContaining(@Nullable final FillContext fillContext, long rowKey) {
+    public ChunkPage<ATTR> getPageContaining(@Nullable final FillContext fillContext, final long rowKey) {
+        try {
+            return getPageContainingImpl(fillContext, rowKey);
+        } catch (final RuntimeException e) {
+            throw new UncheckedDeephavenException("Failed to read parquet page data for row: " + rowKey + ", column: " +
+                    columnChunkReader.columnName() + ", uri: " + columnChunkReader.getURI(), e);
+        }
+    }
+
+    @NotNull
+    private ChunkPage<ATTR> getPageContainingImpl(@Nullable final FillContext fillContext, long rowKey) {
         rowKey &= mask();
         Require.inRange(rowKey - pageRowOffsets[0], "rowKey", numRows(), "numRows");
-
         int localNumPages = numPages;
         int pageNum = Arrays.binarySearch(pageRowOffsets, 1, localNumPages + 1, rowKey);
-
         if (pageNum < 0) {
             pageNum = -2 - pageNum;
         }
-
-        // Use the latest channel context while reading page headers
-        final SeekableChannelContext channelContext = innerFillContext(fillContext);
-
-        if (pageNum >= localNumPages) {
-            final int minPageNum = fillToRow(channelContext, localNumPages, rowKey);
-            localNumPages = numPages;
-            pageNum = Arrays.binarySearch(pageRowOffsets, minPageNum + 1, localNumPages + 1, rowKey);
-
-            if (pageNum < 0) {
-                pageNum = -2 - pageNum;
+        // Use the latest channel context while reading page headers, or create (and close) a new one
+        try (final ContextHolder holder = ensureContext(fillContext)) {
+            if (pageNum >= localNumPages) {
+                final int minPageNum = fillToRow(holder.get(), localNumPages, rowKey);
+                localNumPages = numPages;
+                pageNum = Arrays.binarySearch(pageRowOffsets, minPageNum + 1, localNumPages + 1, rowKey);
+                if (pageNum < 0) {
+                    pageNum = -2 - pageNum;
+                }
             }
+            return getPage(holder.get(), pageNum);
         }
-
-        return getPage(channelContext, pageNum);
     }
 }

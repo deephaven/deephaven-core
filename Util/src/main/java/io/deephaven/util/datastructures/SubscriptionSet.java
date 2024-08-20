@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.util.datastructures;
 
 import io.deephaven.base.reference.SimpleReference;
@@ -54,7 +54,7 @@ public class SubscriptionSet<LISTENER_TYPE> {
          * Activate this subscription entry. Must hold the lock on the enclosing subscription set.
          */
         public void activate() {
-            Assert.holdsLock(SubscriptionSet.this, "SubscriptionSet.this");
+            Assert.assertion(Thread.holdsLock(SubscriptionSet.this), "Thread.holdsLock(SubscriptionSet.this)");
             active = true;
         }
     }

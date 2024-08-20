@@ -1,8 +1,10 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CloseablePrimitiveIteratorOfInt and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CloseablePrimitiveIteratorOfInt and run "./gradlew replicatePrimitiveInterfaces" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.primitive.iterator;
 
 import io.deephaven.util.SafeCloseableArray;

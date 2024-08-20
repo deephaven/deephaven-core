@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.sort.megamerge;
 
 import io.deephaven.engine.table.ChunkSource;
@@ -39,13 +39,13 @@ public class TestCharLongMegaMerge {
         int totalSize = chunkSize * chunkCount;
 
         try (final WritableCharChunk<Values> allValues = WritableCharChunk.makeWritableChunk(totalSize);
-             final WritableLongChunk<RowKeys> allKeys = WritableLongChunk.makeWritableChunk(totalSize)) {
+                final WritableLongChunk<RowKeys> allKeys = WritableLongChunk.makeWritableChunk(totalSize)) {
 
             for (int chunk = 0; chunk < chunkCount; ++chunk) {
                 final int sizeAfterAddition = (chunk + 1) * chunkSize;
 
                 try (final WritableCharChunk<Values> valuesChunk = WritableCharChunk.makeWritableChunk(chunkSize);
-                     final WritableLongChunk<RowKeys> keysChunk = WritableLongChunk.makeWritableChunk(chunkSize)) {
+                        final WritableLongChunk<RowKeys> keysChunk = WritableLongChunk.makeWritableChunk(chunkSize)) {
 
                     final Random random = new Random(0);
 
@@ -57,9 +57,11 @@ public class TestCharLongMegaMerge {
                     MegaMergeTestUtils.doSort(ascending, chunkSize, valuesChunk, keysChunk);
 
                     if (ascending) {
-                        CharLongMegaMergeKernel.merge(keySource, valuesSource, 0, sizeAfterAddition - chunkSize, keysChunk, valuesChunk);
+                        CharLongMegaMergeKernel.merge(keySource, valuesSource, 0, sizeAfterAddition - chunkSize,
+                                keysChunk, valuesChunk);
                     } else {
-                        CharLongMegaMergeDescendingKernel.merge(keySource, valuesSource, 0, sizeAfterAddition - chunkSize, keysChunk, valuesChunk);
+                        CharLongMegaMergeDescendingKernel.merge(keySource, valuesSource, 0,
+                                sizeAfterAddition - chunkSize, keysChunk, valuesChunk);
                     }
 
                     allValues.setSize(sizeAfterAddition);
@@ -71,11 +73,12 @@ public class TestCharLongMegaMerge {
                 MegaMergeTestUtils.doSort(ascending, chunkSize * chunkCount, allValues, allKeys);
 
                 try (final ChunkSource.GetContext valueContext = valuesSource.makeGetContext(sizeAfterAddition);
-                     final ChunkSource.GetContext keyContext = keySource.makeGetContext(sizeAfterAddition)) {
+                        final ChunkSource.GetContext keyContext = keySource.makeGetContext(sizeAfterAddition)) {
                     final RowSequence rowSequence = RowSequenceFactory.forRange(0, sizeAfterAddition - 1);
 
 
-                    final CharChunk<Values> checkValues = valuesSource.getChunk(valueContext, rowSequence).asCharChunk();
+                    final CharChunk<Values> checkValues =
+                            valuesSource.getChunk(valueContext, rowSequence).asCharChunk();
                     final LongChunk<Values> checkKeys = keySource.getChunk(keyContext, rowSequence).asLongChunk();
 
                     TestCase.assertEquals(checkValues.size(), allValues.size());

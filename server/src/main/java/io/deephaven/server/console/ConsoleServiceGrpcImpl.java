@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.server.console;
 
 import com.google.common.base.Throwables;
@@ -157,6 +157,8 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
             GrpcUtil.safelyError(responseObserver, Code.FAILED_PRECONDITION, "Remote console disabled");
             return;
         }
+        // Session close logic implicitly handled in
+        // io.deephaven.server.session.SessionServiceGrpcImpl.SessionServiceInterceptor
         final LogsClient client =
                 new LogsClient(request, (ServerCallStreamObserver<LogSubscriptionData>) responseObserver);
         client.start();
@@ -210,6 +212,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     public void getHeapInfo(
             @NotNull final GetHeapInfoRequest request,
             @NotNull final StreamObserver<GetHeapInfoResponse> responseObserver) {
+        sessionService.getCurrentSession();
         final RuntimeMemory runtimeMemory = RuntimeMemory.getInstance();
         final Sample sample = new Sample();
         runtimeMemory.read(sample);

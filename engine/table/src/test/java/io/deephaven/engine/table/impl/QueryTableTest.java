@@ -1,9 +1,8 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
-import com.google.common.primitives.Ints;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.spec.AggSpec;
@@ -13,7 +12,8 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.AssertionFailure;
-import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.exceptions.UpdateGraphConflictException;
@@ -21,18 +21,17 @@ import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
-import io.deephaven.engine.table.impl.locations.GroupingProvider;
+import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.remote.InitialSnapshotTable;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.select.MatchFilter.CaseSensitivity;
 import io.deephaven.engine.table.impl.select.MatchFilter.MatchType;
-import io.deephaven.engine.table.impl.sources.DeferredGroupingColumnSource;
 import io.deephaven.engine.table.impl.sources.LongAsInstantColumnSource;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
 import io.deephaven.engine.testutil.testcase.RefreshingTableTestCase;
@@ -41,18 +40,19 @@ import io.deephaven.engine.updategraph.UpdateGraph;
 import io.deephaven.engine.updategraph.UpdateGraphLock;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.io.log.LogEntry;
+import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.locks.AwareFunctionalLock;
+import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.vector.*;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.groovy.util.Maps;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.experimental.categories.Category;
 
@@ -77,7 +77,7 @@ import static org.junit.Assert.assertArrayEquals;
 /**
  * Test of QueryTable functionality.
  * <p>
- * This test used to be a catch all, but at over 7,000 lines became unwieldy. It is still somewhat of a catch-all, but
+ * This test used to be a catch-all, but at over 7,000 lines became unwieldy. It is still somewhat of a catch-all, but
  * some specific classes of tests have been broken out.
  * <p>
  * See also {@link QueryTableAggregationTest}, {@link QueryTableJoinTest}, {@link QueryTableSelectUpdateTest},
@@ -85,6 +85,28 @@ import static org.junit.Assert.assertArrayEquals;
  */
 @Category(OutOfBandTest.class)
 public class QueryTableTest extends QueryTableTestBase {
+
+    public void testUngroupWithNullSecondColumn() {
+        final QueryTable qt = testRefreshingTable(
+                col("C1", new int[] {1, 2, 3}, new int[0], null),
+                col("C2", new int[] {3, 2, 1}, new int[0], null));
+
+        final Table ug = qt.ungroup(false, "C1", "C2");
+        setExpectError(false);
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        updateGraph.runWithinUnitTestCycle(() -> {
+            final RowSet mods = i(0, 2);
+            addToTable(qt, mods,
+                    col("C1", null, new int[] {4, 5, 6}),
+                    col("C2", null, new int[] {6, 5, 4}));
+            qt.notifyListeners(i(), i(), mods);
+        });
+        final QueryTable expected = testTable(
+                col("C1", 4, 5, 6),
+                col("C2", 6, 5, 4));
+        assertTableEquals(expected, ug);
+    }
+
     public void testStupidCast() {
         QueryTable table = testRefreshingTable(i(2, 4, 6).toTracking());
         // noinspection UnusedAssignment
@@ -141,11 +163,11 @@ public class QueryTableTest extends QueryTableTestBase {
      * compile the formula. Prior to the second update to IDS-6532, this threw an exception, although typically only by
      * OpenAPI code (because that code uses validateSelect() whereas other code tends not to). The issue is that this
      * sequence of operations works:
-     *
+     * <p>
      * initDef() get compiled formula initDef() get compiled formula
-     *
+     * <p>
      * But (prior to this change) this sequence of operations would not work: initDef() initDef() get compiled formula
-     *
+     * <p>
      * The reason the second one breaks is that (prior to this change), when using certain Time literals, the second
      * initDef() changes Formula state in such a way that a subsequent compilation would not succeed. The reason this
      * break was not observed in practice is that most usages are like the first example: there is a compilation request
@@ -181,7 +203,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table t = emptyTable(10).select("II = ii").where("II > 5");
         final SelectColumn sc = SelectColumnFactory.getExpression("XX = II + 1000");
         ((QueryTable) t).validateSelect(sc);
-        final Table result = t.select(List.of(sc));
+        t.select(List.of(sc));
     }
 
     public void testIds1822() {
@@ -213,7 +235,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
     public void testViewIncremental() {
         final Random random = new Random(0);
-        final ColumnInfo[] columnInfo;
+        final ColumnInfo<?, ?>[] columnInfo;
         final int size = 50;
         final QueryTable queryTable = getTable(size, random,
                 columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
@@ -281,18 +303,13 @@ public class QueryTableTest extends QueryTableTestBase {
         TableTools.emptyTable(3).updateView("MinEdge = (IsIndex ? indexMinEdge : MEF * LnRatioStd) * VegaPer");
 
         final QueryTable table0 = (QueryTable) TableTools.emptyTable(3).view("x = i*2", "y = \"\" + x");
-        assertEquals(Arrays.asList(0, 2, 4),
-                Arrays.asList(DataAccessHelpers.getColumn(table0, "x").get(0, table0.size())));
-        assertEquals(Arrays.asList("0", "2", "4"),
-                Arrays.asList(DataAccessHelpers.getColumn(table0, "y").get(0, table0.size())));
+        assertArrayEquals(new int[] {0, 2, 4}, ColumnVectors.ofInt(table0, "x").toArray());
+        assertArrayEquals(new String[] {"0", "2", "4"}, ColumnVectors.ofObject(table0, "y", String.class).toArray());
 
         final QueryTable table = (QueryTable) table0.updateView("z = x + 1", "x = z + 1", "t = x - 3");
-        assertEquals(Arrays.asList(1, 3, 5),
-                Arrays.asList(DataAccessHelpers.getColumn(table, "z").get(0, table.size())));
-        assertEquals(Arrays.asList(2, 4, 6),
-                Arrays.asList(DataAccessHelpers.getColumn(table, "x").get(0, table.size())));
-        assertEquals(Arrays.asList(-1, 1, 3),
-                Arrays.asList(DataAccessHelpers.getColumn(table, "t").get(0, table.size())));
+        assertArrayEquals(new int[] {1, 3, 5}, ColumnVectors.ofInt(table, "z").toArray());
+        assertArrayEquals(new int[] {2, 4, 6}, ColumnVectors.ofInt(table, "x").toArray());
+        assertArrayEquals(new int[] {-1, 1, 3}, ColumnVectors.ofInt(table, "t").toArray());
 
         final QueryTable table1 = testRefreshingTable(i(2, 4, 6).toTracking(),
                 col("x", 1, 2, 3), col("y", 'a', 'b', 'c'));
@@ -412,22 +429,20 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table t2 = t.view("y=x && true");
         TableTools.merge(t1, t2);
         TableTools.merge(t2, t1);
-        assertNull(DataAccessHelpers.getColumn(t.updateView("nullD = NULL_DOUBLE + 0"), "nullD").get(0));
+        Table table2 = t.updateView("nullD = NULL_DOUBLE + 0");
+        assertNull(table2.getColumnSource("nullD").get(table2.getRowSet().firstRowKey()));
 
-        assertEquals(
-                Arrays.asList(DataAccessHelpers
-                        .getColumn(emptyTable(4).updateView("b1 = (i%2 = 0)?null:true").updateView("x = b1 == null?1:2")
-                                .select("x"), "x")
-                        .get(0, 4)),
-                Arrays.asList(1, 2, 1, 2));
+        Table table1 = emptyTable(4).updateView("b1 = (i%2 = 0)?null:true").updateView("x = b1 == null?1:2")
+                .select("x");
+        assertArrayEquals(new int[] {1, 2, 1, 2}, ColumnVectors.ofInt(table1, "x").toArray());
 
         Table table = newTable(3, Arrays.asList("String", "Int"),
                 Arrays.asList(TableTools.objColSource("c", "e", "g"), TableTools.colSource(2, 4, 6)));
-        assertEquals(2, table.view(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).numColumns());
+        assertEquals(2, table.view(ArrayTypeUtils.EMPTY_STRING_ARRAY).numColumns());
         assertEquals(table.getDefinition().getColumns().get(0).getName(),
-                table.view(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getDefinition().getColumns().get(0).getName());
+                table.view(ArrayTypeUtils.EMPTY_STRING_ARRAY).getDefinition().getColumns().get(0).getName());
         assertEquals(table.getDefinition().getColumns().get(1).getName(),
-                table.view(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getDefinition().getColumns().get(1).getName());
+                table.view(ArrayTypeUtils.EMPTY_STRING_ARRAY).getDefinition().getColumns().get(1).getName());
 
         assertEquals(2, table.view("String", "Int").numColumns());
         assertEquals(table.getDefinition().getColumns().get(0).getName(),
@@ -451,20 +466,21 @@ public class QueryTableTest extends QueryTableTestBase {
 
         table = TableTools.emptyTable(3);
         table = table.view("x = i*2", "y = \"\" + x");
-        assertEquals(Arrays.asList(0, 2, 4), Arrays.asList(DataAccessHelpers.getColumn(table, "x").get(0, 3)));
-        assertEquals(Arrays.asList("0", "2", "4"), Arrays.asList(DataAccessHelpers.getColumn(table, "y").get(0, 3)));
+        assertArrayEquals(new int[] {0, 2, 4}, ColumnVectors.ofInt(table, "x").toArray());
+        assertArrayEquals(new String[] {"0", "2", "4"}, ColumnVectors.ofObject(table, "y", String.class).toArray());
 
         table = table.updateView("z = x + 1", "x = z + 1", "t = x - 3");
-        assertEquals(Arrays.asList(1, 3, 5), Arrays.asList(DataAccessHelpers.getColumn(table, "z").get(0, 3)));
-        assertEquals(Arrays.asList(2, 4, 6), Arrays.asList(DataAccessHelpers.getColumn(table, "x").get(0, 3)));
-        assertEquals(Arrays.asList(-1, 1, 3), Arrays.asList(DataAccessHelpers.getColumn(table, "t").get(0, 3)));
+        assertArrayEquals(new int[] {1, 3, 5}, ColumnVectors.ofInt(table, "z").toArray());
+        assertArrayEquals(new int[] {2, 4, 6}, ColumnVectors.ofInt(table, "x").toArray());
+        assertArrayEquals(new int[] {-1, 1, 3}, ColumnVectors.ofInt(table, "t").toArray());
     }
 
     public void testReinterpret() {
         final Table source = emptyTable(5).select("dt = epochNanosToInstant(ii)", "n = ii");
         final Table result = source.updateView(List.of(
                 new ReinterpretedColumn<>("dt", Instant.class, "dt", long.class)));
-        assertEquals((long[]) DataAccessHelpers.getColumn(result, 0).getDirect(), LongStream.range(0, 5).toArray());
+        assertArrayEquals(LongStream.range(0, 5).toArray(),
+                ColumnVectors.ofLong(result, result.getDefinition().getColumns().get(0).getName()).toArray());
         final Table reflexive = result.updateView(List.of(
                 new ReinterpretedColumn<>("dt", long.class, "dt", Instant.class)));
         assertTableEquals(reflexive, source);
@@ -535,7 +551,8 @@ public class QueryTableTest extends QueryTableTestBase {
         } catch (RuntimeException ignored) {
         }
         try {
-            DataAccessHelpers.getColumn(table.dropColumns("String", "Int"), "Int");
+            Table table1 = table.dropColumns("String", "Int");
+            ColumnVectors.of(table1, "Int");
             fail("Expected exception");
         } catch (RuntimeException ignored) {
         }
@@ -579,91 +596,121 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table table = newTable(3,
                 Arrays.asList("String", "Int", "Double"),
                 Arrays.asList(TableTools.objColSource("c", "e", "g"), colSource(2, 4, 6), colSource(1.0, 2.0, 3.0)));
-        assertEquals(3, table.renameColumns(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getColumnSources().size());
+        assertEquals(3, table.renameColumns(ArrayTypeUtils.EMPTY_STRING_ARRAY).getColumnSources().size());
         final Collection<? extends ColumnSource<?>> columnSources = table.getColumnSources();
         final ColumnSource<?>[] columns = columnSources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
         final Collection<? extends ColumnSource<?>> renamedColumnSources =
-                table.renameColumns(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getColumnSources();
+                table.renameColumns(ArrayTypeUtils.EMPTY_STRING_ARRAY).getColumnSources();
         final ColumnSource<?>[] renamedColumns =
                 renamedColumnSources.toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY);
         assertSame(columns[0], renamedColumns[0]);
         assertSame(columns[1], renamedColumns[1]);
         assertSame(columns[2], renamedColumns[2]);
         assertSame(table.getColumnSource("String"),
-                table.renameColumns(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getColumnSource("String"));
+                table.renameColumns(ArrayTypeUtils.EMPTY_STRING_ARRAY).getColumnSource("String"));
         assertSame(table.getColumnSource("Int"),
-                table.renameColumns(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getColumnSource("Int"));
+                table.renameColumns(ArrayTypeUtils.EMPTY_STRING_ARRAY).getColumnSource("Int"));
         assertSame(table.getColumnSource("Double"),
-                table.renameColumns(CollectionUtil.ZERO_LENGTH_STRING_ARRAY).getColumnSource("Double"));
+                table.renameColumns(ArrayTypeUtils.EMPTY_STRING_ARRAY).getColumnSource("Double"));
 
         assertEquals(3, table.renameColumns("NewInt=Int").numColumns());
         assertEquals(table.getColumnSources().toArray()[0],
                 table.renameColumns("NewInt=Int").getColumnSources().toArray()[0]);
-        assertArrayEquals((int[]) DataAccessHelpers.getColumn(table, 1).getDirect(),
-                (int[]) DataAccessHelpers.getColumn(table.renameColumns("NewInt=Int"), 1).getDirect());
+        Table table5 = table.renameColumns("NewInt=Int");
+        assertEquals(
+                ColumnVectors.of(table, table.getDefinition().getColumns().get(1).getName()),
+                ColumnVectors.of(table5, table5.getDefinition().getColumns().get(1).getName()));
         assertEquals(table.getColumnSources().toArray()[2],
                 table.renameColumns("NewInt=Int").getColumnSources().toArray()[2]);
         assertEquals(table.getColumnSource("String"), table.renameColumns("NewInt=Int").getColumnSource("String"));
-        assertArrayEquals((int[]) DataAccessHelpers.getColumn(table, "Int").getDirect(),
-                (int[]) DataAccessHelpers.getColumn(table.renameColumns("NewInt=Int"), "NewInt").getDirect());
+        Table table11 = table.renameColumns("NewInt=Int");
+        assertEquals(ColumnVectors.of(table, "Int"), ColumnVectors.of(table11, "NewInt"));
         assertEquals(table.getColumnSource("Double"), table.renameColumns("NewInt=Int").getColumnSource("Double"));
         try {
-            DataAccessHelpers.getColumn(table.renameColumns("NewInt=Int"), "Int");
+            Table table1 = table.renameColumns("NewInt=Int");
+            ColumnVectors.of(table1, "Int");
             fail("Expected exception");
         } catch (RuntimeException ignored) {
         }
 
         assertEquals(3, table.renameColumns("NewInt=Int", "NewString=String").numColumns());
-        assertArrayEquals((String[]) DataAccessHelpers.getColumn(table, 0).getDirect(),
-                (String[]) DataAccessHelpers.getColumn(table.renameColumns("NewInt=Int", "NewString=String"), 0)
-                        .getDirect());
-        assertArrayEquals((int[]) DataAccessHelpers.getColumn(table, 1).getDirect(),
-                (int[]) DataAccessHelpers.getColumn(table.renameColumns("NewInt=Int"), 1).getDirect());
+        Table table4 = table.renameColumns("NewInt=Int", "NewString=String");
+        assertEquals(
+                ColumnVectors.of(table, table.getDefinition().getColumns().get(0).getName()),
+                ColumnVectors.of(table4, table4.getDefinition().getColumns().get(0).getName()));
+        Table table3 = table.renameColumns("NewInt=Int");
+        assertEquals(
+                ColumnVectors.of(table, table.getDefinition().getColumns().get(1).getName()),
+                ColumnVectors.of(table3, table3.getDefinition().getColumns().get(1).getName()));
         assertEquals(table.getColumnSources().toArray()[2],
                 table.renameColumns("NewInt=Int", "NewString=String").getColumnSources().toArray()[2]);
-        assertArrayEquals((String[]) DataAccessHelpers.getColumn(table, "String").getDirect(),
-                (String[]) DataAccessHelpers
-                        .getColumn(table.renameColumns("NewInt=Int", "NewString=String"), "NewString").getDirect());
-        assertArrayEquals((int[]) DataAccessHelpers.getColumn(table, "Int").getDirect(),
-                (int[]) DataAccessHelpers.getColumn(table.renameColumns("NewInt=Int"), "NewInt").getDirect());
+        Table table10 = table.renameColumns("NewInt=Int", "NewString=String");
+        assertEquals(ColumnVectors.of(table, "String"), ColumnVectors.of(table10, "NewString"));
+        Table table9 = table.renameColumns("NewInt=Int");
+        assertEquals(ColumnVectors.of(table, "Int"), ColumnVectors.of(table9, "NewInt"));
         assertEquals(table.getColumnSource("Double"),
                 table.renameColumns("NewInt=Int", "NewString=String").getColumnSource("Double"));
         try {
-            DataAccessHelpers.getColumn(table.renameColumns("NewInt=Int", "NewString=String"), "Int");
+            Table table1 = table.renameColumns("NewInt=Int", "NewString=String");
+            ColumnVectors.of(table1, "Int");
             fail("Expected exception");
         } catch (RuntimeException ignored) {
         }
         try {
-            DataAccessHelpers.getColumn(table.renameColumns("NewInt=Int", "NewString=String"), "String");
+            Table table1 = table.renameColumns("NewInt=Int", "NewString=String");
+            ColumnVectors.of(table1, "String");
             fail("Expected exception");
         } catch (RuntimeException ignored) {
         }
 
         assertEquals(3, table.renameColumns("NewInt=Int").renameColumns("NewString=String").numColumns());
-        assertArrayEquals((String[]) DataAccessHelpers.getColumn(table, 0).getDirect(),
-                (String[]) DataAccessHelpers.getColumn(table.renameColumns("NewInt=Int", "NewString=String"), 0)
-                        .getDirect());
-        assertArrayEquals((int[]) DataAccessHelpers.getColumn(table, 1).getDirect(),
-                (int[]) DataAccessHelpers.getColumn(table.renameColumns("NewInt=Int"), 1).getDirect());
+        Table table2 = table.renameColumns("NewInt=Int", "NewString=String");
+        assertEquals(
+                ColumnVectors.of(table, table.getDefinition().getColumns().get(0).getName()),
+                ColumnVectors.of(table2, table2.getDefinition().getColumns().get(0).getName()));
+        Table table1 = table.renameColumns("NewInt=Int");
+        assertEquals(
+                ColumnVectors.of(table, table.getDefinition().getColumns().get(1).getName()),
+                ColumnVectors.of(table1, table1.getDefinition().getColumns().get(1).getName()));
         assertEquals(table.getColumnSources().toArray()[2],
                 table.renameColumns("NewInt=Int").renameColumns("NewString=String").getColumnSources().toArray()[2]);
-        assertArrayEquals((String[]) DataAccessHelpers.getColumn(table, "String").getDirect(),
-                (String[]) DataAccessHelpers
-                        .getColumn(table.renameColumns("NewInt=Int", "NewString=String"), "NewString").getDirect());
-        assertArrayEquals((int[]) DataAccessHelpers.getColumn(table, "Int").getDirect(),
-                (int[]) DataAccessHelpers.getColumn(table.renameColumns("NewInt=Int"), "NewInt").getDirect());
+        Table table8 = table.renameColumns("NewInt=Int", "NewString=String");
+        assertEquals(ColumnVectors.of(table, "String"), ColumnVectors.of(table8, "NewString"));
+        Table table7 = table.renameColumns("NewInt=Int");
+        assertEquals(ColumnVectors.of(table, "Int"), ColumnVectors.of(table7, "NewInt"));
         assertEquals(table.getColumnSource("Double"),
                 table.renameColumns("NewInt=Int").renameColumns("NewString=String").getColumnSource("Double"));
         try {
-            DataAccessHelpers.getColumn(table.renameColumns("NewInt=Int").renameColumns("NewString=String"), "Int");
+            Table table6 = table.renameColumns("NewInt=Int").renameColumns("NewString=String");
+            ColumnVectors.of(table6, "Int");
             fail("Expected exception");
         } catch (RuntimeException ignored) {
         }
         try {
-            DataAccessHelpers.getColumn(table.renameColumns("NewInt=Int").renameColumns("NewString=String"), "String");
+            Table table6 = table.renameColumns("NewInt=Int").renameColumns("NewString=String");
+            ColumnVectors.of(table6, "String");
             fail("Expected exception");
         } catch (RuntimeException ignored) {
         }
+
+        // Can't rename to a dest column twice.
+        Assert.assertThrows(IllegalArgumentException.class, () -> {
+            table.renameColumns("O = Int", "O = Int");
+        });
+
+        // Check what happens when we override a column by name
+        final Table override = table.renameColumns("Double = Int");
+        Assert.assertEquals(override.getColumnSource("Double").getType(), int.class);
+        Assert.assertFalse(override.getColumnSourceMap().containsKey("Int"));
+        // Check that ordering of source columns does not matter
+        final Table override2 = table.renameColumns("Int = Double");
+        Assert.assertEquals(override2.getColumnSource("Int").getType(), double.class);
+        Assert.assertFalse(override2.getColumnSourceMap().containsKey("Double"));
+
+        // Validate that we can swap two columns simultaneously
+        final Table swapped = table.renameColumns("Double = Int", "Int = Double");
+        Assert.assertEquals(swapped.getColumnSource("Double").getType(), int.class);
+        Assert.assertEquals(swapped.getColumnSource("Int").getType(), double.class);
     }
 
     public void testRenameColumnsIncremental() {
@@ -680,13 +727,8 @@ public class QueryTableTest extends QueryTableTestBase {
         final EvalNugget[] en = new EvalNugget[] {
                 EvalNugget.from(() -> queryTable.renameColumns(List.of())),
                 EvalNugget.from(() -> queryTable.renameColumns("Symbol=Sym")),
-                EvalNugget.from(() -> queryTable.renameColumns("Symbol=Sym", "Symbols=Sym")),
                 EvalNugget.from(() -> queryTable.renameColumns("Sym2=Sym", "intCol2=intCol", "doubleCol2=doubleCol")),
         };
-
-        // Verify our assumption that columns can be renamed at most once.
-        Assert.assertTrue(queryTable.renameColumns("Symbol=Sym", "Symbols=Sym").hasColumns("Symbols"));
-        Assert.assertFalse(queryTable.renameColumns("Symbol=Sym", "Symbols=Sym").hasColumns("Symbol"));
 
         final int steps = 100;
         for (int i = 0; i < steps; i++) {
@@ -695,6 +737,175 @@ public class QueryTableTest extends QueryTableTestBase {
             }
             simulateShiftAwareStep("step == " + i, size, random, queryTable, columnInfo, en);
         }
+    }
+
+    public void testMoveColumnsUp() {
+        final Table table = emptyTable(1).update("A = 1", "B = 2", "C = 3", "D = 4", "E = 5");
+
+        assertTableEquals(
+                emptyTable(1).update("C = 3", "A = 1", "B = 2", "D = 4", "E = 5"),
+                table.moveColumnsUp("C"));
+
+        assertTableEquals(
+                emptyTable(1).update("C = 3", "B = 2", "A = 1", "D = 4", "E = 5"),
+                table.moveColumnsUp("C", "B"));
+
+        assertTableEquals(
+                emptyTable(1).update("D = 4", "A = 1", "C = 3", "B = 2", "E = 5"),
+                table.moveColumnsUp("D", "A", "C"));
+
+        // test trivial do nothing case
+        assertTableEquals(table, table.moveColumnsUp());
+
+        // Can't move a column up twice.
+        Assert.assertThrows(IllegalArgumentException.class, () -> {
+            table.moveColumnsUp("C", "C");
+        });
+
+        // Can't rename a source column twice.
+        Assert.assertThrows(IllegalArgumentException.class, () -> {
+            table.moveColumnsUp("A1 = A", "A2 = A");
+        });
+
+        // Can't rename to a dest column twice.
+        Assert.assertThrows(IllegalArgumentException.class, () -> {
+            table.moveColumnsUp("O = A", "O = B");
+        });
+
+        assertTableEquals(
+                emptyTable(1).update("B = 3", "A = 1", "D = 4", "E = 5"),
+                table.moveColumnsUp("B = C"));
+        assertTableEquals(
+                emptyTable(1).update("B = 1", "C = 3", "D = 4", "E = 5"),
+                table.moveColumnsUp("B = A"));
+        assertTableEquals(
+                emptyTable(1).update("B = 1", "A = 2", "C = 3", "D = 4", "E = 5"),
+                table.moveColumnsUp("B = A", "A = B"));
+    }
+
+    public void testMoveColumnsDown() {
+        final Table table = emptyTable(1).update("A = 1", "B = 2", "C = 3", "D = 4", "E = 5");
+
+        assertTableEquals(
+                emptyTable(1).update("A = 1", "B = 2", "D = 4", "E = 5", "C = 3"),
+                table.moveColumnsDown("C"));
+
+        assertTableEquals(
+                emptyTable(1).update("A = 1", "D = 4", "E = 5", "C = 3", "B = 2"),
+                table.moveColumnsDown("C", "B"));
+
+        assertTableEquals(
+                emptyTable(1).update("B = 2", "E = 5", "D = 4", "A = 1", "C = 3"),
+                table.moveColumnsDown("D", "A", "C"));
+
+        // test trivial do nothing case
+        assertTableEquals(table, table.moveColumnsDown());
+
+        // Can't move a column down twice.
+        Assert.assertThrows(IllegalArgumentException.class, () -> {
+            table.moveColumnsDown("C", "C");
+        });
+
+        // Can't rename a source column twice.
+        Assert.assertThrows(IllegalArgumentException.class, () -> {
+            table.moveColumnsDown("A1 = A", "A2 = A");
+        });
+
+        // Can't rename to a dest column twice.
+        Assert.assertThrows(IllegalArgumentException.class, () -> {
+            table.moveColumnsDown("O = A", "O = B");
+        });
+
+        assertTableEquals(
+                emptyTable(1).update("A = 1", "D = 4", "E = 5", "B = 3"),
+                table.moveColumnsDown("B = C"));
+        assertTableEquals(
+                emptyTable(1).update("C = 3", "D = 4", "E = 5", "B = 1"),
+                table.moveColumnsDown("B = A"));
+        assertTableEquals(
+                emptyTable(1).update("C = 3", "D = 4", "E = 5", "B = 1", "A = 2"),
+                table.moveColumnsDown("B = A", "A = B"));
+    }
+
+    public void testMoveColumns() {
+        final Table table = emptyTable(1).update("A = 1", "B = 2", "C = 3", "D = 4", "E = 5");
+
+        // single column
+        assertTableEquals(
+                emptyTable(1).update("C = 3", "A = 1", "B = 2", "D = 4", "E = 5"),
+                table.moveColumns(-1, "C"));
+        assertTableEquals(
+                emptyTable(1).update("C = 3", "A = 1", "B = 2", "D = 4", "E = 5"),
+                table.moveColumns(0, "C"));
+        assertTableEquals(
+                emptyTable(1).update("A = 1", "C = 3", "B = 2", "D = 4", "E = 5"),
+                table.moveColumns(1, "C"));
+        assertTableEquals(
+                emptyTable(1).update("A = 1", "B = 2", "C = 3", "D = 4", "E = 5"),
+                table.moveColumns(2, "C"));
+        assertTableEquals(
+                emptyTable(1).update("A = 1", "B = 2", "D = 4", "C = 3", "E = 5"),
+                table.moveColumns(3, "C"));
+        assertTableEquals(
+                emptyTable(1).update("A = 1", "B = 2", "D = 4", "E = 5", "C = 3"),
+                table.moveColumns(4, "C"));
+        assertTableEquals(
+                emptyTable(1).update("A = 1", "B = 2", "D = 4", "E = 5", "C = 3"),
+                table.moveColumns(10, "C"));
+
+        // two columns
+        assertTableEquals(
+                emptyTable(1).update("C = 3", "B = 2", "A = 1", "D = 4", "E = 5"),
+                table.moveColumns(-1, "C", "B"));
+        assertTableEquals(
+                emptyTable(1).update("C = 3", "B = 2", "A = 1", "D = 4", "E = 5"),
+                table.moveColumns(0, "C", "B"));
+        assertTableEquals(
+                emptyTable(1).update("A = 1", "C = 3", "B = 2", "D = 4", "E = 5"),
+                table.moveColumns(1, "C", "B"));
+        assertTableEquals(
+                emptyTable(1).update("A = 1", "D = 4", "C = 3", "B = 2", "E = 5"),
+                table.moveColumns(2, "C", "B"));
+        assertTableEquals(
+                emptyTable(1).update("A = 1", "D = 4", "E = 5", "C = 3", "B = 2"),
+                table.moveColumns(3, "C", "B"));
+        assertTableEquals(
+                emptyTable(1).update("A = 1", "D = 4", "E = 5", "C = 3", "B = 2"),
+                table.moveColumns(4, "C", "B"));
+        assertTableEquals(
+                emptyTable(1).update("A = 1", "D = 4", "E = 5", "C = 3", "B = 2"),
+                table.moveColumns(10, "C", "B"));
+
+        // test trivial do nothing case
+        for (int ii = -1; ii < 10; ++ii) {
+            assertTableEquals(table, table.moveColumns(ii));
+        }
+
+        // Can't move a column down twice.
+        Assert.assertThrows(IllegalArgumentException.class, () -> {
+            table.moveColumns(2, "C", "C");
+        });
+
+        // Can't rename a source column twice.
+        Assert.assertThrows(IllegalArgumentException.class, () -> {
+            table.moveColumns(2, "A1 = A", "A2 = A");
+        });
+
+        // Can't rename to a dest column twice.
+        Assert.assertThrows(IllegalArgumentException.class, () -> {
+            table.moveColumns(2, "O = A", "O = B");
+        });
+
+
+        assertTableEquals(
+                emptyTable(1).update("A = 1", "D = 4", "B = 3", "E = 5"),
+                table.moveColumns(2, "B = C"));
+        assertTableEquals(
+                emptyTable(1).update("C = 3", "D = 4", "B = 1", "E = 5"),
+                table.moveColumns(2, "B = A"));
+        assertTableEquals(
+                emptyTable(1).update("C = 3", "D = 4", "B = 1", "A = 2", "E = 5"),
+                table.moveColumns(2, "B = A", "A = B"));
     }
 
     public static WhereFilter stringContainsFilter(
@@ -746,6 +957,39 @@ public class QueryTableTest extends QueryTableTestBase {
                 new TableComparator(
                         table.where(filter.apply("S2.contains(`mA`)")),
                         table.where(stringContainsFilter("S2", "mA"))),
+        };
+
+        for (int i = 0; i < 500; i++) {
+            simulateShiftAwareStep(size, random, table, columnInfo, en);
+        }
+    }
+
+    public void testStringMatchFilterIndexed() {
+        // MatchFilters (currently) only use indexes on initial creation but this incremental test will recreate
+        // index-enabled match filtered tables and compare them against incremental non-indexed filtered tables.
+
+        final Random random = new Random(0);
+
+        final int size = 500;
+
+        final ColumnInfo<?, ?>[] columnInfo;
+        final QueryTable table = getTable(size, random, columnInfo = initColumnInfos(new String[] {"S1", "S2"},
+                new SetGenerator<>("aa", "bb", "cc", "dd", "AA", "BB", "CC", "DD"),
+                new SetGenerator<>("aaa", "bbb", "ccc", "ddd", "AAA", "BBB", "CCC", "DDD")));
+
+        DataIndexer.getOrCreateDataIndex(table, "S1");
+        DataIndexer.getOrCreateDataIndex(table, "S2");
+
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
+                EvalNugget.from(() -> table.where("S1 in 'aa'")),
+                EvalNugget.from(() -> table.where("S2 in 'bbb'")),
+                EvalNugget.from(() -> table.where("S2 not in 'ccc', 'dddd'")),
+                EvalNugget.from(() -> table.where("S1 not in 'aa', 'bb'")),
+
+                EvalNugget.from(() -> table.where("S1 icase in 'aa'")),
+                EvalNugget.from(() -> table.where("S2 icase in 'bbb'")),
+                EvalNugget.from(() -> table.where("S2 icase not in 'ccc', 'dddd'")),
+                EvalNugget.from(() -> table.where("S1 icase not in 'aa', 'bb'")),
         };
 
         for (int i = 0; i < 500; i++) {
@@ -880,38 +1124,30 @@ public class QueryTableTest extends QueryTableTestBase {
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new TableComparator(
-                        table.where(filter.apply(
-                                "Timestamp >= '" + lower.toString() + "' && Timestamp <= '" + upper.toString() + "'")),
+                        table.where(filter.apply("Timestamp >= '" + lower + "' && Timestamp <= '" + upper + "'")),
                         "Condition", table.where(new InstantRangeFilter("Timestamp", lower, upper, true, true)),
                         "Range"),
                 new TableComparator(
-                        table.where(filter.apply(
-                                "Timestamp >= '" + lower.toString() + "' && Timestamp < '" + upper.toString() + "'")),
+                        table.where(filter.apply("Timestamp >= '" + lower + "' && Timestamp < '" + upper + "'")),
                         table.where(new InstantRangeFilter("Timestamp", lower, upper, true, false))),
                 new TableComparator(
-                        table.where(filter.apply(
-                                "Timestamp > '" + lower.toString() + "' && Timestamp <= '" + upper.toString() + "'")),
+                        table.where(filter.apply("Timestamp > '" + lower + "' && Timestamp <= '" + upper + "'")),
                         table.where(new InstantRangeFilter("Timestamp", lower, upper, true, true))),
                 new TableComparator(
-                        table.where(filter.apply(
-                                "Timestamp > '" + lower.toString() + "' && Timestamp < '" + upper.toString() + "'")),
+                        table.where(filter.apply("Timestamp > '" + lower + "' && Timestamp < '" + upper + "'")),
                         table.where(new InstantRangeFilter("Timestamp", lower, upper, false, false))),
 
                 new TableComparator(
-                        table.where(
-                                filter.apply("Ts2 >= '" + lower.toString() + "' && Ts2 <= '" + upper.toString() + "'")),
+                        table.where(filter.apply("Ts2 >= '" + lower + "' && Ts2 <= '" + upper + "'")),
                         "Condition", table.where(new InstantRangeFilter("Ts2", lower, upper, true, true)), "Range"),
                 new TableComparator(
-                        table.where(
-                                filter.apply("Ts2 >= '" + lower.toString() + "' && Ts2 < '" + upper.toString() + "'")),
+                        table.where(filter.apply("Ts2 >= '" + lower + "' && Ts2 < '" + upper + "'")),
                         table.where(new InstantRangeFilter("Ts2", lower, upper, true, false))),
                 new TableComparator(
-                        table.where(
-                                filter.apply("Ts2 > '" + lower.toString() + "' && Ts2 <= '" + upper.toString() + "'")),
+                        table.where(filter.apply("Ts2 > '" + lower + "' && Ts2 <= '" + upper + "'")),
                         table.where(new InstantRangeFilter("Ts2", lower, upper, true, true))),
                 new TableComparator(
-                        table.where(
-                                filter.apply("Ts2 > '" + lower.toString() + "' && Ts2 < '" + upper.toString() + "'")),
+                        table.where(filter.apply("Ts2 > '" + lower + "' && Ts2 < '" + upper + "'")),
                         table.where(new InstantRangeFilter("Ts2", lower, upper, false, false)))
         };
 
@@ -940,21 +1176,17 @@ public class QueryTableTest extends QueryTableTestBase {
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new TableComparator(
-                        table.where(filter.apply(
-                                "Timestamp >= '" + lower.toString() + "' && Timestamp <= '" + upper.toString() + "'")),
+                        table.where(filter.apply("Timestamp >= '" + lower + "' && Timestamp <= '" + upper + "'")),
                         "Condition", table.where(new InstantRangeFilter("Timestamp", lower, upper, true, true)),
                         "Range"),
                 new TableComparator(
-                        table.where(filter.apply(
-                                "Timestamp >= '" + lower.toString() + "' && Timestamp < '" + upper.toString() + "'")),
+                        table.where(filter.apply("Timestamp >= '" + lower + "' && Timestamp < '" + upper + "'")),
                         table.where(new InstantRangeFilter("Timestamp", lower, upper, true, false))),
                 new TableComparator(
-                        table.where(filter.apply(
-                                "Timestamp > '" + lower.toString() + "' && Timestamp <= '" + upper.toString() + "'")),
+                        table.where(filter.apply("Timestamp > '" + lower + "' && Timestamp <= '" + upper + "'")),
                         table.where(new InstantRangeFilter("Timestamp", lower, upper, true, true))),
                 new TableComparator(
-                        table.where(filter.apply(
-                                "Timestamp > '" + lower.toString() + "' && Timestamp < '" + upper.toString() + "'")),
+                        table.where(filter.apply("Timestamp > '" + lower + "' && Timestamp < '" + upper + "'")),
                         table.where(new InstantRangeFilter("Timestamp", lower, upper, false, false))),
         };
 
@@ -985,13 +1217,13 @@ public class QueryTableTest extends QueryTableTestBase {
 
         checkReverse(table, reversed, "Ticker");
 
-        assertEquals("TSLA", reversed.getColumnSource("Ticker").getPrev(reversed.getRowSet().copyPrev().get(0)));
+        assertEquals("TSLA", reversed.getColumnSource("Ticker").getPrev(reversed.getRowSet().prev().firstRowKey()));
 
 
         updateGraph.runWithinUnitTestCycle(() -> {
         });
 
-        assertEquals("VXX", reversed.getColumnSource("Ticker").getPrev(reversed.getRowSet().copyPrev().get(0)));
+        assertEquals("VXX", reversed.getColumnSource("Ticker").getPrev(reversed.getRowSet().prev().firstRowKey()));
 
 
         final ColumnSource<Long> longIdentityColumnSource =
@@ -1015,11 +1247,10 @@ public class QueryTableTest extends QueryTableTestBase {
                 Collections.singletonMap("LICS", longIdentityColumnSource));
         bigTable.setRefreshing(true);
         final Table bigReversed = bigTable.reverse();
-        // noinspection unchecked
-        final DataColumn<Long> licsr = DataAccessHelpers.getColumn(bigReversed, "LICS");
-        assertEquals((long) Integer.MAX_VALUE * 2L, (long) licsr.get(0));
-        assertEquals(Integer.MAX_VALUE, (long) licsr.get(1));
-        assertEquals(0, (long) licsr.get(2));
+        final LongVector licsr = ColumnVectors.ofLong(bigReversed, "LICS");
+        assertEquals((long) Integer.MAX_VALUE * 2L, licsr.get(0));
+        assertEquals(Integer.MAX_VALUE, licsr.get(1));
+        assertEquals(0, licsr.get(2));
 
         updateGraph.runWithinUnitTestCycle(() -> {
             bigTable.getRowSet().writableCast().insert(Long.MAX_VALUE);
@@ -1028,10 +1259,10 @@ public class QueryTableTest extends QueryTableTestBase {
 
         assertEquals(4, bigReversed.size());
 
-        assertEquals(Long.MAX_VALUE, (long) licsr.get(0));
-        assertEquals((long) Integer.MAX_VALUE * 2L, (long) licsr.get(1));
-        assertEquals(Integer.MAX_VALUE, (long) licsr.get(2));
-        assertEquals(0, (long) licsr.get(3));
+        assertEquals(Long.MAX_VALUE, licsr.get(0));
+        assertEquals((long) Integer.MAX_VALUE * 2L, licsr.get(1));
+        assertEquals(Integer.MAX_VALUE, licsr.get(2));
+        assertEquals(0, licsr.get(3));
 
     }
 
@@ -1073,12 +1304,18 @@ public class QueryTableTest extends QueryTableTestBase {
 
     }
 
-    private void checkReverse(QueryTable table, Table reversed, String timestamp) {
+    private void checkReverse(QueryTable table, Table reversed, String columnName) {
         assertEquals(table.size(), reversed.size());
-        for (long ii = 0; ii < table.size(); ++ii) {
-            final long jj = table.size() - ii - 1;
-            assertEquals(DataAccessHelpers.getColumn(table, timestamp).get(ii),
-                    DataAccessHelpers.getColumn(reversed, timestamp).get(jj));
+        final ColumnSource<?> tableSource = table.getColumnSource(columnName);
+        final ColumnSource<?> reversedSource = reversed.getColumnSource(columnName);
+        try (final RowSet.Iterator tableRows = table.getRowSet().iterator();
+                final RowSet.Iterator reverseRows = reversed.getRowSet().reverseIterator()) {
+            while (tableRows.hasNext()) {
+                assertTrue(reverseRows.hasNext());
+                final long tableRow = tableRows.nextLong();
+                final long reverseRow = reverseRows.nextLong();
+                assertEquals(tableSource.get(tableRow), reversedSource.get(reverseRow));
+            }
         }
     }
 
@@ -1492,7 +1729,7 @@ public class QueryTableTest extends QueryTableTestBase {
         TableTools.show(snappedOfSnap);
 
         TestCase.assertEquals(1, snappedOfSnap.size());
-        TestCase.assertEquals(2, DataAccessHelpers.getColumn(snappedOfSnap, "B").get(0));
+        TestCase.assertEquals(2, snappedOfSnap.getColumnSource("B").getInt(snappedOfSnap.getRowSet().firstRowKey()));
     }
 
     public void testSnapshotAdditions() {
@@ -1610,7 +1847,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
             System.out.println("Checking satisfaction after #3.");
             flushed2 = updateGraph.flushOneNotificationForUnitTests();
-            // this will do the merged notification; which means the snaphsot is satisfied
+            // this will do the merged notification; which means the snapshot is satisfied
             TestCase.assertTrue(flushed2);
             TestCase.assertTrue(
                     snappedFirst.satisfied(ExecutionContext.getContext().getUpdateGraph().clock().currentStep()));
@@ -1656,7 +1893,7 @@ public class QueryTableTest extends QueryTableTestBase {
         TableTools.show(snappedOfSnap);
 
         TestCase.assertEquals(snappedOfSnap.size(), 1);
-        TestCase.assertEquals(DataAccessHelpers.getColumn(snappedOfSnap, "B").get(0), 1);
+        TestCase.assertEquals(snappedOfSnap.getColumnSource("B").getInt(snappedOfSnap.getRowSet().firstRowKey()), 1);
 
         // this will do the notification for right; at which point we can should get the update going through
         // nothing left
@@ -1705,7 +1942,7 @@ public class QueryTableTest extends QueryTableTestBase {
         TableTools.show(snappedOfSnap);
 
         TestCase.assertEquals(snappedOfSnap.size(), 1);
-        TestCase.assertEquals(DataAccessHelpers.getColumn(snappedOfSnap, "B").get(0), 1);
+        TestCase.assertEquals(snappedOfSnap.getColumnSource("B").getInt(snappedOfSnap.getRowSet().firstRowKey()), 1);
 
         // now we should flush the select
         // now we should flush the second snapshot recorder
@@ -1812,7 +2049,7 @@ public class QueryTableTest extends QueryTableTestBase {
         TableTools.show(snappedOfSnap);
 
         TestCase.assertEquals(snappedOfSnap.size(), 2);
-        TestCase.assertEquals(DataAccessHelpers.getColumn(snappedOfSnap, "B").get(0), 2);
+        TestCase.assertEquals(snappedOfSnap.getColumnSource("B").getInt(snappedOfSnap.getRowSet().firstRowKey()), 2);
     }
 
     public void testWhereInScope() {
@@ -1842,7 +2079,7 @@ public class QueryTableTest extends QueryTableTestBase {
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
 
         assertEquals(1, whereIn.size());
-        assertEquals(new Object[] {"B", 2}, DataAccessHelpers.getRecord(whereIn, 0));
+        assertEquals(new Object[] {"B", 2}, getRowData(whereIn, 0));
 
         assertTrue(whereIn.tryRetainReference());
         whereIn.dropReference();
@@ -1856,8 +2093,8 @@ public class QueryTableTest extends QueryTableTestBase {
         ExecutionContext.getContext().getUpdateGraph().<ControlledUpdateGraph>cast().completeCycleForUnitTests();
 
         assertEquals(2, whereIn.size());
-        assertEquals(new Object[] {"B", 2}, DataAccessHelpers.getRecord(whereIn, 0));
-        assertEquals(new Object[] {"D", 4}, DataAccessHelpers.getRecord(whereIn, 1));
+        assertEquals(new Object[] {"B", 2}, getRowData(whereIn, 0));
+        assertEquals(new Object[] {"D", 4}, getRowData(whereIn, 1));
 
         // Everything is dropped after this, the singletonManager was holding everything.
         ExecutionContext.getContext().getUpdateGraph().exclusiveLock().doLocked(singletonManager::release);
@@ -2156,13 +2393,10 @@ public class QueryTableTest extends QueryTableTestBase {
                         }
 
                         // and anything unmodified should be the same as last time
-                        @SuppressWarnings("unchecked")
-                        final DataColumn<Integer> lastStamps = DataAccessHelpers.getColumn(lastSnapshot, "Stamp");
+                        final ColumnSource<Integer> lastStamps = lastSnapshot.getColumnSource("Stamp", int.class);
                         for (final RowSet.Iterator it = unmodified.iterator(); it.hasNext();) {
                             final long next = it.nextLong();
-                            final long lastPos = lastRowSet.find(next);
-                            assertTrue(lastPos >= 0);
-                            final int priorStamp = lastStamps.getInt((int) lastPos);
+                            final int priorStamp = lastStamps.getInt(next);
                             final int stamp = stamps.getInt(next);
                             assertEquals(priorStamp, stamp);
                         }
@@ -2399,30 +2633,30 @@ public class QueryTableTest extends QueryTableTestBase {
     public void testUngroupingAgnostic() {
         int[][] data1 = new int[][] {new int[] {4, 5, 6}, new int[0], new int[] {7, 8}};
         Table table = testRefreshingTable(col("X", 1, 2, 3),
-                col("Y", new String[] {"a", "b", "c"}, CollectionUtil.ZERO_LENGTH_STRING_ARRAY,
+                col("Y", new String[] {"a", "b", "c"}, ArrayTypeUtils.EMPTY_STRING_ARRAY,
                         new String[] {"d", "e"}),
                 col("Z", data1));
 
         Table t1 = table.ungroup("Y", "Z");
         assertEquals(5, t1.size());
         assertEquals(Arrays.asList("X", "Y", "Z"), t1.getDefinition().getColumnNames());
-        assertEquals(Arrays.asList(1, 1, 1, 3, 3), Arrays.asList(DataAccessHelpers.getColumn(t1, "X").get(0, 5)));
-        assertEquals(Arrays.asList("a", "b", "c", "d", "e"),
-                Arrays.asList(DataAccessHelpers.getColumn(t1, "Y").get(0, 5)));
-        assertEquals(Arrays.asList(4, 5, 6, 7, 8), Arrays.asList(DataAccessHelpers.getColumn(t1, "Z").get(0, 5)));
+        assertArrayEquals(new int[] {1, 1, 1, 3, 3}, ColumnVectors.ofInt(t1, "X").toArray());
+        assertArrayEquals(new String[] {"a", "b", "c", "d", "e"},
+                ColumnVectors.ofObject(t1, "Y", String.class).toArray());
+        assertArrayEquals(new int[] {4, 5, 6, 7, 8}, ColumnVectors.ofInt(t1, "Z").toArray());
 
         t1 = table.ungroup();
         assertEquals(5, t1.size());
         assertEquals(Arrays.asList("X", "Y", "Z"), t1.getDefinition().getColumnNames());
-        assertEquals(Arrays.asList(1, 1, 1, 3, 3), Arrays.asList(DataAccessHelpers.getColumn(t1, "X").get(0, 5)));
-        assertEquals(Arrays.asList("a", "b", "c", "d", "e"),
-                Arrays.asList(DataAccessHelpers.getColumn(t1, "Y").get(0, 5)));
-        assertEquals(Arrays.asList(4, 5, 6, 7, 8), Arrays.asList(DataAccessHelpers.getColumn(t1, "Z").get(0, 5)));
+        assertArrayEquals(new int[] {1, 1, 1, 3, 3}, ColumnVectors.ofInt(t1, "X").toArray());
+        assertArrayEquals(new String[] {"a", "b", "c", "d", "e"},
+                ColumnVectors.ofObject(t1, "Y", String.class).toArray());
+        assertArrayEquals(new int[] {4, 5, 6, 7, 8}, ColumnVectors.ofInt(t1, "Z").toArray());
 
         int[][] data = new int[][] {new int[] {4, 5, 6}, new int[0], new int[] {7, 8}};
         table = testRefreshingTable(col("X", 1, 2, 3),
                 col("Y", new String[] {"a", "b", "c"}, new String[] {"d", "e"},
-                        CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
+                        ArrayTypeUtils.EMPTY_STRING_ARRAY),
                 col("Z", data));
         try {
             table.ungroup();
@@ -2443,36 +2677,66 @@ public class QueryTableTest extends QueryTableTestBase {
         t1 = table.ungroup("Y");
         assertEquals(5, t1.size());
         assertEquals(Arrays.asList("X", "Y", "Z"), t1.getDefinition().getColumnNames());
-        assertEquals(Arrays.asList(1, 1, 1, 2, 2), Arrays.asList(DataAccessHelpers.getColumn(t1, "X").get(0, 5)));
-        assertEquals(Arrays.asList("a", "b", "c", "d", "e"),
-                Arrays.asList(DataAccessHelpers.getColumn(t1, "Y").get(0, 5)));
+        assertArrayEquals(new int[] {1, 1, 1, 2, 2}, ColumnVectors.ofInt(t1, "X").toArray());
+        assertArrayEquals(new String[] {"a", "b", "c", "d", "e"},
+                ColumnVectors.ofObject(t1, "Y", String.class).toArray());
         show(t1);
         show(t1.ungroup("Z"));
         t1 = t1.ungroup("Z");
         assertEquals(9, t1.size());
         assertEquals(Arrays.asList("X", "Y", "Z"), t1.getDefinition().getColumnNames());
-        assertEquals(Arrays.asList(1, 1, 1, 1, 1, 1, 1, 1, 1),
-                Arrays.asList(DataAccessHelpers.getColumn(t1, "X").get(0, 9)));
-        assertEquals(Arrays.asList("a", "a", "a", "b", "b", "b", "c", "c", "c"),
-                Arrays.asList(DataAccessHelpers.getColumn(t1, "Y").get(0, 9)));
-        assertEquals(Arrays.asList(4, 5, 6, 4, 5, 6, 4, 5, 6),
-                Arrays.asList(DataAccessHelpers.getColumn(t1, "Z").get(0, 9)));
+        assertArrayEquals(new int[] {1, 1, 1, 1, 1, 1, 1, 1, 1}, ColumnVectors.ofInt(t1, "X").toArray());
+        assertArrayEquals(new String[] {"a", "a", "a", "b", "b", "b", "c", "c", "c"},
+                ColumnVectors.ofObject(t1, "Y", String.class).toArray());
+        assertArrayEquals(new int[] {4, 5, 6, 4, 5, 6, 4, 5, 6}, ColumnVectors.ofInt(t1, "Z").toArray());
 
 
         t1 = table.ungroup("Z");
         assertEquals(5, t1.size());
         assertEquals(Arrays.asList("X", "Y", "Z"), t1.getDefinition().getColumnNames());
-        assertEquals(Arrays.asList(1, 1, 1, 3, 3), Arrays.asList(DataAccessHelpers.getColumn(t1, "X").get(0, 5)));
-        assertEquals(Arrays.asList(4, 5, 6, 7, 8), Arrays.asList(DataAccessHelpers.getColumn(t1, "Z").get(0, 5)));
+        assertArrayEquals(new int[] {1, 1, 1, 3, 3}, ColumnVectors.ofInt(t1, "X").toArray());
+        assertArrayEquals(new int[] {4, 5, 6, 7, 8}, ColumnVectors.ofInt(t1, "Z").toArray());
         t1 = t1.ungroup("Y");
         assertEquals(9, t1.size());
         assertEquals(Arrays.asList("X", "Y", "Z"), t1.getDefinition().getColumnNames());
-        assertEquals(Arrays.asList(1, 1, 1, 1, 1, 1, 1, 1, 1),
-                Arrays.asList(DataAccessHelpers.getColumn(t1, "X").get(0, 9)));
-        assertEquals(Arrays.asList(4, 4, 4, 5, 5, 5, 6, 6, 6),
-                Arrays.asList(DataAccessHelpers.getColumn(t1, "Z").get(0, 9)));
-        assertEquals(Arrays.asList("a", "b", "c", "a", "b", "c", "a", "b", "c"),
-                Arrays.asList(DataAccessHelpers.getColumn(t1, "Y").get(0, 9)));
+        assertArrayEquals(new int[] {1, 1, 1, 1, 1, 1, 1, 1, 1}, ColumnVectors.ofInt(t1, "X").toArray());
+        assertArrayEquals(new int[] {4, 4, 4, 5, 5, 5, 6, 6, 6}, ColumnVectors.ofInt(t1, "Z").toArray());
+        assertArrayEquals(new String[] {"a", "b", "c", "a", "b", "c", "a", "b", "c"},
+                ColumnVectors.ofObject(t1, "Y", String.class).toArray());
+    }
+
+    public void testEmptyTableSnapshot() {
+        final Table emptyTableNoColumns = emptyTable(0);
+        final Table emptyTableWithSingleColumn = emptyTable(0).update("X = i");
+        final Table emptyTableWithMultipleColumns = emptyTable(0).update("X = i", "Y = 2*i", "Z = 3*i");
+        try (final BarrageMessage snap =
+                ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) emptyTableNoColumns)) {
+            assertTrue(snap.rowsIncluded.isEmpty());
+            assertTrue(snap.addColumnData.length == 0);
+            assertTrue(snap.modColumnData.length == 0);
+        }
+
+        try (final BarrageMessage snap =
+                ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) emptyTableWithSingleColumn)) {
+            assertTrue(snap.rowsIncluded.isEmpty());
+            assertTrue(snap.addColumnData.length == 1);
+            assertTrue(snap.modColumnData.length == 1);
+            assertTrue(snap.addColumnData[0].data.isEmpty());
+            assertTrue(snap.modColumnData[0].data.isEmpty());
+        }
+
+        try (final BarrageMessage snap =
+                ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) emptyTableWithMultipleColumns)) {
+            assertTrue(snap.rowsIncluded.isEmpty());
+            assertTrue(snap.addColumnData.length == 3);
+            assertTrue(snap.modColumnData.length == 3);
+            assertTrue(snap.addColumnData[0].data.isEmpty());
+            assertTrue(snap.addColumnData[1].data.isEmpty());
+            assertTrue(snap.addColumnData[2].data.isEmpty());
+            assertTrue(snap.modColumnData[0].data.isEmpty());
+            assertTrue(snap.modColumnData[1].data.isEmpty());
+            assertTrue(snap.modColumnData[2].data.isEmpty());
+        }
     }
 
     public void testUngroupConstructSnapshotOfBoxedNull() {
@@ -2480,13 +2744,75 @@ public class QueryTableTest extends QueryTableTestBase {
                 testRefreshingTable(i(0).toTracking())
                         .update("X = new Integer[]{null, 2, 3}", "Z = new Integer[]{4, 5, null}");
         final Table ungrouped = t.ungroup();
+        try (final BarrageMessage snap =
+                ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) ungrouped)) {
+            testUngroupConstructSnapshotBoxedNullAllColumnHelper(snap);
+        }
 
-        try (final BarrageMessage snap = ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) ungrouped)) {
-            assertEquals(snap.rowsAdded, i(0, 1, 2));
-            assertEquals(snap.addColumnData[0].data.get(0).asIntChunk().get(0),
-                    io.deephaven.util.QueryConstants.NULL_INT);
-            assertEquals(snap.addColumnData[1].data.get(0).asIntChunk().get(2),
-                    io.deephaven.util.QueryConstants.NULL_INT);
+        // Snapshot the second column for last two rows
+        final BitSet columnsToSnapshot = new BitSet(2);
+        columnsToSnapshot.set(1);
+        final RowSequence rowsToSnapshot = RowSequenceFactory.forRange(1, 2);
+        try (final BarrageMessage snap =
+                ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(this, (BaseTable<?>) ungrouped,
+                        columnsToSnapshot, rowsToSnapshot, null)) {
+            testUngroupConstructSnapshotBoxedNullFewColumnsHelper(snap);
+        }
+
+        final Table selected = ungrouped.select(); // Will convert column sources to in memory
+        try (final BarrageMessage snap =
+                ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) selected)) {
+            testUngroupConstructSnapshotBoxedNullAllColumnHelper(snap);
+        }
+
+        try (final BarrageMessage snap =
+                ConstructSnapshot.constructBackplaneSnapshotInPositionSpace(this, (BaseTable<?>) selected,
+                        columnsToSnapshot, RowSequenceFactory.forRange(1, 2), null)) {
+            testUngroupConstructSnapshotBoxedNullFewColumnsHelper(snap);
+        }
+    }
+
+    private static void testUngroupConstructSnapshotBoxedNullAllColumnHelper(@NotNull final BarrageMessage snap) {
+        assertEquals(snap.rowsAdded, i(0, 1, 2));
+        final List<Chunk<Values>> firstColChunk = snap.addColumnData[0].data;
+        final int[] firstColExpected = new int[] {QueryConstants.NULL_INT, 2, 3};
+        final List<Chunk<Values>> secondColChunk = snap.addColumnData[1].data;
+        final int[] secondColExpected = new int[] {4, 5, QueryConstants.NULL_INT};
+        for (int i = 0; i < 3; i++) {
+            assertEquals(firstColChunk.get(0).asIntChunk().get(i), firstColExpected[i]);
+            assertEquals(secondColChunk.get(0).asIntChunk().get(i), secondColExpected[i]);
+        }
+    }
+
+    private static void testUngroupConstructSnapshotBoxedNullFewColumnsHelper(@NotNull final BarrageMessage snap) {
+        assertEquals(snap.rowsIncluded, i(1, 2));
+        assertEquals(snap.addColumnData[1].data.get(0).asIntChunk().get(0), 5);
+        assertEquals(snap.addColumnData[1].data.get(0).asIntChunk().get(1), QueryConstants.NULL_INT);
+    }
+
+
+    public void testUngroupConstructSnapshotSingleColumnTable() {
+        final Table t =
+                testRefreshingTable(i(0).toTracking())
+                        .update("X = new Integer[]{null, 2, 3}");
+        final Table ungrouped = t.ungroup();
+        try (final BarrageMessage snap =
+                ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) ungrouped)) {
+            testUngroupConstructSnapshotSingleColumnHelper(snap);
+        }
+
+        final Table selected = ungrouped.select(); // Will convert column sources to in memory
+        try (final BarrageMessage snap = ConstructSnapshot.constructBackplaneSnapshot(this, (BaseTable<?>) selected)) {
+            testUngroupConstructSnapshotSingleColumnHelper(snap);
+        }
+    }
+
+    private static void testUngroupConstructSnapshotSingleColumnHelper(@NotNull final BarrageMessage snap) {
+        assertEquals(snap.rowsAdded, i(0, 1, 2));
+        final List<Chunk<Values>> firstColChunk = snap.addColumnData[0].data;
+        final int[] firstColExpected = new int[] {QueryConstants.NULL_INT, 2, 3};
+        for (int i = 0; i < 3; i++) {
+            assertEquals(firstColChunk.get(0).asIntChunk().get(i), firstColExpected[i]);
         }
     }
 
@@ -2523,7 +2849,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table t11 = t9.sortDescending("X").ungroup();
         assertTableEquals(t11, t7);
 
-        final int[] intDirect = (int[]) DataAccessHelpers.getColumn(t2, "Int").getDirect();
+        final int[] intDirect = (int[]) ColumnVectors.of(t2, "Int").toArray();
         System.out.println(Arrays.toString(intDirect));
 
         final int[] expected = new int[] {1, 2, 3, 4, 5, 6, 7, io.deephaven.util.QueryConstants.NULL_INT};
@@ -2534,11 +2860,10 @@ public class QueryTableTest extends QueryTableTestBase {
             fail("Expected does not match direct value!");
         }
 
-        int[] intPrevDirect =
-                (int[]) IndexedDataColumn.makePreviousColumn(t2.getRowSet(), t2.getColumnSource("Int")).getDirect();
-        if (!Arrays.equals(expected, intPrevDirect)) {
+        int[] intPrev = ColumnVectors.ofInt(t2, "Int", true).toArray();
+        if (!Arrays.equals(expected, intPrev)) {
             System.out.println("Expected: " + Arrays.toString(expected));
-            System.out.println("Prev: " + Arrays.toString(intPrevDirect));
+            System.out.println("Prev: " + Arrays.toString(intPrev));
             fail("Expected does not match previous value!");
         }
 
@@ -2546,11 +2871,10 @@ public class QueryTableTest extends QueryTableTestBase {
         updateGraph.runWithinUnitTestCycle(() -> {
         });
 
-        intPrevDirect =
-                (int[]) IndexedDataColumn.makePreviousColumn(t2.getRowSet(), t2.getColumnSource("Int")).getDirect();
-        if (!Arrays.equals(expected, intPrevDirect)) {
+        intPrev = ColumnVectors.ofInt(t2, "Int", true).toArray();
+        if (!Arrays.equals(expected, intPrev)) {
             System.out.println("Expected: " + Arrays.toString(expected));
-            System.out.println("Prev: " + Arrays.toString(intPrevDirect));
+            System.out.println("Prev: " + Arrays.toString(intPrev));
             fail("Expected does not match previous value!");
         }
     }
@@ -2562,9 +2886,9 @@ public class QueryTableTest extends QueryTableTestBase {
             final QueryTable t1 = (QueryTable) table.ungroup("Y");
             assertEquals(5, t1.size());
             assertEquals(Arrays.asList("X", "Y"), t1.getDefinition().getColumnNames());
-            assertEquals(Arrays.asList(1, 1, 1, 2, 2), Arrays.asList(DataAccessHelpers.getColumn(t1, "X").get(0, 5)));
-            assertEquals(Arrays.asList("a", "b", "c", "d", "e"),
-                    Arrays.asList(DataAccessHelpers.getColumn(t1, "Y").get(0, 5)));
+            assertArrayEquals(new int[] {1, 1, 1, 2, 2}, ColumnVectors.ofInt(t1, "X").subVector(0, 5).toArray());
+            assertArrayEquals(new String[] {"a", "b", "c", "d", "e"},
+                    ColumnVectors.ofObject(t1, "Y", String.class).subVector(0, 5).toArray());
 
             final ErrorListener errorListener = new ErrorListener(t1);
             t1.addUpdateListener(errorListener);
@@ -2600,10 +2924,9 @@ public class QueryTableTest extends QueryTableTestBase {
             final QueryTable t1 = (QueryTable) table.ungroup("Y");
             assertEquals(5, t1.size());
             assertEquals(Arrays.asList("X", "Y"), t1.getDefinition().getColumnNames());
-            assertEquals(Arrays.asList(1, 1, 1, 2, 2),
-                    Ints.asList((int[]) DataAccessHelpers.getColumn(t1, "X").getDirect()));
-            assertEquals(Arrays.asList("a", "b", "c", "d", "e"),
-                    Arrays.asList((String[]) DataAccessHelpers.getColumn(t1, "Y").getDirect()));
+            assertArrayEquals(new int[] {1, 1, 1, 2, 2}, ColumnVectors.ofInt(t1, "X").toArray());
+            assertArrayEquals(new String[] {"a", "b", "c", "d", "e"},
+                    ColumnVectors.ofObject(t1, "Y", String.class).toArray());
             validateUpdates(t1);
 
             // This is too big, we should fail
@@ -2616,29 +2939,26 @@ public class QueryTableTest extends QueryTableTestBase {
             TableTools.showWithRowSet(t1);
 
             assertEquals(Arrays.asList("X", "Y"), t1.getDefinition().getColumnNames());
-            assertEquals(Arrays.asList(1, 1, 1, 2, 2, 3, 3, 3, 3, 3, 3),
-                    Ints.asList((int[]) (DataAccessHelpers.getColumn(t1, "X").getDirect())));
-            assertEquals(Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"),
-                    Arrays.asList((String[]) DataAccessHelpers.getColumn(t1, "Y").getDirect()));
+            assertArrayEquals(new int[] {1, 1, 1, 2, 2, 3, 3, 3, 3, 3, 3}, ColumnVectors.ofInt(t1, "X").toArray());
+            assertArrayEquals(new String[] {"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"},
+                    ColumnVectors.ofObject(t1, "Y", String.class).toArray());
 
-            assertEquals(Arrays.asList(1, 1, 1, 2, 2), Ints.asList(
-                    (int[]) IndexedDataColumn.makePreviousColumn(t1.getRowSet(), t1.getColumnSource("X")).getDirect()));
-            assertEquals(Arrays.asList("a", "b", "c", "d", "e"), Arrays.asList((String[]) IndexedDataColumn
-                    .makePreviousColumn(t1.getRowSet(), t1.getColumnSource("Y")).getDirect()));
+            assertArrayEquals(new int[] {1, 1, 1, 2, 2}, ColumnVectors.ofInt(t1, "X", true).toArray());
+            assertArrayEquals(new String[] {"a", "b", "c", "d", "e"},
+                    ColumnVectors.ofObject(t1, "Y", String.class, true).toArray());
 
             updateGraph.runWithinUnitTestCycle(() -> {
             });
 
             assertEquals(Arrays.asList("X", "Y"), t1.getDefinition().getColumnNames());
-            assertEquals(Arrays.asList(1, 1, 1, 2, 2, 3, 3, 3, 3, 3, 3),
-                    Ints.asList((int[]) DataAccessHelpers.getColumn(t1, "X").getDirect()));
-            assertEquals(Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"),
-                    Arrays.asList((String[]) DataAccessHelpers.getColumn(t1, "Y").getDirect()));
-            assertEquals(Arrays.asList(1, 1, 1, 2, 2, 3, 3, 3, 3, 3, 3), Ints.asList(
-                    (int[]) IndexedDataColumn.makePreviousColumn(t1.getRowSet(), t1.getColumnSource("X")).getDirect()));
-            assertEquals(Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"),
-                    Arrays.asList((String[]) IndexedDataColumn
-                            .makePreviousColumn(t1.getRowSet(), t1.getColumnSource("Y")).getDirect()));
+            assertArrayEquals(new int[] {1, 1, 1, 2, 2, 3, 3, 3, 3, 3, 3}, ColumnVectors.ofInt(t1, "X").toArray());
+            assertArrayEquals(new String[] {"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"},
+                    ColumnVectors.ofObject(t1, "Y", String.class).toArray());
+
+            assertArrayEquals(new int[] {1, 1, 1, 2, 2, 3, 3, 3, 3, 3, 3},
+                    ColumnVectors.ofInt(t1, "X", true).toArray());
+            assertArrayEquals(new String[] {"a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"},
+                    ColumnVectors.ofObject(t1, "Y", String.class, true).toArray());
         } finally {
             QueryTable.setMinimumUngroupBase(minimumUngroupBase);
         }
@@ -2659,7 +2979,7 @@ public class QueryTableTest extends QueryTableTestBase {
                         new DateGenerator(format.parse("2011-02-02"), format.parse("2011-02-03")),
                         new SetGenerator<>("a", "b"),
                         new SetGenerator<>(10, 20, 30),
-                        new SetGenerator<>(CollectionUtil.ZERO_LENGTH_STRING_ARRAY, new String[] {"a", "b"},
+                        new SetGenerator<>(ArrayTypeUtils.EMPTY_STRING_ARRAY, new String[] {"a", "b"},
                                 new String[] {"a", "b", "c"})));
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
@@ -3006,12 +3326,9 @@ public class QueryTableTest extends QueryTableTestBase {
     }
 
     public void testMemoizeConcurrent() {
-        final ExecutorService dualPool = Executors.newFixedThreadPool(2, new ThreadFactory() {
-            @Override
-            public Thread newThread(Runnable runnable) {
-                ExecutionContext captured = ExecutionContext.getContext();
-                return new Thread(() -> captured.apply(runnable));
-            }
+        final ExecutorService dualPool = Executors.newFixedThreadPool(2, runnable -> {
+            ExecutionContext captured = ExecutionContext.getContext();
+            return new Thread(() -> captured.apply(runnable));
         });
 
         final boolean old = QueryTable.setMemoizeResults(true);
@@ -3051,12 +3368,10 @@ public class QueryTableTest extends QueryTableTestBase {
 
     public void testWhereInGrouped() throws IOException {
         diskBackedTestHarness(t -> {
-            final ColumnSource<String> symbol = t.getColumnSource("Symbol");
-            // noinspection unchecked,rawtypes
-            final Map<String, RowSet> gtr = (Map) RowSetIndexer.of(t.getRowSet()).getGrouping(symbol);
-            ((AbstractColumnSource<String>) symbol).setGroupToRange(gtr);
-            final Table result =
-                    t.whereIn(t.where("Truthiness=true"), "Symbol", "Timestamp");
+            // Create the data index by asking for it.
+            DataIndexer.getOrCreateDataIndex(t, "Symbol");
+
+            final Table result = t.whereIn(t.where("Truthiness=true"), "Symbol", "Timestamp");
             TableTools.showWithRowSet(result);
         });
     }
@@ -3066,7 +3381,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         final TableDefinition definition = TableDefinition.of(
                 ColumnDefinition.ofInt("Sentinel"),
-                ColumnDefinition.ofString("Symbol").withGrouping(),
+                ColumnDefinition.ofString("Symbol"),
                 ColumnDefinition.ofTime("Timestamp"),
                 ColumnDefinition.ofBoolean("Truthiness"));
 
@@ -3083,11 +3398,15 @@ public class QueryTableTest extends QueryTableTestBase {
                 .updateView("Sentinel=i", "Symbol=syms[i % syms.length]",
                         "Timestamp=baseTime+dateOffset[i]*3600L*1000000000L", "Truthiness=booleans[i]")
                 .groupBy("Symbol").ungroup();
+
+        // Create the index for "Symbol" column.
+        DataIndexer.getOrCreateDataIndex(source, "Symbol");
+
         testDirectory.mkdirs();
         final File dest = new File(testDirectory, "Table.parquet");
         try {
-            ParquetTools.writeTable(source, dest, definition);
-            final Table table = ParquetTools.readTable(dest);
+            ParquetTools.writeTable(source, dest.getPath(), ParquetInstructions.EMPTY.withTableDefinition(definition));
+            final Table table = ParquetTools.readTable(dest.getPath());
             testFunction.accept(table);
             table.close();
         } finally {
@@ -3306,34 +3625,10 @@ public class QueryTableTest extends QueryTableTestBase {
 
     private static class TestInstantGroupingSource
             extends LongAsInstantColumnSource
-            implements DeferredGroupingColumnSource<Instant> {
-
-        final GroupingProvider<Object> groupingProvider = new GroupingProvider<>() {
-            @Override
-            public Map<Object, RowSet> getGroupToRange() {
-                return null;
-            }
-
-            @Override
-            public Pair<Map<Object, RowSet>, Boolean> getGroupToRange(RowSet hint) {
-                return null;
-            }
-        };
+            implements ColumnSource<Instant> {
 
         TestInstantGroupingSource(ColumnSource<Long> realSource) {
             super(realSource);
-            // noinspection unchecked,rawtypes
-            ((DeferredGroupingColumnSource) realSource).setGroupingProvider(groupingProvider);
-        }
-
-        @Override
-        public GroupingProvider<Instant> getGroupingProvider() {
-            return null;
-        }
-
-        @Override
-        public void setGroupingProvider(@Nullable GroupingProvider<Instant> groupingProvider) {
-            throw new UnsupportedOperationException();
         }
     }
 
@@ -3349,12 +3644,19 @@ public class QueryTableTest extends QueryTableTestBase {
         final TestInstantGroupingSource cs = new TestInstantGroupingSource(colSource(0L, 1, 2, 3));
         final Map<String, ? extends ColumnSource<?>> columns = Maps.of("T", cs);
         final QueryTable t1 = new QueryTable(rowSet, columns);
+
+        // Create an index for "T"
+        DataIndexer.getOrCreateDataIndex(t1, "T");
+
         final Table t2 = t1.select("T");
 
-        // noinspection rawtypes
-        final DeferredGroupingColumnSource result =
-                (DeferredGroupingColumnSource) t2.getColumnSource("T").reinterpret(long.class);
-        assertSame(cs.groupingProvider, result.getGroupingProvider());
+        final ColumnSource<?> result = t2.getColumnSource("T");
+        final ColumnSource<?> reinterpreted = result.reinterpret(long.class);
+
+        assertTrue(DataIndexer.of(t1.getRowSet()).hasDataIndex(cs));
+        assertTrue(DataIndexer.of(t2.getRowSet()).hasDataIndex(result));
+
+        assertFalse(DataIndexer.of(t2.getRowSet()).hasDataIndex(reinterpreted));
     }
 
     private static void validateUpdates(final Table table) {

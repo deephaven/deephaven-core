@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.api;
 
 import io.deephaven.api.agg.Aggregation;
@@ -114,6 +114,10 @@ public class Strings {
     public static String of(FilterPattern pattern, boolean invert) {
         final String inner = of(pattern);
         return (invert ? "!" : "") + inner;
+    }
+
+    public static String ofPairs(Collection<? extends Pair> pairs) {
+        return pairs.stream().map(Strings::of).collect(Collectors.joining(",", "[", "]"));
     }
 
     public static String of(Pair pair) {

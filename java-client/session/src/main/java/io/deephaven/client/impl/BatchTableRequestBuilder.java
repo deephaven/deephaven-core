@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.client.impl;
 
 import com.google.protobuf.ByteStringAccess;
@@ -53,6 +53,7 @@ import io.deephaven.proto.backplane.grpc.HeadOrTailRequest;
 import io.deephaven.proto.backplane.grpc.InCondition;
 import io.deephaven.proto.backplane.grpc.IsNullCondition;
 import io.deephaven.proto.backplane.grpc.MergeTablesRequest;
+import io.deephaven.proto.backplane.grpc.MultiJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.NotCondition;
 import io.deephaven.proto.backplane.grpc.OrCondition;
@@ -90,6 +91,8 @@ import io.deephaven.qst.table.InputTable;
 import io.deephaven.qst.table.JoinTable;
 import io.deephaven.qst.table.LazyUpdateTable;
 import io.deephaven.qst.table.MergeTable;
+import io.deephaven.qst.table.MultiJoinInput;
+import io.deephaven.qst.table.MultiJoinTable;
 import io.deephaven.qst.table.NaturalJoinTable;
 import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.RangeJoinTable;
@@ -581,6 +584,29 @@ class BatchTableRequestBuilder {
                 request.addColumnNames(dropColumn.name());
             }
             return op(Builder::setDropColumns, request);
+        }
+
+        @Override
+        public Operation visit(MultiJoinTable multiJoinTable) {
+            final MultiJoinTablesRequest.Builder request = MultiJoinTablesRequest.newBuilder()
+                    .setResultId(ticket);
+            for (MultiJoinInput<TableSpec> input : multiJoinTable.inputs()) {
+                request.addMultiJoinInputs(adapt(input));
+            }
+            return op(Builder::setMultiJoin, request);
+        }
+
+        private io.deephaven.proto.backplane.grpc.MultiJoinInput adapt(MultiJoinInput<TableSpec> input) {
+            io.deephaven.proto.backplane.grpc.MultiJoinInput.Builder builder =
+                    io.deephaven.proto.backplane.grpc.MultiJoinInput.newBuilder()
+                            .setSourceId(ref(input.table()));
+            for (JoinMatch match : input.matches()) {
+                builder.addColumnsToMatch(Strings.of(match));
+            }
+            for (JoinAddition addition : input.additions()) {
+                builder.addColumnsToAdd(Strings.of(addition));
+            }
+            return builder.build();
         }
 
         private SelectOrUpdateRequest selectOrUpdate(SingleParentTable x,

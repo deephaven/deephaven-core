@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api;
 
 import com.google.gwt.junit.DoNotRunWith;
@@ -502,7 +505,7 @@ public class TableManipulationTestGwt extends AbstractAsyncGwtTestCase {
                     table.setViewport(0, 2, null);
 
                     return assertUpdateReceived(table, viewportData -> {
-                        viewportData.getRows().forEach((row, index, all) -> {
+                        viewportData.getRows().forEach((row, index) -> {
                             dates.add(row.get(table.findColumn("Timestamp")).cast());
                             return null;
                         });

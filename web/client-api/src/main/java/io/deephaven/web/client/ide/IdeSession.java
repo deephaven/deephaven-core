@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.ide;
 
 import com.google.gwt.user.client.Timer;
@@ -136,6 +136,11 @@ public class IdeSession extends HasEventHandling {
     public Promise<JsTreeTable> getHierarchicalTable(String name) {
         return connection.getVariableDefinition(name, JsVariableType.HIERARCHICALTABLE)
                 .then(connection::getHierarchicalTable);
+    }
+
+    public Promise<JsPartitionedTable> getPartitionedTable(String name) {
+        return connection.getVariableDefinition(name, JsVariableType.PARTITIONEDTABLE)
+                .then(connection::getPartitionedTable);
     }
 
     public Promise<?> getObject(@TsTypeRef(JsVariableDescriptor.class) JsPropertyMap<Object> definitionObject) {
@@ -365,7 +370,7 @@ public class IdeSession extends HasEventHandling {
                 .timeout(JsTable.MAX_BATCH_TIME)
                 .asPromise()
                 .then(res -> Promise.resolve(
-                        res.getCompletionItems().getItemsList().map((item, index, arr) -> LspTranslate.toJs(item))),
+                        res.getCompletionItems().getItemsList().map((item, index) -> LspTranslate.toJs(item))),
                         fail -> {
                             // noinspection unchecked, rawtypes
                             return (Promise<JsArray<io.deephaven.web.shared.ide.lsp.CompletionItem>>) (Promise) Promise
@@ -393,7 +398,7 @@ public class IdeSession extends HasEventHandling {
                 .timeout(JsTable.MAX_BATCH_TIME)
                 .asPromise()
                 .then(res -> Promise.resolve(
-                        res.getSignatures().getSignaturesList().map((item, index, arr) -> LspTranslate.toJs(item))),
+                        res.getSignatures().getSignaturesList().map((item, index) -> LspTranslate.toJs(item))),
                         fail -> {
                             // noinspection unchecked, rawtypes
                             return (Promise<JsArray<io.deephaven.web.shared.ide.lsp.SignatureInformation>>) (Promise) Promise

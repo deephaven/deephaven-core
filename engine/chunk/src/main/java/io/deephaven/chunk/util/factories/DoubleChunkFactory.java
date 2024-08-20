@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunkFactory and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharChunkFactory and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.chunk.util.factories;
 
 import io.deephaven.chunk.*;
@@ -42,28 +41,28 @@ public class DoubleChunkFactory implements ChunkFactory {
     @NotNull
     @Override
     public final <ATTR extends Any> DoubleChunk<ATTR> chunkWrap(Object array) {
-        final double[] typedArray = (double[])array;
+        final double[] typedArray = (double[]) array;
         return DoubleChunk.chunkWrap(typedArray);
     }
 
     @NotNull
     @Override
     public final <ATTR extends Any> DoubleChunk<ATTR> chunkWrap(Object array, int offset, int capacity) {
-        final double[] typedArray = (double[])array;
+        final double[] typedArray = (double[]) array;
         return DoubleChunk.chunkWrap(typedArray, offset, capacity);
     }
 
     @NotNull
     @Override
     public final <ATTR extends Any> DoubleChunkChunk<ATTR> chunkChunkWrap(Chunk<ATTR>[] array) {
-        DoubleChunk<ATTR>[] typedArray = (DoubleChunk<ATTR>[])array;
+        DoubleChunk<ATTR>[] typedArray = (DoubleChunk<ATTR>[]) array;
         return DoubleChunkChunk.chunkWrap(typedArray);
     }
 
     @NotNull
     @Override
     public final <ATTR extends Any> DoubleChunkChunk<ATTR> chunkChunkWrap(Chunk<ATTR>[] array, int offset, int capacity) {
-        DoubleChunk<ATTR>[] typedArray = (DoubleChunk<ATTR>[])array;
+        DoubleChunk<ATTR>[] typedArray = (DoubleChunk<ATTR>[]) array;
         return DoubleChunkChunk.chunkWrap(typedArray, offset, capacity);
     }
 
@@ -95,14 +94,15 @@ public class DoubleChunkFactory implements ChunkFactory {
     @NotNull
     @Override
     public final <ATTR extends Any> WritableDoubleChunk<ATTR> writableChunkWrap(Object array, int offset, int capacity) {
-        final double[] realType = (double[])array;
+        final double[] realType = (double[]) array;
         return WritableDoubleChunk.writableChunkWrap(realType, offset, capacity);
     }
 
     @NotNull
     @Override
-    public final <ATTR extends Any> WritableChunkChunk<ATTR> writableChunkChunkWrap(WritableChunk<ATTR>[] array, int offset, int capacity) {
-        WritableDoubleChunk<ATTR>[] actual = (WritableDoubleChunk<ATTR>[])array;
+    public final <ATTR extends Any> WritableChunkChunk<ATTR> writableChunkChunkWrap(WritableChunk<ATTR>[] array,
+            int offset, int capacity) {
+        WritableDoubleChunk<ATTR>[] actual = (WritableDoubleChunk<ATTR>[]) array;
         return WritableDoubleChunkChunk.writableChunkWrap(actual, offset, capacity);
     }
 

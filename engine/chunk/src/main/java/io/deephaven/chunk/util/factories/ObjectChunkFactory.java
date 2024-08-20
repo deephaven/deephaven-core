@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.chunk.util.factories;
 
 import io.deephaven.chunk.*;
@@ -37,30 +37,31 @@ public final class ObjectChunkFactory<T> implements ChunkFactory {
     @NotNull
     @Override
     public final <ATTR extends Any> ObjectChunk<T, ATTR> chunkWrap(Object array) {
-        //noinspection unchecked
-        final T[] typedArray = (T[])array;
+        // noinspection unchecked
+        final T[] typedArray = (T[]) array;
         return ObjectChunk.chunkWrap(typedArray);
     }
 
     @NotNull
     @Override
     public final <ATTR extends Any> ObjectChunk<T, ATTR> chunkWrap(Object array, int offset, int capacity) {
-        //noinspection unchecked
-        final T[] typedArray = (T[])array;
+        // noinspection unchecked
+        final T[] typedArray = (T[]) array;
         return ObjectChunk.chunkWrap(typedArray, offset, capacity);
     }
 
     @NotNull
     @Override
     public final <ATTR extends Any> ObjectChunkChunk<T, ATTR> chunkChunkWrap(Chunk<ATTR>[] array) {
-        ObjectChunk<T, ATTR>[] typedArray = (ObjectChunk<T, ATTR>[])array;
+        ObjectChunk<T, ATTR>[] typedArray = (ObjectChunk<T, ATTR>[]) array;
         return ObjectChunkChunk.chunkWrap(typedArray);
     }
 
     @NotNull
     @Override
-    public final <ATTR extends Any> ObjectChunkChunk<T, ATTR> chunkChunkWrap(Chunk<ATTR>[] array, int offset, int capacity) {
-         ObjectChunk<T, ATTR>[] typedArray = (ObjectChunk<T, ATTR>[])array;
+    public final <ATTR extends Any> ObjectChunkChunk<T, ATTR> chunkChunkWrap(Chunk<ATTR>[] array, int offset,
+            int capacity) {
+        ObjectChunk<T, ATTR>[] typedArray = (ObjectChunk<T, ATTR>[]) array;
         return ObjectChunkChunk.chunkWrap(typedArray, offset, capacity);
     }
 
@@ -90,16 +91,18 @@ public final class ObjectChunkFactory<T> implements ChunkFactory {
 
     @NotNull
     @Override
-    public final <ATTR extends Any> WritableObjectChunk<T, ATTR> writableChunkWrap(Object array, int offset, int capacity) {
-        //noinspection unchecked
-        final T[] realType = (T[])array;
+    public final <ATTR extends Any> WritableObjectChunk<T, ATTR> writableChunkWrap(Object array, int offset,
+            int capacity) {
+        // noinspection unchecked
+        final T[] realType = (T[]) array;
         return WritableObjectChunk.writableChunkWrap(realType, offset, capacity);
     }
 
     @NotNull
     @Override
-    public final <ATTR extends Any> WritableChunkChunk<ATTR> writableChunkChunkWrap(WritableChunk<ATTR>[] array, int offset, int capacity) {
-        WritableObjectChunk<T, ATTR>[] actual = (WritableObjectChunk<T, ATTR>[])array;
+    public final <ATTR extends Any> WritableChunkChunk<ATTR> writableChunkChunkWrap(WritableChunk<ATTR>[] array,
+            int offset, int capacity) {
+        WritableObjectChunk<T, ATTR>[] actual = (WritableObjectChunk<T, ATTR>[]) array;
         return WritableObjectChunkChunk.writableChunkWrap(actual, offset, capacity);
     }
 

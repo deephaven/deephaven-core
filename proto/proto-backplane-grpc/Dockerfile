@@ -31,7 +31,7 @@ RUN set -eux; \
     /includes/deephaven/proto/storage.proto; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-ts=/usr/src/app/node_modules/.bin/protoc-gen-ts \
-    --js_out=import_style=commonjs:/generated/js \
+    --js_out=import_style=commonjs_strict:/generated/js \
     --ts_out=service=grpc-web:/generated/js \
     -I/dependencies \
     -I/includes \

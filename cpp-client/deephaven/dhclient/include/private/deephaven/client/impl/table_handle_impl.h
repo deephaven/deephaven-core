@@ -1,5 +1,5 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
+/*
+ * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
  */
 #pragma once
 
@@ -92,9 +92,6 @@ public:
   [[nodiscard]]
   std::shared_ptr<TableHandleImpl> PercentileBy(double percentile, bool avg_median,
       std::vector<std::string> column_specs);
-  [[nodiscard]]
-  std::shared_ptr<TableHandleImpl>
-  PercentileBy(double percentile, std::vector<std::string> column_specs);
   [[nodiscard]]
   std::shared_ptr<TableHandleImpl>
   CountBy(std::string count_by_column, std::vector<std::string> column_specs);

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.server.partitionedtable;
 
 import com.google.rpc.Code;
@@ -112,6 +112,10 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
                             merged = partitionedTable.get().merge();
                         }
                         merged = authorizationTransformation.transform(merged);
+                        if (merged == null) {
+                            throw Exceptions.statusRuntimeException(
+                                    Code.FAILED_PRECONDITION, "Not authorized to merge table.");
+                        }
                         final ExportedTableCreationResponse response =
                                 buildTableCreationResponse(request.getResultId(), merged);
                         safelyComplete(responseObserver, response);
@@ -187,6 +191,10 @@ public class PartitionedTableServiceGrpcImpl extends PartitionedTableServiceGrpc
                         table = authorizationTransformation.transform(table);
                         final ExportedTableCreationResponse response =
                                 buildTableCreationResponse(request.getResultId(), table);
+                        if (table == null) {
+                            throw Exceptions.statusRuntimeException(
+                                    Code.FAILED_PRECONDITION, "Not authorized to get table.");
+                        }
                         safelyComplete(responseObserver, response);
                         return table;
                     });

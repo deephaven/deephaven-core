@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.server.jetty;
 
 import dagger.Component;
@@ -69,6 +69,7 @@ public final class CommunityComponentFactory
      */
     @Module(includes = {
             JettyServerModule.class,
+            JettyClientChannelFactoryModule.class,
             CommunityAuthorizationModule.class,
             CommunityDefaultsModule.class,
             // Implementation note: when / if modules are migrated out of CommunityDefaultsModule, they will need to be

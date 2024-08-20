@@ -1,8 +1,10 @@
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharEmStdOperator and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharEmStdOperator and run "./gradlew replicateUpdateBy" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.updateby.emstd;
 
 import io.deephaven.api.updateby.OperationControl;
@@ -12,6 +14,7 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.impl.MatchPair;
+import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.updateby.UpdateByOperator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -19,8 +22,8 @@ import org.jetbrains.annotations.Nullable;
 import static io.deephaven.util.QueryConstants.*;
 
 /***
- * Compute an exponential moving standard deviation for a int column source. The output is expressed as a
- * BigDecimal value and is computed using the following formula:
+ * Compute an exponential moving standard deviation for a int column source. The output is expressed as a double value
+ * and is computed using the following formula:
  * <p>
  * variance = alpha * (prevVariance + (1 - alpha) * (x - prevEma)^2)
  * <p>
@@ -47,9 +50,9 @@ public class IntEmStdOperator extends BasePrimitiveEmStdOperator {
 
         @Override
         public void accumulateCumulative(@NotNull RowSequence inputKeys,
-                                         Chunk<? extends Values>[] valueChunkArr,
-                                         LongChunk<? extends Values> tsChunk,
-                                         int len) {
+                Chunk<? extends Values>[] valueChunkArr,
+                LongChunk<? extends Values> tsChunk,
+                int len) {
             setValueChunks(valueChunkArr);
 
             // chunk processing
@@ -67,11 +70,11 @@ public class IntEmStdOperator extends BasePrimitiveEmStdOperator {
                             curVariance = 0.0;
                             curVal = Double.NaN;
                         } else {
-                            //  incremental variance = alpha * (prevVariance + (1 - alpha) * (x - prevEma)^2)
+                            // incremental variance = alpha * (prevVariance + (1 - alpha) * (x - prevEma)^2)
                             curVariance = opAlpha * (curVariance + opOneMinusAlpha * Math.pow(input - curEma, 2.0));
 
                             final double decayedEmaVal = curEma * opAlpha;
-                            curEma =  decayedEmaVal + (opOneMinusAlpha * input);
+                            curEma = decayedEmaVal + (opOneMinusAlpha * input);
                             curVal = Math.sqrt(curVariance);
                         }
                     }
@@ -86,7 +89,7 @@ public class IntEmStdOperator extends BasePrimitiveEmStdOperator {
                     // read the value from the values chunk
                     final int input = intValueChunk.get(ii);
                     final long timestamp = tsChunk.get(ii);
-                    //noinspection ConstantConditions
+                    // noinspection ConstantConditions
                     final boolean isNull = input == NULL_INT;
                     final boolean isNullTime = timestamp == NULL_LONG;
 
@@ -101,17 +104,21 @@ public class IntEmStdOperator extends BasePrimitiveEmStdOperator {
                         lastStamp = timestamp;
                     } else {
                         final long dt = timestamp - lastStamp;
+                        if (dt < 0) {
+                            // negative time deltas are not allowed, throw an exception
+                            throw new TableDataException("Timestamp values in UpdateBy operators must not decrease");
+                        }
                         if (dt != lastDt) {
                             // Alpha is dynamic based on time, but only recalculated when needed
                             alpha = Math.exp(-dt / reverseWindowScaleUnits);
                             oneMinusAlpha = 1.0 - alpha;
                             lastDt = dt;
                         }
-                        //  incremental variance = alpha * (prevVariance + (1 - alpha) * (x - prevEma)^2)
+                        // incremental variance = alpha * (prevVariance + (1 - alpha) * (x - prevEma)^2)
                         curVariance = alpha * (curVariance + oneMinusAlpha * Math.pow(input - curEma, 2.0));
 
                         final double decayedEmaVal = curEma * alpha;
-                        curEma =  decayedEmaVal + (oneMinusAlpha * input);
+                        curEma = decayedEmaVal + (oneMinusAlpha * input);
                         curVal = Math.sqrt(curVariance);
 
                         lastStamp = timestamp;
@@ -147,23 +154,24 @@ public class IntEmStdOperator extends BasePrimitiveEmStdOperator {
     }
 
     /**
-     * An operator that computes an exponential moving standard deviation from a int column using an exponential
-     * decay function.
+     * An operator that computes an exponential moving standard deviation from a int column using an exponential decay
+     * function.
      *
-     * @param pair                the {@link MatchPair} that defines the input/output for this operation
-     * @param affectingColumns    the names of the columns that affect this ema
-     * @param control             defines how to handle {@code null} input values.
+     * @param pair the {@link MatchPair} that defines the input/output for this operation
+     * @param affectingColumns the names of the columns that affect this ema
+     * @param control defines how to handle {@code null} input values.
      * @param timestampColumnName the name of the column containing timestamps for time-based calcuations
-     * @param windowScaleUnits      the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is measured in ticks, otherwise it is measured in nanoseconds
+     * @param windowScaleUnits the smoothing window for the EMA. If no {@code timestampColumnName} is provided, this is
+     *        measured in ticks, otherwise it is measured in nanoseconds
      */
     public IntEmStdOperator(
             @NotNull final MatchPair pair,
-             @NotNull final String[] affectingColumns,
-             @NotNull final OperationControl control,
-             @Nullable final String timestampColumnName,
-             final double windowScaleUnits
-             // region extra-constructor-args
-             // endregion extra-constructor-args
+            @NotNull final String[] affectingColumns,
+            @NotNull final OperationControl control,
+            @Nullable final String timestampColumnName,
+            final double windowScaleUnits
+    // region extra-constructor-args
+    // endregion extra-constructor-args
     ) {
         super(pair, affectingColumns, control, timestampColumnName, windowScaleUnits);
         // region constructor
@@ -178,8 +186,8 @@ public class IntEmStdOperator extends BasePrimitiveEmStdOperator {
                 control,
                 timestampColumnName,
                 reverseWindowScaleUnits
-                // region extra-copy-args
-                // endregion extra-copy-args
+        // region extra-copy-args
+        // endregion extra-copy-args
         );
     }
 

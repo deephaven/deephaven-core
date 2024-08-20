@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.web.client.api.widget.plot;
 
 import com.vertispan.tsdefs.annotations.TsTypeRef;
@@ -43,7 +43,7 @@ public class JsFigureFactory {
         FetchObjectResponse response = new FetchObjectResponse();
         response.setData(figureDescriptor.serializeBinary());
         Promise<?>[] tableCopyPromises =
-                tables.map((table, index, all) -> table.copy(false)).asArray(new Promise[0]);
+                tables.map((table, index) -> table.copy(false)).asArray(new Promise[0]);
         return Promise.all(tableCopyPromises)
                 .then(unknownTableCopies -> {
                     JsArray<JsTable> jsTableCopies = Js.cast(unknownTableCopies);

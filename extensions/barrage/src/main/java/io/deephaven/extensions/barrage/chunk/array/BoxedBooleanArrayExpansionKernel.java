@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.extensions.barrage.chunk.array;
 
 import io.deephaven.chunk.ByteChunk;
@@ -21,7 +21,8 @@ public class BoxedBooleanArrayExpansionKernel implements ArrayExpansionKernel {
     public final static BoxedBooleanArrayExpansionKernel INSTANCE = new BoxedBooleanArrayExpansionKernel();
 
     @Override
-    public <T, A extends Any> WritableChunk<A> expand(final ObjectChunk<T, A> source, final WritableIntChunk<ChunkPositions> perElementLengthDest) {
+    public <T, A extends Any> WritableChunk<A> expand(final ObjectChunk<T, A> source,
+            final WritableIntChunk<ChunkPositions> perElementLengthDest) {
         if (source.size() == 0) {
             perElementLengthDest.setSize(0);
             return WritableByteChunk.makeWritableChunk(0);
@@ -46,7 +47,7 @@ public class BoxedBooleanArrayExpansionKernel implements ArrayExpansionKernel {
                 continue;
             }
             for (int j = 0; j < row.length; ++j) {
-                final byte value = row[j] ? BooleanUtils.TRUE_BOOLEAN_AS_BYTE : BooleanUtils.FALSE_BOOLEAN_AS_BYTE;
+                final byte value = BooleanUtils.booleanAsByte(row[j]);
                 result.set(lenWritten + j, value);
             }
             lenWritten += row.length;
@@ -93,7 +94,7 @@ public class BoxedBooleanArrayExpansionKernel implements ArrayExpansionKernel {
             }
         }
 
-        //noinspection unchecked
-        return (WritableObjectChunk<T, A>)result;
+        // noinspection unchecked
+        return (WritableObjectChunk<T, A>) result;
     }
 }

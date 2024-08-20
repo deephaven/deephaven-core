@@ -1,0 +1,1 @@
+Object.assign(exports, require('real/Flight_pb').arrow.flight.protocol)

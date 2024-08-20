@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunkFactory and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit CharChunkFactory and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.chunk.util.factories;
 
 import io.deephaven.chunk.*;
@@ -42,28 +41,28 @@ public class BooleanChunkFactory implements ChunkFactory {
     @NotNull
     @Override
     public final <ATTR extends Any> BooleanChunk<ATTR> chunkWrap(Object array) {
-        final boolean[] typedArray = (boolean[])array;
+        final boolean[] typedArray = (boolean[]) array;
         return BooleanChunk.chunkWrap(typedArray);
     }
 
     @NotNull
     @Override
     public final <ATTR extends Any> BooleanChunk<ATTR> chunkWrap(Object array, int offset, int capacity) {
-        final boolean[] typedArray = (boolean[])array;
+        final boolean[] typedArray = (boolean[]) array;
         return BooleanChunk.chunkWrap(typedArray, offset, capacity);
     }
 
     @NotNull
     @Override
     public final <ATTR extends Any> BooleanChunkChunk<ATTR> chunkChunkWrap(Chunk<ATTR>[] array) {
-        BooleanChunk<ATTR>[] typedArray = (BooleanChunk<ATTR>[])array;
+        BooleanChunk<ATTR>[] typedArray = (BooleanChunk<ATTR>[]) array;
         return BooleanChunkChunk.chunkWrap(typedArray);
     }
 
     @NotNull
     @Override
     public final <ATTR extends Any> BooleanChunkChunk<ATTR> chunkChunkWrap(Chunk<ATTR>[] array, int offset, int capacity) {
-        BooleanChunk<ATTR>[] typedArray = (BooleanChunk<ATTR>[])array;
+        BooleanChunk<ATTR>[] typedArray = (BooleanChunk<ATTR>[]) array;
         return BooleanChunkChunk.chunkWrap(typedArray, offset, capacity);
     }
 
@@ -95,14 +94,15 @@ public class BooleanChunkFactory implements ChunkFactory {
     @NotNull
     @Override
     public final <ATTR extends Any> WritableBooleanChunk<ATTR> writableChunkWrap(Object array, int offset, int capacity) {
-        final boolean[] realType = (boolean[])array;
+        final boolean[] realType = (boolean[]) array;
         return WritableBooleanChunk.writableChunkWrap(realType, offset, capacity);
     }
 
     @NotNull
     @Override
-    public final <ATTR extends Any> WritableChunkChunk<ATTR> writableChunkChunkWrap(WritableChunk<ATTR>[] array, int offset, int capacity) {
-        WritableBooleanChunk<ATTR>[] actual = (WritableBooleanChunk<ATTR>[])array;
+    public final <ATTR extends Any> WritableChunkChunk<ATTR> writableChunkChunkWrap(WritableChunk<ATTR>[] array,
+            int offset, int capacity) {
+        WritableBooleanChunk<ATTR>[] actual = (WritableBooleanChunk<ATTR>[]) array;
         return WritableBooleanChunkChunk.writableChunkWrap(actual, offset, capacity);
     }
 

@@ -1,3 +1,6 @@
+<#--
+  Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+-->
 
 package io.deephaven.function;
 
@@ -11,6 +14,7 @@ import java.util.Arrays;
 import static io.deephaven.base.CompareUtils.compare;
 import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.function.Basic.*;
+import static io.deephaven.function.Sort.*;
 import static io.deephaven.function.Cast.castDouble;
 
 /**
@@ -361,18 +365,27 @@ public class Numeric {
 
         double sum = 0;
         double count = 0;
+        long nullCount = 0;
 
         try ( final ${pt.vectorIterator} vi = values.iterator() ) {
             while ( vi.hasNext() ) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
+                <#if pt.valueType.isFloat >
                 if (isNaN(c)) {
                     return Double.NaN;
                 }
+                </#if>
                 if (!isNull(c)) {
                     sum += c;
                     count++;
+                } else {
+                    nullCount++;
                 }
             }
+        }
+
+        if (nullCount == values.size()) {
+            return NULL_DOUBLE;
         }
 
         return sum / count;
@@ -415,21 +428,30 @@ public class Numeric {
 
         double sum = 0;
         double count = 0;
+        long nullCount = 0;
 
         try ( final ${pt.vectorIterator} vi = values.iterator() ) {
             while ( vi.hasNext() ) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
+                <#if pt.valueType.isFloat >
                 if (isNaN(c)) {
                     return Double.NaN;
                 }
                 if (isInf(c)) {
                     return Double.POSITIVE_INFINITY;
                 }
+                </#if>
                 if (!isNull(c)) {
                     sum += Math.abs(c);
                     count++;
+                } else {
+                    nullCount++;
                 }
             }
+        }
+
+        if (nullCount == values.size()) {
+            return NULL_DOUBLE;
         }
 
         return sum / count;
@@ -482,18 +504,27 @@ public class Numeric {
         double sum = 0;
         double sum2 = 0;
         long count = 0;
+        long nullCount = 0;
         try ( final ${pt.vectorIterator} vi = values.iterator() ) {
             while ( vi.hasNext() ) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
+                <#if pt.valueType.isFloat >
                 if (isNaN(c) || isInf(c)) {
                     return Double.NaN;
                 }
+                </#if>
                 if (!isNull(c)) {
                     sum += (double)c;
                     sum2 += (double)c * (double)c;
                     count++;
+                } else {
+                    nullCount++;
                 }
             }
+        }
+
+        if (nullCount == values.size()) {
+            return NULL_DOUBLE;
         }
 
         // Return NaN if overflow or too few values to compute variance.
@@ -593,6 +624,8 @@ public class Numeric {
         double sum2 = 0;
         double count = 0;
         double count2 = 0;
+        long nullCount = 0;
+        long valueCount = 0;
 
         try (
             final ${pt.vectorIterator} vi = values.iterator();
@@ -601,23 +634,34 @@ public class Numeric {
             while (vi.hasNext()) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
                 final ${pt2.primitive} w = wi.${pt2.iteratorNext}();
+                <#if pt.valueType.isFloat >
                 if (isNaN(c) || isInf(c)) {
                     return Double.NaN;
                 }
+                </#if>
+                <#if pt2.valueType.isFloat >
                 if (isNaN(w) || isInf(w)) {
                     return Double.NaN;
                 }
+                </#if>
                 if (!isNull(c) && !isNull(w)) {
                     sum += w * c;
                     sum2 += w * c * c;
                     count += w;
                     count2 += w * w;
+                    valueCount++;
+                } else {
+                    nullCount++;
                 }
             }
         }
 
+        if (nullCount == values.size()) {
+            return NULL_DOUBLE;
+        }
+
         // Return NaN if overflow or too few values to compute variance.
-        if (count <= 1 || Double.isInfinite(sum) || Double.isInfinite(sum2)) {
+        if (valueCount <= 1 || Double.isInfinite(sum) || Double.isInfinite(sum2)) {
             return Double.NaN;
         }
 
@@ -865,6 +909,11 @@ public class Numeric {
             throw new IllegalArgumentException("Incompatible input sizes: " + values.size() + ", " + weights.size());
         }
 
+        final double s = wstd(values, weights);
+        if (s == NULL_DOUBLE) {
+            return NULL_DOUBLE;
+        }
+
         // see https://stats.stackexchange.com/questions/25895/computing-standard-error-in-weighted-mean-estimation
         double sumw = 0;
         double sumw2 = 0;
@@ -884,8 +933,7 @@ public class Numeric {
             }
         }
 
-        final double s = wstd(values, weights);
-        return s == NULL_DOUBLE ? NULL_DOUBLE : s * Math.sqrt(sumw2/sumw/sumw);
+        return s * Math.sqrt(sumw2/sumw/sumw);
     }
 
     </#if>
@@ -993,7 +1041,15 @@ public class Numeric {
         }
 
         final double a = wavg(values, weights);
+        if (a == NULL_DOUBLE) {
+            return NULL_DOUBLE;
+        }
+
         final double s = wste(values, weights);
+        if (s == NULL_DOUBLE) {
+            return NULL_DOUBLE;
+        }
+
         return a / s;
     }
 
@@ -1186,7 +1242,8 @@ public class Numeric {
     }
 
     /**
-     * Returns the median.
+     * Returns the median. {@code null} input values are ignored but {@code NaN} values will poison the computation,
+     * and {@code NaN} will be returned
      *
      * @param values values.
      * @return median.
@@ -1196,7 +1253,8 @@ public class Numeric {
     }
 
     /**
-     * Returns the median.
+     * Returns the median. {@code null} input values are ignored but {@code NaN} values will poison the computation,
+     * and {@code NaN} will be returned
      *
      * @param values values.
      * @return median.
@@ -1210,7 +1268,8 @@ public class Numeric {
     }
 
     /**
-     * Returns the median.
+     * Returns the median. {@code null} input values are ignored but {@code NaN} values will poison the computation,
+     * and {@code NaN} will be returned
      *
      * @param values values.
      * @return median.
@@ -1223,41 +1282,95 @@ public class Numeric {
         int n = values.intSize("median");
 
         if (n == 0) {
-            return Double.NaN;
-        } else {
-            ${pt.primitive}[] copy = values.copyToArray();
-            Arrays.sort(copy);
-            if (n % 2 == 0)
-                return 0.5 * (copy[n / 2 - 1] + copy[n / 2]);
-            else return copy[n / 2];
+            return NULL_DOUBLE;
         }
+
+        ${pt.primitive}[] sorted = values.copyToArray();
+        Arrays.sort(sorted);
+
+        <#if pt.valueType.isFloat >
+        if (isNaN(sorted[sorted.length - 1])) {
+            return Double.NaN; // Any NaN will pollute the result and NaN always sorted to the end.
+        }
+
+        int nullStart = -1;
+        int nullCount = 0;
+        for (int i = 0; i < n; i++) {
+            final ${pt.primitive} val = sorted[i];
+            if (val > ${pt.null}) {
+                break; // no more NULL possible
+            }
+            if (isNull(val)) {
+                nullCount++;
+                if (nullStart == -1) {
+                    nullStart = i;
+                }
+            }
+        }
+        <#else>
+        int nullCount = 0;
+        for (int i = 0; i < n && isNull(sorted[i]); i++) {
+            nullCount++;
+        }
+        </#if>
+
+        if (nullCount == n) {
+            return NULL_DOUBLE;
+        }
+        if (nullCount > 0) {
+            n -= nullCount;
+            final int medianIndex = n / 2;
+            if (n % 2 == 0) {
+            <#if pt.valueType.isFloat >
+                final int idx1 = (medianIndex - 1) < nullStart ? (medianIndex - 1) : (medianIndex - 1) + nullCount;
+                final int idx2 =  medianIndex < nullStart ? medianIndex : medianIndex + nullCount;
+            <#else>
+                final int idx1 = (medianIndex - 1) + nullCount;
+                final int idx2 = medianIndex + nullCount;
+            </#if>
+                return 0.5 * (sorted[idx1] + sorted[idx2]);
+            }
+            <#if pt.valueType.isFloat >
+            final int adjustedIndex = medianIndex < nullStart ? medianIndex : medianIndex + nullCount;
+            <#else>
+            final int adjustedIndex = medianIndex + nullCount;
+            </#if>
+            return sorted[adjustedIndex];
+        }
+        final int medianIndex = n / 2;
+        if (n % 2 == 0) {
+            return 0.5 * (sorted[medianIndex - 1] + sorted[medianIndex]);
+        }
+        return sorted[medianIndex];
     }
 
     /**
-     * Returns the percentile.
+     * Returns the percentile. {@code null} input values are ignored but {@code NaN} values will poison the computation,
+     * and {@code NaN} will be returned
      *
      * @param percentile percentile to compute.
      * @param values values.
      * @return percentile, or null value in the Deephaven convention if values is null or empty.
      */
-    public static double percentile(double percentile, ${pt.primitive}... values) {
+    public static ${pt.primitive} percentile(double percentile, ${pt.primitive}... values) {
         if (values == null || values.length == 0) {
-            return NULL_DOUBLE;
+            return ${pt.null};
         }
 
         return percentile(percentile, new ${pt.vectorDirect}(values));
     }
 
     /**
-     * Returns the percentile.
+     * Returns the percentile. {@code null} input values are ignored but {@code NaN} values will poison the computation,
+     * and {@code NaN} will be returned
      *
      * @param percentile percentile to compute.
      * @param values values.
      * @return percentile, or null value in the Deephaven convention if values is null or empty.
      */
-    public static double percentile(double percentile, ${pt.vector} values) {
+    public static ${pt.primitive} percentile(double percentile, ${pt.vector} values) {
         if (values == null || values.isEmpty()) {
-            return NULL_DOUBLE;
+            return ${pt.null};
         }
 
         if (percentile < 0 || percentile > 1) {
@@ -1265,11 +1378,51 @@ public class Numeric {
         }
 
         int n = values.intSize("percentile");
-        ${pt.primitive}[] copy = values.copyToArray();
-        Arrays.sort(copy);
 
+        ${pt.primitive}[] sorted = values.copyToArray();
+        Arrays.sort(sorted);
+
+        <#if pt.valueType.isFloat >
+        if (isNaN(sorted[sorted.length - 1])) {
+            return ${pt.boxed}.NaN; // Any NaN will pollute the result and NaN always sorted to the end.
+        }
+        int nullStart = -1;
+        int nullCount = 0;
+        for (int i = 0; i < n; i++) {
+            final ${pt.primitive} val = sorted[i];
+            if (val > ${pt.null}) {
+                break; // no more NULL possible
+            }
+            if (isNull(val)) {
+                nullCount++;
+                if (nullStart == -1) {
+                    nullStart = i;
+                }
+            }
+        }
+        <#else>
+        int nullCount = 0;
+        for (int i = 0; i < n && isNull(sorted[i]); i++) {
+            nullCount++;
+        }
+        </#if>
+
+        if (nullCount == n) {
+            return ${pt.null};
+        }
+        if (nullCount > 0) {
+            n -= nullCount;
+            <#if pt.valueType.isFloat >
+            final int idx = (int) Math.round(percentile * (n - 1));
+            final int adjustedIndex = idx < nullStart ? idx : idx + nullCount;
+            return sorted[adjustedIndex];
+            <#else>
+            int idx = (int) Math.round(percentile * (n - 1));
+            return sorted[idx + nullCount];
+            </#if>
+        }
         int idx = (int) Math.round(percentile * (n - 1));
-        return copy[idx];
+        return sorted[idx];
     }
 
 
@@ -1341,6 +1494,7 @@ public class Numeric {
         double sum1 = 0;
         double sum01 = 0;
         double count = 0;
+        long nullCount = 0;
 
         try (
             final ${pt.vectorIterator} v0i = values0.iterator();
@@ -1349,20 +1503,30 @@ public class Numeric {
             while (v0i.hasNext()) {
                 final ${pt.primitive} v0 = v0i.${pt.iteratorNext}();
                 final ${pt2.primitive} v1 = v1i.${pt2.iteratorNext}();
+                <#if pt.valueType.isFloat >
                 if (isNaN(v0) || isInf(v0)) {
                     return Double.NaN;
                 }
+                </#if>
+                <#if pt2.valueType.isFloat >
                 if (isNaN(v1) || isInf(v1)) {
                     return Double.NaN;
                 }
+                </#if>
 
                 if (!isNull(v0) && !isNull(v1)) {
                     sum0 += v0;
                     sum1 += v1;
                     sum01 += v0 * v1;
                     count++;
+                } else {
+                    nullCount++;
                 }
             }
+        }
+
+        if (nullCount == values0.size()) {
+            return NULL_DOUBLE;
         }
 
         return sum01 / count - sum0 * sum1 / count / count;
@@ -1435,6 +1599,7 @@ public class Numeric {
         double sum1Sq = 0;
         double sum01 = 0;
         double count = 0;
+        long nullCount = 0;
 
         try (
             final ${pt.vectorIterator} v0i = values0.iterator();
@@ -1443,12 +1608,16 @@ public class Numeric {
             while (v0i.hasNext()) {
                 final ${pt.primitive} v0 = v0i.${pt.iteratorNext}();
                 final ${pt2.primitive} v1 = v1i.${pt2.iteratorNext}();
+                <#if pt.valueType.isFloat >
                 if (isNaN(v0) || isInf(v0)) {
                     return Double.NaN;
                 }
+                </#if>
+                <#if pt2.valueType.isFloat >
                 if (isNaN(v1) || isInf(v1)) {
                     return Double.NaN;
                 }
+                </#if>
 
                 if (!isNull(v0) && !isNull(v1)) {
                     sum0 += v0;
@@ -1457,8 +1626,14 @@ public class Numeric {
                     sum1Sq += v1 * v1;
                     sum01 += v0 * v1;
                     count++;
+                } else {
+                    nullCount++;
                 }
             }
+        }
+
+        if (nullCount == values0.size()) {
+            return NULL_DOUBLE;
         }
 
         double cov = sum01 / count - sum0 * sum1 / count / count;
@@ -1478,29 +1653,65 @@ public class Numeric {
      * @param values values.
      * @return sum of non-null values.
      */
-    public static ${pt.primitive} sum(${pt.vector} values) {
+    <#if pt.valueType.isFloat >
+    public static double sum(${pt.vector} values) {
         if (values == null) {
-            return ${pt.null};
+            return NULL_DOUBLE;
         }
 
         double sum = 0;
+        long nullCount = 0;
 
         try ( final ${pt.vectorIterator} vi = values.iterator() ) {
             while ( vi.hasNext() ) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
-    <#if pt.valueType.isFloat >
-                if (isNaN(c)) {
-                    return ${pt.boxed}.NaN;
+
+                if (isNaN(c) || isNaN(sum)) {
+                    return Double.NaN;
                 }
-    </#if>
+
                 if (!isNull(c)) {
                     sum += c;
+                } else {
+                    nullCount++;
                 }
             }
         }
 
-        return (${pt.primitive}) (sum);
+        if (nullCount == values.size()) {
+            return NULL_DOUBLE;
+        }
+
+        return sum;
     }
+    <#else>
+    public static long sum(${pt.vector} values) {
+        if (values == null) {
+            return NULL_LONG;
+        }
+
+        long sum = 0;
+        long nullCount = 0;
+
+        try ( final ${pt.vectorIterator} vi = values.iterator() ) {
+            while ( vi.hasNext() ) {
+                final ${pt.primitive} c = vi.${pt.iteratorNext}();
+
+                if (!isNull(c)) {
+                    sum += c;
+                } else {
+                    nullCount++;
+                }
+            }
+        }
+
+        if (nullCount == values.size()) {
+            return NULL_LONG;
+        }
+
+        return sum;
+    }
+    </#if>
 
     /**
      * Returns the sum.  Null values are excluded.
@@ -1508,13 +1719,23 @@ public class Numeric {
      * @param values values.
      * @return sum of non-null values.
      */
-    public static ${pt.primitive} sum(${pt.primitive}... values) {
+    <#if pt.valueType.isFloat >
+    public static double sum(${pt.primitive}... values) {
         if (values == null) {
-            return ${pt.null};
+            return NULL_DOUBLE;
         }
 
         return sum(new ${pt.vectorDirect}(values));
     }
+    <#else>
+    public static long sum(${pt.primitive}... values) {
+        if (values == null) {
+            return NULL_LONG;
+        }
+
+        return sum(new ${pt.vectorDirect}(values));
+    }
+    </#if>
 
     /**
      * Returns the product.  Null values are excluded.
@@ -1522,40 +1743,35 @@ public class Numeric {
      * @param values values.
      * @return product of non-null values.
      */
-    public static ${pt.primitive} product(${pt.vector} values) {
+    <#if pt.valueType.isFloat >
+    public static double product(${pt.vector} values) {
         if (values == null) {
-            return ${pt.null};
+            return NULL_DOUBLE;
         }
 
-        ${pt.primitive} prod = 1;
+        double prod = 1;
         int count = 0;
-    <#if pt.valueType.isFloat >
-        long zeroCount = 0;
-        long infCount = 0;
-    </#if>
+        boolean hasZero = false;
+        boolean hasInf = false;
 
         try ( final ${pt.vectorIterator} vi = values.iterator() ) {
             while ( vi.hasNext() ) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
-    <#if pt.valueType.isFloat >
+
                 if (isNaN(c)) {
-                    return ${pt.boxed}.NaN;
+                    return Double.NaN;
                 } else if (Double.isInfinite(c)) {
-                    if (zeroCount > 0) {
-                        return ${pt.boxed}.NaN;
+                    if (hasZero) {
+                        return Double.NaN;
                     }
-                    infCount++;
+                    hasInf = true;
                 } else if (c == 0) {
-                    if (infCount > 0) {
-                        return ${pt.boxed}.NaN;
+                    if (hasInf) {
+                        return Double.NaN;
                     }
-                    zeroCount++;
+                    hasZero = true;
                 }
-    <#else>
-                if (c == 0) {
-                    return 0;
-                }
-    </#if>
+
                 if (!isNull(c)) {
                     count++;
                     prod *= c;
@@ -1564,15 +1780,42 @@ public class Numeric {
         }
 
         if (count == 0) {
-            return ${pt.null};
+            return NULL_DOUBLE;
         }
 
-    <#if pt.valueType.isFloat >
-        return zeroCount > 0 ? 0 : (${pt.primitive}) (prod);
-    <#else>
-        return (${pt.primitive}) (prod);
-    </#if>
+        return hasZero ? 0 : prod;
     }
+    <#else>
+    public static long product(${pt.vector} values) {
+        if (values == null) {
+            return NULL_LONG;
+        }
+
+        long prod = 1;
+        int count = 0;
+
+        try ( final ${pt.vectorIterator} vi = values.iterator() ) {
+            while ( vi.hasNext() ) {
+                final ${pt.primitive} c = vi.${pt.iteratorNext}();
+
+                if (c == 0) {
+                    return 0;
+                }
+
+                if (!isNull(c)) {
+                    count++;
+                    prod *= c;
+                }
+            }
+        }
+
+        if (count == 0) {
+            return NULL_LONG;
+        }
+
+        return prod;
+    }
+    </#if>
 
     /**
      * Returns the product.  Null values are excluded.
@@ -1580,12 +1823,89 @@ public class Numeric {
      * @param values values.
      * @return product of non-null values.
      */
-    public static ${pt.primitive} product(${pt.primitive}... values) {
+    <#if pt.valueType.isFloat >
+    public static double product(${pt.primitive}... values) {
         if (values == null) {
-            return ${pt.null};
+            return NULL_DOUBLE;
         }
 
         return product(new ${pt.vectorDirect}(values));
+    }
+    <#else>
+    public static long product(${pt.primitive}... values) {
+        if (values == null) {
+            return NULL_LONG;
+        }
+
+        return product(new ${pt.vectorDirect}(values));
+    }
+    </#if>
+
+    /**
+     * Returns the differences between elements in the input vector separated by a stride.
+     * A stride of k returns v(i)=e(i+k)-e(i), where v(i) is the ith computed value, and e(i) is the ith input value.
+     * A stride of -k returns v(i)=e(i-k)-e(i), where v(i) is the ith computed value, and e(i) is the ith input value.
+     * The result has the same length as the input vector.
+     * Differences off the end of the input vector are the null value.
+     *
+     * @param stride number of elements separating the elements to be differenced.
+     * @param values input vector.
+     * @return a vector containing the differences between elements.
+     */
+    public static ${pt.primitive}[] diff(int stride, ${pt.boxed}[] values) {
+        return diff(stride, unbox(values));
+    }
+
+    /**
+     * Returns the differences between elements in the input vector separated by a stride.
+     * A stride of k returns v(i)=e(i+k)-e(i), where v(i) is the ith computed value e(i) is the ith input value.
+     * A stride of -k returns v(i)=e(i-k)-e(i), where v(i) is the ith computed value e(i) is the ith input value.
+     * The result has the same length as the input vector.
+     * Differences off the end of the input vector are the null value.
+     *
+     * @param stride number of elements separating the elements to be differenced.
+     * @param values input vector.
+     * @return a vector containing the differences between elements.
+     */
+    public static ${pt.primitive}[] diff(int stride, ${pt.primitive}... values) {
+        return diff(stride, new ${pt.vectorDirect}(values));
+    }
+
+    /**
+     * Returns the differences between elements in the input vector separated by a stride.
+     * A stride of k returns v(i)=e(i+k)-e(i), where v(i) is the ith computed value e(i) is the ith input value.
+     * A stride of -k returns v(i)=e(i-k)-e(i), where v(i) is the ith computed value e(i) is the ith input value.
+     * The result has the same length as the input vector.
+     * Differences off the end of the input vector are the null value.
+     *
+     * @param stride number of elements separating the elements to be differenced.
+     * @param values input vector.
+     * @return a vector containing the differences between elements.
+     */
+    public static ${pt.primitive}[] diff(int stride, ${pt.vector} values) {
+        if (values == null) {
+            return null;
+        }
+
+        if (values.isEmpty()) {
+            return new ${pt.primitive}[0];
+        }
+
+        final int n = values.intSize("diff");
+        ${pt.primitive}[] result = new ${pt.primitive}[n];
+
+        for (int i = 0; i < n; i++) {
+            ${pt.primitive} v1 = values.get(i);
+            ${pt.primitive} v2 = values.get(i + stride);
+
+            if (isNull(v1) || isNull(v2)) {
+                result[i] = ${pt.null};
+            } else {
+                result[i] = (${pt.primitive})(v2 - v1);
+            }
+        }
+
+        return result;
     }
 
     /**
@@ -1722,9 +2042,15 @@ public class Numeric {
      * @param values values.
      * @return cumulative sum of non-null values.
      */
-    public static ${pt.primitive}[] cumsum(${pt.boxed}[] values) {
+    <#if pt.valueType.isFloat >
+    public static double[] cumsum(${pt.boxed}[] values) {
         return cumsum(unbox(values));
     }
+   <#else>
+    public static long[] cumsum(${pt.boxed}[] values) {
+        return cumsum(unbox(values));
+    }
+   </#if>
 
     /**
      * Returns the cumulative sum.  Null values are excluded.
@@ -1732,13 +2058,23 @@ public class Numeric {
      * @param values values.
      * @return cumulative sum of non-null values.
      */
-    public static ${pt.primitive}[] cumsum(${pt.primitive}... values) {
+    <#if pt.valueType.isFloat >
+    public static double[] cumsum(${pt.primitive}... values) {
         if (values == null) {
             return null;
         }
 
         return cumsum(new ${pt.vectorDirect}(values));
     }
+   <#else>
+    public static long[] cumsum(${pt.primitive}... values) {
+        if (values == null) {
+            return null;
+        }
+
+        return cumsum(new ${pt.vectorDirect}(values));
+    }
+   </#if>
 
     /**
      * Returns the cumulative sum.  Null values are excluded.
@@ -1746,31 +2082,36 @@ public class Numeric {
      * @param values values.
      * @return cumulative sum of non-null values.
      */
-    public static ${pt.primitive}[] cumsum(${pt.vector} values) {
+    <#if pt.valueType.isFloat >
+    public static double[] cumsum(${pt.vector} values) {
         if (values == null) {
             return null;
         }
 
         if (values.isEmpty()) {
-            return new ${pt.primitive}[0];
+            return new double[0];
         }
 
         final int n = values.intSize("cumsum");
-        ${pt.primitive}[] result = new ${pt.primitive}[n];
+        final double[] result = new double[n];
 
         try ( final ${pt.vectorIterator} vi = values.iterator() ) {
-            result[0] = vi.${pt.iteratorNext}();
+            final ${pt.primitive} v0 = vi.${pt.iteratorNext}();
+            result[0] = isNull(v0) ? NULL_DOUBLE : v0;
             int i = 1;
     
             while (vi.hasNext()) {
                 final ${pt.primitive} v = vi.${pt.iteratorNext}();
-    
-                if (isNull(result[i - 1])) {
-                    result[i] = v;
+
+                if (isNaN(v) || isNaN(result[i - 1])) {
+                    Arrays.fill(result, i, n, Double.NaN);
+                    return result;
                 } else if (isNull(v)) {
                     result[i] = result[i - 1];
+                } else if (isNull(result[i - 1])) {
+                    result[i] = v;
                 } else {
-                    result[i] = (${pt.primitive}) (result[i - 1] + v);
+                    result[i] = result[i - 1] + v;
                 }
     
                 i++;
@@ -1779,6 +2120,42 @@ public class Numeric {
 
         return result;
     }
+    <#else>
+    public static long[] cumsum(${pt.vector} values) {
+        if (values == null) {
+            return null;
+        }
+
+        if (values.isEmpty()) {
+            return new long[0];
+        }
+
+        final int n = values.intSize("cumsum");
+        final long[] result = new long[n];
+
+        try ( final ${pt.vectorIterator} vi = values.iterator() ) {
+            final ${pt.primitive} v0 = vi.${pt.iteratorNext}();
+            result[0] = isNull(v0) ? NULL_LONG : v0;
+            int i = 1;
+
+            while (vi.hasNext()) {
+                final ${pt.primitive} v = vi.${pt.iteratorNext}();
+
+                if (isNull(v)) {
+                    result[i] = result[i - 1];
+                } else if (isNull(result[i - 1])) {
+                    result[i] = v;
+                } else {
+                    result[i] = result[i - 1] + v;
+                }
+
+                i++;
+            }
+        }
+
+        return result;
+    }
+    </#if>
 
     /**
      * Returns the cumulative product.  Null values are excluded.
@@ -1786,9 +2163,15 @@ public class Numeric {
      * @param values values.
      * @return cumulative product of non-null values.
      */
-    public static ${pt.primitive}[] cumprod(${pt.boxed}[] values) {
+    <#if pt.valueType.isFloat >
+    public static double[] cumprod(${pt.boxed}[] values) {
         return cumprod(unbox(values));
     }
+    <#else>
+    public static long[] cumprod(${pt.boxed}[] values) {
+        return cumprod(unbox(values));
+    }
+    </#if>
 
     /**
      * Returns the cumulative product.  Null values are excluded.
@@ -1796,13 +2179,23 @@ public class Numeric {
      * @param values values.
      * @return cumulative product of non-null values.
      */
-    public static ${pt.primitive}[] cumprod(${pt.primitive}... values) {
+    <#if pt.valueType.isFloat >
+    public static double[] cumprod(${pt.primitive}... values) {
         if (values == null) {
             return null;
         }
 
         return cumprod(new ${pt.vectorDirect}(values));
     }
+    <#else>
+    public static long[] cumprod(${pt.primitive}... values) {
+        if (values == null) {
+            return null;
+        }
+
+        return cumprod(new ${pt.vectorDirect}(values));
+    }
+    </#if>
 
     /**
      * Returns the cumulative product.  Null values are excluded.
@@ -1810,31 +2203,36 @@ public class Numeric {
      * @param values values.
      * @return cumulative product of non-null values.
      */
-    public static ${pt.primitive}[] cumprod(${pt.vector} values) {
+    <#if pt.valueType.isFloat >
+    public static double[] cumprod(${pt.vector} values) {
         if (values == null) {
             return null;
         }
 
         if (values.isEmpty()) {
-            return new ${pt.primitive}[0];
+            return new double[0];
         }
 
         final int n = values.intSize("cumprod");
-        ${pt.primitive}[] result = new ${pt.primitive}[n];
+        double[] result = new double[n];
 
         try ( final ${pt.vectorIterator} vi = values.iterator() ) {
-            result[0] = vi.${pt.iteratorNext}();
+            final ${pt.primitive} v0 = vi.${pt.iteratorNext}();
+            result[0] = isNull(v0) ? NULL_DOUBLE : v0;
             int i = 1;
     
             while (vi.hasNext()) {
                 final ${pt.primitive} v = vi.${pt.iteratorNext}();
-    
-                if (isNull(result[i - 1])) {
-                    result[i] = v;
+
+                if (isNaN(v) || isNaN(result[i - 1])) {
+                    Arrays.fill(result, i, n, Double.NaN);
+                    return result;
                 } else if (isNull(v)) {
                     result[i] = result[i - 1];
+                } else if (isNull(result[i - 1])) {
+                    result[i] = v;
                 } else {
-                    result[i] = (${pt.primitive}) (result[i - 1] * v);
+                    result[i] = result[i - 1] * v;
                 }
     
                 i++;
@@ -1843,6 +2241,42 @@ public class Numeric {
 
         return result;
     }
+    <#else>
+    public static long[] cumprod(${pt.vector} values) {
+        if (values == null) {
+            return null;
+        }
+
+        if (values.isEmpty()) {
+            return new long[0];
+        }
+
+        final int n = values.intSize("cumprod");
+        long[] result = new long[n];
+
+        try ( final ${pt.vectorIterator} vi = values.iterator() ) {
+            final ${pt.primitive} v0 = vi.${pt.iteratorNext}();
+            result[0] = isNull(v0) ? NULL_LONG : v0;
+            int i = 1;
+
+            while (vi.hasNext()) {
+                final ${pt.primitive} v = vi.${pt.iteratorNext}();
+
+                if (isNull(v)) {
+                    result[i] = result[i - 1];
+                } else if (isNull(result[i - 1])) {
+                    result[i] = v;
+                } else {
+                    result[i] = result[i - 1] * v;
+                }
+
+                i++;
+            }
+        }
+
+        return result;
+    }
+    </#if>
 
     /**
      * Returns the absolute value.
@@ -2249,13 +2683,23 @@ public class Numeric {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
-    public static double wsum(${pt.primitive}[] values, ${pt2.primitive}[] weights) {
+   <#if pt.valueType.isInteger && pt2.valueType.isInteger >
+   public static long wsum(${pt.primitive}[] values, ${pt2.primitive}[] weights) {
+        if (values == null || weights == null) {
+            return NULL_LONG;
+        }
+
+        return wsum(new ${pt.vectorDirect}(values), new ${pt2.vector}Direct(weights));
+   }
+   <#else>
+   public static double wsum(${pt.primitive}[] values, ${pt2.primitive}[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
         }
 
         return wsum(new ${pt.vectorDirect}(values), new ${pt2.vector}Direct(weights));
     }
+    </#if>
 
     /**
      * Returns the weighted sum.  Null values are excluded.
@@ -2264,6 +2708,15 @@ public class Numeric {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
+   <#if pt.valueType.isInteger && pt2.valueType.isInteger >
+    public static long wsum(${pt.primitive}[] values, ${pt2.vector} weights) {
+        if (values == null || weights == null) {
+            return NULL_LONG;
+        }
+
+        return wsum(new ${pt.vectorDirect}(values), weights);
+    }
+   <#else>
     public static double wsum(${pt.primitive}[] values, ${pt2.vector} weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
@@ -2271,6 +2724,7 @@ public class Numeric {
 
         return wsum(new ${pt.vectorDirect}(values), weights);
     }
+   </#if>
 
     /**
      * Returns the weighted sum.  Null values are excluded.
@@ -2279,6 +2733,15 @@ public class Numeric {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
+   <#if pt.valueType.isInteger && pt2.valueType.isInteger >
+    public static long wsum(${pt.vector} values, ${pt2.primitive}[] weights) {
+        if (values == null || weights == null) {
+            return NULL_LONG;
+        }
+
+        return wsum(values, new ${pt2.vector}Direct(weights));
+    }
+    <#else>
     public static double wsum(${pt.vector} values, ${pt2.primitive}[] weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
@@ -2286,6 +2749,7 @@ public class Numeric {
 
         return wsum(values, new ${pt2.vector}Direct(weights));
     }
+    </#if>
 
     /**
      * Returns the weighted sum.  Null values are excluded.
@@ -2294,6 +2758,44 @@ public class Numeric {
      * @param weights weights
      * @return weighted sum of non-null values.
      */
+   <#if pt.valueType.isInteger && pt2.valueType.isInteger >
+    public static long wsum(${pt.vector} values, ${pt2.vector} weights) {
+        if (values == null || weights == null) {
+            return NULL_LONG;
+        }
+
+        final long n = values.size();
+
+        if (n != weights.size()) {
+            throw new IllegalArgumentException("Incompatible input sizes: " + values.size() + ", " + weights.size());
+        }
+
+        long vsum = 0;
+        long nullCount = 0;
+
+        try (
+            final ${pt.vectorIterator} vi = values.iterator();
+            final ${pt2.vectorIterator} wi = weights.iterator()
+        ) {
+            while (vi.hasNext()) {
+                final ${pt.primitive} c = vi.${pt.iteratorNext}();
+                final ${pt2.primitive} w = wi.${pt2.iteratorNext}();
+
+                if (!isNull(c) && !isNull(w)) {
+                    vsum += c * (long) w;
+                } else {
+                    nullCount++;
+                }
+            }
+        }
+
+        if (nullCount == values.size()) {
+            return NULL_LONG;
+        }
+
+        return vsum;
+    }
+    <#else>
     public static double wsum(${pt.vector} values, ${pt2.vector} weights) {
         if (values == null || weights == null) {
             return NULL_DOUBLE;
@@ -2306,6 +2808,7 @@ public class Numeric {
         }
 
         double vsum = 0;
+        long nullCount = 0;
 
         try (
             final ${pt.vectorIterator} vi = values.iterator();
@@ -2314,21 +2817,42 @@ public class Numeric {
             while (vi.hasNext()) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
                 final ${pt2.primitive} w = wi.${pt2.iteratorNext}();
-                if (isNaN(c)) {
-                    return Double.NaN;
-                }
-                if (isNaN(w)) {
+
+                if (isNaN(vsum)) {
                     return Double.NaN;
                 }
 
+               <#if pt.valueType.isFloat >
+                if (isNaN(c)) {
+                    return Double.NaN;
+                }
+               </#if>
+
+               <#if pt2.valueType.isFloat >
+                if (isNaN(w)) {
+                    return Double.NaN;
+                }
+               </#if>
+
                 if (!isNull(c) && !isNull(w)) {
-                    vsum += c * w;
+                   <#if pt.valueType.isFloat >
+                    vsum += (double) c * w;
+                   <#else>
+                    vsum += c * (double) w;
+                   </#if>
+                } else {
+                    nullCount++;
                 }
             }
         }
 
+        if (nullCount == values.size()) {
+            return NULL_DOUBLE;
+        }
+
         return vsum;
     }
+    </#if>
 
     /**
      * Returns the weighted average.  Null values are excluded.
@@ -2395,6 +2919,7 @@ public class Numeric {
 
         double vsum = 0;
         double wsum = 0;
+        long nullCount = 0;
 
         try (
             final ${pt.vectorIterator} vi = values.iterator();
@@ -2403,17 +2928,27 @@ public class Numeric {
             while (vi.hasNext()) {
                 final ${pt.primitive} c = vi.${pt.iteratorNext}();
                 final ${pt2.primitive} w = wi.${pt2.iteratorNext}();
+                <#if pt.valueType.isFloat >
                 if (isNaN(c)) {
                     return Double.NaN;
                 }
+                </#if>
+                <#if pt2.valueType.isFloat >
                 if (isNaN(w)) {
                     return Double.NaN;
                 }
+                </#if>
                 if (!isNull(c) && !isNull(w)) {
                     vsum += c * w;
                     wsum += w;
+                } else {
+                    nullCount++;
                 }
             }
+        }
+
+        if (nullCount == values.size()) {
+            return NULL_DOUBLE;
         }
 
         return vsum / wsum;
@@ -2787,6 +3322,61 @@ public class Numeric {
 
 
     </#if>
+
+
+    /**
+     * Compares two specified values.  Deephaven null values are less than normal numbers which are less than NaN values.
+     *
+     * @param v1 the first value to compare.
+     * @param v2 the second value to compare.
+     * @returns the value 0 if v1 is numerically equal to v2; a value of less than 0 if v1 is numerically less than v2;
+     *      and a value greater than 0 if v1 is numerically greater than v2.
+     *      Deephaven null values are less than normal numbers which are less than NaN values.
+     *      Unlike standard Java, Deephaven treats NaN values as ordered. In particular two NaN values will compare
+     *      equal to each other, and a NaN value will compare greater than any other value.
+     */
+    static public int compare(${pt.primitive} v1, ${pt.primitive} v2) {
+        final boolean isNull1 = isNull(v1);
+        final boolean isNull2 = isNull(v2);
+
+        if (isNull1 && isNull2) {
+            return 0;
+        } else if (isNull1) {
+            return -1;
+        } else if (isNull2) {
+            return 1;
+        }
+
+        final boolean isNaN1 = isNaN(v1);
+        final boolean isNaN2 = isNaN(v2);
+
+        // NaN is considered the greatest
+        if (isNaN1 && isNaN2) {
+            return 0;
+        } else if (isNaN1) {
+            return 1;
+        } else if (isNaN2) {
+            return -1;
+        }
+
+        return ${pt.boxed}.compare(v1, v2);
+    }
+
+
+    /**
+     * Compares two specified values.  Deephaven null values are less than normal numbers which are less than NaN values.
+     *
+     * @param v1 the first value to compare.
+     * @param v2 the second value to compare.
+     * @returns the value 0 if v1 is numerically equal to v2; a value of less than 0 if v1 is numerically less than v2;
+     *      and a value greater than 0 if v1 is numerically greater than v2.
+     *      Deephaven null values are less than normal numbers which are less than NaN values.
+     *      Unlike standard Java, Deephaven treats NaN values as ordered. In particular two NaN values will compare
+     *      equal to each other, and a NaN value will compare greater than any other value.
+     */
+    static public int compare(${pt.boxed} v1, ${pt.boxed} v2) {
+        return compare(v1 == null ? ${pt.null} : v1, v2 == null ? ${pt.null} : v2);
+    }
 
     </#if>
     </#list>

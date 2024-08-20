@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.server.table.inputtables;
 
 import com.google.rpc.Code;
@@ -71,7 +71,6 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
 
             session.nonExport()
                     .queryPerformanceRecorder(queryPerformanceRecorder)
-                    .requiresSerialQueue()
                     .onError(responseObserver)
                     .require(targetTable, tableToAddExport)
                     .submit(() -> {
@@ -134,7 +133,6 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
 
             session.nonExport()
                     .queryPerformanceRecorder(queryPerformanceRecorder)
-                    .requiresSerialQueue()
                     .onError(responseObserver)
                     .require(targetTable, tableToRemoveExport)
                     .submit(() -> {

@@ -1,6 +1,6 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.parquet.base;
 
 import io.deephaven.util.channel.SeekableChannelContext;
@@ -11,9 +11,20 @@ import org.apache.parquet.schema.PrimitiveType;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.function.Function;
 
 public interface ColumnChunkReader {
+    /**
+     * @return The name of the column this ColumnChunk represents.
+     */
+    String columnName();
+
+    /**
+     * @return The URI of the file this column chunk reader is reading from.
+     */
+    URI getURI();
+
     /**
      * @return The number of rows in this ColumnChunk, or -1 if it's unknown.
      */
@@ -31,10 +42,16 @@ public interface ColumnChunkReader {
     int getMaxRl();
 
     /**
-     * @return The offset index for this column chunk, or null if it not found in the metadata.
+     * @return Whether the column chunk has offset index information set in the metadata or not.
      */
-    @Nullable
-    OffsetIndex getOffsetIndex();
+    boolean hasOffsetIndex();
+
+    /**
+     * @param context The channel context to use for reading the offset index.
+     * @return Get the offset index for a column chunk.
+     * @throws UnsupportedOperationException If the column chunk does not have an offset index.
+     */
+    OffsetIndex getOffsetIndex(final SeekableChannelContext context);
 
     /**
      * Used to iterate over column page readers for each page with the capability to set channel context to for reading
@@ -54,21 +71,26 @@ public interface ColumnChunkReader {
     }
 
     /**
+     * @param pageMaterializerFactory The factory to use for constructing page materializers.
      * @return An iterator over individual parquet pages.
      */
-    ColumnPageReaderIterator getPageIterator() throws IOException;
+    ColumnPageReaderIterator getPageIterator(PageMaterializerFactory pageMaterializerFactory) throws IOException;
 
     interface ColumnPageDirectAccessor {
         /**
          * Directly access a page reader for a given page number.
+         * 
+         * @param pageNum The page number to access.
+         * @param channelContext The channel context to use for constructing the reader
          */
-        ColumnPageReader getPageReader(int pageNum);
+        ColumnPageReader getPageReader(int pageNum, SeekableChannelContext channelContext);
     }
 
     /**
-     * @return An accessor for individual parquet pages.
+     * @param pageMaterializerFactory The factory to use for constructing page materializers.
+     * @return An accessor for individual parquet pages which uses the provided offset index.
      */
-    ColumnPageDirectAccessor getPageAccessor();
+    ColumnPageDirectAccessor getPageAccessor(OffsetIndex offsetIndex, PageMaterializerFactory pageMaterializerFactory);
 
     /**
      * @return Whether this column chunk uses a dictionary-based encoding on every page.
@@ -108,4 +130,5 @@ public interface ColumnChunkReader {
      * @return The channel provider for this column chunk reader.
      */
     SeekableChannelsProvider getChannelsProvider();
+
 }

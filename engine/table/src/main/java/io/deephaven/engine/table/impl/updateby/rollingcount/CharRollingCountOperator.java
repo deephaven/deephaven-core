@@ -1,3 +1,6 @@
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.updateby.rollingcount;
 
 import io.deephaven.base.ringbuffer.ByteRingBuffer;
@@ -38,6 +41,7 @@ public class CharRollingCountOperator extends BaseLongUpdateByOperator {
         public void setValueChunks(@NotNull final Chunk<? extends Values>[] valueChunks) {
             influencerValuesChunk = valueChunks[0].asCharChunk();
         }
+
         @Override
         public void push(int pos, int count) {
             buffer.ensureRemaining(count);
@@ -92,8 +96,8 @@ public class CharRollingCountOperator extends BaseLongUpdateByOperator {
             @Nullable final String timestampColumnName,
             final long reverseWindowScaleUnits,
             final long forwardWindowScaleUnits
-            // region extra-constructor-args
-            // endregion extra-constructor-args
+    // region extra-constructor-args
+    // endregion extra-constructor-args
     ) {
         super(pair, affectingColumns, timestampColumnName, reverseWindowScaleUnits, forwardWindowScaleUnits, true);
         // region constructor
@@ -107,8 +111,8 @@ public class CharRollingCountOperator extends BaseLongUpdateByOperator {
                 timestampColumnName,
                 reverseWindowScaleUnits,
                 forwardWindowScaleUnits
-                // region extra-copy-args
-                // endregion extra-copy-args
+        // region extra-copy-args
+        // endregion extra-copy-args
         );
     }
 }

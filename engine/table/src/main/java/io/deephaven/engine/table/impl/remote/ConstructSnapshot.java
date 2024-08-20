@@ -1,16 +1,22 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl.remote;
 
+import gnu.trove.TIntCollection;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.exceptions.ColumnSnapshotUnsuccessfulException;
 import io.deephaven.engine.exceptions.SnapshotUnsuccessfulException;
+import io.deephaven.engine.table.impl.ForkJoinPoolOperationInitializer;
+import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
+import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.updategraph.*;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.SharedContext;
@@ -23,6 +29,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.engine.liveness.LivenessScope;
@@ -34,6 +41,7 @@ import io.deephaven.chunk.*;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.internal.log.LoggerFactory;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -41,9 +49,14 @@ import java.lang.reflect.Array;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Stream;
 
 import io.deephaven.chunk.attributes.Values;
+
+import static io.deephaven.engine.table.impl.QueryTable.ENABLE_PARALLEL_SNAPSHOT;
+import static io.deephaven.engine.table.impl.QueryTable.MINIMUM_PARALLEL_SNAPSHOT_ROWS;
 
 /**
  * A Set of static utilities for computing values from a table while avoiding the use of an update graph lock. This
@@ -83,42 +96,41 @@ public class ConstructSnapshot {
     public static final int SNAPSHOT_CHUNK_SIZE = Configuration.getInstance()
             .getIntegerWithDefault("ConstructSnapshot.snapshotChunkSize", 1 << 24);
 
-
     public interface State {
 
         /**
-         * Test that determines whether the currently-active concurrent snapshot attempt has become inconsistent. Always
+         * Test that determines whether the currently active concurrent snapshot attempt has become inconsistent. Always
          * returns {@code false} if there is no snapshot attempt active, or if there is a locked attempt active
          * (necessarily at lower depth than the lowest concurrent attempt).
          *
-         * @return Whether the clock or sources have changed in such a way as to make the currently-active concurrent
+         * @return Whether the clock or sources have changed in such a way as to make the currently active concurrent
          *         snapshot attempt inconsistent
          */
         boolean concurrentAttemptInconsistent();
 
         /**
-         * Check that fails if the currently-active concurrent snapshot attempt has become inconsistent. source. This is
-         * a no-op if there is no snapshot attempt active, or if there is a locked attempt active (necessarily at lower
-         * depth than the lowest concurrent attempt).
+         * Check that fails if the currently active concurrent snapshot attempt has become inconsistent. This is a no-op
+         * if there is no snapshot attempt active, or if there is a locked attempt active (necessarily at lower depth
+         * than the lowest concurrent attempt).
          *
-         * @throws SnapshotInconsistentException If the currently-active concurrent snapshot attempt has become
+         * @throws SnapshotInconsistentException If the currently active concurrent snapshot attempt has become
          *         inconsistent
          */
         void failIfConcurrentAttemptInconsistent();
 
         /**
          * Wait for a dependency to become satisfied on the current cycle if we're trying to use current values for the
-         * currently-active concurrent snapshot attempt. This is a no-op if there is no snapshot attempt active, or if
+         * currently active concurrent snapshot attempt. This is a no-op if there is no snapshot attempt active, or if
          * there is a locked attempt active (necessarily at lower depth than the lowest concurrent attempt).
          *
-         * @param dependency The dependency, which may be null in order to avoid redundant checks in calling code
+         * @param dependency The dependency, which may be null to avoid redundant checks in calling code
          * @throws SnapshotInconsistentException If we cannot wait for this dependency on the current step because the
          *         step changed
          */
         void maybeWaitForSatisfaction(@Nullable NotificationQueue.Dependency dependency);
 
         /**
-         * Return the currently-active concurrent snapshot attempt's "before" clock value, or zero if there is no
+         * Return the currently active concurrent snapshot attempt's "before" clock value, or zero if there is no
          * concurrent attempt active.
          *
          * @return The concurrent snapshot attempt's "before" clock value, or zero
@@ -425,23 +437,23 @@ public class ConstructSnapshot {
     }
 
     /**
-     * Get the currently-active snapshot state.
+     * Get the currently active snapshot state.
      *
-     * @return the currently-active snapshot state
+     * @return the currently active snapshot state
      */
     public static State state() {
         return StateImpl.get();
     }
 
     /**
-     * Test that determines whether the currently-active concurrent snapshot attempt has become inconsistent. Always
+     * Test that determines whether the currently active concurrent snapshot attempt has become inconsistent. Always
      * returns {@code false} if there is no snapshot attempt active, or if there is a locked attempt active (necessarily
      * at lower depth than the lowest concurrent attempt).
      *
      * <p>
      * Equivalent to {@code state().concurrentAttemptInconsistent()}.
      *
-     * @return Whether the clock or sources have changed in such a way as to make the currently-active concurrent
+     * @return Whether the clock or sources have changed in such a way as to make the currently active concurrent
      *         snapshot attempt inconsistent
      * @see State#concurrentAttemptInconsistent()
      */
@@ -450,14 +462,14 @@ public class ConstructSnapshot {
     }
 
     /**
-     * Check that fails if the currently-active concurrent snapshot attempt has become inconsistent. source. This is a
-     * no-op if there is no snapshot attempt active, or if there is a locked attempt active (necessarily at lower depth
-     * than the lowest concurrent attempt).
+     * Check that fails if the currently active concurrent snapshot attempt has become inconsistent. This is a no-op if
+     * there is no snapshot attempt active, or if there is a locked attempt active (necessarily at lower depth than the
+     * lowest concurrent attempt).
      *
      * <p>
      * Equivalent to {@code state().failIfConcurrentAttemptInconsistent()}.
      *
-     * @throws SnapshotInconsistentException If the currently-active concurrent snapshot attempt has become inconsistent
+     * @throws SnapshotInconsistentException If the currently active concurrent snapshot attempt has become inconsistent
      * @see State#failIfConcurrentAttemptInconsistent()
      */
     public static void failIfConcurrentAttemptInconsistent() {
@@ -466,13 +478,13 @@ public class ConstructSnapshot {
 
     /**
      * Wait for a dependency to become satisfied on the current cycle if we're trying to use current values for the
-     * currently-active concurrent snapshot attempt. This is a no-op if there is no snapshot attempt active, or if there
+     * currently active concurrent snapshot attempt. This is a no-op if there is no snapshot attempt active, or if there
      * is a locked attempt active (necessarily at lower depth than the lowest concurrent attempt).
      *
      * <p>
      * Equivalent to {@code state().maybeWaitForSatisfaction(dependency)}.
      *
-     * @param dependency The dependency, which may be null in order to avoid redundant checks in calling code
+     * @param dependency The dependency, which may be null to avoid redundant checks in calling code
      * @throws SnapshotInconsistentException If we cannot wait for this dependency on the current step because the step
      *         changed
      * @see State#maybeWaitForSatisfaction(Dependency)
@@ -482,7 +494,7 @@ public class ConstructSnapshot {
     }
 
     /**
-     * Return the currently-active concurrent snapshot attempt's "before" clock value, or zero if there is no concurrent
+     * Return the currently active concurrent snapshot attempt's "before" clock value, or zero if there is no concurrent
      * attempt active.
      *
      * <p>
@@ -531,31 +543,31 @@ public class ConstructSnapshot {
      *
      * @param logIdentityObject An object used to prepend to log rows.
      * @param table the table to snapshot.
-     * @param columnsToSerialize A {@link BitSet} of columns to include, null for all
-     * @param keysToSnapshot An RowSet of keys within the table to include, null for all
+     * @param columnsToSnapshot A {@link BitSet} of columns to include, null for all
+     * @param keysToSnapshot RowSet of keys within the table to include, null for all
      * @return a snapshot of the entire base table.
      */
     public static InitialSnapshot constructInitialSnapshot(
             @NotNull final Object logIdentityObject,
             @NotNull final BaseTable<?> table,
-            @Nullable final BitSet columnsToSerialize,
+            @Nullable final BitSet columnsToSnapshot,
             @Nullable final RowSet keysToSnapshot) {
-        return constructInitialSnapshot(logIdentityObject, table, columnsToSerialize, keysToSnapshot,
+        return constructInitialSnapshot(logIdentityObject, table, columnsToSnapshot, keysToSnapshot,
                 makeSnapshotControl(false, table.isRefreshing(), table));
     }
 
     static InitialSnapshot constructInitialSnapshot(
             @NotNull final Object logIdentityObject,
             @NotNull final BaseTable<?> table,
-            @Nullable final BitSet columnsToSerialize,
+            @Nullable final BitSet columnsToSnapshot,
             @Nullable final RowSet keysToSnapshot,
             @NotNull final SnapshotControl control) {
         final UpdateGraph updateGraph = table.getUpdateGraph();
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
             final InitialSnapshot snapshot = new InitialSnapshot();
 
-            final SnapshotFunction doSnapshot = (usePrev, beforeClockValue) -> serializeAllTable(
-                    usePrev, snapshot, table, logIdentityObject, columnsToSerialize, keysToSnapshot);
+            final SnapshotFunction doSnapshot = (usePrev, beforeClockValue) -> snapshotAllTable(
+                    usePrev, snapshot, table, logIdentityObject, columnsToSnapshot, keysToSnapshot);
 
             snapshot.step = callDataSnapshotFunction(System.identityHashCode(logIdentityObject), control, doSnapshot);
 
@@ -570,18 +582,18 @@ public class ConstructSnapshot {
      *
      * @param logIdentityObject An object used to prepend to log rows.
      * @param table the table to snapshot.
-     * @param columnsToSerialize A {@link BitSet} of columns to include, null for all
-     * @param positionsToSnapshot An RowSet of positions within the table to include, null for all
+     * @param columnsToSnapshot A {@link BitSet} of columns to include, null for all
+     * @param positionsToSnapshot RowSet of positions within the table to include, null for all
      * @return a snapshot of the entire base table.
      */
     public static InitialSnapshot constructInitialSnapshotInPositionSpace(
             @NotNull final Object logIdentityObject,
             @NotNull final BaseTable<?> table,
-            @Nullable final BitSet columnsToSerialize,
+            @Nullable final BitSet columnsToSnapshot,
             @Nullable final RowSet positionsToSnapshot) {
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(
                 table.getUpdateGraph()).open()) {
-            return constructInitialSnapshotInPositionSpace(logIdentityObject, table, columnsToSerialize,
+            return constructInitialSnapshotInPositionSpace(logIdentityObject, table, columnsToSnapshot,
                     positionsToSnapshot, makeSnapshotControl(false, table.isRefreshing(), table));
         }
     }
@@ -589,7 +601,7 @@ public class ConstructSnapshot {
     static InitialSnapshot constructInitialSnapshotInPositionSpace(
             @NotNull final Object logIdentityObject,
             @NotNull final BaseTable<?> table,
-            @Nullable final BitSet columnsToSerialize,
+            @Nullable final BitSet columnsToSnapshot,
             @Nullable final RowSet positionsToSnapshot,
             @NotNull final SnapshotControl control) {
         final InitialSnapshot snapshot = new InitialSnapshot();
@@ -602,7 +614,7 @@ public class ConstructSnapshot {
                 keysToSnapshot = (usePrev ? table.getRowSet().prev() : table.getRowSet())
                         .subSetForPositions(positionsToSnapshot);
             }
-            return serializeAllTable(usePrev, snapshot, table, logIdentityObject, columnsToSerialize, keysToSnapshot);
+            return snapshotAllTable(usePrev, snapshot, table, logIdentityObject, columnsToSnapshot, keysToSnapshot);
         };
 
         try (final SafeCloseable ignored = ExecutionContext.getContext().withUpdateGraph(
@@ -633,17 +645,17 @@ public class ConstructSnapshot {
      *
      * @param logIdentityObject An object used to prepend to log rows.
      * @param table the table to snapshot.
-     * @param columnsToSerialize A {@link BitSet} of columns to include, null for all
-     * @param positionsToSnapshot An RowSet of positions within the table to include, null for all
+     * @param columnsToSnapshot A {@link BitSet} of columns to include, null for all
+     * @param positionsToSnapshot RowSet of positions within the table to include, null for all
      * @return a snapshot of the entire base table.
      */
     public static BarrageMessage constructBackplaneSnapshotInPositionSpace(
             @NotNull final Object logIdentityObject,
             @NotNull final BaseTable<?> table,
-            @Nullable final BitSet columnsToSerialize,
+            @Nullable final BitSet columnsToSnapshot,
             @Nullable final RowSequence positionsToSnapshot,
             @Nullable final RowSequence reversePositionsToSnapshot) {
-        return constructBackplaneSnapshotInPositionSpace(logIdentityObject, table, columnsToSerialize,
+        return constructBackplaneSnapshotInPositionSpace(logIdentityObject, table, columnsToSnapshot,
                 positionsToSnapshot, reversePositionsToSnapshot,
                 makeSnapshotControl(false, table.isRefreshing(), table));
     }
@@ -654,7 +666,7 @@ public class ConstructSnapshot {
      *
      * @param logIdentityObject An object used to prepend to log rows.
      * @param table the table to snapshot.
-     * @param columnsToSerialize A {@link BitSet} of columns to include, null for all
+     * @param columnsToSnapshot A {@link BitSet} of columns to include, null for all
      * @param positionsToSnapshot A RowSequence of positions within the table to include, null for all
      * @param reversePositionsToSnapshot A RowSequence of reverse positions within the table to include, null for all
      * @param control A {@link SnapshotControl} to define the parameters and consistency for this snapshot
@@ -663,18 +675,21 @@ public class ConstructSnapshot {
     public static BarrageMessage constructBackplaneSnapshotInPositionSpace(
             @NotNull final Object logIdentityObject,
             @NotNull final BaseTable<?> table,
-            @Nullable final BitSet columnsToSerialize,
+            @Nullable final BitSet columnsToSnapshot,
             @Nullable final RowSequence positionsToSnapshot,
             @Nullable final RowSequence reversePositionsToSnapshot,
             @NotNull final SnapshotControl control) {
-
         final UpdateGraph updateGraph = table.getUpdateGraph();
-        try (final SafeCloseable ignored1 = ExecutionContext.getContext().withUpdateGraph(updateGraph).open()) {
-            final BarrageMessage snapshot = new BarrageMessage();
-            snapshot.isSnapshot = true;
-            snapshot.shifted = RowSetShiftData.EMPTY;
-
+        final MutableObject<BarrageMessage> snapshotMsg = new MutableObject<>();
+        // Use Fork-Join thread pool for parallel snapshotting
+        try (final SafeCloseable ignored1 = ExecutionContext.getContext()
+                .withUpdateGraph(updateGraph)
+                .withOperationInitializer(ForkJoinPoolOperationInitializer.fromCommonPool())
+                .open()) {
             final SnapshotFunction doSnapshot = (usePrev, beforeClockValue) -> {
+                final BarrageMessage snapshot = new BarrageMessage();
+                snapshot.isSnapshot = true;
+                snapshot.shifted = RowSetShiftData.EMPTY;
                 final RowSet keysToSnapshot;
                 if (positionsToSnapshot == null && reversePositionsToSnapshot == null) {
                     keysToSnapshot = null;
@@ -695,14 +710,23 @@ public class ConstructSnapshot {
                     }
                 }
                 try (final RowSet ignored = keysToSnapshot) {
-                    return serializeAllTable(usePrev, snapshot, table, logIdentityObject, columnsToSerialize,
-                            keysToSnapshot);
+                    final boolean success = snapshotAllTable(usePrev, snapshot, table, logIdentityObject,
+                            columnsToSnapshot, keysToSnapshot);
+                    if (success) {
+                        snapshotMsg.setValue(snapshot);
+                    } else {
+                        snapshot.close();
+                    }
+                    return success;
+                } catch (final Throwable e) {
+                    snapshot.close();
+                    throw e;
                 }
             };
-
-            snapshot.step = callDataSnapshotFunction(System.identityHashCode(logIdentityObject), control, doSnapshot);
-            snapshot.firstSeq = snapshot.lastSeq = snapshot.step;
-
+            final long clockStep =
+                    callDataSnapshotFunction(System.identityHashCode(logIdentityObject), control, doSnapshot);
+            final BarrageMessage snapshot = snapshotMsg.getValue();
+            snapshot.step = snapshot.firstSeq = snapshot.lastSeq = clockStep;
             return snapshot;
         }
     }
@@ -730,7 +754,7 @@ public class ConstructSnapshot {
                     : makeSnapshotControl(false, Arrays.stream(tables).anyMatch(BaseTable::isRefreshing), tables);
 
             final SnapshotFunction doSnapshot =
-                    (usePrev, beforeClockValue) -> serializeAllTables(usePrev, snapshots, tables, logIdentityObject);
+                    (usePrev, beforeClockValue) -> snapshotAllTables(usePrev, snapshots, tables, logIdentityObject);
 
             callDataSnapshotFunction(System.identityHashCode(logIdentityObject), snapshotControl, doSnapshot);
 
@@ -1275,6 +1299,10 @@ public class ConstructSnapshot {
                                 .endl();
                     }
                     break;
+                } catch (SnapshotUnsuccessfulException sue) {
+                    // The snapshot function below detected a failure despite a consistent state. We should not
+                    // re-attempt, or re-check the consistency ourselves.
+                    throw sue;
                 } catch (Exception e) {
                     functionSuccessful = false;
                     caughtException = e;
@@ -1353,7 +1381,8 @@ public class ConstructSnapshot {
                 }
             }
             state.startLockedSnapshot(control);
-            try {
+            final LivenessScope snapshotLivenessScope = new LivenessScope();
+            try (final SafeCloseable ignored = LivenessScopeStack.open(snapshotLivenessScope, true)) {
                 final long beforeClockValue = updateGraph.clock().currentValue();
 
                 final Boolean previousValuesRequested = control.usePreviousValues(beforeClockValue);
@@ -1383,6 +1412,9 @@ public class ConstructSnapshot {
                     log.debug().append(logPrefix).append(" Non-concurrent Snapshot Function took ")
                             .append(System.currentTimeMillis() - attemptStart).append("ms").endl();
                 }
+                if (functionSuccessful && consistent) {
+                    snapshotLivenessScope.transferTo(initialLivenessManager);
+                }
                 step = LogicalClock.getStep(afterClockValue);
             } finally {
                 state.endLockedSnapshot();
@@ -1408,17 +1440,17 @@ public class ConstructSnapshot {
      * @param usePrev Whether to use previous values
      * @param snapshot The snapshot to populate
      * @param logIdentityObject An object for use with log() messages
-     * @param columnsToSerialize A {@link BitSet} of columns to include, null for all
+     * @param columnsToSnapshot A {@link BitSet} of columns to include, null for all
      * @param keysToSnapshot A RowSet of keys within the table to include, null for all
      *
      * @return Whether the snapshot succeeded
      */
-    private static boolean serializeAllTable(
+    private static boolean snapshotAllTable(
             final boolean usePrev,
             @NotNull final InitialSnapshot snapshot,
             @NotNull final BaseTable<?> table,
             @NotNull final Object logIdentityObject,
-            @Nullable final BitSet columnsToSerialize,
+            @Nullable final BitSet columnsToSnapshot,
             @Nullable final RowSet keysToSnapshot) {
         snapshot.rowSet = (usePrev ? table.getRowSet().prev() : table.getRowSet()).copy();
 
@@ -1435,7 +1467,7 @@ public class ConstructSnapshot {
         try (final SharedContext sharedContext =
                 (columnSources.length > 1) ? SharedContext.makeSharedContext() : null) {
             for (int ii = 0; ii < columnSources.length; ii++) {
-                if (columnsToSerialize != null && !columnsToSerialize.get(ii)) {
+                if (columnsToSnapshot != null && !columnsToSnapshot.get(ii)) {
                     continue;
                 }
 
@@ -1460,7 +1492,7 @@ public class ConstructSnapshot {
                     .append((usePrev ? -1 : 0) + LogicalClock.getStep(getConcurrentAttemptClockValue()))
                     .append(", rows=").append(snapshot.rowsIncluded).append("/").append(keysToSnapshot)
                     .append(", cols=").append(FormatBitSet.arrayToLog(snapshot.dataColumns)).append("/")
-                    .append((columnsToSerialize != null) ? FormatBitSet.formatBitSet(columnsToSerialize)
+                    .append((columnsToSnapshot != null) ? FormatBitSet.formatBitSet(columnsToSnapshot)
                             : FormatBitSet.arrayToLog(snapshot.dataColumns))
                     .append(", usePrev=").append(usePrev).endl();
         }
@@ -1479,16 +1511,16 @@ public class ConstructSnapshot {
      * @param usePrev Use previous values?
      * @param snapshot The snapshot to populate
      * @param logIdentityObject an object for use with log() messages
-     * @param columnsToSerialize A {@link BitSet} of columns to include, null for all
+     * @param columnsToSnapshot A {@link BitSet} of columns to include, null for all
      * @param keysToSnapshot A RowSet of keys within the table to include, null for all
      * @return true if the snapshot was computed with an unchanged clock, false otherwise.
      */
-    private static boolean serializeAllTable(
+    private static boolean snapshotAllTable(
             final boolean usePrev,
             @NotNull final BarrageMessage snapshot,
             @NotNull final BaseTable<?> table,
             @NotNull final Object logIdentityObject,
-            @Nullable final BitSet columnsToSerialize,
+            @Nullable final BitSet columnsToSnapshot,
             @Nullable final RowSet keysToSnapshot) {
 
         snapshot.rowsAdded = (usePrev ? table.getRowSet().prev() : table.getRowSet()).copy();
@@ -1506,61 +1538,168 @@ public class ConstructSnapshot {
 
         final String[] columnSources = table.getDefinition().getColumnNamesArray();
 
-        try (final SharedContext sharedContext =
-                (columnSources.length > 1) ? SharedContext.makeSharedContext() : null) {
-            for (int ii = 0; ii < columnSources.length; ++ii) {
-                if (concurrentAttemptInconsistent()) {
-                    if (log.isDebugEnabled()) {
-                        final LogEntry logEntry = log.debug().append(System.identityHashCode(logIdentityObject))
-                                .append(" Bad snapshot before column ").append(ii);
-                        appendConcurrentAttemptClockInfo(logEntry);
-                        logEntry.endl();
-                    }
+        // Snapshot empty columns serially, and collect indices of non-empty columns
+        final int numColumnsToSnapshot =
+                columnsToSnapshot != null ? columnsToSnapshot.cardinality() : columnSources.length;
+        final TIntList nonEmptyColumnIndices = new TIntArrayList(numColumnsToSnapshot);
+        final List<ColumnSource<?>> nonEmptyColumnSources = new ArrayList<>(numColumnsToSnapshot);
+        if (!snapshotEmptyColumns(columnSources, columnsToSnapshot, table, logIdentityObject, snapshot,
+                nonEmptyColumnIndices, nonEmptyColumnSources)) {
+            return false;
+        }
+        boolean canParallelize = false;
+        final int numNonEmptyColumns = nonEmptyColumnIndices.size();
+        if (numNonEmptyColumns != 0) {
+            final ExecutionContext executionContext = ExecutionContext.getContext();
+            canParallelize = ENABLE_PARALLEL_SNAPSHOT &&
+                    executionContext.getOperationInitializer().canParallelize() &&
+                    numNonEmptyColumns > 1 &&
+                    (snapshot.rowsIncluded.size() >= MINIMUM_PARALLEL_SNAPSHOT_ROWS ||
+                            !allColumnSourcesInMemory(nonEmptyColumnSources));
+            if (canParallelize) {
+                if (!snapshotColumnsParallel(nonEmptyColumnIndices, nonEmptyColumnSources, usePrev, executionContext,
+                        snapshot)) {
                     return false;
                 }
-
-                final ColumnSource<?> columnSource = table.getColumnSource(columnSources[ii]);
-
-                final BarrageMessage.AddColumnData acd = new BarrageMessage.AddColumnData();
-                snapshot.addColumnData[ii] = acd;
-                final boolean columnIsEmpty = columnsToSerialize != null && !columnsToSerialize.get(ii);
-                final RowSet rows = columnIsEmpty ? RowSetFactory.empty() : snapshot.rowsIncluded;
-                // Note: cannot use shared context across several calls of differing lengths and no sharing necessary
-                // when empty
-                final ColumnSource<?> sourceToUse = ReinterpretUtils.maybeConvertToPrimitive(columnSource);
-                acd.data = getSnapshotDataAsChunkList(sourceToUse, columnIsEmpty ? null : sharedContext, rows, usePrev);
-                acd.type = columnSource.getType();
-                acd.componentType = columnSource.getComponentType();
-                acd.chunkType = sourceToUse.getChunkType();
-
-                final BarrageMessage.ModColumnData mcd = new BarrageMessage.ModColumnData();
-                snapshot.modColumnData[ii] = mcd;
-                mcd.rowsModified = RowSetFactory.empty();
-                mcd.data = getSnapshotDataAsChunkList(sourceToUse, null, RowSetFactory.empty(), usePrev);
-                mcd.type = acd.type;
-                mcd.componentType = acd.componentType;
-                mcd.chunkType = sourceToUse.getChunkType();
+            } else {
+                // Snapshot all non-empty columns serially
+                snapshotColumnsSerial(nonEmptyColumnIndices, nonEmptyColumnSources, usePrev, snapshot);
             }
         }
-
         if (log.isDebugEnabled()) {
             final LogEntry logEntry = log.debug().append(System.identityHashCode(logIdentityObject))
                     .append(": Snapshot candidate step=")
                     .append((usePrev ? -1 : 0) + LogicalClock.getStep(getConcurrentAttemptClockValue()))
+                    .append(", canParallelize=").append(canParallelize)
                     .append(", rows=").append(snapshot.rowsIncluded).append("/").append(keysToSnapshot)
                     .append(", cols=");
-            if (columnsToSerialize == null) {
+            if (columnsToSnapshot == null) {
                 logEntry.append("ALL");
             } else {
-                logEntry.append(FormatBitSet.formatBitSet(columnsToSerialize));
+                logEntry.append(FormatBitSet.formatBitSet(columnsToSnapshot));
             }
             logEntry.append(", usePrev=").append(usePrev).endl();
         }
-
         return true;
     }
 
-    private static boolean serializeAllTables(
+    /**
+     * Check if all the required column sources are in memory and should allow efficient access.
+     */
+    private static boolean allColumnSourcesInMemory(@NotNull final Iterable<ColumnSource<?>> columnSources) {
+        for (final ColumnSource<?> columnSource : columnSources) {
+            if (!isColumnSourceInMemory(columnSource)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Check if the column source is in-memory or redirected to an in-memory column source.
+     */
+    private static boolean isColumnSourceInMemory(ColumnSource<?> columnSource) {
+        do {
+            if (columnSource instanceof InMemoryColumnSource) {
+                return ((InMemoryColumnSource) columnSource).isInMemory();
+            }
+            if (!(columnSource instanceof RedirectedColumnSource)) {
+                return false;
+            }
+            columnSource = ((RedirectedColumnSource<?>) columnSource).getInnerSource();
+        } while (true);
+    }
+
+    /**
+     * Snapshot the specified columns in parallel.
+     */
+    private static boolean snapshotColumnsParallel(
+            @NotNull final TIntList columnIndices,
+            @NotNull final List<ColumnSource<?>> columnSources,
+            final boolean usePrev,
+            final ExecutionContext executionContext,
+            @NotNull final BarrageMessage snapshot) {
+        final JobScheduler jobScheduler = new OperationInitializerJobScheduler();
+        final CompletableFuture<Void> waitForParallelSnapshot = new CompletableFuture<>();
+        jobScheduler.iterateParallel(
+                executionContext,
+                logOutput -> logOutput.append("snapshotColumnsParallel"),
+                JobScheduler.DEFAULT_CONTEXT_FACTORY,
+                0, columnIndices.size(),
+                (context, colRank, nestedErrorConsumer) -> snapshotColumnsSerial(
+                        new TIntArrayList(new int[] {columnIndices.get(colRank)}),
+                        columnSources.subList(colRank, colRank + 1),
+                        usePrev, snapshot),
+                () -> waitForParallelSnapshot.complete(null),
+                waitForParallelSnapshot::completeExceptionally);
+        try {
+            waitForParallelSnapshot.get();
+        } catch (final InterruptedException e) {
+            throw new CancellationException("Interrupted during parallel column snapshot");
+        } catch (final ExecutionException e) {
+            throw new ColumnSnapshotUnsuccessfulException(
+                    "Exception occurred during parallel column snapshot", e.getCause());
+        }
+        return true;
+    }
+
+    /**
+     * Allocate add and mod column data for each column, and populate the snapshot data for empty columns. Also, collect
+     * the indices and column sources of non-empty columns, for which we will populate snapshot data later.
+     * <p>
+     * This method is intended to be called from the thread that initiated the column snapshot.
+     */
+    private static boolean snapshotEmptyColumns(
+            final String[] columnSources,
+            @Nullable final BitSet columnsToSnapshot,
+            @NotNull final Table table,
+            @NotNull final Object logIdentityObject,
+            @NotNull final BarrageMessage snapshot,
+            @NotNull final TIntCollection nonEmptyColumnsIndices,
+            @NotNull final Collection<ColumnSource<?>> nonEmptyColumnSources) {
+        final boolean rowsetIsEmpty = snapshot.rowsIncluded.isEmpty();
+        for (int colIdx = 0; colIdx < columnSources.length; ++colIdx) {
+            if (concurrentAttemptInconsistent()) {
+                if (log.isDebugEnabled()) {
+                    final LogEntry logEntry = log.debug().append(System.identityHashCode(logIdentityObject))
+                            .append(" Bad snapshot before column ").append(columnSources[colIdx])
+                            .append(" at idx ").append(colIdx);
+                    appendConcurrentAttemptClockInfo(logEntry);
+                    logEntry.endl();
+                }
+                return false;
+            }
+
+            final ColumnSource<?> columnSource = table.getColumnSource(columnSources[colIdx]);
+
+            final BarrageMessage.AddColumnData acd = new BarrageMessage.AddColumnData();
+            snapshot.addColumnData[colIdx] = acd;
+            final boolean columnIsEmpty = rowsetIsEmpty ||
+                    (columnsToSnapshot != null && !columnsToSnapshot.get(colIdx));
+            final ColumnSource<?> sourceToUse = ReinterpretUtils.maybeConvertToPrimitive(columnSource);
+            if (columnIsEmpty) {
+                acd.data = List.of();
+            } else {
+                acd.data = new ArrayList<>(); // To be populated later
+                nonEmptyColumnsIndices.add(colIdx);
+                nonEmptyColumnSources.add(sourceToUse);
+            }
+            acd.type = columnSource.getType();
+            acd.componentType = columnSource.getComponentType();
+            acd.chunkType = sourceToUse.getChunkType();
+
+            final BarrageMessage.ModColumnData mcd = new BarrageMessage.ModColumnData();
+            snapshot.modColumnData[colIdx] = mcd;
+            mcd.rowsModified = RowSetFactory.empty();
+            mcd.data = List.of();
+            mcd.type = acd.type;
+            mcd.componentType = acd.componentType;
+            mcd.chunkType = sourceToUse.getChunkType();
+        }
+        return true;
+    }
+
+    private static boolean snapshotAllTables(
             final boolean usePrev,
             @NotNull final List<InitialSnapshot> snapshots,
             @NotNull final BaseTable<?>[] tables,
@@ -1570,7 +1709,7 @@ public class ConstructSnapshot {
         for (final BaseTable<?> table : tables) {
             final InitialSnapshot snapshot = new InitialSnapshot();
             snapshots.add(snapshot);
-            if (!serializeAllTable(usePrev, snapshot, table, logIdentityObject, null, null)) {
+            if (!snapshotAllTable(usePrev, snapshot, table, logIdentityObject, null, null)) {
                 snapshots.clear();
                 return false;
             }
@@ -1610,57 +1749,45 @@ public class ConstructSnapshot {
         }
     }
 
-    private static <T> ArrayList<Chunk<Values>> getSnapshotDataAsChunkList(
-            @NotNull final ColumnSource<T> columnSource,
-            @Nullable final SharedContext sharedContext,
-            @NotNull final RowSet rowSet,
-            final boolean usePrev) {
-        long offset = 0;
-        final long size = rowSet.size();
-        final ArrayList<Chunk<Values>> result = new ArrayList<>();
-
-        if (size == 0) {
-            return result;
-        }
-
-        final int maxChunkSize = (int) Math.min(size, SNAPSHOT_CHUNK_SIZE);
-
-        try (final ColumnSource.FillContext context = columnSource.makeFillContext(maxChunkSize, sharedContext);
+    private static void snapshotColumnsSerial(
+            @NotNull final TIntList columnIndices,
+            @NotNull final List<ColumnSource<?>> columnSources,
+            final boolean usePrev,
+            @NotNull final BarrageMessage snapshot) {
+        final RowSet rowSet = snapshot.rowsIncluded;
+        final long numRows = rowSet.size();
+        // The caller should handle empty tables
+        Assert.assertion(numRows > 0, "numRows > 0");
+        final int numCols = columnIndices.size();
+        final int maxChunkSize = (int) Math.min(numRows, SNAPSHOT_CHUNK_SIZE);
+        final ColumnSource.FillContext[] fillContexts = new ColumnSource.FillContext[numCols];
+        try (final SharedContext sharedContext = numCols > 1 ? SharedContext.makeSharedContext() : null;
+                final SafeCloseableArray<ColumnSource.FillContext> ignored = new SafeCloseableArray<>(fillContexts);
                 final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
-            int chunkSize = maxChunkSize;
+            for (int colRank = 0; colRank < numCols; ++colRank) {
+                fillContexts[colRank] = columnSources.get(colRank).makeFillContext(maxChunkSize, sharedContext);
+            }
             while (it.hasMore()) {
-                final RowSequence reducedRowSet = it.getNextRowSequenceWithLength(chunkSize);
-                final ChunkType chunkType = columnSource.getChunkType();
-
-                // create a new chunk
-                WritableChunk<Values> currentChunk = chunkType.makeWritableChunk(chunkSize);
-
-                if (usePrev) {
-                    columnSource.fillPrevChunk(context, currentChunk, reducedRowSet);
-                } else {
-                    columnSource.fillChunk(context, currentChunk, reducedRowSet);
+                final RowSequence reducedRowSet = it.getNextRowSequenceWithLength(maxChunkSize);
+                // Populate the snapshot data for each column for the current chunk of rows
+                for (int colRank = 0; colRank < numCols; ++colRank) {
+                    final int colIdx = columnIndices.get(colRank);
+                    final ColumnSource<?> columnSource = columnSources.get(colRank);
+                    final ColumnSource.FillContext fillContext = fillContexts[colRank];
+                    final WritableChunk<Values> currentChunk =
+                            columnSource.getChunkType().makeWritableChunk(reducedRowSet.intSize());
+                    if (usePrev) {
+                        columnSource.fillPrevChunk(fillContext, currentChunk, reducedRowSet);
+                    } else {
+                        columnSource.fillChunk(fillContext, currentChunk, reducedRowSet);
+                    }
+                    snapshot.addColumnData[colIdx].data.add(currentChunk);
                 }
-
-                // add the chunk to the current list
-                result.add(currentChunk);
-
-                // increment the offset for the next chunk (using the actual values written)
-                offset += currentChunk.size();
-
-                // recompute the size of the next chunk
-                if (size - offset > maxChunkSize) {
-                    chunkSize = maxChunkSize;
-                } else {
-                    chunkSize = (int) (size - offset);
-                }
-
                 if (sharedContext != null) {
-                    // a shared context is good for only one chunk of rows
                     sharedContext.reset();
                 }
             }
         }
-        return result;
     }
 
     /**

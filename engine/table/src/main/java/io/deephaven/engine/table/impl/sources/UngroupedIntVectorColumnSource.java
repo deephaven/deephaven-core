@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2022 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit UngroupedCharVectorColumnSource and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit UngroupedCharVectorColumnSource and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.engine.table.ColumnSource;
@@ -14,7 +13,8 @@ import io.deephaven.vector.IntVector;
 
 import static io.deephaven.util.QueryConstants.NULL_INT;
 
-public class UngroupedIntVectorColumnSource extends UngroupedColumnSource<Integer> implements MutableColumnSourceGetDefaults.ForInt {
+public class UngroupedIntVectorColumnSource extends UngroupedColumnSource<Integer>
+        implements MutableColumnSourceGetDefaults.ForInt {
     private ColumnSource<IntVector> innerSource;
     private final boolean isUngroupable;
 
@@ -27,7 +27,8 @@ public class UngroupedIntVectorColumnSource extends UngroupedColumnSource<Intege
     public UngroupedIntVectorColumnSource(ColumnSource<IntVector> innerSource) {
         super(Integer.class);
         this.innerSource = innerSource;
-        this.isUngroupable = innerSource instanceof UngroupableColumnSource && ((UngroupableColumnSource)innerSource).isUngroupable();
+        this.isUngroupable = innerSource instanceof UngroupableColumnSource
+                && ((UngroupableColumnSource) innerSource).isUngroupable();
     }
 
     @Override
@@ -35,11 +36,11 @@ public class UngroupedIntVectorColumnSource extends UngroupedColumnSource<Intege
         if (rowKey < 0) {
             return null;
         }
-        long segment = rowKey >>base;
-        int offset = (int) (rowKey & ((1<<base) - 1));
+        long segment = rowKey >> base;
+        int offset = (int) (rowKey & ((1 << base) - 1));
         final Integer result;
         if (isUngroupable) {
-            result = (Integer)((UngroupableColumnSource)innerSource).getUngrouped(segment, offset);
+            result = (Integer) ((UngroupableColumnSource) innerSource).getUngrouped(segment, offset);
             if (result == null)
                 return null;
         } else {
@@ -56,10 +57,10 @@ public class UngroupedIntVectorColumnSource extends UngroupedColumnSource<Intege
             return NULL_INT;
         }
 
-        long segment = rowKey >>base;
-        int offset = (int) (rowKey & ((1<<base) - 1));
+        long segment = rowKey >> base;
+        int offset = (int) (rowKey & ((1 << base) - 1));
         if (isUngroupable) {
-            return ((UngroupableColumnSource)innerSource).getUngroupedInt(segment, offset);
+            return ((UngroupableColumnSource) innerSource).getUngroupedInt(segment, offset);
         }
 
         final IntVector segmentArray = innerSource.get(segment);
@@ -74,10 +75,10 @@ public class UngroupedIntVectorColumnSource extends UngroupedColumnSource<Intege
         }
 
         long segment = rowKey >> getPrevBase();
-        int offset = (int) (rowKey & ((1<< getPrevBase()) - 1));
+        int offset = (int) (rowKey & ((1 << getPrevBase()) - 1));
         final Integer result;
         if (isUngroupable) {
-            result = (Integer)((UngroupableColumnSource)innerSource).getUngroupedPrev(segment, offset);
+            result = (Integer) ((UngroupableColumnSource) innerSource).getUngroupedPrev(segment, offset);
             if (result == null) {
                 return null;
             }
@@ -96,10 +97,10 @@ public class UngroupedIntVectorColumnSource extends UngroupedColumnSource<Intege
         }
 
         long segment = rowKey >> getPrevBase();
-        int offset = (int) (rowKey & ((1<< getPrevBase()) - 1));
+        int offset = (int) (rowKey & ((1 << getPrevBase()) - 1));
 
         if (isUngroupable) {
-            return ((UngroupableColumnSource)innerSource).getUngroupedPrevInt(segment, offset);
+            return ((UngroupableColumnSource) innerSource).getUngroupedPrevInt(segment, offset);
         }
 
         final IntVector segmentArray = innerSource.getPrev(segment);

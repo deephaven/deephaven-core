@@ -1,11 +1,10 @@
-/**
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
-/*
- * ---------------------------------------------------------------------------------------------------------------------
- * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ImmutableConstantCharSource and regenerate
- * ---------------------------------------------------------------------------------------------------------------------
- */
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit ImmutableConstantCharSource and run "./gradlew replicateSourcesAndChunks" to regenerate
+//
+// @formatter:off
 package io.deephaven.engine.table.impl.sources.immutable;
 
 import io.deephaven.chunk.LongChunk;
@@ -17,7 +16,6 @@ import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.sources.*;
-import io.deephaven.engine.table.impl.util.ShiftData;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
@@ -30,7 +28,7 @@ import static io.deephaven.engine.rowset.RowSequence.NULL_ROW_KEY;
  */
 public class ImmutableConstantObjectSource<T>
         extends AbstractColumnSource<T>
-        implements ImmutableColumnSourceGetDefaults.ForObject<T>, ShiftData.ShiftCallback, InMemoryColumnSource,
+        implements ImmutableColumnSourceGetDefaults.ForObject<T>, InMemoryColumnSource,
         RowKeyAgnosticChunkSource<Values> /* MIXIN_IMPLS */ {
 
     private final T value;
@@ -69,9 +67,6 @@ public class ImmutableConstantObjectSource<T>
     }
 
     @Override
-    public final void shift(final long start, final long end, final long offset) {}
-
-    @Override
     public void fillChunkUnordered(
             @NotNull FillContext context,
             @NotNull WritableChunk<? super Values> dest,
@@ -88,7 +83,7 @@ public class ImmutableConstantObjectSource<T>
             @NotNull FillContext context,
             @NotNull WritableChunk<? super Values> dest,
             @NotNull LongChunk<? extends RowKeys> keys) {
-        fillChunkUnordered(context , dest, keys);
+        fillChunkUnordered(context, dest, keys);
     }
 
     @Override

@@ -1,7 +1,6 @@
-/*
- * Copyright (c) 2016-2023 Deephaven Data Labs and Patent Pending
- */
-
+//
+// Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
+//
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -54,7 +53,7 @@ public final class AddOnlyToBlinkTableAdapter {
         final OperationSnapshotControl snapshotControl =
                 coalesced.createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
 
-        // noinspection DataFlowIssue swapListener cannot be null here, since we know the table is refreshing
+        // noinspection DataFlowIssue snapshotControl cannot be null here, since we know the table is refreshing
         ConstructSnapshot.callDataSnapshotFunction("addOnlyToBlink", snapshotControl,
                 (final boolean usePrev, final long beforeClockValue) -> {
                     // Start with the same rows as the original table
