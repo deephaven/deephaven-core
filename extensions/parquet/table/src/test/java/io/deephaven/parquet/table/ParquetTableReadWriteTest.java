@@ -432,7 +432,7 @@ public final class ParquetTableReadWriteTest {
                 StandaloneTableKey.getInstance(),
                 new ParquetTableLocationKey(
                         convertToURI(new File(rootFile,
-                                ParquetTools.getRelativeIndexFilePath(dest, "someString")), false),
+                                ParquetTools.getRelativeIndexFilePath(dest.getName(), "someString")), false),
                         0, Map.of(), EMPTY),
                 EMPTY);
         assertEquals(index1Location.getSortedColumns(), List.of(SortColumn.asc(ColumnName.of("someString"))));
@@ -443,7 +443,7 @@ public final class ParquetTableReadWriteTest {
                 StandaloneTableKey.getInstance(),
                 new ParquetTableLocationKey(
                         convertToURI(new File(rootFile,
-                                ParquetTools.getRelativeIndexFilePath(dest, "someInt", "someString")), false),
+                                ParquetTools.getRelativeIndexFilePath(dest.getName(), "someInt", "someString")), false),
                         0, Map.of(), EMPTY),
                 EMPTY);
         assertEquals(index2Location.getSortedColumns(), List.of(
@@ -453,7 +453,7 @@ public final class ParquetTableReadWriteTest {
         assertTableEquals(index2Table, index2Table.sort("someInt", "someString"));
     }
 
-    private static void verifyIndexingInfoExists(final Table table, final String... columnNames) {
+    static void verifyIndexingInfoExists(final Table table, final String... columnNames) {
         assertTrue(DataIndexer.hasDataIndex(table, columnNames));
         final DataIndex fullIndex = DataIndexer.getDataIndex(table, columnNames);
         Assert.neqNull(fullIndex, "fullIndex");
@@ -593,6 +593,19 @@ public final class ParquetTableReadWriteTest {
     }
 
     @Test
+    public void basicParquetWrongDestinationTest() {
+        final Table table = TableTools.emptyTable(5).update("A=(int)i");
+        final File dest = new File(rootFile, "basicParquetWrongDestinationTest.parquet");
+        writeTable(table, dest.getPath());
+        final File wrongDest = new File(rootFile, "basicParquetWrongDestinationTest");
+        try {
+            writeTable(table, wrongDest.getPath());
+            fail("Expected an exception because destination does not end with .parquet");
+        } catch (final IllegalArgumentException expected) {
+        }
+    }
+
+    @Test
     public void basicParquetWithMetadataTest() {
         final Table table = TableTools.emptyTable(5).update("A=(int)i", "B=(long)i", "C=(double)i");
         final String filename = "basicParquetWithMetadataTest.parquet";
@@ -623,6 +636,317 @@ public final class ParquetTableReadWriteTest {
         fromDiskWithCommonMetadata = readTable(commonMetadataFile.getPath(), readInstructions);
         assertTableEquals(table, fromDiskWithCommonMetadata);
     }
+
+    @Test
+    public void testOverrideBooleanColumnType() {
+        final Table table = TableTools.emptyTable(5).update("A = i % 3 == 0 ? true : i % 3 == 1 ? false : null");
+        final File dest = new File(rootFile, "testOverrideBooleanColumnType.parquet");
+        ParquetTools.writeTable(table, dest.getPath());
+        assertTableEquals(table, ParquetTools.readTable(dest.getPath()));
+
+        final Table arrayTable =
+                TableTools.emptyTable(5).update("A = new Boolean[] {i % 3 == 0 ? true : i % 3 == 1 ? false : null}");
+        final File arrayTableDest = new File(rootFile, "testOverrideBooleanArrayType.parquet");
+        ParquetTools.writeTable(arrayTable, arrayTableDest.getPath());
+        assertTableEquals(arrayTable, ParquetTools.readTable(arrayTableDest.getPath()));
+        // Boolean -> byte
+        {
+            final ParquetInstructions readInstructions = ParquetInstructions.builder()
+                    .setTableDefinition(TableDefinition.of(ColumnDefinition.ofByte("A")))
+                    .build();
+            final Table byteTable =
+                    TableTools.emptyTable(5).update("A = i % 3 == 0 ? (byte)1 : i % 3 == 1 ? (byte)0 : null");
+            assertTableEquals(byteTable, ParquetTools.readTable(dest.getPath(), readInstructions));
+
+            final Table byteArrayTable =
+                    TableTools.emptyTable(5)
+                            .update("A = new byte[] {i % 3 == 0 ? (byte)1 : i % 3 == 1 ? (byte)0 : (byte)null}");
+            assertTableEquals(byteArrayTable, ParquetTools.readTable(arrayTableDest.getPath(),
+                    readInstructions.withTableDefinition(byteArrayTable.getDefinition())).select());
+        }
+
+        // Boolean -> short
+        {
+            final ParquetInstructions readInstructions = ParquetInstructions.builder()
+                    .setTableDefinition(TableDefinition.of(ColumnDefinition.ofShort("A")))
+                    .build();
+            final Table shortTable =
+                    TableTools.emptyTable(5).update("A = i % 3 == 0 ? (short)1 : i % 3 == 1 ? (short)0 : null");
+            assertTableEquals(shortTable, ParquetTools.readTable(dest.getPath(), readInstructions));
+
+            final Table shortArrayTable =
+                    TableTools.emptyTable(5)
+                            .update("A = new short[] {i % 3 == 0 ? (short)1 : i % 3 == (short)1 ? 0 : (short)null}");
+            assertTableEquals(shortArrayTable, ParquetTools.readTable(arrayTableDest.getPath(),
+                    readInstructions.withTableDefinition(shortArrayTable.getDefinition())).select());
+        }
+
+        // Boolean -> int
+        {
+            final ParquetInstructions readInstructions = ParquetInstructions.builder()
+                    .setTableDefinition(TableDefinition.of(ColumnDefinition.ofInt("A")))
+                    .build();
+            final Table intTable = TableTools.emptyTable(5).update("A = i % 3 == 0 ? 1 : i % 3 == 1 ? 0 : null");
+            assertTableEquals(intTable, ParquetTools.readTable(dest.getPath(), readInstructions));
+
+            final Table intArrayTable =
+                    TableTools.emptyTable(5).update("A = new int[] {i % 3 == 0 ? 1 : i % 3 == 1 ? 0 : null}");
+            assertTableEquals(intArrayTable, ParquetTools.readTable(arrayTableDest.getPath(),
+                    readInstructions.withTableDefinition(intArrayTable.getDefinition())).select());
+        }
+        // Boolean -> long
+        {
+            final ParquetInstructions readInstructions = ParquetInstructions.builder()
+                    .setTableDefinition(TableDefinition.of(ColumnDefinition.ofLong("A")))
+                    .build();
+            final Table longTable = TableTools.emptyTable(5).update("A = i % 3 == 0 ? 1L : i % 3 == 1 ? 0L : null");
+            assertTableEquals(longTable, ParquetTools.readTable(dest.getPath(), readInstructions));
+
+            final Table longArrayTable =
+                    TableTools.emptyTable(5).update("A = new long[] {i % 3 == 0 ? 1L : i % 3 == 1 ? 0L : null}");
+            assertTableEquals(longArrayTable, ParquetTools.readTable(arrayTableDest.getPath(),
+                    readInstructions.withTableDefinition(longArrayTable.getDefinition())).select());
+        }
+    }
+
+    @Test
+    public void testOverrideByteColumnType() {
+        final Table table = TableTools.emptyTable(5).update("A=(byte)(i-2)");
+        final File dest = new File(rootFile, "testOverrideByteColumnType.parquet");
+        ParquetTools.writeTable(table, dest.getPath());
+        assertTableEquals(table, ParquetTools.readTable(dest.getPath()));
+
+        final Table arrayTable = TableTools.emptyTable(5).update("A = new byte[] {i == 0 ? null : (byte)(i-2)}");
+        final File arrayTableDest = new File(rootFile, "testOverrideByteArrayColumnType.parquet");
+        ParquetTools.writeTable(arrayTable, arrayTableDest.getPath());
+        assertTableEquals(arrayTable, ParquetTools.readTable(arrayTableDest.getPath()));
+
+        // byte -> short
+        {
+            final ParquetInstructions readInstructions = ParquetInstructions.builder()
+                    .setTableDefinition(TableDefinition.of(ColumnDefinition.ofShort("A")))
+                    .build();
+            assertTableEquals(table.updateView("A=(short)A"),
+                    ParquetTools.readTable(dest.getPath(), readInstructions));
+
+            final Table shortArrayTable =
+                    TableTools.emptyTable(5).update("A = new short[] {i == 0 ? null : (short)(i-2)}");
+            assertTableEquals(shortArrayTable, ParquetTools.readTable(arrayTableDest.getPath(),
+                    readInstructions.withTableDefinition(shortArrayTable.getDefinition())).select());
+        }
+        // byte -> int
+        {
+            final ParquetInstructions readInstructions = ParquetInstructions.builder()
+                    .setTableDefinition(TableDefinition.of(ColumnDefinition.ofInt("A")))
+                    .build();
+            assertTableEquals(table.updateView("A=(int)A"),
+                    ParquetTools.readTable(dest.getPath(), readInstructions));
+
+            final Table intArrayTable = TableTools.emptyTable(5).update("A = new int[] {i == 0 ? null : (int)(i-2)}");
+            assertTableEquals(intArrayTable, ParquetTools.readTable(arrayTableDest.getPath(),
+                    readInstructions.withTableDefinition(intArrayTable.getDefinition())).select());
+        }
+        // byte -> long
+        {
+            final ParquetInstructions readInstructions = ParquetInstructions.builder()
+                    .setTableDefinition(TableDefinition.of(ColumnDefinition.ofLong("A")))
+                    .build();
+            assertTableEquals(table.updateView("A=(long)A"),
+                    ParquetTools.readTable(dest.getPath(), readInstructions));
+
+            final Table longArrayTable =
+                    TableTools.emptyTable(5).update("A = new long[] {i == 0 ? null : (long)(i-2)}");
+            assertTableEquals(longArrayTable, ParquetTools.readTable(arrayTableDest.getPath(),
+                    readInstructions.withTableDefinition(longArrayTable.getDefinition())).select());
+        }
+        // byte -> char
+        {
+            final ParquetInstructions readInstructions = ParquetInstructions.builder()
+                    .setTableDefinition(TableDefinition.of(ColumnDefinition.ofChar("A")))
+                    .build();
+            try {
+                ParquetTools.readTable(dest.getPath(), readInstructions).select();
+                fail("Expected an exception because cannot convert byte to char");
+            } catch (final RuntimeException ignored) {
+            }
+        }
+    }
+
+    @Test
+    public void testOverrideShortColumnType() {
+        final Table table = TableTools.emptyTable(5).update("A=(short)(i-2)");
+        final File dest = new File(rootFile, "testOverrideShortColumnType.parquet");
+        ParquetTools.writeTable(table, dest.getPath());
+        assertTableEquals(table, ParquetTools.readTable(dest.getPath()));
+
+        final Table arrayTable = TableTools.emptyTable(5).update("A = new short[] {i == 0 ? null : (short)(i-2)}");
+        final File arrayTableDest = new File(rootFile, "testOverrideShortArrayColumnType.parquet");
+        ParquetTools.writeTable(arrayTable, arrayTableDest.getPath());
+        assertTableEquals(arrayTable, ParquetTools.readTable(arrayTableDest.getPath()));
+
+        // short -> int
+        {
+            final ParquetInstructions readInstructions = ParquetInstructions.builder()
+                    .setTableDefinition(TableDefinition.of(ColumnDefinition.ofInt("A")))
+                    .build();
+            assertTableEquals(table.updateView("A=(int)A"),
+                    ParquetTools.readTable(dest.getPath(), readInstructions));
+
+            final Table intArrayTable = TableTools.emptyTable(5).update("A = new int[] {i == 0 ? null : (int)(i-2)}");
+            assertTableEquals(intArrayTable, ParquetTools.readTable(arrayTableDest.getPath(),
+                    readInstructions.withTableDefinition(intArrayTable.getDefinition())).select());
+        }
+        // short -> long
+        {
+            final ParquetInstructions readInstructions = ParquetInstructions.builder()
+                    .setTableDefinition(TableDefinition.of(ColumnDefinition.ofLong("A")))
+                    .build();
+            assertTableEquals(table.updateView("A=(long)A"),
+                    ParquetTools.readTable(dest.getPath(), readInstructions));
+
+            final Table longArrayTable =
+                    TableTools.emptyTable(5).update("A = new long[] {i == 0 ? null : (long)(i-2)}");
+            assertTableEquals(longArrayTable, ParquetTools.readTable(arrayTableDest.getPath(),
+                    readInstructions.withTableDefinition(longArrayTable.getDefinition())).select());
+        }
+        // short -> byte
+        {
+            final ParquetInstructions readInstructions = ParquetInstructions.builder()
+                    .setTableDefinition(TableDefinition.of(ColumnDefinition.ofByte("A")))
+                    .build();
+            try {
+                ParquetTools.readTable(dest.getPath(), readInstructions).select();
+                fail("Expected an exception because cannot convert short to byte");
+            } catch (final RuntimeException ignored) {
+            }
+        }
+    }
+
+    @Test
+    public void testOverrideCharColumnType() {
+        final Table table = TableTools.emptyTable(5).update("A=(char)i");
+        final File dest = new File(rootFile, "testOverrideCharColumnType.parquet");
+        ParquetTools.writeTable(table, dest.getPath());
+        assertTableEquals(table, ParquetTools.readTable(dest.getPath()));
+
+        final Table arrayTable = TableTools.emptyTable(5).update("A = new char[] {i == 0 ? null : (char)i}");
+        final File arrayTableDest = new File(rootFile, "testOverrideCharArrayColumnType.parquet");
+        ParquetTools.writeTable(arrayTable, arrayTableDest.getPath());
+        assertTableEquals(arrayTable, ParquetTools.readTable(arrayTableDest.getPath()));
+
+        // char -> int
+        {
+            final ParquetInstructions readInstructions = ParquetInstructions.builder()
+                    .setTableDefinition(TableDefinition.of(ColumnDefinition.ofInt("A")))
+                    .build();
+            assertTableEquals(table.updateView("A=(int)A"),
+                    ParquetTools.readTable(dest.getPath(), readInstructions));
+
+            final Table intArrayTable = TableTools.emptyTable(5).update("A = new int[] {i == 0 ? null : (int)i}");
+            assertTableEquals(intArrayTable, ParquetTools.readTable(arrayTableDest.getPath(),
+                    readInstructions.withTableDefinition(intArrayTable.getDefinition())).select());
+        }
+        // char -> long
+        {
+            final ParquetInstructions readInstructions = ParquetInstructions.builder()
+                    .setTableDefinition(TableDefinition.of(ColumnDefinition.ofLong("A")))
+                    .build();
+            assertTableEquals(table.updateView("A=(long)A"),
+                    ParquetTools.readTable(dest.getPath(), readInstructions));
+
+            final Table longArrayTable = TableTools.emptyTable(5).update("A = new long[] {i == 0 ? null : (long)i}");
+            assertTableEquals(longArrayTable, ParquetTools.readTable(arrayTableDest.getPath(),
+                    readInstructions.withTableDefinition(longArrayTable.getDefinition())).select());
+        }
+        // char -> short
+        {
+            final ParquetInstructions readInstructions = ParquetInstructions.builder()
+                    .setTableDefinition(TableDefinition.of(ColumnDefinition.ofShort("A")))
+                    .build();
+            try {
+                ParquetTools.readTable(dest.getPath(), readInstructions).select();
+                fail("Expected an exception because cannot convert char to short");
+            } catch (final RuntimeException ignored) {
+            }
+        }
+    }
+
+    @Test
+    public void testOverrideIntColumnType() {
+        final Table table = TableTools.emptyTable(5).update("A=(int)(i-2)");
+        final File dest = new File(rootFile, "testOverrideIntColumnType.parquet");
+        ParquetTools.writeTable(table, dest.getPath());
+        assertTableEquals(table, ParquetTools.readTable(dest.getPath()));
+
+        final Table arrayTable = TableTools.emptyTable(5).update("A = new int[] {i == 0 ? null : (int)(i-2)}");
+        final File arrayTableDest = new File(rootFile, "testOverrideIntArrayColumnType.parquet");
+        ParquetTools.writeTable(arrayTable, arrayTableDest.getPath());
+        assertTableEquals(arrayTable, ParquetTools.readTable(arrayTableDest.getPath()));
+
+        // int -> long
+        {
+            final ParquetInstructions readInstructions = ParquetInstructions.builder()
+                    .setTableDefinition(TableDefinition.of(ColumnDefinition.ofLong("A")))
+                    .build();
+            assertTableEquals(table.updateView("A=(long)A"),
+                    ParquetTools.readTable(dest.getPath(), readInstructions));
+            final Table longArrayTable =
+                    TableTools.emptyTable(5).update("A = new long[] {i == 0 ? null : (long)(i-2)}");
+            assertTableEquals(longArrayTable, ParquetTools.readTable(arrayTableDest.getPath(),
+                    readInstructions.withTableDefinition(longArrayTable.getDefinition())).select());
+        }
+
+        // int -> short
+        {
+            final ParquetInstructions readInstructions = ParquetInstructions.builder()
+                    .setTableDefinition(TableDefinition.of(ColumnDefinition.ofShort("A")))
+                    .build();
+            try {
+                ParquetTools.readTable(dest.getPath(), readInstructions).select();
+                fail("Expected an exception because cannot convert int to short");
+            } catch (final RuntimeException ignored) {
+            }
+        }
+    }
+
+    @Test
+    public void testOverrideFloatColumnType() {
+        final Table table = TableTools.emptyTable(5).update("A=(float)(i-2)");
+        final File dest = new File(rootFile, "testOverrideFloatColumnType.parquet");
+        ParquetTools.writeTable(table, dest.getPath());
+        assertTableEquals(table, ParquetTools.readTable(dest.getPath()));
+
+        final Table arrayTable = TableTools.emptyTable(5).update("A = new float[] {i == 0 ? null : (float)(i-2)}");
+        final File arrayTableDest = new File(rootFile, "testOverrideFloatArrayColumnType.parquet");
+        ParquetTools.writeTable(arrayTable, arrayTableDest.getPath());
+        assertTableEquals(arrayTable, ParquetTools.readTable(arrayTableDest.getPath()));
+
+        // float -> double
+        {
+            final ParquetInstructions readInstructions = ParquetInstructions.builder()
+                    .setTableDefinition(TableDefinition.of(ColumnDefinition.ofDouble("A")))
+                    .build();
+            assertTableEquals(table.updateView("A=(double)A"),
+                    ParquetTools.readTable(dest.getPath(), readInstructions));
+            final Table doubleArrayTable =
+                    TableTools.emptyTable(5).update("A = new double[] {i == 0 ? null : (double)(i-2)}");
+            assertTableEquals(doubleArrayTable, ParquetTools.readTable(arrayTableDest.getPath(),
+                    readInstructions.withTableDefinition(doubleArrayTable.getDefinition())).select());
+        }
+
+        // float -> short
+        {
+            final ParquetInstructions readInstructions = ParquetInstructions.builder()
+                    .setTableDefinition(TableDefinition.of(ColumnDefinition.ofShort("A")))
+                    .build();
+            try {
+                ParquetTools.readTable(dest.getPath(), readInstructions).select();
+                fail("Expected an exception because cannot convert float to short");
+            } catch (final RuntimeException ignored) {
+            }
+        }
+    }
+
 
     @Test
     public void parquetIndexingBuilderTest() {
@@ -1114,6 +1438,12 @@ public final class ParquetTableReadWriteTest {
 
     @Test
     public void someMoreKeyValuePartitionedTestsWithComplexKeys() {
+        // Verify complex keys both with and without data index
+        someMoreKeyValuePartitionedTestsWithComplexKeysHelper(true);
+        someMoreKeyValuePartitionedTestsWithComplexKeysHelper(false);
+    }
+
+    private void someMoreKeyValuePartitionedTestsWithComplexKeysHelper(final boolean addDataIndex) {
         final TableDefinition definition = TableDefinition.of(
                 ColumnDefinition.ofString("symbol").withPartitioning(),
                 ColumnDefinition.ofString("epic_collection_id"),
@@ -1126,16 +1456,32 @@ public final class ParquetTableReadWriteTest {
                         "I = ii"))
                 .withDefinitionUnsafe(definition);
 
-        final File parentDir = new File(rootFile, "someTest");
-        final ParquetInstructions writeInstructions = ParquetInstructions.builder()
-                .setGenerateMetadataFiles(true)
-                .build();
+        final File parentDir = new File(rootFile, "someMoreKeyValuePartitionedTestsWithComplexKeys");
+        if (parentDir.exists()) {
+            FileUtils.deleteRecursively(parentDir);
+        }
+        final ParquetInstructions writeInstructions;
+        if (addDataIndex) {
+            writeInstructions = ParquetInstructions.builder()
+                    .setGenerateMetadataFiles(true)
+                    .addIndexColumns("I", "epic_request_id")
+                    .build();
+        } else {
+            writeInstructions = ParquetInstructions.builder()
+                    .setGenerateMetadataFiles(true)
+                    .build();
+        }
         final String[] partitioningCols = new String[] {"symbol", "epic_collection_id", "epic_request_id"};
         final PartitionedTable partitionedTable = inputData.partitionBy(partitioningCols);
         writeKeyValuePartitionedTable(partitionedTable, parentDir.getPath(), writeInstructions);
 
         final Table fromDisk =
                 readTable(parentDir.getPath(), EMPTY.withLayout(ParquetInstructions.ParquetFileLayout.KV_PARTITIONED));
+        if (addDataIndex) {
+            // Verify if index present on columns "I, epic_request_id"
+            verifyIndexingInfoExists(fromDisk, "I", "epic_request_id");
+        }
+
         for (final String col : partitioningCols) {
             assertTrue(fromDisk.getDefinition().getColumn(col).isPartitioning());
         }
@@ -2047,16 +2393,6 @@ public final class ParquetTableReadWriteTest {
         assertTableEquals(expected, fromDisk);
     }
 
-    /**
-     * These are tests for writing a table to a parquet file and making sure there are no unnecessary files left in the
-     * directory after we finish writing.
-     */
-    @Test
-    public void basicWriteTests() {
-        basicWriteTestsImpl(SINGLE_WRITER);
-        basicWriteTestsImpl(MULTI_WRITER);
-    }
-
     @Test
     public void readPartitionedDataGeneratedOnWindows() {
         final String path = ParquetTableReadWriteTest.class
@@ -2067,6 +2403,16 @@ public final class ParquetTableReadWriteTest {
                 longCol("n_legs", 5, 2, 4, 100, 2, 4),
                 stringCol("animal", "Brittle stars", "Flamingo", "Dog", "Centipede", "Parrot", "Horse"));
         assertTableEquals(expected, partitionedDataFromWindows.sort("year"));
+    }
+
+    /**
+     * These are tests for writing a table to a parquet file and making sure there are no unnecessary files left in the
+     * directory after we finish writing.
+     */
+    @Test
+    public void basicWriteTests() {
+        basicWriteTestsImpl(SINGLE_WRITER);
+        basicWriteTestsImpl(MULTI_WRITER);
     }
 
     private static void basicWriteTestsImpl(TestParquetTableWriter writer) {
@@ -2087,6 +2433,7 @@ public final class ParquetTableReadWriteTest {
         // This write should fail
         final Table badTable = TableTools.emptyTable(5)
                 .updateView("InputString = ii % 2 == 0 ? Long.toString(ii) : null", "A=InputString.charAt(0)");
+        DataIndexer.getOrCreateDataIndex(badTable, "InputString");
         try {
             writer.writeTable(badTable, destFile);
             TestCase.fail("Exception expected for invalid formula");
@@ -2191,9 +2538,10 @@ public final class ParquetTableReadWriteTest {
         final File parentDir = new File(rootFile, "tempDir");
         parentDir.mkdir();
 
-        // Write two tables to parquet file and read them back
+        // Write two tables to parquet file
         final Table firstTable = TableTools.emptyTable(5)
                 .updateView("InputString = Long.toString(ii)", "A=InputString.charAt(0)");
+        DataIndexer.getOrCreateDataIndex(firstTable, "InputString");
         final File firstDestFile = new File(parentDir, "firstTable.parquet");
 
         final Table secondTable = TableTools.emptyTable(5)
@@ -2203,7 +2551,7 @@ public final class ParquetTableReadWriteTest {
         final Table[] tablesToSave = new Table[] {firstTable, secondTable};
         final String[] destinations = new String[] {firstDestFile.getPath(), secondDestFile.getPath()};
 
-        // This write should fail
+        // This write should fail because of the null value in the second table
         try {
             writeTables(tablesToSave, destinations,
                     ParquetInstructions.EMPTY.withTableDefinition(firstTable.getDefinition()));
@@ -2607,6 +2955,10 @@ public final class ParquetTableReadWriteTest {
         indexOverwritingTestsImpl(MULTI_WRITER);
     }
 
+    private static File getBackupFile(final File destFile) {
+        return new File(destFile.getParent(), ".OLD_" + destFile.getName());
+    }
+
     private void indexOverwritingTestsImpl(TestParquetTableWriter writer) {
         // Create an empty parent directory
         final File parentDir = new File(rootFile, "tempDir");
@@ -2652,7 +3004,7 @@ public final class ParquetTableReadWriteTest {
         // The directory should still contain the updated table, its index file for column xxx, and old index file
         // for column vvv
         final File xxxIndexFile = new File(parentDir, xxxIndexFilePath);
-        final File backupXXXIndexFile = ParquetTools.getBackupFile(xxxIndexFile);
+        final File backupXXXIndexFile = getBackupFile(xxxIndexFile);
         final String backupXXXIndexFileName = backupXXXIndexFile.getName();
         verifyFilesInDir(parentDir, new String[] {destFilename},
                 Map.of("vvv", new String[] {vvvIndexFilePath},
@@ -3011,10 +3363,6 @@ public final class ParquetTableReadWriteTest {
         final TableDefinition fooBarDefinition;
         final TableDefinition barDefinition;
         {
-            fooSource.mkdirs();
-            fooBarSource.mkdirs();
-            barSource.mkdirs();
-
             final ColumnHolder<Integer> fooCol = intCol("Foo", 1, 2, 3);
             final ColumnHolder<String> barCol = stringCol("Bar", "Zip", "Zap", "Zoom");
 
@@ -3126,8 +3474,6 @@ public final class ParquetTableReadWriteTest {
             final File p1FileEmpty = new File(emptySource, "01.parquet");
             final File p2FileEmpty = new File(emptySource, "02.parquet");
 
-            p1File.mkdirs();
-            p2File.mkdirs();
             emptySource.mkdirs();
 
             final ColumnHolder<Integer> foo1 = intCol("Foo", 1, 2, 3);
@@ -3141,8 +3487,6 @@ public final class ParquetTableReadWriteTest {
             writeTable(p1, p1File.getPath());
             writeTable(p2, p2File.getPath());
             writeIntoEmptySource = () -> {
-                p1FileEmpty.mkdirs();
-                p2FileEmpty.mkdirs();
                 writeTable(p1, p1FileEmpty.getPath());
                 writeTable(p2, p2FileEmpty.getPath());
             };
@@ -3245,8 +3589,6 @@ public final class ParquetTableReadWriteTest {
             final File p1FileEmpty = new File(emptySource, "Partition=1/z.parquet");
             final File p2FileEmpty = new File(emptySource, "Partition=2/a.parquet");
 
-            p1File.mkdirs();
-            p2File.mkdirs();
             emptySource.mkdirs();
 
             final ColumnHolder<Integer> part1 = intCol("Partition", 1, 1, 1);
@@ -3263,8 +3605,6 @@ public final class ParquetTableReadWriteTest {
             writeTable(p1, p1File.getPath());
             writeTable(p2, p2File.getPath());
             writeIntoEmptySource = () -> {
-                p1FileEmpty.mkdirs();
-                p2FileEmpty.mkdirs();
                 writeTable(p1, p1FileEmpty.getPath());
                 writeTable(p2, p2FileEmpty.getPath());
             };

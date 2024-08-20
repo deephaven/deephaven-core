@@ -10,8 +10,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.stream.Stream;
 
 import static io.deephaven.base.FileUtils.convertToURI;
@@ -92,11 +90,17 @@ public interface SeekableChannelsProvider extends SafeCloseable {
      */
     InputStream getInputStream(SeekableByteChannel channel, int sizeHint) throws IOException;
 
-    default SeekableByteChannel getWriteChannel(@NotNull final String path, final boolean append) throws IOException {
-        return getWriteChannel(Paths.get(path), append);
-    }
+    /**
+     * Creates a {@link CompletableOutputStream} to write to the given URI.
+     *
+     * @param uri the URI to write to
+     * @param bufferSizeHint the number of bytes the caller expects to buffer before flushing
+     * @return the output stream
+     * @throws IOException if an IO exception occurs
+     * @see CompletableOutputStream
+     */
+    CompletableOutputStream getOutputStream(@NotNull final URI uri, int bufferSizeHint) throws IOException;
 
-    SeekableByteChannel getWriteChannel(@NotNull Path path, boolean append) throws IOException;
 
     /**
      * Returns a stream of URIs, the elements of which are the entries in the directory. The listing is non-recursive.

@@ -216,7 +216,7 @@ class PartitioningColumnDataIndex<KEY_TYPE> extends AbstractDataIndex {
             indexKeySource.set(addedKeyPos, locationKey);
 
             indexRowSetSource.ensureCapacity(addedKeyPos + 1);
-            indexRowSetSource.set(addedKeyPos, regionRowSet.shift(regionFirstRowKey));
+            indexRowSetSource.set(addedKeyPos, regionRowSet.shift(regionFirstRowKey).toTracking());
         } else {
             // noinspection DataFlowIssue
             final WritableRowSet existingRowSet = indexRowSetSource.get(pos).writableCast();

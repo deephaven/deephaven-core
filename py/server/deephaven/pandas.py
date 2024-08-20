@@ -11,7 +11,7 @@ import pandas as pd
 import pyarrow as pa
 
 from deephaven import DHError, new_table, dtypes, arrow
-from deephaven.column import Column
+from deephaven.column import ColumnDefinition
 from deephaven.constants import NULL_BYTE, NULL_SHORT, NULL_INT, NULL_LONG, NULL_FLOAT, NULL_DOUBLE, NULL_CHAR
 from deephaven.jcompat import _j_array_to_series
 from deephaven.numpy import _make_input_column
@@ -22,12 +22,12 @@ _JColumnVectors = jpy.get_type("io.deephaven.engine.table.vectors.ColumnVectors"
 _is_dtype_backend_supported = pd.__version__ >= "2.0.0"
 
 
-def _column_to_series(table: Table, col_def: Column, conv_null: bool) -> pd.Series:
+def _column_to_series(table: Table, col_def: ColumnDefinition, conv_null: bool) -> pd.Series:
     """Produce a copy of the specified column as a pandas.Series object.
 
     Args:
         table (Table): the table
-        col_def (Column):  the column definition
+        col_def (ColumnDefinition): the column definition
         conv_null (bool): whether to check for Deephaven nulls in the data and automatically replace them with
             pd.NA.
 
@@ -133,17 +133,17 @@ def to_pandas(table: Table, cols: List[str] = None,
         if table.is_refreshing:
             table = table.snapshot()
 
-        col_def_dict = {col.name: col for col in table.columns}
+        table_def = table.definition
         if not cols:
-            cols = list(col_def_dict.keys())
+            cols = list(table_def.keys())
         else:
-            diff_set = set(cols) - set(col_def_dict.keys())
+            diff_set = set(cols) - set(table_def.keys())
             if diff_set:
                 raise DHError(message=f"columns - {list(diff_set)} not found")
 
         data = {}
         for col in cols:
-            series = _column_to_series(table, col_def_dict[col], conv_null)
+            series = _column_to_series(table, table_def[col], conv_null)
             data[col] = series
 
         return pd.DataFrame(data=data, columns=cols, copy=False)

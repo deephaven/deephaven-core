@@ -182,6 +182,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
      * Create a QueryLanguageParser and parse the given {@code expression}. After construction, the
      * {@link QueryLanguageParser.Result result} of parsing the {@code expression} is available with the
      * {@link #getResult()}} method.
+     * <p>
+     * Note that the provided Collections and Maps must not be mutated concurrently with or after construction.
      *
      * @param expression The query language expression to parse
      * @param packageImports Wildcard package imports
@@ -190,9 +192,10 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
      *        imported.
      * @param variables A map of the names of scope variables to their types
      * @param variableTypeArguments A map of the names of scope variables to their type arguments
-     * @param unboxArguments If true it will unbox the query scope arguments
-     * @param queryScopeVariables A mutable map of the names of query scope variables to their values
+     * @param queryScopeVariables A map of the names of query scope variables to their values
      * @param columnVariables A set of column variable names
+     * @param unboxArguments If true it will unbox the query scope arguments
+     * @param timeConversionResult The result of converting time literals in the expression
      * @throws QueryLanguageParseException If any exception or error is encountered
      */
     public QueryLanguageParser(
@@ -225,6 +228,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
      * Create a QueryLanguageParser and parse the given {@code expression}. After construction, the
      * {@link QueryLanguageParser.Result result} of parsing the {@code expression} is available with the
      * {@link #getResult()}} method.
+     * <p>
+     * Note that the provided Collections and Maps must not be mutated concurrently with or after construction.
      *
      * @param expression The query language expression to parse
      * @param packageImports Wildcard package imports
@@ -247,6 +252,28 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 variableTypeArguments, null, null, true, null);
     }
 
+    /**
+     * Create a QueryLanguageParser and parse the given {@code expression}. After construction, the
+     * {@link QueryLanguageParser.Result result} of parsing the {@code expression} is available with the
+     * {@link #getResult()}} method.
+     * <p>
+     * Note that the provided Collections and Maps must not be mutated concurrently with or after construction.
+     *
+     * @param expression The query language expression to parse
+     * @param packageImports Wildcard package imports
+     * @param classImports Individual class imports
+     * @param staticImports Wildcard static imports. All static variables and methods for the given classes are
+     *        imported.
+     * @param variables A map of the names of scope variables to their types
+     * @param variableTypeArguments A map of the names of scope variables to their type arguments
+     * @param queryScopeVariables A map of the names of query scope variables to their values
+     * @param columnVariables A set of column variable names
+     * @param unboxArguments If true it will unbox the query scope arguments
+     * @param verifyIdempotence If true, the parser will verify that the result expression will not mutate when parsed
+     * @param pyCallableWrapperImplName The name of the PyCallableWrapper implementation to use
+     * @param timeConversionResult The result of converting time literals in the expression
+     * @throws QueryLanguageParseException If any exception or error is encountered
+     */
     @VisibleForTesting
     QueryLanguageParser(
             String expression,
@@ -264,9 +291,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         this.packageImports = packageImports == null ? Collections.emptySet() : Set.copyOf(packageImports);
         this.classImports = classImports == null ? Collections.emptySet() : Set.copyOf(classImports);
         this.staticImports = staticImports == null ? Collections.emptySet() : Set.copyOf(staticImports);
-        this.variables = variables == null ? Collections.emptyMap() : Map.copyOf(variables);
-        this.variableTypeArguments =
-                variableTypeArguments == null ? Collections.emptyMap() : Map.copyOf(variableTypeArguments);
+        this.variables = variables == null ? Collections.emptyMap() : variables;
+        this.variableTypeArguments = variableTypeArguments == null ? Collections.emptyMap() : variableTypeArguments;
         this.queryScopeVariables = queryScopeVariables == null ? new HashMap<>() : queryScopeVariables;
         this.columnVariables = columnVariables == null ? Collections.emptySet() : columnVariables;
         this.unboxArguments = unboxArguments;

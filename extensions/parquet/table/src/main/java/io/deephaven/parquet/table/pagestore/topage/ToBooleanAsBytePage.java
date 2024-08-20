@@ -5,7 +5,7 @@ package io.deephaven.parquet.table.pagestore.topage;
 
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.parquet.base.PageMaterializerFactory;
-import io.deephaven.parquet.base.materializers.BoolMaterializer;
+import io.deephaven.parquet.base.materializers.BooleanAsByteMaterializer;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ObjectVectorDirect;
 import io.deephaven.util.BooleanUtils;
@@ -56,7 +56,7 @@ public class ToBooleanAsBytePage<ATTR extends Any> implements ToPage<ATTR, byte[
 
     @Override
     public final PageMaterializerFactory getPageMaterializerFactory() {
-        return BoolMaterializer.FACTORY;
+        return BooleanAsByteMaterializer.FACTORY;
     }
 
     @Override

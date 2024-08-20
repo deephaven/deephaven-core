@@ -15,8 +15,8 @@ import io.deephaven.engine.table.impl.util.ImmediateJobScheduler;
 import io.deephaven.engine.table.impl.util.JobScheduler;
 import io.deephaven.engine.table.impl.util.UpdateGraphJobScheduler;
 
-import java.util.BitSet;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * A Shift-Aware listener for Select or Update. It uses the SelectAndViewAnalyzer to calculate how columns affect other
@@ -29,8 +29,6 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
     private final SelectAndViewAnalyzer analyzer;
 
     private volatile boolean updateInProgress = false;
-    private final BitSet completedColumns = new BitSet();
-    private final BitSet allNewColumns = new BitSet();
     private final boolean enableParallelUpdate;
 
     /**
@@ -61,7 +59,6 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
                         (QueryTable.ENABLE_PARALLEL_SELECT_AND_UPDATE
                                 && getUpdateGraph().parallelismFactor() > 1))
                         && analyzer.allowCrossColumnParallelization();
-        analyzer.setAllNewColumns(allNewColumns);
     }
 
     @Override
@@ -76,7 +73,6 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
         // - create parallel arrays of pre-shift-keys and post-shift-keys so we can move them in chunks
 
         updateInProgress = true;
-        completedColumns.clear();
         final TableUpdate acquiredUpdate = upstream.acquire();
 
         final WritableRowSet toClear = resultRowSet.copyPrev();
@@ -91,15 +87,16 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
             jobScheduler = new ImmediateJobScheduler();
         }
 
+        // do not allow a double-notify
+        final AtomicBoolean hasNotified = new AtomicBoolean();
         analyzer.applyUpdate(acquiredUpdate, toClear, updateHelper, jobScheduler, this,
-                new SelectAndViewAnalyzer.SelectLayerCompletionHandler(allNewColumns, completedColumns) {
-                    @Override
-                    public void onAllRequiredColumnsCompleted() {
+                () -> {
+                    if (!hasNotified.getAndSet(true)) {
                         completionRoutine(acquiredUpdate, jobScheduler, toClear, updateHelper);
                     }
-
-                    @Override
-                    protected void onError(Exception error) {
+                },
+                error -> {
+                    if (!hasNotified.getAndSet(true)) {
                         handleException(error);
                     }
                 });
