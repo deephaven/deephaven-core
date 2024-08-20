@@ -75,8 +75,10 @@ def time_table(period: DurationLike,
     try:
         builder = _JTableTools.timeTableBuilder()
 
-        if period:
-            builder.period(to_j_duration(period))
+        if period is None:
+            raise ValueError("period must be specified")
+
+        builder.period(to_j_duration(period))
 
         if start_time:
             builder.startTime(to_j_instant(start_time))
