@@ -149,8 +149,8 @@ public class BusinessCalendar extends Calendar {
     }
 
     private SummaryData computeMonthSummary(final int key) {
-        final int year = YearMonthSummaryCache.yearFromMonthKey(key);
-        final int month = YearMonthSummaryCache.monthFromMonthKey(key);
+        final int year = YearMonthSummaryCache.yearFromYearMonthKey(key);
+        final int month = YearMonthSummaryCache.monthFromYearMonthKey(key);
         final LocalDate startDate = LocalDate.of(year, month, 1);
         final LocalDate endDate = startDate.plusMonths(1); // exclusive
         return summarize(key, startDate, endDate);
@@ -209,12 +209,12 @@ public class BusinessCalendar extends Calendar {
     }
 
     /**
-     * Creates a key for the schedules cache.
+     * Creates a key for the schedules cache from a date.
      *
      * @param date date
      * @return key
      */
-    static int schedulesCacheKey(final LocalDate date) {
+    static int schedulesCacheKeyFromDate(final LocalDate date) {
         return date.getYear() * 10000 + date.getMonthValue() * 100 + date.getDayOfMonth();
     }
 
@@ -224,12 +224,12 @@ public class BusinessCalendar extends Calendar {
      * @param key key
      * @return date
      */
-    static LocalDate dateFromSchedulesCacheKey(final int key) {
+    static LocalDate schedulesCacheDateFromKey(final int key) {
         return LocalDate.of(key / 10000, (key % 10000) / 100, key % 100);
     }
 
     private ImmutableConcurrentCache.Pair<CalendarDay<Instant>> computeCalendarDay(final int key) {
-        final LocalDate date = dateFromSchedulesCacheKey(key);
+        final LocalDate date = schedulesCacheDateFromKey(key);
         final CalendarDay<Instant> h = holidays.get(date);
         final CalendarDay<Instant> v;
 
@@ -373,7 +373,7 @@ public class BusinessCalendar extends Calendar {
                     + " lastValidDate=" + lastValidDate);
         }
 
-        final int key = schedulesCacheKey(date);
+        final int key = schedulesCacheKeyFromDate(date);
         return schedulesCache.computeIfAbsent(key).getValue();
     }
 

@@ -49,9 +49,9 @@ public class TestBusinessCalendar extends TestCalendar {
         final int d = 11;
         final LocalDate ld = LocalDate.of(y, m, d);
 
-        final int key = BusinessCalendar.schedulesCacheKey(ld);
+        final int key = BusinessCalendar.schedulesCacheKeyFromDate(ld);
         assertEquals(key, y * 10000 + m * 100 + d);
-        assertEquals(ld, BusinessCalendar.dateFromSchedulesCacheKey(key));
+        assertEquals(ld, BusinessCalendar.schedulesCacheDateFromKey(key));
     }
 
     public void testBusinessGetters() {

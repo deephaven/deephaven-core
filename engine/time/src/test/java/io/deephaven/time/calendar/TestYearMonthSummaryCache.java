@@ -25,10 +25,10 @@ public class TestYearMonthSummaryCache extends BaseArrayTestCase {
     public void testKeys() {
         final int y = 2021;
         final int m = 3;
-        final int key = YearMonthSummaryCache.monthKey(y, m);
+        final int key = YearMonthSummaryCache.yearMonthKey(y, m);
         assertEquals(key, 2021 * 100 + m);
-        assertEquals(y, YearMonthSummaryCache.yearFromMonthKey(key));
-        assertEquals(m, YearMonthSummaryCache.monthFromMonthKey(key));
+        assertEquals(y, YearMonthSummaryCache.yearFromYearMonthKey(key));
+        assertEquals(m, YearMonthSummaryCache.monthFromYearMonthKey(key));
     }
 
     public void testGetters() {

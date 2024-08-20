@@ -60,8 +60,8 @@ public class Calendar {
     }
 
     private SummaryData computeMonthSummary(final int yearMonth) {
-        final int year = YearMonthSummaryCache.yearFromMonthKey(yearMonth);
-        final int month = YearMonthSummaryCache.monthFromMonthKey(yearMonth);
+        final int year = YearMonthSummaryCache.yearFromYearMonthKey(yearMonth);
+        final int month = YearMonthSummaryCache.monthFromYearMonthKey(yearMonth);
         final LocalDate startDate = LocalDate.of(year, month, 1);
         final LocalDate endDate = startDate.plusMonths(1); // exclusive
         return summarize(yearMonth, startDate, endDate);

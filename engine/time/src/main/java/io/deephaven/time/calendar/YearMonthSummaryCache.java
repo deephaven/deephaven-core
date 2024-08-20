@@ -15,13 +15,13 @@ import java.util.function.IntFunction;
 class YearMonthSummaryCache<T extends ImmutableConcurrentCache.IntKeyedValue> {
 
     /**
-     * Computes a key for a year and month.
+     * Computes a year-month key for a year and month.
      *
      * @param year the year
      * @param month the month
      * @return the key
      */
-    static int monthKey(int year, int month) {
+    static int yearMonthKey(int year, int month) {
         return year * 100 + month;
     }
 
@@ -31,7 +31,7 @@ class YearMonthSummaryCache<T extends ImmutableConcurrentCache.IntKeyedValue> {
      * @param key the year month key
      * @return the year
      */
-    static int yearFromMonthKey(int key) {
+    static int yearFromYearMonthKey(int key) {
         return key / 100;
     }
 
@@ -41,7 +41,7 @@ class YearMonthSummaryCache<T extends ImmutableConcurrentCache.IntKeyedValue> {
      * @param key the year month key
      * @return the month
      */
-    static int monthFromMonthKey(int key) {
+    static int monthFromYearMonthKey(int key) {
         return key % 100;
     }
 
@@ -75,7 +75,7 @@ class YearMonthSummaryCache<T extends ImmutableConcurrentCache.IntKeyedValue> {
      * @return the month summary
      */
     T getMonthSummary(int year, int month) {
-        return monthCache.computeIfAbsent(monthKey(year, month));
+        return monthCache.computeIfAbsent(yearMonthKey(year, month));
     }
 
     /**
@@ -110,7 +110,7 @@ class YearMonthSummaryCache<T extends ImmutableConcurrentCache.IntKeyedValue> {
                 incrementCurrentByMonth();
             }
 
-            currentYearMonth = monthKey(currentYear, currentMonth);
+            currentYearMonth = yearMonthKey(currentYear, currentMonth);
 
             final LocalDate endPlus1 = end.plusDays(1);
             final int endPlus1Month = endPlus1.getMonthValue();
@@ -127,7 +127,7 @@ class YearMonthSummaryCache<T extends ImmutableConcurrentCache.IntKeyedValue> {
                 }
             }
 
-            finalYearMonth = monthKey(finalYear, finalMonth);
+            finalYearMonth = yearMonthKey(finalYear, finalMonth);
         }
 
         private void incrementCurrentByMonth() {
@@ -138,12 +138,12 @@ class YearMonthSummaryCache<T extends ImmutableConcurrentCache.IntKeyedValue> {
                 currentMonth = currentMonth + 1;
             }
 
-            currentYearMonth = monthKey(currentYear, currentMonth);
+            currentYearMonth = yearMonthKey(currentYear, currentMonth);
         }
 
         private void incrementCurrentByYear() {
             currentYear++;
-            currentYearMonth = monthKey(currentYear, currentMonth);
+            currentYearMonth = yearMonthKey(currentYear, currentMonth);
         }
 
         @Override
