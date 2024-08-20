@@ -54,6 +54,37 @@ public class CompositeTableDataService extends AbstractTableDataService {
     }
 
     @Override
+    @Nullable
+    public TableLocationProvider getRawTableLocationProvider(@NotNull TableKey tableKey,
+            @NotNull TableLocationKey tableLocationKey) {
+        final TableDataService[] services = serviceSelector.call(tableKey);
+
+        if (services == null || services.length == 0) {
+            return null;
+        }
+
+        TableLocationProvider tlp = null;
+        for (final TableDataService service : services) {
+            final TableLocationProvider tlpCandidate = service.getRawTableLocationProvider(tableKey, tableLocationKey);
+            if (tlpCandidate == null) {
+                return null;
+            }
+
+            if (tlpCandidate.hasTableLocationKey(tableLocationKey)) {
+                if (tlp != null) {
+                    throw new TableDataException(
+                            "TableDataService elements " + tlpCandidate.getName() + " and " + tlp.getName()
+                                    + " both contain " + tableLocationKey + ". Full TableDataService configuration:\n"
+                                    + Formatter.formatTableDataService(CompositeTableDataService.this.toString()));
+                }
+                tlp = tlpCandidate;
+            }
+        }
+
+        return tlp;
+    }
+
+    @Override
     public void reset() {
         super.reset();
         serviceSelector.resetServices();

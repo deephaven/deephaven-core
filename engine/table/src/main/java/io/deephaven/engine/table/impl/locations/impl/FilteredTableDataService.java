@@ -48,6 +48,13 @@ public class FilteredTableDataService extends AbstractTableDataService {
     }
 
     @Override
+    @Nullable
+    public TableLocationProvider getRawTableLocationProvider(@NotNull TableKey tableKey,
+            @NotNull TableLocationKey tableLocationKey) {
+        return serviceToFilter.getRawTableLocationProvider(tableKey, tableLocationKey);
+    }
+
+    @Override
     public void reset() {
         super.reset();
         serviceToFilter.reset();
