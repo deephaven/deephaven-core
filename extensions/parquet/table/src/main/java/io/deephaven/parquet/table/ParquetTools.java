@@ -22,9 +22,9 @@ import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.parquet.base.ParquetMetadataFileWriter;
 import io.deephaven.parquet.base.NullParquetMetadataFileWriter;
 import io.deephaven.util.SafeCloseable;
+import io.deephaven.util.channel.CompletableOutputStream;
 import io.deephaven.util.channel.SeekableChannelsProvider;
 import io.deephaven.util.channel.SeekableChannelsProviderLoader;
-import io.deephaven.util.channel.SeekableChannelsProviderPlugin;
 import io.deephaven.vector.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.PartitionAwareSourceTable;
@@ -53,14 +53,17 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static io.deephaven.base.FileUtils.URI_SEPARATOR_CHAR;
 import static io.deephaven.base.FileUtils.convertToURI;
-import static io.deephaven.parquet.base.ParquetFileReader.FILE_URI_SCHEME;
+import static io.deephaven.parquet.base.ParquetUtils.PARQUET_OUTPUT_BUFFER_SIZE;
+import static io.deephaven.parquet.base.ParquetUtils.resolve;
 import static io.deephaven.parquet.table.ParquetInstructions.FILE_INDEX_TOKEN;
 import static io.deephaven.parquet.table.ParquetInstructions.PARTITIONS_TOKEN;
 import static io.deephaven.parquet.table.ParquetInstructions.UUID_TOKEN;
@@ -85,9 +88,7 @@ public class ParquetTools {
 
     /**
      * Reads in a table from a single parquet file, metadata file, or directory with recognized layout. The source
-     * provided can be a local file path or a URI to be resolved via the provided
-     * {@link SeekableChannelsProviderPlugin}.
-     *
+     * provided can be a local file path or a URI to be resolved.
      * <p>
      * This method attempts to "do the right thing." It examines the source to determine if it's a single parquet file,
      * a metadata file, or a directory. If it's a directory, it additionally tries to guess the layout to use. Unless a
@@ -106,8 +107,7 @@ public class ParquetTools {
 
     /**
      * Reads in a table from a single parquet file, metadata file, or directory with recognized layout. The source
-     * provided can be a local file path or a URI to be resolved via the provided
-     * {@link SeekableChannelsProviderPlugin}.
+     * provided can be a local file path or a URI to be resolved.
      *
      * <p>
      * If the {@link ParquetFileLayout} is not provided in the {@link ParquetInstructions instructions}, this method
@@ -196,15 +196,6 @@ public class ParquetTools {
         return instructions;
     }
 
-    private static File getShadowFile(final File destFile) {
-        return new File(destFile.getParent(), ".NEW_" + destFile.getName());
-    }
-
-    @VisibleForTesting
-    static File getBackupFile(final File destFile) {
-        return new File(destFile.getParent(), ".OLD_" + destFile.getName());
-    }
-
     private static String minusParquetSuffix(@NotNull final String s) {
         if (s.endsWith(PARQUET_FILE_EXTENSION)) {
             return s.substring(0, s.length() - PARQUET_FILE_EXTENSION.length());
@@ -213,9 +204,21 @@ public class ParquetTools {
     }
 
     /**
+     * Get the name of the file from the URI.
+     */
+    private static String getFileName(@NotNull final URI uri) {
+        final String path = uri.getPath();
+        final int lastSlash = path.lastIndexOf(URI_SEPARATOR_CHAR);
+        if (lastSlash == path.length() - 1) {
+            throw new IllegalArgumentException("Directory URIs are not supported, found" + uri);
+        }
+        return lastSlash == -1 ? path : path.substring(lastSlash + 1);
+    }
+
+    /**
      * Generates the index file path relative to the table destination file path.
      *
-     * @param tableDest Destination path for the main table containing these indexing columns
+     * @param destFileName Destination name for the main table containing these indexing columns
      * @param columnNames Array of indexing column names
      *
      * @return The relative index file path. For example, for table with destination {@code "table.parquet"} and
@@ -223,10 +226,10 @@ public class ParquetTools {
      *         {@code ".dh_metadata/indexes/IndexingColName/index_IndexingColName_table.parquet"} on unix systems.
      */
     @VisibleForTesting
-    static String getRelativeIndexFilePath(@NotNull final File tableDest, @NotNull final String... columnNames) {
+    static String getRelativeIndexFilePath(@NotNull final String destFileName, @NotNull final String... columnNames) {
         final String columns = String.join(",", columnNames);
         return String.format(".dh_metadata%sindexes%s%s%sindex_%s_%s", File.separator, File.separator, columns,
-                File.separator, columns, tableDest.getName());
+                File.separator, columns, destFileName);
     }
 
     /**
@@ -247,138 +250,35 @@ public class ParquetTools {
     }
 
     /**
-     * Delete any old backup files created for this destination, and throw an exception on failure
-     */
-    private static void deleteBackupFile(@NotNull final File destFile) {
-        if (!deleteBackupFileNoExcept(destFile)) {
-            throw new UncheckedDeephavenException(
-                    String.format("Failed to delete backup file at %s", getBackupFile(destFile).getAbsolutePath()));
-        }
-    }
-
-    /**
-     * Delete any old backup files created for this destination with no exception in case of failure
-     */
-    private static boolean deleteBackupFileNoExcept(@NotNull final File destFile) {
-        final File backupDestFile = getBackupFile(destFile);
-        if (backupDestFile.exists() && !backupDestFile.delete()) {
-            log.error().append("Error in deleting backup file at path ")
-                    .append(backupDestFile.getAbsolutePath())
-                    .endl();
-            return false;
-        }
-        return true;
-    }
-
-    /**
-     * Backup any existing files at location destFile and rename the shadow file to destFile
-     */
-    private static void installShadowFile(@NotNull final File destFile, @NotNull final File shadowDestFile) {
-        final File backupDestFile = getBackupFile(destFile);
-        if (destFile.exists() && !destFile.renameTo(backupDestFile)) {
-            throw new UncheckedDeephavenException(
-                    String.format(
-                            "Failed to install shadow file at %s because a file already exists at the path which couldn't be renamed to %s",
-                            destFile.getAbsolutePath(), backupDestFile.getAbsolutePath()));
-        }
-        if (!shadowDestFile.renameTo(destFile)) {
-            throw new UncheckedDeephavenException(String.format(
-                    "Failed to install shadow file at %s because couldn't rename temporary shadow file from %s to %s",
-                    destFile.getAbsolutePath(), shadowDestFile.getAbsolutePath(), destFile.getAbsolutePath()));
-        }
-    }
-
-    /**
-     * Roll back any changes made in the {@link #installShadowFile} in best-effort manner
-     */
-    private static void rollbackFile(@NotNull final File destFile) {
-        final File backupDestFile = getBackupFile(destFile);
-        final File shadowDestFile = getShadowFile(destFile);
-        destFile.renameTo(shadowDestFile);
-        backupDestFile.renameTo(destFile);
-    }
-
-    /**
-     * Make any missing ancestor directories of {@code destination}.
-     *
-     * @param destination The destination parquet file
-     * @return The first created directory, or null if no directories were made.
-     */
-    private static File prepareDestinationFileLocation(@NotNull File destination) {
-        destination = destination.getAbsoluteFile();
-        if (!destination.getPath().endsWith(PARQUET_FILE_EXTENSION)) {
-            throw new UncheckedDeephavenException(
-                    String.format("Destination %s does not end in %s extension", destination, PARQUET_FILE_EXTENSION));
-        }
-        if (destination.exists()) {
-            if (destination.isDirectory()) {
-                throw new UncheckedDeephavenException(
-                        String.format("Destination %s exists and is a directory", destination));
-            }
-            if (!destination.canWrite()) {
-                throw new UncheckedDeephavenException(
-                        String.format("Destination %s exists but is not writable", destination));
-            }
-            return null;
-        }
-        final File firstParent = destination.getParentFile();
-        if (firstParent.isDirectory()) {
-            if (firstParent.canWrite()) {
-                return null;
-            }
-            throw new UncheckedDeephavenException(
-                    String.format("Destination %s has non writable parent directory", destination));
-        }
-        File firstCreated = firstParent;
-        File parent;
-        for (parent = destination.getParentFile(); parent != null && !parent.exists(); parent =
-                parent.getParentFile()) {
-            firstCreated = parent;
-        }
-        if (parent == null) {
-            throw new IllegalArgumentException(
-                    String.format("Can't find any existing parent directory for destination path: %s", destination));
-        }
-        if (!parent.isDirectory()) {
-            throw new IllegalArgumentException(
-                    String.format("Existing parent file %s of %s is not a directory", parent, destination));
-        }
-        if (!firstParent.mkdirs()) {
-            throw new UncheckedDeephavenException("Couldn't (re)create destination directory " + firstParent);
-        }
-        return firstCreated;
-    }
-
-    /**
      * Helper function for building index column info for writing and deleting any backup index column files
      *
      * @param indexColumns Names of index columns, stored as String list for each index
      * @param parquetColumnNameArr Names of index columns for the parquet file, stored as String[] for each index
-     * @param destFile The destination path for the main table containing these index columns
+     * @param dest The destination URI for the main table containing these index columns
+     * @param channelProvider The channel provider to use for creating channels to the index files
      */
     private static List<ParquetTableWriter.IndexWritingInfo> indexInfoBuilderHelper(
             @NotNull final Collection<List<String>> indexColumns,
             @NotNull final String[][] parquetColumnNameArr,
-            @NotNull final File destFile) {
+            @NotNull final URI dest,
+            @NotNull final SeekableChannelsProvider channelProvider) throws IOException {
         Require.eq(indexColumns.size(), "indexColumns.size", parquetColumnNameArr.length,
                 "parquetColumnNameArr.length");
         final int numIndexes = indexColumns.size();
         final List<ParquetTableWriter.IndexWritingInfo> indexInfoList = new ArrayList<>(numIndexes);
         int gci = 0;
+        final String destFileName = getFileName(dest);
         for (final List<String> indexColumnNames : indexColumns) {
             final String[] parquetColumnNames = parquetColumnNameArr[gci];
-            final String indexFileRelativePath = getRelativeIndexFilePath(destFile, parquetColumnNames);
-            final File indexFile = new File(destFile.getParent(), indexFileRelativePath);
-            prepareDestinationFileLocation(indexFile);
-            deleteBackupFile(indexFile);
-
-            final File shadowIndexFile = getShadowFile(indexFile);
-
+            final String indexFileRelativePath = getRelativeIndexFilePath(destFileName, parquetColumnNames);
+            final URI indexFileURI = resolve(dest, indexFileRelativePath);
+            final CompletableOutputStream indexFileOutputStream =
+                    channelProvider.getOutputStream(indexFileURI, PARQUET_OUTPUT_BUFFER_SIZE);
             final ParquetTableWriter.IndexWritingInfo info = new ParquetTableWriter.IndexWritingInfo(
                     indexColumnNames,
                     parquetColumnNames,
-                    indexFile,
-                    shadowIndexFile);
+                    indexFileURI,
+                    indexFileOutputStream);
             indexInfoList.add(info);
             gci++;
         }
@@ -395,7 +295,7 @@ public class ParquetTools {
      * while writing, use {@link ParquetInstructions.Builder#addIndexColumns}.
      *
      * @param sourceTable The table to partition and write
-     * @param destinationDir The path to destination root directory to store partitioned data in nested format.
+     * @param destinationDir The path or URI to destination root directory to store partitioned data in nested format.
      *        Non-existing directories are created.
      * @param writeInstructions Write instructions for customizations while writing
      */
@@ -430,7 +330,7 @@ public class ParquetTools {
      * {@link ParquetInstructions.Builder#addIndexColumns}.
      *
      * @param partitionedTable The partitioned table to write
-     * @param destinationDir The path to destination root directory to store partitioned data in nested format.
+     * @param destinationDir The path or URI to destination root directory to store partitioned data in nested format.
      *        Non-existing directories are created.
      * @param writeInstructions Write instructions for customizations while writing
      */
@@ -461,7 +361,7 @@ public class ParquetTools {
      * @param partitionedTable The partitioned table to write
      * @param keyTableDefinition The definition for key columns
      * @param leafDefinition The definition for leaf parquet files to be written
-     * @param destinationRoot The path to destination root directory to store partitioned data in nested format
+     * @param destinationRoot The path or URI to destination root directory to store partitioned data in nested format
      * @param writeInstructions Write instructions for customizations while writing
      * @param indexColumns Collection containing the column names for indexes to persist. The write operation will store
      *        the index info as sidecar tables. This argument is used to narrow the set of indexes to write, or to be
@@ -515,14 +415,16 @@ public class ParquetTools {
         });
         // For the constituent column for each row, accumulate the constituent tables and build the final file paths
         final Collection<Table> partitionedData = new ArrayList<>();
-        final Collection<File> destinations = new ArrayList<>();
+        final Collection<URI> destinations = new ArrayList<>();
         try (final CloseableIterator<ObjectVector<? extends Table>> constituentIterator =
                 withGroupConstituents.objectColumnIterator(partitionedTable.constituentColumnName())) {
             int row = 0;
+            final URI destinationDir = convertToURI(destinationRoot, true);
             while (constituentIterator.hasNext()) {
                 final ObjectVector<? extends Table> constituentVector = constituentIterator.next();
                 final List<String> partitionStrings = partitionStringsList.get(row);
-                final File relativePath = new File(destinationRoot, String.join(File.separator, partitionStrings));
+                final String relativePath = concatenatePartitions(partitionStrings);
+                final URI partitionDir = resolve(destinationDir, relativePath);
                 int count = 0;
                 for (final Table constituent : constituentVector) {
                     String filename = baseName;
@@ -536,7 +438,7 @@ public class ParquetTools {
                         filename = filename.replace(UUID_TOKEN, UUID.randomUUID().toString());
                     }
                     filename += PARQUET_FILE_EXTENSION;
-                    destinations.add(new File(relativePath, filename));
+                    destinations.add(resolve(partitionDir, filename));
                     partitionedData.add(constituent);
                     count++;
                 }
@@ -560,12 +462,20 @@ public class ParquetTools {
             // Store hard reference to prevent indexes from being garbage collected
             final List<DataIndex> dataIndexes = addIndexesToTables(partitionedDataArray, indexColumns);
             writeTablesImpl(partitionedDataArray, leafDefinition, writeInstructions,
-                    destinations.toArray(File[]::new), indexColumns, partitioningColumnsSchema,
-                    new File(destinationRoot), computedCache);
+                    destinations.toArray(URI[]::new), indexColumns, partitioningColumnsSchema,
+                    convertToURI(destinationRoot, true), computedCache);
             if (dataIndexes != null) {
                 dataIndexes.clear();
             }
         }
+    }
+
+    private static String concatenatePartitions(final List<String> partitions) {
+        final StringBuilder builder = new StringBuilder();
+        for (final String partition : partitions) {
+            builder.append(partition).append(File.separator);
+        }
+        return builder.toString();
     }
 
     /**
@@ -649,10 +559,10 @@ public class ParquetTools {
             @NotNull final Table[] sources,
             @NotNull final TableDefinition definition,
             @NotNull final ParquetInstructions writeInstructions,
-            @NotNull final File[] destinations,
+            @NotNull final URI[] destinations,
             @NotNull final Collection<List<String>> indexColumns,
             @Nullable final MessageType partitioningColumnsSchema,
-            @Nullable final File metadataRootDir,
+            @Nullable final URI metadataRootDir,
             @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache) {
         Require.eq(sources.length, "sources.length", destinations.length, "destinations.length");
         if (writeInstructions.getFileLayout().isPresent()) {
@@ -662,14 +572,9 @@ public class ParquetTools {
         if (definition.numColumns() == 0) {
             throw new TableDataException("Cannot write a parquet table with zero columns");
         }
-        Arrays.stream(destinations).forEach(ParquetTools::deleteBackupFile);
-
-        // Write all files at temporary shadow file paths in the same directory to prevent overwriting any existing
-        // data in case of failure
-        final File[] shadowDestFiles =
-                Arrays.stream(destinations).map(ParquetTools::getShadowFile).toArray(File[]::new);
-        final File[] firstCreatedDirs =
-                Arrays.stream(shadowDestFiles).map(ParquetTools::prepareDestinationFileLocation).toArray(File[]::new);
+        // Assuming all destination URIs have the same scheme, and will use the same channels provider instance
+        final SeekableChannelsProvider channelsProvider = SeekableChannelsProviderLoader.getInstance()
+                .fromServiceLoader(destinations[0], writeInstructions.getSpecialInstructions());
 
         final ParquetMetadataFileWriter metadataFileWriter;
         if (writeInstructions.generateMetadataFiles()) {
@@ -682,104 +587,74 @@ public class ParquetTools {
             metadataFileWriter = NullParquetMetadataFileWriter.INSTANCE;
         }
 
-        // List of shadow files, to clean up in case of exceptions
-        final List<File> shadowFiles = new ArrayList<>();
-        // List of all destination files (including index files), to roll back in case of exceptions
-        final List<File> destFiles = new ArrayList<>();
-        try {
-            final List<List<ParquetTableWriter.IndexWritingInfo>> indexInfoLists;
-            if (indexColumns.isEmpty()) {
-                // Write the tables without any index info
-                indexInfoLists = null;
-                for (int tableIdx = 0; tableIdx < sources.length; tableIdx++) {
-                    shadowFiles.add(shadowDestFiles[tableIdx]);
-                    final Table source = sources[tableIdx];
-                    ParquetTableWriter.write(source, definition, writeInstructions, shadowDestFiles[tableIdx].getPath(),
-                            destinations[tableIdx].getPath(), Collections.emptyMap(),
-                            (List<ParquetTableWriter.IndexWritingInfo>) null, metadataFileWriter,
-                            computedCache);
-                }
-            } else {
-                // Create index info for each table and write the table and index files to shadow path
-                indexInfoLists = new ArrayList<>(sources.length);
+        // List of output streams created, to rollback in case of exceptions
+        final List<CompletableOutputStream> outputStreams = new ArrayList<>(destinations.length);
+        try (final SafeCloseable ignored = () -> SafeCloseable.closeAll(outputStreams.stream())) {
+            try {
+                if (indexColumns.isEmpty()) {
+                    // Write the tables without any index info
+                    for (int tableIdx = 0; tableIdx < sources.length; tableIdx++) {
+                        final Table source = sources[tableIdx];
+                        final CompletableOutputStream outputStream = channelsProvider.getOutputStream(
+                                destinations[tableIdx], PARQUET_OUTPUT_BUFFER_SIZE);
+                        outputStreams.add(outputStream);
+                        ParquetTableWriter.write(source, definition, writeInstructions, destinations[tableIdx],
+                                outputStream, Collections.emptyMap(), (List<ParquetTableWriter.IndexWritingInfo>) null,
+                                metadataFileWriter, computedCache);
+                    }
+                } else {
+                    // Shared parquet column names across all tables
+                    final String[][] parquetColumnNameArr = indexColumns.stream()
+                            .map((Collection<String> columns) -> columns.stream()
+                                    .map(writeInstructions::getParquetColumnNameFromColumnNameOrDefault)
+                                    .toArray(String[]::new))
+                            .toArray(String[][]::new);
 
-                // Shared parquet column names across all tables
-                final String[][] parquetColumnNameArr = indexColumns.stream()
-                        .map((Collection<String> columns) -> columns.stream()
-                                .map(writeInstructions::getParquetColumnNameFromColumnNameOrDefault)
-                                .toArray(String[]::new))
-                        .toArray(String[][]::new);
-
-                for (int tableIdx = 0; tableIdx < sources.length; tableIdx++) {
-                    final File tableDestination = destinations[tableIdx];
-                    final List<ParquetTableWriter.IndexWritingInfo> indexInfoList =
-                            indexInfoBuilderHelper(indexColumns, parquetColumnNameArr, tableDestination);
-                    indexInfoLists.add(indexInfoList);
-
-                    shadowFiles.add(shadowDestFiles[tableIdx]);
-                    indexInfoList.forEach(item -> shadowFiles.add(item.destFile));
-
-                    final Table sourceTable = sources[tableIdx];
-                    ParquetTableWriter.write(sourceTable, definition, writeInstructions,
-                            shadowDestFiles[tableIdx].getPath(), tableDestination.getPath(), Collections.emptyMap(),
-                            indexInfoList, metadataFileWriter, computedCache);
-                }
-            }
-
-            // Write the combined metadata files to shadow destinations
-            final File metadataDestFile, shadowMetadataFile, commonMetadataDestFile, shadowCommonMetadataFile;
-            if (writeInstructions.generateMetadataFiles()) {
-                metadataDestFile = new File(metadataRootDir, METADATA_FILE_NAME);
-                shadowMetadataFile = ParquetTools.getShadowFile(metadataDestFile);
-                shadowFiles.add(shadowMetadataFile);
-                commonMetadataDestFile = new File(metadataRootDir, COMMON_METADATA_FILE_NAME);
-                shadowCommonMetadataFile = ParquetTools.getShadowFile(commonMetadataDestFile);
-                shadowFiles.add(shadowCommonMetadataFile);
-                metadataFileWriter.writeMetadataFiles(shadowMetadataFile.getAbsolutePath(),
-                        shadowCommonMetadataFile.getAbsolutePath());
-            } else {
-                metadataDestFile = shadowMetadataFile = commonMetadataDestFile = shadowCommonMetadataFile = null;
-            }
-
-            // Write to shadow files was successful, now replace the original files with the shadow files
-            for (int tableIdx = 0; tableIdx < sources.length; tableIdx++) {
-                destFiles.add(destinations[tableIdx]);
-                installShadowFile(destinations[tableIdx], shadowDestFiles[tableIdx]);
-                if (indexInfoLists != null) {
-                    final List<ParquetTableWriter.IndexWritingInfo> indexInfoList = indexInfoLists.get(tableIdx);
-                    for (final ParquetTableWriter.IndexWritingInfo info : indexInfoList) {
-                        final File indexDestFile = info.destFileForMetadata;
-                        final File shadowIndexFile = info.destFile;
-                        destFiles.add(indexDestFile);
-                        installShadowFile(indexDestFile, shadowIndexFile);
+                    for (int tableIdx = 0; tableIdx < sources.length; tableIdx++) {
+                        final URI tableDestination = destinations[tableIdx];
+                        final List<ParquetTableWriter.IndexWritingInfo> indexInfoList =
+                                indexInfoBuilderHelper(indexColumns, parquetColumnNameArr, tableDestination,
+                                        channelsProvider);
+                        final CompletableOutputStream outputStream = channelsProvider.getOutputStream(
+                                destinations[tableIdx], PARQUET_OUTPUT_BUFFER_SIZE);
+                        outputStreams.add(outputStream);
+                        for (final ParquetTableWriter.IndexWritingInfo info : indexInfoList) {
+                            outputStreams.add(info.destOutputStream);
+                        }
+                        final Table sourceTable = sources[tableIdx];
+                        ParquetTableWriter.write(sourceTable, definition, writeInstructions, destinations[tableIdx],
+                                outputStream, Collections.emptyMap(), indexInfoList, metadataFileWriter, computedCache);
                     }
                 }
-            }
-            if (writeInstructions.generateMetadataFiles()) {
-                destFiles.add(metadataDestFile);
-                installShadowFile(metadataDestFile, shadowMetadataFile);
-                destFiles.add(commonMetadataDestFile);
-                installShadowFile(commonMetadataDestFile, shadowCommonMetadataFile);
-            }
-        } catch (Exception e) {
-            for (final File file : destFiles) {
-                rollbackFile(file);
-            }
-            for (final File file : shadowFiles) {
-                file.delete();
-            }
-            for (final File firstCreatedDir : firstCreatedDirs) {
-                if (firstCreatedDir == null) {
-                    continue;
+
+                if (writeInstructions.generateMetadataFiles()) {
+                    final URI metadataDest = metadataRootDir.resolve(METADATA_FILE_NAME);
+                    final CompletableOutputStream metadataOutputStream = channelsProvider.getOutputStream(
+                            metadataDest, PARQUET_OUTPUT_BUFFER_SIZE);
+                    outputStreams.add(metadataOutputStream);
+                    final URI commonMetadataDest = metadataRootDir.resolve(COMMON_METADATA_FILE_NAME);
+                    final CompletableOutputStream commonMetadataOutputStream = channelsProvider.getOutputStream(
+                            commonMetadataDest, PARQUET_OUTPUT_BUFFER_SIZE);
+                    outputStreams.add(commonMetadataOutputStream);
+                    metadataFileWriter.writeMetadataFiles(metadataOutputStream, commonMetadataOutputStream);
                 }
-                log.error().append(
-                        "Error in table writing, cleaning up potentially incomplete table destination path starting from ")
-                        .append(firstCreatedDir.getAbsolutePath()).append(e).endl();
-                FileUtils.deleteRecursivelyOnNFS(firstCreatedDir);
+
+                // Commit all the writes to underlying file system, to detect any exceptions early before closing
+                for (final CompletableOutputStream outputStream : outputStreams) {
+                    outputStream.complete();
+                }
+            } catch (final Exception e) {
+                // Try to rollback all the output streams in reverse order to undo any writes
+                for (int idx = outputStreams.size() - 1; idx >= 0; idx--) {
+                    try {
+                        outputStreams.get(idx).rollback();
+                    } catch (IOException e1) {
+                        log.error().append("Error in rolling back output stream ").append(e1).endl();
+                    }
+                }
+                throw new UncheckedDeephavenException("Error writing parquet tables", e);
             }
-            throw new UncheckedDeephavenException("Error writing parquet tables", e);
         }
-        destFiles.forEach(ParquetTools::deleteBackupFileNoExcept);
     }
 
     /**
@@ -876,28 +751,35 @@ public class ParquetTools {
             }
             definition = firstDefinition;
         }
-        final File[] destinationFiles = new File[destinations.length];
+        final URI[] destinationUris = new URI[destinations.length];
+        String firstScheme = null;
         for (int idx = 0; idx < destinations.length; idx++) {
-            final URI destinationURI = convertToURI(destinations[idx], false);
-            if (!FILE_URI_SCHEME.equals(destinationURI.getScheme())) {
+            if (!destinations[idx].endsWith(PARQUET_FILE_EXTENSION)) {
                 throw new IllegalArgumentException(
-                        "Only file URI scheme is supported for writing parquet files, found" +
-                                "non-file URI: " + destinations[idx]);
+                        String.format("Destination %s does not end in %s extension", destinations[idx],
+                                PARQUET_FILE_EXTENSION));
             }
-            destinationFiles[idx] = new File(destinationURI);
+            destinationUris[idx] = convertToURI(destinations[idx], false);
+            if (idx == 0) {
+                firstScheme = destinationUris[0].getScheme();
+            } else if (!firstScheme.equals(destinationUris[idx].getScheme())) {
+                throw new IllegalArgumentException("All destination URIs must have the same scheme, expected " +
+                        firstScheme + " found " + destinationUris[idx].getScheme());
+            }
         }
-        final File metadataRootDir;
+        final URI metadataRootDir;
         if (writeInstructions.generateMetadataFiles()) {
             // We insist on writing the metadata file in the same directory as the destination files, thus all
             // destination files should be in the same directory.
-            final String firstDestinationDir = destinationFiles[0].getAbsoluteFile().getParentFile().getAbsolutePath();
+            final URI firstDestinationDir = destinationUris[0].resolve(".");
             for (int i = 1; i < destinations.length; i++) {
-                if (!firstDestinationDir.equals(destinationFiles[i].getParentFile().getAbsolutePath())) {
+                final URI destinationDir = destinationUris[i].resolve(".");
+                if (!firstDestinationDir.equals(destinationDir)) {
                     throw new IllegalArgumentException("All destination files must be in the same directory for " +
-                            " generating metadata files");
+                            " generating metadata files, found " + firstDestinationDir + " and " + destinationDir);
                 }
             }
-            metadataRootDir = new File(firstDestinationDir);
+            metadataRootDir = firstDestinationDir;
         } else {
             metadataRootDir = null;
         }
@@ -907,7 +789,7 @@ public class ParquetTools {
                 buildComputedCache(() -> PartitionedTableFactory.ofTables(definition, sources).merge(), definition);
         // We do not have any additional schema for partitioning columns in this case. Schema for all columns will be
         // generated at the time of writing the parquet files and merged to generate the metadata files.
-        writeTablesImpl(sources, definition, writeInstructions, destinationFiles, indexColumns, null, metadataRootDir,
+        writeTablesImpl(sources, definition, writeInstructions, destinationUris, indexColumns, null, metadataRootDir,
                 computedCache);
     }
 

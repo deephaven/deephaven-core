@@ -13,7 +13,6 @@ import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
-import io.deephaven.chunk.util.pools.PoolableChunk;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -21,22 +20,22 @@ import io.deephaven.extensions.barrage.chunk.array.ArrayExpansionKernel;
 import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.DataInput;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Iterator;
-import java.util.PrimitiveIterator;
 
 public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGenerator<ObjectChunk<T, Values>> {
     private static final String DEBUG_NAME = "VarListChunkInputStreamGenerator";
 
+    private final Factory factory;
     private final Class<T> type;
 
     private WritableIntChunk<ChunkPositions> offsets;
     private ChunkInputStreamGenerator innerGenerator;
 
-    VarListChunkInputStreamGenerator(final Class<T> type, final ObjectChunk<T, Values> chunk, final long rowOffset) {
+    VarListChunkInputStreamGenerator(ChunkInputStreamGenerator.Factory factory, final Class<T> type,
+            final ObjectChunk<T, Values> chunk, final long rowOffset) {
         super(chunk, 0, rowOffset);
+        this.factory = factory;
         this.type = type;
     }
 
@@ -47,31 +46,32 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
 
         final Class<?> myType = type.getComponentType();
         final Class<?> myComponentType = myType != null ? myType.getComponentType() : null;
-        ChunkType chunkType = ChunkType.fromElementType(myType);
-        if (chunkType == ChunkType.Boolean) {
-            // the internal payload is in bytes (to handle nulls), but the wire format is packed bits
+
+        final ChunkType chunkType;
+        if (myType == boolean.class || myType == Boolean.class) {
+            // Note: Internally booleans are passed around as bytes, but the wire format is packed bits.
             chunkType = ChunkType.Byte;
+        } else if (myType != null && !myType.isPrimitive()) {
+            chunkType = ChunkType.Object;
+        } else {
+            chunkType = ChunkType.fromElementType(myType);
         }
+
         final ArrayExpansionKernel kernel = ArrayExpansionKernel.makeExpansionKernel(chunkType, myType);
         offsets = WritableIntChunk.makeWritableChunk(chunk.size() + 1);
 
         final WritableChunk<Values> innerChunk = kernel.expand(chunk, offsets);
-        innerGenerator = ChunkInputStreamGenerator.makeInputStreamGenerator(
-                chunkType, myType, myComponentType, innerChunk, 0);
+        innerGenerator = factory.makeInputStreamGenerator(chunkType, myType, myComponentType, innerChunk, 0);
     }
 
     @Override
-    public void close() {
-        if (REFERENCE_COUNT_UPDATER.decrementAndGet(this) == 0) {
-            if (chunk instanceof PoolableChunk) {
-                ((PoolableChunk) chunk).close();
-            }
-            if (offsets != null) {
-                offsets.close();
-            }
-            if (innerGenerator != null) {
-                innerGenerator.close();
-            }
+    protected void onReferenceCountAtZero() {
+        super.onReferenceCountAtZero();
+        if (offsets != null) {
+            offsets.close();
+        }
+        if (innerGenerator != null) {
+            innerGenerator.close();
         }
     }
 

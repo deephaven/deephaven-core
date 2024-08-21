@@ -2,7 +2,7 @@
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
 // ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
-// ****** Edit FloatMaterializer and run "./gradlew replicatePageMaterializers" to regenerate
+// ****** Edit LongMaterializer and run "./gradlew replicatePageMaterializers" to regenerate
 //
 // @formatter:off
 package io.deephaven.parquet.base.materializers;
@@ -11,9 +11,7 @@ import io.deephaven.parquet.base.PageMaterializer;
 import io.deephaven.parquet.base.PageMaterializerFactory;
 import org.apache.parquet.column.values.ValuesReader;
 
-import java.util.Arrays;
-
-public class IntMaterializer implements PageMaterializer {
+public class IntMaterializer extends IntMaterializerBase implements PageMaterializer {
 
     public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
@@ -29,22 +27,13 @@ public class IntMaterializer implements PageMaterializer {
 
     private final ValuesReader dataReader;
 
-    private final int nullValue;
-    private final int[] data;
-
     private IntMaterializer(ValuesReader dataReader, int numValues) {
         this(dataReader, 0, numValues);
     }
 
     private IntMaterializer(ValuesReader dataReader, int nullValue, int numValues) {
+        super(nullValue, numValues);
         this.dataReader = dataReader;
-        this.nullValue = nullValue;
-        this.data = new int[numValues];
-    }
-
-    @Override
-    public void fillNulls(int startIndex, int endIndex) {
-        Arrays.fill(data, startIndex, endIndex, nullValue);
     }
 
     @Override
@@ -52,16 +41,5 @@ public class IntMaterializer implements PageMaterializer {
         for (int ii = startIndex; ii < endIndex; ii++) {
             data[ii] = dataReader.readInteger();
         }
-    }
-
-    @Override
-    public Object fillAll() {
-        fillValues(0, data.length);
-        return data;
-    }
-
-    @Override
-    public Object data() {
-        return data;
     }
 }

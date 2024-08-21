@@ -496,7 +496,6 @@ public class WorkerConnection {
                         info.fireEvent(EVENT_REFRESH_TOKEN_UPDATED, init);
                     }
                 }
-                handshake.end();
             });
             handshake.onStatus(status -> {
                 if (status.isOk()) {
@@ -526,6 +525,7 @@ public class WorkerConnection {
             });
 
             handshake.send(new HandshakeRequest());
+            handshake.end();
         });
     }
 

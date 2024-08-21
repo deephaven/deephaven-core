@@ -134,6 +134,7 @@ foreach (whichlib dhcore dhcore_static)
     target_compile_options(${whichlib} PRIVATE /W3 /bigobj)
 
     target_compile_definitions(${whichlib} PRIVATE _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
+    target_link_libraries(${whichlib} PRIVATE ws2_32)
   endif()
 
   target_include_directories(${whichlib} PRIVATE include/private)

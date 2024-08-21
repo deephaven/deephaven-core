@@ -9,17 +9,17 @@ import org.apache.parquet.column.values.ValuesReader;
 
 import java.util.Arrays;
 
-public class BoolMaterializer implements PageMaterializer {
+public class BooleanAsByteMaterializer implements PageMaterializer {
 
     public static final PageMaterializerFactory FACTORY = new PageMaterializerFactory() {
         @Override
         public PageMaterializer makeMaterializerWithNulls(ValuesReader dataReader, Object nullValue, int numValues) {
-            return new BoolMaterializer(dataReader, (byte) nullValue, numValues);
+            return new BooleanAsByteMaterializer(dataReader, (byte) nullValue, numValues);
         }
 
         @Override
         public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
-            return new BoolMaterializer(dataReader, numValues);
+            return new BooleanAsByteMaterializer(dataReader, numValues);
         }
     };
 
@@ -28,11 +28,11 @@ public class BoolMaterializer implements PageMaterializer {
     private final byte nullValue;
     private final byte[] data;
 
-    private BoolMaterializer(ValuesReader dataReader, int numValues) {
+    private BooleanAsByteMaterializer(ValuesReader dataReader, int numValues) {
         this(dataReader, (byte) 0, numValues);
     }
 
-    private BoolMaterializer(ValuesReader dataReader, byte nullValue, int numValues) {
+    private BooleanAsByteMaterializer(ValuesReader dataReader, byte nullValue, int numValues) {
         this.dataReader = dataReader;
         this.nullValue = nullValue;
         this.data = new byte[numValues];

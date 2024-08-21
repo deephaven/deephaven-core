@@ -33,6 +33,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * Manage column sources made up of regions in their own row key address space.
@@ -335,45 +336,49 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
             if (entry.pollUpdates(addedRowSetBuilder)) {
                 // Changes were detected, update the row set in the table and mark the row/column as modified.
                 /*
-                 * Since TableLocationState.getRowSet() returns a copy(), we should consider adding an UpdateCommitter
-                 * to close() the previous row sets for modified locations. This is not important for current
-                 * implementations, since they always allocate new, flat RowSets.
+                 * Since TableLocationState.getRowSet() returns a copy(), we own entry.rowSetAtLastUpdate and can
+                 * propagate it without making another copy().
                  */
-                rowSetSource.set(entry.regionIndex, entry.location.getRowSet());
+                rowSetSource.set(entry.regionIndex, entry.rowSetAtLastUpdate);
                 if (modifiedRegionBuilder != null) {
                     modifiedRegionBuilder.appendKey(entry.regionIndex);
                 }
             }
         }
 
-        Collection<EmptyTableLocationEntry> entriesToInclude = null;
-        for (final Iterator<EmptyTableLocationEntry> iterator = emptyTableLocations.iterator(); iterator.hasNext();) {
-            final EmptyTableLocationEntry emptyEntry = iterator.next();
-            emptyEntry.refresh();
-            final RowSet locationRowSet = emptyEntry.location.getRowSet();
-            if (locationRowSet == null) {
-                continue;
-            }
-            if (locationRowSet.isEmpty()) {
-                locationRowSet.close();
-            } else {
-                emptyEntry.initialRowSet = locationRowSet;
-                (entriesToInclude == null ? entriesToInclude = new TreeSet<>() : entriesToInclude).add(emptyEntry);
-                iterator.remove();
-            }
-        }
+        //@formatter:off
+        final Collection<EmptyTableLocationEntry> entriesToInclude = StreamSupport.stream(Spliterators.spliterator(
+                                emptyTableLocations.iterator(),
+                                emptyTableLocations.size(),
+                                Spliterator.IMMUTABLE | Spliterator.DISTINCT | Spliterator.NONNULL),
+                        true) //@formatter:on
+                .peek(EmptyTableLocationEntry::refresh)
+                .filter((final EmptyTableLocationEntry emptyEntry) -> {
+                    final RowSet locationRowSet = emptyEntry.location.getRowSet();
+                    if (locationRowSet == null) {
+                        return false;
+                    }
+                    if (locationRowSet.isEmpty()) {
+                        locationRowSet.close();
+                        return false;
+                    }
+                    emptyEntry.initialRowSet = locationRowSet;
+                    return true;
+                }).collect(Collectors.toList());
+
+        emptyTableLocations.removeAll(entriesToInclude);
 
         final RowSetBuilderSequential addedRegionBuilder = RowSetFactory.builderSequential();
 
         final int prevMaxIndex = nextRegionIndex.get();
-        final int maxIndex = nextRegionIndex.get() + (entriesToInclude == null ? 0 : entriesToInclude.size());
-        if (entriesToInclude != null) {
+        final int maxIndex = nextRegionIndex.get() + (entriesToInclude.isEmpty() ? 0 : entriesToInclude.size());
+        if (!entriesToInclude.isEmpty()) {
             partitioningColumnValueSources.values().forEach(
                     (final WritableColumnSource<?> wcs) -> wcs.ensureCapacity(maxIndex));
             locationSource.ensureCapacity(maxIndex);
             rowSetSource.ensureCapacity(maxIndex);
 
-            for (final EmptyTableLocationEntry entryToInclude : entriesToInclude) {
+            entriesToInclude.stream().sorted().forEachOrdered((final EmptyTableLocationEntry entryToInclude) -> {
                 final IncludedTableLocationEntry entry = new IncludedTableLocationEntry(entryToInclude);
                 includedTableLocations.add(entry);
                 orderedIncludedTableLocations.add(entry);
@@ -387,9 +392,9 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
                                 wcs.set(entry.regionIndex, entry.location.getKey().getPartitionValue(key)));
                 // @formatter:on
                 locationSource.set(entry.regionIndex, entry.location);
-                rowSetSource.set(entry.regionIndex, entry.location.getRowSet());
+                rowSetSource.set(entry.regionIndex, entry.rowSetAtLastUpdate);
                 addedRegionBuilder.appendKey(entry.regionIndex);
-            }
+            });
         }
         final RowSet addedRegions = addedRegionBuilder.build();
 
@@ -428,9 +433,10 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
 
     @Override
     public final synchronized Collection<TableLocation> allLocations() {
+        //@formatter:off
         return Stream.concat(
-                orderedIncludedTableLocations.stream().map(e -> e.location),
-                emptyTableLocations.values().stream().sorted().map(e -> e.location))
+                        orderedIncludedTableLocations.stream().map(e -> e.location),
+                        emptyTableLocations.values().stream().sorted().map(e -> e.location)) //@formatter:on
                 .collect(Collectors.toCollection(ArrayList::new));
     }
 
@@ -563,7 +569,9 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
             rowSetAtLastUpdate = initialRowSet;
         }
 
-        /** Returns {@code true} if there were changes to the row set for this location. */
+        /**
+         * Returns {@code true} if there were changes to the row set for this location.
+         */
         private boolean pollUpdates(final RowSetBuilderSequential addedRowSetBuilder) {
             Assert.neqNull(subscriptionBuffer, "subscriptionBuffer"); // Effectively, this is asserting "isRefreshing".
             try {
@@ -615,7 +623,12 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
                             .appendRange(regionFirstKey + subRegionFirstKey, regionFirstKey + subRegionLastKey));
                 }
             } finally {
-                rowSetAtLastUpdate.close();
+                /*
+                 * Since we record rowSetAtLastUpdate in the RowSet column of our includedLocationsTable, we must not
+                 * close() the old rowSetAtLastUpdate here. We should instead consider adding an UpdateCommitter to
+                 * close() the previous RowSets for modified locations, but this is not important for current
+                 * implementations since they always allocate new, flat RowSets.
+                 */
                 rowSetAtLastUpdate = updateRowSet;
             }
             // There was a change to the row set.
@@ -656,7 +669,8 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
         protected final RegionedColumnSource<T> source;
         protected final ColumnLocation location;
 
-        private ColumnLocationState(ColumnDefinition<T> definition,
+        private ColumnLocationState(
+                ColumnDefinition<T> definition,
                 RegionedColumnSource<T> source,
                 ColumnLocation location) {
             this.definition = definition;
