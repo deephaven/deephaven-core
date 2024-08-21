@@ -175,8 +175,7 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
             if (tokenLocationsAdded != EMPTY_TABLE_LOCATION_KEYS) {
                 for (final ImmutableTableLocationKey tableLocationKey : tokenLocationsAdded) {
                     // Verify that we don't have stacked adds (without intervening removes).
-                    if (pendingLocationsAdded.contains(tableLocationKey)
-                            && !pendingLocationsRemoved.contains(tableLocationKey)) {
+                    if (pendingLocationsAdded.contains(tableLocationKey)) {
                         throw new IllegalStateException("TableLocationKey " + tableLocationKey
                                 + " was already added by a previous transaction.");
                     }
@@ -203,8 +202,7 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
             if (transactionToken == null) {
                 // If we're not in a transaction, modify the pending locations directly.
                 // Need to verify that we don't have stacked adds (without intervening removes).
-                if (pendingLocationsAdded.contains(tableLocationKey)
-                        && !pendingLocationsRemoved.contains(tableLocationKey)) {
+                if (pendingLocationsAdded.contains(tableLocationKey)) {
                     throw new IllegalStateException("TableLocationKey " + tableLocationKey
                             + " was already added by a previous transaction.");
                 }
