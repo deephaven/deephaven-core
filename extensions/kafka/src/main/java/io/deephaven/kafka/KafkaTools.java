@@ -1299,6 +1299,9 @@ public class KafkaTools {
 
     /**
      * Construct a {@link TableDefinition} based on the input Properties and {@link Consume.KeyOrValueSpec} parameters.
+     * Given the same input Properties and Consume.KeyOrValueSpec parameters, the returned TableDefinition is the same
+     * as the TableDefinition of the table produced by
+     * {@link #consumeToTable(Properties, String, IntPredicate, IntToLongFunction, Consume.KeyOrValueSpec, Consume.KeyOrValueSpec, TableType)}
      *
      * @param kafkaProperties Properties to configure this table
      * @param keySpec Conversion specification for Kafka record keys
