@@ -500,16 +500,18 @@ public class WorkerConnection {
                         }
                     }
 
-                    // schedule an update based on our currently configured delay
-                    scheduledAuthUpdate = DomGlobal.setTimeout(ignore -> {
-                        authUpdate();
-                    }, sessionTimeoutMs / 2);
-
+                    // Read the timeout from the server, we'll refresh at less than that
                     result.getMessage().getConfigValuesMap().forEach((item, key) -> {
                         if (key.equals("http.session.durationMs")) {
                             sessionTimeoutMs = Double.parseDouble(item.getStringValue());
                         }
                     });
+
+                    // schedule an update based on our currently configured delay
+                    scheduledAuthUpdate = DomGlobal.setTimeout(ignore -> {
+                        authUpdate();
+                    }, sessionTimeoutMs / 2);
+
                     return Promise.resolve((Void) null);
                 }).catch_(err -> {
                     UnaryOutput<?> result = (UnaryOutput<?>) err;
