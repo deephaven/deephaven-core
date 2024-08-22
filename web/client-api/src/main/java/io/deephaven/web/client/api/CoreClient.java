@@ -131,19 +131,6 @@ public class CoreClient extends HasEventHandling {
                 EventPair.of(CoreClient.EVENT_RECONNECT_AUTH_FAILED, loginPromise::fail));
         Promise<Void> login = loginPromise.asPromise();
 
-        // fetch configs and check session timeout
-        login.then(ignore -> getServerConfigValues()).then(configs -> {
-            for (String[] config : configs) {
-                if (config[0].equals("http.session.durationMs")) {
-                    workerConnection.setSessionTimeoutMs(Double.parseDouble(config[1]));
-                }
-            }
-            return null;
-        }).catch_(ignore -> {
-            // Ignore this failure and suppress browser logging, we have a safe fallback
-            return Promise.resolve((Object) null);
-        });
-
         if (alreadyRunning) {
             ideConnection.connection.get().forceReconnect();
         }
