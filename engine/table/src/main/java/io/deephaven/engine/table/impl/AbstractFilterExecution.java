@@ -190,12 +190,12 @@ abstract class AbstractFilterExecution {
                         // Clean up the row sets created by the filter.
                         try (final RowSet ignored = adds;
                                 final RowSet ignored2 = mods) {
-                            if (addedResult != null) {
+                            if (addedResult != null && adds != null) {
                                 synchronized (addedResult) {
                                     addedResult.insert(adds);
                                 }
                             }
-                            if (modifiedResult != null) {
+                            if (modifiedResult != null && mods != null) {
                                 synchronized (modifiedResult) {
                                     modifiedResult.insert(mods);
                                 }
