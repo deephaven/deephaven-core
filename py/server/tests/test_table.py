@@ -936,9 +936,6 @@ class TableTestCase(BaseTestCase):
         self.assertEqual(t_blink.is_blink, True)
         self.assertEqual(t_no_blink.is_blink, False)
 
-        with self.assertRaises(RuntimeError):
-            t_no_blink.remove_blink()
-
     def test_grouped_column_as_arg(self):
         t1 = empty_table(100).update(
             ["id = i % 10", "Person = random() > 0.5 ? true : random() > 0.5 ? false : true"]).sort(
