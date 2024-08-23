@@ -23,13 +23,12 @@ import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_gene
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.flatbuf.schema_generated.org.apache.arrow.flatbuf.Schema;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.browserflight_pb_service.BrowserFlightServiceClient;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.HandshakeRequest;
-import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.HandshakeResponse;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb_service.FlightServiceClient;
 import io.deephaven.javascript.proto.dhinternal.browserheaders.BrowserHeaders;
 import io.deephaven.javascript.proto.dhinternal.flatbuffers.Builder;
 import io.deephaven.javascript.proto.dhinternal.flatbuffers.Long;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.Code;
+import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.UnaryOutput;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSubscriptionOptions;
@@ -40,6 +39,9 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_p
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldsChangeUpdate;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.ListFieldsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb_service.ApplicationServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.ConfigurationConstantsRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.ConfigurationConstantsResponse;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb_service.ConfigService;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb_service.ConfigServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionData;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionRequest;
@@ -72,13 +74,13 @@ import io.deephaven.web.client.api.barrage.WebBarrageUtils;
 import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
-import io.deephaven.web.client.api.barrage.stream.HandshakeStreamFactory;
 import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.api.batch.RequestBatcher;
 import io.deephaven.web.client.api.batch.TableConfig;
 import io.deephaven.web.client.api.console.JsVariableChanges;
 import io.deephaven.web.client.api.console.JsVariableDefinition;
 import io.deephaven.web.client.api.console.JsVariableType;
+import io.deephaven.web.client.api.grpc.UnaryWithHeaders;
 import io.deephaven.web.client.api.i18n.JsTimeZone;
 import io.deephaven.web.client.api.impl.TicketAndPromise;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
@@ -479,54 +481,58 @@ public class WorkerConnection {
             DomGlobal.clearTimeout(scheduledAuthUpdate);
             scheduledAuthUpdate = null;
         }
-        return new Promise<>((resolve, reject) -> {
-            // the streamfactory will automatically reference our existing metadata, but we can listen to update it
-            BiDiStream<HandshakeRequest, HandshakeResponse> handshake = HandshakeStreamFactory.create(this);
-            handshake.onHeaders(headers -> {
-                // unchecked cast is required here due to "aliasing" in ts/webpack resulting in BrowserHeaders !=
-                // Metadata
-                JsArray<String> authorization = Js.<BrowserHeaders>uncheckedCast(headers).get(FLIGHT_AUTH_HEADER_NAME);
-                if (authorization.length > 0) {
-                    JsArray<String> existing = metadata().get(FLIGHT_AUTH_HEADER_NAME);
-                    if (!existing.getAt(0).equals(authorization.getAt(0))) {
-                        // use this new token
-                        metadata().set(FLIGHT_AUTH_HEADER_NAME, authorization);
-                        CustomEventInit<JsRefreshToken> init = CustomEventInit.create();
-                        init.setDetail(new JsRefreshToken(authorization.getAt(0), sessionTimeoutMs));
-                        info.fireEvent(EVENT_REFRESH_TOKEN_UPDATED, init);
+        return UnaryWithHeaders.<ConfigurationConstantsRequest, ConfigurationConstantsResponse>call(
+                this, ConfigService.GetConfigurationConstants, new ConfigurationConstantsRequest())
+                .then(result -> {
+                    BrowserHeaders headers = result.getHeaders();
+                    // unchecked cast is required here due to "aliasing" in ts/webpack resulting in BrowserHeaders !=
+                    // Metadata
+                    JsArray<String> authorization =
+                            Js.<BrowserHeaders>uncheckedCast(headers).get(FLIGHT_AUTH_HEADER_NAME);
+                    if (authorization.length > 0) {
+                        JsArray<String> existing = metadata().get(FLIGHT_AUTH_HEADER_NAME);
+                        if (!existing.getAt(0).equals(authorization.getAt(0))) {
+                            // use this new token
+                            metadata().set(FLIGHT_AUTH_HEADER_NAME, authorization);
+                            CustomEventInit<JsRefreshToken> init = CustomEventInit.create();
+                            init.setDetail(new JsRefreshToken(authorization.getAt(0), sessionTimeoutMs));
+                            info.fireEvent(EVENT_REFRESH_TOKEN_UPDATED, init);
+                        }
                     }
-                }
-            });
-            handshake.onStatus(status -> {
-                if (status.isOk()) {
+
+                    // Read the timeout from the server, we'll refresh at less than that
+                    result.getMessage().getConfigValuesMap().forEach((item, key) -> {
+                        if (key.equals("http.session.durationMs")) {
+                            sessionTimeoutMs = Double.parseDouble(item.getStringValue());
+                        }
+                    });
+
                     // schedule an update based on our currently configured delay
                     scheduledAuthUpdate = DomGlobal.setTimeout(ignore -> {
                         authUpdate();
                     }, sessionTimeoutMs / 2);
 
-                    resolve.onInvoke((Void) null);
-                } else {
-                    if (status.getCode() == Code.Unauthenticated) {
+                    return Promise.resolve((Void) null);
+                }).catch_(err -> {
+                    UnaryOutput<?> result = (UnaryOutput<?>) err;
+                    if (result.getStatus() == Code.Unauthenticated) {
                         // explicitly clear out any metadata for authentication, and signal that auth failed
                         metadata.delete(FLIGHT_AUTH_HEADER_NAME);
 
                         // Fire an event for the UI to attempt to re-auth
                         info.fireEvent(CoreClient.EVENT_RECONNECT_AUTH_FAILED);
-                        return;
-                    }
-                    // TODO deephaven-core#2564 fire an event for the UI to re-auth
-                    checkStatus(status);
-                    if (status.getDetails() == null || status.getDetails().isEmpty()) {
-                        reject.onInvoke("Error occurred while authenticating, gRPC status " + status.getCode());
-                    } else {
-                        reject.onInvoke(status.getDetails());
-                    }
-                }
-            });
 
-            handshake.send(new HandshakeRequest());
-            handshake.end();
-        });
+                        // We return here rather than continue and call checkStatus()
+                        return Promise.reject("Authentication failed, please reconnect");
+                    }
+                    checkStatus(ResponseStreamWrapper.Status.of(result.getStatus(), result.getMessage().toString(),
+                            result.getTrailers()));
+                    if (result.getMessage() == null || result.getMessage().toString().isEmpty()) {
+                        return Promise.reject(result.getMessage());
+                    } else {
+                        return Promise.reject("Error occurred while authenticating, gRPC status " + result.getStatus());
+                    }
+                });
     }
 
     private void subscribeToTerminationNotification() {
