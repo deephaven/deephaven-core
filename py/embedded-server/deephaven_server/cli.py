@@ -23,7 +23,8 @@ def cli():
 @click.option("--jvm-args", default=None, help="The JVM arguments to use.")
 @click.option("--extra-classpath", default=None, help="The extra classpath to use.")
 @click.option("--default-jvm-args", default=None, help="The advanced JVM arguments to use in place of the default ones that Deephaven recommends.")
-def server(host, port, jvm_args, extra_classpath, default_jvm_args):
+@click.option('--browser/--no-browser', default=True, help="Whether to open the browser when the server starts.")
+def server(host, port, jvm_args, extra_classpath, default_jvm_args, browser):
     """
     Start the Deephaven server.
     """
@@ -46,7 +47,8 @@ def server(host, port, jvm_args, extra_classpath, default_jvm_args):
             authentication_url = authentication_urls[0]
             break
 
-    webbrowser.open(authentication_url)
+    if browser:
+        webbrowser.open(authentication_url)
 
     click.echo(
         f"Deephaven is running at {authentication_url} with authentication type {authentication_type}"

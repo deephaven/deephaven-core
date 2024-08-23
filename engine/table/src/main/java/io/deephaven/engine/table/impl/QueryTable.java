@@ -43,7 +43,6 @@ import io.deephaven.engine.table.impl.rangejoin.RangeJoinOperation;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
-import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzerWrapper;
 import io.deephaven.engine.table.impl.snapshot.SnapshotIncrementalListener;
 import io.deephaven.engine.table.impl.snapshot.SnapshotInternalListener;
 import io.deephaven.engine.table.impl.snapshot.SnapshotUtils;
@@ -1498,10 +1497,9 @@ public class QueryTable extends BaseTable<QueryTable> {
      */
     public SelectValidationResult validateSelect(final SelectColumn... selectColumns) {
         final SelectColumn[] clones = SelectColumn.copyFrom(selectColumns);
-        SelectAndViewAnalyzerWrapper analyzerWrapper = SelectAndViewAnalyzer.create(
-                this, SelectAndViewAnalyzer.Mode.SELECT_STATIC, columns, rowSet, getModifiedColumnSetForUpdates(), true,
-                false, clones);
-        return new SelectValidationResult(analyzerWrapper.getAnalyzer(), clones);
+        SelectAndViewAnalyzer.AnalyzerContext analyzerContext = SelectAndViewAnalyzer.createContext(
+                this, SelectAndViewAnalyzer.Mode.SELECT_STATIC, true, false, clones);
+        return new SelectValidationResult(analyzerContext.createAnalyzer(), clones);
     }
 
     private Table selectOrUpdate(Flavor flavor, final SelectColumn... selectColumns) {
@@ -1526,18 +1524,16 @@ public class QueryTable extends BaseTable<QueryTable> {
                         }
                     }
                     final boolean publishTheseSources = flavor == Flavor.Update;
-                    final SelectAndViewAnalyzerWrapper analyzerWrapper = SelectAndViewAnalyzer.create(
-                            this, mode, columns, rowSet, getModifiedColumnSetForUpdates(), publishTheseSources, true,
-                            selectColumns);
+                    final SelectAndViewAnalyzer.AnalyzerContext analyzerContext = SelectAndViewAnalyzer.createContext(
+                            this, mode, publishTheseSources, true, selectColumns);
 
-                    final SelectAndViewAnalyzer analyzer = analyzerWrapper.getAnalyzer();
-                    final SelectColumn[] processedColumns = analyzerWrapper.getProcessedColumns()
+                    final SelectAndViewAnalyzer analyzer = analyzerContext.createAnalyzer();
+                    final SelectColumn[] processedColumns = analyzerContext.getProcessedColumns()
                             .toArray(SelectColumn[]::new);
 
                     // Init all the rows by cooking up a fake Update
                     final TableUpdate fakeUpdate = new TableUpdateImpl(
-                            analyzer.alreadyFlattenedSources() ? RowSetFactory.flat(rowSet.size()) : rowSet.copy(),
-                            RowSetFactory.empty(), RowSetFactory.empty(),
+                            rowSet.copy(), RowSetFactory.empty(), RowSetFactory.empty(),
                             RowSetShiftData.EMPTY, ModifiedColumnSet.ALL);
 
                     final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
@@ -1558,8 +1554,10 @@ public class QueryTable extends BaseTable<QueryTable> {
                                         new SelectAndViewAnalyzer.UpdateHelper(emptyRowSet, fakeUpdate)) {
 
                             try {
-                                analyzer.applyUpdate(fakeUpdate, emptyRowSet, updateHelper, jobScheduler,
-                                        liveResultCapture, analyzer.futureCompletionHandler(waitForResult));
+                                analyzer.applyUpdate(
+                                        fakeUpdate, emptyRowSet, updateHelper, jobScheduler, liveResultCapture,
+                                        () -> waitForResult.complete(null),
+                                        waitForResult::completeExceptionally);
                             } catch (Exception e) {
                                 waitForResult.completeExceptionally(e);
                             }
@@ -1580,14 +1578,15 @@ public class QueryTable extends BaseTable<QueryTable> {
                             }
                         }
 
-                        final TrackingRowSet resultRowSet =
-                                analyzer.flattenedResult() ? RowSetFactory.flat(rowSet.size()).toTracking() : rowSet;
-                        resultTable = new QueryTable(resultRowSet, analyzerWrapper.getPublishedColumnResources());
+                        final TrackingRowSet resultRowSet = analyzer.flatResult() && !rowSet.isFlat()
+                                ? RowSetFactory.flat(rowSet.size()).toTracking()
+                                : rowSet;
+                        resultTable = new QueryTable(resultRowSet, analyzerContext.getPublishedColumnSources());
                         if (liveResultCapture != null) {
                             analyzer.startTrackingPrev();
-                            final Map<String, String[]> effects = analyzerWrapper.calcEffects();
-                            final SelectOrUpdateListener soul = new SelectOrUpdateListener(updateDescription, this,
-                                    resultTable, effects, analyzer);
+                            final Map<String, String[]> effects = analyzerContext.calcEffects();
+                            final SelectOrUpdateListener soul = new SelectOrUpdateListener(
+                                    updateDescription, this, resultTable, effects, analyzer);
                             liveResultCapture.transferTo(soul);
                             addUpdateListener(soul);
                             ConstituentDependency.install(resultTable, soul);
@@ -1596,11 +1595,6 @@ public class QueryTable extends BaseTable<QueryTable> {
                                 resultTable.setFlat();
                             }
                             propagateDataIndexes(processedColumns, resultTable);
-                            for (final ColumnSource<?> columnSource : analyzer.getNewColumnSources().values()) {
-                                if (columnSource instanceof PossiblyImmutableColumnSource) {
-                                    ((PossiblyImmutableColumnSource) columnSource).setImmutable();
-                                }
-                            }
                         }
                     }
                     propagateFlatness(resultTable);
@@ -1610,10 +1604,10 @@ public class QueryTable extends BaseTable<QueryTable> {
                     } else {
                         maybeCopyColumnDescriptions(resultTable);
                     }
-                    SelectAndViewAnalyzerWrapper.UpdateFlavor updateFlavor = flavor == Flavor.Update
-                            ? SelectAndViewAnalyzerWrapper.UpdateFlavor.Update
-                            : SelectAndViewAnalyzerWrapper.UpdateFlavor.Select;
-                    return analyzerWrapper.applyShiftsAndRemainingColumns(this, resultTable, updateFlavor);
+                    SelectAndViewAnalyzer.UpdateFlavor updateFlavor = flavor == Flavor.Update
+                            ? SelectAndViewAnalyzer.UpdateFlavor.Update
+                            : SelectAndViewAnalyzer.UpdateFlavor.Select;
+                    return analyzerContext.applyShiftsAndRemainingColumns(this, resultTable, updateFlavor);
                 }));
     }
 
@@ -1761,15 +1755,16 @@ public class QueryTable extends BaseTable<QueryTable> {
                                     createSnapshotControlIfRefreshing(OperationSnapshotControl::new);
                             initializeWithSnapshot(humanReadablePrefix, sc, (usePrev, beforeClockValue) -> {
                                 final boolean publishTheseSources = flavor == Flavor.UpdateView;
-                                final SelectAndViewAnalyzerWrapper analyzerWrapper = SelectAndViewAnalyzer.create(
-                                        this, SelectAndViewAnalyzer.Mode.VIEW_EAGER, columns, rowSet,
-                                        getModifiedColumnSetForUpdates(), publishTheseSources, true, viewColumns);
-                                final SelectColumn[] processedViewColumns = analyzerWrapper.getProcessedColumns()
+                                final SelectAndViewAnalyzer.AnalyzerContext analyzerContext =
+                                        SelectAndViewAnalyzer.createContext(
+                                                this, SelectAndViewAnalyzer.Mode.VIEW_EAGER,
+                                                publishTheseSources, true, viewColumns);
+                                final SelectColumn[] processedViewColumns = analyzerContext.getProcessedColumns()
                                         .toArray(SelectColumn[]::new);
                                 QueryTable queryTable = new QueryTable(
-                                        rowSet, analyzerWrapper.getPublishedColumnResources());
+                                        rowSet, analyzerContext.getPublishedColumnSources());
                                 if (sc != null) {
-                                    final Map<String, String[]> effects = analyzerWrapper.calcEffects();
+                                    final Map<String, String[]> effects = analyzerContext.calcEffects();
                                     final TableUpdateListener listener =
                                             new ViewOrUpdateViewListener(updateDescription, this, queryTable, effects);
                                     sc.setListenerAndResult(listener, queryTable);
@@ -1786,11 +1781,11 @@ public class QueryTable extends BaseTable<QueryTable> {
                                 } else {
                                     maybeCopyColumnDescriptions(queryTable);
                                 }
-                                final SelectAndViewAnalyzerWrapper.UpdateFlavor updateFlavor =
+                                final SelectAndViewAnalyzer.UpdateFlavor updateFlavor =
                                         flavor == Flavor.UpdateView
-                                                ? SelectAndViewAnalyzerWrapper.UpdateFlavor.UpdateView
-                                                : SelectAndViewAnalyzerWrapper.UpdateFlavor.View;
-                                queryTable = analyzerWrapper.applyShiftsAndRemainingColumns(
+                                                ? SelectAndViewAnalyzer.UpdateFlavor.UpdateView
+                                                : SelectAndViewAnalyzer.UpdateFlavor.View;
+                                queryTable = analyzerContext.applyShiftsAndRemainingColumns(
                                         this, queryTable, updateFlavor);
 
                                 result.setValue(queryTable);
@@ -1851,14 +1846,13 @@ public class QueryTable extends BaseTable<QueryTable> {
                     sizeForInstrumentation(), () -> {
                         checkInitiateOperation();
 
-                        final SelectAndViewAnalyzerWrapper analyzerWrapper = SelectAndViewAnalyzer.create(
-                                this, SelectAndViewAnalyzer.Mode.VIEW_LAZY, columns, rowSet,
-                                getModifiedColumnSetForUpdates(),
-                                true, true, selectColumns);
-                        final SelectColumn[] processedColumns = analyzerWrapper.getProcessedColumns()
+                        final SelectAndViewAnalyzer.AnalyzerContext analyzerContext =
+                                SelectAndViewAnalyzer.createContext(
+                                        this, SelectAndViewAnalyzer.Mode.VIEW_LAZY, true, true, selectColumns);
+                        final SelectColumn[] processedColumns = analyzerContext.getProcessedColumns()
                                 .toArray(SelectColumn[]::new);
                         final QueryTable result = new QueryTable(
-                                rowSet, analyzerWrapper.getPublishedColumnResources());
+                                rowSet, analyzerContext.getPublishedColumnSources());
                         if (isRefreshing()) {
                             addUpdateListener(new ListenerImpl(
                                     "lazyUpdate(" + Arrays.deepToString(processedColumns) + ')', this, result));
@@ -1868,8 +1862,8 @@ public class QueryTable extends BaseTable<QueryTable> {
                         copySortableColumns(result, processedColumns);
                         maybeCopyColumnDescriptions(result, processedColumns);
 
-                        return analyzerWrapper.applyShiftsAndRemainingColumns(
-                                this, result, SelectAndViewAnalyzerWrapper.UpdateFlavor.LazyUpdate);
+                        return analyzerContext.applyShiftsAndRemainingColumns(
+                                this, result, SelectAndViewAnalyzer.UpdateFlavor.LazyUpdate);
                     });
         }
     }
@@ -2401,7 +2395,9 @@ public class QueryTable extends BaseTable<QueryTable> {
     private Table snapshotHistory(final String nuggetName, final Table baseTable,
             Collection<? extends JoinAddition> stampColumns) {
         return QueryPerformanceRecorder.withNugget(nuggetName, baseTable.sizeForInstrumentation(),
-                () -> maybeViewForSnapshot(stampColumns).snapshotHistoryInternal(baseTable));
+                () -> ((QueryTable) withAttributes(Map.of(APPEND_ONLY_TABLE_ATTRIBUTE, TRUE)))
+                        .maybeViewForSnapshot(stampColumns)
+                        .snapshotHistoryInternal(baseTable));
     }
 
     private Table snapshotHistoryInternal(final Table baseTable) {

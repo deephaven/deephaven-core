@@ -6,7 +6,11 @@ package io.deephaven.parquet.table.pagestore.topage;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.parquet.base.PageMaterializerFactory;
+import io.deephaven.parquet.base.materializers.LongFromBooleanMaterializer;
+import io.deephaven.parquet.base.materializers.LongFromIntMaterializer;
+import io.deephaven.parquet.base.materializers.LongFromUnsignedByteMaterializer;
 import io.deephaven.parquet.base.materializers.LongFromUnsignedIntMaterializer;
+import io.deephaven.parquet.base.materializers.LongFromUnsignedShortMaterializer;
 import io.deephaven.parquet.base.materializers.LongMaterializer;
 import org.jetbrains.annotations.NotNull;
 
@@ -26,10 +30,42 @@ public class ToLongPage<ATTR extends Any> implements ToPage<ATTR, long[]> {
         return FROM_UNSIGNED_INT;
     }
 
+    public static <ATTR extends Any> ToLongPage<ATTR> createFromInt(final Class<?> nativeType) {
+        verifyNativeType(nativeType);
+        // noinspection unchecked
+        return FROM_INT;
+    }
+
+    public static <ATTR extends Any> ToLongPage<ATTR> createFromUnsignedShort(final Class<?> nativeType) {
+        verifyNativeType(nativeType);
+        // noinspection unchecked
+        return FROM_UNSIGNED_SHORT;
+    }
+
+    public static <ATTR extends Any> ToLongPage<ATTR> createFromUnsignedByte(final Class<?> nativeType) {
+        verifyNativeType(nativeType);
+        // noinspection unchecked
+        return FROM_UNSIGNED_BYTE;
+    }
+
+    public static <ATTR extends Any> ToLongPage<ATTR> createFromBoolean(final Class<?> nativeType) {
+        verifyNativeType(nativeType);
+        // noinspection unchecked
+        return FROM_BOOLEAN;
+    }
+
     @SuppressWarnings("rawtypes")
     private static final ToLongPage FROM_LONG = new ToLongPage<>(LongMaterializer.FACTORY);
     @SuppressWarnings("rawtypes")
     private static final ToLongPage FROM_UNSIGNED_INT = new ToLongPage<>(LongFromUnsignedIntMaterializer.FACTORY);
+    @SuppressWarnings("rawtypes")
+    private static final ToLongPage FROM_INT = new ToLongPage<>(LongFromIntMaterializer.FACTORY);
+    @SuppressWarnings("rawtypes")
+    private static final ToLongPage FROM_UNSIGNED_SHORT = new ToLongPage<>(LongFromUnsignedShortMaterializer.FACTORY);
+    @SuppressWarnings("rawtypes")
+    private static final ToLongPage FROM_UNSIGNED_BYTE = new ToLongPage<>(LongFromUnsignedByteMaterializer.FACTORY);
+    @SuppressWarnings("rawtypes")
+    private static final ToLongPage FROM_BOOLEAN = new ToLongPage<>(LongFromBooleanMaterializer.FACTORY);
 
     private static void verifyNativeType(final Class<?> nativeType) {
         if (nativeType == null || long.class.equals(nativeType)) {

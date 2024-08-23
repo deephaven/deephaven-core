@@ -29,6 +29,9 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
       - name: Set JAVA_HOME
         run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
 
@@ -88,11 +91,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Dockerfile and context
-        uses: burrunan/gradle-cache-action@v1
-        with:
-          job-id: build-server
-          arguments: --scan outputVersion docker-server-slim:prepareDocker docker-server:prepareDockerAll
-          gradle-version: wrapper
+        run: ./gradlew --scan outputVersion docker-server-slim:prepareDocker docker-server:prepareDockerAll
 
       - name: Get Deephaven Version
         id: deephaven_version
@@ -158,6 +157,9 @@ jobs:
           distribution: 'temurin'
           java-version: '11'
 
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
       - name: Set JAVA_HOME
         run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
 
@@ -182,11 +184,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Dockerfile and context
-        uses: burrunan/gradle-cache-action@v1
-        with:
-          job-id: build-web
-          arguments: --scan outputVersion docker-web-plugin-packager:prepareDocker
-          gradle-version: wrapper
+        run: ./gradlew --scan outputVersion docker-web-plugin-packager:prepareDocker
 
       - name: Get Deephaven Version
         id: deephaven_version

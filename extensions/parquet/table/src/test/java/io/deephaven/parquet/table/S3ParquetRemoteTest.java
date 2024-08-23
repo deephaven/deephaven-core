@@ -87,6 +87,20 @@ public class S3ParquetRemoteTest {
     }
 
     @Test
+    public void readSampleParquetFilesFromPublicS3Part3() {
+        Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_REMOTE_S3_TESTING);
+        final S3Instructions s3Instructions = S3Instructions.builder()
+                .regionName("us-east-1")
+                .readTimeout(Duration.ofSeconds(60))
+                .credentials(Credentials.anonymous())
+                .build();
+        final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
+                .setSpecialInstructions(s3Instructions)
+                .build();
+        readTable("s3://redshift-downloads/redset/serverless/full.parquet", readInstructions).head(10).select();
+    }
+
+    @Test
     public void readKeyValuePartitionedParquetFromPublicS3() {
         Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_REMOTE_S3_TESTING);
         final S3Instructions s3Instructions = S3Instructions.builder()
