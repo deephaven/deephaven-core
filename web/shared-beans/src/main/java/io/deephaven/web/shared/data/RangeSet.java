@@ -3,8 +3,10 @@
 //
 package io.deephaven.web.shared.data;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import java.util.PrimitiveIterator;
 import java.util.stream.LongStream;
 
@@ -56,6 +58,9 @@ public class RangeSet {
 
     private Range[] sortedRanges = new Range[0];
 
+    private int firstWrongCacheEntry = 0;
+    private long[] cardinality = new long[0];
+
     public void addRange(Range range) {
         // if empty, add as the only entry
         if (sortedRanges.length == 0) {
@@ -68,11 +73,14 @@ public class RangeSet {
             Range overlap = range.overlap(existing);
             if (overlap != null) {
                 sortedRanges = new Range[] {overlap};
+                poisonCache(0);
             } else if (existing.compareTo(range) < 0) {
                 sortedRanges = new Range[] {existing, range};
+                poisonCache(1);
             } else {
                 assert existing.compareTo(range) > 0;
                 sortedRanges = new Range[] {range, existing};
+                poisonCache(0);
             }
             return;
         }
@@ -112,6 +120,7 @@ public class RangeSet {
                 System.arraycopy(sortedRanges, 0, newArray, 0, index);
             }
             newArray[index] = merged;
+            poisonCache(index);
             if (end < sortedRanges.length - 1) {
                 System.arraycopy(sortedRanges, end + 1, newArray, index + 1, sortedRanges.length - 1 - end);
             }
@@ -155,6 +164,7 @@ public class RangeSet {
                 System.arraycopy(sortedRanges, 0, newArray, 0, proposedIndex);
             }
             newArray[proposedIndex] = merged;
+            poisonCache(proposedIndex);
             if (end < sortedRanges.length - 1) {
                 System.arraycopy(sortedRanges, end + 1, newArray, proposedIndex + 1, sortedRanges.length - (end + 1));
             }
@@ -210,6 +220,7 @@ public class RangeSet {
                 }
                 replacement[index] = remaining[0];
                 replacement[index + 1] = remaining[1];
+                poisonCache(index);
                 System.arraycopy(sortedRanges, index + 1, replacement, index + 2, sortedRanges.length - (index + 1));
 
                 sortedRanges = replacement;
@@ -219,6 +230,7 @@ public class RangeSet {
             if (remaining.length == 1) {
                 // swap shortened item and move on
                 sortedRanges[index] = remaining[0];
+                poisonCache(index);
             } else {
                 assert remaining.length == 0 : "Array contains a surprising number of items: " + remaining.length;
 
@@ -235,6 +247,7 @@ public class RangeSet {
             System.arraycopy(sortedRanges, 0, replacement, 0, beforeCount);
             System.arraycopy(sortedRanges, beforeCount + toRemove, replacement, beforeCount,
                     sortedRanges.length - beforeCount - toRemove);
+            poisonCache(beforeCount + 1);
 
             sortedRanges = replacement;
         } else {
@@ -269,7 +282,11 @@ public class RangeSet {
      * @return long
      */
     public long size() {
-        return Arrays.stream(sortedRanges).mapToLong(Range::size).sum();
+        ensureCardinalityCache();
+        if (cardinality.length == 0) {
+            return 0;
+        }
+        return cardinality[cardinality.length - 1];
     }
 
     public boolean isEmpty() {
@@ -355,13 +372,31 @@ public class RangeSet {
         return Arrays.hashCode(sortedRanges);
     }
 
-
-    Range[] getSortedRanges() {
-        return sortedRanges;
+    /**
+     * Indicates that this item has been changed, and should be recomputed. Stores the earliest offset that should
+     * be recomputed.
+     */
+    private void poisonCache(int rangeIndex) {
+        firstWrongCacheEntry = Math.min(rangeIndex, firstWrongCacheEntry);
     }
 
-    void setSortedRanges(Range[] sortedRanges) {
-        this.sortedRanges = sortedRanges;
+    /**
+     * Ensures that the cardinality cache is correct, by correcting any values after the first wrong entry.
+     */
+    private void ensureCardinalityCache() {
+        assert firstWrongCacheEntry >= 0;// && firstWrongCacheEntry < cardinality.length;
+        if (cardinality.length < sortedRanges.length) {
+            long[] replacement = new long[sortedRanges.length];
+            System.arraycopy(cardinality, 0, replacement, 0, cardinality.length);
+            cardinality = replacement;
+        }
+        long cumulative = firstWrongCacheEntry == 0 ? 0 : cardinality[firstWrongCacheEntry - 1];
+        for (int i = firstWrongCacheEntry; i < sortedRanges.length; i++) {
+            cumulative += sortedRanges[i].size();
+            this.cardinality[i] = cumulative;
+        }
+        firstWrongCacheEntry = sortedRanges.length;
+        assert cardinality.length == sortedRanges.length;
     }
 
     public RangeSet subsetForPositions(RangeSet positions, boolean reversed) {
@@ -371,84 +406,79 @@ public class RangeSet {
         if (positions.isEmpty() || isEmpty()) {
             return empty();
         }
-        // if (positions.sortedRanges.length == 1) {
-        // // Desired range is contiguous
-        // List<Range> ranges = new ArrayList<>();
-        // final long offset = positions.getFirstRow();
-        // final long limit = positions.getLastRow();
-        // int i = 0;
-        // long position = 0;
-        // for (; i < sortedRanges.length; i++) {
-        // Range r = sortedRanges[i];
-        // if (offset < position + r.size()) {
-        // // Haven't hit the first range yet
-        // position += r.size();
-        // continue;
-        // }
-        // // This range is part of the desired range, take some/all of it
-        // //TODO wrong, we want the min to measure the index of the range to take
-        // ranges.add(new Range(position, Math.min(r.getLast(), limit)));
-        // position += r.size();
-        // i++;
-        // break;
-        // }
-        // for (; i < sortedRanges.length; i++) {
-        // Range r = sortedRanges[i];
-        // if (limit > position + r.size()) {
-        // // Past the end of the desired positions
-        // break;
-        // }
-        //// ranges.add(new Range(r.getFirst(), Math.))
-        //
-        //
-        // }
-        //
-        //
-        // return RangeSet.fromSortedRanges(ranges.toArray(Range[]::new));
-        // }
+        ensureCardinalityCache();
 
+        List<Range> ranges = new ArrayList<>();
 
-        PrimitiveIterator.OfLong positionIter = positions.indexIterator();
-        PrimitiveIterator.OfLong valueIter = indexIterator();
-        int i = 0;
-        RangeSet result = new RangeSet();
+        Iterator<Range> positionsIter = positions.rangeIterator();
 
-        // There must be at least one of each
-        long position = positionIter.nextLong();
-        long val = valueIter.nextLong();
-
-        done: do {
-            while (i != position) {
-                if (!valueIter.hasNext()) {
-                    break done;
-                }
-                i++;
-                val = valueIter.nextLong();
-            }
-
-            result.addRange(new Range(val, val));
-
-            if (!positionIter.hasNext() || !valueIter.hasNext()) {
+        int from = 0;
+        while (positionsIter.hasNext()) {
+            Range nextPosRange = positionsIter.next();
+            if (nextPosRange.getFirst() > size()) {
+                // Entire range is past the end - since ranges are sorted, we're done
                 break;
             }
-            position = positionIter.nextLong();
-            i++;
-            val = valueIter.nextLong();
-        } while (true);
+            long rangeToTake = nextPosRange.size();
 
-        return result;
+            System.out.println("cardinality.length=" + cardinality.length);
+            int pos = Arrays.binarySearch(cardinality, from, cardinality.length, nextPosRange.getFirst());
+
+            long first;
+            Range target;
+            long offset;
+            if (pos >= 0) {
+                // Position matches the last item in the current range
+                pos++;
+                target = sortedRanges[pos];
+//                first = target.getFirst();
+                offset = 1;
+            } else {
+                // Position matches an earlier item in
+                pos = -pos - 1;
+                target = sortedRanges[pos];
+                long c = cardinality[pos];
+                offset = c - nextPosRange.getFirst();// positive value to offset backwards from the end of target
+            }
+            assert offset >= 0;
+            first = target.getLast() - offset + 1;
+
+
+            while (rangeToTake > 0) {
+                long count = Math.min(offset, target.size());
+                Range res = new Range(first, first + count - 1);
+                assert count == res.size();
+                ranges.add(res);
+
+                rangeToTake -= count;
+                pos++;
+                if (pos >= sortedRanges.length) {
+                    break;
+                }
+                target = sortedRanges[pos];
+                first = target.getFirst();
+            }
+
+            from = pos;
+        }
+        return RangeSet.fromSortedRanges(ranges.toArray(Range[]::new));
     }
 
     public long get(long key) {
-        Iterator<Range> rangeIterator = rangeIterator();
-        long position = 0;
-        while (rangeIterator.hasNext()) {
-            Range next = rangeIterator.next();
-            if (key < position + next.size()) {
-                return next.getFirst() + (key - position);
-            }
-            position += next.size();
+        if (key == 0) {
+            return sortedRanges[0].getFirst();
         }
-        return -1;
+        ensureCardinalityCache();
+
+        int pos = Arrays.binarySearch(cardinality, key);
+
+        if (pos >= 0) {
+            return sortedRanges[pos + 1].getFirst();
+        }
+        Range target = sortedRanges[-pos - 1];
+        long c = cardinality[-pos - 1];
+        long offset = c - key;// positive value to offset backwards from the end of target
+        assert offset >= 0;
+        return target.getLast() - offset + 1;
     }
 }
