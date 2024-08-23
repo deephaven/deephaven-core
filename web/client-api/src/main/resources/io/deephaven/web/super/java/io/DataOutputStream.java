@@ -35,37 +35,37 @@ public class DataOutputStream extends FilterOutputStream implements DataOutput {
 
     @Override
     public void writeShort(int i) throws IOException {
-        out.write((i >> 8) & 0xFF);
-        out.write((i >> 0) & 0xFF);
+        super.write((i >> 8) & 0xFF);
+        super.write((i >> 0) & 0xFF);
         written += 2;
     }
 
     @Override
     public void writeChar(int i) throws IOException {
-        out.write((i >> 8) & 0xFF);
-        out.write((i >> 0) & 0xFF);
+        super.write((i >> 8) & 0xFF);
+        super.write((i >> 0) & 0xFF);
         written += 2;
     }
 
     @Override
     public void writeInt(int i) throws IOException {
-        out.write((i >> 24) & 0xFF);
-        out.write((i >> 16) & 0xFF);
-        out.write((i >> 8) & 0xFF);
-        out.write((i >> 0) & 0xFF);
+        super.write((i >> 24) & 0xFF);
+        super.write((i >> 16) & 0xFF);
+        super.write((i >> 8) & 0xFF);
+        super.write((i >> 0) & 0xFF);
         written += 4;
     }
 
     @Override
     public void writeLong(long l) throws IOException {
-        out.write((int) (l >> 56) & 0xFF);
-        out.write((int) (l >> 48) & 0xFF);
-        out.write((int) (l >> 40) & 0xFF);
-        out.write((int) (l >> 32) & 0xFF);
-        out.write((int) (l >> 24) & 0xFF);
-        out.write((int) (l >> 16) & 0xFF);
-        out.write((int) (l >> 8) & 0xFF);
-        out.write((int) (l >> 0) & 0xFF);
+        super.write((int) (l >> 56) & 0xFF);
+        super.write((int) (l >> 48) & 0xFF);
+        super.write((int) (l >> 40) & 0xFF);
+        super.write((int) (l >> 32) & 0xFF);
+        super.write((int) (l >> 24) & 0xFF);
+        super.write((int) (l >> 16) & 0xFF);
+        super.write((int) (l >> 8) & 0xFF);
+        super.write((int) (l >> 0) & 0xFF);
         written += 8;
     }
 
@@ -82,7 +82,7 @@ public class DataOutputStream extends FilterOutputStream implements DataOutput {
     @Override
     public void writeBytes(String s) throws IOException {
         for (int i = 0; i < s.length(); i++) {
-            out.write(s.charAt(i) & 0xFF);
+            super.write(s.charAt(i) & 0xFF);
         }
         written += s.length();
     }
@@ -91,8 +91,8 @@ public class DataOutputStream extends FilterOutputStream implements DataOutput {
     public void writeChars(String s) throws IOException {
         for (int i = 0; i < s.length(); i++) {
             char c = s.charAt(i);
-            out.write((c >> 8) & 0xFF);
-            out.write(c & 0xFF);
+            super.write((c >> 8) & 0xFF);
+            super.write(c & 0xFF);
         }
         written += s.length() * 2;
     }
