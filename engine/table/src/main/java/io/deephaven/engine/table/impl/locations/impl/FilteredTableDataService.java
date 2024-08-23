@@ -197,6 +197,16 @@ public class FilteredTableDataService extends AbstractTableDataService {
         }
 
         @Override
+        public void handleTableLocationKeysUpdate(
+                @Nullable Collection<ImmutableTableLocationKey> addedKeys,
+                @Nullable Collection<ImmutableTableLocationKey> removedKeys) {
+            final TableLocationProvider.Listener outputListener = getWrapped();
+            if (outputListener != null) {
+                outputListener.handleTableLocationKeysUpdate(addedKeys, removedKeys);
+            }
+        }
+
+        @Override
         public void handleException(@NotNull final TableDataException exception) {
             final TableLocationProvider.Listener outputListener = getWrapped();
             // See note in handleTableLocationKey.

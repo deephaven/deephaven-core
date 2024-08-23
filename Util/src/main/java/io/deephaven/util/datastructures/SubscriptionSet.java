@@ -221,18 +221,18 @@ public class SubscriptionSet<LISTENER_TYPE> {
     }
 
     /**
-     * Dispatch a binary notification to all subscribers. Clean up any GC'd subscriptions.
+     * Dispatch a notification to all subscribers. Clean up any GC'd subscriptions.
      *
      * @param procedure The notification procedure to invoke
-     * @param notification The notification to deliver
-     * @param token An additional token to deliver (usually a transaction token)
+     * @param firstNotification The first item to deliver
+     * @param secondNotification The second item to deliver (must be of the same type as {@code firstNotification})
      * @param activeOnly Whether to restrict this notification to active subscriptions only
      * @return Whether this operation caused the set to become <b>empty</b>
      */
     public final <NOTIFICATION_TYPE> boolean deliverNotification(
-            @NotNull final TriConsumer<LISTENER_TYPE, NOTIFICATION_TYPE, Object> procedure,
-            @Nullable final NOTIFICATION_TYPE notification,
-            @Nullable final Object token,
+            @NotNull final TriConsumer<LISTENER_TYPE, NOTIFICATION_TYPE, NOTIFICATION_TYPE> procedure,
+            @Nullable final NOTIFICATION_TYPE firstNotification,
+            @Nullable final NOTIFICATION_TYPE secondNotification,
             final boolean activeOnly) {
         final int initialSize = size;
         for (int si = 0; si < size;) {
@@ -243,7 +243,7 @@ public class SubscriptionSet<LISTENER_TYPE> {
                 continue; // si is not incremented in this case - we'll reconsider the same slot if necessary.
             }
             if (!activeOnly || currentEntry.isActive()) {
-                procedure.accept(currentListener, notification, token);
+                procedure.accept(currentListener, firstNotification, secondNotification);
             }
             ++si;
         }

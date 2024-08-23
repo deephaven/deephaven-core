@@ -49,7 +49,7 @@ public interface TableLocationProvider extends NamedImplementation {
          * <p>
          * If transactionToken is {@code null}, the key will be added to the pending additions immediately.
          * </p>
-         * 
+         *
          * @param tableLocationKey The new table location key.
          * @param transactionToken The token identifying the transaction.
          */
@@ -92,6 +92,20 @@ public interface TableLocationProvider extends NamedImplementation {
         default void handleTableLocationKeyRemoved(@NotNull ImmutableTableLocationKey tableLocationKey) {
             handleTableLocationKeyRemoved(tableLocationKey, null);
         }
+
+        /**
+         * <p>
+         * Notify the listener of collections of {@link TableLocationKey TableLocationKeys} added or removed while
+         * initiating or maintaining the location subscription. This should occur at most once per location, but the
+         * order of delivery is <i>not</i> guaranteed.
+         * </p>
+         *
+         * @param addedKeys Collection of table location keys that were added.
+         * @param removedKeys Collection of table location keys that were removed.
+         */
+        void handleTableLocationKeysUpdate(
+                @Nullable Collection<ImmutableTableLocationKey> addedKeys,
+                @Nullable Collection<ImmutableTableLocationKey> removedKeys);
     }
 
     /**
