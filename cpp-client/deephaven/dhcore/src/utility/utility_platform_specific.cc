@@ -2,6 +2,7 @@
  * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
  */
 #include <climits>
+#include <mutex>
 #include <optional>
 #include <string>
 #include "deephaven/dhcore/utility/utility.h"
@@ -72,21 +73,87 @@ std::string GetHostname() {
 #endif
 }
 
+namespace {
+/**
+ * This method wraps a function-local static mutex. The purpose of this mutex is to
+ * synchronize the calls GetEnv(), SetEnv(), and UnsetEnv().
+ *
+ * We use a function-local static rather than a global so we don't have to think about /
+ * worry about whether global initialization was done correctly on the mutex object.
+ * This "worry" might be unfounded.
+ */
+std::mutex &MutexForEnvInvocations() {
+  static std::mutex the_mutex;
+  return the_mutex;
+}
+}  // namespace
+
 std::optional<std::string> GetEnv(const std::string& envname) {
 #if defined(__unix__)
+  // Protect against concurrent XXXEnv() calls.
+  std::unique_lock guard(MutexForEnvInvocations());
   const char* ret = getenv(envname.c_str());
   if (ret != nullptr) {
     return std::string(ret);
   }
   return {};
 #elif defined(_WIN32)
+  // Protect against concurrent XXXEnv() calls.
+  std::unique_lock guard(MutexForEnvInvocations());
   static char ret[1024];
   size_t len;
   const errno_t err = getenv_s(&len, ret, sizeof(ret), envname.c_str());
-  if (err == 0) {
-    return std::string(ret);
+  // Return an unset optional if there's an error, or if the key is not found.
+  // len == 0 means "key not found" on Windows.
+  if (err != 0 || len == 0) {
+    return {};
   }
-  return {};
+  return std::string(ret);
+#else
+#error "Unsupported configuration"
+#endif
+}
+
+void SetEnv(const std::string& envname, const std::string& value) {
+#if defined(__unix__)
+  // Protect against concurrent XXXEnv() calls.
+  std::unique_lock guard(MutexForEnvInvocations());
+
+  auto res = setenv(envname.c_str(), value.c_str(), 1);
+  if (res != 0) {
+    auto message = fmt::format("setenv failed, error={}", strerror(errno));
+    throw std::runtime_error(
+        DEEPHAVEN_LOCATION_STR(message));
+  }
+#elif defined(_WIN32)
+  // Protect against concurrent XXXEnv() calls.
+  std::unique_lock guard(MutexForEnvInvocations());
+
+  auto res = _putenv_s(envname.c_str(), value.c_str());
+  if (res != 0) {
+    int lasterr = WSAGetLastError();
+    throw std::runtime_error(
+       DEEPHAVEN_LOCATION_STR("_putenv_s failed: error code ") +
+       std::to_string(lasterr));
+  }
+#else
+#error "Unsupported configuration"
+#endif
+}
+
+void UnsetEnv(const std::string& envname) {
+#if defined(__unix__)
+  // Protect against concurrent XXXEnv() calls.
+  std::unique_lock guard(MutexForEnvInvocations());
+
+  auto res = unsetenv(envname.c_str());
+  if (res != 0) {
+    auto message = fmt::format("unsetenv failed, error={}", strerror(errno));
+    throw std::runtime_error(
+        DEEPHAVEN_LOCATION_STR(message));
+  }
+#elif defined(_WIN32)
+  SetEnv(envname, "");
 #else
 #error "Unsupported configuration"
 #endif
