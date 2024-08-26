@@ -507,6 +507,16 @@ public class RangeSetTest {
         assertEquals(0, initialRange.size());
         initialRange.addRange(new Range(0, 1));
         assertEquals(2, initialRange.size());
+
+        initialRange = RangeSet.ofItems(1, 4, 5, 6);
+        assertEquals(RangeSet.ofItems(1, 4, 5, 6), initialRange.subsetForPositions(RangeSet.ofRange(0, 3), false));
+        assertEquals(RangeSet.ofItems(1, 5, 6), initialRange.subsetForPositions(RangeSet.ofItems(0, 2, 3), false));
+        assertEquals(RangeSet.ofItems(1, 4, 6), initialRange.subsetForPositions(RangeSet.ofItems(0, 1, 3), false));
+        assertEquals(RangeSet.ofItems(1, 4, 5), initialRange.subsetForPositions(RangeSet.ofItems(0, 1, 2), false));
+        assertEquals(RangeSet.ofItems(1, 5), initialRange.subsetForPositions(RangeSet.ofItems(0, 2), false));
+        assertEquals(RangeSet.ofItems(4, 5), initialRange.subsetForPositions(RangeSet.ofRange(1, 2), false));
+        assertEquals(RangeSet.ofItems(4, 5, 6), initialRange.subsetForPositions(RangeSet.ofRange(1, 3), false));
+        assertEquals(RangeSet.ofItems(5, 6), initialRange.subsetForPositions(RangeSet.ofRange(2, 3), false));
     }
 
     @Test

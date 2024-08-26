@@ -228,16 +228,16 @@ public abstract class WebBarrageSubscription {
 
         @Override
         public void applyUpdates(WebBarrageMessage message) {
+            RangeSet populatedRows = serverViewport != null
+                            ? currentRowSet.subsetForPositions(serverViewport, serverReverseViewport)
+                            : null;
+
             if (message.isSnapshot) {
                 updateServerViewport(message.snapshotRowSet, message.snapshotColumns, message.snapshotRowSetIsReversed);
                 viewportChangedHandler.onServerViewportChanged(serverViewport, serverColumns, serverReverseViewport);
             }
 
             final boolean mightBeInitialSnapshot = getCurrentRowSet().isEmpty() && message.isSnapshot;
-
-            RangeSet populatedRows =
-                    serverViewport != null ? currentRowSet.subsetForPositions(serverViewport, serverReverseViewport)
-                            : null;
 
             // Apply removes to our local rowset
             message.rowsRemoved.rangeIterator().forEachRemaining(currentRowSet::removeRange);
@@ -346,7 +346,8 @@ public abstract class WebBarrageSubscription {
                 PrimitiveIterator.OfLong destIter = destinationRowSet.indexIterator();
                 while (srcIter.hasNext()) {
                     assert destIter.hasNext();
-                    redirectedIndexes.put(srcIter.next(), destIter.next());
+                    Long old = redirectedIndexes.put(srcIter.next(), destIter.next());
+                    assert old == null;
                 }
                 assert !destIter.hasNext();
             }
@@ -367,8 +368,7 @@ public abstract class WebBarrageSubscription {
                 }
                 assert !destIterator.hasNext();
             }
-            if (serverViewport != null) {
-                assert populatedRows != null;
+            if (serverViewport != null && populatedRows != null) {
                 RangeSet newPopulated = currentRowSet.subsetForPositions(serverViewport, serverReverseViewport);
                 newPopulated.rangeIterator().forEachRemaining(populatedRows::removeRange);
                 freeRows(populatedRows);

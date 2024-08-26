@@ -230,13 +230,10 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
                 barrageSubscription,
                 rowStyleColumn,
                 columns,
-                transformRowsetForConsumer(rowsAdded, barrageSubscription.getServerViewport(),
-                        barrageSubscription.isReversed()),
-                transformRowsetForConsumer(rowsRemoved, barrageSubscription.getServerViewport(),
-                        barrageSubscription.isReversed()),
-                transformRowsetForConsumer(totalMods, barrageSubscription.getServerViewport(),
-                        barrageSubscription.isReversed()),
-                barrageSubscription.getServerViewport() != null ? null : shifted);
+                rowsAdded,
+                rowsRemoved,
+                totalMods,
+                shifted);
         CustomEventInit<UpdateEventData> event = CustomEventInit.create();
         event.setDetail(detail);
         fireEvent(TableSubscription.EVENT_UPDATED, event);
@@ -366,14 +363,11 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
         public JsArray<TableData.Row> getRows() {
             if (allRows == null) {
                 allRows = new JsArray<>();
-                RangeSet rowSet = subscription.getCurrentRowSet();
-                RangeSet positions =
-                        transformRowsetForConsumer(rowSet, subscription.getServerViewport(), subscription.isReversed());
-                positions.indexIterator().forEachRemaining((long index) -> {
+                fullRowSet.getRange().indexIterator().forEachRemaining((long index) -> {
                     allRows.push(makeRow(index));
                 });
                 if (JsSettings.isDevMode()) {
-                    assert allRows.length == positions.size();
+                    assert allRows.length == fullRowSet.getSize();
                 }
             }
             return (JsArray<Row>) (JsArray) allRows;

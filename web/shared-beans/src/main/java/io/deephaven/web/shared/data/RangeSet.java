@@ -438,14 +438,13 @@ public class RangeSet {
             }
             long rangeToTake = nextPosRange.size();
 
-            int pos = Arrays.binarySearch(cardinality, from, cardinality.length, nextPosRange.getFirst());
+            int pos = Arrays.binarySearch(cardinality, from, cardinality.length, nextPosRange.getFirst() + 1);
 
             long first;
             Range target;
             long offset;
             if (pos >= 0) {
                 // Position matches the last item in the current range
-                pos++;
                 target = sortedRanges[pos];
                 offset = 1;
             } else {
