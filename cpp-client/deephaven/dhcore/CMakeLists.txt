@@ -23,6 +23,7 @@ set(ALL_FILES
     src/immerutil/immer_column_source.cc
     src/interop/testapi/basic_interop_interactions.cc
     src/interop/interop_util.cc
+    src/interop/utility_interop.cc
     src/ticking/barrage_processor.cc
     src/ticking/immer_table_state.cc
     src/ticking/index_decoder.cc
@@ -52,6 +53,7 @@ set(ALL_FILES
     include/public/deephaven/dhcore/container/row_sequence.h
     include/public/deephaven/dhcore/interop/testapi/basic_interop_interactions.h
     include/public/deephaven/dhcore/interop/interop_util.h
+    include/public/deephaven/dhcore/interop/utility_interop.h
     include/public/deephaven/dhcore/ticking/barrage_processor.h
     include/public/deephaven/dhcore/ticking/ticking.h
     include/public/deephaven/dhcore/utility/cython_support.h
