@@ -229,8 +229,8 @@ public abstract class WebBarrageSubscription {
         @Override
         public void applyUpdates(WebBarrageMessage message) {
             RangeSet populatedRows = serverViewport != null
-                            ? currentRowSet.subsetForPositions(serverViewport, serverReverseViewport)
-                            : null;
+                    ? currentRowSet.subsetForPositions(serverViewport, serverReverseViewport)
+                    : null;
 
             if (message.isSnapshot) {
                 updateServerViewport(message.snapshotRowSet, message.snapshotColumns, message.snapshotRowSetIsReversed);
@@ -346,8 +346,7 @@ public abstract class WebBarrageSubscription {
                 PrimitiveIterator.OfLong destIter = destinationRowSet.indexIterator();
                 while (srcIter.hasNext()) {
                     assert destIter.hasNext();
-                    Long old = redirectedIndexes.put(srcIter.next(), destIter.next());
-                    assert old == null;
+                    redirectedIndexes.put(srcIter.next(), destIter.next());
                 }
                 assert !destIter.hasNext();
             }
