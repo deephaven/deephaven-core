@@ -281,12 +281,14 @@ Notes
 
 9. Now configure the build for Deephaven Core:
    ``` 
-   cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake -DCMAKE_INSTALL_PREFIX=%DHINSTALL% -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo
+   cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%/scripts/buildsystems/vcpkg.cmake -DCMAKE_INSTALL_PREFIX=%DHINSTALL% -DX_VCPKG_APPLOCAL_DEPS_INSTALL=ON
    ```
    
-10. Finally, build and install Deephaven Core:
+10. Finally, build and install Deephaven Core. Note that the build type (RelWithDebInfo) is specified differently for the Windows build
+    than it is for the Ubuntu build. For Windows, we specify the configuration type directly in the build step using the --config flag.
    ```
-   cmake --build build --target install
+   # Replace '16' by the number of CPU threads you want to use for building
+   cmake --build build --config RelWithDebInfo --target install -- /p:CL_MPCount=16 -m:1
    ```
 
 11. Run the tests.
