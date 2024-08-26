@@ -26,7 +26,6 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
-import io.deephaven.util.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -76,17 +75,6 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
             new KeyedObjectHashMap<>(INCLUDED_TABLE_LOCATION_ENTRY_KEY);
 
     /**
-     * List of locations that were removed this cycle. Will be cleared after each update.
-     */
-    private final List<IncludedTableLocationEntry> removedTableLocations = new ArrayList<>();
-
-    /**
-     * The next region index to assign to a location. We increment for each new location and will not reuse indices from
-     * regions that were removed.
-     */
-    private final MutableInt nextRegionIndex = new MutableInt(0);
-
-    /**
      * Table locations that provide the regions backing our column sources, in insertion order.
      */
     private final List<IncludedTableLocationEntry> orderedIncludedTableLocations = new ArrayList<>();
@@ -122,7 +110,27 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
     @ReferentialIntegrity
     private Runnable delayedErrorReference;
 
-    final List<IncludedTableLocationEntry> invalidatedLocations;
+    /**
+     * The next region index to assign to a location. We increment for each new location and will not reuse indices from
+     * regions that were removed.
+     */
+    private int nextRegionIndex = 0;
+
+    /**
+     * List of locations that were removed this cycle. Will be swapped each cycle with {@code invalidatedLocations} and
+     * cleared.
+     */
+    private List<IncludedTableLocationEntry> removedTableLocations = new ArrayList<>();
+
+    /**
+     * List of locations to invalidate at the end of the cycle. Swapped with {@code removedTableLocations} each cycle to
+     * avoid reallocating.
+     */
+    private List<IncludedTableLocationEntry> invalidatedLocations = new ArrayList<>();
+
+    /**
+     * Will invalidate the locations at the end of the cycle after all downstream updates are complete.
+     */
     final UpdateCommitter<?> invalidateCommitter;
 
     /**
@@ -184,12 +192,13 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
             }
         }
 
-        invalidatedLocations = new ArrayList<>();
         invalidateCommitter = new UpdateCommitter<>(this,
                 ExecutionContext.getContext().getUpdateGraph(),
                 (ignored) -> {
-                    invalidatedLocations.forEach(IncludedTableLocationEntry::invalidate);
-                    invalidatedLocations.clear();
+                    synchronized (this) {
+                        invalidatedLocations.forEach(IncludedTableLocationEntry::invalidate);
+                        invalidatedLocations.clear();
+                    }
                 });
     }
 
@@ -223,7 +232,7 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
     }
 
     @Override
-    public boolean removeLocationKey(@NotNull final ImmutableTableLocationKey locationKey) {
+    public synchronized boolean removeLocationKey(@NotNull final ImmutableTableLocationKey locationKey) {
         final IncludedTableLocationEntry includedLocation = includedTableLocations.remove(locationKey);
         final EmptyTableLocationEntry emptyLocation = emptyTableLocations.remove(locationKey);
 
@@ -234,9 +243,6 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
         } else if (includedLocation != null) {
             orderedIncludedTableLocations.remove(includedLocation);
             removedTableLocations.add(includedLocation);
-
-            // Mark this location for invalidation.
-            invalidatedLocations.add(includedLocation);
             invalidateCommitter.maybeActivate();
             return true;
         }
@@ -327,7 +333,12 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
             removedRowSetBuilder.appendRowSequenceWithOffset(removedLocation.location.getRowSet(), regionFirstKey);
             removedRegionBuilder.appendKey(removedLocation.regionIndex);
         }
-        removedTableLocations.clear();
+
+        // Swap invalidatedLocations with removedTableLocations.
+        final List<IncludedTableLocationEntry> tmpTableLocations = removedTableLocations;
+        removedTableLocations = invalidatedLocations;
+        invalidatedLocations = tmpTableLocations;
+        Assert.eqTrue(removedTableLocations.isEmpty(), "removedTableLocations.isEmpty()");
 
         final RowSetBuilderSequential modifiedRegionBuilder = initializing ? null : RowSetFactory.builderSequential();
 
@@ -370,8 +381,8 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
 
         final RowSetBuilderSequential addedRegionBuilder = RowSetFactory.builderSequential();
 
-        final int prevMaxIndex = nextRegionIndex.get();
-        final int maxIndex = nextRegionIndex.get() + (entriesToInclude.isEmpty() ? 0 : entriesToInclude.size());
+        final int prevMaxIndex = nextRegionIndex;
+        final int maxIndex = nextRegionIndex + (entriesToInclude.isEmpty() ? 0 : entriesToInclude.size());
         if (!entriesToInclude.isEmpty()) {
             partitioningColumnValueSources.values().forEach(
                     (final WritableColumnSource<?> wcs) -> wcs.ensureCapacity(maxIndex));
@@ -528,7 +539,7 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
         private final TableLocation location;
         private final TableLocationUpdateSubscriptionBuffer subscriptionBuffer;
 
-        private final int regionIndex = nextRegionIndex.getAndIncrement();
+        private final int regionIndex = nextRegionIndex++;
         private final List<ColumnLocationState<?>> columnLocationStates = new ArrayList<>();
 
         /**

@@ -3,7 +3,6 @@
 //
 package io.deephaven.engine.table.impl.locations.impl;
 
-import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.locations.*;
@@ -30,12 +29,41 @@ public abstract class AbstractTableLocationProvider
 
     private static final Set<TableLocationKey> EMPTY_TABLE_LOCATION_KEYS = Collections.emptySet();
 
+    /**
+     * Helper class to manage a transaction of added and removed location keys.
+     */
+    private static class Transaction {
+        Set<TableLocationKey> locationsAdded = EMPTY_TABLE_LOCATION_KEYS;
+        Set<TableLocationKey> locationsRemoved = EMPTY_TABLE_LOCATION_KEYS;
+
+        void addlocationKey(TableLocationKey locationKey) {
+            if (locationsAdded == EMPTY_TABLE_LOCATION_KEYS) {
+                locationsAdded = new HashSet<>();
+            } else if (locationsAdded.contains(locationKey)) {
+                throw new IllegalStateException("TableLocationKey " + locationKey
+                        + " was already added in this transaction.");
+            }
+            locationsAdded.add(locationKey);
+        }
+
+        void removeLocationKey(TableLocationKey locationKey) {
+            if (locationsRemoved == EMPTY_TABLE_LOCATION_KEYS) {
+                locationsRemoved = new HashSet<>();
+            } else if (locationsRemoved.contains(locationKey)) {
+                throw new IllegalStateException("TableLocationKey " + locationKey
+                        + " was already removed and has not been replaced.");
+            } else if (locationsAdded.contains(locationKey)) {
+                throw new IllegalStateException("TableLocationKey " + locationKey
+                        + " was removed after being added in the same transaction.");
+            }
+            locationsRemoved.add(locationKey);
+        }
+    }
+
     private final ImmutableTableKey tableKey;
 
     // These sets represent open transactions that are being accumulated.
-    private final Set<Object> transactionTokens = new HashSet<>();
-    private final Map<Object, Set<TableLocationKey>> accumulatedLocationsAdded = new HashMap<>();
-    private final Map<Object, Set<TableLocationKey>> accumulatedLocationsRemoved = new HashMap<>();
+    private final Map<Object, Transaction> transactions = new HashMap<>();
 
     private final Object transactionLock = new Object();
 
@@ -114,10 +142,6 @@ public abstract class AbstractTableLocationProvider
         listener.handleTableLocationKeysUpdate(unmodifiableTableLocationKeys, null);
     }
 
-    protected final void handleTableLocationKeyAdded(@NotNull final TableLocationKey locationKey) {
-        handleTableLocationKeyAdded(locationKey, null);
-    }
-
     /**
      * Internal method to begin an atomic transaction of location adds and removes.
      *
@@ -126,17 +150,10 @@ public abstract class AbstractTableLocationProvider
     protected void beginTransaction(@NotNull final Object token) {
         synchronized (transactionLock) {
             // Verify that we can start a new transaction with this token.
-            if (transactionTokens.contains(token)) {
+            if (transactions.containsKey(token)) {
                 throw new IllegalStateException("A transaction with token " + token + " is currently open.");
             }
-            Assert.eqFalse(accumulatedLocationsAdded.containsKey(token),
-                    "accumulatedLocationsAdded.containsKey(token)");
-            Assert.eqFalse(accumulatedLocationsRemoved.containsKey(token),
-                    "accumulatedLocationsRemoved.containsKey(token)");
-
-            transactionTokens.add(token);
-            accumulatedLocationsAdded.put(token, EMPTY_TABLE_LOCATION_KEYS);
-            accumulatedLocationsRemoved.put(token, EMPTY_TABLE_LOCATION_KEYS);
+            transactions.put(token, new Transaction());
         }
     }
 
@@ -146,26 +163,26 @@ public abstract class AbstractTableLocationProvider
      * @param token A token to identify the transaction
      */
     protected void endTransaction(@NotNull final Object token) {
-        final Set<TableLocationKey> locationsAdded;
-        final Set<TableLocationKey> locationsRemoved;
+        final Transaction transaction;
         synchronized (transactionLock) {
             // Verify that this transaction is open.
-            if (!transactionTokens.remove(token)) {
+            transaction = transactions.remove(token);
+            if (transaction == null) {
                 throw new IllegalStateException("No transaction with token " + token + " is currently open.");
             }
-
-            locationsAdded = accumulatedLocationsAdded.remove(token);
-            locationsRemoved = accumulatedLocationsRemoved.remove(token);
         }
 
-        final Collection<ImmutableTableLocationKey> addedImmutableKeys = new ArrayList<>(locationsAdded.size());
-        final Collection<ImmutableTableLocationKey> removedImmutableKeys = new ArrayList<>(locationsRemoved.size());
+        final Collection<ImmutableTableLocationKey> addedImmutableKeys =
+                new ArrayList<>(transaction.locationsAdded.size());
+        final Collection<ImmutableTableLocationKey> removedImmutableKeys =
+                new ArrayList<>(transaction.locationsRemoved.size());
 
         // Process the accumulated adds and removes under a lock on `tableLocations` to keep modifications atomic to
         // other holders of this lock.
         synchronized (tableLocations) {
-            if (locationsAdded != EMPTY_TABLE_LOCATION_KEYS || locationsRemoved != EMPTY_TABLE_LOCATION_KEYS) {
-                for (TableLocationKey locationKey : locationsAdded) {
+            if (transaction.locationsAdded != EMPTY_TABLE_LOCATION_KEYS
+                    || transaction.locationsRemoved != EMPTY_TABLE_LOCATION_KEYS) {
+                for (TableLocationKey locationKey : transaction.locationsAdded) {
                     locationCreatedRecorder = false;
                     final Object result = tableLocations.putIfAbsent(locationKey, this::observeInsert);
                     visitLocationKey(locationKey);
@@ -175,7 +192,7 @@ public abstract class AbstractTableLocationProvider
                     }
                 }
 
-                for (TableLocationKey locationKey : locationsRemoved) {
+                for (TableLocationKey locationKey : transaction.locationsRemoved) {
                     final Object removedLocation = tableLocations.remove(locationKey);
                     if (removedLocation != null) {
                         maybeClearLocationForRemoval(removedLocation);
@@ -190,10 +207,10 @@ public abstract class AbstractTableLocationProvider
                 // Push the notifications to the subscribers.
                 if ((!addedImmutableKeys.isEmpty() || !removedImmutableKeys.isEmpty())
                         && subscriptions.deliverNotification(
-                        Listener::handleTableLocationKeysUpdate,
-                        addedImmutableKeys,
-                        removedImmutableKeys,
-                        true)) {
+                                Listener::handleTableLocationKeysUpdate,
+                                addedImmutableKeys,
+                                removedImmutableKeys,
+                                true)) {
                     onEmpty();
                 }
             }
@@ -204,7 +221,17 @@ public abstract class AbstractTableLocationProvider
      * Deliver a possibly-new key.
      *
      * @param locationKey The new key
-     * @param transactionToken The token identifying the transaction
+     * @apiNote This method is intended to be used by subclasses or by tightly-coupled discovery tools.
+     */
+    protected final void handleTableLocationKeyAdded(@NotNull final TableLocationKey locationKey) {
+        handleTableLocationKeyAdded(locationKey, null);
+    }
+
+    /**
+     * Deliver a possibly-new key, optionally as part of a transaction.
+     *
+     * @param locationKey The new key
+     * @param transactionToken The token identifying the transaction (or null if not part of a transaction)
      * @apiNote This method is intended to be used by subclasses or by tightly-coupled discovery tools.
      */
     protected final void handleTableLocationKeyAdded(
@@ -213,7 +240,7 @@ public abstract class AbstractTableLocationProvider
 
         if (!supportsSubscriptions()) {
             tableLocations.putIfAbsent(locationKey, TableLocationKey::makeImmutable);
-            visitLocationKey(toKeyImmutable(locationKey));
+            visitLocationKey(locationKey);
             return;
         }
 
@@ -224,16 +251,12 @@ public abstract class AbstractTableLocationProvider
             // 2. If the location was already removed in this transaction, we have a `replace` operation which is not a
             // logical error (although it may not be supported by all consumers).
             synchronized (transactionLock) {
-                if (accumulatedLocationsAdded.get(transactionToken) == EMPTY_TABLE_LOCATION_KEYS) {
-                    accumulatedLocationsAdded.put(transactionToken, new HashSet<>());
+                final Transaction transaction = transactions.get(transactionToken);
+                if (transaction == null) {
+                    throw new IllegalStateException(
+                            "No transaction with token " + transactionToken + " is currently open.");
                 }
-                final Set<TableLocationKey> locationsAdded = accumulatedLocationsAdded.get(transactionToken);
-
-                if (accumulatedLocationsAdded.containsKey(locationKey)) {
-                    throw new IllegalStateException("TableLocationKey " + locationKey
-                            + " was added multiple times in the same transaction.");
-                }
-                locationsAdded.add(locationKey);
+                transaction.addlocationKey(locationKey);
             }
             return;
         }
@@ -388,6 +411,12 @@ public abstract class AbstractTableLocationProvider
         handleTableLocationKeyRemoved(locationKey, null);
     }
 
+    /**
+     * Handle a removal. Notify subscribers that {@code locationKey} was removed if necessary. See
+     * {@link #removeTableLocationKey(TableLocationKey)} for additional discussions of semantics.
+     *
+     * @param locationKey the TableLocation that was removed
+     */
     protected final void handleTableLocationKeyRemoved(@NotNull final TableLocationKey locationKey) {
         handleTableLocationKeyRemoved(locationKey, null);
     }
@@ -397,7 +426,7 @@ public abstract class AbstractTableLocationProvider
      * necessary. See {@link #removeTableLocationKey(TableLocationKey)} for additional discussions of semantics.
      * 
      * @param locationKey the TableLocation that was removed
-     * @param transactionToken The token identifying the transaction
+     * @param transactionToken The token identifying the transaction (or null if not part of a transaction)
      */
     protected void handleTableLocationKeyRemoved(
             @NotNull final TableLocationKey locationKey,
@@ -414,19 +443,12 @@ public abstract class AbstractTableLocationProvider
         // add then remove the same location.
         if (transactionToken != null) {
             synchronized (transactionLock) {
-                if (accumulatedLocationsRemoved.get(transactionToken) == EMPTY_TABLE_LOCATION_KEYS) {
-                    accumulatedLocationsRemoved.put(transactionToken, new HashSet<>());
+                final Transaction transaction = transactions.get(transactionToken);
+                if (transaction == null) {
+                    throw new IllegalStateException(
+                            "No transaction with token " + transactionToken + " is currently open.");
                 }
-                final Set<TableLocationKey> locationsRemoved = accumulatedLocationsRemoved.get(transactionToken);
-
-                if (accumulatedLocationsRemoved.containsKey(locationKey)) {
-                    throw new IllegalStateException("TableLocationKey " + locationKey
-                            + " was removed multiple times in the same transaction.");
-                } else if (accumulatedLocationsAdded.containsKey(locationKey)) {
-                    throw new IllegalStateException("TableLocationKey " + locationKey
-                            + " was removed after being added in the same transaction.");
-                }
-                locationsRemoved.add(locationKey);
+                transaction.removeLocationKey(locationKey);
                 return;
             }
         }

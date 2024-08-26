@@ -162,7 +162,7 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
             // Verify that we don't have stacked removes (without intervening adds).
             if (pendingLocationsRemoved.contains(tableLocationKey)) {
                 throw new IllegalStateException("TableLocationKey " + tableLocationKey
-                        + " was already removed by a previous transaction.");
+                        + " was already removed and has not been replaced.");
             }
             if (pendingLocationsRemoved == EMPTY_TABLE_LOCATION_KEYS) {
                 pendingLocationsRemoved = new HashSet<>();
@@ -185,7 +185,7 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
                     // Verify that we don't have stacked removes.
                     if (pendingLocationsRemoved.contains(removedTableLocationKey)) {
                         throw new IllegalStateException("TableLocationKey " + removedTableLocationKey
-                                + " was already removed by a previous transaction.");
+                                + " was already removed and has not been replaced.");
                     }
                     if (pendingLocationsRemoved == EMPTY_TABLE_LOCATION_KEYS) {
                         pendingLocationsRemoved = new HashSet<>();

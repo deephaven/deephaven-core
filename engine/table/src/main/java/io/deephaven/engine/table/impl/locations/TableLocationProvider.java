@@ -51,7 +51,8 @@ public interface TableLocationProvider extends NamedImplementation {
          * </p>
          *
          * @param tableLocationKey The new table location key.
-         * @param transactionToken The token identifying the transaction.
+         * @param transactionToken The token identifying the transaction, or {@code null} if this addition is not part
+         *        of a transaction.
          */
         void handleTableLocationKeyAdded(
                 @NotNull ImmutableTableLocationKey tableLocationKey,
@@ -60,7 +61,8 @@ public interface TableLocationProvider extends NamedImplementation {
         /**
          * Notify the listener of a {@link TableLocationKey} encountered while initiating or maintaining the location
          * subscription. This should occur at most once per location, but the order of delivery is <i>not</i>
-         * guaranteed. Uses {@code this} as the token.
+         * guaranteed. This addition is not part of any transaction, and is equivalent to
+         * {@code handleTableLocationKeyAdded(tableLocationKey, null);} by default.
          *
          * @param tableLocationKey The new table location key.
          */
@@ -77,14 +79,16 @@ public interface TableLocationProvider extends NamedImplementation {
          * </p>
          *
          * @param tableLocationKey The table location key that was removed.
-         * @param transactionToken The token identifying the transaction.
+         * @param transactionToken The token identifying the transaction, or {@code null} if this addition is not part
+         *        of a transaction.
          */
         void handleTableLocationKeyRemoved(
                 @NotNull ImmutableTableLocationKey tableLocationKey,
                 @Nullable Object transactionToken);
 
         /**
-         * Notify the listener of a {@link TableLocationKey} that has been removed. Uses {@code this} as the token.
+         * Notify the listener of a {@link TableLocationKey} that has been removed. This addition is not part of any
+         * transaction, and is equivalent to {@code handleTableLocationKeyAdded(tableLocationKey, null);} by default.
          *
          * @param tableLocationKey The table location key that was removed.
          */
