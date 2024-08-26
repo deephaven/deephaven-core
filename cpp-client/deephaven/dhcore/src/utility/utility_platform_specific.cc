@@ -39,7 +39,8 @@ std::string GetHostname() {
   addrinfo *info;
   const int r = getaddrinfo(hostname, nullptr, &hints, &info);
   if (r != 0 || info == nullptr) {
-    throw std::runtime_error(DEEPHAVEN_LOCATION_STR("getaddrinfo failed: ") + gai_strerror(r));
+    auto message = fmt::format("getaddrinfo failed: {}", gai_strerror(r));
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
   // Of all the alternatives, pick the longest.
   std::size_t maxlen = std::strlen(info->ai_canonname);
@@ -62,9 +63,8 @@ std::string GetHostname() {
   const int r = gethostname(hostname, sizeof(hostname));
   if (r != 0) {
     int lasterr = WSAGetLastError();
-    throw std::runtime_error(
-       DEEPHAVEN_LOCATION_STR("gethostname failed: error code ") +
-       std::to_string(lasterr));
+    auto message = fmt::format("gethostname failed: error code {}", lasterr);
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
   return std::string(hostname);
 #else
