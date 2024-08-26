@@ -146,7 +146,7 @@ void SetEnv(const std::string& envname, const std::string& value) {
   auto res = _putenv_s(envname.c_str(), value.c_str());
   if (res != 0) {
     int lasterr = WSAGetLastError();
-    var message = fmt::format("_putenv_s failed: error code {}", lasterr);
+    auto message = fmt::format("_putenv_s failed: error code {}", lasterr);
     throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
 #else
