@@ -488,6 +488,25 @@ public class RangeSetTest {
         assertEquals(RangeSet.ofItems(2, 4, 6), initialRange.subsetForPositions(RangeSet.ofRange(0, 2), false));
         assertEquals(initialRange, initialRange.subsetForPositions(RangeSet.ofRange(0, 3), false));
         assertEquals(initialRange, initialRange.subsetForPositions(RangeSet.ofRange(0, 9), false));
+
+        initialRange = RangeSet.ofRange(10, 109);
+        assertEquals(RangeSet.ofItems(12, 14), initialRange.subsetForPositions(RangeSet.ofItems(2, 4), false));
+        assertEquals(RangeSet.ofItems(12, 14), initialRange.subsetForPositions(RangeSet.ofItems(2, 4, 101), false));
+
+        assertEquals(RangeSet.empty(), RangeSet.empty().subsetForPositions(RangeSet.ofItems(0), false));
+        assertEquals(RangeSet.ofItems(99),
+                RangeSet.ofRange(0, 99).subsetForPositions(RangeSet.ofRange(100, 104), false));
+
+        initialRange = RangeSet.empty();
+        assertEquals(0, initialRange.size());
+        initialRange.addRange(new Range(0, 1));
+        assertEquals(2, initialRange.size());
+        initialRange.addRange(new Range(2, 3));
+        assertEquals(4, initialRange.size());
+        initialRange.removeRange(new Range(0, 3));
+        assertEquals(0, initialRange.size());
+        initialRange.addRange(new Range(0, 1));
+        assertEquals(2, initialRange.size());
     }
 
     @Test
@@ -496,7 +515,7 @@ public class RangeSetTest {
         RangeSet initialRange = RangeSet.ofItems(rows);
 
         for (int i = 0; i < rows.length; i++) {
-            assertEquals(rows[i], initialRange.get(i));
+            assertEquals("i=" + i, rows[i], initialRange.get(i));
         }
 
         initialRange.removeRange(new Range(0, 1));
