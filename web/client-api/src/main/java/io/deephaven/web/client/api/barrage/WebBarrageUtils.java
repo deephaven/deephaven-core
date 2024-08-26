@@ -115,7 +115,7 @@ public class WebBarrageUtils {
         } else {
             s = new RangeSet();
             for (RangeSet rangeSet : rangeSets) {
-                rangeSet.rangeIterator().forEachRemaining(s::addRange);
+                s.addRangeSet(rangeSet);
             }
         }
 

@@ -61,6 +61,16 @@ public class RangeSet {
     private int firstWrongCacheEntry = 0;
     private long[] cardinality = new long[0];
 
+    public void addRangeSet(RangeSet rangeSet) {
+        if (sortedRanges.length == 0 && rangeSet.sortedRanges.length != 0) {
+            sortedRanges = new Range[rangeSet.sortedRanges.length];
+            System.arraycopy(rangeSet.sortedRanges, 0, sortedRanges, 0, sortedRanges.length);
+            poisonCache(0);
+        } else {
+            rangeSet.rangeIterator().forEachRemaining(this::addRange);
+        }
+    }
+
     public void addRange(Range range) {
         // if empty, add as the only entry
         if (sortedRanges.length == 0) {

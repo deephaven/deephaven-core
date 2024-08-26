@@ -202,7 +202,7 @@ public abstract class WebBarrageSubscription {
             }
 
             message.rowsRemoved.rangeIterator().forEachRemaining(currentRowSet::removeRange);
-            message.rowsAdded.rangeIterator().forEachRemaining(currentRowSet::addRange);
+            currentRowSet.addRangeSet(message.rowsAdded);
             state.setSize(message.rowsAdded.size());
             dataChangedHandler.onDataChanged(message.rowsAdded, message.rowsRemoved, RangeSet.empty(), message.shifted,
                     new BitSet(0));
@@ -305,12 +305,12 @@ public abstract class WebBarrageSubscription {
                 populatedRowsetShifter.flush();
             }
 
-            message.rowsAdded.rangeIterator().forEachRemaining(currentRowSet::addRange);
+            currentRowSet.addRangeSet(message.rowsAdded);
 
             RangeSet totalMods = new RangeSet();
             for (int i = 0; i < message.modColumnData.length; i++) {
                 WebBarrageMessage.ModColumnData column = message.modColumnData[i];
-                column.rowsModified.rangeIterator().forEachRemaining(totalMods::addRange);
+                totalMods.addRangeSet(column.rowsModified);
             }
 
             if (!message.rowsIncluded.isEmpty()) {
