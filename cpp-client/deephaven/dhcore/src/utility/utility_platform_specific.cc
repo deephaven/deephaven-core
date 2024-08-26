@@ -78,7 +78,22 @@ namespace {
  * This method wraps a function-local static mutex. The purpose of this mutex is to
  * synchronize the calls GetEnv(), SetEnv(), and UnsetEnv().
  *
- * We use a function-local static rather than a global so we don't have to think about /
+ * The rationale for synchronizing these calls is that they are not guaranteed
+ * reentrant on either Linux or Windows. On Linux, "man getenv" says
+ *
+ *   The implementation of getenv() is not required to  be  reentrant.   The
+ *   string pointed to by the return value of getenv() may be statically al‐
+ *   located, and  can  be  modified  by  a  subsequent  call  to  getenv(),
+ *   putenv(3), setenv(3), or unsetenv(3).
+ *
+ * On Windows, https://learn.microsoft.com/en-us/cpp/c-runtime-library/reference/putenv-wputenv?view=msvc-170
+ * says
+ *
+ *   The _putenv and _getenv families of functions are not thread-safe.
+ *   _getenv could return a string pointer while _putenv is modifying the string,
+ *   causing random failures. Make sure that calls to these functions are synchronized.
+ *
+ * Finally, we use a function-local static rather than a global so we don't have to think about /
  * worry about whether global initialization was done correctly on the mutex object.
  * This "worry" might be unfounded.
  */
@@ -90,7 +105,7 @@ std::mutex &MutexForEnvInvocations() {
 
 std::optional<std::string> GetEnv(const std::string& envname) {
 #if defined(__unix__)
-  // Protect against concurrent XXXEnv() calls.
+  // Protect against concurrent XXXEnv() calls. See comment in MutexForEnvInvocations()
   std::unique_lock guard(MutexForEnvInvocations());
   const char* ret = getenv(envname.c_str());
   if (ret != nullptr) {
@@ -98,7 +113,7 @@ std::optional<std::string> GetEnv(const std::string& envname) {
   }
   return {};
 #elif defined(_WIN32)
-  // Protect against concurrent XXXEnv() calls.
+  // Protect against concurrent XXXEnv() calls. See comment in MutexForEnvInvocations()
   std::unique_lock guard(MutexForEnvInvocations());
   static char ret[1024];
   size_t len;
@@ -116,25 +131,23 @@ std::optional<std::string> GetEnv(const std::string& envname) {
 
 void SetEnv(const std::string& envname, const std::string& value) {
 #if defined(__unix__)
-  // Protect against concurrent XXXEnv() calls.
+  // Protect against concurrent XXXEnv() calls. See comment in MutexForEnvInvocations()
   std::unique_lock guard(MutexForEnvInvocations());
 
   auto res = setenv(envname.c_str(), value.c_str(), 1);
   if (res != 0) {
     auto message = fmt::format("setenv failed, error={}", strerror(errno));
-    throw std::runtime_error(
-        DEEPHAVEN_LOCATION_STR(message));
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
 #elif defined(_WIN32)
-  // Protect against concurrent XXXEnv() calls.
+  // Protect against concurrent XXXEnv() calls. See comment in MutexForEnvInvocations()
   std::unique_lock guard(MutexForEnvInvocations());
 
   auto res = _putenv_s(envname.c_str(), value.c_str());
   if (res != 0) {
     int lasterr = WSAGetLastError();
-    throw std::runtime_error(
-       DEEPHAVEN_LOCATION_STR("_putenv_s failed: error code ") +
-       std::to_string(lasterr));
+    var message = fmt::format("_putenv_s failed: error code {}", lasterr);
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
 #else
 #error "Unsupported configuration"
@@ -143,14 +156,13 @@ void SetEnv(const std::string& envname, const std::string& value) {
 
 void UnsetEnv(const std::string& envname) {
 #if defined(__unix__)
-  // Protect against concurrent XXXEnv() calls.
+  // Protect against concurrent XXXEnv() calls. See comment in MutexForEnvInvocations()
   std::unique_lock guard(MutexForEnvInvocations());
 
   auto res = unsetenv(envname.c_str());
   if (res != 0) {
     auto message = fmt::format("unsetenv failed, error={}", strerror(errno));
-    throw std::runtime_error(
-        DEEPHAVEN_LOCATION_STR(message));
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
   }
 #elif defined(_WIN32)
   SetEnv(envname, "");
