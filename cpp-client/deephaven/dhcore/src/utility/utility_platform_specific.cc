@@ -2,6 +2,7 @@
  * Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
  */
 #include <climits>
+#include <mutex>
 #include <optional>
 #include <string>
 #include "deephaven/dhcore/utility/utility.h"
@@ -31,6 +32,36 @@ std::string GetTidAsString() {
 #endif
 }
 
+#if defined(_WIN32)
+namespace {
+// We need to call WSAStartup() before using other Winsock calls.
+// We only do this once during the lifetime of the program; and we
+// never bother to call WSACleanup().
+void EnsureWsaStartup() {
+  static std::mutex mutex;
+  static bool startupSucceeded = false;
+
+  std::unique_lock guard(mutex);
+  if (startupSucceeded) {
+    return;
+  }
+
+  int32_t versionRequested = 0x202;
+  WSADATA wsaData;
+  auto err = WSAStartup(versionRequested, &wsaData);
+  if (err != 0) {
+    auto message = fmt::format("WSAStartup failed with error: {}", err);
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
+  }
+  if (wsaData.wVersion != versionRequested) {
+    auto message = fmt::format("Got an unexpected version {:x} of winsock.dll", wsaData.wVersion);
+    throw std::runtime_error(DEEPHAVEN_LOCATION_STR(message));
+  }
+  startupSucceeded = true;
+}
+}  // namespace
+#endif
+
 std::string GetHostname() {
 #if defined(__unix__)
   char hostname[HOST_NAME_MAX];
@@ -59,6 +90,7 @@ std::string GetHostname() {
   freeaddrinfo(info);
   return result;
 #elif defined(_WIN32)
+  EnsureWsaStartup();
   char hostname[256];
   const int r = gethostname(hostname, sizeof(hostname));
   if (r != 0) {
@@ -117,6 +149,6 @@ void SetStdinEcho(const bool enable) {
 #else
 #error "Unsupported configuration"
 #endif
-}    
+}
 
 }  // namespace deephaven::dhcore::utility
