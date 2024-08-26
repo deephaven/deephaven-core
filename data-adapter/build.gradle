@@ -3,11 +3,6 @@ plugins {
     id 'java-library'
 }
 
-configurations {
-    implementation.extendsFrom configurations.dhUtil, commonsLang3
-    testImplementation.extendsFrom fishBaseTest
-}
-
 dependencies {
     api project(':engine-api')
     api project(':engine-table')
@@ -16,14 +11,15 @@ dependencies {
     api 'com.fasterxml.jackson.core:jackson-databind:2.13.4'
 
     implementation project(':log-factory')
+    implementation libs.commons.lang3
 
     testRuntimeOnly project(path: ':configs')
     testRuntimeOnly project(path: ':test-configs')
 
     testImplementation TestTools.projectDependency(project, 'engine-table')
+    testImplementation project(path: ':Base', configuration: 'tests')
 
     testRuntimeOnly project(':log-to-slf4j')
-    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 }
 
 repositories {
