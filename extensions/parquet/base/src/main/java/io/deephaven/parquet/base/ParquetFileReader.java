@@ -11,6 +11,7 @@ import org.apache.parquet.format.ColumnOrder;
 import org.apache.parquet.format.Type;
 import org.apache.parquet.schema.*;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -296,18 +297,18 @@ public class ParquetFileReader {
                         columnOrders, columnCount);
             }
 
+            final LogicalTypeAnnotation logicalType;
             if (schemaElement.isSetLogicalType()) {
-                ((Types.Builder) childBuilder).as(getLogicalTypeAnnotation(schemaElement.logicalType));
+                logicalType = getLogicalTypeAnnotation(schemaElement.logicalType);
+                ((Types.Builder) childBuilder).as(logicalType);
+            } else {
+                logicalType = null;
             }
 
             if (schemaElement.isSetConverted_type()) {
                 final LogicalTypeAnnotation originalType = getLogicalTypeAnnotation(
-                        schemaElement.converted_type, schemaElement.logicalType, schemaElement);
-                final LogicalTypeAnnotation newOriginalType = schemaElement.isSetLogicalType()
-                        && getLogicalTypeAnnotation(schemaElement.logicalType) != null
-                                ? getLogicalTypeAnnotation(schemaElement.logicalType)
-                                : null;
-                if (!originalType.equals(newOriginalType)) {
+                        schemaElement.converted_type, schemaElement);
+                if (!originalType.equals(logicalType)) {
                     ((Types.Builder) childBuilder).as(originalType);
                 }
             }
@@ -335,7 +336,9 @@ public class ParquetFileReader {
         }
     }
 
-    static LogicalTypeAnnotation getLogicalTypeAnnotation(LogicalType type) throws ParquetFileReaderException {
+    @Nullable
+    private static LogicalTypeAnnotation getLogicalTypeAnnotation(@NotNull final LogicalType type)
+            throws ParquetFileReaderException {
         switch (type.getSetField()) {
             case MAP:
                 return LogicalTypeAnnotation.mapType();
@@ -405,8 +408,9 @@ public class ParquetFileReader {
         return org.apache.parquet.schema.ColumnOrder.undefined();
     }
 
-    private static LogicalTypeAnnotation getLogicalTypeAnnotation(final ConvertedType convertedType,
-            final LogicalType logicalType, final SchemaElement schemaElement) throws ParquetFileReaderException {
+    private static LogicalTypeAnnotation getLogicalTypeAnnotation(
+            final ConvertedType convertedType,
+            final SchemaElement schemaElement) throws ParquetFileReaderException {
         switch (convertedType) {
             case UTF8:
                 return LogicalTypeAnnotation.stringType();
@@ -430,12 +434,13 @@ public class ParquetFileReader {
             case TIME_MICROS:
                 return LogicalTypeAnnotation.timeType(true, LogicalTypeAnnotation.TimeUnit.MICROS);
             case TIMESTAMP_MILLIS:
-                // Converted type doesn't have isAdjustedToUTC parameter, so use the information from logical type
-                return LogicalTypeAnnotation.timestampType(isAdjustedToUTC(logicalType),
-                        LogicalTypeAnnotation.TimeUnit.MILLIS);
+                // TIMESTAMP_MILLIS is always adjusted to UTC
+                // ref: https://github.com/apache/parquet-format/blob/master/LogicalTypes.md
+                return LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.MILLIS);
             case TIMESTAMP_MICROS:
-                return LogicalTypeAnnotation.timestampType(isAdjustedToUTC(logicalType),
-                        LogicalTypeAnnotation.TimeUnit.MICROS);
+                // TIMESTAMP_MICROS is always adjusted to UTC
+                // ref: https://github.com/apache/parquet-format/blob/master/LogicalTypes.md
+                return LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.MICROS);
             case INTERVAL:
                 return LogicalTypeAnnotation.IntervalLogicalTypeAnnotation.getInstance();
             case INT_8:

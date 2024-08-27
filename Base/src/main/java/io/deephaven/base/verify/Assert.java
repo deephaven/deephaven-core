@@ -23,12 +23,6 @@ import java.util.function.Consumer;
  * <li>void valuesNeverOccur(value0, name0, value1, name1, ... )
  * </ul>
  * <ul>
- * <li>void holdsLock/notHoldsLock(Object, String name)
- * </ul>
- * <ul>
- * <li>void instanceOf/notInstanceOf(Object, String name, Class type[, int numCallsBelowRequirer])
- * </ul>
- * <ul>
  * <li>void eq/neq(boolean/char/byte/short/int/long/float/double, String name0,
  * boolean/char/byte/short/int/long/float/double[, String name1])
  * <li>void lt/leq/gt/geq(char/byte/short/int/long/float/double, String name0, char/byte/short/int/long/float/double[,
@@ -314,48 +308,6 @@ public final class Assert {
     public static AssertionFailure valueNeverOccurs(double d, String name) {
         fail(ExceptionMessageUtil.valueAndName(d, name) + " never occurs");
         return null;
-    }
-
-    // ################################################################
-    // holdsLock, notHoldsLock
-
-    // ----------------------------------------------------------------
-    /** assert (o != null &amp;&amp; (current thread holds o's lock)) */
-    public static void holdsLock(Object o, String name) {
-        neqNull(o, "o");
-        if (!Thread.holdsLock(o)) {
-            fail("\"" + Thread.currentThread().getName() + "\".holdsLock(" + name + ")");
-        }
-    }
-
-    // ----------------------------------------------------------------
-    /** assert (o != null &amp;&amp; !(current thread holds o's lock)) */
-    public static void notHoldsLock(Object o, String name) {
-        neqNull(o, "o");
-        if (Thread.holdsLock(o)) {
-            fail("!\"" + Thread.currentThread().getName() + "\".holdsLock(" + name + ")");
-        }
-    }
-
-    // ################################################################
-    // instanceOf, notInstanceOf
-
-    // ----------------------------------------------------------------
-    /** assert (o instanceof type) */
-    public static void instanceOf(Object o, String name, Class<?> type) {
-        if (!type.isInstance(o)) {
-            fail(name + " instanceof " + type, null == o ? ExceptionMessageUtil.valueAndName(o, name)
-                    : name + " instanceof " + o.getClass() + " (" + ExceptionMessageUtil.valueAndName(o, name) + ")");
-        }
-    }
-
-    // ----------------------------------------------------------------
-    /** assert !(o instanceof type) */
-    public static void notInstanceOf(Object o, String name, Class<?> type) {
-        if (type.isInstance(o)) {
-            fail("!(" + name + " instanceof " + type + ")",
-                    name + " instanceof " + o.getClass() + " (" + ExceptionMessageUtil.valueAndName(o, name) + ")");
-        }
     }
 
     // ################################################################

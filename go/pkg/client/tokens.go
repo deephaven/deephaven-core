@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"github.com/apache/arrow/go/v8/arrow/flight"
 	configpb2 "github.com/deephaven/deephaven-core/go/internal/proto/config"
+	sessionpb2 "github.com/deephaven/deephaven-core/go/internal/proto/session"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/protobuf/proto"
 	"log"
 	"strconv"
 	"sync"
@@ -36,8 +38,19 @@ func withAuthToken(ctx context.Context, token []byte) context.Context {
 }
 
 // requestToken requests a new token from flight.
-func requestToken(handshakeClient flight.FlightService_HandshakeClient, handshakeReq *flight.HandshakeRequest) ([]byte, error) {
-	err := handshakeClient.Send(handshakeReq)
+func requestToken(handshakeClient flight.FlightService_HandshakeClient, authType string, authToken []byte) ([]byte, error) {
+
+	war := sessionpb2.WrappedAuthenticationRequest{
+		Type:    authType,
+		Payload: authToken,
+	}
+	payload, err := proto.Marshal(&war)
+	if err != nil {
+		return nil, err
+	}
+	handshakeReq := flight.HandshakeRequest{Payload: []byte(payload)}
+
+	err = handshakeClient.Send(&handshakeReq)
 
 	if err != nil {
 		return nil, err
@@ -122,15 +135,13 @@ func (tr *tokenManager) Close() error {
 // "user:password"; when auth_type is DefaultAuth, it will be ignored; when auth_type is a custom-built
 // authenticator, it must conform to the specific requirement of the authenticator.
 func newTokenManager(ctx context.Context, fs *flightStub, cfg configpb2.ConfigServiceClient, authType string, authToken string) (*tokenManager, error) {
-	authString := makeAuthString(authType, authToken)
-
-	handshakeClient, err := fs.handshake(withAuth(ctx, authString))
+	handshakeClient, err := fs.handshake(ctx)
 
 	if err != nil {
 		return nil, err
 	}
 
-	tkn, err := requestToken(handshakeClient, &flight.HandshakeRequest{Payload: []byte(authString)})
+	tkn, err := requestToken(handshakeClient, authType, []byte(authToken))
 
 	if err != nil {
 		return nil, err
@@ -174,10 +185,10 @@ func newTokenManager(ctx context.Context, fs *flightStub, cfg configpb2.ConfigSe
 				var tkn []byte
 
 				if err == nil {
-					tkn, err = requestToken(handshakeClient, &flight.HandshakeRequest{Payload: oldToken})
+					tkn, err = requestToken(handshakeClient, "Bearer", oldToken)
 				} else {
 					log.Println("Old token has an error during token update.  Attempting to acquire a fresh token.  err=", err)
-					tkn, err = requestToken(handshakeClient, &flight.HandshakeRequest{Payload: []byte(authString)})
+					tkn, err = requestToken(handshakeClient, authType, []byte(authToken))
 				}
 
 				if err != nil {

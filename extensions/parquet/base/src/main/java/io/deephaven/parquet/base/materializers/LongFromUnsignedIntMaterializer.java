@@ -1,6 +1,10 @@
 //
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
+// ****** AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY
+// ****** Edit LongFromUnsignedShortMaterializer and run "./gradlew replicatePageMaterializers" to regenerate
+//
+// @formatter:off
 package io.deephaven.parquet.base.materializers;
 
 import io.deephaven.parquet.base.PageMaterializer;
@@ -35,7 +39,7 @@ public class LongFromUnsignedIntMaterializer extends LongMaterializerBase implem
     @Override
     public void fillValues(int startIndex, int endIndex) {
         for (int ii = startIndex; ii < endIndex; ii++) {
-            data[ii] = Integer.toUnsignedLong(dataReader.readInteger());
+            data[ii] = Integer.toUnsignedLong((int) dataReader.readInteger());
         }
     }
 }

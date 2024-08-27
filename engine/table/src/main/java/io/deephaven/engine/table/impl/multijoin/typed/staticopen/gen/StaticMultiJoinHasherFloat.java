@@ -51,7 +51,7 @@ final class StaticMultiJoinHasherFloat extends StaticMultiJoinStateManagerTypedB
             int tableLocation = firstTableLocation;
             while (true) {
                 int slotValue = slotToOutputRow.getUnsafe(tableLocation);
-                if (slotValue == EMPTY_OUTPUT_ROW) {
+                if (isStateEmpty(slotValue)) {
                     numEntries++;
                     mainKeySource0.set(tableLocation, k0);
                     final int outputKey = numEntries - 1;
@@ -78,6 +78,10 @@ final class StaticMultiJoinHasherFloat extends StaticMultiJoinStateManagerTypedB
         return hash;
     }
 
+    private static boolean isStateEmpty(int state) {
+        return state == EMPTY_OUTPUT_ROW;
+    }
+
     @Override
     protected void rehashInternalFull(final int oldSize) {
         final float[] destKeyArray0 = new float[tableSize];
@@ -89,7 +93,7 @@ final class StaticMultiJoinHasherFloat extends StaticMultiJoinStateManagerTypedB
         slotToOutputRow.setArray(destState);
         for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket) {
             final int currentStateValue = originalStateArray[sourceBucket];
-            if (currentStateValue == EMPTY_OUTPUT_ROW) {
+            if (isStateEmpty(currentStateValue)) {
                 continue;
             }
             final float k0 = originalKeyArray0[sourceBucket];
@@ -97,7 +101,7 @@ final class StaticMultiJoinHasherFloat extends StaticMultiJoinStateManagerTypedB
             final int firstDestinationTableLocation = hashToTableLocation(hash);
             int destinationTableLocation = firstDestinationTableLocation;
             while (true) {
-                if (destState[destinationTableLocation] == EMPTY_OUTPUT_ROW) {
+                if (isStateEmpty(destState[destinationTableLocation])) {
                     destKeyArray0[destinationTableLocation] = k0;
                     destState[destinationTableLocation] = originalStateArray[sourceBucket];
                     break;

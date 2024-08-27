@@ -7,6 +7,7 @@ description 'Parquet Base: Libraries for working with Parquet files'
 
 dependencies {
     api project(':util-channel')
+    api project(':codec-api')
 
     implementation libs.parquet.hadoop
 
@@ -14,9 +15,11 @@ dependencies {
     implementation project(':Base')
     implementation project(':Util')
     implementation project(':engine-time')
+    implementation project(':engine-chunk')
     implementation project(':Configuration')
     implementation project(':DataStructures')
     implementation libs.commons.io
+    implementation libs.guava
 
     compileOnly libs.jetbrains.annotations
     testImplementation libs.junit4

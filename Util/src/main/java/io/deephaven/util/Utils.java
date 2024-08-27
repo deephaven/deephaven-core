@@ -376,7 +376,7 @@ public class Utils {
      * require (o instanceof type)
      */
     public static <T> T castTo(Object o, String name, Class<T> type) {
-        io.deephaven.base.verify.Require.instanceOf(o, name, type);
+        io.deephaven.base.verify.Require.requirement(type.isInstance(o), name);
         // noinspection unchecked
         return (T) o;
     }

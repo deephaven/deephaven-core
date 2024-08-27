@@ -5,6 +5,7 @@ package io.deephaven.server.netty;
 
 import dagger.BindsInstance;
 import dagger.Component;
+import dagger.Module;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.server.auth.CommunityAuthorizationModule;
 import io.deephaven.server.netty.DeprecatedCommunityComponentFactory.CommunityComponent;
@@ -34,11 +35,7 @@ public final class DeprecatedCommunityComponentFactory extends ComponentFactoryB
 
     @Deprecated
     @Singleton
-    @Component(modules = {
-            NettyServerModule.class,
-            CommunityAuthorizationModule.class,
-            CommunityDefaultsModule.class,
-    })
+    @Component(modules = CommunityModule.class)
     public interface CommunityComponent extends DeephavenApiServerComponent {
 
         @Component.Builder
@@ -46,5 +43,16 @@ public final class DeprecatedCommunityComponentFactory extends ComponentFactoryB
             @BindsInstance
             Builder withNettyConfig(NettyConfig config);
         }
+    }
+
+    @Deprecated
+    @Module(includes = {
+            NettyServerModule.class,
+            NettyClientChannelFactoryModule.class,
+            CommunityAuthorizationModule.class,
+            CommunityDefaultsModule.class,
+    })
+    public interface CommunityModule {
+
     }
 }

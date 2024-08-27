@@ -10,8 +10,10 @@
 package io.deephaven.engine.table.impl.ssa;
 
 import java.util.Objects;
+import io.deephaven.util.compare.ObjectComparisons;
 
 import java.util.Objects;
+import io.deephaven.util.compare.ObjectComparisons;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.ObjectChunk;

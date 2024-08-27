@@ -61,15 +61,16 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
             int tableLocation = firstTableLocation;
             MAIN_SEARCH: while (true) {
                 long rightRowKeyForState = mainRightRowKey.getUnsafe(tableLocation);
-                if (rightRowKeyForState == EMPTY_RIGHT_STATE) {
+                if (isStateEmpty(rightRowKeyForState)) {
                     numEntries++;
+                    liveEntries++;
                     mainKeySource0.set(tableLocation, k0);
                     mainLeftRowSet.set(tableLocation, RowSetFactory.fromKeys(rowKeyChunk.get(chunkPosition)));
                     mainRightRowKey.set(tableLocation, RowSet.NULL_ROW_KEY);
                     mainModifiedTrackerCookieSource.set(tableLocation, -1L);
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    if (rightRowKeyForState < RowSet.NULL_ROW_KEY) {
+                    if (rightRowKeyForState <= FIRST_DUPLICATE) {
                         throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)));
                     }
                     mainLeftRowSet.getUnsafe(tableLocation).insert(rowKeyChunk.get(chunkPosition));
@@ -94,8 +95,9 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
             int tableLocation = firstTableLocation;
             MAIN_SEARCH: while (true) {
                 long existingRightRowKey = mainRightRowKey.getUnsafe(tableLocation);
-                if (existingRightRowKey == EMPTY_RIGHT_STATE) {
+                if (isStateEmpty(existingRightRowKey)) {
                     numEntries++;
+                    liveEntries++;
                     mainKeySource0.set(tableLocation, k0);
                     mainLeftRowSet.set(tableLocation, RowSetFactory.empty());
                     mainRightRowKey.set(tableLocation, rowKeyChunk.get(chunkPosition));
@@ -104,7 +106,7 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
                     if (existingRightRowKey == RowSet.NULL_ROW_KEY) {
                         mainRightRowKey.set(tableLocation, rowKeyChunk.get(chunkPosition));
-                    } else if (existingRightRowKey < RowSet.NULL_ROW_KEY) {
+                    } else if (existingRightRowKey <= FIRST_DUPLICATE) {
                         final long duplicateLocation = duplicateLocationFromRowKey(existingRightRowKey);
                         rightSideDuplicateRowSets.getUnsafe(duplicateLocation).insert(rowKeyChunk.get(chunkPosition));
                     } else {
@@ -131,20 +133,27 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
             final int hash = hash(k0);
             final int firstTableLocation = hashToTableLocation(hash);
             int tableLocation = firstTableLocation;
+            int firstDeletedLocation = -1;
             MAIN_SEARCH: while (true) {
                 long existingRightRowKey = mainRightRowKey.getUnsafe(tableLocation);
-                if (existingRightRowKey == EMPTY_RIGHT_STATE) {
+                if (firstDeletedLocation < 0 && isStateDeleted(existingRightRowKey)) {
+                    firstDeletedLocation = tableLocation;
+                }
+                if (isStateEmpty(existingRightRowKey)) {
                     final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
                     int alternateTableLocation = firstAlternateTableLocation;
                     while (alternateTableLocation < rehashPointer) {
                         existingRightRowKey = alternateRightRowKey.getUnsafe(alternateTableLocation);
-                        if (existingRightRowKey == EMPTY_RIGHT_STATE) {
+                        if (isStateEmpty(existingRightRowKey)) {
                             break;
                         } else if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
+                            if (isStateDeleted(existingRightRowKey)) {
+                                break;
+                            }
                             if (existingRightRowKey == RowSet.NULL_ROW_KEY) {
                                 alternateRightRowKey.set(alternateTableLocation, rowKeyChunk.get(chunkPosition));
                                 alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMain(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
-                            } else if (existingRightRowKey < RowSet.NULL_ROW_KEY) {
+                            } else if (existingRightRowKey <= FIRST_DUPLICATE) {
                                 final long duplicateLocation = duplicateLocationFromRowKey(existingRightRowKey);
                                 final WritableRowSet duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation);
                                 final long duplicateSize = duplicates.size();
@@ -162,17 +171,31 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                             Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
                         }
                     }
-                    numEntries++;
+                    if (firstDeletedLocation >= 0) {
+                        tableLocation = firstDeletedLocation;
+                    } else {
+                        numEntries++;
+                    }
+                    liveEntries++;
                     mainKeySource0.set(tableLocation, k0);
                     mainLeftRowSet.set(tableLocation, RowSetFactory.empty());
                     mainRightRowKey.set(tableLocation, rowKeyChunk.get(chunkPosition));
                     mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(-1, mainInsertMask | tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
+                    if (isStateDeleted(existingRightRowKey)) {
+                        tableLocation = firstDeletedLocation;
+                        liveEntries++;
+                        mainKeySource0.set(tableLocation, k0);
+                        mainLeftRowSet.set(tableLocation, RowSetFactory.empty());
+                        mainRightRowKey.set(tableLocation, rowKeyChunk.get(chunkPosition));
+                        mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(-1, mainInsertMask | tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                        break;
+                    }
                     if (existingRightRowKey == RowSet.NULL_ROW_KEY) {
                         mainRightRowKey.set(tableLocation, rowKeyChunk.get(chunkPosition));
                         mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
-                    } else if (existingRightRowKey < RowSet.NULL_ROW_KEY) {
+                    } else if (existingRightRowKey <= FIRST_DUPLICATE) {
                         final long duplicateLocation = duplicateLocationFromRowKey(existingRightRowKey);
                         final WritableRowSet duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation);
                         final long duplicateSize = duplicates.size();
@@ -203,17 +226,24 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
             final int hash = hash(k0);
             final int firstTableLocation = hashToTableLocation(hash);
             int tableLocation = firstTableLocation;
+            int firstDeletedLocation = -1;
             MAIN_SEARCH: while (true) {
                 long rightRowKeyForState = mainRightRowKey.getUnsafe(tableLocation);
-                if (rightRowKeyForState == EMPTY_RIGHT_STATE) {
+                if (firstDeletedLocation < 0 && isStateDeleted(rightRowKeyForState)) {
+                    firstDeletedLocation = tableLocation;
+                }
+                if (isStateEmpty(rightRowKeyForState)) {
                     final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
                     int alternateTableLocation = firstAlternateTableLocation;
                     while (alternateTableLocation < rehashPointer) {
                         rightRowKeyForState = alternateRightRowKey.getUnsafe(alternateTableLocation);
-                        if (rightRowKeyForState == EMPTY_RIGHT_STATE) {
+                        if (isStateEmpty(rightRowKeyForState)) {
                             break;
                         } else if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
-                            if (rightRowKeyForState < RowSet.NULL_ROW_KEY) {
+                            if (isStateDeleted(rightRowKeyForState)) {
+                                break;
+                            }
+                            if (rightRowKeyForState <= FIRST_DUPLICATE) {
                                 throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)));
                             }
                             alternateLeftRowSet.getUnsafe(alternateTableLocation).insert(rowKeyChunk.get(chunkPosition));
@@ -224,7 +254,12 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                             Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
                         }
                     }
-                    numEntries++;
+                    if (firstDeletedLocation >= 0) {
+                        tableLocation = firstDeletedLocation;
+                    } else {
+                        numEntries++;
+                    }
+                    liveEntries++;
                     mainKeySource0.set(tableLocation, k0);
                     mainLeftRowSet.set(tableLocation, RowSetFactory.fromKeys(rowKeyChunk.get(chunkPosition)));
                     mainRightRowKey.set(tableLocation, RowSet.NULL_ROW_KEY);
@@ -232,7 +267,17 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                     leftRedirections.set(leftRedirectionOffset++, RowSet.NULL_ROW_KEY);
                     break;
                 } else if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    if (rightRowKeyForState < RowSet.NULL_ROW_KEY) {
+                    if (isStateDeleted(rightRowKeyForState)) {
+                        tableLocation = firstDeletedLocation;
+                        liveEntries++;
+                        mainKeySource0.set(tableLocation, k0);
+                        mainLeftRowSet.set(tableLocation, RowSetFactory.fromKeys(rowKeyChunk.get(chunkPosition)));
+                        mainRightRowKey.set(tableLocation, RowSet.NULL_ROW_KEY);
+                        mainModifiedTrackerCookieSource.set(tableLocation, -1L);
+                        leftRedirections.set(leftRedirectionOffset++, RowSet.NULL_ROW_KEY);
+                        break;
+                    }
+                    if (rightRowKeyForState <= FIRST_DUPLICATE) {
                         throw new IllegalStateException("Natural Join found duplicate right key for " + extractKeyStringFromSourceTable(rowKeyChunk.get(chunkPosition)));
                     }
                     mainLeftRowSet.getUnsafe(tableLocation).insert(rowKeyChunk.get(chunkPosition));
@@ -256,11 +301,16 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
             final int hash = hash(k0);
             final int firstTableLocation = hashToTableLocation(hash);
             boolean found = false;
+            boolean searchAlternate = true;
             int tableLocation = firstTableLocation;
             long existingRightRowKey;
-            while ((existingRightRowKey = mainRightRowKey.getUnsafe(tableLocation)) != EMPTY_RIGHT_STATE) {
+            while (!isStateEmpty(existingRightRowKey = mainRightRowKey.getUnsafe(tableLocation))) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    if (existingRightRowKey < RowSet.NULL_ROW_KEY) {
+                    if (isStateDeleted(existingRightRowKey)) {
+                        searchAlternate = false;
+                        break;
+                    }
+                    if (existingRightRowKey <= FIRST_DUPLICATE) {
                         final long duplicateLocation = duplicateLocationFromRowKey(existingRightRowKey);
                         final WritableRowSet duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation);
                         final long duplicateSize = duplicates.size();
@@ -273,7 +323,13 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                     } else if (existingRightRowKey != rowKeyChunk.get(chunkPosition)) {
                         Assert.statementNeverExecuted("Could not find existing right row in state");
                     } else {
-                        mainRightRowKey.set(tableLocation, RowSet.NULL_ROW_KEY);
+                        final boolean leftEmpty = mainLeftRowSet.getUnsafe(tableLocation).isEmpty();
+                        if (leftEmpty) {
+                            mainRightRowKey.set(tableLocation, TOMBSTONE_RIGHT_STATE);
+                            liveEntries--;
+                        } else {
+                            mainRightRowKey.set(tableLocation, RowSet.NULL_ROW_KEY);
+                        }
                         mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
                     }
                     found = true;
@@ -283,37 +339,50 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                 Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
             }
             if (!found) {
-                final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
-                boolean alternateFound = false;
-                if (firstAlternateTableLocation < rehashPointer) {
-                    int alternateTableLocation = firstAlternateTableLocation;
-                    while ((existingRightRowKey = alternateRightRowKey.getUnsafe(alternateTableLocation)) != EMPTY_RIGHT_STATE) {
-                        if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
-                            if (existingRightRowKey < RowSet.NULL_ROW_KEY) {
-                                final long duplicateLocation = duplicateLocationFromRowKey(existingRightRowKey);
-                                final WritableRowSet duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation);
-                                final long duplicateSize = duplicates.size();
-                                duplicates.remove(rowKeyChunk.get(chunkPosition));
-                                Assert.eq(duplicateSize, "duplicateSize", duplicates.size() + 1, "duplicates.size() + 1");
-                                if (duplicates.size() == 1) {
-                                    alternateRightRowKey.set(alternateTableLocation, duplicates.firstRowKey());
-                                    freeDuplicateLocation(duplicateLocation);
-                                }
-                            } else if (existingRightRowKey != rowKeyChunk.get(chunkPosition)) {
-                                Assert.statementNeverExecuted("Could not find existing right row in state");
-                            } else {
-                                alternateRightRowKey.set(alternateTableLocation, RowSet.NULL_ROW_KEY);
-                                alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMain(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
-                            }
-                            alternateFound = true;
-                            break;
-                        }
-                        alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
-                        Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
-                    }
-                }
-                if (!alternateFound) {
+                if (!searchAlternate) {
                     throw Assert.statementNeverExecuted("Could not find existing state for removed right row");
+                } else {
+                    final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
+                    boolean alternateFound = false;
+                    if (firstAlternateTableLocation < rehashPointer) {
+                        int alternateTableLocation = firstAlternateTableLocation;
+                        while (!isStateEmpty(existingRightRowKey = alternateRightRowKey.getUnsafe(alternateTableLocation))) {
+                            if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
+                                if (isStateDeleted(existingRightRowKey)) {
+                                    break;
+                                }
+                                if (existingRightRowKey <= FIRST_DUPLICATE) {
+                                    final long duplicateLocation = duplicateLocationFromRowKey(existingRightRowKey);
+                                    final WritableRowSet duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation);
+                                    final long duplicateSize = duplicates.size();
+                                    duplicates.remove(rowKeyChunk.get(chunkPosition));
+                                    Assert.eq(duplicateSize, "duplicateSize", duplicates.size() + 1, "duplicates.size() + 1");
+                                    if (duplicates.size() == 1) {
+                                        alternateRightRowKey.set(alternateTableLocation, duplicates.firstRowKey());
+                                        freeDuplicateLocation(duplicateLocation);
+                                    }
+                                } else if (existingRightRowKey != rowKeyChunk.get(chunkPosition)) {
+                                    Assert.statementNeverExecuted("Could not find existing right row in state");
+                                } else {
+                                    final boolean leftEmpty = alternateLeftRowSet.getUnsafe(alternateTableLocation).isEmpty();
+                                    if (leftEmpty) {
+                                        alternateRightRowKey.set(alternateTableLocation, TOMBSTONE_RIGHT_STATE);
+                                        liveEntries--;
+                                    } else {
+                                        alternateRightRowKey.set(alternateTableLocation, RowSet.NULL_ROW_KEY);
+                                    }
+                                    alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMain(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                                }
+                                alternateFound = true;
+                                break;
+                            }
+                            alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
+                            Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
+                        }
+                    }
+                    if (!alternateFound) {
+                        throw Assert.statementNeverExecuted("Could not find existing state for removed right row");
+                    }
                 }
             }
         }
@@ -328,10 +397,15 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
             final int hash = hash(k0);
             final int firstTableLocation = hashToTableLocation(hash);
             boolean found = false;
+            boolean searchAlternate = true;
             int tableLocation = firstTableLocation;
             long existingRightRowKey;
-            while ((existingRightRowKey = mainRightRowKey.getUnsafe(tableLocation)) != EMPTY_RIGHT_STATE) {
+            while (!isStateEmpty(existingRightRowKey = mainRightRowKey.getUnsafe(tableLocation))) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
+                    if (isStateDeleted(existingRightRowKey)) {
+                        searchAlternate = false;
+                        break;
+                    }
                     mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
                     found = true;
                     break;
@@ -340,22 +414,29 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                 Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
             }
             if (!found) {
-                final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
-                boolean alternateFound = false;
-                if (firstAlternateTableLocation < rehashPointer) {
-                    int alternateTableLocation = firstAlternateTableLocation;
-                    while ((existingRightRowKey = alternateRightRowKey.getUnsafe(alternateTableLocation)) != EMPTY_RIGHT_STATE) {
-                        if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
-                            alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMain(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
-                            alternateFound = true;
-                            break;
-                        }
-                        alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
-                        Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
-                    }
-                }
-                if (!alternateFound) {
+                if (!searchAlternate) {
                     throw Assert.statementNeverExecuted("Could not find existing state for modified right row");
+                } else {
+                    final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
+                    boolean alternateFound = false;
+                    if (firstAlternateTableLocation < rehashPointer) {
+                        int alternateTableLocation = firstAlternateTableLocation;
+                        while (!isStateEmpty(existingRightRowKey = alternateRightRowKey.getUnsafe(alternateTableLocation))) {
+                            if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
+                                if (isStateDeleted(existingRightRowKey)) {
+                                    break;
+                                }
+                                alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMain(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_CHANGE));
+                                alternateFound = true;
+                                break;
+                            }
+                            alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
+                            Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
+                        }
+                    }
+                    if (!alternateFound) {
+                        throw Assert.statementNeverExecuted("Could not find existing state for modified right row");
+                    }
                 }
             }
         }
@@ -372,15 +453,20 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
             final int hash = hash(k0);
             final int firstTableLocation = hashToTableLocation(hash);
             boolean found = false;
+            boolean searchAlternate = true;
             int tableLocation = firstTableLocation;
             long existingRightRowKey;
-            while ((existingRightRowKey = mainRightRowKey.getUnsafe(tableLocation)) != EMPTY_RIGHT_STATE) {
+            while (!isStateEmpty(existingRightRowKey = mainRightRowKey.getUnsafe(tableLocation))) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
+                    if (isStateDeleted(existingRightRowKey)) {
+                        searchAlternate = false;
+                        break;
+                    }
                     final long keyToShift = rowKeyChunk.get(chunkPosition);
                     if (existingRightRowKey == keyToShift - shiftDelta) {
                         mainRightRowKey.set(tableLocation, keyToShift);
                         mainModifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(mainModifiedTrackerCookieSource.getUnsafe(tableLocation), mainInsertMask | tableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_SHIFT));
-                    } else if (existingRightRowKey < RowSet.NULL_ROW_KEY) {
+                    } else if (existingRightRowKey <= FIRST_DUPLICATE) {
                         final long duplicateLocation = duplicateLocationFromRowKey(existingRightRowKey);
                         if (shiftDelta < 0) {
                             final WritableRowSet duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation);
@@ -399,37 +485,44 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                 Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
             }
             if (!found) {
-                final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
-                boolean alternateFound = false;
-                if (firstAlternateTableLocation < rehashPointer) {
-                    int alternateTableLocation = firstAlternateTableLocation;
-                    while ((existingRightRowKey = alternateRightRowKey.getUnsafe(alternateTableLocation)) != EMPTY_RIGHT_STATE) {
-                        if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
-                            final long keyToShift = rowKeyChunk.get(chunkPosition);
-                            if (existingRightRowKey == keyToShift - shiftDelta) {
-                                alternateRightRowKey.set(alternateTableLocation, keyToShift);
-                                alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMain(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_SHIFT));
-                            } else if (existingRightRowKey < RowSet.NULL_ROW_KEY) {
-                                final long duplicateLocation = duplicateLocationFromRowKey(existingRightRowKey);
-                                if (shiftDelta < 0) {
-                                    final WritableRowSet duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation);
-                                    shiftOneKey(duplicates, keyToShift, shiftDelta);
-                                } else {
-                                    pc.pendingShifts.set(pc.pendingShiftPointer++, (long)duplicateLocation);
-                                    pc.pendingShifts.set(pc.pendingShiftPointer++, keyToShift);
-                                }
-                            } else {
-                                throw Assert.statementNeverExecuted("Could not find existing index for shifted right row");
-                            }
-                            alternateFound = true;
-                            break;
-                        }
-                        alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
-                        Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
-                    }
-                }
-                if (!alternateFound) {
+                if (!searchAlternate) {
                     throw Assert.statementNeverExecuted("Could not find existing state for shifted right row");
+                } else {
+                    final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
+                    boolean alternateFound = false;
+                    if (firstAlternateTableLocation < rehashPointer) {
+                        int alternateTableLocation = firstAlternateTableLocation;
+                        while (!isStateEmpty(existingRightRowKey = alternateRightRowKey.getUnsafe(alternateTableLocation))) {
+                            if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
+                                if (isStateDeleted(existingRightRowKey)) {
+                                    break;
+                                }
+                                final long keyToShift = rowKeyChunk.get(chunkPosition);
+                                if (existingRightRowKey == keyToShift - shiftDelta) {
+                                    alternateRightRowKey.set(alternateTableLocation, keyToShift);
+                                    alternateModifiedTrackerCookieSource.set(alternateTableLocation, modifiedSlotTracker.addMain(alternateModifiedTrackerCookieSource.getUnsafe(alternateTableLocation), alternateInsertMask | alternateTableLocation, existingRightRowKey, NaturalJoinModifiedSlotTracker.FLAG_RIGHT_SHIFT));
+                                } else if (existingRightRowKey <= FIRST_DUPLICATE) {
+                                    final long duplicateLocation = duplicateLocationFromRowKey(existingRightRowKey);
+                                    if (shiftDelta < 0) {
+                                        final WritableRowSet duplicates = rightSideDuplicateRowSets.getUnsafe(duplicateLocation);
+                                        shiftOneKey(duplicates, keyToShift, shiftDelta);
+                                    } else {
+                                        pc.pendingShifts.set(pc.pendingShiftPointer++, (long)duplicateLocation);
+                                        pc.pendingShifts.set(pc.pendingShiftPointer++, keyToShift);
+                                    }
+                                } else {
+                                    throw Assert.statementNeverExecuted("Could not find existing index for shifted right row");
+                                }
+                                alternateFound = true;
+                                break;
+                            }
+                            alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
+                            Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
+                        }
+                    }
+                    if (!alternateFound) {
+                        throw Assert.statementNeverExecuted("Could not find existing state for shifted right row");
+                    }
                 }
             }
         }
@@ -444,10 +537,21 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
             final int hash = hash(k0);
             final int firstTableLocation = hashToTableLocation(hash);
             boolean found = false;
+            boolean searchAlternate = true;
             int tableLocation = firstTableLocation;
-            while (mainRightRowKey.getUnsafe(tableLocation) != EMPTY_RIGHT_STATE) {
+            long rightState;
+            while (!isStateEmpty(rightState = mainRightRowKey.getUnsafe(tableLocation))) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
-                    mainLeftRowSet.getUnsafe(tableLocation).remove(rowKeyChunk.get(chunkPosition));
+                    if (isStateDeleted(rightState)) {
+                        searchAlternate = false;
+                        break;
+                    }
+                    final WritableRowSet left = mainLeftRowSet.getUnsafe(tableLocation);
+                    left.remove(rowKeyChunk.get(chunkPosition));
+                    if (left.isEmpty() && rightState == RowSet.NULL_ROW_KEY) {
+                        mainRightRowKey.set(tableLocation, TOMBSTONE_RIGHT_STATE);
+                        liveEntries--;
+                    }
                     found = true;
                     break;
                 }
@@ -455,22 +559,34 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                 Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
             }
             if (!found) {
-                final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
-                boolean alternateFound = false;
-                if (firstAlternateTableLocation < rehashPointer) {
-                    int alternateTableLocation = firstAlternateTableLocation;
-                    while (alternateRightRowKey.getUnsafe(alternateTableLocation) != EMPTY_RIGHT_STATE) {
-                        if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
-                            alternateLeftRowSet.getUnsafe(alternateTableLocation).remove(rowKeyChunk.get(chunkPosition));
-                            alternateFound = true;
-                            break;
-                        }
-                        alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
-                        Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
-                    }
-                }
-                if (!alternateFound) {
+                if (!searchAlternate) {
                     throw Assert.statementNeverExecuted("Could not find existing state for removed left row");
+                } else {
+                    final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
+                    boolean alternateFound = false;
+                    if (firstAlternateTableLocation < rehashPointer) {
+                        int alternateTableLocation = firstAlternateTableLocation;
+                        while (!isStateEmpty(rightState = alternateRightRowKey.getUnsafe(alternateTableLocation))) {
+                            if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
+                                if (isStateDeleted(rightState)) {
+                                    break;
+                                }
+                                final WritableRowSet left = alternateLeftRowSet.getUnsafe(alternateTableLocation);
+                                left.remove(rowKeyChunk.get(chunkPosition));
+                                if (left.isEmpty() && rightState == RowSet.NULL_ROW_KEY) {
+                                    alternateRightRowKey.set(alternateTableLocation, TOMBSTONE_RIGHT_STATE);
+                                    liveEntries--;
+                                }
+                                alternateFound = true;
+                                break;
+                            }
+                            alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
+                            Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
+                        }
+                    }
+                    if (!alternateFound) {
+                        throw Assert.statementNeverExecuted("Could not find existing state for removed left row");
+                    }
                 }
             }
         }
@@ -486,9 +602,15 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
             final int hash = hash(k0);
             final int firstTableLocation = hashToTableLocation(hash);
             boolean found = false;
+            boolean searchAlternate = true;
             int tableLocation = firstTableLocation;
-            while (mainRightRowKey.getUnsafe(tableLocation) != EMPTY_RIGHT_STATE) {
+            long stateValue;
+            while (!isStateEmpty(stateValue = mainRightRowKey.getUnsafe(tableLocation))) {
                 if (eq(mainKeySource0.getUnsafe(tableLocation), k0)) {
+                    if (isStateDeleted(stateValue)) {
+                        searchAlternate = false;
+                        break;
+                    }
                     final WritableRowSet leftRowSetForState = mainLeftRowSet.getUnsafe(tableLocation);
                     final long keyToShift = rowKeyChunk.get(chunkPosition);
                     if (shiftDelta < 0) {
@@ -504,29 +626,36 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
                 Assert.neq(tableLocation, "tableLocation", firstTableLocation, "firstTableLocation");
             }
             if (!found) {
-                final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
-                boolean alternateFound = false;
-                if (firstAlternateTableLocation < rehashPointer) {
-                    int alternateTableLocation = firstAlternateTableLocation;
-                    while (alternateRightRowKey.getUnsafe(alternateTableLocation) != EMPTY_RIGHT_STATE) {
-                        if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
-                            final WritableRowSet leftRowSetForState = alternateLeftRowSet.getUnsafe(alternateTableLocation);
-                            final long keyToShift = rowKeyChunk.get(chunkPosition);
-                            if (shiftDelta < 0) {
-                                shiftOneKey(leftRowSetForState, keyToShift, shiftDelta);
-                            } else {
-                                pc.pendingShifts.set(pc.pendingShiftPointer++, (long)(AlternatingColumnSource.ALTERNATE_SWITCH_MASK | alternateTableLocation));
-                                pc.pendingShifts.set(pc.pendingShiftPointer++, keyToShift);
-                            }
-                            alternateFound = true;
-                            break;
-                        }
-                        alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
-                        Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
-                    }
-                }
-                if (!alternateFound) {
+                if (!searchAlternate) {
                     throw Assert.statementNeverExecuted("Could not find existing state for shifted left row");
+                } else {
+                    final int firstAlternateTableLocation = hashToTableLocationAlternate(hash);
+                    boolean alternateFound = false;
+                    if (firstAlternateTableLocation < rehashPointer) {
+                        int alternateTableLocation = firstAlternateTableLocation;
+                        while (!isStateEmpty(stateValue = alternateRightRowKey.getUnsafe(alternateTableLocation))) {
+                            if (eq(alternateKeySource0.getUnsafe(alternateTableLocation), k0)) {
+                                if (isStateDeleted(stateValue)) {
+                                    break;
+                                }
+                                final WritableRowSet leftRowSetForState = alternateLeftRowSet.getUnsafe(alternateTableLocation);
+                                final long keyToShift = rowKeyChunk.get(chunkPosition);
+                                if (shiftDelta < 0) {
+                                    shiftOneKey(leftRowSetForState, keyToShift, shiftDelta);
+                                } else {
+                                    pc.pendingShifts.set(pc.pendingShiftPointer++, (long)(AlternatingColumnSource.ALTERNATE_SWITCH_MASK | alternateTableLocation));
+                                    pc.pendingShifts.set(pc.pendingShiftPointer++, keyToShift);
+                                }
+                                alternateFound = true;
+                                break;
+                            }
+                            alternateTableLocation = alternateNextTableLocation(alternateTableLocation);
+                            Assert.neq(alternateTableLocation, "alternateTableLocation", firstAlternateTableLocation, "firstAlternateTableLocation");
+                        }
+                    }
+                    if (!alternateFound) {
+                        throw Assert.statementNeverExecuted("Could not find existing state for shifted left row");
+                    }
                 }
             }
         }
@@ -537,16 +666,30 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
         return hash;
     }
 
-    private boolean migrateOneLocation(int locationToMigrate,
+    private static boolean isStateEmpty(long state) {
+        return state == EMPTY_RIGHT_STATE;
+    }
+
+    private static boolean isStateDeleted(long state) {
+        return state == TOMBSTONE_RIGHT_STATE;
+    }
+
+    private boolean migrateOneLocation(int locationToMigrate, boolean trueOnDeletedEntry,
             NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         final long currentStateValue = alternateRightRowKey.getUnsafe(locationToMigrate);
-        if (currentStateValue == EMPTY_RIGHT_STATE) {
+        if (isStateEmpty(currentStateValue)) {
             return false;
+        }
+        if (isStateDeleted(currentStateValue)) {
+            alternateEntries--;
+            alternateRightRowKey.set(locationToMigrate, EMPTY_RIGHT_STATE);
+            return trueOnDeletedEntry;
         }
         final long k0 = alternateKeySource0.getUnsafe(locationToMigrate);
         final int hash = hash(k0);
         int destinationTableLocation = hashToTableLocation(hash);
-        while (mainRightRowKey.getUnsafe(destinationTableLocation) != EMPTY_RIGHT_STATE) {
+        long candidateState;
+        while (!isStateEmpty(candidateState = mainRightRowKey.getUnsafe(destinationTableLocation)) && !isStateDeleted(candidateState)) {
             destinationTableLocation = nextTableLocation(destinationTableLocation);
         }
         mainKeySource0.set(destinationTableLocation, k0);
@@ -558,6 +701,10 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
         alternateModifiedTrackerCookieSource.set(locationToMigrate, -1L);
         modifiedSlotTracker.moveTableLocation(cookie, locationToMigrate, mainInsertMask | destinationTableLocation);;
         alternateRightRowKey.set(locationToMigrate, EMPTY_RIGHT_STATE);
+        if (!isStateDeleted(candidateState)) {
+            numEntries++;
+        }
+        alternateEntries--;
         return true;
     }
 
@@ -566,7 +713,7 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
             NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         int rehashedEntries = 0;
         while (rehashPointer > 0 && rehashedEntries < entriesToRehash) {
-            if (migrateOneLocation(--rehashPointer, modifiedSlotTracker)) {
+            if (migrateOneLocation(--rehashPointer, false, modifiedSlotTracker)) {
                 rehashedEntries++;
             }
         }
@@ -574,8 +721,7 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
     }
 
     @Override
-    protected void newAlternate() {
-        super.newAlternate();
+    protected void adviseNewAlternate() {
         this.mainKeySource0 = (ImmutableLongArraySource)super.mainKeySources[0];
         this.alternateKeySource0 = (ImmutableLongArraySource)super.alternateKeySources[0];
     }
@@ -589,7 +735,7 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
     @Override
     protected void migrateFront(NaturalJoinModifiedSlotTracker modifiedSlotTracker) {
         int location = 0;
-        while (migrateOneLocation(location++, modifiedSlotTracker));
+        while (migrateOneLocation(location++, true, modifiedSlotTracker) && location < alternateTableSize);
     }
 
     @Override
@@ -609,7 +755,7 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
         mainModifiedTrackerCookieSource.setArray(destModifiedCookie);
         for (int sourceBucket = 0; sourceBucket < oldSize; ++sourceBucket) {
             final long currentStateValue = originalStateArray[sourceBucket];
-            if (currentStateValue == EMPTY_RIGHT_STATE) {
+            if (isStateEmpty(currentStateValue)) {
                 continue;
             }
             final long k0 = originalKeyArray0[sourceBucket];
@@ -617,7 +763,7 @@ final class IncrementalNaturalJoinHasherLong extends IncrementalNaturalJoinState
             final int firstDestinationTableLocation = hashToTableLocation(hash);
             int destinationTableLocation = firstDestinationTableLocation;
             while (true) {
-                if (destState[destinationTableLocation] == EMPTY_RIGHT_STATE) {
+                if (isStateEmpty(destState[destinationTableLocation])) {
                     destKeyArray0[destinationTableLocation] = k0;
                     destState[destinationTableLocation] = originalStateArray[sourceBucket];
                     destLeftRowSet[destinationTableLocation] = oldLeftRowSet[sourceBucket];

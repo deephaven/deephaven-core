@@ -17,7 +17,6 @@ import io.deephaven.csv.sinks.SinkFactory;
 import io.deephaven.csv.sinks.Source;
 import io.deephaven.csv.tokenization.Tokenizer.CustomTimeZoneParser;
 import io.deephaven.csv.util.CsvReaderException;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSet;
@@ -527,7 +526,7 @@ public class CsvTools {
 
         if (columns.length == 0) {
             List<String> columnNames = sources[0].getDefinition().getColumnNames();
-            columns = columnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            columns = columnNames.toArray(String[]::new);
         }
 
         writeCsvHeader(out, fieldSeparator, columns);
@@ -641,7 +640,7 @@ public class CsvTools {
 
         if (columns == null || columns.length == 0) {
             List<String> columnNames = source.getDefinition().getColumnNames();
-            columns = columnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+            columns = columnNames.toArray(String[]::new);
         }
 
         writeCsvHeader(out, separator, columns);
