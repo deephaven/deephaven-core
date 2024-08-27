@@ -3,10 +3,12 @@
 //
 package io.deephaven.iceberg.TestCatalog;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.iceberg.*;
 import org.apache.iceberg.encryption.EncryptionManager;
 import org.apache.iceberg.io.FileIO;
 import org.apache.iceberg.io.LocationProvider;
+import org.apache.iceberg.io.ResolvingFileIO;
 import org.jetbrains.annotations.NotNull;
 import org.testcontainers.shaded.org.apache.commons.lang3.NotImplementedException;
 
@@ -18,11 +20,14 @@ import java.util.Map;
 
 public class IcebergTestTable implements Table {
     private final TableMetadata metadata;
-    private final FileIO fileIO;
+    private final Map<String, String> properties;
+    private final Configuration hadoopConf;
 
-    private IcebergTestTable(@NotNull final String path, @NotNull final FileIO fileIO) {
+    private IcebergTestTable(@NotNull final String path, @NotNull final Map<String, String> properties) {
+        this.properties = properties;
+        hadoopConf = new Configuration();
+
         final File metadataRoot = new File(path, "metadata");
-        this.fileIO = fileIO;
 
         final List<String> metadataFiles = new ArrayList<>();
 
@@ -44,8 +49,10 @@ public class IcebergTestTable implements Table {
         }
     }
 
-    public static IcebergTestTable loadFromMetadata(@NotNull final String path, @NotNull final FileIO fileIO) {
-        return new IcebergTestTable(path, fileIO);
+    public static IcebergTestTable loadFromMetadata(
+            @NotNull final String path,
+            @NotNull final Map<String, String> properties) {
+        return new IcebergTestTable(path, properties);
     }
 
     @Override
@@ -214,7 +221,10 @@ public class IcebergTestTable implements Table {
 
     @Override
     public FileIO io() {
-        return fileIO;
+        final ResolvingFileIO io = new ResolvingFileIO();
+        io.setConf(hadoopConf);
+        io.initialize(properties);
+        return io;
     }
 
     @Override

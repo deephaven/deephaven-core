@@ -21,7 +21,6 @@ import io.deephaven.iceberg.layout.IcebergFlatLayout;
 import io.deephaven.iceberg.layout.IcebergKeyValuePartitionedLayout;
 import io.deephaven.iceberg.location.IcebergTableLocationFactory;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
-import io.deephaven.util.channel.DataInstructionsProviderLoader;
 import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
@@ -30,7 +29,6 @@ import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.SupportsNamespaces;
 import org.apache.iceberg.catalog.TableIdentifier;
-import org.apache.iceberg.io.FileIO;
 import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.Types;
 import org.jetbrains.annotations.NotNull;
@@ -43,18 +41,14 @@ import java.util.stream.Collectors;
 
 public class IcebergCatalogAdapter {
     private final Catalog catalog;
-    private final FileIO fileIO;
 
     private final DataInstructionsProviderLoader dataInstructionsProvider;
 
     /**
      * Construct an IcebergCatalogAdapter from a catalog and file IO.
      */
-    IcebergCatalogAdapter(
-            @NotNull final Catalog catalog,
-            @NotNull final FileIO fileIO) {
+    IcebergCatalogAdapter(@NotNull final Catalog catalog) {
         this.catalog = catalog;
-        this.fileIO = fileIO;
 
         dataInstructionsProvider = DataInstructionsProviderLoader.getInstance(Map.of());
     }
@@ -64,10 +58,8 @@ public class IcebergCatalogAdapter {
      */
     IcebergCatalogAdapter(
             @NotNull final Catalog catalog,
-            @NotNull final FileIO fileIO,
             @NotNull final Map<String, String> properties) {
         this.catalog = catalog;
-        this.fileIO = fileIO;
 
         dataInstructionsProvider = DataInstructionsProviderLoader.getInstance(Map.copyOf(properties));
     }
@@ -599,11 +591,11 @@ public class IcebergCatalogAdapter {
 
         if (partitionSpec.isUnpartitioned()) {
             // Create the flat layout location key finder
-            keyFinder = new IcebergFlatLayout(tableDef, table, snapshot, fileIO, userInstructions,
+            keyFinder = new IcebergFlatLayout(tableDef, table, snapshot, table.io(), userInstructions,
                     dataInstructionsProvider);
         } else {
             // Create the partitioning column location key finder
-            keyFinder = new IcebergKeyValuePartitionedLayout(tableDef, table, snapshot, fileIO, partitionSpec,
+            keyFinder = new IcebergKeyValuePartitionedLayout(tableDef, table, snapshot, table.io(), partitionSpec,
                     userInstructions, dataInstructionsProvider);
         }
 

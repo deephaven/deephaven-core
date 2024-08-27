@@ -11,7 +11,7 @@ import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.iceberg.location.IcebergTableParquetLocationKey;
 import io.deephaven.iceberg.util.IcebergInstructions;
 import io.deephaven.parquet.table.ParquetInstructions;
-import io.deephaven.util.channel.DataInstructionsProviderLoader;
+import io.deephaven.iceberg.util.DataInstructionsProviderLoader;
 import org.apache.iceberg.*;
 import org.apache.iceberg.io.FileIO;
 import org.jetbrains.annotations.NotNull;

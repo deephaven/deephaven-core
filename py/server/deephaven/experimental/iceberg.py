@@ -254,7 +254,8 @@ def adapter_aws_glue(
 
 def adapter(
         name: Optional[str] = None,
-        properties: Optional[Dict[str, str]] = None
+        properties: Optional[Dict[str, str]] = None,
+        hadoopConfig: Optional[Dict[str, str]] = None
 ) -> IcebergCatalogAdapter:
     """
     Create an Iceberg catalog adapter from configuration properties. These properties map to the Iceberg catalog Java
@@ -266,8 +267,6 @@ def adapter(
             `org.apache.iceberg.aws.glue.GlueCatalog`. Choices for `type` include `hive`, `hadoop`, `rest`, `glue`,
             `nessie`, `jdbc`.
     - `uri` - the URI of the catalog
-    - `io-impl` - the Java file IO implementation to use. Common choices are: `org.apache.iceberg.aws.s3.S3FileIO`
-            and `org.apache.iceberg.hadoop.HadoopFileIO`
 
     Other common properties include:
     - `warehouse` - the root path of the data warehouse.
@@ -280,10 +279,9 @@ def adapter(
     ```
     from deephaven.experimental import iceberg
 
-    adapter = iceberg.adapter_generic(name="generic-adapter", {
+    adapter = iceberg.adapter_generic(name="generic-adapter", properties={
         "type" : "rest",
         "uri" : "http://rest:8181",
-        "io-impl" : "org.apache.iceberg.aws.s3.S3FileIO",
         "client.region" : "us-east-1",
         "s3.access-key-id" : "admin",
         "s3.secret-access-key" : "password",
@@ -296,30 +294,30 @@ def adapter(
     from deephaven.experimental import iceberg
 
     ## Note: region and credential information are loaded by the catalog from the environment
-    adapter = iceberg.adapter_generic(name="generic-adapter", {
+    adapter = iceberg.adapter_generic(name="generic-adapter", properties={
         "type" : "glue",
         "uri" : "s3://lab-warehouse/sales",
-        "io-impl" : "org.apache.iceberg.aws.s3.S3FileIO"
     });
     ```
 
     Args:
         name (Optional[str]): a descriptive name of the catalog; if omitted the catalog name is inferred from the
             catalog URI property.
-        properties (Optional[Dict[str, str]]): the location of the warehouse.
+        properties (Optional[Dict[str, str]]): the properties of the catalog to load
 
     Returns:
-        IcebergCatalogAdapter: the catalog adapter for the provided AWS Glue catalog.
+        IcebergCatalogAdapter: the catalog adapter created from the provided properties
 
     Raises:
-        DHError: If unable to build the catalog adapter.
+        DHError: If unable to build the catalog adapter
     """
 
     try:
         return IcebergCatalogAdapter(
             _JIcebergTools.createAdapter(
                 name,
-                j_hashmap(properties if properties is not None else {})))
+                j_hashmap(properties if properties is not None else {}),
+                j_hashmap(hadoopConfig if hadoopConfig is not None else {})))
     except Exception as e:
         raise DHError(e, "Failed to build Iceberg Catalog Adapter") from e
 

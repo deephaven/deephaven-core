@@ -1,7 +1,7 @@
 //
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.util.channel;
+package io.deephaven.iceberg.util;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -48,12 +48,12 @@ public final class DataInstructionsProviderLoader {
     }
 
     /**
-     * Create a new {@link SeekableChannelsProvider} compatible for reading from and writing to the given URI, using the
-     * plugins loaded by the {@link ServiceLoader}. For example, for a "S3" URI, we will create a
-     * {@link SeekableChannelsProvider} which can read files from S3.
+     * Create a new data instructions object compatible with reading from and writing to the given URI, using the
+     * plugins loaded by the {@link ServiceLoader}. For example, for a "S3" URI, we will create an
+     * {@code S3Instructions} object which can read files from S3.
      *
      * @param uri The URI
-     * @return A {@link SeekableChannelsProvider} for the given URI.
+     * @return A data instructions object for the given URI or null if one cannot be found
      */
     public Object fromServiceLoader(@NotNull final URI uri) {
         for (final DataInstructionsProviderPlugin plugin : providers) {

@@ -1,7 +1,7 @@
 //
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.util.channel;
+package io.deephaven.iceberg.util;
 
 import org.jetbrains.annotations.NotNull;
 
