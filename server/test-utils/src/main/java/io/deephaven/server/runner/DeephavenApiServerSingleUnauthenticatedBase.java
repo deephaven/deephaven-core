@@ -16,4 +16,8 @@ public abstract class DeephavenApiServerSingleUnauthenticatedBase extends Deepha
         super.setUp();
         channel = createChannel();
     }
+
+    public DeephavenChannel channel() {
+        return channel;
+    }
 }

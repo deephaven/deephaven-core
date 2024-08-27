@@ -8,6 +8,7 @@ import dagger.Module;
 import dagger.Provides;
 import io.deephaven.plugin.js.JsPluginRegistration;
 import io.deephaven.server.config.ServerConfig;
+import io.deephaven.server.grpc.UserAgentContext;
 import io.deephaven.server.runner.GrpcServer;
 import io.grpc.BindableService;
 import io.grpc.ServerInterceptor;
@@ -42,6 +43,8 @@ public interface JettyServerModule {
         final ServletServerBuilder serverBuilder = new ServletServerBuilder();
         services.forEach(serverBuilder::addService);
         interceptors.forEach(serverBuilder::intercept);
+        serverBuilder.intercept(UserAgentContext.interceptor());
+        serverBuilder.intercept(new JettyCertInterceptor());
 
         // create a custom executor service, just like grpc would use, so that grpc doesn't shut it down ahead
         // of when we are ready
@@ -62,8 +65,6 @@ public interface JettyServerModule {
         serverBuilder.maxInboundMessageSize(maxMessageSize);
 
         serverBuilder.directExecutor();
-
-        serverBuilder.intercept(new JettyCertInterceptor());
 
         return serverBuilder.buildServletAdapter();
     }
