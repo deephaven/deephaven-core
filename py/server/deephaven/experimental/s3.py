@@ -57,11 +57,11 @@ class S3Instructions(JObjectWrapper):
                 fragment. Defaults to 32, which means fetch the next 32 fragments in advance when reading the current fragment.
             fragment_size (int): the maximum size of each fragment to read, defaults to 64 KiB. If there are fewer bytes
                 remaining in the file, the fetched fragment can be smaller.
-            connection_timeout (Union[Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta]):
+            connection_timeout (DurationLike):
                 the amount of time to wait when initially establishing a connection before giving up and timing out, can
                 be expressed as an integer in nanoseconds, a time interval string, e.g. "PT00:00:00.001" or "PT1s", or
                 other time duration types. Default to 2 seconds.
-            read_timeout (Union[Duration, int, str, datetime.timedelta, np.timedelta64, pd.Timedelta]):
+            read_timeout (DurationLike):
                 the amount of time to wait when reading a fragment before giving up and timing out, can be expressed as
                 an integer in nanoseconds, a time interval string, e.g. "PT00:00:00.001" or "PT1s", or other time
                 duration types. Default to 2 seconds.
