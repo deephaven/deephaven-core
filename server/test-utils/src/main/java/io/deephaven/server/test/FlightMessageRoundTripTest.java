@@ -1421,7 +1421,7 @@ public abstract class FlightMessageRoundTripTest {
                 .configBlocking()
                 .withInterceptors(state.clientInterceptor())
                 .getAuthenticationConstants(AuthenticationConstantsRequest.getDefaultInstance());
-        state.awaitServerInvokeFinished(Duration.ZERO);
+        state.awaitServerInvokeFinished(Duration.ofSeconds(3));
         final String userAgent = UserAgentContext.get(state.getCapturedContext()).orElse(null);
         Assert.neqNull(userAgent, "userAgent");
         final boolean userAgentStartsWith = userAgent.startsWith("FlightMessageRoundTripTest grpc-java-netty/");

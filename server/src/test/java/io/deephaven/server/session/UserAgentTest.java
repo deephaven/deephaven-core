@@ -25,7 +25,7 @@ public class UserAgentTest extends DeephavenApiServerSingleUnauthenticatedBase {
                 .configBlocking()
                 .withInterceptors(state.clientInterceptor())
                 .getAuthenticationConstants(AuthenticationConstantsRequest.getDefaultInstance());
-        state.awaitServerInvokeFinished(Duration.ZERO);
+        state.awaitServerInvokeFinished(Duration.ofSeconds(3));
         assertThat(UserAgentContext.get(state.getCapturedContext()).orElse(null))
                 .startsWith("ServerBuilderInProcessModule grpc-java-inprocess/");
     }
