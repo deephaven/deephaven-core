@@ -39,7 +39,7 @@ public interface TransferObject<BUFFER_TYPE> extends SafeCloseable {
             @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache,
             @NotNull final String columnName,
             @NotNull final ColumnSource<DATA_TYPE> columnSource) {
-        Class<DATA_TYPE> columnType = columnSource.getType();
+        final Class<DATA_TYPE> columnType = columnSource.getType();
         if (columnType == int.class) {
             return IntTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
         }

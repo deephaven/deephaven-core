@@ -45,7 +45,7 @@ public final class ParquetFileWriter implements AutoCloseable {
 
     public ParquetFileWriter(
             final URI dest,
-            final OutputStream destOutputStream,
+            final CountingOutputStream countingOutput,
             final int targetPageSize,
             final ByteBufferAllocator allocator,
             final MessageType type,
@@ -55,7 +55,7 @@ public final class ParquetFileWriter implements AutoCloseable {
         this.targetPageSize = targetPageSize;
         this.allocator = allocator;
         this.extraMetaData = new HashMap<>(extraMetaData);
-        this.countingOutput = new CountingOutputStream(destOutputStream);
+        this.countingOutput = countingOutput;
         countingOutput.write(MAGIC);
         this.type = type;
         this.compressorAdapter = DeephavenCompressorAdapterFactory.getInstance().getByName(codecName);

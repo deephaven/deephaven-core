@@ -12,11 +12,13 @@ import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.extensions.s3.S3Instructions;
 import io.deephaven.iceberg.TestCatalog.IcebergTestCatalog;
 import io.deephaven.iceberg.TestCatalog.IcebergTestFileIO;
+import junit.framework.TestCase;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.io.FileIO;
+import org.apache.iceberg.types.Type;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,6 +32,7 @@ import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
 import java.io.File;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -186,7 +189,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testListNamespaces() {
+    void testListNamespaces() {
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
 
         final Collection<Namespace> namespaces = adapter.listNamespaces();
@@ -203,7 +206,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testListTables() {
+    void testListTables() {
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
 
         final Namespace ns = Namespace.of("sales");
@@ -227,7 +230,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testListSnapshots() {
+    void testListSnapshots() {
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
 
         final TLongArrayList snapshotIds = new TLongArrayList();
@@ -253,7 +256,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testOpenTableA() throws ExecutionException, InterruptedException, TimeoutException {
+    void testOpenTableA() throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesPartitioned();
 
         final IcebergCatalogAdapter adapter =
@@ -276,7 +279,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testOpenTableB() throws ExecutionException, InterruptedException, TimeoutException {
+    void testOpenTableB() throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesMulti();
 
         final IcebergCatalogAdapter adapter =
@@ -298,7 +301,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testOpenTableC() throws ExecutionException, InterruptedException, TimeoutException {
+    void testOpenTableC() throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesSingle();
 
         final IcebergCatalogAdapter adapter =
@@ -321,7 +324,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testOpenTableS3Only() throws ExecutionException, InterruptedException, TimeoutException {
+    void testOpenTableS3Only() throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesPartitioned();
 
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
@@ -336,7 +339,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testOpenTableDefinition() throws ExecutionException, InterruptedException, TimeoutException {
+    void testOpenTableDefinition() throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesPartitioned();
 
         final IcebergInstructions localInstructions = IcebergInstructions.builder()
@@ -357,7 +360,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testOpenTablePartitionTypeException() {
+    void testOpenTablePartitionTypeException() {
         final TableDefinition tableDef = TableDefinition.of(
                 ColumnDefinition.ofLong("year").withPartitioning(),
                 ColumnDefinition.ofInt("month").withPartitioning(),
@@ -392,7 +395,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testOpenTableDefinitionRename() throws ExecutionException, InterruptedException, TimeoutException {
+    void testOpenTableDefinitionRename() throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesPartitioned();
 
         final TableDefinition renamed = TableDefinition.of(
@@ -429,7 +432,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testSkippedPartitioningColumn() throws ExecutionException, InterruptedException, TimeoutException {
+    void testSkippedPartitioningColumn() throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesPartitioned();
 
         final TableDefinition tableDef = TableDefinition.of(
@@ -459,7 +462,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testReorderedPartitioningColumn() throws ExecutionException, InterruptedException, TimeoutException {
+    void testReorderedPartitioningColumn() throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesPartitioned();
 
         final TableDefinition tableDef = TableDefinition.of(
@@ -489,7 +492,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testZeroPartitioningColumns() throws ExecutionException, InterruptedException, TimeoutException {
+    void testZeroPartitioningColumns() throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesPartitioned();
 
         final IcebergInstructions localInstructions = IcebergInstructions.builder()
@@ -510,7 +513,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testIncorrectPartitioningColumns() throws ExecutionException, InterruptedException, TimeoutException {
+    void testIncorrectPartitioningColumns() throws ExecutionException, InterruptedException, TimeoutException {
         final TableDefinition tableDef = TableDefinition.of(
                 ColumnDefinition.ofInt("month").withPartitioning(),
                 ColumnDefinition.ofInt("year").withPartitioning(),
@@ -546,7 +549,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testMissingPartitioningColumns() {
+    void testMissingPartitioningColumns() {
         final TableDefinition tableDef = TableDefinition.of(
                 ColumnDefinition.ofInt("__year").withPartitioning(), // Incorrect name
                 ColumnDefinition.ofInt("__month").withPartitioning(), // Incorrect name
@@ -581,7 +584,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testOpenTableColumnRename() throws ExecutionException, InterruptedException, TimeoutException {
+    void testOpenTableColumnRename() throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesPartitioned();
 
         final IcebergInstructions localInstructions = IcebergInstructions.builder()
@@ -602,7 +605,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testOpenTableColumnLegalization() throws ExecutionException, InterruptedException, TimeoutException {
+    void testOpenTableColumnLegalization() throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesRenamed();
 
         final IcebergInstructions localInstructions = IcebergInstructions.builder()
@@ -622,7 +625,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testOpenTableColumnLegalizationRename()
+    void testOpenTableColumnLegalizationRename()
             throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesRenamed();
 
@@ -652,7 +655,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testOpenTableColumnLegalizationPartitionException() {
+    void testOpenTableColumnLegalizationPartitionException() {
         final TableDefinition tableDef = TableDefinition.of(
                 ColumnDefinition.ofInt("Year").withPartitioning(),
                 ColumnDefinition.ofInt("Month").withPartitioning());
@@ -684,7 +687,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testOpenTableColumnRenamePartitioningColumns()
+    void testOpenTableColumnRenamePartitioningColumns()
             throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesPartitioned();
 
@@ -717,7 +720,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testOpenTableSnapshot() throws ExecutionException, InterruptedException, TimeoutException {
+    void testOpenTableSnapshot() throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesMulti();
 
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
@@ -749,7 +752,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testOpenTableSnapshotByID() throws ExecutionException, InterruptedException, TimeoutException {
+    void testOpenTableSnapshotByID() throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesMulti();
 
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
@@ -796,7 +799,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testOpenAllTypesTable() throws ExecutionException, InterruptedException, TimeoutException {
+    void testOpenAllTypesTable() throws ExecutionException, InterruptedException, TimeoutException {
         uploadAllTypes();
 
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
@@ -811,7 +814,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testTableDefinition() {
+    void testTableDefinition() {
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
 
         final Namespace ns = Namespace.of("sales");
@@ -836,7 +839,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testTableDefinitionTable() {
+    void testTableDefinitionTable() {
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
 
         final Namespace ns = Namespace.of("sales");
@@ -869,7 +872,7 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testTableDefinitionWithInstructions() {
+    void testTableDefinitionWithInstructions() {
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
 
         IcebergInstructions localInstructions = IcebergInstructions.builder()
@@ -907,5 +910,85 @@ public abstract class IcebergToolsTest {
         // Use string and current snapshot
         tableDef = adapter.getTableDefinition("sales.sales_multi", localInstructions);
         Assert.equals(tableDef, "tableDef", userTableDef);
+    }
+
+    // TODO Add this back when we have a simulator for Iceberg table
+    // @Test
+    // void testAddSnapshot() throws ExecutionException, InterruptedException, TimeoutException {
+    // uploadSalesMulti();
+    //
+    // final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+    //
+    // final Namespace ns = Namespace.of("sales");
+    // final TableIdentifier tableId = TableIdentifier.of(ns, "sales_multi");
+    // final List<Snapshot> snapshots = adapter.listSnapshots(tableId);
+    // Assert.eq(snapshots.size(), "snapshots.size()", 4, "4 snapshots for sales/sales_multi");
+    // final io.deephaven.engine.table.Table dhTable = adapter.readTable(tableId, icebergInstructions);
+    // Assert.eq(dhTable.size(), "dhTable.size()", 100_000, "100_000 rows in the table");
+    //
+    // // Read the first snapshot
+    // final io.deephaven.engine.table.Table dhTableFirstSnapshot =
+    // adapter.readTable(tableId, snapshots.get(0).snapshotId(), icebergInstructions);
+    // Assert.eq(dhTableFirstSnapshot.size(), "table0.size()", 18266, "18266 rows in the table");
+    // Assert.equals(dhTableFirstSnapshot.getDefinition(), "table0.getDefinition()", SALES_MULTI_DEFINITION);
+    //
+    // // Append these rows back to the iceberg table
+    // final ParquetInstructions parquetInstructions = ParquetInstructions.builder()
+    // .setSpecialInstructions(s3Instructions)
+    // .build();
+    // adapter.appendPartition(tableId, dhTableFirstSnapshot, parquetInstructions);
+    //
+    // // Verify we have added a new snapshot
+    // final List<Snapshot> newSnapshots = adapter.listSnapshots(tableId);
+    // Assert.eq(newSnapshots.size(), "newSnapshots.size()", 5, "5 snapshots for sales/sales_multi");
+    //
+    // // Verify we have added the right number of rows
+    // final io.deephaven.engine.table.Table dhTableNewSnapshot =
+    // adapter.readTable(tableId, newSnapshots.get(4).snapshotId(), icebergInstructions);
+    // Assert.eq(dhTableNewSnapshot.size(), "table0.size()", 18266, "18266 rows in the table");
+    //
+    // // Verify the overall size of the table
+    // final io.deephaven.engine.table.Table dhTableUpdated = adapter.readTable(tableId, icebergInstructions);
+    // Assert.eq(dhTableUpdated.size(), "dhTableUpdated.size()", 100_000 + 18266, "100_000 + 18266 rows in the table");
+    // }
+
+    @Test
+    void testAddSnapshotWrongSchema() throws ExecutionException, InterruptedException, TimeoutException {
+        uploadSalesMulti();
+
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog, resourceFileIO);
+
+        final Namespace ns = Namespace.of("sales");
+        final TableIdentifier tableId = TableIdentifier.of(ns, "sales_multi");
+        final io.deephaven.engine.table.Table dhTable = adapter.readTable(tableId, instructions);
+        Assert.eq(dhTable.size(), "dhTable.size()", 100_000, "100_000 rows in the table");
+
+        // Drop one column and append to original table
+        final io.deephaven.engine.table.Table updatedDhTable = dhTable.dropColumns("Region");
+        try {
+            adapter.appendTable(tableId, updatedDhTable, instructions);
+            TestCase.fail();
+        } catch (final IllegalArgumentException e) {
+            Assert.eqTrue(e.getMessage().contains("Schema mismatch"), "Exception message");
+        }
+    }
+
+    @Test
+    void testConvertToIcebergTypeAndBack() {
+        final Class<?>[] javaTypes = {
+                Boolean.class, double.class, float.class, int.class, long.class, String.class, Instant.class,
+                LocalDateTime.class, LocalDate.class, LocalTime.class, BigDecimal.class, byte[].class
+        };
+
+        for (final Class<?> javaType : javaTypes) {
+            // Java type -> Iceberg type
+            final Type icebergType = IcebergCatalogAdapter.convertToIcebergType(javaType);
+
+            // Iceberg type -> Deephaven type
+            final io.deephaven.qst.type.Type<?> deephavenType = IcebergCatalogAdapter.convertToDHType(icebergType);
+
+            // Deephaven type == Java type
+            Assert.eq(javaType, javaType.getName(), deephavenType.clazz(), deephavenType.clazz().getName());
+        }
     }
 }

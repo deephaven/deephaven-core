@@ -11,15 +11,15 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * This class provides instructions intended for reading Iceberg catalogs and tables. The default values documented in
- * this class may change in the future. As such, callers may wish to explicitly set the values.
+ * This class provides instructions intended for reading/writing Iceberg catalogs and tables. The default values
+ * documented in this class may change in the future. As such, callers may wish to explicitly set the values.
  */
 @Immutable
 @BuildableStyle
 public abstract class IcebergInstructions {
     /**
-     * The default {@link IcebergInstructions} to use when reading Iceberg data files. Providing this will use system
-     * defaults for cloud provider-specific parameters
+     * The default {@link IcebergInstructions} to use when reading/writing Iceberg data files. Providing this will use
+     * system defaults for cloud provider-specific parameters.
      */
     @SuppressWarnings("unused")
     public static final IcebergInstructions DEFAULT = builder().build();
@@ -29,19 +29,19 @@ public abstract class IcebergInstructions {
     }
 
     /**
-     * The {@link TableDefinition} to use when reading Iceberg data files.
+     * The {@link TableDefinition} to use when reading/writing Iceberg data files.
      */
     public abstract Optional<TableDefinition> tableDefinition();
 
     /**
-     * The data instructions to use for reading the Iceberg data files (might be S3Instructions or other cloud
+     * The data instructions to use for reading/writing the Iceberg data files (might be S3Instructions or other cloud
      * provider-specific instructions).
      */
     public abstract Optional<Object> dataInstructions();
 
     /**
-     * A {@link Map map} of rename instructions from Iceberg to Deephaven column names to use when reading the Iceberg
-     * data files.
+     * A {@link Map map} of rename instructions from Iceberg to Deephaven column names to use when reading/writing the
+     * Iceberg data files.
      */
     public abstract Map<String, String> columnRenames();
 

@@ -9,6 +9,7 @@ import org.apache.iceberg.CatalogUtil;
 import org.apache.iceberg.aws.AwsClientProperties;
 import org.apache.iceberg.aws.glue.GlueCatalog;
 import org.apache.iceberg.aws.s3.S3FileIOProperties;
+import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.io.FileIO;
 import org.apache.iceberg.rest.RESTCatalog;
 import org.jetbrains.annotations.NotNull;
@@ -50,11 +51,7 @@ public class IcebergToolsS3 extends IcebergTools {
         // Set up the properties map for the Iceberg catalog
         final Map<String, String> properties = new HashMap<>();
 
-        final RESTCatalog catalog = new RESTCatalog();
-
-        properties.put(CatalogProperties.CATALOG_IMPL, catalog.getClass().getName());
-        properties.put(CatalogProperties.URI, catalogURI);
-        properties.put(CatalogProperties.WAREHOUSE_LOCATION, warehouseLocation);
+        final Catalog catalog = new RESTCatalog();
 
         // Configure the properties map from the Iceberg instructions.
         if (!Strings.isNullOrEmpty(accessKeyId) && !Strings.isNullOrEmpty(secretAccessKey)) {
@@ -67,13 +64,7 @@ public class IcebergToolsS3 extends IcebergTools {
         if (!Strings.isNullOrEmpty(endpointOverride)) {
             properties.put(S3FileIOProperties.ENDPOINT, endpointOverride);
         }
-
-        final FileIO fileIO = CatalogUtil.loadFileIO(S3_FILE_IO_CLASS, properties, null);
-
-        final String catalogName = name != null ? name : "IcebergCatalog-" + catalogURI;
-        catalog.initialize(catalogName, properties);
-
-        return new IcebergCatalogAdapter(catalog, fileIO);
+        return createAdapterCommon(name, catalogURI, warehouseLocation, catalog, properties);
     }
 
     /**
@@ -95,13 +86,22 @@ public class IcebergToolsS3 extends IcebergTools {
         // Set up the properties map for the Iceberg catalog
         final Map<String, String> properties = new HashMap<>();
 
-        final GlueCatalog catalog = new GlueCatalog();
+        final Catalog catalog = new GlueCatalog();
+        return createAdapterCommon(name, catalogURI, warehouseLocation, catalog, properties);
+    }
 
+    private static IcebergCatalogAdapter createAdapterCommon(
+            @Nullable final String name,
+            @NotNull final String catalogURI,
+            @NotNull final String warehouseLocation,
+            @NotNull final Catalog catalog,
+            @NotNull final Map<String, String> properties) {
         properties.put(CatalogProperties.CATALOG_IMPL, catalog.getClass().getName());
         properties.put(CatalogProperties.URI, catalogURI);
         properties.put(CatalogProperties.WAREHOUSE_LOCATION, warehouseLocation);
 
         final FileIO fileIO = CatalogUtil.loadFileIO(S3_FILE_IO_CLASS, properties, null);
+        properties.put(CatalogProperties.FILE_IO_IMPL, fileIO.getClass().getName());
 
         final String catalogName = name != null ? name : "IcebergCatalog-" + catalogURI;
         catalog.initialize(catalogName, properties);

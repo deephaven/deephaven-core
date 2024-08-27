@@ -11,10 +11,10 @@ import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.parquet.base.ParquetUtils;
 import io.deephaven.util.annotations.VisibleForTesting;
-import org.apache.parquet.hadoop.metadata.CompressionCodecName;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -33,94 +33,17 @@ import java.util.stream.Collectors;
  */
 public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
-    private static volatile String defaultCompressionCodecName = CompressionCodecName.SNAPPY.toString();
-
-    /**
-     * Set the default for {@link #getCompressionCodecName()}.
-     *
-     * @deprecated Use {@link Builder#setCompressionCodecName(String)} instead.
-     * @param name The new default
-     */
-    @Deprecated
-    public static void setDefaultCompressionCodecName(final String name) {
-        defaultCompressionCodecName = name;
-    }
-
-    /**
-     * @return The default for {@link #getCompressionCodecName()}
-     */
-    public static String getDefaultCompressionCodecName() {
-        return defaultCompressionCodecName;
-    }
-
-    private static volatile int defaultMaximumDictionaryKeys = 1 << 20;
-
-    /**
-     * Set the default for {@link #getMaximumDictionaryKeys()}.
-     *
-     * @param maximumDictionaryKeys The new default
-     * @see Builder#setMaximumDictionaryKeys(int)
-     */
-    public static void setDefaultMaximumDictionaryKeys(final int maximumDictionaryKeys) {
-        defaultMaximumDictionaryKeys = Require.geqZero(maximumDictionaryKeys, "maximumDictionaryKeys");
-    }
-
-    /**
-     * @return The default for {@link #getMaximumDictionaryKeys()}
-     */
-    public static int getDefaultMaximumDictionaryKeys() {
-        return defaultMaximumDictionaryKeys;
-    }
-
-    private static volatile int defaultMaximumDictionarySize = 1 << 20;
-
-    /**
-     * Set the default for {@link #getMaximumDictionarySize()}.
-     *
-     * @param maximumDictionarySize The new default
-     * @see Builder#setMaximumDictionarySize(int)
-     */
-    public static void setDefaultMaximumDictionarySize(final int maximumDictionarySize) {
-        defaultMaximumDictionarySize = Require.geqZero(maximumDictionarySize, "maximumDictionarySize");
-    }
-
-    /**
-     * @return The default for {@link #getMaximumDictionarySize()}
-     */
-    public static int getDefaultMaximumDictionarySize() {
-        return defaultMaximumDictionarySize;
-    }
-
-    public static final int MIN_TARGET_PAGE_SIZE =
-            Configuration.getInstance().getIntegerWithDefault("Parquet.minTargetPageSize", 1 << 11); // 2KB
-    private static final int DEFAULT_TARGET_PAGE_SIZE =
-            Configuration.getInstance().getIntegerWithDefault("Parquet.defaultTargetPageSize", 1 << 16); // 64KB
-    private static volatile int defaultTargetPageSize = DEFAULT_TARGET_PAGE_SIZE;
+    public static final String DEFAULT_COMPRESSION_CODEC_NAME = "SNAPPY";
+    public static final int DEFAULT_MAXIMUM_DICTIONARY_KEYS = 1 << 20;
+    public static final int DEFAULT_MAXIMUM_DICTIONARY_SIZE = 1 << 20;
+    public static final int MIN_TARGET_PAGE_SIZE = 1 << 11; // 2KB
+    private static final int minTargetPageSize = Configuration.getInstance().getIntegerWithDefault(
+            "Parquet.minTargetPageSize", MIN_TARGET_PAGE_SIZE);
+    public static final int DEFAULT_TARGET_PAGE_SIZE = 1 << 16; // 64KB
+    private static final int defaultTargetPageSize = Configuration.getInstance().getIntegerWithDefault(
+            "Parquet.defaultTargetPageSize", DEFAULT_TARGET_PAGE_SIZE);
 
     private static final boolean DEFAULT_IS_REFRESHING = false;
-
-    /**
-     * Set the default target page size (in bytes) used to section rows of data into pages during column writing. This
-     * number should be no smaller than {@link #MIN_TARGET_PAGE_SIZE}.
-     *
-     * @param newDefaultSizeBytes the new default target page size.
-     */
-    public static void setDefaultTargetPageSize(final int newDefaultSizeBytes) {
-        if (newDefaultSizeBytes < MIN_TARGET_PAGE_SIZE) {
-            throw new IllegalArgumentException(
-                    "Default target page size should be larger than " + MIN_TARGET_PAGE_SIZE + " bytes");
-        }
-        defaultTargetPageSize = newDefaultSizeBytes;
-    }
-
-    /**
-     * Get the current default target page size in bytes.
-     * 
-     * @return the current default target page size in bytes.
-     */
-    public static int getDefaultTargetPageSize() {
-        return defaultTargetPageSize;
-    }
 
     public enum ParquetFileLayout {
         /**
@@ -251,6 +174,36 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
      */
     public abstract String baseNameForPartitionedParquetData();
 
+    public static class CompletedWrite {
+        private final URI destination;
+        private final long numRows;
+        private final long numBytes;
+
+        CompletedWrite(final URI destination, final long numRows, final long numBytes) {
+            this.destination = destination;
+            this.numRows = numRows;
+            this.numBytes = numBytes;
+        }
+
+        public URI destination() {
+            return destination;
+        }
+
+        public long numRows() {
+            return numRows;
+        }
+
+        public long numBytes() {
+            return numBytes;
+        }
+    }
+
+    /**
+     * @return A list to be populated with information about all the parquet files written, ignoring the index and
+     *         metadata files.
+     */
+    public abstract Optional<List<CompletedWrite>> completedWrites();
+
     @VisibleForTesting
     public static boolean sameColumnNamesAndCodecMappings(final ParquetInstructions i1, final ParquetInstructions i2) {
         if (i1 == EMPTY) {
@@ -302,17 +255,17 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
 
         @Override
         public String getCompressionCodecName() {
-            return defaultCompressionCodecName;
+            return DEFAULT_COMPRESSION_CODEC_NAME;
         }
 
         @Override
         public int getMaximumDictionaryKeys() {
-            return defaultMaximumDictionaryKeys;
+            return DEFAULT_MAXIMUM_DICTIONARY_KEYS;
         }
 
         @Override
         public int getMaximumDictionarySize() {
-            return defaultMaximumDictionarySize;
+            return DEFAULT_MAXIMUM_DICTIONARY_SIZE;
         }
 
         @Override
@@ -372,7 +325,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return new ReadOnly(null, null, getCompressionCodecName(), getMaximumDictionaryKeys(),
                     getMaximumDictionarySize(), isLegacyParquet(), getTargetPageSize(), isRefreshing(),
                     getSpecialInstructions(), generateMetadataFiles(), baseNameForPartitionedParquetData(),
-                    useLayout, useDefinition, null);
+                    useLayout, useDefinition, null, null);
         }
 
         @Override
@@ -380,7 +333,12 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return new ReadOnly(null, null, getCompressionCodecName(), getMaximumDictionaryKeys(),
                     getMaximumDictionarySize(), isLegacyParquet(), getTargetPageSize(), isRefreshing(),
                     getSpecialInstructions(), generateMetadataFiles(), baseNameForPartitionedParquetData(),
-                    null, null, indexColumns);
+                    null, null, indexColumns, null);
+        }
+
+        @Override
+        public Optional<List<CompletedWrite>> completedWrites() {
+            return Optional.empty();
         }
     };
 
@@ -455,6 +413,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private final ParquetFileLayout fileLayout;
         private final TableDefinition tableDefinition;
         private final Collection<List<String>> indexColumns;
+        private final List<CompletedWrite> completedWrites;
 
         private ReadOnly(
                 final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructions,
@@ -470,7 +429,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                 final String baseNameForPartitionedParquetData,
                 final ParquetFileLayout fileLayout,
                 final TableDefinition tableDefinition,
-                final Collection<List<String>> indexColumns) {
+                final Collection<List<String>> indexColumns,
+                final List<CompletedWrite> completedWrites) {
             this.columnNameToInstructions = columnNameToInstructions;
             this.parquetColumnNameToInstructions = parquetColumnNameToColumnName;
             this.compressionCodecName = compressionCodecName;
@@ -488,6 +448,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                     : indexColumns.stream()
                             .map(List::copyOf)
                             .collect(Collectors.toUnmodifiableList());
+            this.completedWrites = completedWrites;
         }
 
         private String getOrDefault(final String columnName, final String defaultValue,
@@ -625,7 +586,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                     getCompressionCodecName(), getMaximumDictionaryKeys(), getMaximumDictionarySize(),
                     isLegacyParquet(), getTargetPageSize(), isRefreshing(), getSpecialInstructions(),
                     generateMetadataFiles(), baseNameForPartitionedParquetData(), useLayout, useDefinition,
-                    indexColumns);
+                    indexColumns, completedWrites);
         }
 
         @Override
@@ -634,7 +595,12 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
                     getCompressionCodecName(), getMaximumDictionaryKeys(), getMaximumDictionarySize(),
                     isLegacyParquet(), getTargetPageSize(), isRefreshing(), getSpecialInstructions(),
                     generateMetadataFiles(), baseNameForPartitionedParquetData(), fileLayout,
-                    tableDefinition, useIndexColumns);
+                    tableDefinition, useIndexColumns, completedWrites);
+        }
+
+        @Override
+        public Optional<List<CompletedWrite>> completedWrites() {
+            return Optional.ofNullable(completedWrites);
         }
 
         KeyedObjectHashMap<String, ColumnInstructions> copyColumnNameToInstructions() {
@@ -681,9 +647,9 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         // We only store entries in parquetColumnNameToInstructions when the parquetColumnName is
         // different than the columnName (ie, the column name mapping is not the default mapping)
         private KeyedObjectHashMap<String, ColumnInstructions> parquetColumnNameToInstructions;
-        private String compressionCodecName = defaultCompressionCodecName;
-        private int maximumDictionaryKeys = defaultMaximumDictionaryKeys;
-        private int maximumDictionarySize = defaultMaximumDictionarySize;
+        private String compressionCodecName = DEFAULT_COMPRESSION_CODEC_NAME;
+        private int maximumDictionaryKeys = DEFAULT_MAXIMUM_DICTIONARY_KEYS;
+        private int maximumDictionarySize = DEFAULT_MAXIMUM_DICTIONARY_SIZE;
         private boolean isLegacyParquet;
         private int targetPageSize = defaultTargetPageSize;
         private boolean isRefreshing = DEFAULT_IS_REFRESHING;
@@ -693,6 +659,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         private ParquetFileLayout fileLayout;
         private TableDefinition tableDefinition;
         private Collection<List<String>> indexColumns;
+        private List<CompletedWrite> completedWrites;
 
         /**
          * For each additional field added, make sure to update the copy constructor builder
@@ -720,6 +687,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             fileLayout = readOnlyParquetInstructions.getFileLayout().orElse(null);
             tableDefinition = readOnlyParquetInstructions.getTableDefinition().orElse(null);
             indexColumns = readOnlyParquetInstructions.getIndexColumns().orElse(null);
+            completedWrites = readOnlyParquetInstructions.completedWrites().orElse(null);
         }
 
         private void newColumnNameToInstructionsMap() {
@@ -869,8 +837,8 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
         }
 
         public Builder setTargetPageSize(final int targetPageSize) {
-            if (targetPageSize < MIN_TARGET_PAGE_SIZE) {
-                throw new IllegalArgumentException("Target page size should be >= " + MIN_TARGET_PAGE_SIZE);
+            if (targetPageSize < minTargetPageSize) {
+                throw new IllegalArgumentException("Target page size should be >= " + minTargetPageSize);
             }
             this.targetPageSize = targetPageSize;
             return this;
@@ -987,6 +955,11 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return this;
         }
 
+        public Builder setCompletedWrites(final List<CompletedWrite> completedWrites) {
+            this.completedWrites = completedWrites;
+            return this;
+        }
+
         public ParquetInstructions build() {
             final KeyedObjectHashMap<String, ColumnInstructions> columnNameToInstructionsOut = columnNameToInstructions;
             columnNameToInstructions = null;
@@ -996,7 +969,7 @@ public abstract class ParquetInstructions implements ColumnToCodecMappings {
             return new ReadOnly(columnNameToInstructionsOut, parquetColumnNameToColumnNameOut, compressionCodecName,
                     maximumDictionaryKeys, maximumDictionarySize, isLegacyParquet, targetPageSize, isRefreshing,
                     specialInstructions, generateMetadataFiles, baseNameForPartitionedParquetData, fileLayout,
-                    tableDefinition, indexColumns);
+                    tableDefinition, indexColumns, completedWrites);
         }
     }
 

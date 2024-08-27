@@ -587,6 +587,14 @@ public class ParquetTools {
             metadataFileWriter = NullParquetMetadataFileWriter.INSTANCE;
         }
 
+        final boolean collectCompletedWrites = writeInstructions.completedWrites().isPresent();
+        final List<ParquetInstructions.CompletedWrite> completedWrites;
+        if (collectCompletedWrites) {
+            completedWrites = new ArrayList<>(destinations.length);
+        } else {
+            completedWrites = null;
+        }
+
         // List of output streams created, to rollback in case of exceptions
         final List<CompletableOutputStream> outputStreams = new ArrayList<>(destinations.length);
         try (final SafeCloseable ignored = () -> SafeCloseable.closeAll(outputStreams.stream())) {
@@ -598,9 +606,13 @@ public class ParquetTools {
                         final CompletableOutputStream outputStream = channelsProvider.getOutputStream(
                                 destinations[tableIdx], PARQUET_OUTPUT_BUFFER_SIZE);
                         outputStreams.add(outputStream);
-                        ParquetTableWriter.write(source, definition, writeInstructions, destinations[tableIdx],
-                                outputStream, Collections.emptyMap(), (List<ParquetTableWriter.IndexWritingInfo>) null,
-                                metadataFileWriter, computedCache);
+                        final long numBytes = ParquetTableWriter.write(source, definition, writeInstructions,
+                                destinations[tableIdx], outputStream, Collections.emptyMap(),
+                                (List<ParquetTableWriter.IndexWritingInfo>) null, metadataFileWriter, computedCache);
+                        if (collectCompletedWrites) {
+                            completedWrites.add(new ParquetInstructions.CompletedWrite(destinations[tableIdx],
+                                    source.size(), numBytes));
+                        }
                     }
                 } else {
                     // Shared parquet column names across all tables
@@ -622,8 +634,13 @@ public class ParquetTools {
                             outputStreams.add(info.destOutputStream);
                         }
                         final Table sourceTable = sources[tableIdx];
-                        ParquetTableWriter.write(sourceTable, definition, writeInstructions, destinations[tableIdx],
-                                outputStream, Collections.emptyMap(), indexInfoList, metadataFileWriter, computedCache);
+                        final long numBytes = ParquetTableWriter.write(sourceTable, definition, writeInstructions,
+                                tableDestination, outputStream, Collections.emptyMap(), indexInfoList,
+                                metadataFileWriter, computedCache);
+                        if (collectCompletedWrites) {
+                            completedWrites.add(new ParquetInstructions.CompletedWrite(tableDestination,
+                                    sourceTable.size(), numBytes));
+                        }
                     }
                 }
 
@@ -652,8 +669,17 @@ public class ParquetTools {
                         log.error().append("Error in rolling back output stream ").append(e1).endl();
                     }
                 }
+                if (completedWrites != null) {
+                    completedWrites.clear();
+                }
                 throw new UncheckedDeephavenException("Error writing parquet tables", e);
             }
+        }
+        if (collectCompletedWrites && !completedWrites.isEmpty()) {
+            // Add the completed writes to the list provided in the instructions
+            final List<ParquetInstructions.CompletedWrite> userCompletedWritesList =
+                    writeInstructions.completedWrites().get();
+            userCompletedWritesList.addAll(completedWrites);
         }
     }
 
