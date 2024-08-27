@@ -44,15 +44,15 @@ final class WebRowSetImpl implements RowSet, WritableRowSet {
 
     @Override
     public long get(long position) {
-        return -1;
+        return rangeSet.get(position);
     }
     @Override
     public WritableRowSet intersect(RowSet rowSet) {
-        return this;
+        throw new UnsupportedOperationException("intersect");
     }
     @Override
     public WritableRowSet shift(long shiftAmount) {
-        return this;
+        throw new UnsupportedOperationException("shift");
     }
 
 

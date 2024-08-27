@@ -3,7 +3,6 @@
 //
 package io.deephaven.web.client.api;
 
-import com.vertispan.tsdefs.annotations.TsName;
 import com.vertispan.tsdefs.annotations.TsTypeRef;
 import com.vertispan.tsdefs.annotations.TsUnion;
 import com.vertispan.tsdefs.annotations.TsUnionMember;
@@ -99,6 +98,7 @@ public interface TableData {
      * @param column the column to read
      * @return the value in the table
      */
+    // TODO (deephaven-core#5927) Consider a get/fillChunk API as an efficient alternative
     @JsMethod
     default Any getData(RowPositionUnion index, Column column) {
         if (index.isLongWrapper()) {

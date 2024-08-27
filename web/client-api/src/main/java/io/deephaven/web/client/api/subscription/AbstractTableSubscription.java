@@ -219,8 +219,6 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
             return;
         }
 
-        // TODO if this was a snapshot (or subscriptionReady was false for some interval), we probably need to
-        // notify of the entire table as a single big change
         notifyUpdate(rowsAdded, rowsRemoved, totalMods, shifted);
     }
 

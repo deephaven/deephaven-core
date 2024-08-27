@@ -533,7 +533,6 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
             }
         }
 
-        // TODO move to superclass and check on viewport change
         private RangeSet serverViewport;
 
         public TreeSubscription(ClientTableState state, WorkerConnection connection) {
@@ -625,8 +624,6 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                 .then(results -> {
                     BitSet columnsBitset = makeColumnSubscriptionBitset();
                     RangeSet range = RangeSet.ofRange((long) (double) firstRow, (long) (double) lastRow);
-
-                    // Column[] queryColumns = this.columns;
 
                     boolean alwaysFireEvent = this.alwaysFireNextEvent;
                     this.alwaysFireNextEvent = false;

@@ -177,7 +177,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
 
     @Override
     public <T> void fireEvent(String type, CustomEvent<T> e) {
-        if (type.equals(e.type)) {
+        if (!type.equals(e.type)) {
             throw new IllegalArgumentException(type + " != " + e.type);
         }
         refire(e);

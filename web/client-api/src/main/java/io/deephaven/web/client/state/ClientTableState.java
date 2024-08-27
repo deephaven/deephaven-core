@@ -301,19 +301,18 @@ public final class ClientTableState extends TableConfig {
     }
 
     /**
-     * Returns the Java Class to represent the component type in any list/array type. Only used to detect if a byte[]
-     * should be used for holding data at this time.
+     * Returns the Java Class to represent the component type in any list/array type. At this time, this value is not
+     * used by the chunk reading implementation.
      */
     public Class<?>[] componentTypes() {
-        // The only componentType that matters is byte.class
         return Arrays.stream(tableDef.getColumns()).map(ColumnDefinition::getType).map(t -> {
-            if (!t.endsWith("[]")) {
-                return null;
+            // All arrays and vectors will be handled as objects for now.
+            // TODO (deephaven-core#2102) clarify if we need to handle these cases at all
+            if (t.endsWith("[]") || t.endsWith("Vector")) {
+                return Object.class;
             }
-            if (t.equals("io.deephaven.vector.ByteVector[]")) {
-                return byte.class;
-            }
-            return Object.class;
+            // Non-arrays or vectors should return null
+            return null;
         }).toArray(Class[]::new);
     }
 
