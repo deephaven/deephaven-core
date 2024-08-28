@@ -9,7 +9,7 @@ import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.iceberg.location.IcebergTableParquetLocationKey;
-import io.deephaven.iceberg.util.IcebergInstructions;
+import io.deephaven.iceberg.util.IcebergBaseInstructions;
 import io.deephaven.parquet.table.ParquetInstructions;
 import org.apache.iceberg.*;
 import org.apache.iceberg.io.FileIO;
@@ -46,7 +46,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
     /**
      * The instructions for customizations while reading.
      */
-    final IcebergInstructions instructions;
+    final IcebergBaseInstructions instructions;
 
     /**
      * A cache of {@link IcebergTableLocationKey IcebergTableLocationKeys} keyed by the URI of the file they represent.
@@ -102,7 +102,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             @NotNull final Table table,
             @NotNull final Snapshot tableSnapshot,
             @NotNull final FileIO fileIO,
-            @NotNull final IcebergInstructions instructions) {
+            @NotNull final IcebergBaseInstructions instructions) {
         this.tableDef = tableDef;
         this.table = table;
         this.snapshot = tableSnapshot;

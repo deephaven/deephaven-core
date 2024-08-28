@@ -13,19 +13,16 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * This class provides instructions intended for writing Iceberg tables as Parquet data files.
+ * This class provides instructions intended for writing Iceberg tables as Parquet data files as well as reading for
+ * reading Iceberg catalogs and tables. The default values documented in this class may change in the future. As such,
+ * callers may wish to explicitly set the values.
  */
-// TODO Check with Devin
-// I am getting a warning here
-// (immutables:subtype) Should not inherit io.deephaven.iceberg.util.IcebergInstructions which is a value type
-// itself. Avoid extending from another abstract value type. Better to share common abstract class or interface which
-// are not carrying @Immutable annotation. If still extending from immutable abstract type be ready to face some
-// incoherences in generated types.
 @Immutable
 @BuildableStyle
-public abstract class IcebergParquetWriteInstructions extends IcebergInstructions {
+public abstract class IcebergParquetWriteInstructions implements IcebergBaseInstructions {
     /**
-     * The default {@link IcebergInstructions} to use when reading/writing Iceberg tables as Parquet data files.
+     * The default {@link IcebergParquetWriteInstructions} to use when reading/writing Iceberg tables as Parquet data
+     * files.
      */
     @SuppressWarnings("unused")
     public static final IcebergParquetWriteInstructions DEFAULT = builder().build();
@@ -101,7 +98,7 @@ public abstract class IcebergParquetWriteInstructions extends IcebergInstruction
         return builder.build();
     }
 
-    public interface Builder extends IcebergInstructions.Builder {
+    public interface Builder extends IcebergBaseInstructions.Builder {
         @SuppressWarnings("unused")
         Builder compressionCodecName(String compressionCodecName);
 

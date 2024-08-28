@@ -3,6 +3,10 @@
 //
 package io.deephaven.iceberg.util;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -27,6 +31,7 @@ import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.annotations.VisibleForTesting;
+import org.apache.hadoop.util.StringUtils;
 import org.apache.iceberg.AppendFiles;
 import org.apache.iceberg.DataFiles;
 import org.apache.iceberg.FileFormat;
@@ -34,11 +39,11 @@ import org.apache.iceberg.PartitionField;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
+import org.apache.iceberg.TableProperties;
 import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.SupportsNamespaces;
 import org.apache.iceberg.catalog.TableIdentifier;
-import org.apache.iceberg.exceptions.AlreadyExistsException;
 import org.apache.iceberg.io.FileIO;
 import org.apache.iceberg.types.Type;
 import org.apache.iceberg.types.Types;
@@ -73,6 +78,8 @@ public class IcebergCatalogAdapter {
             ColumnDefinition.ofString("Operation"),
             ColumnDefinition.fromGenericType("Summary", Map.class),
             ColumnDefinition.fromGenericType("SnapshotObject", Snapshot.class));
+
+    private static final String DEFAULT_GENERATED_FILE_FORMAT = "parquet";
 
     private final Catalog catalog;
     private final FileIO fileIO;
@@ -462,7 +469,7 @@ public class IcebergCatalogAdapter {
     private Map<String, String> getRenameColumnMap(
             @NotNull final org.apache.iceberg.Table table,
             @NotNull final Schema schema,
-            @NotNull final IcebergInstructions instructions) {
+            @NotNull final IcebergBaseInstructions instructions) {
 
         final Set<String> takenNames = new HashSet<>();
 
@@ -507,7 +514,7 @@ public class IcebergCatalogAdapter {
      */
     public TableDefinition getTableDefinition(
             @NotNull final String tableIdentifier,
-            @Nullable final IcebergInstructions instructions) {
+            @Nullable final IcebergBaseInstructions instructions) {
         final TableIdentifier tableId = TableIdentifier.parse(tableIdentifier);
         // Load the table from the catalog.
         return getTableDefinition(tableId, instructions);
@@ -523,7 +530,7 @@ public class IcebergCatalogAdapter {
      */
     public TableDefinition getTableDefinition(
             @NotNull final TableIdentifier tableIdentifier,
-            @Nullable final IcebergInstructions instructions) {
+            @Nullable final IcebergBaseInstructions instructions) {
         // Load the table from the catalog.
         return getTableDefinitionInternal(tableIdentifier, null, instructions);
     }
@@ -580,7 +587,7 @@ public class IcebergCatalogAdapter {
      */
     public Table getTableDefinitionTable(
             @NotNull final String tableIdentifier,
-            @Nullable final IcebergInstructions instructions) {
+            @Nullable final IcebergBaseInstructions instructions) {
         final TableIdentifier tableId = TableIdentifier.parse(tableIdentifier);
         return getTableDefinitionTable(tableId, instructions);
     }
@@ -595,7 +602,7 @@ public class IcebergCatalogAdapter {
      */
     public Table getTableDefinitionTable(
             @NotNull final TableIdentifier tableIdentifier,
-            @Nullable final IcebergInstructions instructions) {
+            @Nullable final IcebergBaseInstructions instructions) {
         final TableDefinition definition = getTableDefinition(tableIdentifier, instructions);
         return TableTools.metaTable(definition);
     }
@@ -647,7 +654,7 @@ public class IcebergCatalogAdapter {
     private TableDefinition getTableDefinitionInternal(
             @NotNull final TableIdentifier tableIdentifier,
             @Nullable final Snapshot tableSnapshot,
-            @Nullable final IcebergInstructions instructions) {
+            @Nullable final IcebergBaseInstructions instructions) {
         final org.apache.iceberg.Table table = catalog.loadTable(tableIdentifier);
         if (table == null) {
             throw new IllegalArgumentException("Table not found: " + tableIdentifier);
@@ -656,7 +663,8 @@ public class IcebergCatalogAdapter {
         final Snapshot snapshot = tableSnapshot != null ? tableSnapshot : table.currentSnapshot();
         final Schema schema = snapshot != null ? table.schemas().get(snapshot.schemaId()) : table.schema();
 
-        final IcebergInstructions userInstructions = instructions == null ? IcebergInstructions.DEFAULT : instructions;
+        final IcebergBaseInstructions userInstructions =
+                instructions == null ? IcebergInstructions.DEFAULT : instructions;
 
         return fromSchema(schema,
                 table.spec(),
@@ -673,7 +681,7 @@ public class IcebergCatalogAdapter {
      */
     public Table readTable(
             @NotNull final TableIdentifier tableIdentifier,
-            @Nullable final IcebergInstructions instructions) {
+            @Nullable final IcebergBaseInstructions instructions) {
         return readTableInternal(tableIdentifier, null, instructions);
     }
 
@@ -686,7 +694,7 @@ public class IcebergCatalogAdapter {
      */
     public Table readTable(
             @NotNull final String tableIdentifier,
-            @Nullable final IcebergInstructions instructions) {
+            @Nullable final IcebergBaseInstructions instructions) {
         return readTable(TableIdentifier.parse(tableIdentifier), instructions);
     }
 
@@ -701,7 +709,7 @@ public class IcebergCatalogAdapter {
     public Table readTable(
             @NotNull final TableIdentifier tableIdentifier,
             final long tableSnapshotId,
-            @Nullable final IcebergInstructions instructions) {
+            @Nullable final IcebergBaseInstructions instructions) {
         // Find the snapshot with the given snapshot id
         final Snapshot tableSnapshot = getSnapshot(tableIdentifier, tableSnapshotId);
         if (tableSnapshot == null) {
@@ -721,7 +729,7 @@ public class IcebergCatalogAdapter {
     public Table readTable(
             @NotNull final String tableIdentifier,
             final long tableSnapshotId,
-            @Nullable final IcebergInstructions instructions) {
+            @Nullable final IcebergBaseInstructions instructions) {
         return readTable(TableIdentifier.parse(tableIdentifier), tableSnapshotId, instructions);
     }
 
@@ -736,14 +744,14 @@ public class IcebergCatalogAdapter {
     public Table readTable(
             @NotNull final TableIdentifier tableIdentifier,
             @NotNull final Snapshot tableSnapshot,
-            @Nullable final IcebergInstructions instructions) {
+            @Nullable final IcebergBaseInstructions instructions) {
         return readTableInternal(tableIdentifier, tableSnapshot, instructions);
     }
 
     private Table readTableInternal(
             @NotNull final TableIdentifier tableIdentifier,
             @Nullable final Snapshot tableSnapshot,
-            @Nullable final IcebergInstructions instructions) {
+            @Nullable final IcebergBaseInstructions instructions) {
         // Load the table from the catalog.
         final org.apache.iceberg.Table table = catalog.loadTable(tableIdentifier);
         if (table == null) {
@@ -758,7 +766,8 @@ public class IcebergCatalogAdapter {
         final org.apache.iceberg.PartitionSpec partitionSpec = table.spec();
 
         // Get default instructions if none are provided
-        final IcebergInstructions userInstructions = instructions == null ? IcebergInstructions.DEFAULT : instructions;
+        final IcebergBaseInstructions userInstructions =
+                instructions == null ? IcebergInstructions.DEFAULT : instructions;
 
         // Get the user supplied table definition.
         final TableDefinition userTableDef = userInstructions.tableDefinition().orElse(null);
@@ -846,15 +855,16 @@ public class IcebergCatalogAdapter {
             @NotNull final Table dhTable,
             @NotNull final String namespace,
             @NotNull final String tableName,
-            @NotNull final IcebergInstructions instructions) {
-        verifyWriteInstructions(instructions);
+            @NotNull final IcebergBaseInstructions instructions) {
+        final IcebergParquetWriteInstructions writeInstructions = verifyWriteInstructions(instructions);
         final Namespace ns = createNamespaceIfDoesntExist(namespace);
         final TableIdentifier tableIdentifier = TableIdentifier.of(ns, tableName);
         final TableDefinition useDefinition = instructions.tableDefinition().orElse(dhTable.getDefinition());
         final SpecAndSchema specAndSchema = fromTableDefinition(useDefinition, instructions);
-        final org.apache.iceberg.Table icebergTable = createNewIcebergTable(tableIdentifier, specAndSchema);
+        final org.apache.iceberg.Table icebergTable =
+                createNewIcebergTable(tableIdentifier, specAndSchema, writeInstructions);
         try {
-            writeParquet(icebergTable, dhTable, instructions);
+            writeParquet(icebergTable, dhTable, writeInstructions);
         } catch (final Exception writeException) {
             // If we fail to write the table, we should delete the table to avoid leaving a partial table in the catalog
             try {
@@ -889,7 +899,7 @@ public class IcebergCatalogAdapter {
     public void appendTable(
             @NotNull final String icebergTableIdentifier,
             @NotNull final Table dhTable,
-            @Nullable final IcebergInstructions instructions) {
+            @Nullable final IcebergBaseInstructions instructions) {
         appendTable(TableIdentifier.parse(icebergTableIdentifier), dhTable, instructions);
     }
 
@@ -915,8 +925,8 @@ public class IcebergCatalogAdapter {
     public void appendTable(
             @NotNull final TableIdentifier icebergTableIdentifier,
             @NotNull final Table dhTable,
-            @NotNull final IcebergInstructions instructions) {
-        verifyWriteInstructions(instructions);
+            @NotNull final IcebergBaseInstructions instructions) {
+        final IcebergParquetWriteInstructions writeInstructions = verifyWriteInstructions(instructions);
         // Load the table from the catalog.
         final org.apache.iceberg.Table icebergTable = catalog.loadTable(icebergTableIdentifier);
         if (icebergTable == null) {
@@ -935,15 +945,15 @@ public class IcebergCatalogAdapter {
                     + icebergTable.spec() + ", partition spec derived from deephaven table: "
                     + specAndSchema.partitionSpec);
         }
-        writeParquet(icebergTable, dhTable, instructions);
+        writeParquet(icebergTable, dhTable, writeInstructions);
     }
 
     public void writePartitionedTable(
             @NotNull final Table dhTable,
             @NotNull final String namespace,
             @NotNull final String tableName,
-            @NotNull final IcebergInstructions instructions) {
-        verifyWriteInstructions(instructions);
+            @NotNull final IcebergBaseInstructions instructions) {
+        final IcebergParquetWriteInstructions writeInstructions = verifyWriteInstructions(instructions);
         final Namespace ns = createNamespaceIfDoesntExist(namespace);
         final TableIdentifier tableIdentifier = TableIdentifier.of(ns, tableName);
         final TableDefinition useDefinition = instructions.tableDefinition().orElse(dhTable.getDefinition());
@@ -951,7 +961,7 @@ public class IcebergCatalogAdapter {
             throw new IllegalArgumentException("Table must have partitioning columns to write partitioned data");
         }
         final SpecAndSchema specAndSchema = fromTableDefinition(useDefinition, instructions);
-        writePartitionedTableImpl(dhTable, tableIdentifier, specAndSchema, instructions);
+        writePartitionedTableImpl(dhTable, tableIdentifier, specAndSchema, writeInstructions);
     }
 
     public void writePartitionedTable(
@@ -965,8 +975,8 @@ public class IcebergCatalogAdapter {
             @NotNull final PartitionedTable dhTable,
             @NotNull final String namespace,
             @NotNull final String tableName,
-            @NotNull final IcebergInstructions instructions) {
-        verifyWriteInstructions(instructions);
+            @NotNull final IcebergBaseInstructions instructions) {
+        final IcebergParquetWriteInstructions writeInstructions = verifyWriteInstructions(instructions);
         final Namespace ns = createNamespaceIfDoesntExist(namespace);
         final TableIdentifier tableIdentifier = TableIdentifier.of(ns, tableName);
         final SpecAndSchema specAndSchema;
@@ -975,15 +985,17 @@ public class IcebergCatalogAdapter {
         } else {
             specAndSchema = forPartitionedTable(dhTable, instructions);
         }
-        writePartitionedTableImpl(dhTable, tableIdentifier, specAndSchema, instructions);
+        writePartitionedTableImpl(dhTable, tableIdentifier, specAndSchema, writeInstructions);
     }
 
-    private static void verifyWriteInstructions(@NotNull final IcebergInstructions instructions) {
+    private static IcebergParquetWriteInstructions verifyWriteInstructions(
+            @NotNull final IcebergBaseInstructions instructions) {
         // We ony support writing to Parquet files
         if (!(instructions instanceof IcebergParquetWriteInstructions)) {
             throw new IllegalArgumentException("Unsupported instructions of class " + instructions.getClass() + " for" +
                     " writing Iceberg table, expected: " + IcebergParquetWriteInstructions.class);
         }
+        return (IcebergParquetWriteInstructions) instructions;
     }
 
     private Namespace createNamespaceIfDoesntExist(@NotNull final String namespace) {
@@ -1012,7 +1024,7 @@ public class IcebergCatalogAdapter {
      */
     private static SpecAndSchema fromTableDefinition(
             @NotNull final TableDefinition tableDefinition,
-            @NotNull final IcebergInstructions instructions) {
+            @NotNull final IcebergBaseInstructions instructions) {
         final Collection<String> partitioningColumnNames = new ArrayList<>();
         final List<Types.NestedField> fields = new ArrayList<>();
         int fieldID = 1; // Iceberg field IDs start from 1
@@ -1035,7 +1047,7 @@ public class IcebergCatalogAdapter {
 
     private static SpecAndSchema forPartitionedTable(
             @NotNull final PartitionedTable partitionedTable,
-            @NotNull final IcebergInstructions instructions) {
+            @NotNull final IcebergBaseInstructions instructions) {
         // TODO Look at the duplication
         final List<Types.NestedField> fields = new ArrayList<>();
         int fieldID = 1; // Iceberg field IDs start from 1
@@ -1065,28 +1077,60 @@ public class IcebergCatalogAdapter {
         return new SpecAndSchema(partitionSpec, schema);
     }
 
+    /**
+     * Convert a map of column IDs to names to a JSON string. For example, the map {1 -> "A", 2 -> "B"} would be
+     * converted to: [{"field-id":1,"names":["A"]},{"field-id":2,"names":["B"]}]
+     */
+    // TODO Check with others if there is a better way to do this
+    private static String convertIdToNameMapToJson(final Map<Integer, String> idToNameMap) {
+        final ObjectMapper mapper = new ObjectMapper();
+        final ArrayNode parentNode = mapper.createArrayNode();
+        for (final Map.Entry<Integer, String> columnIndo : idToNameMap.entrySet()) {
+            final ObjectNode columnNode = mapper.createObjectNode();
+            columnNode.put("field-id", columnIndo.getKey());
+            final ArrayNode namesArray = mapper.createArrayNode();
+            namesArray.add(columnIndo.getValue());
+            columnNode.set("names", namesArray);
+            parentNode.add(columnNode);
+        }
+        try {
+            return mapper.writeValueAsString(parentNode);
+        } catch (final JsonProcessingException e) {
+            throw new UncheckedDeephavenException("Failed to convert id to name map to JSON, map=" + idToNameMap, e);
+        }
+    }
+
     private org.apache.iceberg.Table createNewIcebergTable(
             @NotNull final TableIdentifier tableIdentifier,
-            @NotNull final SpecAndSchema specAndSchema) {
-        try {
-            return catalog.createTable(tableIdentifier, specAndSchema.schema, specAndSchema.partitionSpec);
-        } catch (final AlreadyExistsException e) {
+            @NotNull final SpecAndSchema specAndSchema,
+            @NotNull final IcebergParquetWriteInstructions writeInstructions) {
+        // Check if a table with the same name already exists
+        if (catalog.tableExists(tableIdentifier)) {
             throw new IllegalArgumentException("Table already exists: " + tableIdentifier);
         }
+        // It is required to either set the column name mapping in the table properties or to provide the field IDs in
+        // the parquet file, to map the column names from the parquet file to the iceberg table schema. We are using the
+        // former approach here.
+        // TODO Check with larry if we are looking at this correctly while reading
+        final String columnNameMappingJson = convertIdToNameMapToJson(specAndSchema.schema.idToName());
+        return catalog.createTable(tableIdentifier, specAndSchema.schema, specAndSchema.partitionSpec, null,
+                Map.of(TableProperties.DEFAULT_FILE_FORMAT, DEFAULT_GENERATED_FILE_FORMAT,
+                        TableProperties.PARQUET_COMPRESSION,
+                        StringUtils.toLowerCase(writeInstructions.compressionCodecName()),
+                        TableProperties.DEFAULT_NAME_MAPPING, columnNameMappingJson));
     }
 
     private static void writeParquet(
             @NotNull final org.apache.iceberg.Table icebergTable,
             @NotNull final Table dhTable,
-            @NotNull final IcebergInstructions instructions) {
+            @NotNull final IcebergParquetWriteInstructions writeInstructions) {
         if (dhTable.isEmpty()) {
             return;
         }
         // Generate a unique path for the new partition and write the data to it
         final String newDataLocation = icebergTable.locationProvider().newDataLocation(UUID.randomUUID() + ".parquet");
         final List<ParquetInstructions.CompletedWrite> parquetFilesWritten = new ArrayList<>(1);
-        final ParquetInstructions parquetInstructions = ((IcebergParquetWriteInstructions) instructions)
-                .toParquetInstructions(parquetFilesWritten);
+        final ParquetInstructions parquetInstructions = writeInstructions.toParquetInstructions(parquetFilesWritten);
         ParquetTools.writeTable(dhTable, newDataLocation, parquetInstructions);
         createSnapshot(icebergTable, parquetFilesWritten, false);
     }
@@ -1123,12 +1167,13 @@ public class IcebergCatalogAdapter {
             @NotNull final TABLE dhTable,
             @NotNull final TableIdentifier tableIdentifier,
             @NotNull final SpecAndSchema specAndSchema,
-            @NotNull final IcebergInstructions instructions) {
-        final org.apache.iceberg.Table icebergTable = createNewIcebergTable(tableIdentifier, specAndSchema);
+            @NotNull final IcebergParquetWriteInstructions writeInstructions) {
+        final org.apache.iceberg.Table icebergTable =
+                createNewIcebergTable(tableIdentifier, specAndSchema, writeInstructions);
         try {
             final List<ParquetInstructions.CompletedWrite> parquetFilesWritten = new ArrayList<>();
-            final ParquetInstructions parquetInstructions = ((IcebergParquetWriteInstructions) instructions)
-                    .toParquetInstructions(parquetFilesWritten);
+            final ParquetInstructions parquetInstructions =
+                    writeInstructions.toParquetInstructions(parquetFilesWritten);
             // TODO Find data location properly
             final String destinationDir = icebergTable.location() + "/data";
             if (dhTable instanceof PartitionedTable) {
