@@ -7,7 +7,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.iceberg.util.IcebergInstructions;
-import io.deephaven.iceberg.util.DataInstructionsProviderLoader;
+import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import org.apache.iceberg.*;
 import org.apache.iceberg.io.FileIO;
 import org.jetbrains.annotations.NotNull;

@@ -6,6 +6,7 @@ package io.deephaven.iceberg.util;
 import com.google.auto.service.AutoService;
 import io.deephaven.extensions.s3.Credentials;
 import io.deephaven.extensions.s3.S3Instructions;
+import io.deephaven.iceberg.internal.DataInstructionsProviderPlugin;
 import org.apache.iceberg.aws.AwsClientProperties;
 import org.apache.iceberg.aws.s3.S3FileIOProperties;
 import org.jetbrains.annotations.NotNull;
@@ -14,9 +15,9 @@ import java.net.URI;
 import java.util.Map;
 
 /**
- * {@link DataInstructionsProviderPlugin} implementation used for reading files from S3.
+ * {@link io.deephaven.iceberg.internal.DataInstructionsProviderPlugin} implementation used for reading files from S3.
  */
-@AutoService(DataInstructionsProviderPlugin.class)
+@AutoService(io.deephaven.iceberg.internal.DataInstructionsProviderPlugin.class)
 @SuppressWarnings("unused")
 public final class S3InstructionsProviderPlugin implements DataInstructionsProviderPlugin {
     @Override

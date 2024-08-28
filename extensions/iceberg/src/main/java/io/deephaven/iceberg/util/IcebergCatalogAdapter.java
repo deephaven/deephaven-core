@@ -18,6 +18,7 @@ import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.util.TableTools;
+import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.iceberg.layout.IcebergFlatLayout;
 import io.deephaven.iceberg.layout.IcebergKeyValuePartitionedLayout;
 import io.deephaven.iceberg.location.IcebergTableLocationFactory;
