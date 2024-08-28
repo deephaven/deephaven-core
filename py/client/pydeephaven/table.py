@@ -15,7 +15,8 @@ from pydeephaven._table_ops import MetaTableOp, SortDirection
 from pydeephaven.agg import Aggregation
 from pydeephaven.dherror import DHError
 from pydeephaven._table_interface import TableInterface
-from pydeephaven.ticket import Ticket, ServerObject
+from pydeephaven.ticket import Ticket
+from pydeephaven.server_object import ServerObject
 from pydeephaven.updateby import UpdateByOperation
 
 

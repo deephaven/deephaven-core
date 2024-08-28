@@ -44,7 +44,7 @@ class ArrowFlightService:
     def do_get_table(self, table: Table) -> pa.Table:
         """Gets a snapshot of a Table via Flight do_get."""
         try:
-            flight_ticket = paflight.Ticket(table.bytes)
+            flight_ticket = paflight.Ticket(table.ticket.bytes)
             reader = self._flight_client.do_get(
                 flight_ticket,
                 FlightCallOptions(headers=self.session.grpc_metadata))

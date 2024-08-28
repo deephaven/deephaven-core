@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Optional
 from uuid import uuid4
 
 from pydeephaven.dherror import DHError
@@ -138,26 +137,3 @@ def _ticket_from_proto(ticket: ticket_pb2.Ticket) -> Ticket:
         raise DHError(f'Unknown ticket type: {ticket_bytes}')
 
 
-class ServerObject(Ticket):
-    """ A ServerObject is a typed ticket tha represents objects that exist on the server which can be referenced by the
-    client. It is presently used to enable the client API users to send and receive references to server-side plugins.
-    """
-
-    type: Optional[str]
-    """The type of the object. May be None, indicating that the instance cannot be connected to or otherwise directly
-    used from the client."""
-
-    def __init__(self, type: Optional[str], ticket: Ticket):
-        super().__init__(ticket.bytes)
-        self.type = type
-
-    @property
-    def pb_typed_ticket(self) -> ticket_pb2.TypedTicket:
-        """Returns a protobuf typed ticket, suitable for use in communicating with an ObjectType plugin on the server.
-        """
-        return ticket_pb2.TypedTicket(type=self.type, ticket=self.pb_ticket)
-
-
-def _server_object_from_proto(typed_ticket: ticket_pb2.TypedTicket) -> ServerObject:
-    """ Creates a ServerObject from a gRPC protobuf typed ticket object. """
-    return ServerObject(type=typed_ticket.type, ticket=_ticket_from_proto(typed_ticket.ticket))

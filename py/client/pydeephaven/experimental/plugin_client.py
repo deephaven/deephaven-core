@@ -13,7 +13,8 @@ from pydeephaven.proto import object_pb2
 from pydeephaven.proto import ticket_pb2
 from pydeephaven.dherror import DHError
 from pydeephaven.table import Table
-from pydeephaven.ticket import Ticket, _ticket_from_proto, ServerObject
+from pydeephaven.ticket import Ticket, _ticket_from_proto, ExportTicket
+from pydeephaven.server_object import ServerObject
 
 
 class PluginClient(ServerObject):
@@ -22,17 +23,26 @@ class PluginClient(ServerObject):
     Use resp_stream to read messages that the server has sent, and req_stream to send messages back to the server, if
     supported.
     """
-
     def __init__(self, session: 'pydeephaven.session.Session', server_obj: ServerObject):
-        super().__init__(type=server_obj.type, ticket=server_obj)
+        self.export_ticket = None
+        # make sure we have an ExportTicket on the server object so that it will remain alive for
+        # the lifespan of this PluginClient
+        if not isinstance(server_obj.ticket, ExportTicket):
+            self.export_ticket = session.fetch(server_obj.ticket)
+            self.server_obj = ServerObject(type=server_obj.type, ticket=self.export_ticket)
+        else:
+            self.server_obj = server_obj
         self.session = session
-        self.req_stream = PluginRequestStream(SimpleQueue(), self.pb_typed_ticket)
+        self.req_stream = PluginRequestStream(SimpleQueue(), self.server_obj.pb_typed_ticket)
         self.resp_stream = PluginResponseStream(self._open(), self.session)
+        super().__init__(type=self.server_obj.type, ticket=self.server_obj.ticket)
 
     def _open(self) -> Any:
         return self.session.plugin_object_service.message_stream(self.req_stream)
 
     def close(self) -> None:
+        if self.export_ticket:
+            self.session.release(self.export_ticket)
         self.req_stream.close()
         self.resp_stream.close()
 

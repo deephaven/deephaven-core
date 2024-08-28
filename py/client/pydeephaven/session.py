@@ -27,7 +27,8 @@ from pydeephaven._plugin_obj_service import PluginObjService
 from pydeephaven._session_service import SessionService
 from pydeephaven._table_ops import TimeTableOp, EmptyTableOp, MergeTablesOp, FetchTableOp, CreateInputTableOp
 from pydeephaven._table_service import TableService
-from pydeephaven.ticket import SharedTicket, ExportTicket, ScopeTicket, Ticket, ServerObject, _server_object_from_proto
+from pydeephaven.ticket import SharedTicket, ExportTicket, ScopeTicket, Ticket
+from pydeephaven.server_object import ServerObject, _server_object_from_proto
 from pydeephaven._utils import to_list
 from pydeephaven.dherror import DHError
 from pydeephaven.experimental.plugin_client import PluginClient
@@ -486,7 +487,12 @@ class Session:
             self._last_ticket = 0
             self._flight_client.close()
 
-    def release(self, ticket):
+    def release(self, ticket: Ticket) -> None:
+        """Releases a ticket.
+
+        Args:
+            ticket (Ticket): the ticket to release
+        """
         self.session_service.release(ticket)
 
     # convenience/factory methods
