@@ -27,19 +27,13 @@ public interface IcebergBaseInstructions {
      */
     Map<String, String> columnRenames();
 
-    interface Builder {
-        @SuppressWarnings("unused")
-        Builder tableDefinition(TableDefinition tableDefinition);
+    interface Builder<INSTRUCTIONS_BUILDER> {
+        INSTRUCTIONS_BUILDER tableDefinition(TableDefinition tableDefinition);
 
-        @SuppressWarnings("unused")
-        Builder dataInstructions(Object s3Instructions);
+        INSTRUCTIONS_BUILDER dataInstructions(Object s3Instructions);
 
-        @SuppressWarnings("unused")
-        Builder putColumnRenames(String key, String value);
+        INSTRUCTIONS_BUILDER putColumnRenames(String key, String value);
 
-        @SuppressWarnings("unused")
-        Builder putAllColumnRenames(Map<String, ? extends String> entries);
-
-        IcebergBaseInstructions build();
+        INSTRUCTIONS_BUILDER putAllColumnRenames(Map<String, ? extends String> entries);
     }
 }

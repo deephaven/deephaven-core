@@ -98,8 +98,8 @@ public abstract class IcebergToolsTest {
             ColumnDefinition.ofString("ColumnType"),
             ColumnDefinition.ofBoolean("IsPartitioning"));
 
-    IcebergBaseInstructions instructions;
-    IcebergBaseInstructions writeInstructions;
+    private IcebergInstructions instructions;
+    private IcebergParquetWriteInstructions writeInstructions;
 
     public abstract S3AsyncClient s3AsyncClient();
 

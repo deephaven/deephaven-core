@@ -27,7 +27,7 @@ public abstract class IcebergInstructions implements IcebergBaseInstructions {
         return ImmutableIcebergInstructions.builder();
     }
 
-    public interface Builder extends IcebergBaseInstructions.Builder {
+    public interface Builder extends IcebergBaseInstructions.Builder<Builder> {
         IcebergInstructions build();
     }
 }

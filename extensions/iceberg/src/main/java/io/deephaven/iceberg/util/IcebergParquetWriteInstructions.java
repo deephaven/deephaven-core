@@ -98,7 +98,7 @@ public abstract class IcebergParquetWriteInstructions implements IcebergBaseInst
         return builder.build();
     }
 
-    public interface Builder extends IcebergBaseInstructions.Builder {
+    public interface Builder extends IcebergBaseInstructions.Builder<Builder> {
         @SuppressWarnings("unused")
         Builder compressionCodecName(String compressionCodecName);
 
