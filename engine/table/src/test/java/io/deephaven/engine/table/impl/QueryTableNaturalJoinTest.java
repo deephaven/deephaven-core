@@ -5,12 +5,10 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.FileUtils;
 import io.deephaven.chunk.ObjectChunk;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.context.QueryScope;
+import io.deephaven.engine.primitive.iterator.CloseablePrimitiveIteratorOfLong;
+import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
@@ -19,6 +17,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.util.ColumnHolder;
+import io.deephaven.engine.table.impl.util.RuntimeMemory;
 import io.deephaven.engine.table.vectors.ColumnVectors;
 import io.deephaven.engine.testutil.*;
 import io.deephaven.engine.testutil.generator.*;
@@ -30,6 +29,7 @@ import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.mutable.MutableInt;
+import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.vector.IntVector;
 import io.deephaven.vector.ObjectVector;
 import junit.framework.TestCase;
@@ -513,7 +513,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         assertEquals(new int[] {NULL_INT, NULL_INT, NULL_INT}, intColumn(cj6, "RightSentinel"));
 
         final Table left7 = newTable(
-                lC.make("String", CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
+                lC.make("String", ArrayTypeUtils.EMPTY_STRING_ARRAY),
                 intCol("LeftSentinel"));
         final Table right7 = newTable(intCol("RightSentinel", 10, 11));
         final Table cj7 = left7.naturalJoin(right7, "");
@@ -1659,6 +1659,59 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
                 generateAppends(100_000, random, rightTable, rightColumnInfo);
             });
         }
+    }
+
+    public void testCyclingBuckets() {
+        final QueryTable cells = TstUtils.testRefreshingTable(RowSetFactory.fromRange(0, 999).toTracking());
+
+        final Table left = cells.updateView("Bucket=k", "SentinelL=1_000_000_000 + k").flatten();
+        final Table right = cells.updateView("Bucket=k", "SentinelR=2_000_000_000 + k").flatten();
+
+        final Table joined = left.naturalJoin(right, "Bucket");
+
+        // create 100,000,000 buckets
+        final RuntimeMemory.Sample sample = new RuntimeMemory.Sample();
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+        for (long step = 0; step <= 100_000; ++step) {
+            final long fstep = step;
+            if (fstep % 10000 == 0) {
+                System.out.println("Step = " + fstep);
+                System.gc();
+                RuntimeMemory.getInstance().read(sample);
+                System.out.println(sample);
+            }
+            updateGraph.runWithinUnitTestCycle(() -> {
+                final WritableRowSet removed;
+                if (fstep > 0) {
+                    removed = RowSetFactory.fromRange(fstep * 1000 - 100, fstep * 1000 + 899);
+                } else {
+                    removed = RowSetFactory.fromRange(0, 899);
+                }
+                removeRows(cells, removed);
+                final WritableRowSet added = RowSetFactory.fromRange((fstep + 1) * 1000, (fstep + 1) * 1000 + 999);
+                addToTable(cells, added);
+                cells.notifyListeners(added, removed, RowSetFactory.empty());
+            });
+            TestCase.assertEquals(1100, joined.size());
+
+            long currentBucket = (step + 1) * 1000 - 100;
+            try (final CloseablePrimitiveIteratorOfLong bucketIt = joined.longColumnIterator("Bucket");
+                    final CloseablePrimitiveIteratorOfLong leftIt = joined.longColumnIterator("SentinelL");
+                    final CloseablePrimitiveIteratorOfLong rightIt = joined.longColumnIterator("SentinelR")) {
+                while (bucketIt.hasNext()) {
+                    final long bucket = bucketIt.nextLong();
+                    final long lsentinel = leftIt.nextLong();
+                    final long rsentinel = rightIt.nextLong();
+                    TestCase.assertEquals(currentBucket++, bucket);
+                    TestCase.assertEquals(bucket + 1_000_000_000L, lsentinel);
+                    TestCase.assertEquals(bucket + 2_000_000_000L, rsentinel);
+                }
+            }
+        }
+        System.out.println("Done.");
+        System.gc();
+        RuntimeMemory.getInstance().read(sample);
+        System.out.println(sample);
     }
 
     public void testGetDirectAfterNaturalJoin() {

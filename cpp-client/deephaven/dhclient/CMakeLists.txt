@@ -8,7 +8,7 @@ include(GNUInstallDirs)
 
 find_package(Arrow CONFIG REQUIRED)
 find_package(ArrowFlight CONFIG REQUIRED HINTS ${Arrow_DIR})
-find_package(Immer REQUIRED)
+find_package(Immer CONFIG REQUIRED)
 find_package(Protobuf CONFIG REQUIRED)
 find_package(gRPC CONFIG REQUIRED)
 find_package(Threads REQUIRED)
@@ -43,6 +43,13 @@ set(ALL_FILES
     include/public/deephaven/client/client_options.h
     include/public/deephaven/client/flight.h
     include/public/deephaven/client/update_by.h
+
+    src/interop/client_interop.cc
+    src/interop/client_options_interop.cc
+    src/interop/update_by_interop.cc
+    include/public/deephaven/client/interop/client_interop.h
+    include/public/deephaven/client/interop/client_options_interop.h
+    include/public/deephaven/client/interop/update_by_interop.h
 
     src/subscription/subscribe_thread.cc
 
@@ -126,7 +133,6 @@ target_link_libraries(dhclient PUBLIC deephaven::dhcore)
 
 target_link_libraries(dhclient PUBLIC ArrowFlight::arrow_flight_shared)
 target_link_libraries(dhclient PUBLIC Arrow::arrow_shared)
-target_link_libraries(dhclient PUBLIC immer)
-target_link_libraries(dhclient PUBLIC protobuf::libprotobuf)
-target_link_libraries(dhclient PUBLIC gRPC::grpc++)
-target_link_libraries(dhclient PUBLIC Threads::Threads)
+target_link_libraries(dhclient PRIVATE protobuf::libprotobuf)
+target_link_libraries(dhclient PRIVATE gRPC::grpc++)
+target_link_libraries(dhclient PRIVATE Threads::Threads)

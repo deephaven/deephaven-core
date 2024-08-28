@@ -172,38 +172,36 @@ public class TickSuppressor {
                             }
 
                             while (postRsIt.hasMore()) {
-                                try (final RowSequence postChunkOk = postRsIt.getNextRowSequenceWithLength(chunkSize);
-                                        final RowSequence preChunkOk =
-                                                preRsIt.getNextRowSequenceWithLength(chunkSize)) {
-                                    currentSharedContext.reset();
-                                    prevSharedContext.reset();
+                                final RowSequence postChunkOk = postRsIt.getNextRowSequenceWithLength(chunkSize);
+                                final RowSequence preChunkOk = preRsIt.getNextRowSequenceWithLength(chunkSize);
+                                currentSharedContext.reset();
+                                prevSharedContext.reset();
 
-                                    for (final int cc : changedColumnIndices) {
-                                        // noinspection unchecked
-                                        final Chunk<Values> currentValues =
-                                                inputSources[cc].getChunk(getContextArray[cc], postChunkOk);
-                                        // noinspection unchecked
-                                        final Chunk<Values> prevValues =
-                                                inputSources[cc].getPrevChunk(prevContextArray[cc], preChunkOk);
+                                for (final int cc : changedColumnIndices) {
+                                    // noinspection unchecked
+                                    final Chunk<Values> currentValues =
+                                            inputSources[cc].getChunk(getContextArray[cc], postChunkOk);
+                                    // noinspection unchecked
+                                    final Chunk<Values> prevValues =
+                                            inputSources[cc].getPrevChunk(prevContextArray[cc], preChunkOk);
 
-                                        // now we need to compare them
-                                        equalityKernel[cc].notEqual(currentValues, prevValues, changedCellsArray[cc]);
-                                    }
-
-                                    final MutableInt pos = new MutableInt(0);
-                                    postChunkOk.forAllRowKeys((idx) -> {
-                                        boolean idxChanged = false;
-                                        for (final int cc : changedColumnIndices) {
-                                            if (changedCellsArray[cc].get(pos.get())) {
-                                                idxChanged = changedColumns[cc] = true;
-                                            }
-                                        }
-                                        if (idxChanged) {
-                                            builder.appendKey(idx);
-                                        }
-                                        pos.increment();
-                                    });
+                                    // now we need to compare them
+                                    equalityKernel[cc].notEqual(currentValues, prevValues, changedCellsArray[cc]);
                                 }
+
+                                final MutableInt pos = new MutableInt(0);
+                                postChunkOk.forAllRowKeys((idx) -> {
+                                    boolean idxChanged = false;
+                                    for (final int cc : changedColumnIndices) {
+                                        if (changedCellsArray[cc].get(pos.get())) {
+                                            idxChanged = changedColumns[cc] = true;
+                                        }
+                                    }
+                                    if (idxChanged) {
+                                        builder.appendKey(idx);
+                                    }
+                                    pos.increment();
+                                });
                             }
                         }
 

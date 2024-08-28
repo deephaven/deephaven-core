@@ -149,5 +149,7 @@ public interface TableSpec extends TableOperationsDefaults<TableSpec, TableSpec>
         T visit(UngroupTable ungroupTable);
 
         T visit(DropColumnsTable dropColumnsTable);
+
+        T visit(MultiJoinTable multiJoinTable);
     }
 }

@@ -4,6 +4,8 @@
 package io.deephaven.parquet.table.pagestore.topage;
 
 import io.deephaven.chunk.attributes.Any;
+import io.deephaven.parquet.base.PageMaterializerFactory;
+import io.deephaven.parquet.base.materializers.BooleanAsByteMaterializer;
 import io.deephaven.vector.ObjectVector;
 import io.deephaven.vector.ObjectVectorDirect;
 import io.deephaven.util.BooleanUtils;
@@ -14,6 +16,7 @@ import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE_BOXED;
 
 public class ToBooleanAsBytePage<ATTR extends Any> implements ToPage<ATTR, byte[]> {
 
+    @SuppressWarnings("rawtypes")
     private static final ToBooleanAsBytePage INSTANCE = new ToBooleanAsBytePage<>();
 
     public static <ATTR extends Any> ToBooleanAsBytePage<ATTR> create(Class<?> nativeType) {
@@ -49,6 +52,11 @@ public class ToBooleanAsBytePage<ATTR extends Any> implements ToPage<ATTR, byte[
     @Override
     public final Object nullValue() {
         return NULL_BOOLEAN_AS_BYTE_BOXED;
+    }
+
+    @Override
+    public final PageMaterializerFactory getPageMaterializerFactory() {
+        return BooleanAsByteMaterializer.FACTORY;
     }
 
     @Override

@@ -13,7 +13,6 @@ import io.deephaven.chunk.util.pools.ChunkPoolConstants;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.deephaven.chunk.util.pools.PoolableChunk;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.mutable.MutableInt;
 import io.deephaven.util.mutable.MutableLong;
@@ -214,14 +213,10 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
     }
 
     @Override
-    public void close() {
-        if (REFERENCE_COUNT_UPDATER.decrementAndGet(this) == 0) {
-            if (chunk instanceof PoolableChunk) {
-                ((PoolableChunk) chunk).close();
-            }
-            if (byteStorage != null) {
-                byteStorage.close();
-            }
+    protected void onReferenceCountAtZero() {
+        super.onReferenceCountAtZero();
+        if (byteStorage != null) {
+            byteStorage.close();
         }
     }
 
@@ -396,7 +391,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
         }
     }
 
-    static <T> WritableObjectChunk<T, Values> extractChunkFromInputStream(
+    public static <T> WritableObjectChunk<T, Values> extractChunkFromInputStream(
             final DataInput is,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final PrimitiveIterator.OfLong bufferInfoIter,

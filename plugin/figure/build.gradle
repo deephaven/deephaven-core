@@ -9,5 +9,6 @@ dependencies {
     implementation project(':Plot')
     implementation project(':extensions-barrage')
 
-    Classpaths.inheritAutoService(project)
+    compileOnly libs.autoservice
+    annotationProcessor libs.autoservice.compiler
 }

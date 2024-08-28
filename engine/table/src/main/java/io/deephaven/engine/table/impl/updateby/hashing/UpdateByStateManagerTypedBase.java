@@ -181,7 +181,26 @@ public abstract class UpdateByStateManagerTypedBase extends UpdateByStateManager
         return new ProbeContext(buildSources, (int) Math.min(maxSize, CHUNK_SIZE));
     }
 
-    protected void newAlternate() {
+    /**
+     * After creating the new alternate key states, advise the derived classes, so they can cast them to the typed
+     * versions of the column source and adjust the derived class pointers.
+     */
+    protected abstract void adviseNewAlternate();
+
+    private void setupNewAlternate(int oldTableSize) {
+        Assert.eqZero(rehashPointer, "rehashPointer");
+
+        for (int ii = 0; ii < mainKeySources.length; ++ii) {
+            alternateKeySources[ii] = mainKeySources[ii];
+            mainKeySources[ii] = InMemoryColumnSource.getImmutableMemoryColumnSource(tableSize,
+                    alternateKeySources[ii].getType(), alternateKeySources[ii].getComponentType());
+            mainKeySources[ii].ensureCapacity(tableSize);
+        }
+        alternateTableSize = oldTableSize;
+        if (numEntries > 0) {
+            rehashPointer = alternateTableSize;
+        }
+
         alternateStateSource = stateSource;
         stateSource = new ImmutableIntArraySource();
         stateSource.ensureCapacity(tableSize);
@@ -316,20 +335,9 @@ public abstract class UpdateByStateManagerTypedBase extends UpdateByStateManager
             return false;
         }
 
-        Assert.eqZero(rehashPointer, "rehashPointer");
 
-        for (int ii = 0; ii < mainKeySources.length; ++ii) {
-            alternateKeySources[ii] = mainKeySources[ii];
-            mainKeySources[ii] = InMemoryColumnSource.getImmutableMemoryColumnSource(tableSize,
-                    alternateKeySources[ii].getType(), alternateKeySources[ii].getComponentType());
-            mainKeySources[ii].ensureCapacity(tableSize);
-        }
-        alternateTableSize = oldTableSize;
-        if (numEntries > 0) {
-            rehashPointer = alternateTableSize;
-        }
-
-        newAlternate();
+        setupNewAlternate(oldTableSize);
+        adviseNewAlternate();
 
         return true;
     }

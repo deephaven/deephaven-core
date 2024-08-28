@@ -10,6 +10,7 @@ import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoSet;
 import io.deephaven.appmode.ApplicationState;
+import io.deephaven.client.impl.BarrageSessionFactoryConfig;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.custom.CustomComponentFactory.CustomComponent;
@@ -18,9 +19,11 @@ import io.deephaven.server.jetty.JettyConfig;
 import io.deephaven.server.jetty.JettyServerModule;
 import io.deephaven.server.runner.CommunityDefaultsModule;
 import io.deephaven.server.runner.ComponentFactoryBase;
+import io.deephaven.server.session.ClientChannelFactoryModule.UserAgent;
 
 import javax.inject.Singleton;
 import java.io.PrintStream;
+import java.util.List;
 
 /**
  * An example of a "custom integrator" component factory. This is not meant to be an exhaustive example of Deephaven
@@ -71,6 +74,7 @@ public final class CustomComponentFactory extends ComponentFactoryBase<CustomCom
 
     @Module(includes = {
             JettyServerModule.class,
+            CustomClientChannelFactoryModule.class,
             CommunityDefaultsModule.class,
     })
     public interface CustomModule {

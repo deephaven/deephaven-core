@@ -1280,7 +1280,7 @@ public class GeneratePyV2FigureAPI {
         rst.add(new PyFunc("y_ticks_minor", SEQUENTIAL, new String[] {"yMinorTicks", "yMinorTicksVisible"}, null,
                 "Updates the configuration for minor ticks of the y-Axis."));
         rst.add(new PyFunc("y_twin", SINGLETON, new String[] {"twinY"}, null,
-                "Creates a new Axes which shares the y-Axis with the current Axes. For example, this is used for creating plots with a common x-axis but two different y-axes."));
+                "Creates a new Axes which shares the y-Axis with the current Axes. For example, this is used for creating plots with a common y-axis but two different x-axes."));
         rst.add(new PyFunc("series", SEQUENTIAL, new String[] {"series", "group", "seriesColor", "toolTipPattern",
                 "xToolTipPattern", "yToolTipPattern", "errorBarColor", "gradientVisible", "seriesNamingFunction"}, null,
                 "Gets a specific data series and updates the data series's configurations."));

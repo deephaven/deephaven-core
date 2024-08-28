@@ -6,16 +6,19 @@ plugins {
 dependencies {
     api project(':extensions-json-jackson')
     api project(':engine-processor')
-    api 'de.undercouch:bson4jackson:2.15.1'
+    api libs.undercouch.bson4jackson
 
-    Classpaths.inheritImmutables(project)
-    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables.value
 
-    Classpaths.inheritJacksonPlatform(project, 'testImplementation')
-    Classpaths.inheritJUnitPlatform(project)
-    Classpaths.inheritAssertJ(project)
-    testImplementation 'org.junit.jupiter:junit-jupiter'
-    testImplementation 'com.fasterxml.jackson.core:jackson-databind'
+    compileOnly libs.google.findbugs.jsr305
+
+    testImplementation platform(libs.jackson.bom)
+    testImplementation libs.jackson.databind
+
+    testImplementation libs.assertj
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
 }
 
 test {

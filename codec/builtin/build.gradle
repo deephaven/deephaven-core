@@ -1,0 +1,17 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+description 'Codec Builtin: Deephaven builtin codec implementations'
+
+dependencies {
+    api project(":codec-api")
+
+    implementation project(":Base")
+    implementation project(":engine-query-constants")
+
+    compileOnly libs.jetbrains.annotations
+
+    testImplementation libs.junit4
+}

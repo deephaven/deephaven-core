@@ -7,6 +7,7 @@ import com.google.common.base.Strings;
 import org.apache.iceberg.CatalogProperties;
 import org.apache.iceberg.CatalogUtil;
 import org.apache.iceberg.aws.AwsClientProperties;
+import org.apache.iceberg.aws.glue.GlueCatalog;
 import org.apache.iceberg.aws.s3.S3FileIOProperties;
 import org.apache.iceberg.io.FileIO;
 import org.apache.iceberg.rest.RESTCatalog;
@@ -23,6 +24,20 @@ import java.util.Map;
 public class IcebergToolsS3 extends IcebergTools {
     private static final String S3_FILE_IO_CLASS = "org.apache.iceberg.aws.s3.S3FileIO";
 
+    /**
+     * Create an Iceberg catalog adapter for a REST catalog backed by S3 storage. If {@code null} is provided for a
+     * value, the system defaults will be used.
+     *
+     * @param name the name of the catalog; if omitted, the catalog URI will be used to generate a name
+     * @param catalogURI the URI of the Iceberg REST catalog
+     * @param warehouseLocation the location of the S3 datafiles backing the catalog
+     * @param region the AWS region; if omitted, system defaults will be used
+     * @param accessKeyId the AWS access key ID; if omitted, system defaults will be used
+     * @param secretAccessKey the AWS secret access key; if omitted, system defaults will be used
+     * @param endpointOverride the S3 endpoint override; this is useful for testing with a S3-compatible local service
+     *        such as MinIO or LocalStack
+     * @return the Iceberg catalog adapter
+     */
     public static IcebergCatalogAdapter createS3Rest(
             @Nullable final String name,
             @NotNull final String catalogURI,
@@ -53,7 +68,6 @@ public class IcebergToolsS3 extends IcebergTools {
             properties.put(S3FileIOProperties.ENDPOINT, endpointOverride);
         }
 
-        // TODO: create a FileIO interface wrapping the Deephaven S3SeekableByteChannel/Provider
         final FileIO fileIO = CatalogUtil.loadFileIO(S3_FILE_IO_CLASS, properties, null);
 
         final String catalogName = name != null ? name : "IcebergCatalog-" + catalogURI;
@@ -62,4 +76,36 @@ public class IcebergToolsS3 extends IcebergTools {
         return new IcebergCatalogAdapter(catalog, fileIO);
     }
 
+    /**
+     * Create an Iceberg catalog adapter for an AWS Glue catalog. System defaults will be used to populate the region
+     * and credentials. These can be configured by following
+     * <a href="https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-authentication.html">AWS Authentication and
+     * access credentials</a> guide.
+     *
+     * @param name the name of the catalog; if omitted, the catalog URI will be used to generate a name
+     * @param catalogURI the URI of the AWS Glue catalog
+     * @param warehouseLocation the location of the S3 datafiles backing the catalog
+     * @return the Iceberg catalog adapter
+     */
+    public static IcebergCatalogAdapter createGlue(
+            @Nullable final String name,
+            @NotNull final String catalogURI,
+            @NotNull final String warehouseLocation) {
+
+        // Set up the properties map for the Iceberg catalog
+        final Map<String, String> properties = new HashMap<>();
+
+        final GlueCatalog catalog = new GlueCatalog();
+
+        properties.put(CatalogProperties.CATALOG_IMPL, catalog.getClass().getName());
+        properties.put(CatalogProperties.URI, catalogURI);
+        properties.put(CatalogProperties.WAREHOUSE_LOCATION, warehouseLocation);
+
+        final FileIO fileIO = CatalogUtil.loadFileIO(S3_FILE_IO_CLASS, properties, null);
+
+        final String catalogName = name != null ? name : "IcebergCatalog-" + catalogURI;
+        catalog.initialize(catalogName, properties);
+
+        return new IcebergCatalogAdapter(catalog, fileIO);
+    }
 }

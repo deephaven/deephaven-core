@@ -6,12 +6,11 @@ plugins {
 dependencies {
     api project(':engine-processor')
 
-    Classpaths.inheritJacksonPlatform(project, 'api')
-    Classpaths.inheritJacksonPlatform(project, 'testImplementation')
+    api platform(libs.jackson.bom)
+    api libs.jackson.core
 
-    api 'com.fasterxml.jackson.core:jackson-core'
     // https://github.com/FasterXML/jackson-core/issues/1229
-    implementation 'ch.randelshofer:fastdoubleparser:1.0.0'
+    implementation libs.randelshofer.fastdoubleparser
 
     api project(':extensions-json')
 
@@ -19,14 +18,20 @@ dependencies {
 
     implementation project(':engine-query-constants')
     implementation project(':engine-time')
-    Classpaths.inheritImmutables(project)
-    Classpaths.inheritAutoService(project)
-    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 
-    Classpaths.inheritJUnitPlatform(project)
-    Classpaths.inheritAssertJ(project)
-    testImplementation 'org.junit.jupiter:junit-jupiter'
-    testImplementation 'com.fasterxml.jackson.core:jackson-databind'
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables.value
+
+    compileOnly libs.autoservice
+    annotationProcessor libs.autoservice.compiler
+    compileOnly libs.google.findbugs.jsr305
+
+    testImplementation libs.assertj
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
+
+    testImplementation platform(libs.jackson.bom)
+    testImplementation libs.jackson.databind
 }
 
 test {

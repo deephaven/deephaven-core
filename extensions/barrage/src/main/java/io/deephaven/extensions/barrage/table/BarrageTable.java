@@ -293,7 +293,7 @@ public abstract class BarrageTable extends QueryTable implements BarrageMessage.
             final RowSet viewport,
             final BitSet columns,
             final boolean reverseViewport) {
-        Assert.holdsLock(this, "BarrageTable.this");
+        Assert.assertion(Thread.holdsLock(this), "Thread.holdsLock(this)");
 
         final RowSet finalViewport = viewport == null ? null : viewport.copy();
         final BitSet finalColumns = (columns == null || columns.cardinality() == numColumns())

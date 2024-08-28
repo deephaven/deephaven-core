@@ -682,7 +682,7 @@ public class BarrageUtil {
 
     private static boolean isTypeNativelySupported(final Class<?> typ) {
         if (typ.isPrimitive() || TypeUtils.isBoxedType(typ) || supportedTypes.contains(typ)
-                || Vector.class.isAssignableFrom(typ) || TypeUtils.isDateTime(typ)) {
+                || Vector.class.isAssignableFrom(typ) || Instant.class == typ || ZonedDateTime.class == typ) {
             return true;
         }
         if (typ.isArray()) {

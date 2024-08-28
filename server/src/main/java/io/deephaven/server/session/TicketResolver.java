@@ -24,7 +24,8 @@ public interface TicketResolver {
          *          transformations to requested resources.
          *
          * @param source the object to transform (such as by applying ACLs)
-         * @return an object that has been sanitized to be used by the current user
+         * @return an object that has been sanitized to be used by the current user; may return null if user does not
+         *         have access to the resource
          */
         <T> T transform(T source);
 

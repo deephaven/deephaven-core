@@ -8,7 +8,6 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.CodecLookup;
 import io.deephaven.engine.table.impl.dataindex.RowSetCodec;
-import io.deephaven.parquet.base.PageMaterializer;
 import io.deephaven.stringset.StringSet;
 import io.deephaven.util.codec.ExternalizableCodec;
 import io.deephaven.util.codec.SerializableCodec;
@@ -176,9 +175,13 @@ public class TypeInfos {
             final RowSet rowSet,
             final Map<String, ? extends ColumnSource<?>> columnSourceMap,
             @NotNull final ParquetInstructions instructions) {
-        final Class<?> dataType = column.getDataType();
-        if (BigDecimal.class.equals(dataType)) {
+        if (BigDecimal.class.equals(column.getDataType())) {
             return bigDecimalTypeInfo(computedCache, column, rowSet, columnSourceMap);
+        }
+        if (BigDecimal.class.equals(column.getComponentType())) {
+            throw new UnsupportedOperationException("Writing arrays/vector columns for big decimals is currently not " +
+                    "supported");
+            // TODO(deephaven-core#4612): Add support for this
         }
         return lookupTypeInfo(column, instructions);
     }
@@ -413,7 +416,7 @@ public class TypeInfos {
      * external compatibility by encoding them as fixed length decimals of scale 1. Internally, we'll record that we
      * wrote this as a decimal, so we can properly decode it back to BigInteger.
      *
-     * @see PageMaterializer#resolveDecimalLogicalType
+     * @see ParquetSchemaReader
      */
     private enum BigIntegerType implements TypeInfo {
         INSTANCE;

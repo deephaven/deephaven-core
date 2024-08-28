@@ -17,7 +17,9 @@ import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketResolverBase;
 import io.deephaven.server.session.TicketRouter;
+import io.grpc.StatusRuntimeException;
 import org.apache.arrow.flight.impl.Flight;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
@@ -79,10 +81,12 @@ public class ApplicationTicketResolver extends TicketResolverBase implements App
         }
         final Field<Object> field = id.app.getField(id.fieldName);
         if (field == null) {
-            throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
-                    "Could not resolve '" + logId + "': field '" + getLogNameFor(id) + "' not found");
+            throw newNotFoundSRE(logId, id);
         }
         Object value = authorization.transform(field.value());
+        if (value == null) {
+            throw newNotFoundSRE(logId, id);
+        }
         // noinspection unchecked
         return SessionState.wrapAsExport((T) value);
     }
@@ -100,16 +104,18 @@ public class ApplicationTicketResolver extends TicketResolverBase implements App
         synchronized (id.app) {
             Field<?> field = id.app.getField(id.fieldName);
             if (field == null) {
-                throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
-                        "Could not resolve '" + logId + "': field '" + getLogNameFor(id) + "' not found");
+                throw newNotFoundSRE(logId, id);
             }
             Object value = field.value();
             if (value instanceof Table) {
+                // may return null if the table is not authorized
                 value = authorization.transform(value);
+            }
+
+            if (value instanceof Table) {
                 info = TicketRouter.getFlightInfo((Table) value, descriptor, flightTicketForName(id.app, id.fieldName));
             } else {
-                throw Exceptions.statusRuntimeException(Code.NOT_FOUND,
-                        "Could not resolve '" + logId + "': field '" + getLogNameFor(id) + "' is not a flight");
+                throw newNotFoundSRE(logId, id);
             }
         }
 
@@ -151,7 +157,10 @@ public class ApplicationTicketResolver extends TicketResolverBase implements App
             app.listFields().forEach(field -> {
                 Object value = field.value();
                 if (value instanceof Table) {
+                    // may return null if the table is not authorized
                     value = authorization.transform(value);
+                }
+                if (value instanceof Table) {
                     final Flight.FlightInfo info = TicketRouter.getFlightInfo((Table) value,
                             descriptorForName(app, field.name()), flightTicketForName(app, field.name()));
                     visitor.accept(info);
@@ -200,6 +209,11 @@ public class ApplicationTicketResolver extends TicketResolverBase implements App
                 .setType(Flight.FlightDescriptor.DescriptorType.PATH)
                 .addAllPath(ApplicationTicketHelper.applicationFieldToPath(app.id(), name))
                 .build();
+    }
+
+    private @NotNull StatusRuntimeException newNotFoundSRE(String logId, AppFieldId id) {
+        return Exceptions.statusRuntimeException(Code.NOT_FOUND,
+                "Could not resolve '" + logId + "': field '" + getLogNameFor(id) + "' not found");
     }
 
     private AppFieldId appFieldIdFor(final ByteBuffer ticket, final String logId) {

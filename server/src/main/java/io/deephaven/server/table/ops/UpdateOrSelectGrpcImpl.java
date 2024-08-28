@@ -6,7 +6,6 @@ package io.deephaven.server.table.ops;
 import io.deephaven.api.Selectable;
 import io.deephaven.auth.codegen.impl.TableServiceContextualAuthWiring;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
@@ -48,7 +47,7 @@ public abstract class UpdateOrSelectGrpcImpl extends GrpcTableOperation<SelectOr
         Assert.eq(sourceTables.size(), "sourceTables.size()", 1);
 
         final Table parent = sourceTables.get(0).get();
-        final String[] columnSpecs = request.getColumnSpecsList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        final String[] columnSpecs = request.getColumnSpecsList().toArray(String[]::new);
         final SelectColumn[] expressions = SelectColumnFactory.getExpressions(columnSpecs);
         ColumnExpressionValidator.validateColumnExpressions(expressions, columnSpecs, parent);
 

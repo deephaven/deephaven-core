@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.engine.table.impl.AsOfJoinMatchFactory.AsOfJoinResult;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.primitive.iterator.CloseableIterator;
 import io.deephaven.engine.table.PartitionedTable;
@@ -27,6 +26,7 @@ import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseable;
 import gnu.trove.list.array.TIntArrayList;
+import io.deephaven.util.type.ArrayTypeUtils;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 
@@ -367,7 +367,7 @@ public class QueryTableAjTest {
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 result.getDefinition().getColumnNames());
 
-        BaseArrayTestCase.assertEquals(CollectionUtil.ZERO_LENGTH_INT_ARRAY, intColumn(result, "Sentinel"));
+        BaseArrayTestCase.assertEquals(ArrayTypeUtils.EMPTY_INT_ARRAY, intColumn(result, "Sentinel"));
     }
 
     @Test
@@ -1433,10 +1433,10 @@ public class QueryTableAjTest {
 
         final int[] leftStampArray = ColumnVectors.ofInt(leftTable, "LeftStamp").toArray();
         final int[] rightStampArray = rightTable == null
-                ? CollectionUtil.ZERO_LENGTH_INT_ARRAY
+                ? ArrayTypeUtils.EMPTY_INT_ARRAY
                 : ColumnVectors.ofInt(rightTable, "RightStamp").toArray();
         final int[] rightSentinelArray = rightTable == null
-                ? CollectionUtil.ZERO_LENGTH_INT_ARRAY
+                ? ArrayTypeUtils.EMPTY_INT_ARRAY
                 : ColumnVectors.ofInt(rightTable, "RightSentinel").toArray();
 
         for (final int leftStamp : leftStampArray) {

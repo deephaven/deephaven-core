@@ -566,6 +566,138 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(dt1s, DateTimeUtils.parseInstantQuiet(Long.toString(seconds)));
     }
 
+    public void testParseLocalDateTime() {
+        final String[] roots = {
+                "2010-01-01T12:11",
+                "2010-01-01T12:00:02",
+                "2010-01-01T12:00:00.1",
+                "2010-01-01T12:00:00.123",
+                "2010-01-01T12:00:00.123",
+                "2010-01-01T12:00:00.123456789",
+        };
+
+        for (String root : roots) {
+            final LocalDateTime ldt = LocalDateTime.parse(root);
+            TestCase.assertEquals("LocalDateTime string: " + root, ldt, DateTimeUtils.parseLocalDateTime(root));
+        }
+
+        final String[] uglyRoots = {
+                "2023-04-30",
+                "2023-04-30T",
+                "2023-04-30t",
+                "2023-04-30T9:30:00",
+                "2023-4-3T9:3:6",
+                "2023-4-3T9:3",
+                "2023-4-3T9:3:6.1",
+                "2023-4-3T9:3:6.123",
+                "2023-4-3T9:3:6.123456789",
+        };
+
+        final LocalDateTime[] uglyLDTs = {
+                LocalDateTime.of(2023, 4, 30, 0, 0),
+                LocalDateTime.of(2023, 4, 30, 0, 0),
+                LocalDateTime.of(2023, 4, 30, 0, 0),
+                LocalDateTime.of(2023, 4, 30, 9, 30, 0),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 6),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 0),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 6, 100_000_000),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 6, 123_000_000),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 6, 123456789),
+        };
+
+        for (int i = 0; i < uglyRoots.length; i++) {
+            final String root = uglyRoots[i];
+            final LocalDateTime ldt = uglyLDTs[i];
+            TestCase.assertEquals("LocalDateTime string: " + root, ldt, DateTimeUtils.parseLocalDateTime(root));
+        }
+
+        try {
+            DateTimeUtils.parseLocalDateTime("JUNK");
+            TestCase.fail("Should throw an exception");
+        } catch (Exception ex) {
+            // pass
+        }
+
+        try {
+            DateTimeUtils.parseLocalDateTime("2010-01-01JUNK12:11");
+            TestCase.fail("Should throw an exception");
+        } catch (Exception ex) {
+            // pass
+        }
+
+        try {
+            DateTimeUtils.parseLocalDateTime("2010-01-01T12:11 JUNK");
+            TestCase.fail("Should throw an exception");
+        } catch (Exception ex) {
+            // pass
+        }
+
+        try {
+            // noinspection ConstantConditions
+            DateTimeUtils.parseLocalDateTime(null);
+            TestCase.fail("Should throw an exception");
+        } catch (Exception ex) {
+            // pass
+        }
+
+        final String iso8601 = "2022-04-26T00:30:31.087360";
+        assertEquals(LocalDateTime.parse(iso8601), DateTimeUtils.parseLocalDateTime(iso8601));
+    }
+
+    public void testParseLocalDateTimeQuiet() {
+        final String[] roots = {
+                "2010-01-01T12:11",
+                "2010-01-01T12:00:02",
+                "2010-01-01T12:00:00.1",
+                "2010-01-01T12:00:00.123",
+                "2010-01-01T12:00:00.123",
+                "2010-01-01T12:00:00.123456789",
+        };
+
+        for (String root : roots) {
+            final LocalDateTime ldt = LocalDateTime.parse(root);
+            TestCase.assertEquals("LocalDateTime string: " + root, ldt, DateTimeUtils.parseLocalDateTime(root));
+        }
+
+        final String[] uglyRoots = {
+                "2023-04-30",
+                "2023-04-30T",
+                "2023-04-30t",
+                "2023-04-30T9:30:00",
+                "2023-4-3T9:3:6",
+                "2023-4-3T9:3",
+                "2023-4-3T9:3:6.1",
+                "2023-4-3T9:3:6.123",
+                "2023-4-3T9:3:6.123456789",
+        };
+
+        final LocalDateTime[] uglyLDTs = {
+                LocalDateTime.of(2023, 4, 30, 0, 0),
+                LocalDateTime.of(2023, 4, 30, 0, 0),
+                LocalDateTime.of(2023, 4, 30, 0, 0),
+                LocalDateTime.of(2023, 4, 30, 9, 30, 0),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 6),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 0),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 6, 100_000_000),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 6, 123_000_000),
+                LocalDateTime.of(2023, 4, 3, 9, 3, 6, 123456789),
+        };
+
+        for (int i = 0; i < uglyRoots.length; i++) {
+            final String root = uglyRoots[i];
+            final LocalDateTime ldt = uglyLDTs[i];
+            TestCase.assertEquals("LocalDateTime string: " + root, ldt, DateTimeUtils.parseLocalDateTime(root));
+        }
+
+        TestCase.assertNull(DateTimeUtils.parseLocalDateTimeQuiet("JUNK"));
+        TestCase.assertNull(DateTimeUtils.parseLocalDateTimeQuiet("2010-01-01JUNK12:11"));
+        TestCase.assertNull(DateTimeUtils.parseLocalDateTimeQuiet("2010-01-01T12:11 JUNK"));
+        TestCase.assertNull(DateTimeUtils.parseLocalDateTimeQuiet(null));
+
+        final String iso8601 = "2022-04-26T00:30:31.087360";
+        assertEquals(LocalDateTime.parse(iso8601), DateTimeUtils.parseLocalDateTime(iso8601));
+    }
+
     public void testParseZonedDateTime() {
         final String[] tzs = {
                 "NY",
@@ -1800,6 +1932,13 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
             TestCase.assertEquals(Instant.ofEpochSecond(0, nanos), DateTimeUtils.now());
             TestCase.assertEquals(Instant.ofEpochSecond(0, (nanos / DateTimeUtils.MILLI) * DateTimeUtils.MILLI),
                     DateTimeUtils.nowMillisResolution());
+
+            // Occasionally tests fail because of invalid clocks on the test system
+            final LocalDate startDate = LocalDate.of(1990, 1, 1);
+            final LocalDate currentDate = DateTimeUtils.toLocalDate(
+                    DateTimeUtils.epochNanosToInstant(Clock.system().currentTimeNanos()), DateTimeUtils.timeZone());
+            assertTrue("Checking for a valid date on the test system: currentDate=" + currentDate,
+                    currentDate.isAfter(startDate));
 
             TestCase.assertTrue(Math.abs(Clock.system().currentTimeNanos()
                     - DateTimeUtils.epochNanos(DateTimeUtils.nowSystem())) < 1_000_000L);
