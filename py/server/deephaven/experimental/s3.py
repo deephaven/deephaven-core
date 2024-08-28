@@ -54,9 +54,9 @@ class S3Instructions(JObjectWrapper):
 
         Args:
             region_name (str): the region name for reading parquet files. If not provided, the default region will be
-            picked by the AWS SDK from 'aws.region' system property, "AWS_REGION" environment variable, the
-            {user.home}/.aws/credentials or {user.home}/.aws/config files, or from EC2 metadata service, if running in
-            EC2.
+                picked by the AWS SDK from 'aws.region' system property, "AWS_REGION" environment variable, the
+                {user.home}/.aws/credentials or {user.home}/.aws/config files, or from EC2 metadata service, if running
+                in EC2.
             max_concurrent_requests (int): the maximum number of concurrent requests for reading files, default is 256.
             read_ahead_count (int): the number of fragments to send asynchronous read requests for while reading the current
                 fragment. Defaults to 32, which means fetch the next 32 fragments in advance when reading the current fragment.
