@@ -322,9 +322,11 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
 
     private TableUpdateImpl update(final boolean initializing) {
         final RowSetBuilderSequential addedRowSetBuilder = RowSetFactory.builderSequential();
-        final RowSetBuilderSequential removedRowSetBuilder = RowSetFactory.builderSequential();
 
-        final RowSetBuilderSequential removedRegionBuilder = RowSetFactory.builderSequential();
+        final RowSetBuilderSequential removedRowSetBuilder =
+                removedTableLocations.isEmpty() ? null : RowSetFactory.builderSequential();
+        final RowSetBuilderSequential removedRegionBuilder =
+                removedTableLocations.isEmpty() ? null : RowSetFactory.builderSequential();
 
         // Sort the removed locations by region index, so that we can process them in order.
         removedTableLocations.sort(Comparator.comparingInt(e -> e.regionIndex));
@@ -379,7 +381,8 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
 
         emptyTableLocations.removeAll(entriesToInclude);
 
-        final RowSetBuilderSequential addedRegionBuilder = RowSetFactory.builderSequential();
+        final RowSetBuilderSequential addedRegionBuilder =
+                entriesToInclude.isEmpty() ? null : RowSetFactory.builderSequential();
 
         final int prevMaxIndex = nextRegionIndex;
         final int maxIndex = nextRegionIndex + (entriesToInclude.isEmpty() ? 0 : entriesToInclude.size());
@@ -407,14 +410,14 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
                 addedRegionBuilder.appendKey(entry.regionIndex);
             });
         }
-        final RowSet addedRegions = addedRegionBuilder.build();
+        final RowSet addedRegions = addedRegionBuilder == null ? RowSetFactory.empty() : addedRegionBuilder.build();
 
         if (addedRegions.isNonempty()) {
             includedLocationsTable.getRowSet().writableCast().insert(addedRegions);
         }
 
         if (initializing) {
-            Assert.eqZero(prevMaxIndex, "previousNumRegions");
+            Assert.eqZero(prevMaxIndex, "prevMaxIndex");
             if (isRefreshing) {
                 rowSetSource.startTrackingPrevValues();
                 includedLocationsTable.getRowSet().writableCast().initializePreviousValue();
@@ -424,7 +427,8 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
             }
         } else {
             final RowSet modifiedRegions = modifiedRegionBuilder.build();
-            final RowSet removedRegions = removedRegionBuilder.build();
+            final RowSet removedRegions =
+                    removedRegionBuilder == null ? RowSetFactory.empty() : removedRegionBuilder.build();
             if (addedRegions.isEmpty() && modifiedRegions.isEmpty() && removedRegions.isEmpty()) {
                 SafeCloseable.closeAll(addedRegions, modifiedRegions, removedRegions);
             } else {
@@ -438,8 +442,12 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
                 includedLocationsTable.notifyListeners(update);
             }
         }
-        return new TableUpdateImpl(addedRowSetBuilder.build(), removedRowSetBuilder.build(), RowSetFactory.empty(),
-                RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
+        return new TableUpdateImpl(
+                addedRowSetBuilder.build(),
+                removedRowSetBuilder == null ? RowSetFactory.empty() : removedRowSetBuilder.build(),
+                RowSetFactory.empty(),
+                RowSetShiftData.EMPTY,
+                ModifiedColumnSet.EMPTY);
     }
 
     @Override

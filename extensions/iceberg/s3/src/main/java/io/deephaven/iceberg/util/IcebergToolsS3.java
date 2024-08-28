@@ -68,6 +68,8 @@ public class IcebergToolsS3 extends IcebergTools {
             properties.put(S3FileIOProperties.ENDPOINT, endpointOverride);
         }
 
+        // final org.apache.hadoop.conf.Configuration hadoopConf = new org.apache.hadoop.conf.Configuration();
+
         final FileIO fileIO = CatalogUtil.loadFileIO(S3_FILE_IO_CLASS, properties, null);
 
         final String catalogName = name != null ? name : "IcebergCatalog-" + catalogURI;

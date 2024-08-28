@@ -28,6 +28,7 @@ public class IcebergAutoRefreshTableLocationProvider<TK extends TableKey, TLK ex
 
     private static final String IMPLEMENTATION_NAME = IcebergAutoRefreshTableLocationProvider.class.getSimpleName();
 
+    private final TableDataRefreshService refreshService;
     private final long refreshIntervalMs;
 
     private TableDataRefreshService.CancellableSubscriptionToken subscriptionToken;
@@ -40,9 +41,10 @@ public class IcebergAutoRefreshTableLocationProvider<TK extends TableKey, TLK ex
             final long refreshIntervalMs,
             @NotNull final IcebergCatalogAdapter adapter,
             @NotNull final TableIdentifier tableIdentifier) {
-        super(tableKey, locationKeyFinder, locationFactory, refreshService, true, adapter, tableIdentifier);
+        super(tableKey, locationKeyFinder, locationFactory, true, adapter, tableIdentifier);
 
         Assert.neqNull(refreshService, "refreshService");
+        this.refreshService = refreshService;
         this.refreshIntervalMs = refreshIntervalMs;
     }
 

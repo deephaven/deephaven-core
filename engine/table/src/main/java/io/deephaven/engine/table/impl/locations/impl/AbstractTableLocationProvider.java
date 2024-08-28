@@ -468,7 +468,7 @@ public abstract class AbstractTableLocationProvider
         }
     }
 
-    private void maybeClearLocationForRemoval(@Nullable final Object removedLocation) {
+    private synchronized void maybeClearLocationForRemoval(@Nullable final Object removedLocation) {
         if (removedLocation instanceof AbstractTableLocation) {
             locationsToClear.add((AbstractTableLocation) removedLocation);
             locationClearCommitter.maybeActivate();

@@ -26,7 +26,7 @@ public class IcebergStaticTableLocationProvider<TK extends TableKey, TLK extends
             @NotNull final IcebergBaseLayout locationKeyFinder,
             @NotNull final TableLocationFactory<TK, TLK> locationFactory,
             @NotNull final TableIdentifier tableIdentifier) {
-        super(tableKey, locationKeyFinder, locationFactory, null, false, null, tableIdentifier);
+        super(tableKey, locationKeyFinder, locationFactory, false, null, tableIdentifier);
     }
 
     // ------------------------------------------------------------------------------------------------------------------

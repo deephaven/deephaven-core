@@ -27,13 +27,15 @@ public class IcebergManualRefreshTableLocationProvider<TK extends TableKey, TLK 
 
     private static final String IMPLEMENTATION_NAME = IcebergManualRefreshTableLocationProvider.class.getSimpleName();
 
+    private boolean initialized = false;
+
     public IcebergManualRefreshTableLocationProvider(
             @NotNull final TK tableKey,
             @NotNull final IcebergBaseLayout locationKeyFinder,
             @NotNull final TableLocationFactory<TK, TLK> locationFactory,
             @NotNull final IcebergCatalogAdapter adapter,
             @NotNull final TableIdentifier tableIdentifier) {
-        super(tableKey, locationKeyFinder, locationFactory, null, true, adapter, tableIdentifier);
+        super(tableKey, locationKeyFinder, locationFactory, true, adapter, tableIdentifier);
     }
 
     // ------------------------------------------------------------------------------------------------------------------
@@ -108,8 +110,11 @@ public class IcebergManualRefreshTableLocationProvider<TK extends TableKey, TLK 
 
     @Override
     protected void activateUnderlyingDataSource() {
-        refreshSnapshot();
-        activationSuccessful(this);
+        if (!initialized) {
+            refreshSnapshot();
+            activationSuccessful(this);
+            initialized = true;
+        }
     }
 
     @Override

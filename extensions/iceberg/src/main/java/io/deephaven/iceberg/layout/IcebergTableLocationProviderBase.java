@@ -6,7 +6,6 @@ package io.deephaven.iceberg.layout;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocationProvider;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationFactory;
-import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import io.deephaven.iceberg.util.IcebergCatalogAdapter;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.catalog.TableIdentifier;
@@ -18,7 +17,6 @@ public abstract class IcebergTableLocationProviderBase<TK extends TableKey, TLK 
 
     final IcebergBaseLayout locationKeyFinder;
     final TableLocationFactory<TK, TLK> locationFactory;
-    final TableDataRefreshService refreshService;
     final IcebergCatalogAdapter adapter;
     final TableIdentifier tableIdentifier;
 
@@ -26,14 +24,12 @@ public abstract class IcebergTableLocationProviderBase<TK extends TableKey, TLK 
             @NotNull final TK tableKey,
             @NotNull final IcebergBaseLayout locationKeyFinder,
             @NotNull final TableLocationFactory<TK, TLK> locationFactory,
-            @Nullable final TableDataRefreshService refreshService,
             final boolean isRefreshing,
             @Nullable final IcebergCatalogAdapter adapter,
             @NotNull final TableIdentifier tableIdentifier) {
         super(tableKey, isRefreshing);
         this.locationKeyFinder = locationKeyFinder;
         this.locationFactory = locationFactory;
-        this.refreshService = refreshService;
         this.adapter = adapter;
         this.tableIdentifier = tableIdentifier;
     }
@@ -65,6 +61,6 @@ public abstract class IcebergTableLocationProviderBase<TK extends TableKey, TLK 
     @NotNull
     protected TableLocation makeTableLocation(@NotNull final TableLocationKey locationKey) {
         // noinspection unchecked
-        return locationFactory.makeLocation((TK) getKey(), (TLK) locationKey, refreshService);
+        return locationFactory.makeLocation((TK) getKey(), (TLK) locationKey, null);
     }
 }

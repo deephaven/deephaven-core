@@ -48,11 +48,11 @@ public abstract class IcebergInstructions {
 
     /**
      * The {@link IcebergUpdateMode} mode to use when reading the Iceberg data files. Default is
-     * {@link IcebergUpdateMode#STATIC}.
+     * {@link IcebergUpdateMode#staticMode()}.
      */
     @Value.Default
     public IcebergUpdateMode updateMode() {
-        return IcebergUpdateMode.STATIC;
+        return IcebergUpdateMode.staticMode();
     }
 
     public interface Builder {
@@ -69,7 +69,7 @@ public abstract class IcebergInstructions {
         Builder putAllColumnRenames(Map<String, ? extends String> entries);
 
         @SuppressWarnings("unused")
-        Builder updateMode(IcebergUpdateMode refreshing);
+        Builder updateMode(IcebergUpdateMode updateMode);
 
         IcebergInstructions build();
     }

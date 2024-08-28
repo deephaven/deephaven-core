@@ -10,7 +10,6 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableKey;
-import io.deephaven.engine.table.impl.locations.impl.KnownLocationKeyFinder;
 import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
@@ -342,13 +341,34 @@ public class IcebergCatalogAdapter {
     /**
      * List all {@link Snapshot snapshots} of a given Iceberg table as a Deephaven {@link Table table}. The resulting
      * table will be static and contain the following columns:
-     * <ul>
-     * <li>Id: the snapshot identifier (can be used for updating the table or loading a specific snapshot).</li>
-     * <li>TimestampMs: the timestamp of the snapshot.</li>
-     * <li>Operation: the data operation that created this snapshot.</li>
-     * <li>Summary: additional information about the snapshot from the Iceberg metadata.</li>
-     * <li>SnapshotObject: a Java object containing the Iceberg API snapshot.</li>
-     * </ul>
+     * <table>
+     * <tr>
+     * <th>Column Name</th>
+     * <th>Description</th>
+     * </tr>
+     * <tr>
+     * <td>Id</td>
+     * <td>The snapshot identifier (can be used for updating the table or loading a specific snapshot)</td>
+     * </tr>
+     * <tr>
+     * <td>TimestampMs</td>
+     * <td>The timestamp of the snapshot</td>
+     * </tr>
+     * <tr>
+     * <td>Operation</td>
+     * <td>The data operation that created this snapshot</td>
+     * </tr>
+     * <tr>
+     * <td>Summary</td>
+     * <td>Additional information about the snapshot from the Iceberg metadata</td>
+     * </tr>
+     * <tr>
+     * <td>SnapshotObject</td>
+     * <td>A Java object containing the Iceberg API snapshot</td>
+     * </tr>
+     * <tr>
+     * </tr>
+     * </table>
      *
      * @param tableIdentifier The identifier of the table from which to gather snapshots.
      * @return A list of all tables in the given namespace.
@@ -806,11 +826,6 @@ public class IcebergCatalogAdapter {
                 RegionedTableComponentFactoryImpl.INSTANCE,
                 locationProvider,
                 updateSourceRegistrar);
-    }
-
-    private static KnownLocationKeyFinder<IcebergTableLocationKey> toKnownKeys(
-            final IcebergBaseLayout keyFinder) {
-        return KnownLocationKeyFinder.copyFrom(keyFinder, Comparator.naturalOrder());
     }
 
     /**

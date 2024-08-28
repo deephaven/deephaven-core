@@ -32,9 +32,9 @@ class IcebergUpdateMode(JObjectWrapper):
     """
     This class specifies the update mode for the Iceberg table to be loaded into Deephaven. The modes are:
 
-    - `STATIC`: The table is loaded once and does not change
-    - `MANUAL_REFRESHING`: The table can be manually refreshed by the user.
-    - `AUTO_REFRESHING`: The table will be automatically refreshed at a specified interval (use
+    - `static()`: The table is loaded once and does not change
+    - `manual_refresh()`: The table can be manually refreshed by the user.
+    - `auto_refresh()`: The table will be automatically refreshed at a system-defined interval (also can call
             `auto_refreshing(auto_refresh_ms: int)` to specify an interval rather than use the system default
             of 60 seconds).
     """
@@ -44,21 +44,33 @@ class IcebergUpdateMode(JObjectWrapper):
         self._j_object = mode
 
     @classmethod
-    def auto_refreshing(cls, auto_refresh_ms: int) -> IcebergUpdateMode:
+    def static(cls) -> IcebergUpdateMode:
+        """
+        Creates an IcebergUpdateMode with no refreshing supported.
+        """
+        return IcebergUpdateMode(_JIcebergUpdateMode.staticMode())
+
+    @classmethod
+    def manual_refresh(cls) -> IcebergUpdateMode:
+        """
+        Creates an IcebergUpdateMode with manual refreshing enabled.
+        """
+        return IcebergUpdateMode(_JIcebergUpdateMode.manualRefreshingMode())
+
+    @classmethod
+    def auto_refresh(cls, auto_refresh_ms:Optional[int] = None) -> IcebergUpdateMode:
         """
         Creates an IcebergUpdateMode with auto-refreshing mode enabled using the provided refresh interval.
 
         :param auto_refresh_ms (int): the refresh interval in milliseconds.
         """
-        return IcebergUpdateMode(_JIcebergUpdateMode.autoRefreshing(auto_refresh_ms))
+        if auto_refresh_ms is None:
+            return IcebergUpdateMode(_JIcebergUpdateMode.autoRefreshingMode())
+        return IcebergUpdateMode(_JIcebergUpdateMode.autoRefreshingMode(auto_refresh_ms))
 
     @property
     def j_object(self) -> jpy.JType:
         return self._j_object
-
-IcebergUpdateMode.STATIC=IcebergUpdateMode(_JIcebergUpdateMode.STATIC)
-IcebergUpdateMode.MANUAL_REFRESHING=IcebergUpdateMode(_JIcebergUpdateMode.MANUAL_REFRESHING)
-IcebergUpdateMode.AUTO_REFRESHING=IcebergUpdateMode(_JIcebergUpdateMode.AUTO_REFRESHING)
 
 
 class IcebergInstructions(JObjectWrapper):
@@ -119,7 +131,7 @@ class IcebergInstructions(JObjectWrapper):
 
 class IcebergTable(Table):
     """
-    IcebergTable is a subclass of Table that allows the users to dynamically update the table with new snapshots from
+    IcebergTable is a subclass of Table that allows users to dynamically update the table with new snapshots from
     the Iceberg catalog.
     """
     j_object_type = _JIcebergTable
