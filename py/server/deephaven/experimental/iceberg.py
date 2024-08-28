@@ -11,10 +11,6 @@ from deephaven._wrapper import JObjectWrapper
 from deephaven.experimental import s3
 from deephaven.table import Table, TableDefinition, TableDefinitionLike
 
-from deephaven.jcompat import j_hashmap
-
-from deephaven.table import Table
-
 _JIcebergInstructions = jpy.get_type("io.deephaven.iceberg.util.IcebergInstructions")
 _JIcebergCatalogAdapter = jpy.get_type("io.deephaven.iceberg.util.IcebergCatalogAdapter")
 _JIcebergTools = jpy.get_type("io.deephaven.iceberg.util.IcebergTools")

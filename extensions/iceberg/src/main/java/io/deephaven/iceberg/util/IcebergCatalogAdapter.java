@@ -634,28 +634,6 @@ public class IcebergCatalogAdapter {
      * Read the latest static snapshot of an Iceberg table from the Iceberg catalog.
      *
      * @param tableIdentifier The table identifier to load
-     * @return The loaded table
-     */
-    @SuppressWarnings("unused")
-    public Table readTable(@NotNull final TableIdentifier tableIdentifier) {
-        return readTableInternal(tableIdentifier, null, null);
-    }
-
-    /**
-     * Read the latest static snapshot of an Iceberg table from the Iceberg catalog.
-     *
-     * @param tableIdentifier The table identifier to load
-     * @return The loaded table
-     */
-    @SuppressWarnings("unused")
-    public Table readTable(@NotNull final String tableIdentifier) {
-        return readTableInternal(TableIdentifier.parse(tableIdentifier), null, null);
-    }
-
-    /**
-     * Read the latest static snapshot of an Iceberg table from the Iceberg catalog.
-     *
-     * @param tableIdentifier The table identifier to load
      * @param instructions The instructions for customizations while reading
      * @return The loaded table
      */
