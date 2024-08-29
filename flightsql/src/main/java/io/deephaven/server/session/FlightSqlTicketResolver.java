@@ -7,15 +7,21 @@ import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.rpc.Code;
+import io.deephaven.engine.context.ExecutionContext;
+import io.deephaven.engine.context.QueryScope;
 import io.deephaven.engine.sql.Sql;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.TableCreatorImpl;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.util.Exceptions;
+import io.deephaven.qst.table.TableSpec;
+import io.deephaven.qst.table.TicketTable;
 import io.deephaven.qst.type.Type;
 import io.deephaven.server.auth.AuthorizationProvider;
+import io.deephaven.server.console.ScopeTicketResolver;
 import io.deephaven.server.session.SessionState.ExportObject;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.grpc.stub.StreamObserver;
@@ -41,6 +47,8 @@ import org.jetbrains.annotations.Nullable;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.nio.ByteBuffer;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -117,9 +125,16 @@ public final class FlightSqlTicketResolver extends TicketResolverBase {
             ColumnDefinition.ofString("table_type"),
             ColumnDefinition.of("table_schema", Type.byteType().arrayType()));
 
+    // Unable to depends on TicketRouter, would be a circular dependency atm (since TicketRouter depends on all of the
+    // TicketResolvers).
+    // private final TicketRouter router;
+    private final ScopeTicketResolver scopeTicketResolver;
+
     @Inject
-    public FlightSqlTicketResolver(final AuthorizationProvider authProvider) {
+    public FlightSqlTicketResolver(final AuthorizationProvider authProvider,
+            final ScopeTicketResolver scopeTicketResolver) {
         super(authProvider, (byte) TICKET_PREFIX, FLIGHT_DESCRIPTOR_ROUTE);
+        this.scopeTicketResolver = Objects.requireNonNull(scopeTicketResolver);
     }
 
     @Override
@@ -142,10 +157,7 @@ public final class FlightSqlTicketResolver extends TicketResolverBase {
                     String.format("Unsupported descriptor type '%s'", descriptor.getType()));
         }
         return session.<Flight.FlightInfo>nonExport().submit(() -> {
-            // TODO we need to apply authorization to each individual part,
-            // like io.deephaven.server.table.ops.TableServiceGrpcImpl.batch
-            // Likely want to parse as TableSpec
-            final Table table = execute(descriptor);
+            final Table table = execute(session, descriptor);
             final ExportObject<Table> sse = session.newServerSideExport(table);
             final int exportId = sse.getExportIdInt();
             return TicketRouter.getFlightInfo(table, descriptor,
@@ -250,13 +262,13 @@ public final class FlightSqlTicketResolver extends TicketResolverBase {
         // todo: release the server exports?
     }
 
-    private Table execute(final Flight.FlightDescriptor descriptor) {
+    private Table execute(SessionState sessionState, final Flight.FlightDescriptor descriptor) {
         final Any any = parseOrThrow(descriptor.getCmd());
         switch (any.getTypeUrl()) {
             case COMMAND_STATEMENT_QUERY_TYPE_URL:
-                return execute(unpackOrThrow(any, CommandStatementQuery.class));
+                return execute(sessionState, unpackOrThrow(any, CommandStatementQuery.class));
             case COMMAND_PREPARED_STATEMENT_QUERY_TYPE_URL:
-                return execute(unpackOrThrow(any, CommandPreparedStatementQuery.class));
+                return execute(sessionState, unpackOrThrow(any, CommandPreparedStatementQuery.class));
             case COMMAND_GET_TABLE_TYPES_TYPE_URL:
                 return execute(unpackOrThrow(any, CommandGetTableTypes.class));
             case COMMAND_GET_CATALOGS_TYPE_URL:
@@ -269,18 +281,31 @@ public final class FlightSqlTicketResolver extends TicketResolverBase {
         throw new UnsupportedOperationException("todo");
     }
 
-    private Table execute(CommandStatementQuery query) {
+    private Table execute(SessionState sessionState, CommandStatementQuery query) {
         if (query.hasTransactionId()) {
             throw new IllegalArgumentException("Transactions not supported");
         }
-        final String sqlQuery = query.getQuery();
-        return Sql.evaluate(sqlQuery);
+        return executSqlQuery(sessionState, query.getQuery());
     }
 
-    private Table execute(CommandPreparedStatementQuery query) {
+    private Table execute(SessionState sessionState, CommandPreparedStatementQuery query) {
         // Hack, we are just passing the SQL through the "handle"
-        final String sql = query.getPreparedStatementHandle().toStringUtf8();
-        return Sql.evaluate(sql);
+        return executSqlQuery(sessionState, query.getPreparedStatementHandle().toStringUtf8());
+    }
+
+    private Table executSqlQuery(SessionState sessionState, String sql) {
+        // See SQLTODO(catalog-reader-implementation)
+        // final QueryScope queryScope = sessionState.getExecutionContext().getQueryScope();
+        // Note: ScopeTicketResolver uses from ExecutionContext.getContext() instead of session...
+        final QueryScope queryScope = ExecutionContext.getContext().getQueryScope();
+        // noinspection unchecked,rawtypes
+        final Map<String, Table> queryScopeTables =
+                (Map<String, Table>) (Map) queryScope.toMap(queryScope::unwrapObject, (n, t) -> t instanceof Table);
+        final TableSpec tableSpec = Sql.parseSql(sql, queryScopeTables, TicketTable::fromQueryScopeField, null);
+        // Note: this is doing io.deephaven.server.session.TicketResolver.Authorization.transform, but not
+        // io.deephaven.auth.ServiceAuthWiring
+        return tableSpec.logic()
+                .create(new TableCreatorScopeTickets(TableCreatorImpl.INSTANCE, scopeTicketResolver, sessionState));
     }
 
     private Table execute(CommandGetTableTypes request) {
