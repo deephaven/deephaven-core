@@ -133,6 +133,7 @@ public abstract class IcebergToolsTest {
                 .build();
         writeInstructions = IcebergParquetWriteInstructions.builder()
                 .dataInstructions(s3Instructions)
+                .verifySchema(true)
                 .build();
     }
 
@@ -930,7 +931,7 @@ public abstract class IcebergToolsTest {
         // Drop one column and append to original table
         final io.deephaven.engine.table.Table updatedDhTable = dhTable.dropColumns("Region");
         try {
-            adapter.appendTable(tableId, updatedDhTable, writeInstructions);
+            adapter.addPartition(tableId, updatedDhTable, writeInstructions);
             TestCase.fail();
         } catch (final IllegalArgumentException e) {
             Assert.eqTrue(e.getMessage().contains("Schema mismatch"), "Exception message");

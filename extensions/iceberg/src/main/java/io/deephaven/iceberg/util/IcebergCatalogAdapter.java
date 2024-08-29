@@ -830,154 +830,136 @@ public class IcebergCatalogAdapter {
     }
 
     /**
-     * Write a Deephaven table to a new Iceberg table in the catalog.
+     * Add the provided deephaven table as a new partition to the existing iceberg table in a single snapshot.
      *
-     * @param dhTable The Deephaven table to write
-     * @param namespace The namespace for the new table, will be created if it does not exist
-     * @param tableName The name of the new table
+     * @param icebergTableIdentifier The identifier for the iceberg table to append to
+     * @param dhTable The deephaven table to append
      */
-    public void writeTable(
-            @NotNull final Table dhTable,
-            @NotNull final String namespace,
-            @NotNull final String tableName) {
-        writeTable(dhTable, namespace, tableName, IcebergParquetWriteInstructions.DEFAULT);
+    public void addPartition(
+            @NotNull final String icebergTableIdentifier,
+            @NotNull final Table dhTable) {
+        addPartition(TableIdentifier.parse(icebergTableIdentifier), dhTable, IcebergParquetWriteInstructions.DEFAULT);
     }
 
     /**
-     * Write a Deephaven table to a new Iceberg table in the catalog.
+     * Add the provided deephaven table as a new partition to the existing iceberg table in a single snapshot.
      *
-     * @param dhTable The Deephaven table to write
-     * @param namespace The namespace for the new table, will be created if it does not exist
-     * @param tableName The name of the new table
+     * @param icebergTableIdentifier The identifier for the iceberg table to append to
+     * @param dhTable The deephaven table to append
      * @param instructions The instructions for customizations while writing
      */
-    public void writeTable(
+    public void addPartition(
+            @NotNull final String icebergTableIdentifier,
             @NotNull final Table dhTable,
-            @NotNull final String namespace,
-            @NotNull final String tableName,
             @NotNull final IcebergBaseInstructions instructions) {
-        final IcebergParquetWriteInstructions writeInstructions = verifyWriteInstructions(instructions);
-        final Namespace ns = createNamespaceIfDoesntExist(namespace);
-        final TableIdentifier tableIdentifier = TableIdentifier.of(ns, tableName);
+        addPartition(TableIdentifier.parse(icebergTableIdentifier), dhTable, instructions);
+    }
+
+    /**
+     * Add the provided deephaven table as a new partition to the existing iceberg table in a single snapshot.
+     *
+     * @param icebergTableIdentifier The identifier for the iceberg table to append to
+     * @param dhTable The deephaven table to append
+     */
+    public void addPartition(
+            @NotNull final TableIdentifier icebergTableIdentifier,
+            @NotNull final Table dhTable) {
+        addPartition(icebergTableIdentifier, dhTable, IcebergParquetWriteInstructions.DEFAULT);
+    }
+
+    /**
+     * Add the provided deephaven table as a new partition to the existing iceberg table in a single snapshot.
+     *
+     * @param tableIdentifier The identifier for the iceberg table to append to
+     * @param dhTable The deephaven table to append
+     * @param instructions The instructions for customizations while writing
+     */
+    public void addPartition(
+            @NotNull final TableIdentifier tableIdentifier,
+            @NotNull final Table dhTable,
+            @NotNull final IcebergBaseInstructions instructions) {
         final TableDefinition useDefinition = instructions.tableDefinition().orElse(dhTable.getDefinition());
         final SpecAndSchema specAndSchema = fromTableDefinition(useDefinition, instructions);
-        final org.apache.iceberg.Table icebergTable =
-                createNewIcebergTable(tableIdentifier, specAndSchema, writeInstructions);
+        final IcebergParquetWriteInstructions writeInstructions = verifyWriteInstructions(instructions);
+        boolean tableCreated = false;
+
+        // Try loading the table from the catalog, or create it if it required
+        final org.apache.iceberg.Table icebergTable;
+        if (catalog.tableExists(tableIdentifier)) {
+            icebergTable = catalog.loadTable(tableIdentifier);
+        } else if (!writeInstructions.createTableIfNotExist()) {
+            throw new IllegalArgumentException("Table not found: " + tableIdentifier + ", update the " +
+                    "instructions to create the table if it does not exist and try again.");
+        } else {
+            createNamespaceIfNotExists(tableIdentifier.namespace());
+            icebergTable = createNewIcebergTable(tableIdentifier, specAndSchema, writeInstructions);
+            tableCreated = true;
+        }
+
+        if (writeInstructions.verifySchema()) {
+            // Make sure spec and schema for the iceberg and deephaven table is identical
+            if (!icebergTable.schema().sameSchema(specAndSchema.schema)) {
+                throw new IllegalArgumentException("Schema mismatch, iceberg table schema "
+                        + icebergTable.schema() + ", schema derived from deephaven table: " + specAndSchema.schema);
+            }
+            if (!icebergTable.spec().compatibleWith(specAndSchema.partitionSpec)) {
+                throw new IllegalArgumentException("Partition spec mismatch, iceberg table partition spec "
+                        + icebergTable.spec() + ", partition spec derived from deephaven table: "
+                        + specAndSchema.partitionSpec);
+            }
+        }
+
+        if (dhTable.isEmpty()) {
+            return;
+        }
+
         try {
-            writeParquet(icebergTable, dhTable, writeInstructions);
+            final List<ParquetInstructions.CompletedWrite> parquetFileinfo =
+                    writeParquet(icebergTable, dhTable, writeInstructions);
+            createSnapshot(icebergTable, parquetFileinfo, false);
         } catch (final Exception writeException) {
             // If we fail to write the table, we should delete the table to avoid leaving a partial table in the catalog
-            try {
-                catalog.dropTable(tableIdentifier, true);
-            } catch (final Exception dropException) {
-                writeException.addSuppressed(dropException);
+            if (tableCreated) {
+                try {
+                    catalog.dropTable(tableIdentifier, true);
+                } catch (final Exception dropException) {
+                    writeException.addSuppressed(dropException);
+                }
             }
             throw writeException;
         }
-
     }
 
-    /**
-     * Append provided deephaven table as a new partition to the existing iceberg table in a single snapshot.
-     *
-     * @param icebergTableIdentifier The identifier for the iceberg table to append to
-     * @param dhTable The deephaven table to append
-     */
-    public void appendTable(
-            @NotNull final String icebergTableIdentifier,
-            @NotNull final Table dhTable) {
-        appendTable(TableIdentifier.parse(icebergTableIdentifier), dhTable, IcebergParquetWriteInstructions.DEFAULT);
-    }
-
-    /**
-     * Append provided deephaven table as a new partition to the existing iceberg table in a single snapshot.
-     *
-     * @param icebergTableIdentifier The identifier for the iceberg table to append to
-     * @param dhTable The deephaven table to append
-     * @param instructions The instructions for customizations while writing
-     */
-    public void appendTable(
-            @NotNull final String icebergTableIdentifier,
-            @NotNull final Table dhTable,
-            @Nullable final IcebergBaseInstructions instructions) {
-        appendTable(TableIdentifier.parse(icebergTableIdentifier), dhTable, instructions);
-    }
-
-    /**
-     * Append provided deephaven table as a new partition to the existing iceberg table in a single snapshot.
-     *
-     * @param icebergTableIdentifier The identifier for the iceberg table to append to
-     * @param dhTable The deephaven table to append
-     */
-    public void appendTable(
-            @NotNull final TableIdentifier icebergTableIdentifier,
-            @NotNull final Table dhTable) {
-        appendTable(icebergTableIdentifier, dhTable, IcebergParquetWriteInstructions.DEFAULT);
-    }
-
-    /**
-     * Append provided deephaven table as a new partition to the existing iceberg table in a single snapshot.
-     *
-     * @param icebergTableIdentifier The identifier for the iceberg table to append to
-     * @param dhTable The deephaven table to append
-     * @param instructions The instructions for customizations while writing
-     */
-    public void appendTable(
-            @NotNull final TableIdentifier icebergTableIdentifier,
-            @NotNull final Table dhTable,
-            @NotNull final IcebergBaseInstructions instructions) {
-        final IcebergParquetWriteInstructions writeInstructions = verifyWriteInstructions(instructions);
-        // Load the table from the catalog.
-        final org.apache.iceberg.Table icebergTable = catalog.loadTable(icebergTableIdentifier);
-        if (icebergTable == null) {
-            throw new IllegalArgumentException("Table not found: " + icebergTableIdentifier);
-        }
-
-        // Make sure spec and schema for the iceberg and deephaven table is identical
-        final TableDefinition useDefinition = instructions.tableDefinition().orElse(dhTable.getDefinition());
-        final SpecAndSchema specAndSchema = fromTableDefinition(useDefinition, instructions);
-        if (!icebergTable.schema().sameSchema(specAndSchema.schema)) {
-            throw new IllegalArgumentException("Schema mismatch, iceberg table schema "
-                    + icebergTable.schema() + ", schema derived from deephaven table: " + specAndSchema.schema);
-        }
-        if (!icebergTable.spec().compatibleWith(specAndSchema.partitionSpec)) {
-            throw new IllegalArgumentException("Partition spec mismatch, iceberg table partition spec "
-                    + icebergTable.spec() + ", partition spec derived from deephaven table: "
-                    + specAndSchema.partitionSpec);
-        }
-        writeParquet(icebergTable, dhTable, writeInstructions);
-    }
-
-    public void writePartitionedTable(
+    public void writePartitioned(
             @NotNull final Table dhTable,
             @NotNull final String namespace,
             @NotNull final String tableName,
             @NotNull final IcebergBaseInstructions instructions) {
         final IcebergParquetWriteInstructions writeInstructions = verifyWriteInstructions(instructions);
-        final Namespace ns = createNamespaceIfDoesntExist(namespace);
+        final Namespace ns = createNamespaceIfNotExists(namespace);
         final TableIdentifier tableIdentifier = TableIdentifier.of(ns, tableName);
         final TableDefinition useDefinition = instructions.tableDefinition().orElse(dhTable.getDefinition());
         if (useDefinition.getPartitioningColumns().isEmpty()) {
             throw new IllegalArgumentException("Table must have partitioning columns to write partitioned data");
         }
         final SpecAndSchema specAndSchema = fromTableDefinition(useDefinition, instructions);
-        writePartitionedTableImpl(dhTable, tableIdentifier, specAndSchema, writeInstructions);
+        writePartitionedImpl(dhTable, tableIdentifier, specAndSchema, writeInstructions);
     }
 
-    public void writePartitionedTable(
+    public void writePartitioned(
             @NotNull final PartitionedTable dhTable,
             @NotNull final String namespace,
             @NotNull final String tableName) {
-        writePartitionedTable(dhTable, namespace, tableName, IcebergParquetWriteInstructions.DEFAULT);
+        writePartitioned(dhTable, namespace, tableName, IcebergParquetWriteInstructions.DEFAULT);
     }
 
-    public void writePartitionedTable(
+    public void writePartitioned(
             @NotNull final PartitionedTable dhTable,
             @NotNull final String namespace,
             @NotNull final String tableName,
             @NotNull final IcebergBaseInstructions instructions) {
         final IcebergParquetWriteInstructions writeInstructions = verifyWriteInstructions(instructions);
-        final Namespace ns = createNamespaceIfDoesntExist(namespace);
+        final Namespace ns = createNamespaceIfNotExists(namespace);
         final TableIdentifier tableIdentifier = TableIdentifier.of(ns, tableName);
         final SpecAndSchema specAndSchema;
         if (instructions.tableDefinition().isPresent()) {
@@ -985,7 +967,7 @@ public class IcebergCatalogAdapter {
         } else {
             specAndSchema = forPartitionedTable(dhTable, instructions);
         }
-        writePartitionedTableImpl(dhTable, tableIdentifier, specAndSchema, writeInstructions);
+        writePartitionedImpl(dhTable, tableIdentifier, specAndSchema, writeInstructions);
     }
 
     private static IcebergParquetWriteInstructions verifyWriteInstructions(
@@ -998,15 +980,19 @@ public class IcebergCatalogAdapter {
         return (IcebergParquetWriteInstructions) instructions;
     }
 
-    private Namespace createNamespaceIfDoesntExist(@NotNull final String namespace) {
-        final Namespace ns = Namespace.of(namespace);
+    // TODO look at if required
+    private Namespace createNamespaceIfNotExists(@NotNull final String namespace) {
+        return createNamespaceIfNotExists(Namespace.of(namespace));
+    }
+
+    private Namespace createNamespaceIfNotExists(@NotNull final Namespace namespace) {
         if (catalog instanceof SupportsNamespaces) {
             final SupportsNamespaces nsCatalog = (SupportsNamespaces) catalog;
-            if (!nsCatalog.namespaceExists(ns)) {
-                nsCatalog.createNamespace(ns);
+            if (!nsCatalog.namespaceExists(namespace)) {
+                nsCatalog.createNamespace(namespace);
             }
         }
-        return ns;
+        return namespace;
     }
 
     private static class SpecAndSchema {
@@ -1120,19 +1106,17 @@ public class IcebergCatalogAdapter {
                         TableProperties.DEFAULT_NAME_MAPPING, columnNameMappingJson));
     }
 
-    private static void writeParquet(
+    @NotNull
+    private static List<ParquetInstructions.CompletedWrite> writeParquet(
             @NotNull final org.apache.iceberg.Table icebergTable,
             @NotNull final Table dhTable,
             @NotNull final IcebergParquetWriteInstructions writeInstructions) {
-        if (dhTable.isEmpty()) {
-            return;
-        }
         // Generate a unique path for the new partition and write the data to it
         final String newDataLocation = icebergTable.locationProvider().newDataLocation(UUID.randomUUID() + ".parquet");
         final List<ParquetInstructions.CompletedWrite> parquetFilesWritten = new ArrayList<>(1);
         final ParquetInstructions parquetInstructions = writeInstructions.toParquetInstructions(parquetFilesWritten);
         ParquetTools.writeTable(dhTable, newDataLocation, parquetInstructions);
-        createSnapshot(icebergTable, parquetFilesWritten, false);
+        return parquetFilesWritten;
     }
 
     private static void createSnapshot(
@@ -1163,11 +1147,16 @@ public class IcebergCatalogAdapter {
         append.commit();
     }
 
-    private <TABLE> void writePartitionedTableImpl(
+    private <TABLE> void writePartitionedImpl(
             @NotNull final TABLE dhTable,
             @NotNull final TableIdentifier tableIdentifier,
             @NotNull final SpecAndSchema specAndSchema,
             @NotNull final IcebergParquetWriteInstructions writeInstructions) {
+        if (catalog.tableExists(tableIdentifier)) {
+            throw new IllegalArgumentException("Table already exists: " + tableIdentifier + ", we do not support " +
+                    "adding a deephaven table with partitioning columns to an existing iceberg table.");
+        }
+        createNamespaceIfNotExists(tableIdentifier.namespace());
         final org.apache.iceberg.Table icebergTable =
                 createNewIcebergTable(tableIdentifier, specAndSchema, writeInstructions);
         try {

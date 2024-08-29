@@ -32,6 +32,24 @@ public abstract class IcebergParquetWriteInstructions implements IcebergBaseInst
     }
 
     /**
+     * While appending a partition to an iceberg table, whether to create the iceberg table if it does not exist;
+     * defaults to {@code false}.
+     */
+    @Default
+    public boolean createTableIfNotExist() {
+        return false;
+    }
+
+    /**
+     * While appending a partition to an iceberg table, whether to verify that the schema of the table being appended is
+     * consistent with the iceberg table; defaults to {@code false}.
+     */
+    @Default
+    public boolean verifySchema() {
+        return false;
+    }
+
+    /**
      * The name of the compression codec to use when writing Parquet files; defaults to
      * {@value ParquetInstructions#DEFAULT_COMPRESSION_CODEC_NAME}.
      */
@@ -99,6 +117,12 @@ public abstract class IcebergParquetWriteInstructions implements IcebergBaseInst
     }
 
     public interface Builder extends IcebergBaseInstructions.Builder<Builder> {
+        @SuppressWarnings("unused")
+        Builder createTableIfNotExist(boolean createTableIfNotExist);
+
+        @SuppressWarnings("unused")
+        Builder verifySchema(boolean verifySchema);
+
         @SuppressWarnings("unused")
         Builder compressionCodecName(String compressionCodecName);
 
