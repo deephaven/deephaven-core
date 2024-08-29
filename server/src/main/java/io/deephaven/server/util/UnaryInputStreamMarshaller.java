@@ -3,7 +3,7 @@
 //
 package io.deephaven.server.util;
 
-import io.deephaven.extensions.barrage.util.BarrageProtoUtil;
+import io.deephaven.extensions.barrage.util.ExposedByteArrayOutputStream;
 import io.grpc.MethodDescriptor;
 
 import java.io.ByteArrayInputStream;
@@ -20,8 +20,7 @@ public class UnaryInputStreamMarshaller implements MethodDescriptor.Marshaller<I
 
     @Override
     public InputStream parse(InputStream stream) {
-        try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos =
-                new BarrageProtoUtil.ExposedByteArrayOutputStream()) {
+        try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream()) {
             final byte[] buffer = new byte[4096];
             while (stream.available() > 0) {
                 int len = stream.read(buffer);

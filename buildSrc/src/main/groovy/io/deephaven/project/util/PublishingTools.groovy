@@ -63,12 +63,16 @@ class PublishingTools {
         }
     }
 
+    static boolean isSnapshot(Project project) {
+        return ((String)project.version).endsWith('-SNAPSHOT')
+    }
+
     static void setupRepositories(Project project) {
         PublishingExtension publishingExtension = project.extensions.getByType(PublishingExtension)
         publishingExtension.repositories { repoHandler ->
             repoHandler.maven { MavenArtifactRepository repo ->
                 repo.name = REPO_NAME
-                repo.url = ((String)project.version).endsWith('SNAPSHOT') ? SNAPSHOT_REPO : RELEASE_REPO
+                repo.url = isSnapshot(project) ? SNAPSHOT_REPO : RELEASE_REPO
                 // ossrhUsername, ossrhPassword
                 repo.credentials(PasswordCredentials)
             }
@@ -145,7 +149,9 @@ class PublishingTools {
                     throw new IllegalStateException('Release error: env CI must be true')
                 }
                 def actualGithubRef = System.getenv('GITHUB_REF')
-                def expectedGithubRef = "refs/heads/release/v${p.version}"
+                def expectedGithubRef = isSnapshot(p)
+                        ? 'refs/heads/main'
+                        : "refs/heads/release/v${p.version}".toString()
                 if (actualGithubRef != expectedGithubRef) {
                     throw new IllegalStateException("Release error: env GITHUB_REF '${actualGithubRef}' does not match expected '${expectedGithubRef}'. Bad tag? Bump version?")
                 }

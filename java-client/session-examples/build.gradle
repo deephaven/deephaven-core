@@ -49,6 +49,7 @@ application.applicationDistribution.into('bin') {
     from(createApplication('message-stream-send-receive', 'io.deephaven.client.examples.MessageStreamSendReceive'))
     from(createApplication('filter-table', 'io.deephaven.client.examples.FilterTable'))
     from(createApplication('create-shared-id', 'io.deephaven.client.examples.CreateSharedId'))
+    from(createApplication('print-configuration-constants', 'io.deephaven.client.examples.PrintConfigurationConstants'))
 
     fileMode = 0755
 }

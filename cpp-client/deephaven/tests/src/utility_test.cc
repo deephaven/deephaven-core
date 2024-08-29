@@ -11,6 +11,8 @@ using deephaven::dhcore::utility::GetEnv;
 using deephaven::dhcore::utility::GetTidAsString;
 using deephaven::dhcore::utility::GetHostname;
 using deephaven::dhcore::utility::ObjectId;
+using deephaven::dhcore::utility::SetEnv;
+using deephaven::dhcore::utility::UnsetEnv;
 
 namespace deephaven::client::tests {
 TEST_CASE("Base64encode", "[utility]") {
@@ -66,12 +68,43 @@ TEST_CASE("GetHostname", "[utility]") {
 // This isn't much of a test, but if it can compile on all supported
 // platforms (Linux and Windows) then that is at least a sanity check
 // (that the entry point exists). For now we just visually spot-check
-// that ireturns the right value.
+// that it returns the right value.
 TEST_CASE("GetEnv", "[utility]") {
-  auto path = GetEnv("PATH");
-  // Very suspect if neither Windows nor Linux has a PATH set in their
-  // environment.
-  REQUIRE(path.has_value());
-  fmt::println("PATH is: {}", *path);
+#if defined(__unix__)
+  const char *expected_key = "PATH";
+#elif defined(_WIN32)
+  const char *expected_key = "OS";
+#else
+#error "Unsupported configuration"
+#endif
+
+  auto value = GetEnv(expected_key);
+  REQUIRE(value.has_value());
+  fmt::println("{} is: {}", expected_key, *value);
+}
+
+// Confirm that SetEnv leaves something that GetEnv can find.
+TEST_CASE("SetEnv", "[utility]") {
+  std::string unlikely_key = "Deephaven__serious_realtime_data_tools";
+  std::string unlikely_value = "query_engine_APIs_and_user_interfaces";
+  {
+    auto value = GetEnv(unlikely_key);
+    if (value.has_value()) {
+      fmt::println(std::cerr, "unexpected value is {}", *value);
+    }
+    REQUIRE(!value.has_value());
+  }
+
+  SetEnv(unlikely_key, unlikely_value);
+  {
+    auto value = GetEnv(unlikely_key);
+    REQUIRE(unlikely_value == value);
+  }
+
+  UnsetEnv(unlikely_key);
+  {
+    auto value = GetEnv(unlikely_key);
+    REQUIRE(!value.has_value());
+  }
 }
 }  // namespace deephaven::client::tests

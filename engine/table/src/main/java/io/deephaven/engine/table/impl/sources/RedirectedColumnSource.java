@@ -94,6 +94,10 @@ public class RedirectedColumnSource<T> extends AbstractColumnSource<T>
         return rowRedirection;
     }
 
+    public final ColumnSource<T> getInnerSource() {
+        return innerSource;
+    }
+
     @Override
     public void startTrackingPrevValues() {}
 

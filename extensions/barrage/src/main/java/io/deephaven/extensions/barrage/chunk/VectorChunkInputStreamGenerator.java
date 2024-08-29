@@ -11,7 +11,6 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.chunk.util.pools.PoolableChunk;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -29,16 +28,19 @@ public class VectorChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
     private static final String DEBUG_NAME = "VarListChunkInputStreamGenerator";
 
     private final Class<?> componentType;
+    private final Factory factory;
 
     private WritableIntChunk<ChunkPositions> offsets;
     private ChunkInputStreamGenerator innerGenerator;
 
     VectorChunkInputStreamGenerator(
+            final ChunkInputStreamGenerator.Factory factory,
             final Class<Vector<?>> type,
             final Class<?> componentType,
             final ObjectChunk<Vector<?>, Values> chunk,
             final long rowOffset) {
         super(chunk, 0, rowOffset);
+        this.factory = factory;
         this.componentType = VectorExpansionKernel.getComponentType(type, componentType);
     }
 
@@ -53,22 +55,17 @@ public class VectorChunkInputStreamGenerator extends BaseChunkInputStreamGenerat
         offsets = WritableIntChunk.makeWritableChunk(chunk.size() + 1);
 
         final WritableChunk<Values> innerChunk = kernel.expand(chunk, offsets);
-        innerGenerator = ChunkInputStreamGenerator.makeInputStreamGenerator(
-                chunkType, componentType, innerComponentType, innerChunk, 0);
+        innerGenerator = factory.makeInputStreamGenerator(chunkType, componentType, innerComponentType, innerChunk, 0);
     }
 
     @Override
-    public void close() {
-        if (REFERENCE_COUNT_UPDATER.decrementAndGet(this) == 0) {
-            if (chunk instanceof PoolableChunk) {
-                ((PoolableChunk) chunk).close();
-            }
-            if (offsets != null) {
-                offsets.close();
-            }
-            if (innerGenerator != null) {
-                innerGenerator.close();
-            }
+    protected void onReferenceCountAtZero() {
+        super.onReferenceCountAtZero();
+        if (offsets != null) {
+            offsets.close();
+        }
+        if (innerGenerator != null) {
+            innerGenerator.close();
         }
     }
 

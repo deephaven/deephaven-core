@@ -259,7 +259,7 @@ public class TestParquetTools {
         try {
             ParquetTools.writeTable(table1, testRoot + File.separator + "unexpectedFile" + File.separator + "Table1");
             TestCase.fail("Expected exception");
-        } catch (UncheckedDeephavenException e) {
+        } catch (IllegalArgumentException e) {
             // Expected
         }
 
@@ -268,7 +268,7 @@ public class TestParquetTools {
         try {
             ParquetTools.writeTable(table1, testRoot + File.separator + "Table1");
             TestCase.fail("Expected exception");
-        } catch (UncheckedDeephavenException e) {
+        } catch (IllegalArgumentException e) {
             // Expected
         }
         new File(testRoot + File.separator + "Nested").mkdirs();

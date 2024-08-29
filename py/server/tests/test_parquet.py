@@ -14,7 +14,7 @@ import pyarrow.parquet
 
 from deephaven import DHError, empty_table, dtypes, new_table
 from deephaven import arrow as dharrow
-from deephaven.column import InputColumn, Column, ColumnType, string_col, int_col, char_col, long_col
+from deephaven.column import InputColumn, ColumnType, col_def, string_col, int_col, char_col, long_col, short_col
 from deephaven.pandas import to_pandas, to_table
 from deephaven.parquet import (write, batch_write, read, delete, ColumnInstruction, ParquetFileLayout,
                                write_partitioned)
@@ -597,12 +597,10 @@ class ParquetTestCase(BaseTestCase):
             actual = read(
                 kv_dir,
                 table_definition=[
-                    Column(
-                        "Partition", dtypes.int32, column_type=ColumnType.PARTITIONING
-                    ),
-                    Column("x", dtypes.int32),
-                    Column("y", dtypes.double),
-                    Column("z", dtypes.double),
+                    col_def("Partition", dtypes.int32, column_type=ColumnType.PARTITIONING),
+                    col_def("x", dtypes.int32),
+                    col_def("y", dtypes.double),
+                    col_def("z", dtypes.double),
                 ],
                 file_layout=ParquetFileLayout.KV_PARTITIONED,
             )
@@ -655,7 +653,7 @@ class ParquetTestCase(BaseTestCase):
             shutil.rmtree(root_dir)
 
         def verify_table_from_disk(table):
-            self.assertTrue(len(table.columns))
+            self.assertTrue(len(table.definition))
             self.assertTrue(table.columns[0].name == "X")
             self.assertTrue(table.columns[0].column_type == ColumnType.PARTITIONING)
             self.assert_table_equals(table.select().sort(["X", "Y"]), source.sort(["X", "Y"]))
@@ -696,9 +694,9 @@ class ParquetTestCase(BaseTestCase):
 
         shutil.rmtree(root_dir)
         table_definition = [
-            Column("X", dtypes.string, column_type=ColumnType.PARTITIONING),
-            Column("Y", dtypes.string),
-            Column("Number", dtypes.int32)
+            col_def("X", dtypes.string, column_type=ColumnType.PARTITIONING),
+            col_def("Y", dtypes.string),
+            col_def("Number", dtypes.int32)
         ]
         write_partitioned(source, table_definition=table_definition, destination_dir=root_dir,
                           base_name=base_name, max_dictionary_keys=max_dictionary_keys)
@@ -780,6 +778,32 @@ class ParquetTestCase(BaseTestCase):
             char_col("uint16Col", [65535, 2, 0]),
             long_col("uint32Col", [4294967295, 2, 0]),
         ])
+        self.assert_table_equals(table_from_disk, expected)
+
+    def test_unsigned_byte_cast(self):
+        data = {'uint8Col': [255, 2, 0]}
+        df = pandas.DataFrame(data)
+        df['uint8Col'] = df['uint8Col'].astype(np.uint8)
+        pyarrow.parquet.write_table(pyarrow.Table.from_pandas(df), 'data_from_pyarrow.parquet')
+
+        # UByte -> Char
+        table_from_disk = read("data_from_pyarrow.parquet", table_definition={"uint8Col": dtypes.char})
+        expected = new_table([char_col("uint8Col", [255, 2, 0])])
+        self.assert_table_equals(table_from_disk, expected)
+
+        # UByte -> Short
+        table_from_disk = read("data_from_pyarrow.parquet", table_definition={"uint8Col": dtypes.short})
+        expected = new_table([short_col("uint8Col", [255, 2, 0])])
+        self.assert_table_equals(table_from_disk, expected)
+
+        # UByte -> Int
+        table_from_disk = read("data_from_pyarrow.parquet", table_definition={"uint8Col": dtypes.int32})
+        expected = new_table([int_col("uint8Col", [255, 2, 0])])
+        self.assert_table_equals(table_from_disk, expected)
+
+        # UByte -> Long
+        table_from_disk = read("data_from_pyarrow.parquet", table_definition={"uint8Col": dtypes.long})
+        expected = new_table([long_col("uint8Col", [255, 2, 0])])
         self.assert_table_equals(table_from_disk, expected)
 
     def test_v2_pages(self):
