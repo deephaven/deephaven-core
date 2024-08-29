@@ -67,7 +67,7 @@ public class CompositeTableDataService extends AbstractTableDataService {
         for (final TableDataService service : services) {
             final TableLocationProvider tlpCandidate = service.getRawTableLocationProvider(tableKey, tableLocationKey);
             if (tlpCandidate == null) {
-                return null;
+                continue;
             }
 
             if (tlpCandidate.hasTableLocationKey(tableLocationKey)) {
