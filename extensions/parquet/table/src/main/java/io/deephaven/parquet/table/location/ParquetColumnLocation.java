@@ -51,8 +51,6 @@ import static org.apache.parquet.schema.PrimitiveType.PrimitiveTypeName.BINARY;
 
 final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLocation {
 
-    private static final String IMPLEMENTATION_NAME = ParquetColumnLocation.class.getSimpleName();
-
     private static final int INITIAL_PAGE_CACHE_SIZE = Configuration.getInstance()
             .getIntegerForClassWithDefault(ParquetColumnLocation.class, "initialPageCacheSize", 128);
     private static final int MAX_PAGE_CACHE_SIZE = Configuration.getInstance()
@@ -106,11 +104,6 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
     // -----------------------------------------------------------------------------------------------------------------
     // AbstractColumnLocation implementation
     // -----------------------------------------------------------------------------------------------------------------
-
-    @Override
-    public String getImplementationName() {
-        return IMPLEMENTATION_NAME;
-    }
 
     @Override
     public boolean exists() {

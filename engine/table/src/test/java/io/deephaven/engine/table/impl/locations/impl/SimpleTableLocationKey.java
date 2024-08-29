@@ -15,15 +15,8 @@ import java.util.Map;
  */
 public final class SimpleTableLocationKey extends PartitionedTableLocationKey {
 
-    private static final String IMPLEMENTATION_NAME = SimpleTableLocationKey.class.getSimpleName();
-
     public SimpleTableLocationKey(@Nullable final Map<String, Comparable<?>> partitions) {
         super(partitions);
-    }
-
-    @Override
-    public String getImplementationName() {
-        return IMPLEMENTATION_NAME;
     }
 
     @Override

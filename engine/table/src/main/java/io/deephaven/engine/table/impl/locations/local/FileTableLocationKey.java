@@ -22,8 +22,6 @@ import java.util.Map;
  */
 public class FileTableLocationKey extends PartitionedTableLocationKey {
 
-    private static final String IMPLEMENTATION_NAME = FileTableLocationKey.class.getSimpleName();
-
     protected final File file;
     private final int order;
 
@@ -114,10 +112,5 @@ public class FileTableLocationKey extends PartitionedTableLocationKey {
         }
         final FileTableLocationKey otherTyped = (FileTableLocationKey) other;
         return file.equals(otherTyped.file) && partitions.equals(otherTyped.partitions);
-    }
-
-    @Override
-    public String getImplementationName() {
-        return IMPLEMENTATION_NAME;
     }
 }

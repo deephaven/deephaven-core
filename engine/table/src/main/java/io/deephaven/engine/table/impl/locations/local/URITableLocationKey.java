@@ -25,8 +25,6 @@ import java.util.Map;
  */
 public class URITableLocationKey extends PartitionedTableLocationKey {
 
-    private static final String IMPLEMENTATION_NAME = URITableLocationKey.class.getSimpleName();
-
     protected final URI uri;
     private final int order;
 
@@ -120,10 +118,5 @@ public class URITableLocationKey extends PartitionedTableLocationKey {
         }
         final URITableLocationKey otherTyped = (URITableLocationKey) other;
         return uri.equals(otherTyped.uri) && partitions.equals(otherTyped.partitions);
-    }
-
-    @Override
-    public String getImplementationName() {
-        return IMPLEMENTATION_NAME;
     }
 }

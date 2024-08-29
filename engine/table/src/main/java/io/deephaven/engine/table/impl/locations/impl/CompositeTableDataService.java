@@ -21,8 +21,6 @@ import java.util.stream.Collectors;
  */
 public class CompositeTableDataService extends AbstractTableDataService {
 
-    private static final String IMPLEMENTATION_NAME = CompositeTableDataService.class.getSimpleName();
-
     private final ServiceSelector serviceSelector;
 
     public interface ServiceSelector {
@@ -228,11 +226,6 @@ public class CompositeTableDataService extends AbstractTableDataService {
             }
             return location;
         }
-    }
-
-    @Override
-    public String getImplementationName() {
-        return IMPLEMENTATION_NAME;
     }
 
     @Override

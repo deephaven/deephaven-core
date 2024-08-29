@@ -21,8 +21,9 @@ public interface TableDataService {
     TableLocationProvider getTableLocationProvider(@NotNull TableKey tableKey);
 
     /**
-     * Request the raw {@link TableLocationProvider} from this service that will provide the {@link TableLocation} for {@code tableKey} and {@code tableLocationKey} if the location may exist. A raw {@link TableLocationProvider} does not
-     * compose multiple {@link TableLocationProvider TableLocationProviders} or delegate to other implementations.
+     * Request the raw {@link TableLocationProvider} from this service that will provide the {@link TableLocation} for
+     * {@code tableKey} and {@code tableLocationKey} if the location may exist. A raw {@link TableLocationProvider} does
+     * not compose multiple {@link TableLocationProvider TableLocationProviders} or delegate to other implementations.
      *
      * @param tableKey The {@link TableKey} to lookup
      * @param tableLocationKey The {@link TableLocationKey} to lookup

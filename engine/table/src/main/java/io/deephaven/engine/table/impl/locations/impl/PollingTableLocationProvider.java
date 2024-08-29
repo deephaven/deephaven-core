@@ -19,8 +19,6 @@ import org.jetbrains.annotations.Nullable;
 public class PollingTableLocationProvider<TK extends TableKey, TLK extends TableLocationKey>
         extends AbstractTableLocationProvider {
 
-    private static final String IMPLEMENTATION_NAME = PollingTableLocationProvider.class.getSimpleName();
-
     private final TableLocationKeyFinder<TLK> locationKeyFinder;
     private final TableLocationFactory<TK, TLK> locationFactory;
     private final TableDataRefreshService refreshService;
@@ -40,11 +38,6 @@ public class PollingTableLocationProvider<TK extends TableKey, TLK extends Table
     // ------------------------------------------------------------------------------------------------------------------
     // AbstractTableLocationProvider implementation
     // ------------------------------------------------------------------------------------------------------------------
-
-    @Override
-    public String getImplementationName() {
-        return IMPLEMENTATION_NAME;
-    }
 
     @Override
     public void refresh() {
