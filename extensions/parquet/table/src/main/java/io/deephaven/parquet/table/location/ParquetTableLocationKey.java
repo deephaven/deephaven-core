@@ -31,6 +31,8 @@ import static io.deephaven.base.FileUtils.convertToURI;
  */
 public class ParquetTableLocationKey extends URITableLocationKey {
 
+    private static final String IMPLEMENTATION_NAME = ParquetTableLocationKey.class.getSimpleName();
+
     private ParquetFileReader fileReader;
     private ParquetMetadata metadata;
     private int[] rowGroupIndices;
@@ -82,6 +84,11 @@ public class ParquetTableLocationKey extends URITableLocationKey {
                     + parquetFileUri.getRawPath());
         }
         return parquetFileUri;
+    }
+
+    @Override
+    public String getImplementationName() {
+        return IMPLEMENTATION_NAME;
     }
 
     /**

@@ -54,6 +54,8 @@ import static io.deephaven.parquet.table.ParquetTableWriter.GROUPING_END_POS_COL
 
 public class ParquetTableLocation extends AbstractTableLocation {
 
+    private static final String IMPLEMENTATION_NAME = ParquetColumnLocation.class.getSimpleName();
+
     private final ParquetInstructions readInstructions;
     private final ParquetFileReader parquetFileReader;
     private final int[] rowGroupIndices;
@@ -124,6 +126,11 @@ public class ParquetTableLocation extends AbstractTableLocation {
         } else {
             handleUpdate(computeIndex(), new File(tableLocationKey.getURI()).lastModified());
         }
+    }
+
+    @Override
+    public String getImplementationName() {
+        return IMPLEMENTATION_NAME;
     }
 
     @Override
