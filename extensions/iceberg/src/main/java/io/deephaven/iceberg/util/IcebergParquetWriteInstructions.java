@@ -7,10 +7,13 @@ import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.parquet.table.ParquetInstructions;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
+import org.immutables.value.Value.Check;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 import java.util.Map;
+
+import static io.deephaven.parquet.table.ParquetInstructions.MIN_TARGET_PAGE_SIZE;
 
 /**
  * This class provides instructions intended for writing Iceberg tables as Parquet data files as well as reading for
@@ -19,7 +22,7 @@ import java.util.Map;
  */
 @Immutable
 @BuildableStyle
-public abstract class IcebergParquetWriteInstructions implements IcebergBaseInstructions {
+public abstract class IcebergParquetWriteInstructions extends IcebergWriteInstructions {
     /**
      * The default {@link IcebergParquetWriteInstructions} to use when reading/writing Iceberg tables as Parquet data
      * files.
@@ -29,24 +32,6 @@ public abstract class IcebergParquetWriteInstructions implements IcebergBaseInst
 
     public static Builder builder() {
         return ImmutableIcebergParquetWriteInstructions.builder();
-    }
-
-    /**
-     * While appending a partition to an iceberg table, whether to create the iceberg table if it does not exist;
-     * defaults to {@code false}.
-     */
-    @Default
-    public boolean createTableIfNotExist() {
-        return false;
-    }
-
-    /**
-     * While appending a partition to an iceberg table, whether to verify that the schema of the table being appended is
-     * consistent with the iceberg table; defaults to {@code false}.
-     */
-    @Default
-    public boolean verifySchema() {
-        return false;
     }
 
     /**
@@ -80,10 +65,11 @@ public abstract class IcebergParquetWriteInstructions implements IcebergBaseInst
 
     /**
      * The target page size for writing the parquet files; defaults to
-     * {@value ParquetInstructions#DEFAULT_TARGET_PAGE_SIZE}.
+     * {@value ParquetInstructions#DEFAULT_TARGET_PAGE_SIZE}, should be greater than or equal to
+     * {@value ParquetInstructions#MIN_TARGET_PAGE_SIZE}.
      */
     @Default
-    public int getTargetPageSize() {
+    public int targetPageSize() {
         return ParquetInstructions.DEFAULT_TARGET_PAGE_SIZE;
     }
 
@@ -92,7 +78,7 @@ public abstract class IcebergParquetWriteInstructions implements IcebergBaseInst
      *
      * @param completedWrites List of completed writes to be set in the {@link ParquetInstructions}
      */
-    public ParquetInstructions toParquetInstructions(
+    ParquetInstructions toParquetInstructions(
             @NotNull final List<ParquetInstructions.CompletedWrite> completedWrites) {
         final ParquetInstructions.Builder builder = new ParquetInstructions.Builder();
 
@@ -110,7 +96,7 @@ public abstract class IcebergParquetWriteInstructions implements IcebergBaseInst
         builder.setCompressionCodecName(compressionCodecName());
         builder.setMaximumDictionaryKeys(maximumDictionaryKeys());
         builder.setMaximumDictionarySize(maximumDictionarySize());
-        builder.setTargetPageSize(getTargetPageSize());
+        builder.setTargetPageSize(targetPageSize());
         builder.setCompletedWrites(completedWrites);
 
         return builder.build();
@@ -136,5 +122,27 @@ public abstract class IcebergParquetWriteInstructions implements IcebergBaseInst
         Builder targetPageSize(int targetPageSize);
 
         IcebergParquetWriteInstructions build();
+    }
+
+    @Check
+    final void boundsCheckMaxDictionaryKeys() {
+        if (maximumDictionaryKeys() < 0) {
+            throw new IllegalArgumentException("maximumDictionaryKeys(=" + maximumDictionaryKeys() + ") must be >= 0");
+        }
+    }
+
+    @Check
+    final void boundsCheckMaxDictionarySize() {
+        if (maximumDictionarySize() < 0) {
+            throw new IllegalArgumentException("maximumDictionarySize(=" + maximumDictionarySize() + ") must be >= 0");
+        }
+    }
+
+    @Check
+    final void boundsCheckMinTargetPageSize() {
+        if (targetPageSize() < MIN_TARGET_PAGE_SIZE) {
+            throw new IllegalArgumentException(
+                    "targetPageSize(=" + targetPageSize() + ") must be >= " + MIN_TARGET_PAGE_SIZE);
+        }
     }
 }

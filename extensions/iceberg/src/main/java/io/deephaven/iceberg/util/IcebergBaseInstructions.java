@@ -34,6 +34,7 @@ public interface IcebergBaseInstructions {
 
         INSTRUCTIONS_BUILDER putColumnRenames(String key, String value);
 
+        @SuppressWarnings("unused")
         INSTRUCTIONS_BUILDER putAllColumnRenames(Map<String, ? extends String> entries);
     }
 }
