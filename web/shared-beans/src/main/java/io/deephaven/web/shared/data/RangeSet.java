@@ -410,7 +410,7 @@ public class RangeSet {
             this.cardinality[i] = cumulative;
         }
         firstWrongCacheEntry = sortedRanges.length;
-        assert cardinality.length == sortedRanges.length : this;
+        assert cardinality.length >= sortedRanges.length : this;
     }
 
     public RangeSet subsetForPositions(RangeSet positions, boolean reversed) {
@@ -438,7 +438,7 @@ public class RangeSet {
             }
             long rangeToTake = nextPosRange.size();
 
-            int pos = Arrays.binarySearch(cardinality, from, cardinality.length, nextPosRange.getFirst() + 1);
+            int pos = Arrays.binarySearch(cardinality, from, sortedRanges.length, nextPosRange.getFirst() + 1);
 
             long first;
             Range target;
