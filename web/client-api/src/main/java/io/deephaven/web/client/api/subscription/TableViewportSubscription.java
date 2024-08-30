@@ -30,6 +30,7 @@ import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.shared.data.Range;
 import io.deephaven.web.shared.data.RangeSet;
 import io.deephaven.web.shared.data.ShiftedRange;
+import io.deephaven.web.shared.fu.RemoverFn;
 import jsinterop.annotations.JsMethod;
 import jsinterop.annotations.JsNullable;
 import jsinterop.annotations.JsOptional;
@@ -63,6 +64,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
     private double refresh;
 
     private final JsTable original;
+    private final RemoverFn reconnectSubscription;
 
     /**
      * true if the sub is set up to not close the underlying table once the original table is done with it, otherwise
@@ -74,7 +76,6 @@ public class TableViewportSubscription extends AbstractTableSubscription {
      */
     private boolean retained;
 
-
     private UpdateEventData viewportData;
 
     public TableViewportSubscription(double firstRow, double lastRow, Column[] columns, Double updateIntervalMs,
@@ -84,10 +85,10 @@ public class TableViewportSubscription extends AbstractTableSubscription {
         this.lastRow = lastRow;
         this.columns = columns;
 
-        refresh = updateIntervalMs == null ? 1000.0 : updateIntervalMs;
+        this.refresh = updateIntervalMs == null ? 1000.0 : updateIntervalMs;
         this.original = existingTable;
 
-        existingTable.addEventListener(JsTable.EVENT_RECONNECT, e -> {
+        this.reconnectSubscription = existingTable.addEventListener(JsTable.EVENT_RECONNECT, e -> {
             if (existingTable.state() == state()) {
                 revive();
             }
@@ -284,6 +285,8 @@ public class TableViewportSubscription extends AbstractTableSubscription {
     public void internalClose() {
         // indicate that the base table shouldn't get events anymore, even if it is still retained elsewhere
         originalActive = false;
+
+        reconnectSubscription.remove();
 
         if (retained || status == Status.DONE) {
             // the JsTable has indicated it is no longer interested in this viewport, but other calling
