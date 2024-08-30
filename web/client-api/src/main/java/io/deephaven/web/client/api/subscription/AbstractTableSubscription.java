@@ -490,6 +490,7 @@ public abstract class AbstractTableSubscription extends HasEventHandling {
      * Stops the subscription on the server.
      */
     public void close() {
+        state.unretain(this);
         if (doExchange != null) {
             doExchange.end();
             doExchange.cancel();
