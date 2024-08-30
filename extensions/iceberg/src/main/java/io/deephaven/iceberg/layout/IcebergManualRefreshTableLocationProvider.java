@@ -6,7 +6,7 @@ package io.deephaven.iceberg.layout;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationFactory;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
-import io.deephaven.iceberg.util.IcebergCatalogAdapter;
+import io.deephaven.iceberg.util.IcebergTableAdapter;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.jetbrains.annotations.NotNull;
@@ -33,7 +33,7 @@ public class IcebergManualRefreshTableLocationProvider<TK extends TableKey, TLK 
             @NotNull final TK tableKey,
             @NotNull final IcebergBaseLayout locationKeyFinder,
             @NotNull final TableLocationFactory<TK, TLK> locationFactory,
-            @NotNull final IcebergCatalogAdapter adapter,
+            @NotNull final IcebergTableAdapter adapter,
             @NotNull final TableIdentifier tableIdentifier) {
         super(tableKey, locationKeyFinder, locationFactory, true, adapter, tableIdentifier);
     }
@@ -55,12 +55,14 @@ public class IcebergManualRefreshTableLocationProvider<TK extends TableKey, TLK 
 
     @Override
     public synchronized void update() {
-        update(adapter.getCurrentSnapshot(tableIdentifier));
+        adapter.refresh();
+        update(adapter.currentSnapshot());
     }
 
     @Override
     public synchronized void update(final long snapshotId) {
-        final List<Snapshot> snapshots = adapter.listSnapshots(tableIdentifier);
+        adapter.refresh();
+        final List<Snapshot> snapshots = adapter.listSnapshots();
 
         final Snapshot snapshot = snapshots.stream()
                 .filter(s -> s.snapshotId() == snapshotId).findFirst()

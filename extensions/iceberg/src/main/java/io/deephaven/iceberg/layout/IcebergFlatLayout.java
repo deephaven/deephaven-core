@@ -3,12 +3,11 @@
 //
 package io.deephaven.iceberg.layout;
 
-import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.iceberg.util.IcebergInstructions;
+import io.deephaven.iceberg.util.IcebergTableAdapter;
 import org.apache.iceberg.*;
-import org.apache.iceberg.io.FileIO;
 import org.jetbrains.annotations.NotNull;
 
 import java.net.URI;
@@ -19,24 +18,20 @@ import java.net.URI;
  */
 public final class IcebergFlatLayout extends IcebergBaseLayout {
     /**
-     * @param tableDef The {@link TableDefinition} that will be used for the table.
-     * @param table The {@link Table} to discover locations for.
+     * @param tableAdapter The {@link IcebergTableAdapter} that will be used to access the table.
      * @param tableSnapshot The {@link Snapshot} from which to discover data files.
-     * @param fileIO The file IO to use for reading manifest data files.
      * @param instructions The instructions for customizations while reading.
      */
     public IcebergFlatLayout(
-            @NotNull final TableDefinition tableDef,
-            @NotNull final Table table,
+            @NotNull final IcebergTableAdapter tableAdapter,
             @NotNull final Snapshot tableSnapshot,
-            @NotNull final FileIO fileIO,
             @NotNull final IcebergInstructions instructions) {
-        super(tableDef, table, tableSnapshot, fileIO, instructions);
+        super(tableAdapter, tableSnapshot, instructions);
     }
 
     @Override
     public String toString() {
-        return IcebergFlatLayout.class.getSimpleName() + '[' + table.name() + ']';
+        return IcebergFlatLayout.class.getSimpleName() + '[' + tableAdapter + ']';
     }
 
     @Override

@@ -3,44 +3,20 @@
 //
 package io.deephaven.iceberg.util;
 
-import io.deephaven.api.util.NameValidator;
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.locations.TableDataException;
-import io.deephaven.engine.table.impl.locations.TableKey;
-import io.deephaven.engine.table.impl.locations.impl.StandaloneTableKey;
-import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
-import io.deephaven.engine.table.impl.sources.regioned.RegionedTableComponentFactoryImpl;
-import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
-import io.deephaven.iceberg.layout.*;
-import io.deephaven.engine.util.TableTools;
-import io.deephaven.iceberg.layout.IcebergFlatLayout;
-import io.deephaven.iceberg.layout.IcebergKeyValuePartitionedLayout;
-import io.deephaven.iceberg.location.IcebergTableLocationFactory;
-import io.deephaven.iceberg.location.IcebergTableLocationKey;
-import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.annotations.VisibleForTesting;
-import org.apache.iceberg.PartitionField;
-import org.apache.iceberg.PartitionSpec;
-import org.apache.iceberg.Schema;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.SupportsNamespaces;
 import org.apache.iceberg.catalog.TableIdentifier;
-import org.apache.iceberg.io.FileIO;
-import org.apache.iceberg.types.Type;
-import org.apache.iceberg.types.Types;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class IcebergCatalogAdapter {
 
@@ -55,142 +31,15 @@ public class IcebergCatalogAdapter {
             ColumnDefinition.ofString("TableName"),
             ColumnDefinition.fromGenericType("TableIdentifierObject", TableIdentifier.class));
 
-    @VisibleForTesting
-    static final TableDefinition SNAPSHOT_DEFINITION = TableDefinition.of(
-            ColumnDefinition.ofLong("Id"),
-            ColumnDefinition.ofTime("Timestamp"),
-            ColumnDefinition.ofString("Operation"),
-            ColumnDefinition.fromGenericType("Summary", Map.class),
-            ColumnDefinition.fromGenericType("SnapshotObject", Snapshot.class));
-
     private final Catalog catalog;
-    private final FileIO fileIO;
 
     /**
      * Construct an IcebergCatalogAdapter from a catalog and file IO.
      */
-    IcebergCatalogAdapter(
-            @NotNull final Catalog catalog,
-            @NotNull final FileIO fileIO) {
+    IcebergCatalogAdapter(@NotNull final Catalog catalog) {
         this.catalog = catalog;
-        this.fileIO = fileIO;
     }
 
-    /**
-     * Create a single {@link TableDefinition} from a given Schema, PartitionSpec, and TableDefinition. Takes into
-     * account {@link Map<> column rename instructions}
-     *
-     * @param schema The schema of the table.
-     * @param partitionSpec The partition specification of the table.
-     * @param userTableDef The table definition.
-     * @param columnRename The map for renaming columns.
-     * @return The generated TableDefinition.
-     */
-    private static TableDefinition fromSchema(
-            @NotNull final Schema schema,
-            @NotNull final PartitionSpec partitionSpec,
-            @Nullable final TableDefinition userTableDef,
-            @NotNull final Map<String, String> columnRename) {
-
-        final Set<String> columnNames = userTableDef != null
-                ? userTableDef.getColumnNameSet()
-                : null;
-
-        final Set<String> partitionNames =
-                partitionSpec.fields().stream()
-                        .map(PartitionField::name)
-                        .map(colName -> columnRename.getOrDefault(colName, colName))
-                        .collect(Collectors.toSet());
-
-        final List<ColumnDefinition<?>> columns = new ArrayList<>();
-
-        for (final Types.NestedField field : schema.columns()) {
-            final String name = columnRename.getOrDefault(field.name(), field.name());
-            // Skip columns that are not in the provided table definition.
-            if (columnNames != null && !columnNames.contains(name)) {
-                continue;
-            }
-            final Type type = field.type();
-            final io.deephaven.qst.type.Type<?> qstType = convertPrimitiveType(type);
-            final ColumnDefinition<?> column;
-            if (partitionNames.contains(name)) {
-                column = ColumnDefinition.of(name, qstType).withPartitioning();
-            } else {
-                column = ColumnDefinition.of(name, qstType);
-            }
-            columns.add(column);
-        }
-
-        final TableDefinition icebergTableDef = TableDefinition.of(columns);
-        if (userTableDef == null) {
-            return icebergTableDef;
-        }
-
-        // If the user supplied a table definition, make sure it's fully compatible.
-        final TableDefinition tableDef = icebergTableDef.checkCompatibility(userTableDef);
-
-        // Ensure that the user has not marked non-partitioned columns as partitioned.
-        final Set<String> userPartitionColumns = userTableDef.getPartitioningColumns().stream()
-                .map(ColumnDefinition::getName)
-                .collect(Collectors.toSet());
-        final Set<String> partitionColumns = tableDef.getPartitioningColumns().stream()
-                .map(ColumnDefinition::getName)
-                .collect(Collectors.toSet());
-
-        // The working partitioning column set must be a super-set of the user-supplied set.
-        if (!partitionColumns.containsAll(userPartitionColumns)) {
-            final Set<String> invalidColumns = new HashSet<>(userPartitionColumns);
-            invalidColumns.removeAll(partitionColumns);
-
-            throw new TableDataException("The following columns are not partitioned in the Iceberg table: " +
-                    invalidColumns);
-        }
-        return tableDef;
-    }
-
-    /**
-     * Convert an Iceberg data type to a Deephaven type.
-     *
-     * @param icebergType The Iceberg data type to be converted.
-     * @return The converted Deephaven type.
-     */
-    static io.deephaven.qst.type.Type<?> convertPrimitiveType(@NotNull final Type icebergType) {
-        final Type.TypeID typeId = icebergType.typeId();
-        switch (typeId) {
-            case BOOLEAN:
-                return io.deephaven.qst.type.Type.booleanType().boxedType();
-            case DOUBLE:
-                return io.deephaven.qst.type.Type.doubleType();
-            case FLOAT:
-                return io.deephaven.qst.type.Type.floatType();
-            case INTEGER:
-                return io.deephaven.qst.type.Type.intType();
-            case LONG:
-                return io.deephaven.qst.type.Type.longType();
-            case STRING:
-                return io.deephaven.qst.type.Type.stringType();
-            case TIMESTAMP:
-                final Types.TimestampType timestampType = (Types.TimestampType) icebergType;
-                return timestampType.shouldAdjustToUTC()
-                        ? io.deephaven.qst.type.Type.find(Instant.class)
-                        : io.deephaven.qst.type.Type.find(LocalDateTime.class);
-            case DATE:
-                return io.deephaven.qst.type.Type.find(java.time.LocalDate.class);
-            case TIME:
-                return io.deephaven.qst.type.Type.find(java.time.LocalTime.class);
-            case DECIMAL:
-                return io.deephaven.qst.type.Type.find(java.math.BigDecimal.class);
-            case FIXED: // Fall through
-            case BINARY:
-                return io.deephaven.qst.type.Type.find(byte[].class);
-            case UUID: // Fall through
-            case STRUCT: // Fall through
-            case LIST: // Fall through
-            case MAP: // Fall through
-            default:
-                throw new TableDataException("Unsupported iceberg column type " + typeId.name());
-        }
-    }
 
     /**
      * List all {@link Namespace namespaces} in the catalog. This method is only supported if the catalog implements
@@ -225,8 +74,8 @@ public class IcebergCatalogAdapter {
      *
      * @return A {@link Table table} of all namespaces.
      */
-    public Table listNamespacesAsTable() {
-        return listNamespacesAsTable(Namespace.empty());
+    public Table namespaces() {
+        return namespaces(Namespace.empty());
     }
 
     /**
@@ -235,7 +84,7 @@ public class IcebergCatalogAdapter {
      *
      * @return A {@link Table table} of all namespaces.
      */
-    public Table listNamespacesAsTable(@NotNull final Namespace namespace) {
+    public Table namespaces(@NotNull final Namespace namespace) {
         final List<Namespace> namespaces = listNamespaces(namespace);
         final long size = namespaces.size();
 
@@ -269,8 +118,8 @@ public class IcebergCatalogAdapter {
      * @return A {@link Table table} of all namespaces.
      */
     @SuppressWarnings("unused")
-    public Table listNamespacesAsTable(@NotNull final String... namespace) {
-        return listNamespacesAsTable(Namespace.of(namespace));
+    public Table namespaces(@NotNull final String... namespace) {
+        return namespaces(Namespace.of(namespace));
     }
 
     /**
@@ -290,7 +139,7 @@ public class IcebergCatalogAdapter {
      * @param namespace The namespace from which to gather the tables
      * @return A list of all tables in the given namespace.
      */
-    public Table listTablesAsTable(@NotNull final Namespace namespace) {
+    public Table tables(@NotNull final Namespace namespace) {
         final List<TableIdentifier> tableIdentifiers = listTables(namespace);
         final long size = tableIdentifiers.size();
 
@@ -322,8 +171,23 @@ public class IcebergCatalogAdapter {
         return new QueryTable(TABLES_DEFINITION, RowSetFactory.flat(size).toTracking(), columnSourceMap);
     }
 
-    public Table listTablesAsTable(@NotNull final String... namespace) {
-        return listTablesAsTable(Namespace.of(namespace));
+    public Table tables(@NotNull final String... namespace) {
+        return tables(Namespace.of(namespace));
+    }
+
+    /**
+     * Load an Iceberg table from the catalog.
+     *
+     * @param tableIdentifier The identifier of the table to load.
+     * @return The {@link IcebergTableAdapter table adapter} for the Iceberg table.
+     */
+    public IcebergTableAdapter loadTable(@NotNull final TableIdentifier tableIdentifier) {
+        // Load the table from the catalog.
+        final org.apache.iceberg.Table table = catalog.loadTable(tableIdentifier);
+        if (table == null) {
+            throw new IllegalArgumentException("Table not found: " + tableIdentifier);
+        }
+        return new IcebergTableAdapter(tableIdentifier, table);
     }
 
     /**
@@ -332,10 +196,22 @@ public class IcebergCatalogAdapter {
      * @param tableIdentifier The identifier of the table from which to gather snapshots.
      * @return A list of all snapshots of the given table.
      */
+    @Deprecated(forRemoval = true)
+    public List<Snapshot> listSnapshots(@NotNull final String tableIdentifier) {
+        final IcebergTableAdapter tableAdapter = loadTable(tableIdentifier);
+        return tableAdapter.listSnapshots();
+    }
+
+    /**
+     * List all {@link Snapshot snapshots} of a given Iceberg table.
+     *
+     * @param tableIdentifier The identifier of the table from which to gather snapshots.
+     * @return A list of all snapshots of the given table.
+     */
+    @Deprecated(forRemoval = true)
     public List<Snapshot> listSnapshots(@NotNull final TableIdentifier tableIdentifier) {
-        final List<Snapshot> snapshots = new ArrayList<>();
-        catalog.loadTable(tableIdentifier).snapshots().forEach(snapshots::add);
-        return snapshots;
+        final IcebergTableAdapter tableAdapter = loadTable(tableIdentifier);
+        return tableAdapter.listSnapshots();
     }
 
     /**
@@ -373,46 +249,10 @@ public class IcebergCatalogAdapter {
      * @param tableIdentifier The identifier of the table from which to gather snapshots.
      * @return A list of all tables in the given namespace.
      */
-    public Table listSnapshotsAsTable(@NotNull final TableIdentifier tableIdentifier) {
-        final List<Snapshot> snapshots = listSnapshots(tableIdentifier);
-        final long size = snapshots.size();
-
-        // Create and return a table containing the namespaces as strings
-        final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
-
-        // Create the column source(s)
-        final long[] idArr = new long[(int) size];
-        columnSourceMap.put("Id", InMemoryColumnSource.getImmutableMemoryColumnSource(idArr, long.class, null));
-
-        final long[] timestampArr = new long[(int) size];
-        columnSourceMap.put("Timestamp",
-                InMemoryColumnSource.getImmutableMemoryColumnSource(timestampArr, Instant.class, null));
-
-        final String[] operatorArr = new String[(int) size];
-        columnSourceMap.put("Operation",
-                InMemoryColumnSource.getImmutableMemoryColumnSource(operatorArr, String.class, null));
-
-        final Map<String, String>[] summaryArr = new Map[(int) size];
-        columnSourceMap.put("Summary",
-                InMemoryColumnSource.getImmutableMemoryColumnSource(summaryArr, Map.class, null));
-
-        final Snapshot[] snapshotArr = new Snapshot[(int) size];
-        columnSourceMap.put("SnapshotObject",
-                InMemoryColumnSource.getImmutableMemoryColumnSource(snapshotArr, Snapshot.class, null));
-
-        // Populate the column source(s)
-        for (int i = 0; i < size; i++) {
-            final Snapshot snapshot = snapshots.get(i);
-            idArr[i] = snapshot.snapshotId();
-            // Provided as millis from epoch, convert to nanos
-            timestampArr[i] = DateTimeUtils.millisToNanos(snapshot.timestampMillis());
-            operatorArr[i] = snapshot.operation();
-            summaryArr[i] = snapshot.summary();
-            snapshotArr[i] = snapshot;
-        }
-
-        // Create and return the table
-        return new QueryTable(SNAPSHOT_DEFINITION, RowSetFactory.flat(size).toTracking(), columnSourceMap);
+    @Deprecated(forRemoval = true)
+    public Table snapshots(@NotNull final TableIdentifier tableIdentifier) {
+        final IcebergTableAdapter tableAdapter = loadTable(tableIdentifier);
+        return tableAdapter.snapshots();
     }
 
     /**
@@ -422,77 +262,9 @@ public class IcebergCatalogAdapter {
      * @param tableIdentifier The identifier of the table from which to gather snapshots.
      * @return A list of all tables in the given namespace.
      */
-    public Table listSnapshotsAsTable(@NotNull final String tableIdentifier) {
-        return listSnapshotsAsTable(TableIdentifier.parse(tableIdentifier));
-    }
-
-    /**
-     * Retrieve a specific {@link Snapshot snapshot} of an Iceberg table.
-     *
-     * @param tableIdentifier The identifier of the table from which to load the snapshot.
-     * @param snapshotId The identifier of the snapshot to load.
-     *
-     * @return An Optional<Snapshot> containing the requested snapshot if it exists.
-     */
-    private Optional<Snapshot> getSnapshot(@NotNull final TableIdentifier tableIdentifier, final long snapshotId) {
-        return listSnapshots(tableIdentifier).stream()
-                .filter(snapshot -> snapshot.snapshotId() == snapshotId)
-                .findFirst();
-    }
-
-    /**
-     * Get the current {@link Snapshot snapshot} of a given Iceberg table.
-     *
-     * @param tableIdentifier The identifier of the table.
-     * @return The current snapshot of the table.
-     */
-    public Snapshot getCurrentSnapshot(@NotNull final TableIdentifier tableIdentifier) {
-        final List<Snapshot> snapshots = listSnapshots(tableIdentifier);
-        if (snapshots.isEmpty()) {
-            throw new IllegalStateException("No snapshots found for table " + tableIdentifier);
-        }
-        return snapshots.get(snapshots.size() - 1);
-    }
-
-    /**
-     * Get a legalized column rename map from a table schema and user instructions.
-     */
-    private Map<String, String> getRenameColumnMap(
-            @NotNull final org.apache.iceberg.Table table,
-            @NotNull final Schema schema,
-            @NotNull final IcebergInstructions instructions) {
-
-        final Set<String> takenNames = new HashSet<>();
-
-        // Map all the column names in the schema to their legalized names.
-        final Map<String, String> legalizedColumnRenames = new HashMap<>();
-
-        // Validate user-supplied names meet legalization instructions
-        for (final Map.Entry<String, String> entry : instructions.columnRenames().entrySet()) {
-            final String destinationName = entry.getValue();
-            if (!NameValidator.isValidColumnName(destinationName)) {
-                throw new TableDataException(
-                        String.format("%s - invalid column name provided (%s)", table, destinationName));
-            }
-            // Add these renames to the legalized list.
-            legalizedColumnRenames.put(entry.getKey(), destinationName);
-            takenNames.add(destinationName);
-        }
-
-        for (final Types.NestedField field : schema.columns()) {
-            final String name = field.name();
-            // Do we already have a valid rename for this column from the user or a partitioned column?
-            if (!legalizedColumnRenames.containsKey(name)) {
-                final String legalizedName =
-                        NameValidator.legalizeColumnName(name, s -> s.replace(" ", "_"), takenNames);
-                if (!legalizedName.equals(name)) {
-                    legalizedColumnRenames.put(name, legalizedName);
-                    takenNames.add(legalizedName);
-                }
-            }
-        }
-
-        return legalizedColumnRenames;
+    @Deprecated(forRemoval = true)
+    public Table snapshots(@NotNull final String tableIdentifier) {
+        return snapshots(TableIdentifier.parse(tableIdentifier));
     }
 
     /**
@@ -503,12 +275,12 @@ public class IcebergCatalogAdapter {
      * @param instructions The instructions for customizations while reading
      * @return The table definition
      */
+    @Deprecated(forRemoval = true)
     public TableDefinition getTableDefinition(
             @NotNull final String tableIdentifier,
             @Nullable final IcebergInstructions instructions) {
-        final TableIdentifier tableId = TableIdentifier.parse(tableIdentifier);
-        // Load the table from the catalog.
-        return getTableDefinition(tableId, instructions);
+        final IcebergTableAdapter tableAdapter = loadTable(tableIdentifier);
+        return tableAdapter.definition(instructions);
     }
 
     /**
@@ -519,11 +291,12 @@ public class IcebergCatalogAdapter {
      * @param instructions The instructions for customizations while reading
      * @return The table definition
      */
+    @Deprecated(forRemoval = true)
     public TableDefinition getTableDefinition(
             @NotNull final TableIdentifier tableIdentifier,
             @Nullable final IcebergInstructions instructions) {
-        // Load the table from the catalog.
-        return getTableDefinitionInternal(tableIdentifier, null, instructions);
+        final IcebergTableAdapter tableAdapter = loadTable(tableIdentifier);
+        return tableAdapter.definition(instructions);
     }
 
     /**
@@ -535,19 +308,13 @@ public class IcebergCatalogAdapter {
      * @param instructions The instructions for customizations while reading
      * @return The table definition
      */
+    @Deprecated(forRemoval = true)
     public TableDefinition getTableDefinition(
             @NotNull final String tableIdentifier,
             final long snapshotId,
             @Nullable final IcebergInstructions instructions) {
-        final TableIdentifier tableId = TableIdentifier.parse(tableIdentifier);
-
-        // Find the snapshot with the given snapshot id
-        final Snapshot tableSnapshot =
-                getSnapshot(tableId, snapshotId).orElseThrow(() -> new IllegalArgumentException(
-                        "Snapshot with id " + snapshotId + " not found for table " + tableId));
-
-        // Load the table from the catalog.
-        return getTableDefinition(tableId, tableSnapshot, instructions);
+        final IcebergTableAdapter tableAdapter = loadTable(tableIdentifier);
+        return tableAdapter.definition(snapshotId, instructions);
     }
 
     /**
@@ -559,12 +326,13 @@ public class IcebergCatalogAdapter {
      * @param instructions The instructions for customizations while reading
      * @return The table definition
      */
+    @Deprecated(forRemoval = true)
     public TableDefinition getTableDefinition(
             @NotNull final TableIdentifier tableIdentifier,
             @Nullable final Snapshot tableSnapshot,
             @Nullable final IcebergInstructions instructions) {
-        // Load the table from the catalog.
-        return getTableDefinitionInternal(tableIdentifier, tableSnapshot, instructions);
+        final IcebergTableAdapter tableAdapter = loadTable(tableIdentifier);
+        return tableAdapter.definition(tableSnapshot, instructions);
     }
 
     /**
@@ -575,11 +343,12 @@ public class IcebergCatalogAdapter {
      * @param instructions The instructions for customizations while reading
      * @return The table definition as a Deephaven table
      */
+    @Deprecated(forRemoval = true)
     public Table getTableDefinitionTable(
             @NotNull final String tableIdentifier,
             @Nullable final IcebergInstructions instructions) {
-        final TableIdentifier tableId = TableIdentifier.parse(tableIdentifier);
-        return getTableDefinitionTable(tableId, instructions);
+        final IcebergTableAdapter tableAdapter = loadTable(tableIdentifier);
+        return tableAdapter.definitionTable(instructions);
     }
 
     /**
@@ -590,11 +359,12 @@ public class IcebergCatalogAdapter {
      * @param instructions The instructions for customizations while reading
      * @return The table definition as a Deephaven table
      */
+    @Deprecated(forRemoval = true)
     public Table getTableDefinitionTable(
             @NotNull final TableIdentifier tableIdentifier,
             @Nullable final IcebergInstructions instructions) {
-        final TableDefinition definition = getTableDefinition(tableIdentifier, instructions);
-        return TableTools.metaTable(definition);
+        final IcebergTableAdapter tableAdapter = loadTable(tableIdentifier);
+        return tableAdapter.definitionTable(instructions);
     }
 
     /**
@@ -606,18 +376,13 @@ public class IcebergCatalogAdapter {
      * @param instructions The instructions for customizations while reading
      * @return The table definition as a Deephaven table
      */
+    @Deprecated(forRemoval = true)
     public Table getTableDefinitionTable(
             @NotNull final String tableIdentifier,
             final long snapshotId,
             @Nullable final IcebergInstructions instructions) {
-        final TableIdentifier tableId = TableIdentifier.parse(tableIdentifier);
-
-        // Find the snapshot with the given snapshot id
-        final Snapshot tableSnapshot =
-                getSnapshot(tableId, snapshotId).orElseThrow(() -> new IllegalArgumentException(
-                        "Snapshot with id " + snapshotId + " not found for table " + tableId));
-
-        return getTableDefinitionTable(tableId, tableSnapshot, instructions);
+        final IcebergTableAdapter tableAdapter = loadTable(tableIdentifier);
+        return tableAdapter.definitionTable(snapshotId, instructions);
     }
 
     /**
@@ -629,35 +394,13 @@ public class IcebergCatalogAdapter {
      * @param instructions The instructions for customizations while reading
      * @return The table definition as a Deephaven table
      */
+    @Deprecated(forRemoval = true)
     public Table getTableDefinitionTable(
             @NotNull final TableIdentifier tableIdentifier,
             @Nullable final Snapshot tableSnapshot,
             @Nullable final IcebergInstructions instructions) {
-        final TableDefinition definition = getTableDefinition(tableIdentifier, tableSnapshot, instructions);
-        return TableTools.metaTable(definition);
-    }
-
-    /**
-     * Internal method to create a {@link TableDefinition} from the table schema, snapshot and user instructions.
-     */
-    private TableDefinition getTableDefinitionInternal(
-            @NotNull final TableIdentifier tableIdentifier,
-            @Nullable final Snapshot tableSnapshot,
-            @Nullable final IcebergInstructions instructions) {
-        final org.apache.iceberg.Table table = catalog.loadTable(tableIdentifier);
-        if (table == null) {
-            throw new IllegalArgumentException("Table not found: " + tableIdentifier);
-        }
-
-        final Snapshot snapshot = tableSnapshot != null ? tableSnapshot : table.currentSnapshot();
-        final Schema schema = snapshot != null ? table.schemas().get(snapshot.schemaId()) : table.schema();
-
-        final IcebergInstructions userInstructions = instructions == null ? IcebergInstructions.DEFAULT : instructions;
-
-        return fromSchema(schema,
-                table.spec(),
-                userInstructions.tableDefinition().orElse(null),
-                getRenameColumnMap(table, schema, userInstructions));
+        final IcebergTableAdapter tableAdapter = loadTable(tableIdentifier);
+        return tableAdapter.definitionTable(tableSnapshot, instructions);
     }
 
     /**
@@ -668,10 +411,12 @@ public class IcebergCatalogAdapter {
      * @return The loaded table
      */
     @SuppressWarnings("unused")
+    @Deprecated(forRemoval = true)
     public IcebergTable readTable(
             @NotNull final TableIdentifier tableIdentifier,
             @Nullable final IcebergInstructions instructions) {
-        return readTableInternal(tableIdentifier, null, instructions);
+        final IcebergTableAdapter tableAdapter = loadTable(tableIdentifier);
+        return tableAdapter.table(instructions);
     }
 
     /**
@@ -682,10 +427,12 @@ public class IcebergCatalogAdapter {
      * @return The loaded table
      */
     @SuppressWarnings("unused")
+    @Deprecated(forRemoval = true)
     public IcebergTable readTable(
             @NotNull final String tableIdentifier,
             @Nullable final IcebergInstructions instructions) {
-        return readTable(TableIdentifier.parse(tableIdentifier), instructions);
+        final IcebergTableAdapter tableAdapter = loadTable(tableIdentifier);
+        return tableAdapter.table(instructions);
     }
 
     /**
@@ -697,16 +444,13 @@ public class IcebergCatalogAdapter {
      * @return The loaded table
      */
     @SuppressWarnings("unused")
+    @Deprecated(forRemoval = true)
     public IcebergTable readTable(
             @NotNull final TableIdentifier tableIdentifier,
             final long tableSnapshotId,
             @Nullable final IcebergInstructions instructions) {
-        // Find the snapshot with the given snapshot id
-        final Snapshot tableSnapshot =
-                getSnapshot(tableIdentifier, tableSnapshotId).orElseThrow(() -> new IllegalArgumentException(
-                        "Snapshot with id " + tableSnapshotId + " not found for table " + tableIdentifier));
-
-        return readTableInternal(tableIdentifier, tableSnapshot, instructions);
+        final IcebergTableAdapter tableAdapter = loadTable(tableIdentifier);
+        return tableAdapter.table(tableSnapshotId, instructions);
     }
 
     /**
@@ -718,11 +462,13 @@ public class IcebergCatalogAdapter {
      * @return The loaded table
      */
     @SuppressWarnings("unused")
+    @Deprecated(forRemoval = true)
     public IcebergTable readTable(
             @NotNull final String tableIdentifier,
             final long tableSnapshotId,
             @Nullable final IcebergInstructions instructions) {
-        return readTable(TableIdentifier.parse(tableIdentifier), tableSnapshotId, instructions);
+        final IcebergTableAdapter tableAdapter = loadTable(tableIdentifier);
+        return tableAdapter.table(tableSnapshotId, instructions);
     }
 
     /**
@@ -734,98 +480,24 @@ public class IcebergCatalogAdapter {
      * @return The loaded table
      */
     @SuppressWarnings("unused")
+    @Deprecated(forRemoval = true)
     public IcebergTable readTable(
             @NotNull final TableIdentifier tableIdentifier,
             @NotNull final Snapshot tableSnapshot,
             @Nullable final IcebergInstructions instructions) {
-        return readTableInternal(tableIdentifier, tableSnapshot, instructions);
+        final IcebergTableAdapter tableAdapter = loadTable(tableIdentifier);
+        return tableAdapter.table(tableSnapshot, instructions);
     }
 
-    private IcebergTable readTableInternal(
-            @NotNull final TableIdentifier tableIdentifier,
-            @Nullable final Snapshot tableSnapshot,
-            @Nullable final IcebergInstructions instructions) {
-        // Load the table from the catalog.
-        final org.apache.iceberg.Table table = catalog.loadTable(tableIdentifier);
-        if (table == null) {
-            throw new IllegalArgumentException("Table not found: " + tableIdentifier);
-        }
-
-        // Do we want the latest or a specific snapshot?
-        final Snapshot snapshot = tableSnapshot != null ? tableSnapshot : table.currentSnapshot();
-        final Schema schema = table.schemas().get(snapshot.schemaId());
-
-        // Load the partitioning schema.
-        final org.apache.iceberg.PartitionSpec partitionSpec = table.spec();
-
-        // Get default instructions if none are provided
-        final IcebergInstructions userInstructions = instructions == null ? IcebergInstructions.DEFAULT : instructions;
-
-        // Get the user supplied table definition.
-        final TableDefinition userTableDef = userInstructions.tableDefinition().orElse(null);
-
-        // Map all the column names in the schema to their legalized names.
-        final Map<String, String> legalizedColumnRenames = getRenameColumnMap(table, schema, userInstructions);
-
-        // Get the table definition from the schema (potentially limited by the user supplied table definition and
-        // applying column renames).
-        final TableDefinition tableDef = fromSchema(schema, partitionSpec, userTableDef, legalizedColumnRenames);
-
-        final IcebergBaseLayout keyFinder;
-
-        if (partitionSpec.isUnpartitioned()) {
-            // Create the flat layout location key finder
-            keyFinder = new IcebergFlatLayout(tableDef, table, snapshot, fileIO, userInstructions);
-        } else {
-            // Create the partitioning column location key finder
-            keyFinder = new IcebergKeyValuePartitionedLayout(tableDef, table, snapshot, fileIO, partitionSpec,
-                    userInstructions);
-        }
-
-        if (instructions == null
-                || instructions.updateMode().updateType() == IcebergUpdateMode.IcebergUpdateType.STATIC) {
-            final IcebergTableLocationProviderBase<TableKey, IcebergTableLocationKey> locationProvider =
-                    new IcebergStaticTableLocationProvider<>(
-                            StandaloneTableKey.getInstance(),
-                            keyFinder,
-                            new IcebergTableLocationFactory(),
-                            tableIdentifier);
-
-            return new IcebergTableImpl(
-                    tableDef,
-                    tableIdentifier.toString(),
-                    RegionedTableComponentFactoryImpl.INSTANCE,
-                    locationProvider,
-                    null);
-        }
-
-        final UpdateSourceRegistrar updateSourceRegistrar = ExecutionContext.getContext().getUpdateGraph();
-        final IcebergTableLocationProviderBase<TableKey, IcebergTableLocationKey> locationProvider;
-
-        if (instructions.updateMode().updateType() == IcebergUpdateMode.IcebergUpdateType.MANUAL_REFRESHING) {
-            locationProvider = new IcebergManualRefreshTableLocationProvider<>(
-                    StandaloneTableKey.getInstance(),
-                    keyFinder,
-                    new IcebergTableLocationFactory(),
-                    this,
-                    tableIdentifier);
-        } else {
-            locationProvider = new IcebergAutoRefreshTableLocationProvider<>(
-                    StandaloneTableKey.getInstance(),
-                    keyFinder,
-                    new IcebergTableLocationFactory(),
-                    TableDataRefreshService.getSharedRefreshService(),
-                    instructions.updateMode().autoRefreshMs(),
-                    this,
-                    tableIdentifier);
-        }
-
-        return new IcebergTableImpl(
-                tableDef,
-                tableIdentifier.toString(),
-                RegionedTableComponentFactoryImpl.INSTANCE,
-                locationProvider,
-                updateSourceRegistrar);
+    /**
+     * Load an Iceberg table from the catalog.
+     *
+     * @param tableIdentifier The identifier of the table to load.
+     * @return The {@link IcebergTableAdapter table adapter} for the Iceberg table.
+     */
+    @Deprecated(forRemoval = true)
+    public IcebergTableAdapter loadTable(final String tableIdentifier) {
+        return loadTable(TableIdentifier.parse(tableIdentifier));
     }
 
     /**

@@ -15,6 +15,7 @@ import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocation;
+import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationUpdateSubscriptionBuffer;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
@@ -102,6 +103,9 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
     @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
     @ReferentialIntegrity
     private final Collection<DataIndex> retainedDataIndexes = new ArrayList<>();
+
+    private final List<AbstractTableLocation> locationsToClear;
+    private final UpdateCommitter<?> locationClearCommitter;
 
     /**
      * A reference to a delayed error notifier for the {@link #includedLocationsTable}, if one is pending.
@@ -192,6 +196,19 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
             }
         }
 
+
+        locationsToClear = new ArrayList<>();
+        locationClearCommitter = new UpdateCommitter<>(this,
+                ExecutionContext.getContext().getUpdateGraph(),
+                (ignored) -> {
+                    locationsToClear.forEach(location -> {
+                        location.handleUpdate(null, System.currentTimeMillis());
+                        location.clearColumnLocations();
+
+                    });
+                    locationsToClear.clear();
+                });
+
         invalidateCommitter = new UpdateCommitter<>(this,
                 ExecutionContext.getContext().getUpdateGraph(),
                 (ignored) -> {
@@ -212,6 +229,9 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
                 log.debug().append("LOCATION_ADDED:").append(tableLocation.toString()).endl();
             }
             emptyTableLocations.add(new EmptyTableLocationEntry(tableLocation));
+            if (tableLocation instanceof AbstractTableLocation) {
+                ((AbstractTableLocation) tableLocation).incrementReferenceCount();
+            }
         } else {
             // Duplicate location - not allowed
             final TableLocation duplicateLocation =
@@ -656,6 +676,9 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
 
         private void invalidate() {
             columnLocationStates.forEach(cls -> cls.source.invalidateRegion(regionIndex));
+            if (location instanceof AbstractTableLocation) {
+                ((AbstractTableLocation) location).decrementReferenceCount();
+            }
         }
 
         @Override

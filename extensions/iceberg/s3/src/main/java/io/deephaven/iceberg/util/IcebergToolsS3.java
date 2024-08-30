@@ -4,6 +4,7 @@
 package io.deephaven.iceberg.util;
 
 import com.google.common.base.Strings;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.iceberg.CatalogProperties;
 import org.apache.iceberg.CatalogUtil;
 import org.apache.iceberg.aws.AwsClientProperties;
@@ -68,14 +69,11 @@ public class IcebergToolsS3 extends IcebergTools {
             properties.put(S3FileIOProperties.ENDPOINT, endpointOverride);
         }
 
-        // final org.apache.hadoop.conf.Configuration hadoopConf = new org.apache.hadoop.conf.Configuration();
-
-        final FileIO fileIO = CatalogUtil.loadFileIO(S3_FILE_IO_CLASS, properties, null);
-
         final String catalogName = name != null ? name : "IcebergCatalog-" + catalogURI;
+        catalog.setConf(new Configuration());
         catalog.initialize(catalogName, properties);
 
-        return new IcebergCatalogAdapter(catalog, fileIO);
+        return new IcebergCatalogAdapter(catalog);
     }
 
     /**
@@ -103,11 +101,10 @@ public class IcebergToolsS3 extends IcebergTools {
         properties.put(CatalogProperties.URI, catalogURI);
         properties.put(CatalogProperties.WAREHOUSE_LOCATION, warehouseLocation);
 
-        final FileIO fileIO = CatalogUtil.loadFileIO(S3_FILE_IO_CLASS, properties, null);
-
         final String catalogName = name != null ? name : "IcebergCatalog-" + catalogURI;
+        catalog.setConf(new Configuration());
         catalog.initialize(catalogName, properties);
 
-        return new IcebergCatalogAdapter(catalog, fileIO);
+        return new IcebergCatalogAdapter(catalog);
     }
 }

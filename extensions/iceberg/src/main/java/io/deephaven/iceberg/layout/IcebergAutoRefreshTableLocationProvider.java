@@ -8,7 +8,7 @@ import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationFactory;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.engine.table.impl.locations.util.TableDataRefreshService;
-import io.deephaven.iceberg.util.IcebergCatalogAdapter;
+import io.deephaven.iceberg.util.IcebergTableAdapter;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.jetbrains.annotations.NotNull;
@@ -39,7 +39,7 @@ public class IcebergAutoRefreshTableLocationProvider<TK extends TableKey, TLK ex
             @NotNull final TableLocationFactory<TK, TLK> locationFactory,
             @NotNull final TableDataRefreshService refreshService,
             final long refreshIntervalMs,
-            @NotNull final IcebergCatalogAdapter adapter,
+            @NotNull final IcebergTableAdapter adapter,
             @NotNull final TableIdentifier tableIdentifier) {
         super(tableKey, locationKeyFinder, locationFactory, true, adapter, tableIdentifier);
 
@@ -59,7 +59,8 @@ public class IcebergAutoRefreshTableLocationProvider<TK extends TableKey, TLK ex
 
     @Override
     public synchronized void refresh() {
-        final Snapshot latestSnapshot = adapter.getCurrentSnapshot(tableIdentifier);
+        adapter.refresh();
+        final Snapshot latestSnapshot = adapter.currentSnapshot();
         if (latestSnapshot.sequenceNumber() > locationKeyFinder.snapshot.sequenceNumber()) {
             locationKeyFinder.snapshot = latestSnapshot;
             refreshSnapshot();

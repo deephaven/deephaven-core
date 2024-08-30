@@ -6,7 +6,7 @@ package io.deephaven.iceberg.layout;
 import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocationProvider;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationFactory;
-import io.deephaven.iceberg.util.IcebergCatalogAdapter;
+import io.deephaven.iceberg.util.IcebergTableAdapter;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.jetbrains.annotations.NotNull;
@@ -17,7 +17,7 @@ public abstract class IcebergTableLocationProviderBase<TK extends TableKey, TLK 
 
     final IcebergBaseLayout locationKeyFinder;
     final TableLocationFactory<TK, TLK> locationFactory;
-    final IcebergCatalogAdapter adapter;
+    final IcebergTableAdapter adapter;
     final TableIdentifier tableIdentifier;
 
     public IcebergTableLocationProviderBase(
@@ -25,7 +25,7 @@ public abstract class IcebergTableLocationProviderBase<TK extends TableKey, TLK 
             @NotNull final IcebergBaseLayout locationKeyFinder,
             @NotNull final TableLocationFactory<TK, TLK> locationFactory,
             final boolean isRefreshing,
-            @Nullable final IcebergCatalogAdapter adapter,
+            @Nullable final IcebergTableAdapter adapter,
             @NotNull final TableIdentifier tableIdentifier) {
         super(tableKey, isRefreshing);
         this.locationKeyFinder = locationKeyFinder;

@@ -12,6 +12,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.util.annotations.InternalUseOnly;
+import io.deephaven.util.referencecounting.ReferenceCounted;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,6 +35,8 @@ public abstract class AbstractTableLocation
     private final TableLocationStateHolder state = new TableLocationStateHolder();
     private final KeyedObjectHashMap<CharSequence, ColumnLocation> columnLocations =
             new KeyedObjectHashMap<>(StringUtils.charSequenceKey());
+
+    private final ReferenceCounted referenceCounted;
 
     @SuppressWarnings("rawtypes")
     private static final AtomicReferenceFieldUpdater<AbstractTableLocation, KeyedObjectHashMap> CACHED_DATA_INDEXES_UPDATER =
@@ -58,6 +61,15 @@ public abstract class AbstractTableLocation
         super(supportsSubscriptions);
         this.tableKey = Require.neqNull(tableKey, "tableKey").makeImmutable();
         this.tableLocationKey = Require.neqNull(tableLocationKey, "tableLocationKey").makeImmutable();
+
+        referenceCounted = new ReferenceCounted() {
+            @Override
+            protected void onReferenceCountAtZero() {
+                // Call the location's onReferenceCountAtZero method
+                AbstractTableLocation.this.onReferenceCountAtZero();
+            }
+        };
+
     }
 
     @Override
@@ -158,7 +170,7 @@ public abstract class AbstractTableLocation
      * Clear all column locations (usually because a truncated location was observed).
      */
     @SuppressWarnings("unused")
-    protected final void clearColumnLocations() {
+    public final void clearColumnLocations() {
         columnLocations.clear();
     }
 
@@ -229,4 +241,34 @@ public abstract class AbstractTableLocation
     @InternalUseOnly
     @Nullable
     public abstract BasicDataIndex loadDataIndex(@NotNull String... columns);
+
+    // ------------------------------------------------------------------------------------------------------------------
+    // Reference counting implementation
+    // ------------------------------------------------------------------------------------------------------------------
+
+    /**
+     * Increment the reference count by one.
+     *
+     * @throws IllegalStateException If the reference count was not successfully incremented
+     */
+    public final void incrementReferenceCount() {
+        referenceCounted.incrementReferenceCount();
+    }
+
+    /**
+     * Decrement the reference count by one, when the reference count reaches zero this location will be cleared.
+     *
+     * @throws IllegalStateException If the reference count was not successfully incremented
+     */
+    public void decrementReferenceCount() {
+        referenceCounted.decrementReferenceCount();
+    }
+
+    /**
+     * The reference count has reached zero, we can clear this location and release any resources.
+     */
+    private void onReferenceCountAtZero() {
+        handleUpdate(null, System.currentTimeMillis());
+        clearColumnLocations();
+    }
 }

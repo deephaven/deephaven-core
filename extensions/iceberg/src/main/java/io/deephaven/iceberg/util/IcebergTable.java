@@ -11,7 +11,6 @@ public interface IcebergTable extends Table {
     /**
      * Update the table with the latest snapshot from the catalog.
      */
-    @SuppressWarnings("unused")
     void update();
 
     /**
@@ -21,7 +20,6 @@ public interface IcebergTable extends Table {
      *
      * @param snapshotId The identifier of the snapshot to use when updating the table.
      */
-    @SuppressWarnings("unused")
     void update(final long snapshotId);
 
     /**
@@ -30,6 +28,5 @@ public interface IcebergTable extends Table {
      *
      * @param snapshot The snapshot to use when updating the table.
      */
-    @SuppressWarnings("unused")
     void update(final @NotNull Snapshot snapshot);
 }

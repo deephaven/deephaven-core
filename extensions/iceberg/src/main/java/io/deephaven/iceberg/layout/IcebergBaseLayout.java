@@ -10,9 +10,9 @@ import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.iceberg.location.IcebergTableParquetLocationKey;
 import io.deephaven.iceberg.util.IcebergInstructions;
+import io.deephaven.iceberg.util.IcebergTableAdapter;
 import io.deephaven.parquet.table.ParquetInstructions;
 import org.apache.iceberg.*;
-import org.apache.iceberg.io.FileIO;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -24,19 +24,15 @@ import java.util.function.Consumer;
 
 public abstract class IcebergBaseLayout implements TableLocationKeyFinder<IcebergTableLocationKey> {
     /**
-     * The {@link TableDefinition} that will be used for the table.
+     * The {@link IcebergTableAdapter} that will be used to access the table.
+     */
+    final IcebergTableAdapter tableAdapter;
+
+    /**
+     * The {@link TableDefinition} that will be used for life of this table. Although Iceberg table schema may change,
+     * schema changes are not supported in Deephaven.
      */
     final TableDefinition tableDef;
-
-    /**
-     * The Iceberg {@link Table} to discover locations for.
-     */
-    final Table table;
-
-    /**
-     * The {@link FileIO} to use for passing to the catalog reading manifest data files.
-     */
-    final FileIO fileIO;
 
     /**
      * The instructions for customizations while reading.
@@ -87,27 +83,23 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             return new IcebergTableParquetLocationKey(fileUri, 0, partitions, parquetInstructions);
         }
         throw new UnsupportedOperationException(String.format("%s:%d - an unsupported file format %s for URI '%s'",
-                table, snapshot.snapshotId(), format, fileUri));
+                tableAdapter, snapshot.snapshotId(), format, fileUri));
     }
 
     /**
-     * @param tableDef The {@link TableDefinition} that will be used for the table.
-     * @param table The {@link Table} to discover locations for.
+     * @param tableAdapter The {@link IcebergTableAdapter} that will be used to access the table.
      * @param tableSnapshot The {@link Snapshot} from which to discover data files.
-     * @param fileIO The file IO to use for reading manifest data files.
      * @param instructions The instructions for customizations while reading.
      */
     public IcebergBaseLayout(
-            @NotNull final TableDefinition tableDef,
-            @NotNull final Table table,
+            @NotNull final IcebergTableAdapter tableAdapter,
             @NotNull final Snapshot tableSnapshot,
-            @NotNull final FileIO fileIO,
             @NotNull final IcebergInstructions instructions) {
-        this.tableDef = tableDef;
-        this.table = table;
+        this.tableAdapter = tableAdapter;
         this.snapshot = tableSnapshot;
-        this.fileIO = fileIO;
         this.instructions = instructions;
+
+        this.tableDef = tableAdapter.definition(tableSnapshot, instructions);
 
         this.cache = new HashMap<>();
     }
@@ -116,9 +108,10 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
 
     @Override
     public synchronized void findKeys(@NotNull final Consumer<IcebergTableLocationKey> locationKeyObserver) {
+        final Table table = tableAdapter.icebergTable();
         try {
             // Retrieve the manifest files from the snapshot
-            final List<ManifestFile> manifestFiles = snapshot.allManifests(fileIO);
+            final List<ManifestFile> manifestFiles = snapshot.allManifests(table.io());
             for (final ManifestFile manifestFile : manifestFiles) {
                 // Currently only can process manifest files with DATA content type.
                 if (manifestFile.content() != ManifestContent.DATA) {
@@ -126,7 +119,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
                             String.format("%s:%d - only DATA manifest files are currently supported, encountered %s",
                                     table, snapshot.snapshotId(), manifestFile.content()));
                 }
-                try (final ManifestReader<DataFile> reader = ManifestFiles.read(manifestFile, fileIO)) {
+                try (final ManifestReader<DataFile> reader = ManifestFiles.read(manifestFile, table.io())) {
                     for (DataFile df : reader) {
                         final URI fileUri = FileUtils.convertToURI(df.path().toString(), false);
                         final IcebergTableLocationKey locationKey =
@@ -139,7 +132,7 @@ public abstract class IcebergBaseLayout implements TableLocationKeyFinder<Iceber
             }
         } catch (final Exception e) {
             throw new TableDataException(
-                    String.format("%s:%d - error finding Iceberg locations", table, snapshot.snapshotId()), e);
+                    String.format("%s:%d - error finding Iceberg locations", tableAdapter, snapshot.snapshotId()), e);
         }
     }
 }

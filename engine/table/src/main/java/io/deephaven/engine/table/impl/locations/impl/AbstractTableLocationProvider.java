@@ -3,10 +3,8 @@
 //
 package io.deephaven.engine.table.impl.locations.impl;
 
-import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.locations.*;
-import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import org.jetbrains.annotations.NotNull;
@@ -83,9 +81,6 @@ public abstract class AbstractTableLocationProvider
             (Collection<ImmutableTableLocationKey>) (Collection<? extends TableLocationKey>) Collections
                     .unmodifiableCollection(tableLocations.keySet());
 
-    final List<AbstractTableLocation> locationsToClear;
-    final UpdateCommitter<?> locationClearCommitter;
-
     private volatile boolean initialized;
 
     private List<String> partitionKeys;
@@ -101,18 +96,6 @@ public abstract class AbstractTableLocationProvider
         super(supportsSubscriptions);
         this.tableKey = tableKey.makeImmutable();
         this.partitionKeys = null;
-
-        locationsToClear = new ArrayList<>();
-        locationClearCommitter = new UpdateCommitter<>(this,
-                ExecutionContext.getContext().getUpdateGraph(),
-                (ignored) -> {
-                    locationsToClear.forEach(location -> {
-                        location.handleUpdate(null, System.currentTimeMillis());
-                        location.clearColumnLocations();
-
-                    });
-                    locationsToClear.clear();
-                });
     }
 
     /**
@@ -195,7 +178,6 @@ public abstract class AbstractTableLocationProvider
                 for (TableLocationKey locationKey : transaction.locationsRemoved) {
                     final Object removedLocation = tableLocations.remove(locationKey);
                     if (removedLocation != null) {
-                        maybeClearLocationForRemoval(removedLocation);
                         removedImmutableKeys.add(toKeyImmutable(locationKey));
                     }
                 }
@@ -432,7 +414,6 @@ public abstract class AbstractTableLocationProvider
             @NotNull final TableLocationKey locationKey,
             @Nullable final Object transactionToken) {
         if (!supportsSubscriptions()) {
-            maybeClearLocationForRemoval(tableLocations.remove(locationKey));
             return;
         }
 
@@ -457,7 +438,6 @@ public abstract class AbstractTableLocationProvider
         synchronized (subscriptions) {
             final Object removedLocation = tableLocations.remove(locationKey);
             if (removedLocation != null) {
-                maybeClearLocationForRemoval(removedLocation);
                 if (subscriptions.deliverNotification(
                         Listener::handleTableLocationKeyRemoved,
                         locationKey.makeImmutable(),
@@ -465,13 +445,6 @@ public abstract class AbstractTableLocationProvider
                     onEmpty();
                 }
             }
-        }
-    }
-
-    private synchronized void maybeClearLocationForRemoval(@Nullable final Object removedLocation) {
-        if (removedLocation instanceof AbstractTableLocation) {
-            locationsToClear.add((AbstractTableLocation) removedLocation);
-            locationClearCommitter.maybeActivate();
         }
     }
 

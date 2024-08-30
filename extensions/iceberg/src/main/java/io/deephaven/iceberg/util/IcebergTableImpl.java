@@ -57,15 +57,4 @@ public class IcebergTableImpl extends PartitionAwareSourceTable implements Icebe
     public void update(final @NotNull Snapshot snapshot) {
         locationProvider.update(snapshot);
     }
-
-    @Override
-    public int currentSnapshotId() {
-        // TODO: implement the TableAdapter
-        return 0;
-    }
-
-    @Override
-    public Snapshot currentSnapshot() {
-        return null;
-    }
 }

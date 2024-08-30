@@ -15,6 +15,7 @@ from deephaven.table import Table, TableDefinition, TableDefinitionLike
 _JIcebergInstructions = jpy.get_type("io.deephaven.iceberg.util.IcebergInstructions")
 _JIcebergUpdateMode = jpy.get_type("io.deephaven.iceberg.util.IcebergUpdateMode")
 _JIcebergCatalogAdapter = jpy.get_type("io.deephaven.iceberg.util.IcebergCatalogAdapter")
+_JIcebergTableAdapter = jpy.get_type("io.deephaven.iceberg.util.IcebergTableAdapter")
 _JIcebergTable = jpy.get_type("io.deephaven.iceberg.util.IcebergTable")
 
 # IcebergToolsS3 is an optional library
@@ -166,6 +167,79 @@ class IcebergTable(Table):
         return self.j_table
 
 
+class IcebergTableAdapter(JObjectWrapper):
+    """
+    This class provides an interface for interacting with Iceberg tables. It allows listing snapshots, table
+    definitions, as well as reading Iceberg tables into Deephaven tables.
+    """
+    j_object_type = _JIcebergTableAdapter or type(None)
+
+    def __init__(self, j_object: _JIcebergTableAdapter):
+        self.j_table_adapter = j_object
+
+    def snapshots(self) -> Table:
+        """
+        Returns information on the snapshots of this table as a Deephaven table. The table contains the
+        following columns:
+        - `Id`: the snapshot identifier (can be used for updating the table or loading a specific snapshot).
+        - `TimestampMs`: the timestamp of the snapshot.
+        - `Operation`: the data operation that created this snapshot.
+        - `Summary`: additional information about this snapshot from the Iceberg metadata.
+        - `SnapshotObject`: a Java object containing the Iceberg API snapshot.
+
+        Args:
+            table_identifier (str): the table from which to list snapshots.
+
+        Returns:
+            a table containing the snapshot information.
+        """
+        return Table(self.j_object.snapshots())
+
+    def definition(self, instructions: Optional[IcebergInstructions] = None, snapshot_id: Optional[int] = None) -> Table:
+        """
+        Returns information on the tables in the specified namespace as a Deephaven table.
+
+        Args:
+            namespace (str): the namespace from which to list tables.
+
+        Returns:
+            a table containing the tables in the provided namespace.
+        """
+
+        if snapshot_id is not None:
+            return Table(self.j_object.definitionTable(snapshot_id, instructions))
+        return Table(self.j_object.definitionTable(instructions))
+
+    def table(self, instructions: Optional[IcebergInstructions] = None, snapshot_id: Optional[int] = None) -> IcebergTable:
+        """
+        Reads the table using the provided instructions. Optionally, a snapshot id can be provided to
+        read a specific snapshot of the table.
+
+        Args:
+            table_identifier (str): the table to read.
+            instructions (Optional[IcebergInstructions]): the instructions for reading the table. These instructions
+                can include column renames, table definition, and specific data instructions for reading the data files
+                from the provider. If omitted, the table will be read with default instructions.
+            snapshot_id (Optional[int]): the snapshot id to read; if omitted the most recent snapshot will be selected.
+
+        Returns:
+            Table: the table read from the catalog.
+        """
+
+        if instructions is not None:
+            instructions_object = instructions.j_object
+        else:
+            instructions_object = _JIcebergInstructions.DEFAULT
+
+        if snapshot_id is not None:
+            return IcebergTable(self.j_object.table(snapshot_id, instructions_object))
+        return IcebergTable(self.j_object.readTable(instructions_object))
+
+    @property
+    def j_object(self) -> jpy.JType:
+        return self.j_table_adapter
+
+
 class IcebergCatalogAdapter(JObjectWrapper):
     """
     This class provides an interface for interacting with Iceberg catalogs. It allows listing namespaces, tables and
@@ -190,10 +264,10 @@ class IcebergCatalogAdapter(JObjectWrapper):
         """
 
         if namespace is not None:
-            return Table(self.j_object.listNamespaces(namespace))
-        return Table(self.j_object.listNamespacesAsTable())
+            return Table(self.j_object.namespaces(namespace))
+        return Table(self.j_object.namespaces())
 
-    def tables(self, namespace: str) -> Table:
+    def tables(self, namespace: str) -> IcebergTableAdapter:
         """
         Returns information on the tables in the specified namespace as a Deephaven table.
 
@@ -204,12 +278,25 @@ class IcebergCatalogAdapter(JObjectWrapper):
             a table containing the tables in the provided namespace.
         """
 
-        if namespace is not None:
-            return Table(self.j_object.listTablesAsTable(namespace))
-        return Table(self.j_object.listTablesAsTable())
+        return Table(self.j_object.tables(namespace))
+
+    def load_table(self, table_identifier: str) -> IcebergTable:
+        """
+        Load the table from the catalog using the provided instructions.
+
+        Args:
+            table_identifier (str): the table to read.
+
+        Returns:
+            Table: the table read from the catalog.
+        """
+
+        return IcebergTableAdapter(self.j_object.loadTable(table_identifier))
 
     def snapshots(self, table_identifier: str) -> Table:
         """
+        NOTE: deprecated, use `load_table(table_identifier).snapshots()` instead.
+
         Returns information on the snapshots of the specified table as a Deephaven table. The table contains the
         following columns:
         - `Id`: the snapshot identifier (can be used for updating the table or loading a specific snapshot).
@@ -225,10 +312,12 @@ class IcebergCatalogAdapter(JObjectWrapper):
             a table containing the snapshot information.
         """
 
-        return self.j_object.listSnapshotsAsTable(table_identifier)
+        return self.j_object.snapshots(table_identifier)
 
     def read_table(self, table_identifier: str, instructions: Optional[IcebergInstructions] = None, snapshot_id: Optional[int] = None) -> IcebergTable:
         """
+        NOTE: deprecated, use `load_table(table_identifier).table()` instead.
+
         Reads the table from the catalog using the provided instructions. Optionally, a snapshot id can be provided to
         read a specific snapshot of the table.
 
