@@ -297,20 +297,13 @@ public class ParquetFileReader {
                         columnOrders, columnCount);
             }
 
-            final LogicalTypeAnnotation logicalType;
             if (schemaElement.isSetLogicalType()) {
-                logicalType = getLogicalTypeAnnotation(schemaElement.logicalType);
+                final LogicalTypeAnnotation logicalType = getLogicalTypeAnnotation(schemaElement.logicalType);
                 ((Types.Builder) childBuilder).as(logicalType);
-            } else {
-                logicalType = null;
-            }
-
-            if (schemaElement.isSetConverted_type()) {
-                final LogicalTypeAnnotation originalType = getLogicalTypeAnnotation(
+            } else if (schemaElement.isSetConverted_type()) {
+                final LogicalTypeAnnotation logicalType = getLogicalTypeFromConvertedType(
                         schemaElement.converted_type, schemaElement);
-                if (!originalType.equals(logicalType)) {
-                    ((Types.Builder) childBuilder).as(originalType);
-                }
+                ((Types.Builder) childBuilder).as(logicalType);
             }
 
             if (schemaElement.isSetField_id()) {
@@ -408,7 +401,13 @@ public class ParquetFileReader {
         return org.apache.parquet.schema.ColumnOrder.undefined();
     }
 
-    private static LogicalTypeAnnotation getLogicalTypeAnnotation(
+    /**
+     * This method will convert the {@link ConvertedType} to a {@link LogicalTypeAnnotation} and should only be called
+     * if the logical type is not set in the schema element.
+     *
+     * @see <a href="https://github.com/apache/parquet-format/blob/master/LogicalTypes.md">Reference for conversions</a>
+     */
+    private static LogicalTypeAnnotation getLogicalTypeFromConvertedType(
             final ConvertedType convertedType,
             final SchemaElement schemaElement) throws ParquetFileReaderException {
         switch (convertedType) {
@@ -429,17 +428,12 @@ public class ParquetFileReader {
             case DATE:
                 return LogicalTypeAnnotation.dateType();
             case TIME_MILLIS:
-                // isAdjustedToUTC parameter is ignored while reading Parquet TIME type, so disregard it here
                 return LogicalTypeAnnotation.timeType(true, LogicalTypeAnnotation.TimeUnit.MILLIS);
             case TIME_MICROS:
                 return LogicalTypeAnnotation.timeType(true, LogicalTypeAnnotation.TimeUnit.MICROS);
             case TIMESTAMP_MILLIS:
-                // TIMESTAMP_MILLIS is always adjusted to UTC
-                // ref: https://github.com/apache/parquet-format/blob/master/LogicalTypes.md
                 return LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.MILLIS);
             case TIMESTAMP_MICROS:
-                // TIMESTAMP_MICROS is always adjusted to UTC
-                // ref: https://github.com/apache/parquet-format/blob/master/LogicalTypes.md
                 return LogicalTypeAnnotation.timestampType(true, LogicalTypeAnnotation.TimeUnit.MICROS);
             case INTERVAL:
                 return LogicalTypeAnnotation.IntervalLogicalTypeAnnotation.getInstance();
