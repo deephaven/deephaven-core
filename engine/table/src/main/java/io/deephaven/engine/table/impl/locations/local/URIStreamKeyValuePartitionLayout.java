@@ -34,6 +34,7 @@ public abstract class URIStreamKeyValuePartitionLayout<TLK extends TableLocation
         extends KeyValuePartitionLayout<TLK, URI> {
 
     protected final URI tableRootDirectory;
+    private final int rootDirectoryPathLength;
     private final Supplier<LocationTableBuilder> locationTableBuilderFactory;
     private final int maxPartitioningLevels;
 
@@ -53,6 +54,7 @@ public abstract class URIStreamKeyValuePartitionLayout<TLK extends TableLocation
             final int maxPartitioningLevels) {
         super(keyFactory);
         this.tableRootDirectory = tableRootDirectory;
+        this.rootDirectoryPathLength = tableRootDirectory.getPath().length();
         this.locationTableBuilderFactory = locationTableBuilderFactory;
         this.maxPartitioningLevels = Require.geqZero(maxPartitioningLevels, "maxPartitioningLevels");
     }
@@ -75,8 +77,11 @@ public abstract class URIStreamKeyValuePartitionLayout<TLK extends TableLocation
         final MutableBoolean registered = new MutableBoolean(false);
         uriStream.forEachOrdered(uri -> {
             final Collection<String> partitionValues = new ArrayList<>();
-            final URI relativePath = tableRootDirectory.relativize(uri);
-            getPartitions(relativePath, partitionKeys, partitionValues, partitionColInfo, registered.booleanValue());
+            // Not using URI#relativize here because the scheme for the root directory might be different, like in case
+            // of GCS URIs, where we internally use "s3://" as scheme
+            final String relativePathString = uri.getPath().substring(rootDirectoryPathLength);
+            getPartitions(relativePathString, partitionKeys, partitionValues, partitionColInfo,
+                    registered.booleanValue());
             if (registered.isFalse()) {
                 // Use the first path to find the partition keys and use the same for the rest
                 locationTableBuilder.registerPartitionKeys(partitionKeys);
@@ -90,12 +95,12 @@ public abstract class URIStreamKeyValuePartitionLayout<TLK extends TableLocation
         buildLocationKeys(locationTable, targetURIs, locationKeyObserver);
     }
 
-    private void getPartitions(@NotNull final URI relativePath,
+    private void getPartitions(
+            @NotNull final String relativePathString,
             @NotNull final Set<String> partitionKeys,
             @NotNull final Collection<String> partitionValues,
             @NotNull final TIntObjectMap<ColumnNameInfo> partitionColInfo,
             final boolean registered) {
-        final String relativePathString = relativePath.getPath();
         // The following assumes that there is exactly one separator between each subdirectory in the path
         final String[] subDirs = relativePathString.split(URI_SEPARATOR);
         final int numPartitioningCol = subDirs.length - 1;

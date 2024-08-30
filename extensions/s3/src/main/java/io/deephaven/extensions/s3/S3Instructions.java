@@ -43,6 +43,9 @@ public abstract class S3Instructions implements LogOutputAppendable {
     static final int MIN_WRITE_PART_SIZE = 5 << 20; // 5 MiB
 
     static final S3Instructions DEFAULT = builder().build();
+    static final URI DEFAULT_ENDPOINT_OVERRIDE_FOR_GCS = URI.create("https://storage.googleapis.com");
+    static final S3Instructions DEFAULT_FOR_GCS_URI =
+            builder().endpointOverride(DEFAULT_ENDPOINT_OVERRIDE_FOR_GCS).build();
 
     public static Builder builder() {
         return ImmutableS3Instructions.builder();
@@ -144,6 +147,8 @@ public abstract class S3Instructions implements LogOutputAppendable {
      * @see <a href="https://docs.aws.amazon.com/general/latest/gr/s3.html">Amazon Simple Storage Service endpoints</a>
      */
     public abstract Optional<URI> endpointOverride();
+
+    public abstract S3Instructions withEndpointOverride(final URI endpointOverride);
 
     public interface Builder {
         Builder regionName(String regionName);
