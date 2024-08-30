@@ -36,6 +36,7 @@ import io.deephaven.server.session.ClientChannelFactoryModule.UserAgent;
 import io.deephaven.server.session.ObfuscatingErrorTransformerModule;
 import io.deephaven.server.session.SslConfigModule;
 import io.deephaven.time.calendar.CalendarsFromConfigurationModule;
+import io.deephaven.util.process.ProcessEnvironment;
 import org.jpy.PyModule;
 import org.jpy.PyObject;
 
@@ -165,6 +166,15 @@ public class EmbeddedServer {
         server.run();
 
         Bootstrap.printf("Server started on port %d%n", getPort());
+    }
+
+    public void prepareForShutdown() {
+        // Stop any DH-started threads and work
+        ProcessEnvironment.getGlobalShutdownManager().maybeInvokeTasks();
+
+        // Shut down our wrapped stdout/stderr instances
+        System.out.close();
+        System.err.close();
     }
 
     public int getPort() {
