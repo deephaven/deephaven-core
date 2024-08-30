@@ -34,10 +34,17 @@ namespace ExcelAddIn.views {
       userIdBox.DataBindings.Add(nameof(userIdBox.Text), vm, nameof(vm.UserId));
       passwordBox.DataBindings.Add(nameof(passwordBox.Text), vm, nameof(vm.Password));
       operateAsBox.DataBindings.Add(nameof(operateAsBox.Text), vm, nameof(vm.OperateAs));
+      validateCertCheckBox.DataBindings.Add(nameof(validateCertCheckBox.Checked), vm, nameof(vm.ValidateCertificate));
 
       // Bind the Core property (there's just one)
       connectionStringBox.DataBindings.Add(nameof(connectionStringBox.Text),
         vm, nameof(vm.ConnectionString));
+
+      // Bind the SessionType checkboxes
+      sessionTypeIsPythonButton.DataBindings.Add(nameof(sessionTypeIsPythonButton.Checked),
+        vm, nameof(vm.SessionTypeIsPython));
+      sessionTypeIsGroovyButton.DataBindings.Add(nameof(sessionTypeIsGroovyButton.Checked),
+        vm, nameof(vm.SessionTypeIsGroovy));
 
       // Bind the IsDefault property
       makeDefaultCheckBox.DataBindings.Add(nameof(makeDefaultCheckBox.Checked),

@@ -25,6 +25,7 @@
     private void InitializeComponent() {
       flowLayoutPanel1 = new FlowLayoutPanel();
       corePlusPanel = new Panel();
+      validateCertCheckBox = new CheckBox();
       operateAsBox = new TextBox();
       passwordBox = new TextBox();
       label5 = new Label();
@@ -36,7 +37,11 @@
       corePanel = new Panel();
       connectionStringBox = new TextBox();
       label2 = new Label();
+      groupBox1 = new GroupBox();
+      sessionTypeIsGroovyButton = new RadioButton();
+      sessionTypeIsPythonButton = new RadioButton();
       finalPanel = new Panel();
+      makeDefaultCheckBox = new CheckBox();
       testResultsTextBox = new TextBox();
       testResultsLabel = new Label();
       testCredentialsButton = new Button();
@@ -46,10 +51,10 @@
       endpointIdBox = new TextBox();
       label1 = new Label();
       connectionTypeGroup = new GroupBox();
-      makeDefaultCheckBox = new CheckBox();
       flowLayoutPanel1.SuspendLayout();
       corePlusPanel.SuspendLayout();
       corePanel.SuspendLayout();
+      groupBox1.SuspendLayout();
       finalPanel.SuspendLayout();
       connectionTypeGroup.SuspendLayout();
       SuspendLayout();
@@ -61,11 +66,12 @@
       flowLayoutPanel1.Controls.Add(finalPanel);
       flowLayoutPanel1.Location = new Point(28, 160);
       flowLayoutPanel1.Name = "flowLayoutPanel1";
-      flowLayoutPanel1.Size = new Size(994, 531);
+      flowLayoutPanel1.Size = new Size(994, 676);
       flowLayoutPanel1.TabIndex = 200;
       // 
       // corePlusPanel
       // 
+      corePlusPanel.Controls.Add(validateCertCheckBox);
       corePlusPanel.Controls.Add(operateAsBox);
       corePlusPanel.Controls.Add(passwordBox);
       corePlusPanel.Controls.Add(label5);
@@ -76,8 +82,19 @@
       corePlusPanel.Controls.Add(label3);
       corePlusPanel.Location = new Point(3, 3);
       corePlusPanel.Name = "corePlusPanel";
-      corePlusPanel.Size = new Size(991, 242);
+      corePlusPanel.Size = new Size(991, 299);
       corePlusPanel.TabIndex = 210;
+      // 
+      // validateCertCheckBox
+      // 
+      validateCertCheckBox.AutoSize = true;
+      validateCertCheckBox.Location = new Point(192, 240);
+      validateCertCheckBox.Name = "validateCertCheckBox";
+      validateCertCheckBox.RightToLeft = RightToLeft.No;
+      validateCertCheckBox.Size = new Size(183, 29);
+      validateCertCheckBox.TabIndex = 216;
+      validateCertCheckBox.Text = "Validate Certificate";
+      validateCertCheckBox.UseVisualStyleBackColor = true;
       // 
       // operateAsBox
       // 
@@ -148,9 +165,10 @@
       // 
       corePanel.Controls.Add(connectionStringBox);
       corePanel.Controls.Add(label2);
-      corePanel.Location = new Point(3, 251);
+      corePanel.Controls.Add(groupBox1);
+      corePanel.Location = new Point(3, 308);
       corePanel.Name = "corePanel";
-      corePanel.Size = new Size(991, 76);
+      corePanel.Size = new Size(991, 170);
       corePanel.TabIndex = 220;
       // 
       // connectionStringBox
@@ -169,6 +187,39 @@
       label2.TabIndex = 0;
       label2.Text = "Connection String";
       // 
+      // groupBox1
+      // 
+      groupBox1.Controls.Add(sessionTypeIsGroovyButton);
+      groupBox1.Controls.Add(sessionTypeIsPythonButton);
+      groupBox1.Location = new Point(18, 80);
+      groupBox1.Name = "groupBox1";
+      groupBox1.Size = new Size(970, 71);
+      groupBox1.TabIndex = 231;
+      groupBox1.TabStop = false;
+      groupBox1.Text = "Session Type";
+      // 
+      // sessionTypeIsGroovyButton
+      // 
+      sessionTypeIsGroovyButton.AutoSize = true;
+      sessionTypeIsGroovyButton.Location = new Point(338, 30);
+      sessionTypeIsGroovyButton.Name = "sessionTypeIsGroovyButton";
+      sessionTypeIsGroovyButton.Size = new Size(95, 29);
+      sessionTypeIsGroovyButton.TabIndex = 1;
+      sessionTypeIsGroovyButton.TabStop = true;
+      sessionTypeIsGroovyButton.Text = "Groovy";
+      sessionTypeIsGroovyButton.UseVisualStyleBackColor = true;
+      // 
+      // sessionTypeIsPythonButton
+      // 
+      sessionTypeIsPythonButton.AutoSize = true;
+      sessionTypeIsPythonButton.Location = new Point(192, 30);
+      sessionTypeIsPythonButton.Name = "sessionTypeIsPythonButton";
+      sessionTypeIsPythonButton.Size = new Size(93, 29);
+      sessionTypeIsPythonButton.TabIndex = 0;
+      sessionTypeIsPythonButton.TabStop = true;
+      sessionTypeIsPythonButton.Text = "Python";
+      sessionTypeIsPythonButton.UseVisualStyleBackColor = true;
+      // 
       // finalPanel
       // 
       finalPanel.Controls.Add(makeDefaultCheckBox);
@@ -176,10 +227,20 @@
       finalPanel.Controls.Add(testResultsLabel);
       finalPanel.Controls.Add(testCredentialsButton);
       finalPanel.Controls.Add(setCredentialsButton);
-      finalPanel.Location = new Point(3, 333);
+      finalPanel.Location = new Point(3, 484);
       finalPanel.Name = "finalPanel";
-      finalPanel.Size = new Size(991, 132);
+      finalPanel.Size = new Size(991, 152);
       finalPanel.TabIndex = 230;
+      // 
+      // makeDefaultCheckBox
+      // 
+      makeDefaultCheckBox.AutoSize = true;
+      makeDefaultCheckBox.Location = new Point(599, 70);
+      makeDefaultCheckBox.Name = "makeDefaultCheckBox";
+      makeDefaultCheckBox.Size = new Size(143, 29);
+      makeDefaultCheckBox.TabIndex = 234;
+      makeDefaultCheckBox.Text = "Make Default";
+      makeDefaultCheckBox.UseVisualStyleBackColor = true;
       // 
       // testResultsTextBox
       // 
@@ -220,7 +281,7 @@
       // isCorePlusRadioButton
       // 
       isCorePlusRadioButton.AutoSize = true;
-      isCorePlusRadioButton.Location = new Point(6, 39);
+      isCorePlusRadioButton.Location = new Point(192, 30);
       isCorePlusRadioButton.Name = "isCorePlusRadioButton";
       isCorePlusRadioButton.Size = new Size(169, 29);
       isCorePlusRadioButton.TabIndex = 110;
@@ -231,7 +292,7 @@
       // isCoreRadioButton
       // 
       isCoreRadioButton.AutoSize = true;
-      isCoreRadioButton.Location = new Point(195, 39);
+      isCoreRadioButton.Location = new Point(388, 30);
       isCoreRadioButton.Name = "isCoreRadioButton";
       isCoreRadioButton.Size = new Size(172, 29);
       isCoreRadioButton.TabIndex = 111;
@@ -266,21 +327,11 @@
       connectionTypeGroup.TabStop = false;
       connectionTypeGroup.Text = "Connection Type";
       // 
-      // makeDefaultCheckBox
-      // 
-      makeDefaultCheckBox.AutoSize = true;
-      makeDefaultCheckBox.Location = new Point(599, 70);
-      makeDefaultCheckBox.Name = "makeDefaultCheckBox";
-      makeDefaultCheckBox.Size = new Size(143, 29);
-      makeDefaultCheckBox.TabIndex = 234;
-      makeDefaultCheckBox.Text = "Make Default";
-      makeDefaultCheckBox.UseVisualStyleBackColor = true;
-      // 
       // CredentialsDialog
       // 
       AutoScaleDimensions = new SizeF(10F, 25F);
       AutoScaleMode = AutoScaleMode.Font;
-      ClientSize = new Size(1086, 714);
+      ClientSize = new Size(1086, 887);
       Controls.Add(connectionTypeGroup);
       Controls.Add(label1);
       Controls.Add(endpointIdBox);
@@ -292,6 +343,8 @@
       corePlusPanel.PerformLayout();
       corePanel.ResumeLayout(false);
       corePanel.PerformLayout();
+      groupBox1.ResumeLayout(false);
+      groupBox1.PerformLayout();
       finalPanel.ResumeLayout(false);
       finalPanel.PerformLayout();
       connectionTypeGroup.ResumeLayout(false);
@@ -326,5 +379,9 @@
     private Label testResultsLabel;
     private TextBox testResultsTextBox;
     private CheckBox makeDefaultCheckBox;
+    private CheckBox validateCertCheckBox;
+    private GroupBox groupBox1;
+    private RadioButton sessionTypeIsGroovyButton;
+    private RadioButton sessionTypeIsPythonButton;
   }
 }
