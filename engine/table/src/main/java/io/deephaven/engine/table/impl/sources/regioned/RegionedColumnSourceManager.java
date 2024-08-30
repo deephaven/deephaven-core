@@ -35,6 +35,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import static io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK;
+import static io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource.getFirstRowKey;
+
 /**
  * Manage column sources made up of regions in their own row key address space.
  */
@@ -369,10 +372,10 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
             if (entry.pollUpdates(addedRowSetBuilder)) {
                 // Changes were detected, update the row set in the table and mark the row/column as modified.
                 /*
-                 * Since TableLocationState.getRowSet() returns a copy(), we own entry.rowSetAtLastUpdate and can
-                 * propagate it without making another copy().
+                 * We should consider adding an UpdateCommitter to close() the previous row sets for modified locations.
+                 * This is not important for current implementations, since they always allocate new, flat RowSets.
                  */
-                rowSetSource.set(entry.regionIndex, entry.rowSetAtLastUpdate);
+                rowSetSource.set(entry.regionIndex, entry.rowSetAtLastUpdate.shift(getFirstRowKey(entry.regionIndex)));
                 if (modifiedRegionBuilder != null) {
                     modifiedRegionBuilder.appendKey(entry.regionIndex);
                 }
@@ -426,7 +429,7 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
                                 wcs.set(entry.regionIndex, entry.location.getKey().getPartitionValue(key)));
                 // @formatter:on
                 locationSource.set(entry.regionIndex, entry.location);
-                rowSetSource.set(entry.regionIndex, entry.rowSetAtLastUpdate);
+                rowSetSource.set(entry.regionIndex, entry.rowSetAtLastUpdate.shift(getFirstRowKey(entry.regionIndex)));
                 addedRegionBuilder.appendKey(entry.regionIndex);
             });
         }
@@ -584,14 +587,14 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
             Assert.neqNull(initialRowSet, "initialRowSet");
             Assert.eqTrue(initialRowSet.isNonempty(), "initialRowSet.isNonempty()");
             Assert.eqNull(rowSetAtLastUpdate, "rowSetAtLastUpdate");
-            if (initialRowSet.lastRowKey() > RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK) {
+            if (initialRowSet.lastRowKey() > ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK) {
                 throw new TableDataException(String.format(
                         "Location %s has initial last key %#016X, larger than maximum supported key %#016X",
                         location, initialRowSet.lastRowKey(),
-                        RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK));
+                        ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK));
             }
 
-            final long regionFirstKey = RegionedColumnSource.getFirstRowKey(regionIndex);
+            final long regionFirstKey = getFirstRowKey(regionIndex);
             initialRowSet.forAllRowKeyRanges((subRegionFirstKey, subRegionLastKey) -> addedRowSetBuilder
                     .appendRange(regionFirstKey + subRegionFirstKey, regionFirstKey + subRegionLastKey));
 
@@ -644,11 +647,11 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
                     // Nothing to do
                     return false;
                 }
-                if (updateRowSet.lastRowKey() > RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK) {
+                if (updateRowSet.lastRowKey() > ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK) {
                     throw new TableDataException(String.format(
                             "Location %s has updated last key %#016X, larger than maximum supported key %#016X",
                             location, updateRowSet.lastRowKey(),
-                            RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK));
+                            ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK));
                 }
 
                 if (log.isDebugEnabled()) {
@@ -657,7 +660,7 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
                             .append(",TO:").append(updateRowSet.size()).endl();
                 }
                 try (final RowSet addedRowSet = updateRowSet.minus(rowSetAtLastUpdate)) {
-                    final long regionFirstKey = RegionedColumnSource.getFirstRowKey(regionIndex);
+                    final long regionFirstKey = getFirstRowKey(regionIndex);
                     addedRowSet.forAllRowKeyRanges((subRegionFirstKey, subRegionLastKey) -> addedRowSetBuilder
                             .appendRange(regionFirstKey + subRegionFirstKey, regionFirstKey + subRegionLastKey));
                 }
