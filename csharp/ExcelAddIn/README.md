@@ -29,6 +29,18 @@ For Deephaven Enterprise Core+, contact your IT administrator.
 
 ## Prerequisites
 
+## Build machine specifications
+
+In our experience following this instructions on a fresh Windows 11 VM
+required a total of 125G of disk space to install and build everything.
+We recommend a machine with at least 200G of free disk space in order to
+leave a comfortable margin.
+
+Also, building the dependencies with vcpkg is very resource-intensive.
+A machine that has more cores will be able to finish faster.
+We recommend at least 16 cores for the build process. Note that *running*
+the Excel Add-In does not require that many cores.
+
 ## Tooling
 
 ### Excel
