@@ -276,6 +276,9 @@ public abstract class WebBarrageSubscription {
                     Long oldValue = redirectedIndexes.put(shiftedKey, redirectedIndexes.remove(key));
                     assert oldValue == null : shiftedKey + " already has a value, " + oldValue;
                     currentRowsetShifter.append(shiftedKey);
+                    if (populatedRowsetShifter != null) {
+                        populatedRowsetShifter.append(shiftedKey);
+                    }
                 }
             }
             if (hasReverseShift) {
@@ -297,6 +300,9 @@ public abstract class WebBarrageSubscription {
                         Long oldValue = redirectedIndexes.put(shiftedKey, redirectedIndexes.remove(key));
                         assert oldValue == null : shiftedKey + " already has a value, " + oldValue;
                         currentRowsetShifter.append(shiftedKey);
+                        if (populatedRowsetShifter != null) {
+                            populatedRowsetShifter.append(shiftedKey);
+                        }
                     }
                 }
             }
