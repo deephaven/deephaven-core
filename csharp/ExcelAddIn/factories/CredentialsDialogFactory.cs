@@ -19,6 +19,8 @@ internal static class CredentialsDialogFactory {
       if (cvm.IsDefault) {
         sm.SetDefaultCredentials(newCreds);
       }
+
+      credentialsDialog!.Close();
     }
 
     void OnTestCredentialsButtonClicked() {

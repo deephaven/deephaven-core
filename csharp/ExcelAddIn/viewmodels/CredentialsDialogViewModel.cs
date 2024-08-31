@@ -16,11 +16,14 @@ public sealed class CredentialsDialogViewModel : INotifyPropertyChanged {
   }
 
   public static CredentialsDialogViewModel OfIdAndCredentials(string id, CredentialsBase credentials) {
-    var result = new CredentialsDialogViewModel { Id = id };
+    var result = new CredentialsDialogViewModel {
+      Id = credentials.Id.Id
+    };
     _ = credentials.AcceptVisitor(
       core => {
         result._isCorePlus = false;
         result.ConnectionString = core.ConnectionString;
+        result.SessionTypeIsPython = core.SessionTypeIsPython;
         return Unit.Instance;
       },
       corePlus => {
@@ -29,6 +32,7 @@ public sealed class CredentialsDialogViewModel : INotifyPropertyChanged {
         result.UserId = corePlus.User;
         result.Password = corePlus.Password;
         result.OperateAs = corePlus.OperateAs;
+        result.ValidateCertificate = corePlus.ValidateCertificate;
         return Unit.Instance;
       });
 
@@ -38,12 +42,14 @@ public sealed class CredentialsDialogViewModel : INotifyPropertyChanged {
   private string _id = "";
   private bool _isDefault = false;
   private bool _isCorePlus = true;
+  private bool _sessionTypeIsPython = true;
 
   // Core properties
   private string _connectionString = "";
 
   // Core+ properties
   private string _jsonUrl = "";
+  private bool _validateCertificate = true;
   private string _userId = "";
   private string _password = "";
   private string _operateAs = "";
@@ -80,8 +86,8 @@ public sealed class CredentialsDialogViewModel : INotifyPropertyChanged {
 
     var epId = new EndpointId(_id);
     result = _isCorePlus
-      ? CredentialsBase.OfCorePlus(epId, _jsonUrl, _userId, _password, _operateAs)
-      : CredentialsBase.OfCore(epId, _connectionString);
+      ? CredentialsBase.OfCorePlus(epId, _jsonUrl, _userId, _password, _operateAs, _validateCertificate)
+      : CredentialsBase.OfCore(epId, _connectionString, _sessionTypeIsPython);
     return true;
   }
 
@@ -198,6 +204,44 @@ public sealed class CredentialsDialogViewModel : INotifyPropertyChanged {
 
       _operateAs = value;
       OnPropertyChanged();
+    }
+  }
+
+  public bool ValidateCertificate {
+    get => _validateCertificate;
+    set {
+      if (_validateCertificate == value) {
+        return;
+      }
+
+      _validateCertificate = value;
+      OnPropertyChanged();
+    }
+  }
+
+  public bool SessionTypeIsPython {
+    get => _sessionTypeIsPython;
+    set {
+      if (_sessionTypeIsPython == value) {
+        return;
+      }
+
+      _sessionTypeIsPython = value;
+      OnPropertyChanged();
+      OnPropertyChanged(nameof(SessionTypeIsGroovy));
+    }
+  }
+
+  public bool SessionTypeIsGroovy {
+    get => !_sessionTypeIsPython;
+    set {
+      if (!_sessionTypeIsPython == value) {
+        return;
+      }
+
+      _sessionTypeIsPython = !value;
+      OnPropertyChanged();
+      OnPropertyChanged(nameof(SessionTypeIsPython));
     }
   }
 
