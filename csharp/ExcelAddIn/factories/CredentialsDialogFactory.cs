@@ -1,5 +1,5 @@
 ﻿using Deephaven.ExcelAddIn.Models;
-using Deephaven.ExcelAddIn.Providers;
+using Deephaven.ExcelAddIn.Util;
 using Deephaven.ExcelAddIn.ViewModels;
 using ExcelAddIn.views;
 
@@ -23,6 +23,30 @@ internal static class CredentialsDialogFactory {
       credentialsDialog!.Close();
     }
 
+    // This is used to ignore the results from stale "Test Credentials" invocations
+    // and to only use the results from the latest. It is read and written from different
+    // threads so we protect it with a synchronization object.
+    var sharedTestCredentialsCookie = new SimpleAtomicReference<object>(new object());
+
+    void TestCredentials(CredentialsBase creds) {
+      // Set new version
+      var localLatestTcc = new object();
+      sharedTestCredentialsCookie.Value = localLatestTcc;
+
+      var state = "OK";
+      try {
+        var temp = SessionBaseFactory.Create(creds, sm.WorkerThread);
+        temp.Dispose();
+      } catch (Exception ex) {
+        state = ex.Message;
+      }
+
+      // true if the button was wasn't pressed again in the meantime
+      if (ReferenceEquals(localLatestTcc, sharedTestCredentialsCookie.Value)) {
+        credentialsDialog!.SetTestResultsBox(state);
+      }
+    }
+
     void OnTestCredentialsButtonClicked() {
       if (!cvm.TryMakeCredentials(out var newCreds, out var error)) {
         ShowMessageBox(error);
@@ -30,18 +54,8 @@ internal static class CredentialsDialogFactory {
       }
 
       credentialsDialog!.SetTestResultsBox("Checking credentials");
-
-      sm.WorkerThread.Invoke(() => {
-        var state = "OK";
-        try {
-          var temp = SessionBaseFactory.Create(newCreds, sm.WorkerThread);
-          temp.Dispose();
-        } catch (Exception ex) {
-          state = ex.Message;
-        }
-
-        credentialsDialog!.SetTestResultsBox(state);
-      });
+      // Check credentials on its own thread
+      new Thread(() => TestCredentials(newCreds)) { IsBackground = true }.Start();
     }
 
     // Save in captured variable so that the lambdas can access it.

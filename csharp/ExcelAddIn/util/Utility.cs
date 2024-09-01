@@ -7,6 +7,18 @@ internal static class Utility {
     item = newValue;
     return result;
   }
+
+  public static void RunInBackground(Action a) {
+    new Thread(() => a()) { IsBackground = true }.Start();
+  }
+
+  public static void IgnoreExceptions(Action action) {
+    try {
+      action();
+    } catch {
+      // Ignore errors
+    }
+  }
 }
 
 public class Unit {

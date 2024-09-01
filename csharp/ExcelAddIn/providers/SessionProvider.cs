@@ -11,6 +11,10 @@ internal class SessionProvider(WorkerThread workerThread) : IObservable<StatusOr
   private StatusOr<SessionBase> _session = StatusOr<SessionBase>.OfStatus("[Not connected]");
   private readonly ObserverContainer<StatusOr<CredentialsBase>> _credentialsObservers = new();
   private readonly ObserverContainer<StatusOr<SessionBase>> _sessionObservers = new();
+  /// <summary>
+  /// This is used to ignore the results from multiple invocations of "SetCredentials".
+  /// </summary>
+  private readonly SimpleAtomicReference<object> _sharedSetCredentialsCookie = new(new object());
 
   public void Dispose() {
     // Get on the worker thread if not there already.
@@ -83,12 +87,35 @@ internal class SessionProvider(WorkerThread workerThread) : IObservable<StatusOr
 
     _sessionObservers.SetAndSendStatus(ref _session, "Trying to connect");
 
+    new Thread(() => CreateSessionBaseInSeparateThread(credentials)) { IsBackground = true }.Start();
+  }
+
+  void CreateSessionBaseInSeparateThread(CredentialsBase credentials) {
+    var localLatestCookie = new object();
+    _sharedSetCredentialsCookie.Value = localLatestCookie;
+
+    StatusOr<SessionBase> result;
     try {
       var sb = SessionBaseFactory.Create(credentials, workerThread);
-      _sessionObservers.SetAndSendValue(ref _session, sb);
+      result = StatusOr<SessionBase>.OfValue(sb);
     } catch (Exception ex) {
-      _sessionObservers.SetAndSendStatus(ref _session, ex.Message);
+      result = StatusOr<SessionBase>.OfStatus(ex.Message);
     }
+
+    // By the time we get here, some time has passed. Decide whether to keep it.
+    if (!ReferenceEquals(localLatestCookie, _sharedSetCredentialsCookie.Value)) {
+      // No, it's stale. Dispose the SessionBase if we have it.
+      _ = result.AcceptVisitor(sb => {
+          sb.Dispose();
+          return Unit.Instance;
+        },
+        _ => Unit.Instance
+      );
+      return;
+    }
+
+    // Keep it and tell everyone about it (on the worker thread).
+    workerThread.Invoke(() => _sessionObservers.SetAndSend(ref _session, result));
   }
 
   public void Reconnect() {

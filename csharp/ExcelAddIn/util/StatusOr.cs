@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Windows.Forms;
 
 namespace Deephaven.ExcelAddIn.Util;
 
@@ -38,20 +39,24 @@ public static class ObserverStatusOr_Extensions {
     observer.OnNext(so);
   }
 
-  public static void SetAndSendStatus<T>(this IObserver<StatusOr<T>> observer, ref StatusOr<T> sor,
-    string message) {
-    sor = StatusOr<T>.OfStatus(message);
-    observer.OnNext(sor);
-  }
-
   public static void SendValue<T>(this IObserver<StatusOr<T>> observer, T value) {
     var so = StatusOr<T>.OfValue(value);
     observer.OnNext(so);
   }
 
+  public static void SetAndSendStatus<T>(this IObserver<StatusOr<T>> observer, ref StatusOr<T> sor,
+    string message) {
+    SetAndSend(observer, ref sor, StatusOr<T>.OfStatus(message));
+  }
+
   public static void SetAndSendValue<T>(this IObserver<StatusOr<T>> observer, ref StatusOr<T> sor,
     T value) {
-    sor = StatusOr<T>.OfValue(value);
-    observer.OnNext(sor);
+    SetAndSend(observer, ref sor, StatusOr<T>.OfValue(value));
+  }
+
+  public static void SetAndSend<T>(this IObserver<StatusOr<T>> observer, ref StatusOr<T> sor,
+    StatusOr<T> newSor) {
+    sor = newSor;
+    observer.OnNext(newSor);
   }
 }
