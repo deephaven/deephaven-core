@@ -102,19 +102,16 @@ internal class SessionProvider(WorkerThread workerThread) : IObservable<StatusOr
       result = StatusOr<SessionBase>.OfStatus(ex.Message);
     }
 
-    // By the time we get here, some time has passed. Decide whether to keep it.
+    // By the time we get here, some time has passed. Have our results become moot?
     if (!ReferenceEquals(localLatestCookie, _sharedSetCredentialsCookie.Value)) {
-      // No, it's stale. Dispose the SessionBase if we have it.
-      _ = result.AcceptVisitor(sb => {
-          sb.Dispose();
-          return Unit.Instance;
-        },
-        _ => Unit.Instance
-      );
+      // Our results are moot. Dispose of them.
+      if (result.GetValueOrStatus(out var sb, out _)) {
+        sb.Dispose();
+      }
       return;
     }
 
-    // Keep it and tell everyone about it (on the worker thread).
+    // Our results are valid. Keep them and tell everyone about it (on the worker thread).
     workerThread.Invoke(() => _sessionObservers.SetAndSend(ref _session, result));
   }
 
