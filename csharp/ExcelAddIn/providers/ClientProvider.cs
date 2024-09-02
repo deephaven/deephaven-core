@@ -70,7 +70,7 @@ internal class ClientProvider(
         }
 
         // Connect to the PQ on a separate thread
-        new Thread(() => ConnectToPq(corePlusSession.SessionManager, pqId)) { IsBackground = true }.Start();
+        Utility.RunInBackground(() => ConnectToPq(corePlusSession.SessionManager, pqId));
         return Unit.Instance;
       });
     } catch (Exception ex) {

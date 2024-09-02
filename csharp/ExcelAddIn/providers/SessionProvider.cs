@@ -87,7 +87,7 @@ internal class SessionProvider(WorkerThread workerThread) : IObservable<StatusOr
 
     _sessionObservers.SetAndSendStatus(ref _session, "Trying to connect");
 
-    new Thread(() => CreateSessionBaseInSeparateThread(credentials)) { IsBackground = true }.Start();
+    Utility.RunInBackground(() => CreateSessionBaseInSeparateThread(credentials));
   }
 
   void CreateSessionBaseInSeparateThread(CredentialsBase credentials) {
