@@ -80,7 +80,7 @@ internal class TableHandleProvider(
       return;
     }
 
-    _ = _tableHandle.GetValueOrStatus(out var oldTh, out var _);
+    _ = _tableHandle.GetValueOrStatus(out var oldTh, out _);
 
     if (oldTh != null) {
       _observers.SetAndSendStatus(ref _tableHandle, "Disposing TableHandle");

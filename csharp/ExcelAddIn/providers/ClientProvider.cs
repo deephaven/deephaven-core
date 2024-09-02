@@ -112,9 +112,10 @@ internal class ClientProvider(
       return;
     }
 
-    if (_ownedDndClient != null) {
+    var oldClient = Utility.Exchange(ref _ownedDndClient, null);
+    if (oldClient != null) {
       _observers.SetAndSendStatus(ref _client, "Disposing client");
-      _ownedDndClient.Dispose();
+      oldClient.Dispose();
     }
   }
 
