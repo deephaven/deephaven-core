@@ -36,28 +36,33 @@ public class StateManager {
 
   public IDisposable SubscribeToTableTriple(TableTriple descriptor, string filter,
     IObserver<StatusOr<TableHandle>> observer) {
-    // There is a chain with three elements.
-    // The final observer (i.e. the argument to this method) will be a subscriber to a TableHandleProvider that we create here.
-    // That TableHandleProvider will in turn be a subscriber to a session.
-
-    // So:
+    // There is a chain with multiple elements:
+    //
     // 1. Make a TableHandleProvider
-    // 2. Subscribe it to either the session provider named by the endpoint id
-    // or to the default session provider
-    // 3. Subscribe our observer to it
-    // 4. Return a dispose action that disposes both Subscribes
+    // 2. Make a ClientProvider
+    // 3. Subscribe the ClientProvider to either the session provider named by the endpoint id
+    //    or to the default session provider
+    // 4. Subscribe the TableHandleProvider to the ClientProvider
+    // 4. Subscribe our observer to the TableHandleProvider
+    // 5. Return a dispose action that disposes all the needfuls.
 
     var thp = new TableHandleProvider(WorkerThread, descriptor, filter);
+    var cp = new ClientProvider(WorkerThread, descriptor);
+
     var disposer1 = descriptor.EndpointId == null ?
-      SubscribeToDefaultSession(thp) :
-      SubscribeToSession(descriptor.EndpointId, thp);
-    var disposer2 = thp.Subscribe(observer);
+      SubscribeToDefaultSession(cp) :
+      SubscribeToSession(descriptor.EndpointId, cp);
+    var disposer2 = cp.Subscribe(thp);
+    var disposer3 = thp.Subscribe(observer);
 
     // The disposer for this needs to dispose both "inner" disposers.
     return ActionAsDisposable.Create(() => {
+      // TODO(kosak): probably don't need to be on the worker thread here
       WorkerThread.Invoke(() => {
         var temp1 = Utility.Exchange(ref disposer1, null);
         var temp2 = Utility.Exchange(ref disposer2, null);
+        var temp3 = Utility.Exchange(ref disposer3, null);
+        temp3?.Dispose();
         temp2?.Dispose();
         temp1?.Dispose();
       });

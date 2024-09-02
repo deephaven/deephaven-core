@@ -1,5 +1,5 @@
 ﻿using Deephaven.ExcelAddIn.Models;
-using Deephaven.ExcelAddIn.Providers;
+using Deephaven.ExcelAddIn.Util;
 using Deephaven.ExcelAddIn.ViewModels;
 using ExcelAddIn.views;
 
@@ -23,6 +23,43 @@ internal static class CredentialsDialogFactory {
       credentialsDialog!.Close();
     }
 
+    // This is used to ignore the results from stale "Test Credentials" invocations
+    // and to only use the results from the latest. It is read and written from different
+    // threads so we protect it with a synchronization object.
+    var sharedTestCredentialsCookie = new SimpleAtomicReference<object>(new object());
+
+    void TestCredentials(CredentialsBase creds) {
+      // Make a unique sentinel object to indicate that this thread should be
+      // the one privileged to provide the system with the answer to the "Test
+      // Credentials" question. If the user doesn't press the button again,
+      // we will go ahead and provide our answer to the system. However, if the
+      // user presses the button again, triggering a new thread, then that
+      // new thread will usurp our privilege and it will be the one to provide
+      // the answer.
+      var localLatestTcc = new object();
+      sharedTestCredentialsCookie.Value = localLatestTcc;
+
+      var state = "OK";
+      try {
+        // This operation might take some time.
+        var temp = SessionBaseFactory.Create(creds, sm.WorkerThread);
+        temp.Dispose();
+      } catch (Exception ex) {
+        state = ex.Message;
+      }
+
+      // If sharedTestCredentialsCookie is still the same, then our privilege
+      // has not been usurped and we can provide our answer to the system.
+      // On the other hand, if it changes, then we will just throw away our work.
+      if (!ReferenceEquals(localLatestTcc, sharedTestCredentialsCookie.Value)) {
+        // Our results are moot. Dispose of them.
+        return;
+      }
+
+      // Our results are valid. Keep them and tell everyone about it.
+      credentialsDialog!.SetTestResultsBox(state);
+    }
+
     void OnTestCredentialsButtonClicked() {
       if (!cvm.TryMakeCredentials(out var newCreds, out var error)) {
         ShowMessageBox(error);
@@ -30,18 +67,8 @@ internal static class CredentialsDialogFactory {
       }
 
       credentialsDialog!.SetTestResultsBox("Checking credentials");
-
-      sm.WorkerThread.Invoke(() => {
-        var state = "OK";
-        try {
-          var temp = SessionBaseFactory.Create(newCreds, sm.WorkerThread);
-          temp.Dispose();
-        } catch (Exception ex) {
-          state = ex.Message;
-        }
-
-        credentialsDialog!.SetTestResultsBox(state);
-      });
+      // Check credentials on its own thread
+      Utility.RunInBackground(() => TestCredentials(newCreds));
     }
 
     // Save in captured variable so that the lambdas can access it.

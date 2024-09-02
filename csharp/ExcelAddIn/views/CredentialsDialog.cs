@@ -51,8 +51,8 @@ namespace ExcelAddIn.views {
         vm, nameof(vm.IsDefault));
     }
 
-    public void SetTestResultsBox(string painState) {
-      Invoke(() => testResultsTextBox.Text = painState);
+    public void SetTestResultsBox(string testResultsState) {
+      Invoke(() => testResultsTextBox.Text = testResultsState);
     }
 
     private void setCredentialsButton_Click(object sender, EventArgs e) {

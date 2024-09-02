@@ -8,11 +8,9 @@ namespace Deephaven.ExcelAddIn.Providers;
 internal class TableHandleProvider(
   WorkerThread workerThread,
   TableTriple descriptor,
-  string filter) : IObserver<StatusOr<SessionBase>>, IObserver<StatusOr<Client>>,
-  IObservable<StatusOr<TableHandle>>, IDisposable {
+  string filter) : IObserver<StatusOr<Client>>, IObservable<StatusOr<TableHandle>>, IDisposable {
 
   private readonly ObserverContainer<StatusOr<TableHandle>> _observers = new();
-  private IDisposable? _pqDisposable = null;
   private StatusOr<TableHandle> _tableHandle = StatusOr<TableHandle>.OfStatus("[no TableHandle]");
 
   public IDisposable Subscribe(IObserver<StatusOr<TableHandle>> observer) {
@@ -37,47 +35,6 @@ internal class TableHandleProvider(
     }
 
     DisposePqAndThState();
-  }
-
-  public void OnNext(StatusOr<SessionBase> session) {
-    // Get onto the worker thread if we're not already on it.
-    if (workerThread.InvokeIfRequired(() => OnNext(session))) {
-      return;
-    }
-
-    try {
-      // Dispose whatever state we had before.
-      DisposePqAndThState();
-
-      // If the new state is just a status message, make that our status and transmit to our observers
-      if (!session.GetValueOrStatus(out var sb, out var status)) {
-        _observers.SetAndSendStatus(ref _tableHandle, status);
-        return;
-      }
-
-      // New state is a Core or CorePlus Session.
-      _ = sb.Visit(coreSession => {
-        // It's a Core session so just forward its client field to our own OnNext(Client) method.
-        // We test against null in the unlikely/impossible case that the session is Disposed
-        if (coreSession.Client != null) {
-          OnNext(StatusOr<Client>.OfValue(coreSession.Client));
-        }
-
-        return Unit.Instance;  // Essentially a "void" value that is ignored.
-      }, corePlusSession => {
-        // It's a CorePlus session so subscribe us to its PQ observer for the appropriate PQ ID
-        // If no PQ id was provided, that's a problem
-        var pqid = descriptor.PersistentQueryId;
-        if (pqid == null) {
-          throw new Exception("PQ id is required");
-        }
-        _observers.SetAndSendStatus(ref _tableHandle, $"Subscribing to PQ \"{pqid}\"");
-        _pqDisposable = corePlusSession.SubscribeToPq(pqid, this);
-        return Unit.Instance;
-      });
-    } catch (Exception ex) {
-      _observers.SetAndSendStatus(ref _tableHandle, ex.Message);
-    }
   }
 
   public void OnNext(StatusOr<Client> client) {
@@ -118,17 +75,16 @@ internal class TableHandleProvider(
   }
 
   private void DisposePqAndThState() {
-    _ = _tableHandle.GetValueOrStatus(out var oldTh, out var _);
-    var oldPq = Utility.Exchange(ref _pqDisposable, null);
+    // Get onto the worker thread if we're not already on it.
+    if (workerThread.InvokeIfRequired(DisposePqAndThState)) {
+      return;
+    }
+
+    _ = _tableHandle.GetValueOrStatus(out var oldTh, out _);
 
     if (oldTh != null) {
       _observers.SetAndSendStatus(ref _tableHandle, "Disposing TableHandle");
       oldTh.Dispose();
-    }
-
-    if (oldPq != null) {
-      _observers.SetAndSendStatus(ref _tableHandle, "Disposing PQ");
-      oldPq.Dispose();
     }
   }
 

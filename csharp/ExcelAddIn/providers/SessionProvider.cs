@@ -11,6 +11,10 @@ internal class SessionProvider(WorkerThread workerThread) : IObservable<StatusOr
   private StatusOr<SessionBase> _session = StatusOr<SessionBase>.OfStatus("[Not connected]");
   private readonly ObserverContainer<StatusOr<CredentialsBase>> _credentialsObservers = new();
   private readonly ObserverContainer<StatusOr<SessionBase>> _sessionObservers = new();
+  /// <summary>
+  /// This is used to ignore the results from multiple invocations of "SetCredentials".
+  /// </summary>
+  private readonly SimpleAtomicReference<object> _sharedSetCredentialsCookie = new(new object());
 
   public void Dispose() {
     // Get on the worker thread if not there already.
@@ -83,12 +87,42 @@ internal class SessionProvider(WorkerThread workerThread) : IObservable<StatusOr
 
     _sessionObservers.SetAndSendStatus(ref _session, "Trying to connect");
 
+    Utility.RunInBackground(() => CreateSessionBaseInSeparateThread(credentials));
+  }
+
+  void CreateSessionBaseInSeparateThread(CredentialsBase credentials) {
+    // Make a unique sentinel object to indicate that this thread should be
+    // the one privileged to provide the system with the Session corresponding
+    // to the credentials. If SetCredentials isn't called in the meantime,
+    // we will go ahead and provide our answer to the system. However, if
+    // SetCredentials is called again, triggering a new thread, then that
+    // new thread will usurp our privilege and it will be the one to provide
+    // the answer.
+    var localLatestCookie = new object();
+    _sharedSetCredentialsCookie.Value = localLatestCookie;
+
+    StatusOr<SessionBase> result;
     try {
+      // This operation might take some time.
       var sb = SessionBaseFactory.Create(credentials, workerThread);
-      _sessionObservers.SetAndSendValue(ref _session, sb);
+      result = StatusOr<SessionBase>.OfValue(sb);
     } catch (Exception ex) {
-      _sessionObservers.SetAndSendStatus(ref _session, ex.Message);
+      result = StatusOr<SessionBase>.OfStatus(ex.Message);
     }
+
+    // If sharedTestCredentialsCookie is still the same, then our privilege
+    // has not been usurped and we can provide our answer to the system.
+    // On the other hand, if it has changed, then we will just throw away our work.
+    if (!ReferenceEquals(localLatestCookie, _sharedSetCredentialsCookie.Value)) {
+      // Our results are moot. Dispose of them.
+      if (result.GetValueOrStatus(out var sb, out _)) {
+        sb.Dispose();
+      }
+      return;
+    }
+
+    // Our results are valid. Keep them and tell everyone about it (on the worker thread).
+    workerThread.Invoke(() => _sessionObservers.SetAndSend(ref _session, result));
   }
 
   public void Reconnect() {
