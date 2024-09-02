@@ -2,8 +2,9 @@
 
 These instructions show how to install and run the Deephaven Excel Add-In
 on Windows. These instructions also happen to build the Deephaven C# Client as a
-side-effect. However if your goal is to build the Deephaven C# Client,
-please see [repository root]/csharp/client/README.md (does not exist yet).
+side-effect. However if your goal is only to build the Deephaven C# Client,
+please see the instructions at %DHSRC%\csharp\client\README.md
+(does not exist yet).
 
 We have tested these instructions on Windows 10 and 11 with Visual Studio
 Community Edition.
@@ -117,7 +118,17 @@ devenv ExcelAddIn.sln /build Release
 
 ## Run the Add-In
 
-### From within Visual Studio
+### Environment variables
+
+Set these variables (or keep them set from the above steps) to the locations
+of your Deephaven source directory and your Deephaven install directory.
+
+```
+set DHSRC=%HOMEDRIVE%%HOMEPATH%\dhsrc
+set DHINSTALL=%HOMEDRIVE%%HOMEPATH%\dhinstall
+```
+
+### Running from within Visual Studio
 
 1. In order to actually function, the Add-In requires the C++ Client binaries
    built in the above steps. The easiest thing to do is simply copy all the
@@ -125,7 +136,7 @@ devenv ExcelAddIn.sln /build Release
 
 Assuming a Debug build:
 
-copy /Y %DHINSTALL%\bin [repository root]\csharp\ExcelAddIn\bin\Debug\net8.0-windows
+copy /Y %DHINSTALL%\bin %DHSRC%\csharp\ExcelAddIn\bin\Debug\net8.0-windows
 
 If you are doing a Release build, change "Debug" to "Release" in the above path.
 
@@ -138,15 +149,24 @@ for this session only."
 ### From standalone Excel
 
 To install the add-in into Excel, we need put the relevant files into a
-directory and then point to that directory. For simplicity, we will use
-the already-established %DHINSTALL%\bin directory, which already has all the
-relevant files except for the add-in's XLL file.
+directory and then point Excel to that directory. These steps assume you
+have already built the C# project with Visual Studio.
+
+For simplicity, we will make a folder on the Desktop called "exceladdin".
 
 ```
-copy [repository root]\csharp\ExcelAddIn\bin\Debug\net8.0-windows\publish\ExcelAddIn-Addin64-packed.xll %DHINSTALL%\bin
+set ADDINDIR=%HOMEDRIVE%%HOMEPATH%\Desktop\exceladdin
+mkdir %ADDINDIR%
 ```
 
-Note the above file comes from the "publish" subdirectory.
+Now copy the C++ files, the C# files, and the XLL file to this directory:
+```
+copy /Y %DHINSTALL%\bin\* %ADDINDIR%
+copy /Y %DHSRC%\csharp\ExcelAddIn\bin\Debug\net8.0-windows\* %ADDINDIR%
+copy /Y %DHSRC%\csharp\ExcelAddIn\bin\Debug\net8.0-windows\publish\ExcelAddIn-Addin64-packed.xll %ADDINDIR%
+```
+
+As above, if you happen to have done a Release build in C#, then change Debug to Release in the above paths.
 
 Then, run Excel and follow the following steps.
 
@@ -155,9 +175,8 @@ Then, run Excel and follow the following steps.
 3. At the bottom of the screen click, near "Manage", select "Excel Add-ins"
    from the pulldown, and then click "Go..."
 4. In the next screen click "Browse..." 
-5. Navigate to your %DHINSTALL%\bin directory and click on the ExcelAddIn-Addin64-packed.xll file that you recently copied there
+5. Navigate to your %ADDINDIR% directory and click on the ExcelAddIn-Addin64-packed.xll file that you recently copied there
 6. Click OK
-7. Click OK
 
 
 ## Test the add-in
@@ -175,15 +194,15 @@ Then, run Excel and follow the following steps.
 3. Inside Connections, click the "New Connection" button. A "Credentials
    Editor" window will pop up. Inside this window, enter "con1" for the
    Connection ID, select the "Community Core" button, and enter a nonsense
-   endpoint address like "abc.def"
+   endpoint address like "abc...def"
 
 4. Press Test Credentials. You should immediately see an error like
    "Can't get configuration constants. Error 14: DNS resolution failed for
-   abc.def"
+   abc...def"
 
 5. Enterprise users can do a similar test by selecting the Enterprise Core+
-   button. Putting a nonsense protocol like abc://def in the JSON URl field
-   will quickly lead to an error.
+   button and putting the same nonsense address abc...def into the JSON URL
+   field.
    
 ### By connecting to a Deephaven server
 
