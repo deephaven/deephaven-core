@@ -91,18 +91,28 @@ internal class SessionProvider(WorkerThread workerThread) : IObservable<StatusOr
   }
 
   void CreateSessionBaseInSeparateThread(CredentialsBase credentials) {
+    // Make a unique sentinel object to indicate that this thread should be
+    // the one privileged to provide the system with the Session corresponding
+    // to the credentials. If SetCredentials isn't called in the meantime,
+    // we will go ahead and provide our answer to the system. However, if
+    // SetCredentials is called again, triggering a new thread, then that
+    // new thread will usurp our privilege and it will be the one to provide
+    // the answer.
     var localLatestCookie = new object();
     _sharedSetCredentialsCookie.Value = localLatestCookie;
 
     StatusOr<SessionBase> result;
     try {
+      // This operation might take some time.
       var sb = SessionBaseFactory.Create(credentials, workerThread);
       result = StatusOr<SessionBase>.OfValue(sb);
     } catch (Exception ex) {
       result = StatusOr<SessionBase>.OfStatus(ex.Message);
     }
 
-    // By the time we get here, some time has passed. Have our results become moot?
+    // If sharedTestCredentialsCookie is still the same, then our privilege
+    // has not been usurped and we can provide our answer to the system.
+    // On the other hand, if it has changed, then we will just throw away our work.
     if (!ReferenceEquals(localLatestCookie, _sharedSetCredentialsCookie.Value)) {
       // Our results are moot. Dispose of them.
       if (result.GetValueOrStatus(out var sb, out _)) {
