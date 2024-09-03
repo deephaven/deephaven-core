@@ -51,9 +51,9 @@ class KeyedRecordAdapter(typing.Generic[K, T]):
 
         # Build a list of the DTypes corresponding to the key columns
         if self.is_single_key_col:
-            self.key_dtypes = self.table.columns_dict()[key_cols[0]].data_type
+            self.key_dtypes = self.table.definition[key_cols[0]].data_type
         else:
-            self.key_dtypes = [self.table.columns_dict()[col_name].data_type for col_name in key_cols]
+            self.key_dtypes = [self.table.definition[col_name].data_type for col_name in key_cols]
 
     def get_records(self, data_keys: [typing.List[K], numpy.ndarray]) -> [typing.Dict[K, T], typing.List[T]]:
         """
