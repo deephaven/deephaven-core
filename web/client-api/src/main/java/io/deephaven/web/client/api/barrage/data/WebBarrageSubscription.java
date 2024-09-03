@@ -241,12 +241,18 @@ public abstract class WebBarrageSubscription {
 
             // Apply removes to our local rowset
             message.rowsRemoved.rangeIterator().forEachRemaining(currentRowSet::removeRange);
-            if (serverViewport != null) {
+
+            RangeSet removed = message.rowsRemoved;
+            if (populatedRows != null) {
                 // limit the removed rows to what intersect the viewport
-                serverViewport.rangeIterator().forEachRemaining(r -> message.rowsRemoved.removeRange(r));
+                RangeSet populatedCopy = populatedRows.copy();
+                message.rowsRemoved.rangeIterator().forEachRemaining(populatedCopy::removeRange);
+                removed = populatedRows.copy();
+                populatedCopy.rangeIterator().forEachRemaining(removed::removeRange);
+                removed.rangeIterator().forEachRemaining(populatedRows::removeRange);
             }
             // free rows that are no longer needed
-            freeRows(message.rowsRemoved);
+            freeRows(removed);
 
             // Apply shifts
 
@@ -380,7 +386,7 @@ public abstract class WebBarrageSubscription {
             }
 
             state.setSize(currentRowSet.size());
-            dataChangedHandler.onDataChanged(message.rowsAdded, message.rowsRemoved, totalMods, message.shifted,
+            dataChangedHandler.onDataChanged(message.rowsAdded, removed, totalMods, message.shifted,
                     modifiedColumnSet);
         }
 
@@ -449,8 +455,10 @@ public abstract class WebBarrageSubscription {
         private void freeRows(RangeSet removed) {
             RangeSetBulkHelper reusableHelper = new RangeSetBulkHelper(freeset, RangeSetBulkHelper.Operation.APPEND);
             removed.indexIterator().forEachRemaining((long index) -> {
-                long dest = redirectedIndexes.remove(index);
-                reusableHelper.append(dest);
+                Long dest = redirectedIndexes.remove(index);
+                if (dest != null) {
+                    reusableHelper.append(dest);
+                }
             });
             reusableHelper.flush();
         }
