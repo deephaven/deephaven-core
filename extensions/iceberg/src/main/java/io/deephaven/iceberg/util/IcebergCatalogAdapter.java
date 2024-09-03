@@ -495,7 +495,6 @@ public class IcebergCatalogAdapter {
      * @param tableIdentifier The identifier of the table to load.
      * @return The {@link IcebergTableAdapter table adapter} for the Iceberg table.
      */
-    @Deprecated(forRemoval = true)
     public IcebergTableAdapter loadTable(final String tableIdentifier) {
         return loadTable(TableIdentifier.parse(tableIdentifier));
     }
