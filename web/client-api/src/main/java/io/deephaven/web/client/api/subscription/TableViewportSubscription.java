@@ -15,11 +15,13 @@ import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.ColumnConversionMode;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.FlattenRequest;
 import io.deephaven.util.mutable.MutableLong;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.JsRangeSet;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.TableData;
+import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.api.barrage.WebBarrageMessage;
 import io.deephaven.web.client.api.barrage.WebBarrageStreamReader;
 import io.deephaven.web.client.api.barrage.WebBarrageUtils;
@@ -27,6 +29,7 @@ import io.deephaven.web.client.api.barrage.data.WebBarrageSubscription;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
+import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.data.Range;
 import io.deephaven.web.shared.data.RangeSet;
 import io.deephaven.web.shared.data.ShiftedRange;
@@ -66,6 +69,9 @@ public class TableViewportSubscription extends AbstractTableSubscription {
     private final JsTable original;
     private final RemoverFn reconnectSubscription;
 
+    /** The initial state of the provided table, before flattening. */
+    private final ClientTableState initialState;
+
     /**
      * true if the sub is set up to not close the underlying table once the original table is done with it, otherwise
      * false.
@@ -78,18 +84,35 @@ public class TableViewportSubscription extends AbstractTableSubscription {
 
     private UpdateEventData viewportData;
 
-    public TableViewportSubscription(double firstRow, double lastRow, Column[] columns, Double updateIntervalMs,
-            JsTable existingTable) {
-        super(existingTable.state(), existingTable.getConnection());
-        this.firstRow = firstRow;
-        this.lastRow = lastRow;
-        this.columns = columns;
+    public static TableViewportSubscription make(double firstRow, double lastRow, Column[] columns,
+            Double updateIntervalMs, JsTable existingTable) {
+        ClientTableState tableState = existingTable.state();
+        WorkerConnection connection = existingTable.getConnection();
 
-        this.refresh = updateIntervalMs == null ? 1000.0 : updateIntervalMs;
+        ClientTableState flattenedState = connection.newState((callback, newState, metadata) -> {
+            FlattenRequest flatten = new FlattenRequest();
+            flatten.setSourceId(tableState.getHandle().makeTableReference());
+            flatten.setResultId(newState.getHandle().makeTicket());
+            connection.tableServiceClient().flatten(flatten, metadata, callback::apply);
+        }, "flatten");
+        flattenedState.refetch(null, connection.metadata()).then(result -> {
+            return null;
+        }, err -> {
+            return null;
+        });
+
+        TableViewportSubscription sub = new TableViewportSubscription(flattenedState, connection, existingTable);
+        sub.setInternalViewport(firstRow, lastRow, columns, updateIntervalMs, false);
+        return sub;
+    }
+
+    public TableViewportSubscription(ClientTableState state, WorkerConnection connection, JsTable existingTable) {
+        super(state, connection);
         this.original = existingTable;
 
+        initialState = existingTable.state();
         this.reconnectSubscription = existingTable.addEventListener(JsTable.EVENT_RECONNECT, e -> {
-            if (existingTable.state() == state()) {
+            if (existingTable.state() == initialState) {
                 revive();
             }
         });
@@ -186,7 +209,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
 
     @Override
     public boolean hasListeners(String name) {
-        if (originalActive && state() == original.state()) {
+        if (originalActive && initialState == original.state()) {
             if (original.hasListeners(name)) {
                 return true;
             }
@@ -204,12 +227,12 @@ public class TableViewportSubscription extends AbstractTableSubscription {
     private <T> void refire(CustomEvent<T> e) {
         // explicitly calling super.fireEvent to avoid calling ourselves recursively
         super.fireEvent(e.type, e);
-        if (originalActive && state() == original.state()) {
+        if (originalActive && initialState == original.state()) {
             // When these fail to match, it probably means that the original's state was paused, but we're still
             // holding on to it. Since we haven't been internalClose()d yet, that means we're still waiting for
             // the new state to resolve or fail, so we can be restored, or stopped. In theory, we should put this
             // assert back, and make the pause code also tell us to pause.
-            // assert state() == original.state() : "Table owning this viewport subscription forgot to release it";
+            // assert initialState == original.state() : "Table owning this viewport subscription forgot to release it";
             original.fireEvent(e.type, e);
         }
     }

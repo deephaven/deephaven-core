@@ -715,7 +715,7 @@ public class JsTable extends HasLifecycle implements HasTableBinding, JoinableTa
 
             // rewrap current state in a new one, when ready the viewport will be applied
             TableViewportSubscription replacement =
-                    new TableViewportSubscription(firstRow, lastRow, columnsCopy, updateIntervalMs, this);
+                    TableViewportSubscription.make(firstRow, lastRow, columnsCopy, updateIntervalMs, this);
 
             subscriptions.put(currentState.getHandle(), replacement);
             return replacement;
