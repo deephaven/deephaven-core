@@ -55,8 +55,8 @@ public class CompositeTableDataService extends AbstractTableDataService {
 
     @Override
     @Nullable
-    public TableLocationProvider getRawTableLocationProvider(@NotNull TableKey tableKey,
-            @NotNull TableLocationKey tableLocationKey) {
+    public TableLocationProvider getRawTableLocationProvider(@NotNull final TableKey tableKey,
+            @NotNull final TableLocationKey tableLocationKey) {
         final TableDataService[] services = serviceSelector.call(tableKey);
 
         if (services == null || services.length == 0) {

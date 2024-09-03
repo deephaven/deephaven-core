@@ -49,8 +49,8 @@ public class FilteredTableDataService extends AbstractTableDataService {
 
     @Override
     @Nullable
-    public TableLocationProvider getRawTableLocationProvider(@NotNull TableKey tableKey,
-            @NotNull TableLocationKey tableLocationKey) {
+    public TableLocationProvider getRawTableLocationProvider(@NotNull final TableKey tableKey,
+            @NotNull final TableLocationKey tableLocationKey) {
         if (!locationKeyFilter.accept(tableLocationKey)) {
             return null;
         }
