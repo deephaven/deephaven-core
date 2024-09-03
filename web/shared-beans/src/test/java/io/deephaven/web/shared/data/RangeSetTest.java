@@ -212,6 +212,41 @@ public class RangeSetTest {
         assertFalse(rangeSet.includesAllOf(RangeSet.ofRange(54, 60)));
     }
 
+    @Test
+    public void testIncludesAnyOf() {
+        RangeSet rangeSet = new RangeSet();
+        rangeSet.addRange(new Range(0, 19));
+        rangeSet.addRange(new Range(50, 54));
+
+        assertTrue(rangeSet.includesAnyOf(new Range(0, 19)));
+        assertTrue(rangeSet.includesAnyOf(new Range(50, 54)));
+
+        rangeSet.indexIterator().forEachRemaining((LongConsumer) l -> {
+            assertTrue(rangeSet.includesAnyOf(new Range(l, l)));
+        });
+
+        assertTrue(rangeSet.includesAnyOf(new Range(0, 20)));
+        assertTrue(rangeSet.includesAnyOf(new Range(10, 20)));
+        assertTrue(rangeSet.includesAnyOf(new Range(19, 20)));
+
+        assertTrue(rangeSet.includesAnyOf(new Range(19, 30)));
+        assertFalse(rangeSet.includesAnyOf(new Range(20, 30)));
+        assertFalse(rangeSet.includesAnyOf(new Range(21, 30)));
+
+        assertFalse(rangeSet.includesAnyOf(new Range(30, 40)));
+
+        assertFalse(rangeSet.includesAnyOf(new Range(40, 49)));
+        assertTrue(rangeSet.includesAnyOf(new Range(40, 50)));
+        assertFalse(rangeSet.includesAnyOf(new Range(40, 41)));
+        assertTrue(rangeSet.includesAnyOf(new Range(40, 54)));
+
+        assertTrue(rangeSet.includesAnyOf(new Range(49, 54)));
+        assertTrue(rangeSet.includesAnyOf(new Range(50, 55)));
+        assertTrue(rangeSet.includesAnyOf(new Range(50, 60)));
+
+        assertTrue(rangeSet.includesAnyOf(new Range(54, 60)));
+        assertFalse(rangeSet.includesAnyOf(new Range(55, 60)));
+    }
 
     @Test
     public void testRemove() {

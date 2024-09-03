@@ -259,7 +259,9 @@ public abstract class WebBarrageSubscription {
             // Shift moved rows in the redir index
             boolean hasReverseShift = COLUMNS_AS_LIST;
             final ShiftedRange[] shiftedRanges = message.shifted;
-            RangeSetBulkHelper currentRowsetShifter =
+            RangeSetBulkHelper currentRowsetAddShifter =
+                    new RangeSetBulkHelper(currentRowSet, RangeSetBulkHelper.Operation.APPEND);
+            RangeSetBulkHelper currentRowsetRemoveShifter =
                     new RangeSetBulkHelper(currentRowSet, RangeSetBulkHelper.Operation.APPEND);
             RangeSetBulkHelper populatedRowsetShifter = populatedRows == null ? null
                     : new RangeSetBulkHelper(populatedRows, RangeSetBulkHelper.Operation.APPEND);
@@ -270,8 +272,15 @@ public abstract class WebBarrageSubscription {
                     hasReverseShift = true;
                     continue;
                 }
-                currentRowSet.removeRange(shiftedRange.getRange());
+                currentRowsetRemoveShifter.appendRange(shiftedRange.getRange());
+                currentRowsetAddShifter.appendRange(shiftedRange.getResultRange());
+
+                // test if shift is in populatedRows before continuing
                 if (populatedRows != null) {
+                    if (!populatedRows.includesAnyOf(shiftedRange.getRange())) {
+                        // no rows were included, we can skip updating populatedRows and redirectedIndexes
+                        continue;
+                    }
                     populatedRows.removeRange(shiftedRange.getRange());
                 }
                 final NavigableSet<Long> toMove = redirectedIndexes.navigableKeySet()
@@ -281,12 +290,12 @@ public abstract class WebBarrageSubscription {
                     long shiftedKey = key + offset;
                     Long oldValue = redirectedIndexes.put(shiftedKey, redirectedIndexes.remove(key));
                     assert oldValue == null : shiftedKey + " already has a value, " + oldValue;
-                    currentRowsetShifter.append(shiftedKey);
                     if (populatedRowsetShifter != null) {
                         populatedRowsetShifter.append(shiftedKey);
                     }
                 }
             }
+
             if (hasReverseShift) {
                 for (int i = 0; i < shiftedRanges.length; ++i) {
                     final ShiftedRange shiftedRange = shiftedRanges[i];
@@ -294,8 +303,14 @@ public abstract class WebBarrageSubscription {
                     if (offset > 0) {
                         continue;
                     }
-                    currentRowSet.removeRange(shiftedRange.getRange());
+                    currentRowsetRemoveShifter.appendRange(shiftedRange.getRange());
+                    currentRowsetAddShifter.appendRange(shiftedRange.getResultRange());
+
                     if (populatedRows != null) {
+                        if (!populatedRows.includesAnyOf(shiftedRange.getRange())) {
+                            // no rows were included, we can skip updating populatedRows and redirectedIndexes
+                            continue;
+                        }
                         populatedRows.removeRange(shiftedRange.getRange());
                     }
                     final NavigableSet<Long> toMove = redirectedIndexes.navigableKeySet()
@@ -305,14 +320,14 @@ public abstract class WebBarrageSubscription {
                         long shiftedKey = key + offset;
                         Long oldValue = redirectedIndexes.put(shiftedKey, redirectedIndexes.remove(key));
                         assert oldValue == null : shiftedKey + " already has a value, " + oldValue;
-                        currentRowsetShifter.append(shiftedKey);
                         if (populatedRowsetShifter != null) {
                             populatedRowsetShifter.append(shiftedKey);
                         }
                     }
                 }
             }
-            currentRowsetShifter.flush();
+            currentRowsetAddShifter.flush();
+            currentRowsetRemoveShifter.flush();
             if (populatedRowsetShifter != null) {
                 populatedRowsetShifter.flush();
             }
@@ -507,6 +522,25 @@ public abstract class WebBarrageSubscription {
                 }
                 currentFirst = key;
                 currentLast = key;
+            }
+        }
+
+        public void appendRange(Range range) {
+            if (currentFirst == -1) {
+                currentFirst = range.getFirst();
+                currentLast = range.getLast();
+            } else if (range.getFirst() == currentLast + 1) {
+                currentLast = range.getLast();
+            } else if (range.getLast() == currentFirst - 1) {
+                currentFirst = range.getFirst();
+            } else {
+                if (operation == Operation.APPEND) {
+                    rangeSet.addRange(new Range(currentFirst, currentLast));
+                } else {
+                    rangeSet.removeRange(new Range(currentFirst, currentLast));
+                }
+                currentFirst = range.getFirst();
+                currentLast = range.getLast();
             }
         }
 

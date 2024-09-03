@@ -346,6 +346,39 @@ public class RangeSet {
         return true;
     }
 
+    public boolean includesAnyOf(Range range) {
+        if (isEmpty()) {
+            return false;
+        }
+        // search the sorted list of ranges and find where the current range starts. two case here when using
+        // binarySearch, either the removed range starts in the same place as an existing range starts, or
+        // it starts before an item (and so we check the item before and the item after)
+        int index = Arrays.binarySearch(sortedRanges, range);
+        if (index >= 0) {
+            // matching start position
+            return true;
+        }
+        // adjusted index notes where the item would be if it were added, minus _one more_ to see if
+        // it overlaps the item before it. To compute "the position where the new item belongs", we
+        // would do (-index - 1), so to examine one item prior to that we'll subtract one more. Then,
+        // to confirm that we are inserting in a valid position, take the max of that value and zero.
+        index = Math.max(0, -index - 2);
+
+        // Check if there is any overlap with the prev item
+        Range target = sortedRanges[index];
+        if (range.getFirst() <= target.getLast() && range.getLast() >= target.getFirst()) {
+            return true;
+        }
+
+        // Check if there is a later item, and if there is an overlap with it
+        index++;
+        if (index >= sortedRanges.length) {
+            return false;
+        }
+        target = sortedRanges[index];
+        return range.getFirst() <= target.getLast() && range.getLast() >= target.getFirst();
+    }
+
     @Override
     public String toString() {
         return "RangeSet{" +
@@ -454,6 +487,7 @@ public class RangeSet {
                 long c = cardinality[pos];
                 offset = c - nextPosRange.getFirst();// positive value to offset backwards from the end of target
             }
+            assert target != null : this + ".subsetForPositions(" + positions + ")";
             assert offset >= 0 && offset <= target.size() : offset;
             first = target.getLast() - offset + 1;
 
