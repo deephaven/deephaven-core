@@ -817,11 +817,8 @@ class Table(JObjectWrapper):
         return Table(j_table=self.j_table.flatten())
 
     def remove_blink(self) -> Table:
-        """Returns a new version of this table without specialized blink table aggregation semantics."""
-        try:
-            return Table(j_table=self.j_table.removeBlink())
-        except Exception as e:
-            raise DHError(e, "failed to remove blink table semantics.") from e
+        """Returns a non-blink child table, or this table if it is not a blink table."""
+        return Table(j_table=self.j_table.removeBlink())
 
     def snapshot(self) -> Table:
         """Returns a static snapshot table.
