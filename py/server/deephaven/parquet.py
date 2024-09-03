@@ -177,7 +177,7 @@ def read(
         is_refreshing (bool): if the parquet data represents a refreshing source
         file_layout (Optional[ParquetFileLayout]): the parquet file layout, by default None. When None, the layout is
             inferred.
-        table_definition (Union[Dict[str, DType], List[Column], None]): the table definition, by default None. When None,
+        table_definition (Optional[TableDefinitionLike]): the table definition, by default None. When None,
             the definition is inferred from the parquet file(s). Setting a definition guarantees the returned table will
             have that definition. This is useful for bootstrapping purposes when the initially partitioned directory is
             empty and is_refreshing=True. It is also useful for specifying a subset of the parquet definition.
@@ -250,7 +250,7 @@ def write(
         path (str): the destination file path or URI; the file name should end in a ".parquet" extension. If the path
             includes any non-existing directories, they are created. If there is an error, any intermediate directories
             previously created are removed; note this makes this method unsafe for concurrent use
-        table_definition (Optional[Union[Dict[str, DType], List[Column]]): the table definition to use for writing,
+        table_definition (Optional[TableDefinitionLike]): the table definition to use for writing,
             instead of the definitions implied by the table. Default is None, which means use the column definitions
             implied by the table. This definition can be used to skip some columns or add additional columns with
             null values.
@@ -322,7 +322,7 @@ def write_partitioned(
         destination_dir (str): The path or URI to the destination root directory in which the partitioned parquet data
             will be stored in a nested directory structure format. Non-existing directories in the provided path will be
             created.
-        table_definition (Optional[Union[Dict[str, DType], List[Column]]): the table definition to use for writing,
+        table_definition (Optional[TableDefinitionLike]): the table definition to use for writing,
             instead of the definitions implied by the table. Default is None, which means use the column definitions
             implied by the table. This definition can be used to skip some columns or add additional columns with
             null values.
@@ -405,7 +405,7 @@ def batch_write(
         paths (List[str]): the destination paths or URIs. Any non-existing directories in the paths provided are
             created. If there is an error, any intermediate directories previously created are removed; note this makes
             this method unsafe for concurrent use
-        table_definition (Optional[Union[Dict[str, DType], List[Column]]]): the table definition to use for writing.
+        table_definition (Optional[TableDefinitionLike]): the table definition to use for writing.
             This definition can be used to skip some columns or add additional columns with null values. Default is
             None, which means if all tables have the same definition, use the common table definition implied by the
             tables. Otherwise, this parameter must be specified.

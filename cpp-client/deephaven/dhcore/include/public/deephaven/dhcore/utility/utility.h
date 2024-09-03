@@ -218,6 +218,19 @@ std::string Basename(std::string_view path);
 [[nodiscard]] std::optional<std::string> GetEnv(const std::string& envname);
 
 /**
+ * Sets a value in the environment.
+ * @param envname the key
+ * @param value the value to set in the environment
+ */
+void SetEnv(const std::string& envname, const std::string& value);
+
+/**
+ * Unsets a value in the environment.
+ * @param envname the key to unset
+ */
+void UnsetEnv(const std::string& envname);
+
+/**
  * Enables or disables echo for stdin.
  * @param enable true to enable, false to disable
  */

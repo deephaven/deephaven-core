@@ -9,17 +9,21 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.extensions.s3.S3Instructions;
 import io.deephaven.iceberg.TestCatalog.IcebergTestCatalog;
 import io.deephaven.iceberg.TestCatalog.IcebergTestFileIO;
+import io.deephaven.test.types.OutOfBandTest;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.Namespace;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.io.FileIO;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import software.amazon.awssdk.core.async.AsyncRequestBody;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
@@ -47,6 +51,7 @@ import static io.deephaven.iceberg.util.IcebergCatalogAdapter.NAMESPACE_DEFINITI
 import static io.deephaven.iceberg.util.IcebergCatalogAdapter.TABLES_DEFINITION;
 import static io.deephaven.iceberg.util.IcebergTableAdapter.SNAPSHOT_DEFINITION;
 
+@Category(OutOfBandTest.class)
 public abstract class IcebergToolsTest {
 
     private static final TableDefinition SALES_SINGLE_DEFINITION = TableDefinition.of(
@@ -110,8 +115,11 @@ public abstract class IcebergToolsTest {
     private Catalog resourceCatalog;
     private FileIO resourceFileIO;
 
-    @BeforeEach
-    void setUp() throws ExecutionException, InterruptedException {
+    @Rule
+    public final EngineCleanup framework = new EngineCleanup();
+
+    @Before
+    public void setUp() throws ExecutionException, InterruptedException {
         bucket = "warehouse";
         asyncClient = s3AsyncClient();
         asyncClient.createBucket(CreateBucketRequest.builder().bucket(bucket).build()).get();
@@ -127,6 +135,16 @@ public abstract class IcebergToolsTest {
         instructions = IcebergInstructions.builder()
                 .dataInstructions(s3Instructions)
                 .build();
+    }
+
+    @After
+    public void tearDown() throws ExecutionException, InterruptedException {
+        for (String key : keys) {
+            asyncClient.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(key).build()).get();
+        }
+        keys.clear();
+        asyncClient.deleteBucket(DeleteBucketRequest.builder().bucket(bucket).build()).get();
+        asyncClient.close();
     }
 
     private void uploadParquetFiles(final File root, final String prefixToRemove)
@@ -173,16 +191,6 @@ public abstract class IcebergToolsTest {
     private void uploadSalesRenamed() throws ExecutionException, InterruptedException, TimeoutException {
         uploadParquetFiles(new File(IcebergToolsTest.class.getResource("/warehouse/sales/sales_renamed").getPath()),
                 warehousePath);
-    }
-
-    @AfterEach
-    public void tearDown() throws ExecutionException, InterruptedException {
-        for (String key : keys) {
-            asyncClient.deleteObject(DeleteObjectRequest.builder().bucket(bucket).key(key).build()).get();
-        }
-        keys.clear();
-        asyncClient.deleteBucket(DeleteBucketRequest.builder().bucket(bucket).build()).get();
-        asyncClient.close();
     }
 
     @Test
@@ -834,7 +842,7 @@ public abstract class IcebergToolsTest {
         final TableIdentifier tableId = TableIdentifier.of(ns, "all_types");
 
         // Verify we retrieved all the rows.
-        final io.deephaven.engine.table.Table table = adapter.readTable(tableId, instructions);
+        final io.deephaven.engine.table.Table table = adapter.readTable(tableId, instructions).select();
         Assert.eq(table.size(), "table.size()", 10, "10 rows in the table");
         Assert.equals(table.getDefinition(), "table.getDefinition()", ALL_TYPES_DEF);
     }

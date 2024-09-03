@@ -93,9 +93,12 @@ class TableFactoryTestCase(BaseTestCase):
 
     def test_time_table_error(self):
         with self.assertRaises(DHError) as cm:
-            t = time_table("PT00:0a:01")
+            time_table("PT00:0a:01")
 
         self.assertIn("DateTimeParseException", cm.exception.root_cause)
+
+        with self.assertRaises(DHError):
+            time_table(None)
 
     def test_merge(self):
         t1 = self.test_table.update(formulas=["Timestamp=epochNanosToInstant(0L)"])
