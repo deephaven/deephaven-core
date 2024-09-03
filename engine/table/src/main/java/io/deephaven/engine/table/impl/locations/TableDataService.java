@@ -33,8 +33,8 @@ public interface TableDataService {
      * @throws TableDataException if the TableLocationKey is provided by more than one TableLocationProvider
      */
     @Nullable
-    default TableLocationProvider getRawTableLocationProvider(@NotNull TableKey tableKey,
-            @NotNull TableLocationKey tableLocationKey) {
+    default TableLocationProvider getRawTableLocationProvider(@NotNull final TableKey tableKey,
+            @NotNull final TableLocationKey tableLocationKey) {
         return getTableLocationProvider(tableKey);
     }
 
