@@ -28,7 +28,7 @@ public interface TableDataService {
      * @param tableKey The {@link TableKey} to lookup
      * @param tableLocationKey The {@link TableLocationKey} to lookup
      * @return The raw {@link TableLocationProvider} for the specified {@link TableKey} and {@link TableLocationKey}, or
-     *         {@code null} the table location is not present
+     *         {@code null} if the table location is not present
      * @implSpec Non-raw {@link TableDataService TableDataServices} must implement this method.
      * @throws TableDataException if the TableLocationKey is provided by more than one TableLocationProvider
      */
