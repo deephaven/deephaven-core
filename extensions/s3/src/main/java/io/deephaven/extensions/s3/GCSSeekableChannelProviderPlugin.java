@@ -11,8 +11,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.net.URI;
 
-import static io.deephaven.extensions.s3.S3Instructions.DEFAULT_ENDPOINT_OVERRIDE_FOR_GCS;
-
 /**
  * {@link SeekableChannelsProviderPlugin} implementation used for reading files from Google Cloud Storage.
  */
@@ -20,7 +18,11 @@ import static io.deephaven.extensions.s3.S3Instructions.DEFAULT_ENDPOINT_OVERRID
 public final class GCSSeekableChannelProviderPlugin implements SeekableChannelsProviderPlugin {
 
     static final String GCS_URI_SCHEME = "gs";
+
     private static final String ENDPOINT_OVERRIDE_SUFFIX = ".googleapis.com";
+    private static final URI DEFAULT_ENDPOINT_OVERRIDE = URI.create("https://storage.googleapis.com");
+    private static final S3Instructions DEFAULT_INSTRUCTIONS =
+            S3Instructions.builder().endpointOverride(DEFAULT_ENDPOINT_OVERRIDE).build();
 
     @Override
     public boolean isCompatible(@NotNull final URI uri, @Nullable final Object config) {
@@ -40,7 +42,7 @@ public final class GCSSeekableChannelProviderPlugin implements SeekableChannelsP
      */
     private static S3Instructions s3Instructions(@Nullable final Object config) {
         if (config == null) {
-            return S3Instructions.DEFAULT_FOR_GCS;
+            return DEFAULT_INSTRUCTIONS;
         }
         if (!(config instanceof S3Instructions)) {
             throw new IllegalArgumentException("Only S3Instructions are valid when reading GCS URIs, " +
@@ -48,7 +50,7 @@ public final class GCSSeekableChannelProviderPlugin implements SeekableChannelsP
         }
         final S3Instructions s3Instructions = (S3Instructions) config;
         if (s3Instructions.endpointOverride().isEmpty()) {
-            return s3Instructions.withEndpointOverride(DEFAULT_ENDPOINT_OVERRIDE_FOR_GCS);
+            return s3Instructions.withEndpointOverride(DEFAULT_ENDPOINT_OVERRIDE);
         }
         if (!(s3Instructions.endpointOverride().get()).toString().endsWith(ENDPOINT_OVERRIDE_SUFFIX)) {
             throw new IllegalArgumentException("Provided endpoint override=(" +
