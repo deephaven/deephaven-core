@@ -3786,7 +3786,7 @@ class MultiJoinInput(JObjectWrapper):
             table (Table): the right table to include in the join
             on (Union[str, Sequence[str]]): the column(s) to match, can be a common name or an equal expression,
                 i.e. "col_a = col_b" for different column names
-            joins (Union[str, Sequence[str]], optional): the column(s) to be added from the this table to the result
+            joins (Union[str, Sequence[str]], optional): the column(s) to be added from the table to the result
                 table, can be renaming expressions, i.e. "new_col = col"; default is None
 
         Raises:

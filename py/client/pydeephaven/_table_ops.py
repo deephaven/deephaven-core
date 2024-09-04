@@ -687,3 +687,26 @@ class MetaTableOp(TableOp):
     def make_grpc_request_for_batch(self, result_id, source_id) -> Any:
         return table_pb2.BatchTableRequest.Operation(
             meta_table=self.make_grpc_request(result_id=result_id, source_id=source_id))
+
+
+class MultijoinTablesOp(TableOp):
+    def __init__(self, multi_join_inputs: List["MultiJoinInput"]):
+        self.multi_join_inputs = multi_join_inputs
+
+    @classmethod
+    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub) -> Any:
+        return table_service_stub.MultiJoinTables
+
+    def make_grpc_request(self, result_id, source_id) -> Any:
+        pb_inputs = []
+        for mji in self.multi_join_inputs:
+            source_id = table_pb2.TableReference(ticket=mji.table.ticket)
+            columns_to_match = mji.on
+            columns_to_add = mji.joins
+            pb_inputs.append(table_pb2.MultiJoinInput(source_id=source_id, columns_to_match=columns_to_match,
+                                                   columns_to_add=columns_to_add))
+        return table_pb2.MultiJoinTablesRequest(result_id=result_id, multi_join_inputs=pb_inputs)
+
+    def make_grpc_request_for_batch(self, result_id, source_id) -> Any:
+        return table_pb2.BatchTableRequest.Operation(
+            multi_join=self.make_grpc_request(result_id=result_id, source_id=source_id))
