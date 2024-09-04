@@ -175,31 +175,27 @@ public class FilteredTableDataService extends AbstractTableDataService {
         }
 
         @Override
-        public void handleTableLocationKeyAdded(
-                @NotNull final ImmutableTableLocationKey tableLocationKey,
-                @Nullable final Object transactionToken) {
+        public void handleTableLocationKeyAdded(@NotNull final ImmutableTableLocationKey tableLocationKey) {
             final TableLocationProvider.Listener outputListener = getWrapped();
             // We can't try to clean up null listeners here, the underlying implementation may not allow concurrent
             // unsubscribe operations.
             if (outputListener != null && locationKeyFilter.accept(tableLocationKey)) {
-                outputListener.handleTableLocationKeyAdded(tableLocationKey, transactionToken);
+                outputListener.handleTableLocationKeyAdded(tableLocationKey);
             }
         }
 
         @Override
-        public void handleTableLocationKeyRemoved(
-                @NotNull final ImmutableTableLocationKey tableLocationKey,
-                @Nullable final Object transactionToken) {
+        public void handleTableLocationKeyRemoved(@NotNull final ImmutableTableLocationKey tableLocationKey) {
             final TableLocationProvider.Listener outputListener = getWrapped();
             if (outputListener != null && locationKeyFilter.accept(tableLocationKey)) {
-                outputListener.handleTableLocationKeyRemoved(tableLocationKey, transactionToken);
+                outputListener.handleTableLocationKeyRemoved(tableLocationKey);
             }
         }
 
         @Override
         public void handleTableLocationKeysUpdate(
-                @Nullable Collection<ImmutableTableLocationKey> addedKeys,
-                @Nullable Collection<ImmutableTableLocationKey> removedKeys) {
+                @NotNull Collection<ImmutableTableLocationKey> addedKeys,
+                @NotNull Collection<ImmutableTableLocationKey> removedKeys) {
             final TableLocationProvider.Listener outputListener = getWrapped();
             if (outputListener != null) {
                 outputListener.handleTableLocationKeysUpdate(addedKeys, removedKeys);

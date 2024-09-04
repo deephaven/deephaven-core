@@ -971,7 +971,7 @@ public abstract class IcebergToolsTest {
         Assert.eq(table.size(), "table.size()", 18073, "rows in the table");
         Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_MULTI_DEFINITION);
 
-        updateGraph.runWithinUnitTestCycle(() ->{
+        updateGraph.runWithinUnitTestCycle(() -> {
             table.update(snapshots.get(1).snapshotId());
         });
         Assert.eq(table.size(), "table.size()", 54433, "rows in the table");
@@ -1020,7 +1020,7 @@ public abstract class IcebergToolsTest {
         Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_MULTI_DEFINITION);
 
         icebergTable.advanceSequenceNumber();
-        updateGraph.runWithinUnitTestCycle(() ->{
+        updateGraph.runWithinUnitTestCycle(() -> {
         });
         Assert.eq(table.size(), "table.size()", 54433, "rows in the table");
         Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_MULTI_DEFINITION);

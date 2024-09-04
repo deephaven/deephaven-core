@@ -71,7 +71,7 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
                 // NB: Providers that don't support subscriptions don't tick - this single call to run is
                 // sufficient.
                 tableLocationProvider.refresh();
-                handleTableLocationKeysUpdate(tableLocationProvider.getTableLocationKeys(), null);
+                handleTableLocationKeysUpdate(tableLocationProvider.getTableLocationKeys(), List.of());
             }
             subscribed = true;
         }
@@ -126,14 +126,8 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
     }
 
     @Override
-    public void handleTableLocationKeyAdded(
-            @NotNull final ImmutableTableLocationKey tableLocationKey,
-            @Nullable Object transactionToken) {
+    public void handleTableLocationKeyAdded(@NotNull final ImmutableTableLocationKey tableLocationKey) {
         synchronized (updateLock) {
-            if (transactionToken != null) {
-                throw new UnsupportedOperationException("Transactions are not supported by this provider.");
-            }
-
             // Need to verify that we don't have stacked adds (without intervening removes).
             if (pendingLocationsAdded.contains(tableLocationKey)) {
                 throw new IllegalStateException("TableLocationKey " + tableLocationKey
@@ -147,14 +141,8 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
     }
 
     @Override
-    public void handleTableLocationKeyRemoved(
-            @NotNull final ImmutableTableLocationKey tableLocationKey,
-            final Object transactionToken) {
+    public void handleTableLocationKeyRemoved(@NotNull final ImmutableTableLocationKey tableLocationKey) {
         synchronized (updateLock) {
-            if (transactionToken != null) {
-                throw new UnsupportedOperationException("Transactions are not supported by this provider.");
-            }
-
             // If we have a pending add, it is being cancelled by this remove.
             if (pendingLocationsAdded.remove(tableLocationKey)) {
                 return;

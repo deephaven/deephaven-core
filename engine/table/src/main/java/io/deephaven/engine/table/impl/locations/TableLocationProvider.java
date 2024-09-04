@@ -41,24 +41,6 @@ public interface TableLocationProvider extends NamedImplementation {
         void endTransaction(@NotNull Object token);
 
         /**
-         * <p>
-         * Notify the listener of a {@link TableLocationKey} encountered while initiating or maintaining the location
-         * subscription. This should occur at most once per location, but the order of delivery is <i>not</i>
-         * guaranteed.
-         * </p>
-         * <p>
-         * If transactionToken is {@code null}, the key will be added to the pending additions immediately.
-         * </p>
-         *
-         * @param tableLocationKey The new table location key.
-         * @param transactionToken The token identifying the transaction, or {@code null} if this addition is not part
-         *        of a transaction.
-         */
-        void handleTableLocationKeyAdded(
-                @NotNull ImmutableTableLocationKey tableLocationKey,
-                @Nullable Object transactionToken);
-
-        /**
          * Notify the listener of a {@link TableLocationKey} encountered while initiating or maintaining the location
          * subscription. This should occur at most once per location, but the order of delivery is <i>not</i>
          * guaranteed. This addition is not part of any transaction, and is equivalent to
@@ -66,50 +48,33 @@ public interface TableLocationProvider extends NamedImplementation {
          *
          * @param tableLocationKey The new table location key.
          */
-        default void handleTableLocationKeyAdded(@NotNull ImmutableTableLocationKey tableLocationKey) {
-            handleTableLocationKeyAdded(tableLocationKey, null);
-        }
+        void handleTableLocationKeyAdded(@NotNull ImmutableTableLocationKey tableLocationKey);
 
         /**
-         * <p>
-         * Notify the listener of a {@link TableLocationKey} that has been removed.
-         * </p>
-         * <p>
-         * If transactionToken is {@code null}, the key will be added to the pending removals immediately.
-         * </p>
-         *
-         * @param tableLocationKey The table location key that was removed.
-         * @param transactionToken The token identifying the transaction, or {@code null} if this addition is not part
-         *        of a transaction.
-         */
-        void handleTableLocationKeyRemoved(
-                @NotNull ImmutableTableLocationKey tableLocationKey,
-                @Nullable Object transactionToken);
-
-        /**
-         * Notify the listener of a {@link TableLocationKey} that has been removed. This addition is not part of any
-         * transaction, and is equivalent to {@code handleTableLocationKeyAdded(tableLocationKey, null);} by default.
+         * Notify the listener of a {@link TableLocationKey} that has been removed. This removal is not part of any
+         * transaction, and is equivalent to {@code handleTableLocationKeyRemoved(tableLocationKey, null);} by default.
          *
          * @param tableLocationKey The table location key that was removed.
          */
         @SuppressWarnings("unused")
-        default void handleTableLocationKeyRemoved(@NotNull ImmutableTableLocationKey tableLocationKey) {
-            handleTableLocationKeyRemoved(tableLocationKey, null);
-        }
+        void handleTableLocationKeyRemoved(@NotNull ImmutableTableLocationKey tableLocationKey);
 
         /**
          * <p>
          * Notify the listener of collections of {@link TableLocationKey TableLocationKeys} added or removed while
-         * initiating or maintaining the location subscription. This should occur at most once per location, but the
-         * order of delivery is <i>not</i> guaranteed.
+         * initiating or maintaining the location subscription. Addition or removal should occur at most once per
+         * location, but the order of delivery is <i>not</i> guaranteed.
          * </p>
          *
          * @param addedKeys Collection of table location keys that were added.
          * @param removedKeys Collection of table location keys that were removed.
          */
-        void handleTableLocationKeysUpdate(
-                @Nullable Collection<ImmutableTableLocationKey> addedKeys,
-                @Nullable Collection<ImmutableTableLocationKey> removedKeys);
+        default void handleTableLocationKeysUpdate(
+                @NotNull Collection<ImmutableTableLocationKey> addedKeys,
+                @NotNull Collection<ImmutableTableLocationKey> removedKeys) {
+            removedKeys.forEach(this::handleTableLocationKeyRemoved);
+            addedKeys.forEach(this::handleTableLocationKeyAdded);
+        }
     }
 
     /**

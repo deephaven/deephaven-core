@@ -258,7 +258,7 @@ public abstract class AbstractTableLocation
     /**
      * Decrement the reference count by one, when the reference count reaches zero this location will be cleared.
      *
-     * @throws IllegalStateException If the reference count was not successfully incremented
+     * @throws IllegalStateException If the reference count was not successfully decremented
      */
     public void decrementReferenceCount() {
         referenceCounted.decrementReferenceCount();
