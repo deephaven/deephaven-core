@@ -5,10 +5,14 @@ package io.deephaven.iceberg.util;
 
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.context.ExecutionContext;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
+import io.deephaven.engine.testutil.ControlledUpdateGraph;
+import io.deephaven.engine.testutil.GenerateTableUpdates;
+import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.extensions.s3.S3Instructions;
 import io.deephaven.iceberg.TestCatalog.IcebergTestCatalog;
@@ -201,12 +205,12 @@ public abstract class IcebergToolsTest {
         final Collection<String> namespaceNames =
                 namespaces.stream().map(Namespace::toString).collect(Collectors.toList());
 
-        Assert.eq(namespaceNames.size(), "namespaceNames.size()", 2, "2 namespace in the catalog");
+        Assert.eq(namespaceNames.size(), "namespaceNames.size()", 2, "namespace in the catalog");
         Assert.eqTrue(namespaceNames.contains("sales"), "namespaceNames.contains(sales)");
         Assert.eqTrue(namespaceNames.contains("sample"), "namespaceNames.contains(sample)");
 
         final Table table = adapter.namespaces();
-        Assert.eq(table.size(), "table.size()", 2, "2 namespace in the catalog");
+        Assert.eq(table.size(), "table.size()", 2, "namespace in the catalog");
         Assert.equals(table.getDefinition(), "table.getDefinition()", NAMESPACE_DEFINITION);
     }
 
@@ -217,7 +221,7 @@ public abstract class IcebergToolsTest {
         final Namespace ns = Namespace.of("sales");
 
         Collection<TableIdentifier> tables = adapter.listTables(ns);
-        Assert.eq(tables.size(), "tables.size()", 4, "4 tables in the namespace");
+        Assert.eq(tables.size(), "tables.size()", 4, "tables in the namespace");
         Assert.eqTrue(tables.contains(TableIdentifier.of(ns, "sales_multi")), "tables.contains(sales_multi)");
         Assert.eqTrue(tables.contains(TableIdentifier.of(ns, "sales_partitioned")),
                 "tables.contains(sales_partitioned)");
@@ -225,12 +229,12 @@ public abstract class IcebergToolsTest {
         Assert.eqTrue(tables.contains(TableIdentifier.of(ns, "sales_renamed")), "tables.contains(sales_renamed)");
 
         Table table = adapter.tables(ns);
-        Assert.eq(table.size(), "table.size()", 4, "4 tables in the namespace");
+        Assert.eq(table.size(), "table.size()", 4, "tables in the namespace");
         Assert.equals(table.getDefinition(), "table.getDefinition()", TABLES_DEFINITION);
 
         // Test the string versions of the methods
         table = adapter.tables("sales");
-        Assert.eq(table.size(), "table.size()", 4, "4 tables in the namespace");
+        Assert.eq(table.size(), "table.size()", 4, "tables in the namespace");
         Assert.equals(table.getDefinition(), "table.getDefinition()", TABLES_DEFINITION);
     }
 
@@ -243,7 +247,7 @@ public abstract class IcebergToolsTest {
         adapter.listSnapshots(tableIdentifier)
                 .forEach(snapshot -> snapshotIds.add(snapshot.snapshotId()));
 
-        Assert.eq(snapshotIds.size(), "snapshots.size()", 6, "6 snapshots for sales/sales_multi");
+        Assert.eq(snapshotIds.size(), "snapshots.size()", 6, "snapshots for sales/sales_multi");
 
         Assert.eqTrue(snapshotIds.contains(8121674823173822790L), "snapshots.contains(8121674823173822790L)");
         Assert.eqTrue(snapshotIds.contains(6040260770188877244L), "snapshots.contains(6040260770188877244L)");
@@ -253,12 +257,12 @@ public abstract class IcebergToolsTest {
         Assert.eqTrue(snapshotIds.contains(3825168261540020388L), "snapshots.contains(3825168261540020388L)");
 
         Table table = adapter.snapshots(tableIdentifier);
-        Assert.eq(table.size(), "table.size()", 6, "6 snapshots for sales/sales_multi");
+        Assert.eq(table.size(), "table.size()", 6, "snapshots for sales/sales_multi");
         Assert.equals(table.getDefinition(), "table.getDefinition()", SNAPSHOT_DEFINITION);
 
         // Test the string versions of the methods
         table = adapter.snapshots("sales.sales_multi");
-        Assert.eq(table.size(), "table.size()", 6, "6 snapshots for sales/sales_multi");
+        Assert.eq(table.size(), "table.size()", 6, "snapshots for sales/sales_multi");
         Assert.equals(table.getDefinition(), "table.getDefinition()", SNAPSHOT_DEFINITION);
     }
 
@@ -274,14 +278,14 @@ public abstract class IcebergToolsTest {
         io.deephaven.engine.table.Table table = adapter.readTable(tableId, instructions);
 
         // Verify we retrieved all the rows.
-        Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
+        Assert.eq(table.size(), "table.size()", 100_000, "rows in the table");
         Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_PARTITIONED_DEFINITION);
 
         // Test the string versions of the methods
         table = adapter.readTable("sales.sales_partitioned", instructions);
 
         // Verify we retrieved all the rows.
-        Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
+        Assert.eq(table.size(), "table.size()", 100_000, "rows in the table");
         Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_PARTITIONED_DEFINITION);
     }
 
@@ -297,14 +301,14 @@ public abstract class IcebergToolsTest {
         io.deephaven.engine.table.Table table = adapter.readTable(tableId, instructions);
 
         // This table ends up with zero records
-        Assert.eq(table.size(), "table.size()", 0, "0 rows in the table");
+        Assert.eq(table.size(), "table.size()", 0, "rows in the table");
         Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_MULTI_DEFINITION);
 
         // Test the string versions of the methods
         table = adapter.readTable("sales.sales_multi", instructions);
 
         // Verify we retrieved all the rows.
-        Assert.eq(table.size(), "table.size()", 0, "0 rows in the table");
+        Assert.eq(table.size(), "table.size()", 0, "rows in the table");
         Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_MULTI_DEFINITION);
     }
 
@@ -320,14 +324,14 @@ public abstract class IcebergToolsTest {
         io.deephaven.engine.table.Table table = adapter.readTable(tableId, instructions);
 
         // Verify we retrieved all the rows.
-        Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
+        Assert.eq(table.size(), "table.size()", 100_000, "rows in the table");
         Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_SINGLE_DEFINITION);
 
         // Test the string versions of the methods
         table = adapter.readTable("sales.sales_single", instructions);
 
         // Verify we retrieved all the rows.
-        Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
+        Assert.eq(table.size(), "table.size()", 100_000, "rows in the table");
         Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_SINGLE_DEFINITION);
     }
 
@@ -342,7 +346,7 @@ public abstract class IcebergToolsTest {
         final io.deephaven.engine.table.Table table = adapter.readTable(tableId, instructions);
 
         // Verify we retrieved all the rows.
-        Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
+        Assert.eq(table.size(), "table.size()", 100_000, "rows in the table");
         Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_PARTITIONED_DEFINITION);
     }
 
@@ -363,7 +367,7 @@ public abstract class IcebergToolsTest {
         final io.deephaven.engine.table.Table table = adapter.readTable(tableId, localInstructions);
 
         // Verify we retrieved all the rows.
-        Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
+        Assert.eq(table.size(), "table.size()", 100_000, "rows in the table");
         Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_PARTITIONED_DEFINITION);
     }
 
@@ -435,7 +439,7 @@ public abstract class IcebergToolsTest {
         final io.deephaven.engine.table.Table table = adapter.readTable(tableId, localInstructions);
 
         // Verify we retrieved all the rows.
-        Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
+        Assert.eq(table.size(), "table.size()", 100_000, "rows in the table");
         Assert.equals(table.getDefinition(), "table.getDefinition()", renamed);
     }
 
@@ -465,7 +469,7 @@ public abstract class IcebergToolsTest {
         final io.deephaven.engine.table.Table table = adapter.readTable(tableId, localInstructions);
 
         // Verify we retrieved all the rows.
-        Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
+        Assert.eq(table.size(), "table.size()", 100_000, "rows in the table");
         Assert.equals(table.getDefinition(), "table.getDefinition()", tableDef);
     }
 
@@ -495,7 +499,7 @@ public abstract class IcebergToolsTest {
         final io.deephaven.engine.table.Table table = adapter.readTable(tableId, localInstructions);
 
         // Verify we retrieved all the rows.
-        Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
+        Assert.eq(table.size(), "table.size()", 100_000, "rows in the table");
         Assert.equals(table.getDefinition(), "table.getDefinition()", tableDef);
     }
 
@@ -516,7 +520,7 @@ public abstract class IcebergToolsTest {
         final io.deephaven.engine.table.Table table = adapter.readTable(tableId, localInstructions);
 
         // Verify we retrieved all the rows.
-        Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
+        Assert.eq(table.size(), "table.size()", 100_000, "rows in the table");
         Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_MULTI_DEFINITION);
     }
 
@@ -609,7 +613,7 @@ public abstract class IcebergToolsTest {
         final io.deephaven.engine.table.Table table = adapter.readTable(tableId, localInstructions);
 
         // Verify we retrieved all the rows.
-        Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
+        Assert.eq(table.size(), "table.size()", 100_000, "rows in the table");
     }
 
     @Test
@@ -628,7 +632,7 @@ public abstract class IcebergToolsTest {
         final io.deephaven.engine.table.Table table = adapter.readTable(tableId, localInstructions);
 
         // Verify we retrieved all the rows.
-        Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
+        Assert.eq(table.size(), "table.size()", 100_000, "rows in the table");
         Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_RENAMED_DEFINITION);
     }
 
@@ -658,7 +662,7 @@ public abstract class IcebergToolsTest {
                 ColumnDefinition.ofTime("Order_Date"));
 
         // Verify we retrieved all the rows.
-        Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
+        Assert.eq(table.size(), "table.size()", 100_000, "rows in the table");
         Assert.equals(table.getDefinition(), "table.getDefinition()", expected);
     }
 
@@ -740,32 +744,32 @@ public abstract class IcebergToolsTest {
         // Verify we retrieved all the rows.
         final io.deephaven.engine.table.Table table0 =
                 adapter.readTable(tableId, snapshots.get(0).snapshotId(), instructions);
-        Assert.eq(table0.size(), "table0.size()", 18073, "18266 rows in the table");
+        Assert.eq(table0.size(), "table0.size()", 18073, "rows in the table");
         Assert.equals(table0.getDefinition(), "table0.getDefinition()", SALES_MULTI_DEFINITION);
 
         final io.deephaven.engine.table.Table table1 =
                 adapter.readTable(tableId, snapshots.get(1).snapshotId(), instructions);
-        Assert.eq(table1.size(), "table1.size()", 54433, "54373 rows in the table");
+        Assert.eq(table1.size(), "table1.size()", 54433, "rows in the table");
         Assert.equals(table1.getDefinition(), "table1.getDefinition()", SALES_MULTI_DEFINITION);
 
         final io.deephaven.engine.table.Table table2 =
                 adapter.readTable(tableId, snapshots.get(2).snapshotId(), instructions);
-        Assert.eq(table2.size(), "table2.size()", 72551, "72603 rows in the table");
+        Assert.eq(table2.size(), "table2.size()", 72551, "rows in the table");
         Assert.equals(table2.getDefinition(), "table2.getDefinition()", SALES_MULTI_DEFINITION);
 
         final io.deephaven.engine.table.Table table3 =
                 adapter.readTable(tableId, snapshots.get(3).snapshotId(), instructions);
-        Assert.eq(table3.size(), "table3.size()", 100_000, "100_000 rows in the table");
+        Assert.eq(table3.size(), "table3.size()", 100_000, "rows in the table");
         Assert.equals(table3.getDefinition(), "table3.getDefinition()", SALES_MULTI_DEFINITION);
 
         final io.deephaven.engine.table.Table table4 =
                 adapter.readTable(tableId, snapshots.get(4).snapshotId(), instructions);
-        Assert.eq(table4.size(), "table4.size()", 100_000, "100_000 rows in the table");
+        Assert.eq(table4.size(), "table4.size()", 100_000, "rows in the table");
         Assert.equals(table4.getDefinition(), "table4.getDefinition()", SALES_MULTI_DEFINITION);
 
         final io.deephaven.engine.table.Table table5 =
                 adapter.readTable(tableId, snapshots.get(5).snapshotId(), instructions);
-        Assert.eq(table5.size(), "table5.size()", 0, "0 rows in the table");
+        Assert.eq(table5.size(), "table5.size()", 0, "rows in the table");
         Assert.equals(table5.getDefinition(), "table5.getDefinition()", SALES_MULTI_DEFINITION);
     }
 
@@ -781,54 +785,54 @@ public abstract class IcebergToolsTest {
 
         // Verify we retrieved all the rows.
         io.deephaven.engine.table.Table table0 = adapter.readTable(tableId, snapshots.get(0), instructions);
-        Assert.eq(table0.size(), "table0.size()", 18073, "18073 rows in the table");
+        Assert.eq(table0.size(), "table0.size()", 18073, "rows in the table");
         Assert.equals(table0.getDefinition(), "table0.getDefinition()", SALES_MULTI_DEFINITION);
 
         io.deephaven.engine.table.Table table1 = adapter.readTable(tableId, snapshots.get(1), instructions);
-        Assert.eq(table1.size(), "table1.size()", 54433, "54433 rows in the table");
+        Assert.eq(table1.size(), "table1.size()", 54433, "rows in the table");
         Assert.equals(table1.getDefinition(), "table1.getDefinition()", SALES_MULTI_DEFINITION);
 
         io.deephaven.engine.table.Table table2 = adapter.readTable(tableId, snapshots.get(2), instructions);
-        Assert.eq(table2.size(), "table2.size()", 72551, "72551 rows in the table");
+        Assert.eq(table2.size(), "table2.size()", 72551, "rows in the table");
         Assert.equals(table2.getDefinition(), "table2.getDefinition()", SALES_MULTI_DEFINITION);
 
         io.deephaven.engine.table.Table table3 = adapter.readTable(tableId, snapshots.get(3), instructions);
-        Assert.eq(table3.size(), "table3.size()", 100_000, "100_000 rows in the table");
+        Assert.eq(table3.size(), "table3.size()", 100_000, "rows in the table");
         Assert.equals(table3.getDefinition(), "table3.getDefinition()", SALES_MULTI_DEFINITION);
 
         io.deephaven.engine.table.Table table4 = adapter.readTable(tableId, snapshots.get(4), instructions);
-        Assert.eq(table4.size(), "table4.size()", 100_000, "100_000 rows in the table");
+        Assert.eq(table4.size(), "table4.size()", 100_000, "rows in the table");
         Assert.equals(table4.getDefinition(), "table4.getDefinition()", SALES_MULTI_DEFINITION);
 
         io.deephaven.engine.table.Table table5 = adapter.readTable(tableId, snapshots.get(5), instructions);
-        Assert.eq(table5.size(), "table5.size()", 0, "0 rows in the table");
+        Assert.eq(table5.size(), "table5.size()", 0, "rows in the table");
         Assert.equals(table5.getDefinition(), "table5.getDefinition()", SALES_MULTI_DEFINITION);
 
         // Test the string versions of the methods
 
         // Verify we retrieved all the rows.
         table0 = adapter.readTable("sales.sales_multi", snapshots.get(0).snapshotId(), instructions);
-        Assert.eq(table0.size(), "table0.size()", 18073, "18073 rows in the table");
+        Assert.eq(table0.size(), "table0.size()", 18073, "rows in the table");
         Assert.equals(table0.getDefinition(), "table0.getDefinition()", SALES_MULTI_DEFINITION);
 
         table1 = adapter.readTable("sales.sales_multi", snapshots.get(1).snapshotId(), instructions);
-        Assert.eq(table1.size(), "table1.size()", 54433, "54433 rows in the table");
+        Assert.eq(table1.size(), "table1.size()", 54433, "rows in the table");
         Assert.equals(table1.getDefinition(), "table1.getDefinition()", SALES_MULTI_DEFINITION);
 
         table2 = adapter.readTable("sales.sales_multi", snapshots.get(2).snapshotId(), instructions);
-        Assert.eq(table2.size(), "table2.size()", 72551, "72551 rows in the table");
+        Assert.eq(table2.size(), "table2.size()", 72551, "rows in the table");
         Assert.equals(table2.getDefinition(), "table2.getDefinition()", SALES_MULTI_DEFINITION);
 
         table3 = adapter.readTable("sales.sales_multi", snapshots.get(3).snapshotId(), instructions);
-        Assert.eq(table3.size(), "table3.size()", 100_000, "100_000 rows in the table");
+        Assert.eq(table3.size(), "table3.size()", 100_000, "rows in the table");
         Assert.equals(table3.getDefinition(), "table0.getDefinition()", SALES_MULTI_DEFINITION);
 
         table4 = adapter.readTable("sales.sales_multi", snapshots.get(4).snapshotId(), instructions);
-        Assert.eq(table4.size(), "table4.size()", 100_000, "100_000 rows in the table");
+        Assert.eq(table4.size(), "table4.size()", 100_000, "rows in the table");
         Assert.equals(table4.getDefinition(), "table4.getDefinition()", SALES_MULTI_DEFINITION);
 
         table5 = adapter.readTable("sales.sales_multi", snapshots.get(5).snapshotId(), instructions);
-        Assert.eq(table5.size(), "table5.size()", 0, "0 rows in the table");
+        Assert.eq(table5.size(), "table5.size()", 0, "rows in the table");
         Assert.equals(table5.getDefinition(), "table5.getDefinition()", SALES_MULTI_DEFINITION);
     }
 
@@ -843,7 +847,7 @@ public abstract class IcebergToolsTest {
 
         // Verify we retrieved all the rows.
         final io.deephaven.engine.table.Table table = adapter.readTable(tableId, instructions).select();
-        Assert.eq(table.size(), "table.size()", 10, "10 rows in the table");
+        Assert.eq(table.size(), "table.size()", 10, "rows in the table");
         Assert.equals(table.getDefinition(), "table.getDefinition()", ALL_TYPES_DEF);
     }
 
@@ -883,25 +887,25 @@ public abstract class IcebergToolsTest {
         // Use string and current snapshot
         Table tableDefTable = adapter.getTableDefinitionTable("sales.sales_multi", null);
 
-        Assert.eq(tableDefTable.size(), "tableDefTable.size()", 5, "5 rows in the table");
+        Assert.eq(tableDefTable.size(), "tableDefTable.size()", 5, "rows in the table");
         Assert.equals(tableDefTable.getDefinition(), "tableDefTable.getDefinition()", META_DEF);
 
         // Use TableIdentifier and Snapshot
         tableDefTable = adapter.getTableDefinitionTable(tableId, null);
 
-        Assert.eq(tableDefTable.size(), "tableDefTable.size()", 5, "5 rows in the table");
+        Assert.eq(tableDefTable.size(), "tableDefTable.size()", 5, "rows in the table");
         Assert.equals(tableDefTable.getDefinition(), "tableDefTable.getDefinition()", META_DEF);
 
         // Use string and long snapshot ID
         tableDefTable = adapter.getTableDefinitionTable("sales.sales_multi", snapshots.get(0).snapshotId(), null);
 
-        Assert.eq(tableDefTable.size(), "tableDefTable.size()", 5, "5 rows in the table");
+        Assert.eq(tableDefTable.size(), "tableDefTable.size()", 5, "rows in the table");
         Assert.equals(tableDefTable.getDefinition(), "tableDefTable.getDefinition()", META_DEF);
 
         // Use TableIdentifier and Snapshot
         tableDefTable = adapter.getTableDefinitionTable(tableId, snapshots.get(0), null);
 
-        Assert.eq(tableDefTable.size(), "tableDefTable.size()", 5, "5 rows in the table");
+        Assert.eq(tableDefTable.size(), "tableDefTable.size()", 5, "rows in the table");
         Assert.equals(tableDefTable.getDefinition(), "tableDefTable.getDefinition()", META_DEF);
     }
 
@@ -947,7 +951,9 @@ public abstract class IcebergToolsTest {
     }
 
     @Test
-    public void testManualRefreshingTable() {
+    public void testManualRefreshingTable() throws ExecutionException, InterruptedException, TimeoutException {
+        uploadSalesMulti();
+
         final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
 
         final IcebergInstructions localInstructions = IcebergInstructions.builder()
@@ -959,29 +965,76 @@ public abstract class IcebergToolsTest {
 
         final List<Snapshot> snapshots = tableAdapter.listSnapshots();
 
-        // Use string and current snapshot
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
         final IcebergTable table = tableAdapter.table(snapshots.get(0).snapshotId(), localInstructions);
-        Assert.eq(table.size(), "table.size()", 18073, "18073 rows in the table");
+        Assert.eq(table.size(), "table.size()", 18073, "rows in the table");
         Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_MULTI_DEFINITION);
 
-        table.update(snapshots.get(1).snapshotId());
-        Assert.eq(table.size(), "table.size()", 54433, "54433 rows in the table");
+        updateGraph.runWithinUnitTestCycle(() ->{
+            table.update(snapshots.get(1).snapshotId());
+        });
+        Assert.eq(table.size(), "table.size()", 54433, "rows in the table");
         Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_MULTI_DEFINITION);
 
         table.update(snapshots.get(2).snapshotId());
-        Assert.eq(table.size(), "table.size()", 72551, "72551 rows in the table");
+        Assert.eq(table.size(), "table.size()", 72551, "rows in the table");
         Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_MULTI_DEFINITION);
 
         table.update(snapshots.get(3).snapshotId());
-        Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
+        Assert.eq(table.size(), "table.size()", 100_000, "rows in the table");
         Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_MULTI_DEFINITION);
 
         table.update(snapshots.get(4).snapshotId());
-        Assert.eq(table.size(), "table.size()", 100_000, "100_000 rows in the table");
+        Assert.eq(table.size(), "table.size()", 100_000, "rows in the table");
         Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_MULTI_DEFINITION);
 
         table.update(snapshots.get(5).snapshotId());
-        Assert.eq(table.size(), "table.size()", 0, "0 rows in the table");
+        Assert.eq(table.size(), "table.size()", 0, "rows in the table");
+        Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_MULTI_DEFINITION);
+    }
+
+    @Test
+    public void testAutoRefreshingTable() throws ExecutionException, InterruptedException, TimeoutException {
+        uploadSalesMulti();
+
+        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
+
+        final IcebergInstructions localInstructions = IcebergInstructions.builder()
+                .dataInstructions(instructions.dataInstructions().get())
+                .updateMode(IcebergUpdateMode.manualRefreshingMode())
+                .build();
+
+        final IcebergTableAdapter tableAdapter = adapter.loadTable("sales.sales_multi");
+
+        final List<Snapshot> snapshots = tableAdapter.listSnapshots();
+
+        final ControlledUpdateGraph updateGraph = ExecutionContext.getContext().getUpdateGraph().cast();
+
+        final IcebergTable table = tableAdapter.table(snapshots.get(0).snapshotId(), localInstructions);
+        Assert.eq(table.size(), "table.size()", 18073, "rows in the table");
+        Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_MULTI_DEFINITION);
+
+        updateGraph.runWithinUnitTestCycle(() ->{
+            table.update(snapshots.get(1).snapshotId());
+        });
+        Assert.eq(table.size(), "table.size()", 54433, "rows in the table");
+        Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_MULTI_DEFINITION);
+
+        table.update(snapshots.get(2).snapshotId());
+        Assert.eq(table.size(), "table.size()", 72551, "rows in the table");
+        Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_MULTI_DEFINITION);
+
+        table.update(snapshots.get(3).snapshotId());
+        Assert.eq(table.size(), "table.size()", 100_000, "rows in the table");
+        Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_MULTI_DEFINITION);
+
+        table.update(snapshots.get(4).snapshotId());
+        Assert.eq(table.size(), "table.size()", 100_000, "rows in the table");
+        Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_MULTI_DEFINITION);
+
+        table.update(snapshots.get(5).snapshotId());
+        Assert.eq(table.size(), "table.size()", 0, "rows in the table");
         Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_MULTI_DEFINITION);
     }
 }

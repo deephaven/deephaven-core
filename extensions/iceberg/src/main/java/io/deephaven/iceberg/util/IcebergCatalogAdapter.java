@@ -506,12 +506,4 @@ public class IcebergCatalogAdapter {
     public Catalog catalog() {
         return catalog;
     }
-
-    /**
-     * Returns the underlying Iceberg {@link FileIO} used by this adapter.
-     */
-    @SuppressWarnings("unused")
-    public FileIO fileIO() {
-        return fileIO;
-    }
 }
