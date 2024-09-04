@@ -17,7 +17,6 @@ import jsinterop.base.Any;
 
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.Iterator;
 import java.util.NavigableSet;
 import java.util.NoSuchElementException;
 import java.util.PrimitiveIterator;

@@ -128,21 +128,24 @@ public class RangeSetTest {
     @Test
     public void testOverlappingRangesInDifferentOrder() {
 
-        // add three items in each possible order to a rangeset, ensure results are always the same
+        // add five ranges, where some overlap others, in each possible order to a rangeset, ensure results are always
+        // the same
         Range rangeA = new Range(100, 108);
         Range rangeB = new Range(105, 112);
         Range rangeC = new Range(110, 115);
-        Collections2.permutations(Arrays.asList(rangeA, rangeB, rangeC)).forEach(list -> {
+        Range rangeD = new Range(100, 113);
+        Range rangeE = new Range(101, 115);
+        Collections2.permutations(Arrays.asList(rangeA, rangeB, rangeC, rangeD, rangeE)).forEach(list -> {
             RangeSet rangeSet = new RangeSet();
             list.forEach(rangeSet::addRange);
 
-            assertEquals(16, rangeSet.size());
+            assertEquals(list.toString(), 16, rangeSet.size());
             assertEquals(list.toString(), Collections.singletonList(new Range(100, 115)), asList(rangeSet));
         });
 
-        // same three items, but with another before that will not overlap with them
+        // same five items, but with another before that will not overlap with them
         Range before = new Range(0, 4);
-        Collections2.permutations(Arrays.asList(before, rangeA, rangeB, rangeC)).forEach(list -> {
+        Collections2.permutations(Arrays.asList(before, rangeA, rangeB, rangeC, rangeD, rangeE)).forEach(list -> {
             RangeSet rangeSet = new RangeSet();
             list.forEach(rangeSet::addRange);
 
@@ -150,9 +153,9 @@ public class RangeSetTest {
             assertEquals(list.toString(), Arrays.asList(new Range(0, 4), new Range(100, 115)), asList(rangeSet));
         });
 
-        // same three items, but with another following that will not overlap with them
+        // same five items, but with another following that will not overlap with them
         Range after = new Range(200, 204);
-        Collections2.permutations(Arrays.asList(after, rangeA, rangeB, rangeC)).forEach(list -> {
+        Collections2.permutations(Arrays.asList(after, rangeA, rangeB, rangeC, rangeD, rangeE)).forEach(list -> {
             RangeSet rangeSet = new RangeSet();
             list.forEach(rangeSet::addRange);
 

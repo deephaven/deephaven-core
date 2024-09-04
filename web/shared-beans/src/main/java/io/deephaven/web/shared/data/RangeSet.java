@@ -5,6 +5,7 @@ package io.deephaven.web.shared.data;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.PrimitiveIterator;
@@ -41,7 +42,7 @@ public class RangeSet {
     public static RangeSet fromSortedRanges(Range[] sortedRanges) {
         assert orderedAndNonOverlapping(sortedRanges) : Arrays.toString(sortedRanges);
         RangeSet rangeSet = new RangeSet();
-        rangeSet.sortedRanges = sortedRanges;
+        rangeSet.sortedRanges.addAll(Arrays.asList(sortedRanges));
         return rangeSet;
     }
 
@@ -56,15 +57,14 @@ public class RangeSet {
         return true;
     }
 
-    private Range[] sortedRanges = new Range[0];
+    private List<Range> sortedRanges = new ArrayList<>();
 
     private int firstWrongCacheEntry = 0;
     private long[] cardinality = new long[0];
 
     public void addRangeSet(RangeSet rangeSet) {
-        if (sortedRanges.length == 0 && rangeSet.sortedRanges.length != 0) {
-            sortedRanges = new Range[rangeSet.sortedRanges.length];
-            System.arraycopy(rangeSet.sortedRanges, 0, sortedRanges, 0, sortedRanges.length);
+        if (rangeCount() == 0 && rangeSet.rangeCount() != 0) {
+            sortedRanges = new ArrayList<>(rangeSet.sortedRanges);
             poisonCache(0);
         } else {
             rangeSet.rangeIterator().forEachRemaining(this::addRange);
@@ -73,40 +73,40 @@ public class RangeSet {
 
     public void addRange(Range range) {
         // if empty, add as the only entry
-        if (sortedRanges.length == 0) {
-            sortedRanges = new Range[] {range};
+        if (rangeCount() == 0) {
+            sortedRanges.add(range);
             poisonCache(0);
             return;
         }
         // if one other entry, test if before, after, or overlapping
-        if (sortedRanges.length == 1) {
-            Range existing = sortedRanges[0];
+        if (rangeCount() == 1) {
+            Range existing = sortedRanges.get(0);
             Range overlap = range.overlap(existing);
             if (overlap != null) {
-                sortedRanges = new Range[] {overlap};
+                sortedRanges.set(0, overlap);
                 poisonCache(0);
             } else if (existing.compareTo(range) < 0) {
-                sortedRanges = new Range[] {existing, range};
+                sortedRanges.add(range);
                 poisonCache(1);
             } else {
                 assert existing.compareTo(range) > 0;
-                sortedRanges = new Range[] {range, existing};
+                sortedRanges.add(0, range);
                 poisonCache(0);
             }
             return;
         }
 
         // if more than one other entry, binarySearch to find before and after entry, and test both for overlapping
-        int index = Arrays.binarySearch(sortedRanges, range);
+        int index = Collections.binarySearch(sortedRanges, range);
         if (index >= 0) {
 
             // starting with that item, check to see if each following item is part of the existing range
             // we know that no range before it will need to be considered, since the set should previously
             // have been broken into non-contiguous ranges
             Range merged = range;
-            int end = sortedRanges.length - 1;
-            for (int i = index; i < sortedRanges.length; i++) {
-                Range existing = sortedRanges[i];
+            int end = rangeCount() - 1;
+            for (int i = index; i < rangeCount(); i++) {
+                Range existing = sortedRanges.get(i);
                 // there is an item with the same start, either new item falls within it, or should replace it
                 Range overlap = existing.overlap(merged);
 
@@ -125,23 +125,15 @@ public class RangeSet {
             }
             // splice out [index, end] items, replacing with the newly grown overlap object (may be the same
             // size, and only replacing one item)
-            int newLength = sortedRanges.length - (end - index);
-            Range[] newArray = new Range[newLength];
-            if (index > 0) {
-                System.arraycopy(sortedRanges, 0, newArray, 0, index);
-            }
-            newArray[index] = merged;
+            sortedRanges.set(index, merged);
+            sortedRanges.subList(index + 1, end + 1).clear();
             poisonCache(index);
-            if (end < sortedRanges.length - 1) {
-                System.arraycopy(sortedRanges, end + 1, newArray, index + 1, sortedRanges.length - 1 - end);
-            }
-            sortedRanges = newArray;
         } else {
             int proposedIndex = -(index) - 1;
             Range merged = range;
             // test the item before the proposed location (if any), try to merge it
             if (proposedIndex > 0) {
-                Range before = sortedRanges[proposedIndex - 1];
+                Range before = sortedRanges.get(proposedIndex - 1);
                 Range overlap = before.overlap(merged);
                 if (overlap != null) {
                     // replace the range that we are merging, and start the slice here instead
@@ -156,10 +148,10 @@ public class RangeSet {
             // instead of shrinking.
             // if we never find an item we cannot merge with, the end of the replaced range is the last item of the old
             // array, which could result in the new array having as little as only 1 item
-            int end = sortedRanges.length - 1;
+            int end = rangeCount() - 1;
             // until we quit finding matches, test subsequent items
-            for (int i = proposedIndex; i < sortedRanges.length; i++) {
-                Range existing = sortedRanges[i];
+            for (int i = proposedIndex; i < rangeCount(); i++) {
+                Range existing = sortedRanges.get(i);
                 Range overlap = existing.overlap(merged);
                 if (overlap == null) {
                     // stop at the item before this one
@@ -168,18 +160,17 @@ public class RangeSet {
                 }
                 merged = overlap;
             }
-            int newLength = sortedRanges.length - (end - proposedIndex);
-            assert newLength > 0 && newLength <= sortedRanges.length + 1;
-            Range[] newArray = new Range[newLength];
-            if (proposedIndex > 0) {
-                System.arraycopy(sortedRanges, 0, newArray, 0, proposedIndex);
+            int newLength = rangeCount() - (end - proposedIndex);
+            assert newLength > 0 && newLength <= rangeCount() + 1;
+            if (end == proposedIndex) {
+                sortedRanges.set(proposedIndex, merged);
+            } else if (newLength < rangeCount()) {
+                sortedRanges.set(proposedIndex, merged);
+                sortedRanges.subList(proposedIndex + 1, end + 1).clear();
+            } else {
+                sortedRanges.add(proposedIndex, merged);
             }
-            newArray[proposedIndex] = merged;
             poisonCache(proposedIndex);
-            if (end < sortedRanges.length - 1) {
-                System.arraycopy(sortedRanges, end + 1, newArray, proposedIndex + 1, sortedRanges.length - (end + 1));
-            }
-            sortedRanges = newArray;
         }
     }
 
@@ -189,14 +180,14 @@ public class RangeSet {
 
     public void removeRange(Range range) {
         // if empty, nothing to do
-        if (sortedRanges.length == 0) {
+        if (rangeCount() == 0) {
             return;
         }
 
         // search the sorted list of ranges and find where the current range starts. two case here when using
         // binarySearch, either the removed range starts in the same place as an existing range starts, or
         // it starts before an item (and so we check the item before and the item after)
-        int index = Arrays.binarySearch(sortedRanges, range);
+        int index = Collections.binarySearch(sortedRanges, range);
         if (index < 0) {
             // adjusted index notes where the item would be if it were added, minus _one more_ to see if
             // it overlaps the item before it. To compute "the position where the new item belongs", we
@@ -207,8 +198,8 @@ public class RangeSet {
 
         int beforeCount = -1;
         int toRemove = 0;
-        for (; index < sortedRanges.length; index++) {
-            Range toCheck = sortedRanges[index];
+        for (; index < rangeCount(); index++) {
+            Range toCheck = sortedRanges.get(index);
             if (toCheck.getFirst() > range.getLast()) {
                 break;// done, this is entirely after the range we're removing
             }
@@ -229,22 +220,15 @@ public class RangeSet {
                         : "Expected that no previous items in the RangeSet had been removed toRemove=" + toRemove
                                 + ", beforeCount=" + beforeCount;
 
-                Range[] replacement = new Range[sortedRanges.length + 1];
-                if (index > 0) {
-                    System.arraycopy(sortedRanges, 0, replacement, 0, index);
-                }
-                replacement[index] = remaining[0];
-                replacement[index + 1] = remaining[1];
+                sortedRanges.set(index, remaining[0]);
+                sortedRanges.add(index + 1, remaining[1]);
                 poisonCache(index);
-                System.arraycopy(sortedRanges, index + 1, replacement, index + 2, sortedRanges.length - (index + 1));
-
-                sortedRanges = replacement;
 
                 return;
             }
             if (remaining.length == 1) {
                 // swap shortened item and move on
-                sortedRanges[index] = remaining[0];
+                sortedRanges.set(index, remaining[0]);
                 poisonCache(index);
             } else {
                 assert remaining.length == 0 : "Array contains a surprising number of items: " + remaining.length;
@@ -258,13 +242,8 @@ public class RangeSet {
 
         }
         if (toRemove > 0) {
-            Range[] replacement = new Range[sortedRanges.length - toRemove];
-            System.arraycopy(sortedRanges, 0, replacement, 0, beforeCount);
-            System.arraycopy(sortedRanges, beforeCount + toRemove, replacement, beforeCount,
-                    sortedRanges.length - beforeCount - toRemove);
-            poisonCache(beforeCount + 1);
-
-            sortedRanges = replacement;
+            sortedRanges.subList(beforeCount, beforeCount + toRemove).clear();
+            poisonCache(beforeCount);
         } else {
             assert beforeCount == -1 : "No items to remove, but beforeCount set?";
         }
@@ -276,17 +255,18 @@ public class RangeSet {
      * @return Iterator of {@link Range}
      */
     public Iterator<Range> rangeIterator() {
-        return Arrays.asList(sortedRanges).iterator();
+        return sortedRanges.iterator();
     }
 
     public PrimitiveIterator.OfLong indexIterator() {
-        return Arrays.stream(sortedRanges)
+        return sortedRanges
+                .stream()
                 .flatMapToLong(range -> LongStream.rangeClosed(range.getFirst(), range.getLast()))
                 .iterator();
     }
 
     public int rangeCount() {
-        return sortedRanges.length;
+        return sortedRanges.size();
     }
 
     /**
@@ -297,15 +277,15 @@ public class RangeSet {
      * @return long
      */
     public long size() {
-        if (sortedRanges.length == 0) {
+        if (rangeCount() == 0) {
             return 0;
         }
         ensureCardinalityCache();
-        return cardinality[cardinality.length - 1];
+        return cardinality[sortedRanges.size() - 1];
     }
 
     public boolean isEmpty() {
-        return sortedRanges.length == 0;
+        return rangeCount() == 0;
     }
 
     public boolean contains(long value) {
@@ -357,7 +337,7 @@ public class RangeSet {
         // search the sorted list of ranges and find where the current range starts. two case here when using
         // binarySearch, either the removed range starts in the same place as an existing range starts, or
         // it starts before an item (and so we check the item before and the item after)
-        int index = Arrays.binarySearch(sortedRanges, range);
+        int index = Collections.binarySearch(sortedRanges, range);
         if (index >= 0) {
             // matching start position
             return true;
@@ -369,38 +349,38 @@ public class RangeSet {
         index = Math.max(0, -index - 2);
 
         // Check if there is any overlap with the prev item
-        Range target = sortedRanges[index];
+        Range target = sortedRanges.get(index);
         if (range.getFirst() <= target.getLast() && range.getLast() >= target.getFirst()) {
             return true;
         }
 
         // Check if there is a later item, and if there is an overlap with it
         index++;
-        if (index >= sortedRanges.length) {
+        if (index >= rangeCount()) {
             return false;
         }
-        target = sortedRanges[index];
+        target = sortedRanges.get(index);
         return range.getFirst() <= target.getLast() && range.getLast() >= target.getFirst();
     }
 
     @Override
     public String toString() {
         return "RangeSet{" +
-                "sortedRanges=" + Arrays.toString(sortedRanges) +
+                "sortedRanges=" + sortedRanges +
                 '}';
     }
 
     public long getFirstRow() {
-        return sortedRanges[0].getFirst();
+        return sortedRanges.get(0).getFirst();
     }
 
     public long getLastRow() {
-        return sortedRanges[sortedRanges.length - 1].getLast();
+        return sortedRanges.get(rangeCount() - 1).getLast();
     }
 
     public RangeSet copy() {
         RangeSet copy = new RangeSet();
-        copy.sortedRanges = Arrays.copyOf(sortedRanges, sortedRanges.length);
+        copy.sortedRanges = new ArrayList<>(sortedRanges);
         return copy;
     }
 
@@ -412,12 +392,12 @@ public class RangeSet {
             return false;
 
         final RangeSet rangeSet = (RangeSet) o;
-        return Arrays.equals(sortedRanges, rangeSet.sortedRanges);
+        return sortedRanges.equals(rangeSet.sortedRanges);
     }
 
     @Override
     public int hashCode() {
-        return Arrays.hashCode(sortedRanges);
+        return sortedRanges.hashCode();
     }
 
     /**
@@ -432,22 +412,22 @@ public class RangeSet {
      * Ensures that the cardinality cache is correct, by correcting any values after the first wrong entry.
      */
     private void ensureCardinalityCache() {
-        if (firstWrongCacheEntry == sortedRanges.length) {
+        if (firstWrongCacheEntry == rangeCount()) {
             return;
         }
-        if (cardinality.length < sortedRanges.length) {
-            long[] replacement = new long[sortedRanges.length];
+        if (cardinality.length < rangeCount()) {
+            long[] replacement = new long[rangeCount()];
             System.arraycopy(cardinality, 0, replacement, 0, cardinality.length);
             cardinality = replacement;
         }
         assert firstWrongCacheEntry >= 0 : this;
         long cumulative = firstWrongCacheEntry == 0 ? 0 : cardinality[firstWrongCacheEntry - 1];
-        for (int i = firstWrongCacheEntry; i < sortedRanges.length; i++) {
-            cumulative += sortedRanges[i].size();
+        for (int i = firstWrongCacheEntry; i < rangeCount(); i++) {
+            cumulative += sortedRanges.get(i).size();
             this.cardinality[i] = cumulative;
         }
-        firstWrongCacheEntry = sortedRanges.length;
-        assert cardinality.length >= sortedRanges.length : this;
+        firstWrongCacheEntry = rangeCount();
+        assert cardinality.length >= rangeCount() : this;
     }
 
     public RangeSet subsetForPositions(RangeSet positions, boolean reversed) {
@@ -475,19 +455,19 @@ public class RangeSet {
             }
             long rangeToTake = nextPosRange.size();
 
-            int pos = Arrays.binarySearch(cardinality, from, sortedRanges.length, nextPosRange.getFirst() + 1);
+            int pos = Arrays.binarySearch(cardinality, from, rangeCount(), nextPosRange.getFirst() + 1);
 
             long first;
             Range target;
             long offset;
             if (pos >= 0) {
                 // Position matches the last item in the current range
-                target = sortedRanges[pos];
+                target = sortedRanges.get(pos);
                 offset = 1;
             } else {
                 // Position matches an earlier item in
                 pos = -pos - 1;
-                target = sortedRanges[pos];
+                target = sortedRanges.get(pos);
                 long c = cardinality[pos];
                 offset = c - nextPosRange.getFirst();// positive value to offset backwards from the end of target
             }
@@ -503,10 +483,10 @@ public class RangeSet {
 
                 rangeToTake -= count;
                 pos++;
-                if (pos >= sortedRanges.length) {
+                if (pos >= rangeCount()) {
                     break;
                 }
-                target = sortedRanges[pos];
+                target = sortedRanges.get(pos);
                 first = target.getFirst();
                 offset = target.size();
             }
@@ -520,16 +500,16 @@ public class RangeSet {
 
     public long get(long key) {
         if (key == 0) {
-            return sortedRanges[0].getFirst();
+            return getFirstRow();
         }
         ensureCardinalityCache();
 
         int pos = Arrays.binarySearch(cardinality, key);
 
         if (pos >= 0) {
-            return sortedRanges[pos + 1].getFirst();
+            return sortedRanges.get(pos + 1).getFirst();
         }
-        Range target = sortedRanges[-pos - 1];
+        Range target = sortedRanges.get(-pos - 1);
         long c = cardinality[-pos - 1];
         long offset = c - key;// positive value to offset backwards from the end of target
         assert offset >= 0;
@@ -538,6 +518,7 @@ public class RangeSet {
 
     /**
      * Removes all keys in the provided rangeset that are present in this.
+     *
      * @param other the rows to remove
      * @return any removed keys
      */
