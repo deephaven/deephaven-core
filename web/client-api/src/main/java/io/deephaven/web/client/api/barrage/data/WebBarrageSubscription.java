@@ -411,49 +411,26 @@ public abstract class WebBarrageSubscription {
             final RangeSet result;
             if (capacity == 0) {
                 capacity = Long.highestOneBit(Math.max(size * 2, 8));
-                freeset.addRange(new Range(size, capacity - 1));
-                result = new RangeSet();
-                result.addRange(new Range(0, size - 1));
+                freeset.addRange(new Range(0, capacity - 1));
                 needsResizing = true;
             } else {
-                result = new RangeSet();
-                Iterator<Range> iterator = freeset.rangeIterator();
-                int required = (int) size;
-                while (required > 0 && iterator.hasNext()) {
-                    Range next = iterator.next();
-                    Range range =
-                            next.size() < required ? next : new Range(next.getFirst(), next.getFirst() + required - 1);
-                    result.addRange(range);
-                    freeset.removeRange(range);
-                    required -= (int) next.size();
-                }
-
-                if (required > 0) {
-                    // we need more, allocate extra, return some, grow the freeset for next time
+                if (freeset.size() < size) {
                     long usedSlots = capacity - freeset.size();
                     long prevCapacity = capacity;
 
                     do {
                         capacity *= 2;
-                    } while ((capacity - usedSlots) < required);
-
-                    result.addRange(new Range(prevCapacity, prevCapacity + required - 1));
-
-                    freeset = new RangeSet();
-                    if (capacity - prevCapacity > required) {
-                        // extra was allocated for next time
-                        freeset.addRange(new Range(prevCapacity + required, capacity - 1));
-                    }
+                    } while ((capacity - usedSlots) < size);
+                    freeset.addRange(new Range(prevCapacity, capacity - 1));
                     needsResizing = true;
                 }
             }
-
             if (needsResizing) {
                 Arrays.stream(destSources).forEach(s -> s.ensureCapacity(capacity));
             }
-
-            assert result.size() == size;
-
+            result = freeset.subsetForPositions(RangeSet.ofRange(0, size - 1), false);
+            freeset.removeRange(new Range(0, result.getLastRow()));
+            assert result.size() == size : result.size() + " == " + size;
             return result;
         }
 
