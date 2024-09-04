@@ -183,6 +183,10 @@ public class RangeSet {
         }
     }
 
+    public void removeRangeSet(RangeSet rangeSet) {
+        rangeSet.rangeIterator().forEachRemaining(this::removeRange);
+    }
+
     public void removeRange(Range range) {
         // if empty, nothing to do
         if (sortedRanges.length == 0) {
@@ -530,5 +534,19 @@ public class RangeSet {
         long offset = c - key;// positive value to offset backwards from the end of target
         assert offset >= 0;
         return target.getLast() - offset + 1;
+    }
+
+    /**
+     * Removes all keys in the provided rangeset that are present in this.
+     * @param other the rows to remove
+     * @return any removed keys
+     */
+    public RangeSet extract(RangeSet other) {
+        RangeSet populatedCopy = copy();
+        populatedCopy.removeRangeSet(other);
+        RangeSet removed = copy();
+        removed.removeRangeSet(populatedCopy);
+        removeRangeSet(removed);
+        return removed;
     }
 }

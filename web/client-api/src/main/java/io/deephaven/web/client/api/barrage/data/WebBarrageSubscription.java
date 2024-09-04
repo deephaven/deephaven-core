@@ -201,7 +201,8 @@ public abstract class WebBarrageSubscription {
                 }
             }
 
-            message.rowsRemoved.rangeIterator().forEachRemaining(currentRowSet::removeRange);
+            currentRowSet.removeRangeSet(message.rowsRemoved);
+
             currentRowSet.addRangeSet(message.rowsAdded);
             state.setSize(message.rowsAdded.size());
             dataChangedHandler.onDataChanged(message.rowsAdded, message.rowsRemoved, RangeSet.empty(), message.shifted,
@@ -240,16 +241,12 @@ public abstract class WebBarrageSubscription {
             final boolean mightBeInitialSnapshot = getCurrentRowSet().isEmpty() && message.isSnapshot;
 
             // Apply removes to our local rowset
-            message.rowsRemoved.rangeIterator().forEachRemaining(currentRowSet::removeRange);
+            currentRowSet.removeRangeSet(message.rowsRemoved);
 
             RangeSet removed = message.rowsRemoved;
             if (populatedRows != null) {
                 // limit the removed rows to what intersect the viewport
-                RangeSet populatedCopy = populatedRows.copy();
-                message.rowsRemoved.rangeIterator().forEachRemaining(populatedCopy::removeRange);
-                removed = populatedRows.copy();
-                populatedCopy.rangeIterator().forEachRemaining(removed::removeRange);
-                removed.rangeIterator().forEachRemaining(populatedRows::removeRange);
+                removed = populatedRows.extract(message.rowsRemoved);
             }
             // free rows that are no longer needed
             freeRows(removed);
@@ -257,7 +254,7 @@ public abstract class WebBarrageSubscription {
             // Apply shifts
 
             // Shift moved rows in the redir index
-            boolean hasReverseShift = COLUMNS_AS_LIST;
+            boolean hasReverseShift = false;
             final ShiftedRange[] shiftedRanges = message.shifted;
             RangeSetBulkHelper currentRowsetAddShifter =
                     new RangeSetBulkHelper(currentRowSet, RangeSetBulkHelper.Operation.APPEND);
@@ -341,9 +338,6 @@ public abstract class WebBarrageSubscription {
             }
 
             if (!message.rowsIncluded.isEmpty()) {
-                // int addBatchSize = (int) Math.min(message.rowsIncluded.size(), 1 << 16);//reexamine this constant in
-                // light of browsers being browsers
-
                 if (mightBeInitialSnapshot) {
                     capacity = message.rowsIncluded.size();
                     Arrays.stream(destSources).forEach(s -> s.ensureCapacity(capacity));
@@ -351,10 +345,6 @@ public abstract class WebBarrageSubscription {
                 }
 
                 RangeSet destinationRowSet = getFreeRows(message.rowsIncluded.size());
-                // RangeSet destinationRowSet = new RangeSet();
-                // message.rowsIncluded.indexIterator().forEachRemaining((long row) -> {
-                // destinationRowSet.addRange(new Range(row, row));
-                // });
 
                 for (int ii = 0; ii < message.addColumnData.length; ii++) {
                     if (isSubscribedColumn(ii)) {
@@ -396,7 +386,7 @@ public abstract class WebBarrageSubscription {
             }
             if (serverViewport != null && populatedRows != null) {
                 RangeSet newPopulated = currentRowSet.subsetForPositions(serverViewport, serverReverseViewport);
-                newPopulated.rangeIterator().forEachRemaining(populatedRows::removeRange);
+                populatedRows.removeRangeSet(newPopulated);
                 freeRows(populatedRows);
             }
 
@@ -417,7 +407,7 @@ public abstract class WebBarrageSubscription {
             if (size <= 0) {
                 return RangeSet.empty();
             }
-            boolean needsResizing = COLUMNS_AS_LIST;
+            boolean needsResizing = false;
             final RangeSet result;
             if (capacity == 0) {
                 capacity = Long.highestOneBit(Math.max(size * 2, 8));

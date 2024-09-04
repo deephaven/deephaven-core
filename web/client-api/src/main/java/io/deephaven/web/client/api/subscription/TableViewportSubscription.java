@@ -147,7 +147,7 @@ public class TableViewportSubscription extends AbstractTableSubscription {
         if (hasListeners(EVENT_ROWADDED) || hasListeners(EVENT_ROWREMOVED) || hasListeners(EVENT_ROWUPDATED)) {
             RangeSet modifiedCopy = totalMods.copy();
             // exclude added items from being marked as modified, since we're hiding shifts from api consumers
-            rowsAdded.rangeIterator().forEachRemaining(modifiedCopy::removeRange);
+            modifiedCopy.removeRangeSet(rowsAdded);
             RangeSet removedCopy = rowsRemoved.copy();
             RangeSet addedCopy = rowsAdded.copy();
 
