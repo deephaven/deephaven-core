@@ -335,11 +335,11 @@ class Session:
 
     def make_export_ticket(self, ticket_no=None) -> ExportTicket:
         if not ticket_no:
-            ticket_no = self.get_ticket_no()
+            ticket_no = self.next_export_ticket_no()
         ticket_bytes = ticket_no.to_bytes(4, byteorder='little', signed=True)
         return ExportTicket(ticket_bytes=b'e' + ticket_bytes)
 
-    def get_ticket_no(self) -> int:
+    def next_export_ticket_no(self) -> int:
         with self._r_lock:
             self._last_ticket += 1
             if self._last_ticket == 2 ** 31 - 1:

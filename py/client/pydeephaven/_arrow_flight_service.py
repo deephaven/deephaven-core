@@ -21,7 +21,7 @@ class ArrowFlightService:
         try:
             if not isinstance(data, (pa.Table, pa.RecordBatch)):
                 raise DHError("source data must be either a pa table or RecordBatch.")
-            ticket = self.session.get_ticket_no()
+            ticket = self.session.next_export_ticket_no()
             dh_fields = []
             for f in data.schema:
                 dh_fields.append(pa.field(name=f.name, type=f.type, metadata=map_arrow_type(f.type)))
