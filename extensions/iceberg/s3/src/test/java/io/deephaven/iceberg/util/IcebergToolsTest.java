@@ -11,12 +11,12 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.testutil.ControlledUpdateGraph;
-import io.deephaven.engine.testutil.GenerateTableUpdates;
-import io.deephaven.engine.testutil.TstUtils;
 import io.deephaven.engine.testutil.junit4.EngineCleanup;
 import io.deephaven.extensions.s3.S3Instructions;
+import io.deephaven.iceberg.TestCatalog.IcebergRefreshingTestTable;
 import io.deephaven.iceberg.TestCatalog.IcebergTestCatalog;
 import io.deephaven.iceberg.TestCatalog.IcebergTestFileIO;
+import io.deephaven.iceberg.TestCatalog.IcebergTestTable;
 import io.deephaven.test.types.OutOfBandTest;
 import org.apache.iceberg.Snapshot;
 import org.apache.iceberg.catalog.Catalog;
@@ -998,14 +998,18 @@ public abstract class IcebergToolsTest {
     public void testAutoRefreshingTable() throws ExecutionException, InterruptedException, TimeoutException {
         uploadSalesMulti();
 
-        final IcebergCatalogAdapter adapter = IcebergTools.createAdapter(resourceCatalog);
+        final TableIdentifier tableId = TableIdentifier.parse("sales.sales_multi");
+
+        // Create a custom table adapter on top of the refreshing Iceberge table.
+        final IcebergRefreshingTestTable icebergTable = IcebergRefreshingTestTable.fromTestTable(
+                (IcebergTestTable) resourceCatalog.loadTable(tableId));
+        final IcebergTableAdapter tableAdapter = new IcebergTableAdapter(tableId, icebergTable);
 
         final IcebergInstructions localInstructions = IcebergInstructions.builder()
                 .dataInstructions(instructions.dataInstructions().get())
-                .updateMode(IcebergUpdateMode.manualRefreshingMode())
+                .updateMode(IcebergUpdateMode.autoRefreshingMode(1))
                 .build();
 
-        final IcebergTableAdapter tableAdapter = adapter.loadTable("sales.sales_multi");
 
         final List<Snapshot> snapshots = tableAdapter.listSnapshots();
 
@@ -1015,8 +1019,8 @@ public abstract class IcebergToolsTest {
         Assert.eq(table.size(), "table.size()", 18073, "rows in the table");
         Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_MULTI_DEFINITION);
 
+        icebergTable.advanceSequenceNumber();
         updateGraph.runWithinUnitTestCycle(() ->{
-            table.update(snapshots.get(1).snapshotId());
         });
         Assert.eq(table.size(), "table.size()", 54433, "rows in the table");
         Assert.equals(table.getDefinition(), "table.getDefinition()", SALES_MULTI_DEFINITION);
