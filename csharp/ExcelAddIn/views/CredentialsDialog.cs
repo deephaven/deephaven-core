@@ -1,4 +1,5 @@
-﻿using Deephaven.ExcelAddIn.ViewModels;
+﻿using System.Diagnostics;
+using Deephaven.ExcelAddIn.ViewModels;
 
 namespace ExcelAddIn.views {
   public partial class CredentialsDialog : Form {
@@ -33,7 +34,9 @@ namespace ExcelAddIn.views {
       jsonUrlBox.DataBindings.Add(nameof(jsonUrlBox.Text), vm, nameof(vm.JsonUrl));
       userIdBox.DataBindings.Add(nameof(userIdBox.Text), vm, nameof(vm.UserId));
       passwordBox.DataBindings.Add(nameof(passwordBox.Text), vm, nameof(vm.Password));
+
       operateAsBox.DataBindings.Add(nameof(operateAsBox.Text), vm, nameof(vm.OperateAs));
+
       validateCertCheckBox.DataBindings.Add(nameof(validateCertCheckBox.Checked), vm, nameof(vm.ValidateCertificate));
 
       // Bind the Core property (there's just one)
@@ -52,7 +55,19 @@ namespace ExcelAddIn.views {
     }
 
     public void SetTestResultsBox(string testResultsState) {
-      Invoke(() => testResultsTextBox.Text = testResultsState);
+      if (InvokeRequired) {
+        try {
+          Invoke(() => SetTestResultsBox(testResultsState));
+        } catch (InvalidOperationException) {
+          // TODO(kosak): figure out a better way to handle this race
+          // Invoke will fail if it is called after the form was closed. There is a race
+          // here that is pretty hard to get rid of. For now we catch the exception and
+          // throw away the value.
+        }
+        return;
+      }
+
+      testResultsTextBox.Text = testResultsState;
     }
 
     private void setCredentialsButton_Click(object sender, EventArgs e) {

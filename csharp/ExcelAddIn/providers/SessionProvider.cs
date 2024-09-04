@@ -1,8 +1,8 @@
-﻿using Deephaven.DeephavenClient.ExcelAddIn.Util;
+﻿using System.Diagnostics;
+using Deephaven.DeephavenClient.ExcelAddIn.Util;
 using Deephaven.ExcelAddIn.Factories;
 using Deephaven.ExcelAddIn.Models;
 using Deephaven.ExcelAddIn.Util;
-using System.Net;
 
 namespace Deephaven.ExcelAddIn.Providers;
 
@@ -12,7 +12,8 @@ internal class SessionProvider(WorkerThread workerThread) : IObservable<StatusOr
   private readonly ObserverContainer<StatusOr<CredentialsBase>> _credentialsObservers = new();
   private readonly ObserverContainer<StatusOr<SessionBase>> _sessionObservers = new();
   /// <summary>
-  /// This is used to ignore the results from multiple invocations of "SetCredentials".
+  /// This is used to track the results from multiple invocations of "SetCredentials" and
+  /// to keep only the latest.
   /// </summary>
   private readonly SimpleAtomicReference<object> _sharedSetCredentialsCookie = new(new object());
 
@@ -66,7 +67,8 @@ internal class SessionProvider(WorkerThread workerThread) : IObservable<StatusOr
 
     return ActionAsDisposable.Create(() => {
       workerThread.Invoke(() => {
-        _sessionObservers.Remove(observer, out _);
+        _sessionObservers.Remove(observer, out var isLast);
+        Debug.WriteLine(isLast);
       });
     });
   }
@@ -88,6 +90,19 @@ internal class SessionProvider(WorkerThread workerThread) : IObservable<StatusOr
     _sessionObservers.SetAndSendStatus(ref _session, "Trying to connect");
 
     Utility.RunInBackground(() => CreateSessionBaseInSeparateThread(credentials));
+  }
+
+  public void SwitchOnEmpty(Action callerOnEmpty, Action callerOnNotEmpty) {
+    if (workerThread.InvokeIfRequired(() => SwitchOnEmpty(callerOnEmpty, callerOnNotEmpty))) {
+      return;
+    }
+
+    if (_credentialsObservers.Count != 0 || _sessionObservers.Count != 0) {
+      callerOnNotEmpty();
+      return;
+    }
+
+    callerOnEmpty();
   }
 
   void CreateSessionBaseInSeparateThread(CredentialsBase credentials) {
