@@ -70,15 +70,14 @@ public class CompositeTableDataService extends AbstractTableDataService {
                 continue;
             }
 
-            if (tlpCandidate.hasTableLocationKey(tableLocationKey)) {
-                if (tlp != null) {
-                    throw new TableDataException(
-                            "TableDataService elements " + tlpCandidate.getName() + " and " + tlp.getName()
-                                    + " both contain " + tableLocationKey + ". Full TableDataService configuration:\n"
-                                    + Formatter.formatTableDataService(CompositeTableDataService.this.toString()));
-                }
-                tlp = tlpCandidate;
+            if (tlp != null) {
+                throw new TableDataException(
+                        "TableDataService elements " + tlpCandidate.getName() + " and " + tlp.getName()
+                                + " both contain " + tableLocationKey + ". Full TableDataService configuration:\n"
+                                + Formatter.formatTableDataService(CompositeTableDataService.this.toString()));
             }
+
+            tlp = tlpCandidate;
         }
 
         return tlp;

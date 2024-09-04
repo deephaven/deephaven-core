@@ -21,24 +21,20 @@ public interface TableDataService {
     TableLocationProvider getTableLocationProvider(@NotNull TableKey tableKey);
 
     /**
-     * Request the single raw {@link TableLocationProvider} from this service that provides the {@link TableLocation}
-     * for {@code tableKey} and {@code tableLocationKey}. A raw {@link TableLocationProvider} does not compose multiple
+     * Request the single raw {@link TableLocationProvider} from this service that has the {@link TableLocation} for
+     * {@code tableKey} and {@code tableLocationKey}. A raw {@link TableLocationProvider} does not compose multiple
      * {@link TableLocationProvider TableLocationProviders} or delegate to other implementations.
      *
      * @param tableKey The {@link TableKey} to lookup
      * @param tableLocationKey The {@link TableLocationKey} to lookup
-     * @return The raw {@link TableLocationProvider} that provides the {@link TableLocation} for {@code tableKey} and
+     * @return The raw {@link TableLocationProvider} that has the {@link TableLocation} for {@code tableKey} and
      *         {@code tableLocationKey}, or {@code null} if there is none
-     * @implSpec Non-raw {@link TableDataService TableDataServices} must implement this method to provide a single raw
-     *           {@link TableLocationProvider} or throw a {@link TableDataException} if there is ambiguity.
-     * @throws TableDataException If the {@link TableLocation} is provided by more than one
-     *         {@link TableLocationProvider}
+     * @throws TableDataException If more than one {@link TableLocationProvider} has the {@link TableLocation}
+     *
      */
     @Nullable
-    default TableLocationProvider getRawTableLocationProvider(@NotNull final TableKey tableKey,
-            @NotNull final TableLocationKey tableLocationKey) {
-        return getTableLocationProvider(tableKey);
-    }
+    TableLocationProvider getRawTableLocationProvider(@NotNull final TableKey tableKey,
+            @NotNull final TableLocationKey tableLocationKey);
 
     /**
      * Forget all state for subsequent requests for all tables.
