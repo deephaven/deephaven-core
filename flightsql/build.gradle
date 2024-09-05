@@ -15,7 +15,6 @@ dependencies {
 
     testImplementation project(':server')
     testImplementation project(':extensions-csv')
-    implementation libs.slf4j.jul.to.slf4j
 
     implementation libs.dagger
     annotationProcessor libs.dagger.compiler
@@ -30,10 +29,13 @@ dependencies {
     testImplementation platform(libs.junit.bom)
     testImplementation libs.junit.jupiter
     testRuntimeOnly libs.junit.platform.launcher
-    testRuntimeOnly libs.arrow.flight.sql.jdbc
 
     testRuntimeOnly project(':log-to-slf4j')
     testRuntimeOnly libs.slf4j.simple
+
+    // Should not use this in testing until we can use a newer version
+    // https://github.com/apache/arrow/pull/40908
+    // testRuntimeOnly libs.arrow.flight.sql.jdbc
 }
 
 test {

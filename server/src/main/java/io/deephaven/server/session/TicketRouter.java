@@ -15,8 +15,6 @@ import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.util.Exceptions;
 import io.deephaven.server.auth.AuthorizationProvider;
 import io.deephaven.util.SafeCloseable;
-import io.grpc.stub.ServerCalls;
-import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.flight.impl.Flight.Action;
 import org.apache.arrow.flight.impl.Flight.FlightDescriptor.DescriptorType;
@@ -318,22 +316,27 @@ public class TicketRouter {
         byteResolverMap.iterator().forEachRemaining(resolver -> resolver.forAllFlightInfo(session, visitor));
     }
 
-    public void doAction(@Nullable final SessionState session, Action request,
-            StreamObserver<Result> responseObserver) {
+    public void doAction(@Nullable final SessionState session, Action request, Consumer<Result> visitor) {
         final String type = request.getType();
-        TicketResolver actionHandler = null;
+        TicketResolver doActionResolver = null;
         for (TicketResolver resolver : resolvers) {
-            if (resolver.supportsDoActionType(type)) {
-                actionHandler = resolver;
-                // TODO: should we throw error if multiple support same type?
-                break;
+            if (!resolver.supportsDoActionType(type)) {
+                continue;
             }
+            if (doActionResolver != null) {
+                throw Exceptions.statusRuntimeException(Code.INTERNAL,
+                        String.format("Found multiple doAction resolvers for action type '%s'", type));
+            }
+            doActionResolver = resolver;
         }
-        if (actionHandler == null) {
-            ServerCalls.asyncUnimplementedUnaryCall(FlightServiceGrpc.getDoActionMethod(), responseObserver);
-            return;
+        if (doActionResolver == null) {
+            // Similar to the default unimplemented message from
+            // org.apache.arrow.flight.impl.FlightServiceGrpc.AsyncService.doAction
+            throw Exceptions.statusRuntimeException(Code.UNIMPLEMENTED,
+                    String.format("Method %s is unimplemented, no doAction resolver found for for action type '%s'",
+                            FlightServiceGrpc.getDoActionMethod(), type));
         }
-        actionHandler.doAction(session, request, responseObserver);
+        doActionResolver.doAction(session, request, visitor);
     }
 
     public static Flight.FlightInfo getFlightInfo(final Table table,

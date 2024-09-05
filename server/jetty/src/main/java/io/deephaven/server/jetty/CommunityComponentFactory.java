@@ -69,12 +69,12 @@ public final class CommunityComponentFactory
      */
     @Module(includes = {
             JettyServerModule.class,
+            JettyServerOptionalModule.class,
             JettyClientChannelFactoryModule.class,
             CommunityAuthorizationModule.class,
             CommunityDefaultsModule.class,
             // Implementation note: when / if modules are migrated out of CommunityDefaultsModule, they will need to be
             // re-added here.
-            io.deephaven.server.session.FlightSqlModule.class
     })
     public interface CommunityModule {
     }

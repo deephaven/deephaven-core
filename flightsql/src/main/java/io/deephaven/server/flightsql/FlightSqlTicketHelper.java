@@ -1,7 +1,7 @@
 //
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.server.session;
+package io.deephaven.server.flightsql;
 
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;

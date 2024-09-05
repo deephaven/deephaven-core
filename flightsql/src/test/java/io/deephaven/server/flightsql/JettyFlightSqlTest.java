@@ -1,7 +1,7 @@
 //
 // Copyright (c) 2016-2024 Deephaven Data Labs and Patent Pending
 //
-package io.deephaven.flightsql.test;
+package io.deephaven.server.flightsql;
 
 import dagger.Component;
 import dagger.Module;

@@ -163,7 +163,8 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
 
     @Override
     public void doAction(Flight.Action request, StreamObserver<Flight.Result> responseObserver) {
-        ticketRouter.doAction(sessionService.getOptionalSession(), request, responseObserver);
+        ticketRouter.doAction(sessionService.getOptionalSession(), request, responseObserver::onNext);
+        responseObserver.onCompleted();
     }
 
     @Override
