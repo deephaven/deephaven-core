@@ -5,6 +5,7 @@ package io.deephaven.web.client.api.barrage.data;
 
 import elemental2.core.JsArray;
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.web.client.api.barrage.WebBarrageMessage;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
@@ -42,9 +43,9 @@ public abstract class WebBarrageSubscription {
             DataChangedHandler dataChangedHandler) {
 
         WebColumnData[] dataSinks = new WebColumnData[cts.columnTypes().length];
+        ChunkType[] chunkTypes = cts.chunkTypes();
         for (int i = 0; i < dataSinks.length; i++) {
-            JsArray<Any> arr = JsData.newArray(cts.columnTypes()[i].getCanonicalName());
-            switch (cts.chunkTypes()[i]) {
+            switch (chunkTypes[i]) {
                 case Boolean:
                     throw new IllegalStateException("Boolean unsupported here");
                 case Char:
