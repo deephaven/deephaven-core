@@ -4,6 +4,7 @@
 package io.deephaven.server.session;
 
 import com.github.f4b6a3.uuid.UuidCreator;
+import com.github.f4b6a3.uuid.exception.InvalidUuidException;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.protobuf.ByteString;
@@ -333,7 +334,7 @@ public class SessionService {
                 if (session != null) {
                     return session;
                 }
-            } catch (IllegalArgumentException ignored) {
+            } catch (InvalidUuidException ignored) {
             }
         }
 
@@ -348,21 +349,6 @@ public class SessionService {
         return handler.login(payload, SessionServiceGrpcImpl::insertCallHeader)
                 .map(this::newSession)
                 .orElseThrow(AuthenticationException::new);
-    }
-
-    public SessionState getSessionForCookie(final String cookie) throws AuthenticationException {
-        try {
-            // deephaven_cookie=7a8a9245-58c5-4b48-82cb-623612f27f28
-            final String token = cookie.split("=")[1];
-            final UUID uuid = UuidCreator.fromString(token);
-            SessionState session = getSessionForToken(uuid);
-            if (session != null) {
-                return session;
-            }
-        } catch (RuntimeException e) {
-            // ignore
-        }
-        throw new AuthenticationException();
     }
 
     /**

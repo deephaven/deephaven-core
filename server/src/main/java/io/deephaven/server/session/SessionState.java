@@ -36,6 +36,7 @@ import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.auth.AuthContext;
 import io.deephaven.util.datastructures.SimpleReferenceManager;
 import io.deephaven.util.process.ProcessEnvironment;
+import io.grpc.Context;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flight.impl.Flight;
@@ -718,7 +719,7 @@ public class SessionState {
                 return;
             }
 
-            this.exportMain = exportMain;
+            this.exportMain = Objects.requireNonNull(exportMain);
             this.errorHandler = errorHandler;
             this.successHandler = successHandler;
 
@@ -1369,13 +1370,14 @@ public class SessionState {
         private final int exportId;
         private final ExportObject<T> export;
 
+        private Context context;
         private boolean requiresSerialQueue;
         private ExportErrorHandler errorHandler;
         private Consumer<? super T> successHandler;
 
         ExportBuilder(final int exportId) {
             this.exportId = exportId;
-
+            this.context = Context.current();
             if (exportId == NON_EXPORT_ID) {
                 this.export = new ExportObject<>(SessionState.this.errorTransformer, SessionState.this, NON_EXPORT_ID);
             } else {
@@ -1513,6 +1515,19 @@ public class SessionState {
         }
 
         /**
+         * Set a custom {@code context} to be used. This context will be set for the submission, success handler, and
+         * error handler. If not explicitly set, the {@link Context#current() current context} at the time this builder
+         * was created will be used.
+         *
+         * @param context the context
+         * @return this builder
+         */
+        public ExportBuilder<T> withContext(final Context context) {
+            this.context = context;
+            return this;
+        }
+
+        /**
          * This method is the final method for submitting an export to the session. The provided callable is enqueued on
          * the scheduler when all dependencies have been satisfied. Only the dependencies supplied to the builder are
          * guaranteed to be resolved when the exportMain is executing.
@@ -1524,7 +1539,11 @@ public class SessionState {
          * @return the submitted export object
          */
         public ExportObject<T> submit(final Callable<T> exportMain) {
-            export.setWork(exportMain, errorHandler, successHandler, requiresSerialQueue);
+            export.setWork(
+                    context == null ? exportMain : context.wrap(exportMain),
+                    context == null || errorHandler == null ? errorHandler : wrap(context, errorHandler),
+                    context == null || successHandler == null ? successHandler : wrap(context, successHandler),
+                    requiresSerialQueue);
             return export;
         }
 
@@ -1559,6 +1578,28 @@ public class SessionState {
         public int getExportId() {
             return exportId;
         }
+    }
+
+    private static ExportErrorHandler wrap(Context context, ExportErrorHandler handler) {
+        return (resultState, errorContext, cause, dependentExportId) -> {
+            final Context prev = context.attach();
+            try {
+                handler.onError(resultState, errorContext, cause, dependentExportId);
+            } finally {
+                context.detach(prev);
+            }
+        };
+    }
+
+    private static <X> Consumer<X> wrap(Context context, Consumer<X> consumer) {
+        return x -> {
+            final Context prev = context.attach();
+            try {
+                consumer.accept(x);
+            } finally {
+                context.detach(prev);
+            }
+        };
     }
 
     private static final KeyedIntObjectKey<ExportObject<?>> EXPORT_OBJECT_ID_KEY =

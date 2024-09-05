@@ -44,4 +44,10 @@ public interface SessionModule {
     static Set<SessionListener> primeSessionListeners() {
         return Collections.emptySet();
     }
+
+    @Provides
+    @IntoSet
+    static ServerInterceptor providesAuthCookieInterceptor() {
+        return AuthCookie.interceptor();
+    }
 }
