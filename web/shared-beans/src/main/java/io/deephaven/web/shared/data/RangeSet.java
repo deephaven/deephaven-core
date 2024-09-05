@@ -40,21 +40,20 @@ public class RangeSet {
     }
 
     public static RangeSet fromSortedRanges(Range[] sortedRanges) {
-        assert orderedAndNonOverlapping(sortedRanges) : Arrays.toString(sortedRanges);
+        assertOrderedAndNonOverlapping(sortedRanges);
         RangeSet rangeSet = new RangeSet();
         rangeSet.sortedRanges.addAll(Arrays.asList(sortedRanges));
         return rangeSet;
     }
 
-    private static boolean orderedAndNonOverlapping(Range[] sortedRanges) {
+    private static void assertOrderedAndNonOverlapping(Range[] sortedRanges) {
         long lastSeen = -1;
         for (int i = 0; i < sortedRanges.length; i++) {
             if (lastSeen >= sortedRanges[i].getFirst()) {
-                return false;
+                assert lastSeen == -1 : sortedRanges[i - 1] + " came before " + sortedRanges[i] + " (index=" + i + ")";
             }
             lastSeen = sortedRanges[i].getLast();
         }
-        return true;
     }
 
     private List<Range> sortedRanges = new ArrayList<>();
@@ -225,8 +224,7 @@ public class RangeSet {
                 poisonCache(index);
 
                 return;
-            }
-            if (remaining.length == 1) {
+            } else if (remaining.length == 1) {
                 // swap shortened item and move on
                 sortedRanges.set(index, remaining[0]);
                 poisonCache(index);
@@ -247,6 +245,176 @@ public class RangeSet {
         } else {
             assert beforeCount == -1 : "No items to remove, but beforeCount set?";
         }
+    }
+
+    private static class RangeAccumulator {
+        private final List<Range> replacement = new ArrayList<>();
+
+        public void appendRange(Range range) {
+            if (!replacement.isEmpty()) {
+                Range lastSeen = replacement.get(replacement.size() - 1);
+                Range overlap = lastSeen.overlap(range);
+                if (overlap != null) {
+                    replacement.set(replacement.size() - 1, overlap);
+                } else {
+                    replacement.add(range);
+                }
+            } else {
+                replacement.add(range);
+            }
+//            assert isSorted();
+        }
+
+        public void appendRanges(List<Range> ranges) {
+            appendRange(ranges.get(0));
+            replacement.addAll(ranges.subList(0, ranges.size() - 1));
+//            assert isSorted();
+        }
+
+        public void appendRanges(List<Range> ranges, long firstItemSubindex) {
+            Range first = ranges.get(0);
+            appendRange(new Range(first.getFirst() + firstItemSubindex, first.getLast()));
+            replacement.addAll(ranges.subList(0, ranges.size() - 1));
+//            assert isSorted();
+        }
+
+        public List<Range> build() {
+//            assert isSorted();
+            return replacement;
+        }
+
+        private boolean isSorted() {
+            RangeSet r = new RangeSet();
+            replacement.forEach(r::addRange);
+            return r.equals(RangeSet.fromSortedRanges(replacement.toArray(new Range[0])));
+        }
+    }
+
+    private static class RangeIterator {
+        private int index = -1;
+        private final List<Range> ranges;
+        private long key = 0;
+
+        private RangeIterator(List<Range> ranges) {
+            this.ranges = ranges;
+        }
+
+        public void advanceInCurrentRangeToKey(long key) {
+            assert key != 0;
+            this.key = key;
+        }
+        public boolean hasNext() {
+            return key == -1 || index < ranges.size() - 1;
+        }
+        public Range next() {
+            if (key != 0) {
+                Range r = ranges.get(index);
+                assert key > r.getFirst() && key <= r.getLast();
+                r = new Range(key, r.getLast());
+                key = 0;
+
+                return r;
+            }
+            return ranges.get(++index);
+        }
+
+    }
+    public void applyShifts(ShiftedRange[] shiftedRanges) {
+        if (shiftedRanges.length == 0 || isEmpty()) {
+            return;
+        }
+        RangeAccumulator newRanges = new RangeAccumulator();
+        RangeIterator rangeIterator = new RangeIterator(sortedRanges);
+        Iterator<ShiftedRange> shiftIterator = Arrays.asList(shiftedRanges).iterator();
+        Range toCheck = rangeIterator.next();
+        ShiftedRange shiftedRange = shiftIterator.next();
+        do {
+            if (toCheck.getLast() < shiftedRange.getRange().getFirst()) {
+                // leave this range alone, the range to shift is after it
+                newRanges.appendRange(toCheck);
+                if (!rangeIterator.hasNext()) {
+                    toCheck = null;
+                    break;
+                }
+                toCheck = rangeIterator.next();
+            } else if (toCheck.getFirst() > shiftedRange.getRange().getLast()) {
+                // skip the rest of this shift, the next range is after it
+                if (!shiftIterator.hasNext()) {
+                    break;
+                }
+                shiftedRange = shiftIterator.next();
+            } else {
+                Range[] remaining = toCheck.minus(shiftedRange.getRange());
+                if (remaining.length == 0) {
+                    // entire range shifted
+                    newRanges.appendRange(toCheck.shift(shiftedRange.getDelta()));
+                    if (!rangeIterator.hasNext()) {
+                        toCheck = null;
+                        break;
+                    }
+                    toCheck = rangeIterator.next();
+                } else if (remaining.length == 1) {
+                    Range remainingRange = remaining[0];
+
+                    Range[] complimentArr = toCheck.minus(remainingRange);
+                    assert complimentArr.length == 1;
+                    Range compliment = complimentArr[0];
+                    if (remainingRange.compareTo(toCheck) > 0) {
+                        // shift the compliment
+                        newRanges.appendRange(compliment.shift(shiftedRange.getDelta()));
+
+                        // rest of the range still needs to be checked
+                        rangeIterator.advanceInCurrentRangeToKey(remainingRange.getFirst());
+                        toCheck = rangeIterator.next();
+
+                        // shift is consumed, move to the next one
+                        if (!shiftIterator.hasNext()) {
+                            break;
+                        }
+                        shiftedRange = shiftIterator.next();
+                    } else {
+                        // keep the remaining section
+                        newRanges.appendRange(remainingRange);
+                        // leftovers after, shift the compliment
+                        newRanges.appendRange(compliment.shift(shiftedRange.getDelta()));
+
+                        // look at the next range
+                        if (!rangeIterator.hasNext()) {
+                            toCheck = null;
+                            break;
+                        }
+                        toCheck = rangeIterator.next();
+                    }
+                } else {
+                    assert remaining.length == 2;
+                    // We matched the entire shift range, plus a prefix and suffix
+                    // First append the before section
+                    newRanges.appendRange(remaining[0]);
+                    // Then the entire shift range
+                    newRanges.appendRange(shiftedRange.getResultRange());
+
+                    // Visit the rest of the range next
+                    rangeIterator.advanceInCurrentRangeToKey(remaining[1].getFirst());
+                    toCheck = rangeIterator.next();
+
+                    if (!shiftIterator.hasNext()) {
+                        break;
+                    }
+                    shiftedRange = shiftIterator.next();
+                }
+            }
+        } while (true);
+
+        // Grab remaining ranges
+        if (toCheck != null) {
+            newRanges.appendRange(toCheck);
+            while (rangeIterator.hasNext()) {
+                newRanges.appendRange(rangeIterator.next());
+            }
+        }
+
+        sortedRanges = newRanges.build();
+        poisonCache(0);
     }
 
     /**

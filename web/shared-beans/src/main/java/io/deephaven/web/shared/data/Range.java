@@ -115,4 +115,8 @@ public class Range implements Comparable<Range> {
                 ", last=" + last +
                 '}';
     }
+
+    public Range shift(long delta) {
+        return new Range(first + delta, last + delta);
+    }
 }

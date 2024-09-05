@@ -33,7 +33,7 @@ public class ShiftedRange implements Serializable {
     }
 
     public Range getResultRange() {
-        return new Range(range.getFirst() + delta, range.getLast() + delta);
+        return range.shift(delta);
     }
 
     @Override

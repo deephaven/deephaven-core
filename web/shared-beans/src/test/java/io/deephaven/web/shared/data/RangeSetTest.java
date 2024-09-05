@@ -568,4 +568,68 @@ public class RangeSetTest {
 
         initialRange.removeRange(new Range(0, 1));
     }
+
+    @Test
+    public void testShift() {
+        RangeSet r = RangeSet.ofRange(0, 2);
+        r.applyShifts(new ShiftedRange[] {
+                new ShiftedRange(new Range(0, 2), 2)
+        });
+        assertEquals(RangeSet.ofRange(2, 4), r);
+        r.applyShifts(new ShiftedRange[] {
+                new ShiftedRange(new Range(2, 6), -2)
+        });
+        assertEquals(RangeSet.ofRange(0, 2), r);
+        r.applyShifts(new ShiftedRange[] {
+                new ShiftedRange(new Range(1, 2), 3)
+        });
+        assertEquals(RangeSet.ofItems(0, 4, 5), r);
+        r.applyShifts(new ShiftedRange[] {
+                new ShiftedRange(new Range(4, 4), -1)
+        });
+        assertEquals(RangeSet.ofItems(0, 3, 5), r);
+
+        r = RangeSet.ofItems(0, 3, 4, 5, 6, 10);
+        r.applyShifts(new ShiftedRange[] {
+                new ShiftedRange(new Range(4, 4), 2),
+                new ShiftedRange(new Range(5, 6), 3),
+        });
+        assertEquals(RangeSet.ofItems(0, 3, 6, 8, 9, 10), r);
+
+
+        r = RangeSet.fromSortedRanges(new Range[] {
+                new Range(0,1),
+                new Range(3,5),
+                new Range(7,13),
+                new Range(15, 19),
+        });
+        r.applyShifts(new ShiftedRange[] {
+                new ShiftedRange(new Range(3,4), -1),
+                new ShiftedRange(new Range(7,13), -1),
+                new ShiftedRange(new Range(15, 17), -2),
+        });
+        assertEquals(RangeSet.fromSortedRanges(new Range[] {
+                new Range(0, 3),
+                new Range(5, 15),
+                new Range(18, 19),
+        }), r);
+
+
+        r = RangeSet.fromSortedRanges(new Range[] {
+                new Range(28972, 28987),
+                new Range(28989, 29003),
+                new Range(29005, 29011),
+                new Range(29013, 29013),
+                new Range(29015, 29018),
+                new Range(29020, 29020),
+                new Range(29022, 29024),
+                new Range(29026, 29039),
+        });
+        r.applyShifts(new ShiftedRange[] {
+                new ShiftedRange(new Range(28989, 29011), 2),
+                new ShiftedRange(new Range(29013, 29013), 1),
+                new ShiftedRange(new Range(29022, 29024), -1),
+                new ShiftedRange(new Range(29026, 29026), -2),
+        });
+    }
 }
