@@ -259,7 +259,7 @@ def adapter(
     The minimal set of properties required to create an Iceberg catalog are the following:
     - `catalog-impl` or `type` - the Java catalog implementation to use. When providing `catalog-impl`, the
             implementing Java class should be provided (e.g. `org.apache.iceberg.rest.RESTCatalog` or
-            `org.apache.iceberg.aws.glue.GlueCatalog`. Choices for `type` include `hive`, `hadoop`, `rest`, `glue`,
+            `org.apache.iceberg.aws.glue.GlueCatalog`). Choices for `type` include `hive`, `hadoop`, `rest`, `glue`,
             `nessie`, `jdbc`.
     - `uri` - the URI of the catalog
 
