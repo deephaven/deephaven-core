@@ -34,7 +34,7 @@ public abstract class AbstractTableLocationProvider
         Set<ImmutableTableLocationKey> locationsAdded = EMPTY_TABLE_LOCATION_KEYS;
         Set<ImmutableTableLocationKey> locationsRemoved = EMPTY_TABLE_LOCATION_KEYS;
 
-        void addlocationKey(ImmutableTableLocationKey locationKey) {
+        synchronized void addLocationKey(ImmutableTableLocationKey locationKey) {
             if (locationsAdded == EMPTY_TABLE_LOCATION_KEYS) {
                 locationsAdded = new HashSet<>();
             }
@@ -49,7 +49,7 @@ public abstract class AbstractTableLocationProvider
             }
         }
 
-        void removeLocationKey(ImmutableTableLocationKey locationKey) {
+        synchronized void removeLocationKey(ImmutableTableLocationKey locationKey) {
             if (locationsRemoved == EMPTY_TABLE_LOCATION_KEYS) {
                 locationsRemoved = new HashSet<>();
             }
@@ -72,7 +72,7 @@ public abstract class AbstractTableLocationProvider
     private final ImmutableTableKey tableKey;
 
     // Open transactions that are being accumulated
-    private final Map<Object, Transaction> transactions = new HashMap<>();
+    private final Map<Object, Transaction> transactions = Collections.synchronizedMap(new HashMap<>());
 
     /**
      * Map from {@link TableLocationKey} to itself, or to a {@link TableLocation}. The values are {@link TableLocation}s
@@ -140,15 +140,13 @@ public abstract class AbstractTableLocationProvider
      * @param token A token to identify the transaction
      */
     protected void beginTransaction(@NotNull final Object token) {
-        synchronized (transactions) {
-            // Verify that we can start a new transaction with this token.
-            transactions.compute(token, (key, val) -> {
-                if (val != null) {
-                    throw new IllegalStateException("A transaction with token " + token + " is already open.");
-                }
-                return new Transaction();
-            });
-        }
+        // Verify that we can start a new transaction with this token.
+        transactions.compute(token, (key, val) -> {
+            if (val != null) {
+                throw new IllegalStateException("A transaction with token " + token + " is already open.");
+            }
+            return new Transaction();
+        });
     }
 
     /**
@@ -157,19 +155,11 @@ public abstract class AbstractTableLocationProvider
      * @param token A token to identify the transaction
      */
     protected void endTransaction(@NotNull final Object token) {
-        final Transaction transaction;
-        synchronized (transactions) {
-            // Verify that this transaction is open.
-            transaction = transactions.remove(token);
-            if (transaction == null) {
-                throw new IllegalStateException("No transaction with token " + token + " is currently open.");
-            }
+        // Verify that this transaction is open.
+        final Transaction transaction = transactions.remove(token);
+        if (transaction == null) {
+            throw new IllegalStateException("No transaction with token " + token + " is currently open.");
         }
-
-        final Collection<ImmutableTableLocationKey> addedKeys =
-                new ArrayList<>(transaction.locationsAdded.size());
-        final Collection<ImmutableTableLocationKey> removedKeys =
-                new ArrayList<>(transaction.locationsRemoved.size());
 
         // Return early if there are no changes to process.
         if (transaction.locationsAdded == EMPTY_TABLE_LOCATION_KEYS
@@ -177,20 +167,30 @@ public abstract class AbstractTableLocationProvider
             return;
         }
 
-        for (ImmutableTableLocationKey locationKey : transaction.locationsRemoved) {
-            final Object removedLocation = tableLocations.remove(locationKey);
-            if (removedLocation != null) {
-                removedKeys.add(locationKey);
-            }
-        }
+        final Collection<ImmutableTableLocationKey> addedKeys =
+                new ArrayList<>(transaction.locationsAdded.size());
+        final Collection<ImmutableTableLocationKey> removedKeys =
+                new ArrayList<>(transaction.locationsRemoved.size());
 
-        for (ImmutableTableLocationKey locationKey : transaction.locationsAdded) {
-            locationCreatedRecorder = false;
-            tableLocations.putIfAbsent(locationKey, this::observeInsert);
-            visitLocationKey(locationKey);
-            if (locationCreatedRecorder) {
-                verifyPartitionKeys(locationKey);
-                addedKeys.add(locationKey);
+        synchronized (tableLocations) {
+            for (ImmutableTableLocationKey locationKey : transaction.locationsRemoved) {
+                final Object removedLocation = tableLocations.remove(locationKey);
+                if (removedLocation != null) {
+                    if (removedLocation instanceof AbstractTableLocation) {
+                        ((AbstractTableLocation) removedLocation).decrementReferenceCount();
+                    }
+                    removedKeys.add(locationKey);
+                }
+            }
+
+            for (ImmutableTableLocationKey locationKey : transaction.locationsAdded) {
+                locationCreatedRecorder = false;
+                tableLocations.putIfAbsent(locationKey, this::observeInsert);
+                visitLocationKey(locationKey);
+                if (locationCreatedRecorder) {
+                    verifyPartitionKeys(locationKey);
+                    addedKeys.add(locationKey);
+                }
             }
         }
 
@@ -230,16 +230,13 @@ public abstract class AbstractTableLocationProvider
             @Nullable final Object transactionToken) {
 
         if (transactionToken != null) {
-            final Transaction transaction;
-            synchronized (transactions) {
-                transaction = transactions.get(transactionToken);
-                if (transaction == null) {
-                    throw new IllegalStateException(
-                            "No transaction with token " + transactionToken + " is currently open.");
-                }
+            final Transaction transaction = transactions.get(transactionToken);
+            if (transaction == null) {
+                throw new IllegalStateException(
+                        "No transaction with token " + transactionToken + " is currently open.");
             }
             // Store an immutable key
-            transaction.addlocationKey(toKeyImmutable(locationKey));
+            transaction.addLocationKey(toKeyImmutable(locationKey));
             return;
         }
 
@@ -335,9 +332,11 @@ public abstract class AbstractTableLocationProvider
     @Override
     @NotNull
     public final Collection<ImmutableTableLocationKey> getTableLocationKeys() {
-        final List<ImmutableTableLocationKey> result = new ArrayList<>(tableLocations.size());
-        tableLocations.keySet().forEach(key -> result.add((ImmutableTableLocationKey) key));
-        return result;
+        synchronized (tableLocations) {
+            // Note that we never store keys that aren't immutable.
+            // noinspection unchecked,rawtypes
+            return new ArrayList<>((Set<ImmutableTableLocationKey>) (Set) tableLocations.keySet());
+        }
     }
 
     @Override
@@ -363,6 +362,9 @@ public abstract class AbstractTableLocationProvider
                 if (immutableKey == current) {
                     // Note, this may contend for the lock on tableLocations
                     tableLocations.add(current = makeTableLocation(immutableKey));
+                    if (current instanceof AbstractTableLocation) {
+                        ((AbstractTableLocation) current).incrementReferenceCount();
+                    }
                 }
             }
         }
@@ -418,20 +420,20 @@ public abstract class AbstractTableLocationProvider
             @NotNull final TableLocationKey locationKey,
             @Nullable final Object transactionToken) {
         if (transactionToken != null) {
-            final Transaction transaction;
-            synchronized (transactions) {
-                transaction = transactions.get(transactionToken);
-                if (transaction == null) {
-                    throw new IllegalStateException(
-                            "No transaction with token " + transactionToken + " is currently open.");
-                }
+            final Transaction transaction = transactions.get(transactionToken);
+            if (transaction == null) {
+                throw new IllegalStateException(
+                        "No transaction with token " + transactionToken + " is currently open.");
             }
             transaction.removeLocationKey(toKeyImmutable(locationKey));
             return;
         }
 
         if (!supportsSubscriptions()) {
-            tableLocations.remove(locationKey);
+            final Object removedLocation = tableLocations.remove(locationKey);
+            if (removedLocation instanceof AbstractTableLocation) {
+                ((AbstractTableLocation) removedLocation).decrementReferenceCount();
+            }
             return;
         }
 
@@ -439,6 +441,9 @@ public abstract class AbstractTableLocationProvider
         synchronized (subscriptions) {
             final Object removedLocation = tableLocations.remove(locationKey);
             if (removedLocation != null) {
+                if (removedLocation instanceof AbstractTableLocation) {
+                    ((AbstractTableLocation) removedLocation).decrementReferenceCount();
+                }
                 if (subscriptions.deliverNotification(
                         Listener::handleTableLocationKeyRemoved,
                         locationKey.makeImmutable(),

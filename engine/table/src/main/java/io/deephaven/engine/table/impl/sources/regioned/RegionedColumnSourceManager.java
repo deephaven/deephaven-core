@@ -107,9 +107,6 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
     @ReferentialIntegrity
     private final Collection<DataIndex> retainedDataIndexes = new ArrayList<>();
 
-    private final List<AbstractTableLocation> locationsToClear;
-    private final UpdateCommitter<?> locationClearCommitter;
-
     /**
      * A reference to a delayed error notifier for the {@link #includedLocationsTable}, if one is pending.
      */
@@ -199,19 +196,6 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
             }
         }
 
-
-        locationsToClear = new ArrayList<>();
-        locationClearCommitter = new UpdateCommitter<>(this,
-                ExecutionContext.getContext().getUpdateGraph(),
-                (ignored) -> {
-                    locationsToClear.forEach(location -> {
-                        location.handleUpdate(null, System.currentTimeMillis());
-                        location.clearColumnLocations();
-
-                    });
-                    locationsToClear.clear();
-                });
-
         invalidateCommitter = new UpdateCommitter<>(this,
                 ExecutionContext.getContext().getUpdateGraph(),
                 (ignored) -> {
@@ -220,6 +204,16 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
                         invalidatedLocations.clear();
                     }
                 });
+    }
+
+    @Override
+    public void destroy() {
+        super.destroy();
+        includedTableLocations.keySet().forEach(location -> {
+            if (location instanceof AbstractTableLocation) {
+                ((AbstractTableLocation) location).decrementReferenceCount();
+            }
+        });
     }
 
     @Override
@@ -232,9 +226,6 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
                 log.debug().append("LOCATION_ADDED:").append(tableLocation.toString()).endl();
             }
             emptyTableLocations.add(new EmptyTableLocationEntry(tableLocation));
-            if (tableLocation instanceof AbstractTableLocation) {
-                ((AbstractTableLocation) tableLocation).incrementReferenceCount();
-            }
         } else {
             // Duplicate location - not allowed
             final TableLocation duplicateLocation =
@@ -420,6 +411,9 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
                 includedTableLocations.add(entry);
                 orderedIncludedTableLocations.add(entry);
                 entry.processInitial(addedRowSetBuilder, entryToInclude.initialRowSet);
+                if (entry.location instanceof AbstractTableLocation) {
+                    ((AbstractTableLocation) entry.location).incrementReferenceCount();
+                }
 
                 // We have a new location, add the row set to the table and mark the row as added.
                 // @formatter:off
