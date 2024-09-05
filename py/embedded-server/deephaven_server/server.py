@@ -5,6 +5,7 @@
 
 from typing import List, Optional
 import sys
+import atexit
 
 from .start_jvm import start_jvm
 
@@ -166,6 +167,9 @@ class Server:
 
         # Keep a reference to the server so we know it is running
         Server.instance = self
+
+        # On halt, prevent the JVM from writing to sys.out and sys.err
+        atexit.register(self.j_server.prepareForShutdown)
 
     def start(self):
         """

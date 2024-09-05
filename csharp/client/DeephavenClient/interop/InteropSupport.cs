@@ -5,9 +5,11 @@ using System.Text.Unicode;
 
 namespace Deephaven.DeephavenClient.Interop;
 
-internal class LibraryPaths {
-  internal const string Dhcore = "dhcore";
-  internal const string Dhclient = "dhclient";
+public class LibraryPaths {
+  public const string Dhcore = "dhcore";
+  public const string Dhclient = "dhclient";
+  // public const string DhEnterprise = @"dhe_client";  // does not work
+  public const string DhEnterprise = @"dhe_client.dll";  // works
 }
 
 /// <summary>
@@ -30,6 +32,10 @@ public struct NativePtr<T> {
 
     ptr = IntPtr.Zero;
     return true;
+  }
+
+  public NativePtr<T2> UnsafeCast<T2>() {
+    return new NativePtr<T2>(ptr);
   }
 
   public readonly bool IsNull => ptr == IntPtr.Zero;
