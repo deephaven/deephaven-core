@@ -376,14 +376,23 @@ public class TicketRouter {
             }
             return resolver;
         } else if (descriptor.getType() == DescriptorType.CMD) {
+            TicketResolver commandResolver = null;
             for (TicketResolver resolver : resolvers) {
-                if (resolver.supportsCommand(descriptor)) {
-                    // todo: error if more than one?
-                    return resolver;
+                if (!resolver.supportsCommand(descriptor)) {
+                    continue;
                 }
+                if (commandResolver != null) {
+                    // Is there any good way to give a friendly string for unknown command bytes? Probably not.
+                    throw Exceptions.statusRuntimeException(Code.INTERNAL,
+                            "Could not resolve '" + logId + "': multiple resolvers for command");
+                }
+                commandResolver = resolver;
             }
-            throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Could not resolve '" + logId + "': no resolver for command");
+            if (commandResolver == null) {
+                throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
+                        "Could not resolve '" + logId + "': no resolver for command");
+            }
+            return commandResolver;
         } else {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                     "Could not resolve '" + logId + "': unexpected type");

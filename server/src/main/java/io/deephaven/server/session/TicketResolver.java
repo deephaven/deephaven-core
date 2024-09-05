@@ -180,26 +180,6 @@ public interface TicketResolver {
      */
     void forAllFlightInfo(@Nullable SessionState session, Consumer<Flight.FlightInfo> visitor);
 
-    default boolean supports(FlightDescriptor descriptor) {
-        switch (descriptor.getType()) {
-            case PATH:
-                return supportsPath(descriptor);
-            case CMD:
-                return supportsCommand(descriptor);
-            default:
-                throw new IllegalArgumentException("Unexpected type " + descriptor.getType());
-        }
-    }
-
-    default boolean supportsPath(FlightDescriptor descriptor) {
-        return descriptor.getPathCount() > 0 && flightDescriptorRoute().equals(descriptor.getPath(0));
-    }
-
-    /**
-     *
-     * @param descriptor
-     * @return
-     */
     default boolean supportsCommand(FlightDescriptor descriptor) {
         // Unfortunately, there is no universal way to know whether a command belongs to a given Flight protocol or not;
         // at best, we can assume (or mandate) that all of the supportable command bytes are sufficiently unique such
