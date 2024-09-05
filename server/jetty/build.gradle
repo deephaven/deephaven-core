@@ -53,6 +53,7 @@ dependencies {
     testRuntimeOnly libs.slf4j.simple
 
     implementation project(':flightsql')
+    compileOnlyApi project(':flightsql')
 }
 
 test.systemProperty "PeriodicUpdateGraph.allowUnitTestMode", false
