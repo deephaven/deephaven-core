@@ -76,11 +76,10 @@ public sealed class CredentialsDialogViewModel : INotifyPropertyChanged {
       CheckMissing(JsonUrl, "JSON URL");
       CheckMissing(UserId, "User Id");
       CheckMissing(Password, "Password");
-      CheckMissing(OperateAsToUse, "Operate As");
     }
 
     if (missingFields.Count > 0) {
-      errorText = string.Join(", ", missingFields);
+      errorText = string.Join(Environment.NewLine, missingFields);
       return false;
     }
 

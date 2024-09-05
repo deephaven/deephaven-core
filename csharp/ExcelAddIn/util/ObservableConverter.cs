@@ -33,10 +33,10 @@ internal class ObservableConverter<TFrom, TTo>(Func<TFrom, TTo> converter, Worke
   }
 
   public IDisposable Subscribe(IObserver<TTo> observer) {
-    workerThread.Invoke(() => _observers.Add(observer, out _));
+    workerThread.EnqueueOrRun(() => _observers.Add(observer, out _));
 
     return ActionAsDisposable.Create(() => {
-      workerThread.Invoke(() => {
+      workerThread.EnqueueOrRun(() => {
         _observers.Remove(observer, out _);
       });
     });

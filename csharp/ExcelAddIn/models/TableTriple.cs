@@ -1,5 +1,10 @@
 ﻿namespace Deephaven.ExcelAddIn.Models;
 
+public record PersistentQueryKey(
+  EndpointId EndpointId,
+  PersistentQueryId? PersistentQueryId) {
+}
+
 public record TableTriple(
   EndpointId? EndpointId,
   PersistentQueryId? PersistentQueryId,
@@ -34,4 +39,11 @@ public record TableTriple(
     // This version never fails to parse, but we leave open the option in our API to do so.
     return true;
   }
+}
+
+public record TableQuad(
+  EndpointId? EndpointId,
+  PersistentQueryId? PersistentQueryId,
+  string TableName,
+  string Condition) {
 }

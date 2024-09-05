@@ -6,8 +6,11 @@ using Deephaven.ExcelAddIn.ViewModels;
 
 namespace Deephaven.ExcelAddIn.Managers;
 
-public sealed class ConnectionManagerDialogRowManager : IObserver<StatusOr<CredentialsBase>>,
-  IObserver<StatusOr<SessionBase>>, IObserver<ConnectionManagerDialogRowManager.MyWrappedSocb>, IDisposable {
+public sealed class ConnectionManagerDialogRowManager :
+  IObserver<StatusOr<CredentialsBase>>,
+  IObserver<StatusOr<SessionBase>>,
+  IObserver<EndpointId?>,
+  IDisposable {
 
   public static ConnectionManagerDialogRowManager Create(ConnectionManagerDialogRow row,
     EndpointId endpointId, StateManager stateManager) {
@@ -31,11 +34,11 @@ public sealed class ConnectionManagerDialogRowManager : IObserver<StatusOr<Crede
   }
 
   public void Dispose() {
-    Unsubcribe();
+    Unsubscribe();
   }
 
   private void Resubscribe() {
-    if (_workerThread.InvokeIfRequired(Resubscribe)) {
+    if (_workerThread.EnqueueOrNop(Resubscribe)) {
       return;
     }
 
@@ -45,22 +48,12 @@ public sealed class ConnectionManagerDialogRowManager : IObserver<StatusOr<Crede
     // We watch for session and credential state changes in our ID
     var d1 = _stateManager.SubscribeToSession(_endpointId, this);
     var d2 = _stateManager.SubscribeToCredentials(_endpointId, this);
-    // Now we have a problem. We would also like to watch for credential
-    // state changes in the default session. But the default session
-    // has the same observable type (IObservable<StatusOr<SessionBase>>)
-    // as the specific session we are watching. To work around this,
-    // we create an Observer that translates StatusOr<SessionBase> to
-    // MyWrappedSOSB and then we subscribe to that.
-    var converter = ObservableConverter.Create(
-      (StatusOr<CredentialsBase> socb) => new MyWrappedSocb(socb), _workerThread);
-    var d3 = _stateManager.SubscribeToDefaultCredentials(converter);
-    var d4 = converter.Subscribe(this);
-
-    _disposables.AddRange(new[] { d1, d2, d3, d4 });
+    var d3 = _stateManager.SubscribeToDefaultEndpointSelection(this);
+    _disposables.AddRange(new[] { d1, d2, d3 });
   }
 
-  private void Unsubcribe() {
-    if (_workerThread.InvokeIfRequired(Unsubcribe)) {
+  private void Unsubscribe() {
+    if (_workerThread.EnqueueOrNop(Unsubscribe)) {
       return;
     }
     var temp = _disposables.ToArray();
@@ -79,8 +72,8 @@ public sealed class ConnectionManagerDialogRowManager : IObserver<StatusOr<Crede
     _row.SetSessionSynced(value);
   }
 
-  public void OnNext(MyWrappedSocb value) {
-    _row.SetDefaultCredentialsSynced(value.Value);
+  public void OnNext(EndpointId? value) {
+    _row.SetDefaultEndpointIdSynced(value);
   }
 
   public void DoEdit() {
@@ -90,20 +83,28 @@ public sealed class ConnectionManagerDialogRowManager : IObserver<StatusOr<Crede
     var cvm = creds.AcceptVisitor(
       crs => CredentialsDialogViewModel.OfIdAndCredentials(_endpointId.Id, crs),
       _ => CredentialsDialogViewModel.OfIdButOtherwiseEmpty(_endpointId.Id));
-    var cd = CredentialsDialogFactory.Create(_stateManager, cvm);
-    cd.Show();
+    CredentialsDialogFactory.CreateAndShow(_stateManager, cvm, _endpointId);
   }
 
-  public void DoDelete() {
+  public void DoDelete(Action<EndpointId> onSuccess, Action<EndpointId, string> onFailure) {
+    if (_workerThread.EnqueueOrNop(() => DoDelete(onSuccess, onFailure))) {
+      return;
+    }
+
     // Strategy:
     // 1. Unsubscribe to everything
-    // 2. If it turns out that we were the last subscriber to the session, then great, the
+    // 2. If it turns out that we were the last subscriber to the credentials, then great, the
     //    delete can proceed.
-    // 3. Otherwise (there is some other subscriber to the session), then the delete operation
+    // 3. If the credentials we are deleting are the default credentials, then unset default credentials
+    // 4. Otherwise (there is some other subscriber to the credentials), then the delete operation
     //    should be denied. In that case we restore our state by resubscribing to everything.
-    Unsubcribe();
-
-    _stateManager.SwitchOnEmpty(_endpointId, () => { }, Resubscribe);
+    Unsubscribe();
+    _stateManager.TryDeleteCredentials(_endpointId,
+      () => onSuccess(_endpointId),
+      reason => {
+        Resubscribe();
+        onFailure(_endpointId, reason);
+      });
   }
 
   public void DoReconnect() {
@@ -116,13 +117,7 @@ public sealed class ConnectionManagerDialogRowManager : IObserver<StatusOr<Crede
       return;
     }
 
-    // If we don't have credentials, then we can't make them the default.
-    var credentials = _row.GetCredentialsSynced();
-    if (!credentials.GetValueOrStatus(out var creds, out _)) {
-      return;
-    }
-
-    _stateManager.SetDefaultCredentials(creds);
+    _stateManager.SetDefaultEndpointId(_endpointId);
   }
 
   public void OnCompleted() {
@@ -133,8 +128,5 @@ public sealed class ConnectionManagerDialogRowManager : IObserver<StatusOr<Crede
   public void OnError(Exception error) {
     // TODO(kosak)
     throw new NotImplementedException();
-  }
-
-  public record MyWrappedSocb(StatusOr<CredentialsBase> Value) {
   }
 }

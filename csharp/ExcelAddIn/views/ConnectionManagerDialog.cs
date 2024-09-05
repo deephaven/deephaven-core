@@ -5,25 +5,15 @@ namespace Deephaven.ExcelAddIn.Views;
 using SelectedRowsAction = Action<ConnectionManagerDialogRow[]>;
 
 public partial class ConnectionManagerDialog : Form {
-  private const string IsDefaultColumnName = "IsDefault";
-  private readonly Action _onNewButtonClicked;
-  private readonly SelectedRowsAction _onDeleteButtonClicked;
-  private readonly SelectedRowsAction _onReconnectButtonClicked;
-  private readonly SelectedRowsAction _onMakeDefaultButtonClicked;
-  private readonly SelectedRowsAction _onEditButtonClicked;
+  public event Action? OnNewButtonClicked;
+  public event SelectedRowsAction? OnDeleteButtonClicked;
+  public event SelectedRowsAction? OnReconnectButtonClicked;
+  public event SelectedRowsAction? OnMakeDefaultButtonClicked;
+  public event SelectedRowsAction? OnEditButtonClicked;
+
   private readonly BindingSource _bindingSource = new();
 
-  public ConnectionManagerDialog(Action onNewButtonClicked,
-    SelectedRowsAction onDeleteButtonClicked,
-    SelectedRowsAction onReconnectButtonClicked,
-    SelectedRowsAction onMakeDefaultButtonClicked,
-    SelectedRowsAction onEditButtonClicked) {
-    _onNewButtonClicked = onNewButtonClicked;
-    _onDeleteButtonClicked = onDeleteButtonClicked;
-    _onReconnectButtonClicked = onReconnectButtonClicked;
-    _onMakeDefaultButtonClicked = onMakeDefaultButtonClicked;
-    _onEditButtonClicked = onEditButtonClicked;
-
+  public ConnectionManagerDialog() {
     InitializeComponent();
 
     _bindingSource.DataSource = typeof(ConnectionManagerDialogRow);
@@ -48,27 +38,27 @@ public partial class ConnectionManagerDialog : Form {
   }
 
   private void newButton_Click(object sender, EventArgs e) {
-    _onNewButtonClicked();
+    OnNewButtonClicked?.Invoke();
   }
 
   private void reconnectButton_Click(object sender, EventArgs e) {
     var selections = GetSelectedRows();
-    _onReconnectButtonClicked(selections);
+    OnReconnectButtonClicked?.Invoke(selections);
   }
 
   private void editButton_Click(object sender, EventArgs e) {
     var selections = GetSelectedRows();
-    _onEditButtonClicked(selections);
+    OnEditButtonClicked?.Invoke(selections);
   }
 
   private void deleteButton_Click(object sender, EventArgs e) {
     var selections = GetSelectedRows();
-    _onDeleteButtonClicked(selections);
+    OnDeleteButtonClicked?.Invoke(selections);
   }
 
   private void makeDefaultButton_Click(object sender, EventArgs e) {
     var selections = GetSelectedRows();
-    _onMakeDefaultButtonClicked(selections);
+    OnMakeDefaultButtonClicked?.Invoke(selections);
   }
 
   private ConnectionManagerDialogRow[] GetSelectedRows() {
@@ -78,7 +68,6 @@ public partial class ConnectionManagerDialog : Form {
     for (var i = 0; i != count; ++i) {
       result.Add((ConnectionManagerDialogRow)sr[i].DataBoundItem);
     }
-
     return result.ToArray();
   }
 }
