@@ -16,7 +16,7 @@ import java.util.*;
  * Partial {@link TableLocationProvider} implementation for standalone use or as part of a {@link TableDataService}.
  * <p>
  * Presents an interface similar to {@link TableLocationProvider.Listener} for subclasses to use when communicating with
- * the parent; see {@link #handleTableLocationKeyAdded(TableLocationKey, Object).
+ * the parent; see {@link #handleTableLocationKeyAdded(TableLocationKey, Object)}.
  * <p>
  * Note that subclasses are responsible for determining when it's appropriate to call {@link #setInitialized()} and/or
  * override {@link #doInitialization()}.
