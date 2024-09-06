@@ -11,6 +11,8 @@ from deephaven._wrapper import JObjectWrapper
 from deephaven.experimental import s3
 from deephaven.table import Table, TableDefinition, TableDefinitionLike
 
+from deephaven.jcompat import j_hashmap
+
 _JIcebergInstructions = jpy.get_type("io.deephaven.iceberg.util.IcebergInstructions")
 _JIcebergCatalogAdapter = jpy.get_type("io.deephaven.iceberg.util.IcebergCatalogAdapter")
 _JIcebergTools = jpy.get_type("io.deephaven.iceberg.util.IcebergTools")
@@ -299,6 +301,7 @@ def adapter(
         name (Optional[str]): a descriptive name of the catalog; if omitted the catalog name is inferred from the
             catalog URI property.
         properties (Optional[Dict[str, str]]): the properties of the catalog to load
+        hadoopConfig (Optional[Dict[str, str]]): hadoop configuration properties for the catalog to load
 
     Returns:
         IcebergCatalogAdapter: the catalog adapter created from the provided properties
