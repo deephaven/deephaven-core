@@ -110,6 +110,7 @@ public class S3ParquetRemoteTest {
                     .setSpecialInstructions(S3Instructions.builder()
                             .readTimeout(Duration.ofSeconds(60))
                             .credentials(Credentials.anonymous())
+                            .regionName("us-east-1")
                             .endpointOverride("https://storage.googleapis.com")
                             .build())
                     .build();
@@ -124,6 +125,7 @@ public class S3ParquetRemoteTest {
             final ParquetInstructions readInstructions = new ParquetInstructions.Builder()
                     .setSpecialInstructions(S3Instructions.builder()
                             .readTimeout(Duration.ofSeconds(60))
+                            .regionName("us-east-1")
                             .credentials(Credentials.anonymous())
                             .build())
                     .build();
@@ -172,6 +174,9 @@ public class S3ParquetRemoteTest {
         assertEquals(2, table.numColumns());
     }
 
+    /**
+     * The follow test reads from Deephaven's s3 bucket, thus requires the credentials to be set up.
+     */
     @Test
     public void readMetadataPartitionedParquetFromS3() {
         Assume.assumeTrue("Skipping test because s3 testing disabled.", ENABLE_REMOTE_S3_TESTING);
