@@ -23,6 +23,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_p
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldsChangeUpdate;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.ListFieldsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb_service.ApplicationServiceClient;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.ConfigValue;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.ConfigurationConstantsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.ConfigurationConstantsResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb_service.ConfigService;
@@ -198,6 +199,8 @@ public class WorkerConnection {
     private final JsSet<JsConsumer<JsVariableChanges>> fieldUpdatesCallback = new JsSet<>();
     private Map<String, JsVariableDefinition> knownFields = new HashMap<>();
     private ResponseStreamWrapper<FieldsChangeUpdate> fieldsChangeUpdateStream;
+
+    private ConfigurationConstantsResponse constants;
 
     public WorkerConnection(QueryConnectable<?> info) {
         this.info = info;
@@ -479,11 +482,11 @@ public class WorkerConnection {
                     }
 
                     // Read the timeout from the server, we'll refresh at less than that
-                    result.getMessage().getConfigValuesMap().forEach((item, key) -> {
-                        if (key.equals("http.session.durationMs")) {
-                            sessionTimeoutMs = Double.parseDouble(item.getStringValue());
-                        }
-                    });
+                    constants = result.getMessage();
+                    ConfigValue sessionDuration = constants.getConfigValuesMap().get("http.session.durationMs");
+                    if (sessionDuration != null && sessionDuration.hasStringValue()) {
+                        sessionTimeoutMs = Double.parseDouble(sessionDuration.getStringValue());
+                    }
 
                     // schedule an update based on our currently configured delay
                     scheduledAuthUpdate = DomGlobal.setTimeout(ignore -> {
@@ -1324,6 +1327,10 @@ public class WorkerConnection {
 
     public ClientConfiguration getConfig() {
         return config;
+    }
+
+    public ConfigValue getServerConfigValue(String key) {
+        return constants.getConfigValuesMap().get(key);
     }
 
     public void onOpen(BiConsumer<Void, String> callback) {

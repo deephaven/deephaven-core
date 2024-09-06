@@ -15,6 +15,7 @@ import io.deephaven.barrage.flatbuf.BarrageSnapshotRequest;
 import io.deephaven.extensions.barrage.BarrageSnapshotOptions;
 import io.deephaven.extensions.barrage.ColumnConversionMode;
 import io.deephaven.javascript.proto.dhinternal.arrow.flight.protocol.flight_pb.FlightData;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.config_pb.ConfigValue;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.FlattenRequest;
 import io.deephaven.util.mutable.MutableLong;
 import io.deephaven.web.client.api.Column;
@@ -89,19 +90,22 @@ public class TableViewportSubscription extends AbstractTableSubscription {
         ClientTableState tableState = existingTable.state();
         WorkerConnection connection = existingTable.getConnection();
 
-        ClientTableState flattenedState = connection.newState((callback, newState, metadata) -> {
-            FlattenRequest flatten = new FlattenRequest();
-            flatten.setSourceId(tableState.getHandle().makeTableReference());
-            flatten.setResultId(newState.getHandle().makeTicket());
-            connection.tableServiceClient().flatten(flatten, metadata, callback::apply);
-        }, "flatten");
-        flattenedState.refetch(null, connection.metadata()).then(result -> {
-            return null;
-        }, err -> {
-            return null;
-        });
+        final ClientTableState stateToSubscribe;
+        ConfigValue flattenViewport = connection.getServerConfigValue("web.flattenViewports");
+        if (flattenViewport != null && flattenViewport.hasStringValue()
+                && "true".equalsIgnoreCase(flattenViewport.getStringValue())) {
+            stateToSubscribe = connection.newState((callback, newState, metadata) -> {
+                FlattenRequest flatten = new FlattenRequest();
+                flatten.setSourceId(tableState.getHandle().makeTableReference());
+                flatten.setResultId(newState.getHandle().makeTicket());
+                connection.tableServiceClient().flatten(flatten, metadata, callback::apply);
+            }, "flatten");
+            stateToSubscribe.refetch(null, connection.metadata()).then(result -> null, err -> null);
+        } else {
+            stateToSubscribe = tableState;
+        }
 
-        TableViewportSubscription sub = new TableViewportSubscription(flattenedState, connection, existingTable);
+        TableViewportSubscription sub = new TableViewportSubscription(stateToSubscribe, connection, existingTable);
         sub.setInternalViewport(firstRow, lastRow, columns, updateIntervalMs, false);
         return sub;
     }
