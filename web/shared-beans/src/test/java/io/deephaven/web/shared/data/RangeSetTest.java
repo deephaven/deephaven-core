@@ -598,14 +598,14 @@ public class RangeSetTest {
 
 
         r = RangeSet.fromSortedRanges(new Range[] {
-                new Range(0,1),
-                new Range(3,5),
-                new Range(7,13),
+                new Range(0, 1),
+                new Range(3, 5),
+                new Range(7, 13),
                 new Range(15, 19),
         });
         r.applyShifts(new ShiftedRange[] {
-                new ShiftedRange(new Range(3,4), -1),
-                new ShiftedRange(new Range(7,13), -1),
+                new ShiftedRange(new Range(3, 4), -1),
+                new ShiftedRange(new Range(7, 13), -1),
                 new ShiftedRange(new Range(15, 17), -2),
         });
         assertEquals(RangeSet.fromSortedRanges(new Range[] {

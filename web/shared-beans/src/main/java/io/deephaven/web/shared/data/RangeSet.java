@@ -239,24 +239,24 @@ public class RangeSet {
             } else {
                 replacement.add(range);
             }
-//            assert isSorted();
+            // assert isSorted();
         }
 
         public void appendRanges(List<Range> ranges) {
             appendRange(ranges.get(0));
             replacement.addAll(ranges.subList(0, ranges.size() - 1));
-//            assert isSorted();
+            // assert isSorted();
         }
 
         public void appendRanges(List<Range> ranges, long firstItemSubindex) {
             Range first = ranges.get(0);
             appendRange(new Range(first.getFirst() + firstItemSubindex, first.getLast()));
             replacement.addAll(ranges.subList(0, ranges.size() - 1));
-//            assert isSorted();
+            // assert isSorted();
         }
 
         public List<Range> build() {
-//            assert isSorted();
+            // assert isSorted();
             return replacement;
         }
 
@@ -280,9 +280,11 @@ public class RangeSet {
             assert key != 0;
             this.key = key;
         }
+
         public boolean hasNext() {
             return key == -1 || index < ranges.size() - 1;
         }
+
         public Range next() {
             if (key != 0) {
                 Range r = ranges.get(index);
@@ -296,6 +298,7 @@ public class RangeSet {
         }
 
     }
+
     public void applyShifts(ShiftedRange[] shiftedRanges) {
         if (shiftedRanges.length == 0 || isEmpty()) {
             return;
@@ -411,6 +414,7 @@ public class RangeSet {
             private int rangeIndex = 0;
             private Range current = sortedRanges.get(0);
             private long offsetInRange = 0;
+
             @Override
             public long nextLong() {
                 long value = current.getFirst() + offsetInRange;
