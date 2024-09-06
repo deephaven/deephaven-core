@@ -256,10 +256,7 @@ public abstract class WebBarrageSubscription {
             // Shift moved rows in the redir index
             boolean hasReverseShift = false;
             final ShiftedRange[] shiftedRanges = message.shifted;
-            RangeSetBulkHelper currentRowsetAddShifter =
-                    new RangeSetBulkHelper(currentRowSet, RangeSetBulkHelper.Operation.APPEND);
-            RangeSetBulkHelper currentRowsetRemoveShifter =
-                    new RangeSetBulkHelper(currentRowSet, RangeSetBulkHelper.Operation.APPEND);
+            currentRowSet.applyShifts(shiftedRanges);
             RangeSetBulkHelper populatedRowsetShifter = populatedRows == null ? null
                     : new RangeSetBulkHelper(populatedRows, RangeSetBulkHelper.Operation.APPEND);
             for (int i = shiftedRanges.length - 1; i >= 0; --i) {
@@ -269,8 +266,6 @@ public abstract class WebBarrageSubscription {
                     hasReverseShift = true;
                     continue;
                 }
-                currentRowsetRemoveShifter.appendRange(shiftedRange.getRange());
-                currentRowsetAddShifter.appendRange(shiftedRange.getResultRange());
 
                 // test if shift is in populatedRows before continuing
                 if (populatedRows != null) {
@@ -300,8 +295,6 @@ public abstract class WebBarrageSubscription {
                     if (offset > 0) {
                         continue;
                     }
-                    currentRowsetRemoveShifter.appendRange(shiftedRange.getRange());
-                    currentRowsetAddShifter.appendRange(shiftedRange.getResultRange());
 
                     if (populatedRows != null) {
                         if (!populatedRows.includesAnyOf(shiftedRange.getRange())) {
@@ -323,8 +316,6 @@ public abstract class WebBarrageSubscription {
                     }
                 }
             }
-            currentRowsetAddShifter.flush();
-            currentRowsetRemoveShifter.flush();
             if (populatedRowsetShifter != null) {
                 populatedRowsetShifter.flush();
             }
