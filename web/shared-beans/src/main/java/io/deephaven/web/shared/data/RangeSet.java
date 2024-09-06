@@ -56,9 +56,8 @@ public class RangeSet {
     private static void assertOrderedAndNonOverlapping(Range[] sortedRanges) {
         long lastSeen = -1;
         for (int i = 0; i < sortedRanges.length; i++) {
-            if (lastSeen >= sortedRanges[i].getFirst()) {
-                assert lastSeen == -1 : sortedRanges[i - 1] + " came before " + sortedRanges[i] + " (index=" + i + ")";
-            }
+            assert lastSeen < sortedRanges[i].getFirst() || lastSeen == -1
+                    : sortedRanges[i - 1] + " came before " + sortedRanges[i] + " (index=" + i + ")";
             lastSeen = sortedRanges[i].getLast();
         }
     }
@@ -239,31 +238,21 @@ public class RangeSet {
             } else {
                 replacement.add(range);
             }
-            // assert isSorted();
         }
 
         public void appendRanges(List<Range> ranges) {
             appendRange(ranges.get(0));
             replacement.addAll(ranges.subList(0, ranges.size() - 1));
-            // assert isSorted();
         }
 
         public void appendRanges(List<Range> ranges, long firstItemSubindex) {
             Range first = ranges.get(0);
             appendRange(new Range(first.getFirst() + firstItemSubindex, first.getLast()));
             replacement.addAll(ranges.subList(0, ranges.size() - 1));
-            // assert isSorted();
         }
 
         public List<Range> build() {
-            // assert isSorted();
             return replacement;
-        }
-
-        private boolean isSorted() {
-            RangeSet r = new RangeSet();
-            replacement.forEach(r::addRange);
-            return r.equals(RangeSet.fromSortedRanges(replacement.toArray(new Range[0])));
         }
     }
 
