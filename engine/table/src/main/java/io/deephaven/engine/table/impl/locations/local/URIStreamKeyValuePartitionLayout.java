@@ -90,7 +90,8 @@ public abstract class URIStreamKeyValuePartitionLayout<TLK extends TableLocation
         buildLocationKeys(locationTable, targetURIs, locationKeyObserver);
     }
 
-    private void getPartitions(@NotNull final URI relativePath,
+    private void getPartitions(
+            @NotNull final URI relativePath,
             @NotNull final Set<String> partitionKeys,
             @NotNull final Collection<String> partitionValues,
             @NotNull final TIntObjectMap<ColumnNameInfo> partitionColInfo,
