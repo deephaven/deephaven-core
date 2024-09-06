@@ -9,10 +9,8 @@ import org.jetbrains.annotations.NotNull;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 import software.amazon.awssdk.core.client.config.SdkAdvancedAsyncClientOption;
 import software.amazon.awssdk.core.retry.RetryMode;
-import software.amazon.awssdk.http.SdkHttpClient;
 import software.amazon.awssdk.http.async.SdkAsyncHttpClient;
 import software.amazon.awssdk.http.crt.AwsCrtAsyncHttpClient;
-import software.amazon.awssdk.http.crt.AwsCrtHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.S3AsyncClientBuilder;
@@ -58,9 +56,27 @@ class S3AsyncClientFactory {
                         .scheduledExecutorService(ensureScheduledExecutor())
                         .build())
                 .credentialsProvider(instructions.awsV2CredentialsProvider());
-        instructions.regionName().map(Region::of).ifPresent(builder::region);
+        if (instructions.regionName().isPresent()) {
+            builder.region(Region.of(instructions.regionName().get()));
+        } else {
+            // If region is not provided, we enable cross-region access to allow the SDK to determine the region
+            // based on the bucket location and cache it for future requests.
+            builder.crossRegionAccessEnabled(true);
+        }
         instructions.endpointOverride().ifPresent(builder::endpointOverride);
-        final S3AsyncClient s3AsyncClient = builder.build();
+        S3AsyncClient s3AsyncClient;
+        try {
+            s3AsyncClient = builder.build();
+        } catch (final Exception e) {
+            if (e.getMessage().contains("region") && instructions.regionName().isEmpty()) {
+                // TODO Check with Devin if this feels okay, this seems hacky to me but I am not able to figure out a
+                // better way to handle this fallback. If I just set crossRegionAccessEnabled, it still requires one
+                // region to be set or derived from the default chain (as mentioned in DefaultAwsRegionProviderChain).
+                s3AsyncClient = builder.region(Region.US_EAST_1).build();
+            } else {
+                throw e;
+            }
+        }
         if (log.isDebugEnabled()) {
             log.debug().append("Building S3AsyncClient with instructions: ").append(instructions).endl();
         }

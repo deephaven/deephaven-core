@@ -8,8 +8,7 @@ public interface Credentials {
     /**
      * The default credentials.
      *
-     * @see <a href="https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/credentials-chain.html">Default
-     *      credentials provider chain</a>
+     * @see DefaultCredentials
      */
     static Credentials defaultCredentials() {
         return DefaultCredentials.DEFAULT_CREDENTIALS;
