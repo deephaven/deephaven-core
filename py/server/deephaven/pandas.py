@@ -207,9 +207,9 @@ def to_table(df: pd.DataFrame, cols: List[str] = None, infer_objects: bool = Tru
     Args:
         df (DataFrame): the pandas DataFrame instance
         cols (List[str]): the dataframe column names, default is None which means including all columns in the DataFrame
-        infer_objects (bool): whether to convert columns of object types in the DataFrame to the best possible types
-            supporting pd.NA first before creating the table, default is True. When True, pandas convert_dtypes() method
-            is called to perform the conversion. Note that any conversion will make a copy of the data.
+        infer_objects (bool): whether to infer the best possible types for columns of the generic 'object' type in the
+            DataFrame before creating the table, default is True. When True, pandas convert_dtypes() method is called to
+            perform the conversion. Note that any conversion will make a copy of the data.
 
     Returns:
         a Deephaven table
