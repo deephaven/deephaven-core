@@ -4,7 +4,6 @@
 package io.deephaven.web.shared.data;
 
 import javax.annotation.Nonnull;
-import java.io.Serializable;
 
 /**
  * Describes a contiguous range of at least one item. Equals/hashcode compare both start and end, but comparing Range
@@ -15,15 +14,7 @@ public class Range implements Comparable<Range> {
     private final long first;
     private final long last;
 
-    // serialization
-    Range() {
-        this(0, 0);
-    }
-
     public Range(long first, long last) {
-        if (first > last) {
-            throw new IllegalStateException(first + " > " + last);
-        }
         this.first = first;
         this.last = last;
     }
@@ -70,13 +61,10 @@ public class Range implements Comparable<Range> {
         // otherwise either the subtracted section's start is within our range _or_ its end is within our range,
         // and we can use that to only produce the one range we need to return
         if (range.first <= first) {
-            assert range.last >= first : "removed range expected to not end before existing range";
             return new Range[] {
                     new Range(range.last + 1, last)
             };
         } else {
-            assert range.last >= last : "removed range expected to end by the end of the existing range";
-            assert range.first <= last : "removed range expected to start before existing range";
             return new Range[] {
                     new Range(first, range.first - 1)
             };
