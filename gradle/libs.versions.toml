@@ -50,7 +50,7 @@ javax-inject = "1"
 javax-validation = "1.0.0.GA"
 jdom2 = "2.0.6.1"
 jetbrains = "24.1.0"
-jetty = "11.0.20"
+jetty11 = "11.0.20"
 jpy = "0.18.0"
 jsinterop = "2.0.2"
 # google is annoying, and have different versions released for the same groupId
@@ -226,14 +226,15 @@ jdom2 = { module = "org.jdom:jdom2", version.ref = "jdom2" }
 
 jetbrains-annotations = { module = "org.jetbrains:annotations", version.ref = "jetbrains" }
 
-jetty-alpn-java-server = { module = "org.eclipse.jetty:jetty-alpn-java-server" }
-jetty-alpn-server = { module = "org.eclipse.jetty:jetty-alpn-server" }
-jetty-bom = { module = "org.eclipse.jetty:jetty-bom", version.ref = "jetty" }
-jetty-http2-server = { module = "org.eclipse.jetty.http2:http2-server" }
-jetty-servlet = { module = "org.eclipse.jetty:jetty-servlet" }
-jetty-servlets = { module = "org.eclipse.jetty:jetty-servlets" }
-jetty-webapp = { module = "org.eclipse.jetty:jetty-webapp" }
-jetty-websocket-jakarta-server = { module = "org.eclipse.jetty.websocket:websocket-jakarta-server" }
+
+jetty11-alpn-java-server = { module = "org.eclipse.jetty:jetty-alpn-java-server" }
+jetty11-alpn-server = { module = "org.eclipse.jetty:jetty-alpn-server" }
+jetty11-bom = { module = "org.eclipse.jetty:jetty-bom", version.ref = "jetty11" }
+jetty11-http2-server = { module = "org.eclipse.jetty.http2:http2-server" }
+jetty11-servlet = { module = "org.eclipse.jetty:jetty-servlet" }
+jetty11-servlets = { module = "org.eclipse.jetty:jetty-servlets" }
+jetty11-webapp = { module = "org.eclipse.jetty:jetty-webapp" }
+jetty11-websocket-jakarta-server = { module = "org.eclipse.jetty.websocket:websocket-jakarta-server" }
 
 jpy = { module = "org.jpyconsortium:jpy", version.ref = "jpy" }
 

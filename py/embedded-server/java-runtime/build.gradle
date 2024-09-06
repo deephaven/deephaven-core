@@ -9,7 +9,7 @@ configurations {
 }
 
 dependencies {
-    implementation project(':server-jetty')
+    implementation project(':server-jetty-11')//revert me
 
     implementation libs.dagger
     annotationProcessor libs.dagger.compiler

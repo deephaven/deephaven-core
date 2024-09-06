@@ -28,7 +28,7 @@ configurations {
 }
 
 dependencies {
-    serverApplicationDist project(path: ':server-jetty-app', configuration: 'applicationDist')
+    serverApplicationDist project(path: ':server-jetty-app-11', configuration: 'applicationDist')//revert me
 
     pythonWheel project(':py-server')
 }
