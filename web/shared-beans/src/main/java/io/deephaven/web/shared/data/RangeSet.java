@@ -39,6 +39,13 @@ public class RangeSet {
         return rangeSet;
     }
 
+    public static RangeSet fromSortedRanges(List<Range> sortedRanges) {
+        assertOrderedAndNonOverlapping(sortedRanges.toArray(new Range[0]));
+        RangeSet rangeSet = new RangeSet();
+        rangeSet.sortedRanges = sortedRanges;
+        return rangeSet;
+    }
+
     public static RangeSet fromSortedRanges(Range[] sortedRanges) {
         assertOrderedAndNonOverlapping(sortedRanges);
         RangeSet rangeSet = new RangeSet();
@@ -62,189 +69,159 @@ public class RangeSet {
     private long[] cardinality = new long[0];
 
     public void addRangeSet(RangeSet rangeSet) {
-        if (rangeCount() == 0 && rangeSet.rangeCount() != 0) {
+        if (isEmpty() && !rangeSet.isEmpty()) {
             sortedRanges = new ArrayList<>(rangeSet.sortedRanges);
             poisonCache(0);
-        } else {
-            rangeSet.rangeIterator().forEachRemaining(this::addRange);
+        } else if (!rangeSet.isEmpty()) {
+            RangeAccumulator newRanges = new RangeAccumulator();
+            Iterator<Range> rangeIterator = sortedRanges.iterator();
+            Iterator<Range> addIterator = rangeSet.sortedRanges.iterator();
+
+            Range toCheck = rangeIterator.next();
+            Range toAdd = addIterator.next();
+            while (true) {
+                if (toCheck.getLast() < toAdd.getFirst()) {
+                    newRanges.appendRange(toCheck);
+                    if (!rangeIterator.hasNext()) {
+                        toCheck = null;
+                        break;
+                    }
+                    toCheck = rangeIterator.next();
+                } else if (toCheck.getFirst() > toAdd.getLast()) {
+                    newRanges.appendRange(toAdd);
+
+                    if (!addIterator.hasNext()) {
+                        toAdd = null;
+                        break;
+                    }
+                    toAdd = addIterator.next();
+                } else {
+                    Range overlap = toCheck.overlap(toAdd);
+                    assert overlap != null;
+                    newRanges.appendRange(overlap);
+
+                    if (!rangeIterator.hasNext()) {
+                        toCheck = null;
+                        break;
+                    }
+                    toCheck = rangeIterator.next();
+
+                    if (!addIterator.hasNext()) {
+                        toAdd = null;
+                        break;
+                    }
+                    toAdd = addIterator.next();
+                }
+            }
+
+            // Grab remaining ranges
+            if (toCheck != null) {
+                assert toAdd == null;
+                newRanges.appendRange(toCheck);
+                while (rangeIterator.hasNext()) {
+                    newRanges.appendRange(rangeIterator.next());
+                }
+            } else {
+                assert toAdd != null;
+                newRanges.appendRange(toAdd);
+                while (addIterator.hasNext()) {
+                    newRanges.appendRange(addIterator.next());
+                }
+            }
+
+            this.sortedRanges = newRanges.build();
+            poisonCache(0);
         }
     }
 
     public void addRange(Range range) {
-        // if empty, add as the only entry
-        if (rangeCount() == 0) {
-            sortedRanges.add(range);
-            poisonCache(0);
-            return;
-        }
-        // if one other entry, test if before, after, or overlapping
-        if (rangeCount() == 1) {
-            Range existing = sortedRanges.get(0);
-            Range overlap = range.overlap(existing);
-            if (overlap != null) {
-                sortedRanges.set(0, overlap);
-                poisonCache(0);
-            } else if (existing.compareTo(range) < 0) {
-                sortedRanges.add(range);
-                poisonCache(1);
-            } else {
-                assert existing.compareTo(range) > 0;
-                sortedRanges.add(0, range);
-                poisonCache(0);
-            }
-            return;
-        }
-
-        // if more than one other entry, binarySearch to find before and after entry, and test both for overlapping
-        int index = Collections.binarySearch(sortedRanges, range);
-        if (index >= 0) {
-
-            // starting with that item, check to see if each following item is part of the existing range
-            // we know that no range before it will need to be considered, since the set should previously
-            // have been broken into non-contiguous ranges
-            Range merged = range;
-            int end = rangeCount() - 1;
-            for (int i = index; i < rangeCount(); i++) {
-                Range existing = sortedRanges.get(i);
-                // there is an item with the same start, either new item falls within it, or should replace it
-                Range overlap = existing.overlap(merged);
-
-                if (overlap == null) {
-                    // index before this one is the last item to be replaced
-                    end = i - 1;
-                    break;
-                }
-                if (overlap.equals(existing)) {
-                    // the entire range to be added existed within an existing range, we're done
-                    return;
-                }
-
-                // grow the region used for replacing
-                merged = overlap;
-            }
-            // splice out [index, end] items, replacing with the newly grown overlap object (may be the same
-            // size, and only replacing one item)
-            sortedRanges.set(index, merged);
-            sortedRanges.subList(index + 1, end + 1).clear();
-            poisonCache(index);
-        } else {
-            int proposedIndex = -(index) - 1;
-            Range merged = range;
-            // test the item before the proposed location (if any), try to merge it
-            if (proposedIndex > 0) {
-                Range before = sortedRanges.get(proposedIndex - 1);
-                Range overlap = before.overlap(merged);
-                if (overlap != null) {
-                    // replace the range that we are merging, and start the slice here instead
-                    merged = overlap;
-                    proposedIndex--;
-                    // TODO this will make the loop start here, considering this item twice. not ideal, but not a big
-                    // deal either
-                }
-            }
-            // "end" represents the last item that needs to be merged in to the newly added item. if no items are to be
-            // merged in, then end will be proposedIndex-1, meaning nothing gets merged in, and the array will grow
-            // instead of shrinking.
-            // if we never find an item we cannot merge with, the end of the replaced range is the last item of the old
-            // array, which could result in the new array having as little as only 1 item
-            int end = rangeCount() - 1;
-            // until we quit finding matches, test subsequent items
-            for (int i = proposedIndex; i < rangeCount(); i++) {
-                Range existing = sortedRanges.get(i);
-                Range overlap = existing.overlap(merged);
-                if (overlap == null) {
-                    // stop at the item before this one
-                    end = i - 1;
-                    break;
-                }
-                merged = overlap;
-            }
-            int newLength = rangeCount() - (end - proposedIndex);
-            assert newLength > 0 && newLength <= rangeCount() + 1;
-            if (end == proposedIndex) {
-                sortedRanges.set(proposedIndex, merged);
-            } else if (newLength < rangeCount()) {
-                sortedRanges.set(proposedIndex, merged);
-                sortedRanges.subList(proposedIndex + 1, end + 1).clear();
-            } else {
-                sortedRanges.add(proposedIndex, merged);
-            }
-            poisonCache(proposedIndex);
-        }
+        addRangeSet(RangeSet.fromSortedRanges(Collections.singletonList(range)));
     }
 
     public void removeRangeSet(RangeSet rangeSet) {
-        rangeSet.rangeIterator().forEachRemaining(this::removeRange);
-    }
-
-    public void removeRange(Range range) {
-        // if empty, nothing to do
-        if (rangeCount() == 0) {
+        if (isEmpty() || rangeSet.isEmpty()) {
             return;
         }
 
-        // search the sorted list of ranges and find where the current range starts. two case here when using
-        // binarySearch, either the removed range starts in the same place as an existing range starts, or
-        // it starts before an item (and so we check the item before and the item after)
-        int index = Collections.binarySearch(sortedRanges, range);
-        if (index < 0) {
-            // adjusted index notes where the item would be if it were added, minus _one more_ to see if
-            // it overlaps the item before it. To compute "the position where the new item belongs", we
-            // would do (-index - 1), so to examine one item prior to that we'll subtract one more. Then,
-            // to confirm that we are inserting in a valid position, take the max of that value and zero.
-            index = Math.max(0, -index - 2);
-        }
+        RangeAccumulator newRanges = new RangeAccumulator();
+        RangeIterator rangeIterator = new RangeIterator(sortedRanges);
+        Iterator<Range> removeIterator = rangeSet.sortedRanges.iterator();
 
-        int beforeCount = -1;
-        int toRemove = 0;
-        for (; index < rangeCount(); index++) {
-            Range toCheck = sortedRanges.get(index);
-            if (toCheck.getFirst() > range.getLast()) {
-                break;// done, this is entirely after the range we're removing
-            }
-            if (toCheck.getLast() < range.getFirst()) {
-                continue;// skip, we don't overlap at all yet
-            }
-            Range[] remaining = toCheck.minus(range);
-            assert remaining != null : "Only early ranges are allowed to not match at all";
-
-            if (remaining.length == 2) {
-                // Removed region is entirely within the range we are checking:
-                // Splice in the one extra item and we're done - this entry
-                // both started before and ended after the removed section,
-                // so we don't even "break", we just return
-                assert toCheck.getFirst() < range.getFirst() : "Expected " + range + " to start after " + toCheck;
-                assert toCheck.getLast() > range.getLast() : "Expected " + range + " to end after " + toCheck;
-                assert toRemove == 0 && beforeCount == -1
-                        : "Expected that no previous items in the RangeSet had been removed toRemove=" + toRemove
-                                + ", beforeCount=" + beforeCount;
-
-                sortedRanges.set(index, remaining[0]);
-                sortedRanges.add(index + 1, remaining[1]);
-                poisonCache(index);
-
-                return;
-            } else if (remaining.length == 1) {
-                // swap shortened item and move on
-                sortedRanges.set(index, remaining[0]);
-                poisonCache(index);
-            } else {
-                assert remaining.length == 0 : "Array contains a surprising number of items: " + remaining.length;
-
-                // splice out this item as nothing exists here any more and move on
-                if (toRemove == 0) {
-                    beforeCount = index;
+        Range toCheck = rangeIterator.next();
+        Range toRemove = removeIterator.next();
+        while (true) {
+            if (toCheck.getLast() < toRemove.getFirst()) {
+                newRanges.appendRange(toCheck);
+                if (!rangeIterator.hasNext()) {
+                    toCheck = null;
+                    break;
                 }
-                toRemove++;
-            }
+                toCheck = rangeIterator.next();
+            } else if (toCheck.getFirst() > toRemove.getLast()) {
+                if (!removeIterator.hasNext()) {
+                    break;
+                }
+                toRemove = removeIterator.next();
+            } else {
+                Range[] remaining = toCheck.minus(toRemove);
+                if (remaining.length == 0) {
+                    // entire range removed, advance to the next range to check
+                    if (!rangeIterator.hasNext()) {
+                        toCheck = null;
+                        break;
+                    }
+                    toCheck = rangeIterator.next();
+                } else if (remaining.length == 1) {
+                    Range remainingRange = remaining[0];
+                    if (remainingRange.compareTo(toCheck) > 0) {
+                        // unremoved range still needs to be checked
+                        rangeIterator.advanceInCurrentRangeToKey(remainingRange.getFirst());
+                        toCheck = rangeIterator.next();
 
+                        if (!removeIterator.hasNext()) {
+                            break;
+                        }
+                        toRemove = removeIterator.next();
+                    } else {
+                        // keep the leading, remaining section
+                        newRanges.appendRange(remainingRange);
+
+                        // look at the next range
+                        if (!rangeIterator.hasNext()) {
+                            toCheck = null;
+                            break;
+                        }
+                        toCheck = rangeIterator.next();
+                    }
+                } else {
+                    assert remaining.length == 2;
+                    newRanges.appendRange(remaining[0]);
+
+                    rangeIterator.advanceInCurrentRangeToKey(remaining[1].getFirst());
+                    toCheck = rangeIterator.next();
+
+                    if (!removeIterator.hasNext()) {
+                        break;
+                    }
+                    toRemove = removeIterator.next();
+                }
+            }
         }
-        if (toRemove > 0) {
-            sortedRanges.subList(beforeCount, beforeCount + toRemove).clear();
-            poisonCache(beforeCount);
-        } else {
-            assert beforeCount == -1 : "No items to remove, but beforeCount set?";
+
+        // Grab remaining ranges
+        if (toCheck != null) {
+            newRanges.appendRange(toCheck);
+            while (rangeIterator.hasNext()) {
+                newRanges.appendRange(rangeIterator.next());
+            }
         }
+
+        this.sortedRanges = newRanges.build();
+        poisonCache(0);
+    }
+
+    public void removeRange(Range range) {
+        removeRangeSet(RangeSet.fromSortedRanges(Collections.singletonList(range)));
     }
 
     private static class RangeAccumulator {
@@ -427,10 +404,33 @@ public class RangeSet {
     }
 
     public PrimitiveIterator.OfLong indexIterator() {
-        return sortedRanges
-                .stream()
-                .flatMapToLong(range -> LongStream.rangeClosed(range.getFirst(), range.getLast()))
-                .iterator();
+        if (isEmpty()) {
+            return LongStream.empty().iterator();
+        }
+        return new PrimitiveIterator.OfLong() {
+            private int rangeIndex = 0;
+            private Range current = sortedRanges.get(0);
+            private long offsetInRange = 0;
+            @Override
+            public long nextLong() {
+                long value = current.getFirst() + offsetInRange;
+                if (++offsetInRange >= current.size()) {
+                    rangeIndex++;
+                    offsetInRange = 0;
+                    if (rangeIndex < rangeCount()) {
+                        current = sortedRanges.get(rangeIndex);
+                    } else {
+                        current = null;
+                    }
+                }
+                return value;
+            }
+
+            @Override
+            public boolean hasNext() {
+                return rangeIndex < rangeCount();
+            }
+        };
     }
 
     public int rangeCount() {
