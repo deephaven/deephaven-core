@@ -3,13 +3,11 @@
 //
 package io.deephaven.web.client.api.barrage.data;
 
-import elemental2.core.JsArray;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.web.client.api.barrage.WebBarrageMessage;
 import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
-import io.deephaven.web.client.fu.JsData;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.shared.data.Range;
 import io.deephaven.web.shared.data.RangeSet;
