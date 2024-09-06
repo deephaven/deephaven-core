@@ -39,7 +39,7 @@ public interface TransferObject<BUFFER_TYPE> extends SafeCloseable {
             @NotNull final Map<String, Map<ParquetCacheTags, Object>> computedCache,
             @NotNull final String columnName,
             @NotNull final ColumnSource<DATA_TYPE> columnSource) {
-        Class<DATA_TYPE> columnType = columnSource.getType();
+        final Class<DATA_TYPE> columnType = columnSource.getType();
         if (columnType == int.class) {
             return IntTransfer.create(columnSource, tableRowSet, instructions.getTargetPageSize());
         }
@@ -84,13 +84,11 @@ public interface TransferObject<BUFFER_TYPE> extends SafeCloseable {
             return new CodecTransfer<>(columnSource, codec, tableRowSet, instructions.getTargetPageSize());
         }
         if (columnType == BigDecimal.class) {
-            // noinspection unchecked
-            final ColumnSource<BigDecimal> bigDecimalColumnSource = (ColumnSource<BigDecimal>) columnSource;
             final BigDecimalUtils.PrecisionAndScale precisionAndScale = TypeInfos.getPrecisionAndScale(
-                    computedCache, columnName, tableRowSet, () -> bigDecimalColumnSource);
+                    computedCache, columnName, tableRowSet, () -> columnSource);
             final ObjectCodec<BigDecimal> codec = new BigDecimalParquetBytesCodec(
                     precisionAndScale.precision, precisionAndScale.scale);
-            return new CodecTransfer<>(bigDecimalColumnSource, codec, tableRowSet, instructions.getTargetPageSize());
+            return new CodecTransfer<>(columnSource, codec, tableRowSet, instructions.getTargetPageSize());
         }
         if (columnType == BigInteger.class) {
             return new CodecTransfer<>(columnSource, new BigIntegerParquetBytesCodec(), tableRowSet,
@@ -136,6 +134,13 @@ public interface TransferObject<BUFFER_TYPE> extends SafeCloseable {
             if (componentType == String.class) {
                 return new StringArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
+            if (componentType == BigDecimal.class) {
+                final BigDecimalUtils.PrecisionAndScale precisionAndScale = TypeInfos.getPrecisionAndScale(
+                        computedCache, columnName, tableRowSet, () -> columnSource);
+                final ObjectCodec<BigDecimal> codec = new BigDecimalParquetBytesCodec(
+                        precisionAndScale.precision, precisionAndScale.scale);
+                return new CodecArrayTransfer<>(columnSource, codec, tableRowSet, instructions.getTargetPageSize());
+            }
             if (componentType == BigInteger.class) {
                 return new CodecArrayTransfer<>(columnSource, new BigIntegerParquetBytesCodec(),
                         tableRowSet, instructions.getTargetPageSize());
@@ -152,7 +157,7 @@ public interface TransferObject<BUFFER_TYPE> extends SafeCloseable {
             if (componentType == LocalDateTime.class) {
                 return new LocalDateTimeArrayTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
-            // TODO(deephaven-core#4612): Handle arrays of BigDecimal and if explicit codec provided
+            // TODO(deephaven-core#4612): Handle if explicit codec provided
         }
         if (Vector.class.isAssignableFrom(columnType)) {
             if (componentType == int.class) {
@@ -182,6 +187,13 @@ public interface TransferObject<BUFFER_TYPE> extends SafeCloseable {
             if (componentType == String.class) {
                 return new StringVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
+            if (componentType == BigDecimal.class) {
+                final BigDecimalUtils.PrecisionAndScale precisionAndScale = TypeInfos.getPrecisionAndScale(
+                        computedCache, columnName, tableRowSet, () -> columnSource);
+                final ObjectCodec<BigDecimal> codec = new BigDecimalParquetBytesCodec(
+                        precisionAndScale.precision, precisionAndScale.scale);
+                return new CodecVectorTransfer<>(columnSource, codec, tableRowSet, instructions.getTargetPageSize());
+            }
             if (componentType == BigInteger.class) {
                 return new CodecVectorTransfer<>(columnSource, new BigIntegerParquetBytesCodec(),
                         tableRowSet, instructions.getTargetPageSize());
@@ -198,7 +210,7 @@ public interface TransferObject<BUFFER_TYPE> extends SafeCloseable {
             if (componentType == LocalDateTime.class) {
                 return new LocalDateTimeVectorTransfer(columnSource, tableRowSet, instructions.getTargetPageSize());
             }
-            // TODO(deephaven-core#4612): Handle vectors of BigDecimal and if explicit codec provided
+            // TODO(deephaven-core#4612): Handle if explicit codec provided
         }
 
         // Go with the default
