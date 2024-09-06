@@ -14,12 +14,36 @@ import java.util.*;
  */
 public final class DataInstructionsProviderLoader {
     /**
+     * The list of plugins loaded by the {@link ServiceLoader}.
+     */
+    private static volatile List<DataInstructionsProviderPlugin> providers;
+
+    /**
+     * Ensure that the {@link DataInstructionsProviderPlugin plugins} are loaded exactly once.
+     */
+    private static void ensureProviders() {
+        if (providers == null) {
+            synchronized (DataInstructionsProviderLoader.class) {
+                if (providers == null) {
+                    providers = new ArrayList<>();
+                    // Load the plugins
+                    for (final DataInstructionsProviderPlugin plugin : ServiceLoader
+                            .load(DataInstructionsProviderPlugin.class)) {
+                        providers.add(plugin);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * Get a {@link DataInstructionsProviderLoader} instance for the given property collection.
      *
      * @param properties The property collection.
      * @return A {@link DataInstructionsProviderLoader} instance.
      */
     public static DataInstructionsProviderLoader getInstance(final Map<String, String> properties) {
+        ensureProviders();
         return new DataInstructionsProviderLoader(properties);
     }
 
@@ -29,22 +53,12 @@ public final class DataInstructionsProviderLoader {
     private final Map<String, String> properties;
 
     /**
-     * The list of plugins loaded by the {@link ServiceLoader}.
-     */
-    private final List<DataInstructionsProviderPlugin> providers;
-
-    /**
      * Create a new {@link DataInstructionsProviderLoader} instance for the given property collection.
      *
      * @param properties The property collection.
      */
     private DataInstructionsProviderLoader(final Map<String, String> properties) {
         this.properties = properties;
-        providers = new ArrayList<>();
-        // Load the plugins
-        for (final DataInstructionsProviderPlugin plugin : ServiceLoader.load(DataInstructionsProviderPlugin.class)) {
-            providers.add(plugin);
-        }
     }
 
     /**

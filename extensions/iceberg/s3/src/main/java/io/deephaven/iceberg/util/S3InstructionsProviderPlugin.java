@@ -21,7 +21,7 @@ import java.util.Map;
 @SuppressWarnings("unused")
 public final class S3InstructionsProviderPlugin implements DataInstructionsProviderPlugin {
     @Override
-    public Object createInstructions(@NotNull URI uri, @NotNull Map<String, String> properties) {
+    public Object createInstructions(@NotNull final URI uri, @NotNull final Map<String, String> properties) {
         // If the URI scheme is "s3","s3a","s3n" or if the properties contain one of these specific keys, we can
         // create a useful S3Instructions object.
         if (uri.getScheme().equals("s3")

@@ -69,16 +69,14 @@ public class IcebergCatalogAdapter {
     private final DataInstructionsProviderLoader dataInstructionsProvider;
 
     /**
-     * Construct an IcebergCatalogAdapter from a catalog and file IO.
+     * Construct an IcebergCatalogAdapter from a catalog.
      */
     IcebergCatalogAdapter(@NotNull final Catalog catalog) {
-        this.catalog = catalog;
-
-        dataInstructionsProvider = DataInstructionsProviderLoader.getInstance(Map.of());
+        this(catalog, Map.of());
     }
 
     /**
-     * Construct an IcebergCatalogAdapter from a catalog, file IO, and property collection.
+     * Construct an IcebergCatalogAdapter from a catalog and property collection.
      */
     IcebergCatalogAdapter(
             @NotNull final Catalog catalog,
@@ -660,6 +658,22 @@ public class IcebergCatalogAdapter {
     }
 
     /**
+     * Retrieve a snapshot of an Iceberg table from the Iceberg catalog.
+     *
+     * @param tableIdentifier The table identifier to load
+     * @param tableSnapshotId The snapshot id to load
+     * @return The loaded table
+     * @throws IllegalArgumentException if the snapshot with the given id is not found
+     */
+    private Snapshot getTableSnapshot(@NotNull TableIdentifier tableIdentifier, long tableSnapshotId) {
+        return listSnapshots(tableIdentifier).stream()
+                .filter(snapshot -> snapshot.snapshotId() == tableSnapshotId)
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Snapshot with id " + tableSnapshotId + " for table " + tableIdentifier + " not found"));
+    }
+
+    /**
      * Read a static snapshot of an Iceberg table from the Iceberg catalog.
      *
      * @param tableIdentifier The table identifier to load
@@ -669,13 +683,11 @@ public class IcebergCatalogAdapter {
     @SuppressWarnings("unused")
     public Table readTable(@NotNull final TableIdentifier tableIdentifier, final long tableSnapshotId) {
         // Find the snapshot with the given snapshot id
-        final Snapshot tableSnapshot = listSnapshots(tableIdentifier).stream()
-                .filter(snapshot -> snapshot.snapshotId() == tableSnapshotId)
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Snapshot with id " + tableSnapshotId + " not found"));
+        final Snapshot tableSnapshot = getTableSnapshot(tableIdentifier, tableSnapshotId);
 
         return readTableInternal(tableIdentifier, tableSnapshot, null);
     }
+
 
     /**
      * Read a static snapshot of an Iceberg table from the Iceberg catalog.
@@ -688,10 +700,7 @@ public class IcebergCatalogAdapter {
     public Table readTable(@NotNull final String tableIdentifier, final long tableSnapshotId) {
         final TableIdentifier tableId = TableIdentifier.parse(tableIdentifier);
         // Find the snapshot with the given snapshot id
-        final Snapshot tableSnapshot = listSnapshots(tableId).stream()
-                .filter(snapshot -> snapshot.snapshotId() == tableSnapshotId)
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Snapshot with id " + tableSnapshotId + " not found"));
+        final Snapshot tableSnapshot = getTableSnapshot(tableId, tableSnapshotId);
 
         return readTableInternal(tableId, tableSnapshot, null);
     }

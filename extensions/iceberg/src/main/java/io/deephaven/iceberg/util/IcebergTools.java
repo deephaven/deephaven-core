@@ -36,8 +36,6 @@ public abstract class IcebergTools {
      * {@code "type"} include {@code "hive"}, {@code "hadoop"}, {@code "rest"}, {@code "glue"}, {@code "nessie"},
      * {@code "jdbc"}.</li>
      * <li>{@code "uri"} - the URI of the catalog.</li>
-     * <li>{@code "io-impl"} - the Java FileIO implementation to use. Common choices are:
-     * {@code "org.apache.iceberg.aws.s3.S3FileIO"} and {@code "org.apache.iceberg.hadoop.HadoopFileIO"}</li>
      * </ul>
      * <p>
      * Other common properties include:
@@ -62,7 +60,6 @@ public abstract class IcebergTools {
     public static IcebergCatalogAdapter createAdapter(
             @Nullable final String name,
             @NotNull final Map<String, String> properties) {
-
         return createAdapter(name, properties, Map.of());
     }
 
@@ -80,8 +77,6 @@ public abstract class IcebergTools {
      * {@code "type"} include {@code "hive"}, {@code "hadoop"}, {@code "rest"}, {@code "glue"}, {@code "nessie"},
      * {@code "jdbc"}.</li>
      * <li>{@code "uri"} - the URI of the catalog.</li>
-     * <li>{@code "io-impl"} - the Java FileIO implementation to use. Common choices are:
-     * {@code "org.apache.iceberg.aws.s3.S3FileIO"} and {@code "org.apache.iceberg.hadoop.HadoopFileIO"}</li>
      * </ul>
      * <p>
      * Other common properties include:
@@ -108,12 +103,12 @@ public abstract class IcebergTools {
             @Nullable final String name,
             @NotNull final Map<String, String> properties,
             @NotNull final Map<String, String> hadoopConfig) {
-
         // Validate the minimum required properties are set
         if (!properties.containsKey(CatalogProperties.CATALOG_IMPL)
                 && !properties.containsKey(CatalogUtil.ICEBERG_CATALOG_TYPE)) {
-            throw new IllegalArgumentException(String.format("Catalog type or implementation property '%s' is required",
-                    CatalogProperties.CATALOG_IMPL));
+            throw new IllegalArgumentException(
+                    String.format("Catalog type '%s' or implementation class '%s' is required",
+                            CatalogUtil.ICEBERG_CATALOG_TYPE, CatalogProperties.CATALOG_IMPL));
         }
         if (!properties.containsKey(CatalogProperties.URI)) {
             throw new IllegalArgumentException(String.format("Catalog URI property '%s' is required",
@@ -122,7 +117,6 @@ public abstract class IcebergTools {
 
         final String catalogUri = properties.get(CatalogProperties.URI);
         final String catalogName = name != null ? name : "IcebergCatalog-" + catalogUri;
-        final String fileIOImpl = properties.get(CatalogProperties.FILE_IO_IMPL);
 
         // Load the Hadoop configuration with the provided properties
         final Configuration hadoopConf = new Configuration();
