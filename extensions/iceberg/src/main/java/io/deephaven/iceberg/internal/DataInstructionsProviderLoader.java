@@ -16,20 +16,20 @@ public final class DataInstructionsProviderLoader {
     /**
      * The list of plugins loaded by the {@link ServiceLoader}.
      */
-    private static volatile List<DataInstructionsProviderPlugin> providers;
+    private static volatile List<DataInstructionsProviderPlugin> cachedProviders;
 
     /**
      * Ensure that the {@link DataInstructionsProviderPlugin plugins} are loaded exactly once.
      */
     private static void ensureProviders() {
-        if (providers == null) {
+        if (cachedProviders == null) {
             synchronized (DataInstructionsProviderLoader.class) {
-                if (providers == null) {
-                    providers = new ArrayList<>();
+                if (cachedProviders == null) {
+                    cachedProviders = new ArrayList<>();
                     // Load the plugins
                     for (final DataInstructionsProviderPlugin plugin : ServiceLoader
                             .load(DataInstructionsProviderPlugin.class)) {
-                        providers.add(plugin);
+                        cachedProviders.add(plugin);
                     }
                 }
             }
@@ -42,7 +42,7 @@ public final class DataInstructionsProviderLoader {
      * @param properties The property collection.
      * @return A {@link DataInstructionsProviderLoader} instance.
      */
-    public static DataInstructionsProviderLoader getInstance(final Map<String, String> properties) {
+    public static DataInstructionsProviderLoader create(final Map<String, String> properties) {
         ensureProviders();
         return new DataInstructionsProviderLoader(properties);
     }
@@ -53,12 +53,18 @@ public final class DataInstructionsProviderLoader {
     private final Map<String, String> properties;
 
     /**
+     * The local list of plugins loaded by the {@link ServiceLoader}.
+     */
+    private final List<DataInstructionsProviderPlugin> providers;
+
+    /**
      * Create a new {@link DataInstructionsProviderLoader} instance for the given property collection.
      *
      * @param properties The property collection.
      */
     private DataInstructionsProviderLoader(final Map<String, String> properties) {
         this.properties = properties;
+        providers = cachedProviders;
     }
 
     /**

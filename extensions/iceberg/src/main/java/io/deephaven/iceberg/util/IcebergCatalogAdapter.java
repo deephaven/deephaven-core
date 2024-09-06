@@ -83,7 +83,7 @@ public class IcebergCatalogAdapter {
             @NotNull final Map<String, String> properties) {
         this.catalog = catalog;
 
-        dataInstructionsProvider = DataInstructionsProviderLoader.getInstance(Map.copyOf(properties));
+        dataInstructionsProvider = DataInstructionsProviderLoader.create(Map.copyOf(properties));
     }
 
     /**
