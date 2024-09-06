@@ -230,6 +230,8 @@ class ParquetTestCase(BaseTestCase):
             "someCharArrayColumn = new char[] {i % 10 == 0 ? null : (char)i}",
             "someTimeArrayColumn = new Instant[] {i % 10 == 0 ? null : (Instant)DateTimeUtils.now() + i}",
             "someBiColumn = new java.math.BigInteger[] {i % 10 == 0 ? null : java.math.BigInteger.valueOf(i)}",
+            "someBdColumn = new java.math.BigDecimal[] {i % 10 == 0 ? null : " +
+                "java.math.BigDecimal.valueOf(ii).stripTrailingZeros()}",
             "nullStringArrayColumn = new String[] {(String)null}",
             "nullIntArrayColumn = new int[] {(int)null}",
             "nullLongArrayColumn = new long[] {(long)null}",
@@ -240,7 +242,8 @@ class ParquetTestCase(BaseTestCase):
             "nullByteArrayColumn = new byte[] {(byte)null}",
             "nullCharArrayColumn = new char[] {(char)null}",
             "nullTimeArrayColumn = new Instant[] {(Instant)null}",
-            "nullBiColumn = new java.math.BigInteger[] {(java.math.BigInteger)null}"
+            "nullBiColumn = new java.math.BigInteger[] {(java.math.BigInteger)null}",
+            "nullBdColumn = new java.math.BigDecimal[] {(java.math.BigDecimal)null}"
         ])
         return dh_table
 
