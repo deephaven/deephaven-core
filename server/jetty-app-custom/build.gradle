@@ -1,0 +1,113 @@
+plugins {
+    id 'application'
+    id 'io.deephaven.project.register'
+}
+
+configurations {
+    applicationDist
+}
+
+dependencies {
+    implementation project(':server-jetty')
+    implementation libs.dagger
+    annotationProcessor libs.dagger.compiler
+
+    runtimeOnly project(':log-to-slf4j')
+    runtimeOnly project(':logback-print-stream-globals')
+    runtimeOnly project(':logback-logbuffer')
+    runtimeOnly libs.logback.classic
+}
+
+distributions {
+    main {
+        distributionBaseName = 'server-jetty-custom'
+    }
+}
+
+def extraJvmArgs = [
+        '-server',
+        '-XshowSettings:vm',
+]
+
+if (hasProperty('groovy')) {
+    extraJvmArgs += ['-Ddeephaven.console.type=groovy']
+}
+
+if (!hasProperty('excludeHotspotImpl')) {
+    dependencies {
+        runtimeOnly project(':hotspot-impl')
+    }
+    extraJvmArgs += ['--add-exports', 'java.management/sun.management=ALL-UNNAMED']
+}
+
+if (!hasProperty('excludeClockImpl')) {
+    dependencies {
+        runtimeOnly project(':clock-impl')
+    }
+    extraJvmArgs += ['--add-exports', 'java.base/jdk.internal.misc=ALL-UNNAMED']
+}
+
+if (!hasProperty('excludeSql')) {
+    dependencies {
+        runtimeOnly project(':engine-sql')
+    }
+}
+
+if (!hasProperty('excludeS3')) {
+    dependencies {
+        runtimeOnly project(':extensions-s3')
+        runtimeOnly project(':extensions-iceberg-s3')
+    }
+}
+
+if (hasProperty('devCerts') || hasProperty('devMTLS')) {
+    extraJvmArgs += [
+            '-Dhttp.port=8443',
+            '-Dssl.identity.type=privatekey',
+            '-Dssl.identity.certChainPath=../dev-certs/server.chain.crt',
+            '-Dssl.identity.privateKeyPath=../dev-certs/server.key',
+    ]
+    if (hasProperty('devMTLS')) {
+        extraJvmArgs += [
+                '-Dssl.trust.type=certs',
+                '-Dssl.trust.path=../dev-certs/ca.crt',
+                '-Dssl.clientAuthentication=NEEDED',
+        ]
+    }
+}
+
+if (hasProperty('debug')) {
+    extraJvmArgs += ['-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005']
+}
+
+if (hasProperty('debugAutocomplete')) {
+    extraJvmArgs += ['-Ddeephaven.console.autocomplete.quiet=false']
+}
+
+if (hasProperty('gcApplication')) {
+    extraJvmArgs += ['-Dio.deephaven.app.GcApplication.enabled=true']
+}
+
+if (hasProperty('quiet')) {
+    extraJvmArgs += ['-Ddeephaven.quiet=true']
+}
+
+tasks.withType(JavaExec).configureEach {
+    // This appends to the existing jvm args, so that java-open-nio still takes effect
+    jvmArgs extraJvmArgs
+}
+
+tasks.withType(CreateStartScripts).configureEach {
+    defaultJvmOpts += extraJvmArgs
+}
+
+application {
+    applicationName = 'start'
+    mainClass = 'io.deephaven.server.custom.CustomMain'
+}
+
+artifacts {
+    applicationDist project.tasks.findByName('distTar')
+}
+
+apply plugin: 'io.deephaven.java-open-nio'
