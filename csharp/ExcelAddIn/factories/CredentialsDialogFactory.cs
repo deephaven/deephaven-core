@@ -1,4 +1,5 @@
-﻿using Deephaven.ExcelAddIn.Models;
+﻿using System.Diagnostics;
+using Deephaven.ExcelAddIn.Models;
 using Deephaven.ExcelAddIn.Util;
 using Deephaven.ExcelAddIn.ViewModels;
 using ExcelAddIn.views;

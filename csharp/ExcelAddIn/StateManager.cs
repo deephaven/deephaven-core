@@ -80,4 +80,8 @@ public class StateManager {
   public void Reconnect(EndpointId id) {
     _sessionProviders.Reconnect(id);
   }
+
+  public void SwitchOnEmpty(EndpointId id, Action onEmpty, Action onNotEmpty) {
+    _sessionProviders.SwitchOnEmpty(id, onEmpty, onNotEmpty);
+  }
 }

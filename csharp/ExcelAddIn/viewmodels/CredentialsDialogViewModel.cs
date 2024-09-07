@@ -31,7 +31,7 @@ public sealed class CredentialsDialogViewModel : INotifyPropertyChanged {
         result.JsonUrl = corePlus.JsonUrl;
         result.UserId = corePlus.User;
         result.Password = corePlus.Password;
-        result.OperateAs = corePlus.OperateAs;
+        result.OperateAs = corePlus.OperateAs.Equals(corePlus.User) ? "" : corePlus.OperateAs;
         result.ValidateCertificate = corePlus.ValidateCertificate;
         return Unit.Instance;
       });
@@ -68,15 +68,15 @@ public sealed class CredentialsDialogViewModel : INotifyPropertyChanged {
       }
     }
 
-    CheckMissing(_id, "Connection Id");
+    CheckMissing(Id, "Connection Id");
 
     if (!_isCorePlus) {
-      CheckMissing(_connectionString, "Connection String");
+      CheckMissing(ConnectionString, "Connection String");
     } else {
-      CheckMissing(_jsonUrl, "JSON URL");
-      CheckMissing(_userId, "User Id");
-      CheckMissing(_password, "Password");
-      CheckMissing(_operateAs, "Operate As");
+      CheckMissing(JsonUrl, "JSON URL");
+      CheckMissing(UserId, "User Id");
+      CheckMissing(Password, "Password");
+      CheckMissing(OperateAsToUse, "Operate As");
     }
 
     if (missingFields.Count > 0) {
@@ -86,8 +86,8 @@ public sealed class CredentialsDialogViewModel : INotifyPropertyChanged {
 
     var epId = new EndpointId(_id);
     result = _isCorePlus
-      ? CredentialsBase.OfCorePlus(epId, _jsonUrl, _userId, _password, _operateAs, _validateCertificate)
-      : CredentialsBase.OfCore(epId, _connectionString, _sessionTypeIsPython);
+      ? CredentialsBase.OfCorePlus(epId, JsonUrl, UserId, Password, OperateAsToUse, ValidateCertificate)
+      : CredentialsBase.OfCore(epId, ConnectionString, SessionTypeIsPython);
     return true;
   }
 
@@ -206,6 +206,8 @@ public sealed class CredentialsDialogViewModel : INotifyPropertyChanged {
       OnPropertyChanged();
     }
   }
+
+  public string OperateAsToUse => _operateAs.Length != 0 ? _operateAs : UserId;
 
   public bool ValidateCertificate {
     get => _validateCertificate;
