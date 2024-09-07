@@ -1,83 +1,138 @@
-﻿using System.Diagnostics;
-using Deephaven.ExcelAddIn.Models;
+﻿using Deephaven.ExcelAddIn.Models;
 using Deephaven.ExcelAddIn.Util;
 using Deephaven.ExcelAddIn.ViewModels;
 using ExcelAddIn.views;
+using static System.Windows.Forms.AxHost;
 
 namespace Deephaven.ExcelAddIn.Factories;
 
 internal static class CredentialsDialogFactory {
-  public static CredentialsDialog Create(StateManager sm, CredentialsDialogViewModel cvm) {
-    CredentialsDialog? credentialsDialog = null;
+  public static void CreateAndShow(StateManager stateManager, CredentialsDialogViewModel cvm,
+    EndpointId? whitelistId) {
+    Utility.RunInBackground(() => {
+      var cd = new CredentialsDialog(cvm);
+      var state = new CredentialsDialogState(stateManager, cd, cvm, whitelistId);
 
-    void OnSetCredentialsButtonClicked() {
-      if (!cvm.TryMakeCredentials(out var newCreds, out var error)) {
-        ShowMessageBox(error);
-        return;
-      }
 
-      sm.SetCredentials(newCreds);
-      if (cvm.IsDefault) {
-        sm.SetDefaultCredentials(newCreds);
-      }
+      cd.OnSetCredentialsButtonClicked += state.OnSetCredentials;
+      cd.OnTestCredentialsButtonClicked += state.OnTestCredentials;
 
-      credentialsDialog!.Close();
-    }
+      cd.Closed += (_, _) => state.Dispose();
+      // Blocks forever (in this private thread)
+      cd.ShowDialog();
+    });
+  }
+}
 
-    // This is used to ignore the results from stale "Test Credentials" invocations
-    // and to only use the results from the latest. It is read and written from different
-    // threads so we protect it with a synchronization object.
-    var sharedTestCredentialsCookie = new SimpleAtomicReference<object>(new object());
+internal class CredentialsDialogState : IObserver<AddOrRemove<EndpointId>>, IDisposable {
+  private readonly StateManager _stateManager;
+  private readonly CredentialsDialog _credentialsDialog;
+  private readonly CredentialsDialogViewModel _cvm;
+  private readonly EndpointId? _whitelistId;
+  private IDisposable? _disposer;
+  private readonly object _sync = new();
+  private readonly HashSet<EndpointId> _knownIds = new();
+  private readonly VersionTracker _versionTracker = new();
 
-    void TestCredentials(CredentialsBase creds) {
-      // Make a unique sentinel object to indicate that this thread should be
-      // the one privileged to provide the system with the answer to the "Test
-      // Credentials" question. If the user doesn't press the button again,
-      // we will go ahead and provide our answer to the system. However, if the
-      // user presses the button again, triggering a new thread, then that
-      // new thread will usurp our privilege and it will be the one to provide
-      // the answer.
-      var localLatestTcc = new object();
-      sharedTestCredentialsCookie.Value = localLatestTcc;
-
-      var state = "OK";
-      try {
-        // This operation might take some time.
-        var temp = SessionBaseFactory.Create(creds, sm.WorkerThread);
-        temp.Dispose();
-      } catch (Exception ex) {
-        state = ex.Message;
-      }
-
-      // If sharedTestCredentialsCookie is still the same, then our privilege
-      // has not been usurped and we can provide our answer to the system.
-      // On the other hand, if it changes, then we will just throw away our work.
-      if (!ReferenceEquals(localLatestTcc, sharedTestCredentialsCookie.Value)) {
-        // Our results are moot. Dispose of them.
-        return;
-      }
-
-      // Our results are valid. Keep them and tell everyone about it.
-      credentialsDialog!.SetTestResultsBox(state);
-    }
-
-    void OnTestCredentialsButtonClicked() {
-      if (!cvm.TryMakeCredentials(out var newCreds, out var error)) {
-        ShowMessageBox(error);
-        return;
-      }
-
-      credentialsDialog!.SetTestResultsBox("Checking credentials");
-      // Check credentials on its own thread
-      Utility.RunInBackground(() => TestCredentials(newCreds));
-    }
-
-    // Save in captured variable so that the lambdas can access it.
-    credentialsDialog = new CredentialsDialog(cvm, OnSetCredentialsButtonClicked, OnTestCredentialsButtonClicked);
-    return credentialsDialog;
+  public CredentialsDialogState(
+    StateManager stateManager,
+    CredentialsDialog credentialsDialog,
+    CredentialsDialogViewModel cvm,
+    EndpointId? whitelistId) {
+    _stateManager = stateManager;
+    _credentialsDialog = credentialsDialog;
+    _cvm = cvm;
+    _whitelistId = whitelistId;
+    _disposer = stateManager.SubscribeToCredentialsPopulation(this);
   }
 
-  private static void ShowMessageBox(string error) {
-    MessageBox.Show(error, "Please provide missing fields", MessageBoxButtons.OK);
+  public void Dispose() {
+    Utility.Exchange(ref _disposer, null)?.Dispose();
+  }
+
+  public void OnCompleted() {
+    throw new NotImplementedException();
+  }
+
+  public void OnError(Exception error) {
+    throw new NotImplementedException();
+  }
+
+  public void OnNext(AddOrRemove<EndpointId> value) {
+    lock (_sync) {
+      if (value.IsAdd) {
+        _knownIds.Add(value.Value);
+      } else {
+        _knownIds.Remove(value.Value);
+      }
+    }
+  }
+
+  public void OnSetCredentials() {
+    if (!_cvm.TryMakeCredentials(out var newCreds, out var error)) {
+      ShowMessageBox(error);
+      return;
+    }
+
+    bool isKnown;
+    lock (_sync) {
+      isKnown = _knownIds.Contains(newCreds.Id);
+    }
+
+    if (isKnown && !newCreds.Id.Equals(_whitelistId)) {
+      const string caption = "Modify existing connection?";
+      var text = $"Are you sure you want to modify connection \"{newCreds.Id}\"";
+      var dhm = new DeephavenMessageBox(caption, text, true);
+      var dialogResult = dhm.ShowDialog(_credentialsDialog);
+      if (dialogResult != DialogResult.OK) {
+        return;
+      }
+    }
+
+    _stateManager.SetCredentials(newCreds);
+    if (_cvm.IsDefault) {
+      _stateManager.SetDefaultEndpointId(newCreds.Id);
+    }
+
+    _credentialsDialog!.Close();
+  }
+
+  public void OnTestCredentials() {
+    if (!_cvm.TryMakeCredentials(out var newCreds, out var error)) {
+      ShowMessageBox(error);
+      return;
+    }
+
+    _credentialsDialog!.SetTestResultsBox("Checking credentials");
+    // Check credentials on its own thread
+    Utility.RunInBackground(() => TestCredentialsThreadFunc(newCreds));
+  }
+
+  private void TestCredentialsThreadFunc(CredentialsBase creds) {
+    var latestCookie = _versionTracker.SetNewVersion();
+
+    var state = "OK";
+    try {
+      // This operation might take some time.
+      var temp = SessionBaseFactory.Create(creds, _stateManager.WorkerThread);
+      temp.Dispose();
+    } catch (Exception ex) {
+      state = ex.Message;
+    }
+
+    if (!latestCookie.IsCurrent) {
+      // Our results are moot. Dispose of them.
+      return;
+    }
+
+    // Our results are valid. Keep them and tell everyone about it.
+    _credentialsDialog!.SetTestResultsBox(state);
+  }
+
+  private void ShowMessageBox(string error) {
+    _credentialsDialog.Invoke(() => {
+      var dhm = new DeephavenMessageBox("Please provide missing fields", error, false);
+      dhm.ShowDialog(_credentialsDialog);
+    });
   }
 }

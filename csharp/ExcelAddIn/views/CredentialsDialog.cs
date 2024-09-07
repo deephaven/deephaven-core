@@ -1,16 +1,11 @@
-﻿using System.Diagnostics;
-using Deephaven.ExcelAddIn.ViewModels;
+﻿using Deephaven.ExcelAddIn.ViewModels;
 
 namespace ExcelAddIn.views {
   public partial class CredentialsDialog : Form {
-    private readonly Action _onSetCredentialsButtonClicked;
-    private readonly Action _onTestCredentialsButtonClicked;
+    public event Action? OnSetCredentialsButtonClicked = null;
+    public event Action? OnTestCredentialsButtonClicked = null;
 
-    public CredentialsDialog(CredentialsDialogViewModel vm, Action onSetCredentialsButtonClicked,
-      Action onTestCredentialsButtonClicked) {
-      _onSetCredentialsButtonClicked = onSetCredentialsButtonClicked;
-      _onTestCredentialsButtonClicked = onTestCredentialsButtonClicked;
-
+    public CredentialsDialog(CredentialsDialogViewModel vm) {
       InitializeComponent();
       // Need to fire these bindings on property changed rather than simply on validation,
       // because on validation is not responsive enough. Also, painful technical note:
@@ -71,11 +66,11 @@ namespace ExcelAddIn.views {
     }
 
     private void setCredentialsButton_Click(object sender, EventArgs e) {
-      _onSetCredentialsButtonClicked();
+      OnSetCredentialsButtonClicked?.Invoke();
     }
 
     private void testCredentialsButton_Click(object sender, EventArgs e) {
-      _onTestCredentialsButtonClicked();
+      OnTestCredentialsButtonClicked?.Invoke();
     }
   }
 }

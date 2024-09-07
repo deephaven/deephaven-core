@@ -54,7 +54,7 @@ public sealed class CorePlusSession(SessionManager sessionManager, WorkerThread 
   }
 
   public override void Dispose() {
-    if (workerThread.InvokeIfRequired(Dispose)) {
+    if (workerThread.EnqueueOrNop(Dispose)) {
       return;
     }
 
