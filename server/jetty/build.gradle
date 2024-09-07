@@ -1,0 +1,59 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+dependencies {
+    api project(':authentication')
+    api project(':authorization')
+    api project(':server')
+    api(project(':Integrations')) {
+        because 'downstream dagger compile'
+    }
+    runtimeOnly(project(':web'))
+
+    implementation libs.dagger
+    annotationProcessor libs.dagger.compiler
+
+    testImplementation libs.dagger
+    testAnnotationProcessor libs.dagger.compiler
+
+    implementation platform(libs.grpc.bom)
+    implementation platform(libs.jetty.bom)
+    implementation platform(libs.jetty.ee10.bom)
+
+    api libs.jakarata.servlet.api
+    implementation libs.jetty.servlet
+    implementation libs.jetty.servlets
+    implementation libs.jetty.webapp
+    implementation libs.jetty.http2.server
+    implementation libs.jetty.alpn.server
+    // TODO(deephaven-core#2506): Support for alternative ALPN implementations
+    runtimeOnly libs.jetty.alpn.java.server
+
+//    implementation 'io.grpc:grpc-servlet-jakarta'
+    api(project(':grpc-java:grpc-servlet-jakarta')) {
+        because 'downstream dagger compile'
+    }
+    implementation project(':grpc-java:grpc-servlet-websocket-jakarta')
+    implementation libs.jetty.websocket.jakarta.server
+
+    compileOnly project(':util-immutables')
+    annotationProcessor libs.immutables.value
+
+    implementation project(':ssl-kickstart')
+    implementation libs.sslcontext.kickstart.jetty
+
+    implementation project(':grpc-java:grpc-mtls')
+
+    testImplementation project(':server-test-utils')
+    testImplementation libs.junit4
+    testImplementation libs.assertj
+
+    testRuntimeOnly project(':log-to-slf4j')
+    testRuntimeOnly libs.slf4j.simple
+}
+
+test.systemProperty "PeriodicUpdateGraph.allowUnitTestMode", false
+
+apply plugin: 'io.deephaven.java-open-nio'
