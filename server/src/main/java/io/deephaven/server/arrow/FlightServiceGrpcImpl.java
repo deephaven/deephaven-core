@@ -138,7 +138,8 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                             SessionState session = sessionService.getSessionForToken(uuid);
                             respondWithAuthTokenBin(session);
                             return;
-                        } catch (IllegalArgumentException | InvalidUuidException ignored) {}
+                        } catch (IllegalArgumentException | InvalidUuidException ignored) {
+                        }
                     }
 
                     // Attempt to log in with the given type and token
