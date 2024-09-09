@@ -29,7 +29,6 @@ import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.ee10.servlets.CrossOriginFilter;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.ee10.websocket.jakarta.common.SessionTracker;
 import org.eclipse.jetty.ee10.websocket.jakarta.server.JakartaWebSocketServerContainer;
@@ -51,6 +50,7 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.server.handler.CrossOriginHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.ExceptionUtil;
 import org.eclipse.jetty.util.component.Graceful;
@@ -68,6 +68,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -112,57 +113,6 @@ public class JettyBackedGrpcServer implements GrpcServer {
 
         // Add an extra filter to redirect from / to /ide/
         context.addFilter(HomeFilter.class, "/", EnumSet.noneOf(DispatcherType.class));
-
-        // If requested, permit CORS requests
-        FilterHolder holder = new FilterHolder(CrossOriginFilter.class);
-
-        // Permit all origins
-        holder.setInitParameter(CrossOriginFilter.ALLOWED_ORIGINS_PARAM, "*");
-
-        // Only support POST - technically gRPC can use GET, but we don't use any of those methods
-        holder.setInitParameter(CrossOriginFilter.ALLOWED_METHODS_PARAM, "POST");
-
-        // Required request headers for gRPC, gRPC-web, flight, and deephaven
-        holder.setInitParameter(CrossOriginFilter.ALLOWED_HEADERS_PARAM, String.join(",",
-                // Required for CORS itself to work
-                HttpHeader.ORIGIN.asString(),
-                CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER,
-
-                // Required for gRPC
-                GrpcUtil.CONTENT_TYPE_KEY.name(),
-                GrpcUtil.TIMEOUT_KEY.name(),
-
-                // Optional for gRPC
-                GrpcUtil.MESSAGE_ENCODING_KEY.name(),
-                GrpcUtil.MESSAGE_ACCEPT_ENCODING_KEY.name(),
-                GrpcUtil.CONTENT_ENCODING_KEY.name(),
-                GrpcUtil.CONTENT_ACCEPT_ENCODING_KEY.name(),
-
-                // Required for gRPC-web
-                "x-grpc-web",
-                // Optional for gRPC-web
-                "x-user-agent",
-
-                // Required for Flight auth 1/2
-                AuthConstants.TOKEN_NAME,
-                Auth2Constants.AUTHORIZATION_HEADER,
-
-                // Required for DH gRPC browser bidi stream support
-                BrowserStreamInterceptor.TICKET_HEADER_NAME,
-                BrowserStreamInterceptor.SEQUENCE_HEADER_NAME,
-                BrowserStreamInterceptor.HALF_CLOSE_HEADER_NAME));
-
-        // Response headers that the browser will need to be able to decode
-        holder.setInitParameter(CrossOriginFilter.EXPOSED_HEADERS_PARAM, String.join(",",
-                Auth2Constants.AUTHORIZATION_HEADER,
-                GrpcUtil.CONTENT_TYPE_KEY.name(),
-                InternalStatus.CODE_KEY.name(),
-                InternalStatus.MESSAGE_KEY.name(),
-                // Not used (yet?), see io.grpc.protobuf.StatusProto
-                "grpc-status-details-bin"));
-
-        // Add the filter on all requests
-        context.addFilter(holder, "/*", EnumSet.noneOf(DispatcherType.class));
 
         // Handle grpc-web connections, translate to vanilla grpc
         context.addFilter(new FilterHolder(new GrpcWebFilter()), "/*", EnumSet.noneOf(DispatcherType.class));
@@ -210,6 +160,54 @@ public class JettyBackedGrpcServer implements GrpcServer {
             this.websocketsEnabled = false;
         }
 
+        // If requested, permit CORS requests
+        CrossOriginHandler corsHandler = new CrossOriginHandler();
+        // Permit all origins
+        corsHandler.setAllowedOriginPatterns(Set.of("*"));
+
+        // Only support POST - technically gRPC can use GET, but we don't use any of those methods
+        corsHandler.setAllowedMethods(Set.of("POST"));
+
+        // Required request headers for gRPC, gRPC-web, flight, and deephaven
+        corsHandler.setAllowedHeaders(Set.of(
+                // Required for CORS itself to work
+                HttpHeader.ORIGIN.asString(),
+                HttpHeader.ACCESS_CONTROL_ALLOW_ORIGIN.asString(),
+
+                // Required for gRPC
+                GrpcUtil.CONTENT_TYPE_KEY.name(),
+                GrpcUtil.TIMEOUT_KEY.name(),
+
+                // Optional for gRPC
+                GrpcUtil.MESSAGE_ENCODING_KEY.name(),
+                GrpcUtil.MESSAGE_ACCEPT_ENCODING_KEY.name(),
+                GrpcUtil.CONTENT_ENCODING_KEY.name(),
+                GrpcUtil.CONTENT_ACCEPT_ENCODING_KEY.name(),
+
+                // Required for gRPC-web
+                "x-grpc-web",
+                // Optional for gRPC-web
+                "x-user-agent",
+
+                // Required for Flight auth 1/2
+                AuthConstants.TOKEN_NAME,
+                Auth2Constants.AUTHORIZATION_HEADER,
+
+                // Required for DH gRPC browser bidi stream support
+                BrowserStreamInterceptor.TICKET_HEADER_NAME,
+                BrowserStreamInterceptor.SEQUENCE_HEADER_NAME,
+                BrowserStreamInterceptor.HALF_CLOSE_HEADER_NAME));
+
+        // Response headers that the browser will need to be able to decode
+        corsHandler.setExposedHeaders(Set.of(
+                Auth2Constants.AUTHORIZATION_HEADER,
+                GrpcUtil.CONTENT_TYPE_KEY.name(),
+                InternalStatus.CODE_KEY.name(),
+                InternalStatus.MESSAGE_KEY.name(),
+                // Not used (yet?), see io.grpc.protobuf.StatusProto
+                "grpc-status-details-bin"));
+        corsHandler.setHandler(context);
+
         // Optionally wrap the webapp in a gzip handler
         final Handler handler;
         if (config.httpCompressionOrDefault()) {
@@ -221,10 +219,10 @@ public class JettyBackedGrpcServer implements GrpcServer {
             // the future as gRPC can technically operate over GET.
             gzipHandler.setIncludedMethods(HttpMethod.GET.asString());
             // Otherwise, the other defaults seem reasonable.
-            gzipHandler.setHandler(context);
+            gzipHandler.setHandler(corsHandler);
             handler = gzipHandler;
         } else {
-            handler = context;
+            handler = corsHandler;
         }
         jetty.setHandler(handler);
     }
