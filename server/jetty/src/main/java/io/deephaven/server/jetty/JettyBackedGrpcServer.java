@@ -27,6 +27,7 @@ import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
 import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.ee10.servlet.FilterHolder;
+import org.eclipse.jetty.ee10.servlet.ResourceServlet;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
@@ -365,11 +366,11 @@ public class JettyBackedGrpcServer implements GrpcServer {
     }
 
     private static ServletHolder servletHolder(String name, URI filesystemUri) {
-        final ServletHolder jsPlugins = new ServletHolder(name, DefaultServlet.class);
+        final ServletHolder jsPlugins = new ServletHolder(name, ResourceServlet.class);
         // Note, the URI needs explicitly be parseable as a directory URL ending in "!/", a requirement of the jetty
         // resource creation implementation, see
         // org.eclipse.jetty.util.resource.Resource.newResource(java.lang.String, boolean)
-        jsPlugins.setInitParameter("resourceBase", filesystemUri.toString());
+        jsPlugins.setInitParameter("baseResource", filesystemUri.toString());
         jsPlugins.setInitParameter("pathInfoOnly", "true");
         jsPlugins.setInitParameter("dirAllowed", "false");
         jsPlugins.setAsyncSupported(true);
