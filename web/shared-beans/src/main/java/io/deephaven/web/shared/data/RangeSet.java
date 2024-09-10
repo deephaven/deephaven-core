@@ -223,6 +223,11 @@ public class RangeSet {
         removeRangeSet(RangeSet.fromSortedRanges(Collections.singletonList(range)));
     }
 
+    public void clear() {
+        sortedRanges.clear();
+        poisonCache(0);
+    }
+
     private static class RangeAccumulator {
         private final List<Range> replacement = new ArrayList<>();
 

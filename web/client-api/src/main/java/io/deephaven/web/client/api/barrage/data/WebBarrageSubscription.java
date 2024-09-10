@@ -199,7 +199,7 @@ public abstract class WebBarrageSubscription {
                 }
             }
 
-            currentRowSet.removeRangeSet(message.rowsRemoved);
+            currentRowSet.clear();
 
             currentRowSet.addRangeSet(message.rowsAdded);
             state.setSize(message.rowsAdded.size());
