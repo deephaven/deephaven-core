@@ -1,6 +1,0 @@
-docker run \
-  -v "$(pwd)/docs/out:/out" \
-  -v "$(pwd)/docs:/docs" \
-  -v "$(pwd)/src/main/proto:/protos" \
-  --entrypoint "/docs/generate_docs.sh" \
-  pseudomuto/protoc-gen-doc

@@ -72,6 +72,29 @@ TaskProvider<Task> generateProtobuf = Docker.registerDockerTask(project, 'genera
   }
 }
 
+TaskProvider<Task> generateProtoDocs = Docker.registerDockerTask(project, 'generateProtoDocs') {
+  platform = 'linux/amd64'
+
+  copyIn {
+    from(layout.projectDirectory) {
+      include 'docs/'
+      include 'src/main/proto/'
+    }
+  }
+
+  dockerfile {
+    from('deephaven/protoc-base:local-build')
+    copyFile('docs/', '/docs')
+    copyFile('src/main/proto/', '/protos')
+    runCommand('mkdir /docs/out; ./docs/generate_docs.sh')
+  }
+
+  containerOutPath = '/docs/out'
+  copyOut {
+    into('docs/out')
+  }
+}
+
 // Provide js, go, python output as distinct artifacts - the java output will be consumed in this project by
 // declaring it as a new sourceset, see below. This could definitely be more precisely stated, but given that
 // all are generated in the same docker image creation step, we don't need to get too clever here.
