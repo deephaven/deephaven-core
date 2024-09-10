@@ -11,6 +11,7 @@ RUN set -eux; \
   mkdir -p /generated/go; \
   mkdir -p /generated/python; \
   mkdir -p /generated/cpp; \
+  mkdir -p /generated/proto-doc; \
   /opt/protoc/bin/protoc \
     --plugin=protoc-gen-grpc=/opt/java/bin/protoc-gen-grpc-java \
     --java_out=/generated/java \
@@ -84,4 +85,71 @@ RUN set -eux; \
     /includes/deephaven/proto/partitionedtable.proto \
     /includes/deephaven/proto/config.proto \
     /includes/deephaven/proto/hierarchicaltable.proto \
-    /includes/deephaven/proto/storage.proto;
+    /includes/deephaven/proto/storage.proto; \
+  # proto-doc-gen does not support writing multiple proto files to multiple docs, must break up command
+  /opt/protoc/bin/protoc \
+    --plugin=protoc-gen-doc=/usr/local/bin/protoc-gen-doc \
+    --doc_out=generated/proto-doc \
+    --doc_opt=markdown,ticket.md \
+    -I/includes \
+    /includes/deephaven/proto/ticket.proto; \
+  /opt/protoc/bin/protoc \
+    --plugin=protoc-gen-doc=/usr/local/bin/protoc-gen-doc \
+    --doc_out=generated/proto-doc \
+    --doc_opt=markdown,console.md \
+    -I/includes \
+    /includes/deephaven/proto/console.proto; \
+  /opt/protoc/bin/protoc \
+    --plugin=protoc-gen-doc=/usr/local/bin/protoc-gen-doc \
+    --doc_out=generated/proto-doc \
+    --doc_opt=markdown,object.md \
+    -I/includes \
+    /includes/deephaven/proto/object.proto; \
+  /opt/protoc/bin/protoc \
+    --plugin=protoc-gen-doc=/usr/local/bin/protoc-gen-doc \
+    --doc_out=generated/proto-doc \
+    --doc_opt=markdown,session.md \
+    -I/includes \
+    /includes/deephaven/proto/session.proto; \
+  /opt/protoc/bin/protoc \
+    --plugin=protoc-gen-doc=/usr/local/bin/protoc-gen-doc \
+    --doc_out=generated/proto-doc \
+    --doc_opt=markdown,table.md \
+    -I/includes \
+    /includes/deephaven/proto/table.proto; \
+  /opt/protoc/bin/protoc \
+    --plugin=protoc-gen-doc=/usr/local/bin/protoc-gen-doc \
+    --doc_out=generated/proto-doc \
+    --doc_opt=markdown,application.md \
+    -I/includes \
+    /includes/deephaven/proto/application.proto; \
+  /opt/protoc/bin/protoc \
+    --plugin=protoc-gen-doc=/usr/local/bin/protoc-gen-doc \
+    --doc_out=generated/proto-doc \
+    --doc_opt=markdown,inputtable.md \
+    -I/includes \
+    /includes/deephaven/proto/inputtable.proto; \
+  /opt/protoc/bin/protoc \
+    --plugin=protoc-gen-doc=/usr/local/bin/protoc-gen-doc \
+    --doc_out=generated/proto-doc \
+    --doc_opt=markdown,partitionedtable.md \
+    -I/includes \
+    /includes/deephaven/proto/partitionedtable.proto; \
+  /opt/protoc/bin/protoc \
+    --plugin=protoc-gen-doc=/usr/local/bin/protoc-gen-doc \
+    --doc_out=generated/proto-doc \
+    --doc_opt=markdown,config.md \
+    -I/includes \
+    /includes/deephaven/proto/config.proto; \
+  /opt/protoc/bin/protoc \
+    --plugin=protoc-gen-doc=/usr/local/bin/protoc-gen-doc \
+    --doc_out=generated/proto-doc \
+    --doc_opt=markdown,hierarchicaltable.md \
+    -I/includes \
+    /includes/deephaven/proto/hierarchicaltable.proto; \
+  /opt/protoc/bin/protoc \
+    --plugin=protoc-gen-doc=/usr/local/bin/protoc-gen-doc \
+    --doc_out=generated/proto-doc \
+    --doc_opt=markdown,storage.md \
+    -I/includes \
+    /includes/deephaven/proto/storage.proto; \
