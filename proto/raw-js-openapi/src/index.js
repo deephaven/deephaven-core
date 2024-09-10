@@ -28,11 +28,6 @@ var browserHeaders = require("browser-headers");
 
 var grpcWeb = require("@improbable-eng/grpc-web");//usually .grpc
 var jspb = require("google-protobuf");
-var flatbuffers = require("flatbuffers").flatbuffers;
-var barrage = require("@deephaven/barrage");
-
-var message = require('./arrow/flight/flatbuf/Message_generated');
-var schema = require('./arrow/flight/flatbuf/Schema_generated');
 
 var io = { deephaven: {
     proto: {
@@ -58,17 +53,8 @@ var io = { deephaven: {
             hierarchicaltable_pb,
             hierarchicaltable_pb_service
         },
-        barrage: {
-            "flatbuf": {
-                "Barrage_generated": barrage,
-            }
-        }
 }};
 var arrow = { flight: {
-    flatbuf: {
-        Message_generated: message,
-        Schema_generated: schema,
-    },
     protocol: {
         Flight_pb,
         Flight_pb_service,
@@ -80,7 +66,6 @@ var dhinternal = {
     browserHeaders,
     jspb,
     grpcWeb,//TODO need to expand this to the specific things we need
-    flatbuffers,
     io,
     arrow
 };

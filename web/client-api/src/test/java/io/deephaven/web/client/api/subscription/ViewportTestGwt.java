@@ -12,6 +12,7 @@ import io.deephaven.web.client.api.AbstractAsyncGwtTestCase;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.HasEventHandling;
 import io.deephaven.web.client.api.JsTable;
+import io.deephaven.web.client.api.TableData;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.filter.FilterValue;
 import io.deephaven.web.shared.fu.RemoverFn;
@@ -40,7 +41,8 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
             .script("from datetime import datetime, timedelta")
             .script("growingForward",
                     "time_table(period=\"PT00:00:01\", start_time=datetime.now() - timedelta(minutes=1)).update([\"I=i\", \"J=i*i\", \"K=0\"])")
-            .script("growingBackward", "growingForward.sort_descending(\"Timestamp\")")
+            .script("growingBackward",
+                    "growingForward.sort_descending(\"Timestamp\").format_columns(['I=I>2 ? GREEN : RED'])")
             .script("blinkOne",
                     "time_table(\"PT00:00:01\").update([\"I=i\", \"J=1\"]).last_by(by=\"J\").where(\"I%2 != 0\")");
 
@@ -59,28 +61,28 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                     // table has 100 rows, go through each page of 25, make sure the offset and length is sane
                     table.setViewport(0, 24, null);
                     return assertUpdateReceived(table, viewport -> {
-                        assertEquals(0, (long) viewport.getOffset());
+                        assertEquals(0d, viewport.getOffset());
                         assertEquals(25, viewport.getRows().length);
                     }, 2100);
                 })
                 .then(table -> {
                     table.setViewport(25, 49, null);
                     return assertUpdateReceived(table, viewport -> {
-                        assertEquals(25, (long) viewport.getOffset());
+                        assertEquals(25d, viewport.getOffset());
                         assertEquals(25, viewport.getRows().length);
                     }, 2101);
                 })
                 .then(table -> {
                     table.setViewport(50, 74, null);
                     return assertUpdateReceived(table, viewport -> {
-                        assertEquals(50, (long) viewport.getOffset());
+                        assertEquals(50d, viewport.getOffset());
                         assertEquals(25, viewport.getRows().length);
                     }, 2102);
                 })
                 .then(table -> {
                     table.setViewport(75, 99, null);
                     return assertUpdateReceived(table, viewport -> {
-                        assertEquals(75, (long) viewport.getOffset());
+                        assertEquals(75d, viewport.getOffset());
                         assertEquals(25, viewport.getRows().length);
                     }, 2103);
                 })
@@ -179,10 +181,16 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                         assertEquals(0, indexOf(viewport.getColumns(), table.findColumn("I")));
 
                         assertEquals(1, viewport.getRows().length);
-                        assertNotNull(viewport.getRows().getAt(0).get(table.findColumn("I")));
-                        assertThrowsException(() -> viewport.getRows().getAt(0).get(table.findColumn("J")));
-                        assertThrowsException(() -> viewport.getRows().getAt(0).get(table.findColumn("K")));
+                        TableData.Row row1 = viewport.getRows().getAt(0);
+                        assertNotNull(viewport.getData(0, table.findColumn("I")));
+                        assertNotNull(row1.get(table.findColumn("I")));
+                        assertNotNull(table.findColumn("I").get(row1));
+                        assertNotNull(row1.getFormat(table.findColumn("I")));
+                        assertNotNull(table.findColumn("I").getFormat(row1));
+                        assertNotNull(viewport.getFormat(0, table.findColumn("I")));
 
+                        assertThrowsException(() -> row1.get(table.findColumn("J")));
+                        assertThrowsException(() -> row1.get(table.findColumn("K")));
                     }, 2501);
                 })
                 .then(table -> {
@@ -361,7 +369,7 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                     table.setViewport(0, 10, null);
                     table.setViewport(5, 14, null);
                     return assertUpdateReceived(table, viewport -> {
-                        assertEquals(5, (int) viewport.getOffset());
+                        assertEquals(5d, viewport.getOffset());
                         assertEquals(10, (int) viewport.getRows().length);
                     }, 1008);
                 })
@@ -373,8 +381,8 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                 .then(table -> {
                     table.setViewport(6, 14, null);
                     return assertUpdateReceived(table, viewport -> {
-                        assertEquals(6, (int) viewport.getOffset());
-                        assertEquals(9, (int) viewport.getRows().length);
+                        assertEquals(6d, viewport.getOffset());
+                        assertEquals(9, viewport.getRows().length);
                     }, 1009);
                 })
                 .then(table -> {
@@ -387,12 +395,9 @@ public class ViewportTestGwt extends AbstractAsyncGwtTestCase {
                     table.setViewport(7, 17, null);
                     return assertUpdateReceived(table, ignored -> {
                     }, 1010)
-                            .then(waitFor(JsTable.DEBOUNCE_TIME * 2))
                             .then(t -> {
-                                // force the debounce to be processed
-                                t.processSnapshot();
                                 t.getViewportData().then(vp -> {
-                                    // assertEquals(7, (int) vp.getOffset());
+                                    assertEquals(7d, vp.getOffset());
                                     assertEquals(11, (int) vp.getRows().length);
                                     return Promise.resolve(vp);
                                 });
