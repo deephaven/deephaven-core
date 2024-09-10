@@ -3,6 +3,7 @@
 //
 package io.deephaven.server.session;
 
+import com.github.f4b6a3.uuid.exception.InvalidUuidException;
 import com.google.protobuf.ByteString;
 import com.google.rpc.Code;
 import io.deephaven.auth.AuthContext;
@@ -345,7 +346,7 @@ public class SessionServiceGrpcImpl extends SessionServiceGrpc.SessionServiceImp
             if (altToken != null) {
                 try {
                     session = service.getSessionForToken(UUID.fromString(new String(altToken)));
-                } catch (IllegalArgumentException ignored) {
+                } catch (IllegalArgumentException | InvalidUuidException ignored) {
                 }
             }
 

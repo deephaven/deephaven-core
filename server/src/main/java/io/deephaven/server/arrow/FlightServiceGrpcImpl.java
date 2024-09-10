@@ -136,7 +136,12 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
                         try {
                             UUID uuid = UuidCreator.fromString(req.getPayload().toString(StandardCharsets.US_ASCII));
                             SessionState session = sessionService.getSessionForToken(uuid);
-                            respondWithAuthTokenBin(session);
+                            if (session != null) {
+                                SessionService.TokenExpiration expiration = session.getExpiration();
+                                if (expiration != null) {
+                                    respondWithAuthTokenBin(expiration);
+                                }
+                            }
                             return;
                         } catch (IllegalArgumentException | InvalidUuidException ignored) {
                         }
@@ -157,7 +162,7 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
             }
 
             SessionState session = sessionService.newSession(auth.get());
-            respondWithAuthTokenBin(session);
+            respondWithAuthTokenBin(session.getExpiration());
         }
 
         private Optional<AuthContext> login(String type, long version, ByteString payload,
@@ -171,10 +176,10 @@ public class FlightServiceGrpcImpl extends FlightServiceGrpc.FlightServiceImplBa
         }
 
         /** send the bearer token as an AuthTokenBin, as headers might have already been sent */
-        private void respondWithAuthTokenBin(SessionState session) {
+        private void respondWithAuthTokenBin(SessionService.TokenExpiration expiration) {
             isComplete = true;
             responseObserver.onNext(Flight.HandshakeResponse.newBuilder()
-                    .setPayload(session.getExpiration().getTokenAsByteString())
+                    .setPayload(expiration.getTokenAsByteString())
                     .build());
             responseObserver.onCompleted();
         }
