@@ -9,6 +9,7 @@ import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
 import io.deephaven.iceberg.location.IcebergTableLocationKey;
 import io.deephaven.iceberg.util.IcebergInstructions;
+import io.deephaven.iceberg.internal.DataInstructionsProviderLoader;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.iceberg.*;
@@ -24,7 +25,7 @@ import java.util.stream.Collectors;
  * a {@link Snapshot}
  */
 public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
-    private class ColumnData {
+    private static class ColumnData {
         final String name;
         final Class<?> type;
         final int index;
@@ -52,8 +53,9 @@ public final class IcebergKeyValuePartitionedLayout extends IcebergBaseLayout {
             @NotNull final org.apache.iceberg.Snapshot tableSnapshot,
             @NotNull final FileIO fileIO,
             @NotNull final PartitionSpec partitionSpec,
-            @NotNull final IcebergInstructions instructions) {
-        super(tableDef, table, tableSnapshot, fileIO, instructions);
+            @NotNull final IcebergInstructions instructions,
+            @NotNull final DataInstructionsProviderLoader dataInstructionsProvider) {
+        super(tableDef, table, tableSnapshot, fileIO, instructions, dataInstructionsProvider);
 
         // We can assume due to upstream validation that there are no duplicate names (after renaming) that are included
         // in the output definition, so we can ignore duplicates.
