@@ -18,8 +18,7 @@ configurations {
   python {}
   go {}
   cpp {}
-  html {}
-  markdown {}
+  protoDocs {}
 }
 
 dependencies {
@@ -90,16 +89,7 @@ artifacts {
   cpp(layout.buildDirectory.dir('generated/source/proto/main/cpp')) {
     builtBy generateProtobuf
   }
-  html(layout.buildDirectory.dir('generated/source/proto/main/proto-doc/single-html')) {
-    builtBy generateProtobuf
-  }
-  html(layout.buildDirectory.dir('generated/source/proto/main/proto-doc/multi-html')) {
-    builtBy generateProtobuf
-  }
-  markdown(layout.buildDirectory.dir('generated/source/proto/main/proto-doc/single-md')) {
-    builtBy generateProtobuf
-  }
-  markdown(layout.buildDirectory.dir('generated/source/proto/main/proto-doc/multi-md')) {
+  protoDocs(layout.buildDirectory.dir('generated/source/proto/main/proto-doc')) {
     builtBy generateProtobuf
   }
 }
