@@ -599,13 +599,24 @@ public class JsTreeTable extends HasLifecycle implements ServerObject {
                     viewTicket.release();
                     viewTicket = null;
                 }
-            case SUBSCRIPTION:
+
+                // In all of the above cases, we replace the subscription
                 if (stream != null) {
                     stream.then(stream -> {
                         stream.close();
                         return null;
                     });
                     stream = null;
+                }
+                break;
+            case SUBSCRIPTION:
+                // If it exists, adjust the existing subscription, otherwise create a new one
+                if (stream != null) {
+                    stream.then(subscription -> {
+                        subscription.setViewport(firstRow, lastRow, Js.uncheckedCast(columns), (double) updateInterval);
+                        return null;
+                    });
+                    return;
                 }
         }
 
