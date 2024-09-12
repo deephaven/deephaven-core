@@ -1,0 +1,35 @@
+plugins {
+    id 'java-library'
+    id 'io.deephaven.project.register'
+}
+
+description = 'The Deephaven flight SQL library'
+
+dependencies {
+    implementation libs.arrow.flight.sql
+    implementation project(path: ':engine-sql')
+    implementation project(':extensions-barrage')
+
+    testImplementation project(':server')
+    testImplementation project(':extensions-csv')
+    implementation libs.slf4j.jul.to.slf4j
+    implementation libs.dagger
+    testImplementation project(path: ':server-jetty')
+    testImplementation project(path: ':server-test-utils')
+    annotationProcessor libs.dagger.compiler
+    testImplementation libs.dagger
+    testAnnotationProcessor libs.dagger.compiler
+
+    testImplementation libs.assertj
+    testImplementation platform(libs.junit.bom)
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly libs.junit.platform.launcher
+    testRuntimeOnly libs.arrow.flight.sql.jdbc
+
+    testRuntimeOnly project(':log-to-slf4j')
+    testRuntimeOnly libs.slf4j.simple
+}
+
+test {
+    useJUnitPlatform()
+}

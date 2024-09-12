@@ -801,6 +801,13 @@ public class SessionState {
         }
 
         /**
+         * @return the export id for this export
+         */
+        public int getExportIdInt() {
+            return exportId;
+        }
+
+        /**
          * Add dependency if object export has not yet completed.
          *
          * @param child the dependent task
