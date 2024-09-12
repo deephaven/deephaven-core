@@ -111,12 +111,7 @@ public class SelectAndViewAnalyzer implements LogOutputAppendable {
 
         // First pass to initialize all columns and to compile formulas in one batch.
         final QueryCompilerRequestProcessor.BatchProcessor compilationProcessor = QueryCompilerRequestProcessor.batch();
-        for (Map.Entry<String, ColumnSource<?>> entry : columnSources.entrySet()) {
-            final String name = entry.getKey();
-            final ColumnSource<?> cs = entry.getValue();
-            final ColumnDefinition<?> cd = ColumnDefinition.fromGenericType(name, cs.getType(), cs.getComponentType());
-            columnDefinitions.put(name, cd);
-        }
+        parentTable.getDefinition().getColumns().forEach(cd -> columnDefinitions.put(cd.getName(), cd));
 
         final Set<String> resultColumnNames = new HashSet<>();
         for (final SelectColumn sc : selectColumns) {

@@ -189,7 +189,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                     .endl();
 
             applyUsedVariables(columnDefinitionMap, result.getVariablesUsed(), result.getPossibleParams());
-            returnedType = result.getType();
+            returnedType = TypeUtils.getUnboxedTypeIfBoxed(result.getType());
             if (returnedType == boolean.class) {
                 returnedType = Boolean.class;
             }
