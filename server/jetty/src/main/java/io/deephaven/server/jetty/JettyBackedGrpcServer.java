@@ -52,14 +52,18 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.component.Graceful;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.websocket.jakarta.common.SessionTracker;
 import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.websocket.jakarta.server.internal.JakartaWebSocketServerContainer;
+import org.jetbrains.annotations.Nullable;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -92,10 +96,18 @@ public class JettyBackedGrpcServer implements GrpcServer {
 
         final ServletContextHandler context =
                 new ServletContextHandler(null, "/", null, null, null, new ErrorPageErrorHandler(), NO_SESSIONS);
-        String knownFile = "/ide/index.html";
-        URL ide = JettyBackedGrpcServer.class.getResource(knownFile);
-        String path = ide.toExternalForm().replace("!" + knownFile, "!/");
-        context.addServlet(servletHolder("default", path), "/*");
+        try {
+            // Build a URL to a known file on the classpath, so Jetty can load resources from that jar to serve as
+            // static content
+            String knownFile = "/ide/index.html";
+            URL ide = JettyBackedGrpcServer.class.getResource(knownFile);
+            Resource jarContents = Resource.newResource(ide.toExternalForm().replace("!" + knownFile, "!/"));
+            context.setBaseResource(ControlledCacheResource.wrap(jarContents));
+        } catch (IOException ioException) {
+            throw new UncheckedIOException(ioException);
+        }
+        // Register a DefaultServlet to serve our custom resources
+        context.addServlet(servletHolder("default", null), "/*");
 
         // Cache all of the appropriate assets folders
         for (String appRoot : List.of("/ide/", "/iframe/table/", "/iframe/chart/", "/iframe/widget/")) {
@@ -170,7 +182,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
         // Wire up /js-plugins/*
         // TODO(deephaven-core#4620): Add js-plugins version-aware caching
         context.addFilter(NoCacheFilter.class, JS_PLUGINS_PATH_SPEC, EnumSet.noneOf(DispatcherType.class));
-        context.addServlet(servletHolder("js-plugins", jsPlugins.filesystem().toString()), JS_PLUGINS_PATH_SPEC);
+        context.addServlet(servletHolder("js-plugins", jsPlugins.filesystem()), JS_PLUGINS_PATH_SPEC);
 
         // Set up websockets for grpc-web - depending on configuration, we can register both in case we encounter a
         // client using "vanilla"
@@ -372,12 +384,14 @@ public class JettyBackedGrpcServer implements GrpcServer {
         return serverConnector;
     }
 
-    private static ServletHolder servletHolder(String name, String resources) {
+    private static ServletHolder servletHolder(String name, @Nullable URI filesystemUri) {
         final ServletHolder jsPlugins = new ServletHolder(name, DefaultServlet.class);
-        // Note, the URI needs explicitly be parseable as a directory URL ending in "!/", a requirement of the jetty
-        // resource creation implementation, see
-        // org.eclipse.jetty.util.resource.Resource.newResource(java.lang.String, boolean)
-        jsPlugins.setInitParameter("resourceBase", resources);
+        if (filesystemUri != null) {
+            // Note, the URI needs explicitly be parseable as a directory URL ending in "!/", a requirement of the jetty
+            // resource creation implementation, see
+            // org.eclipse.jetty.util.resource.Resource.newResource(java.lang.String, boolean)
+            jsPlugins.setInitParameter("resourceBase", filesystemUri.toString());
+        }
         jsPlugins.setInitParameter("pathInfoOnly", "true");
         jsPlugins.setInitParameter("dirAllowed", "false");
         jsPlugins.setAsyncSupported(true);
