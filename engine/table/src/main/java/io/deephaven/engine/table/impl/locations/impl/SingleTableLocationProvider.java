@@ -9,6 +9,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
+import java.util.function.Predicate;
 
 /**
  * A {@link TableLocationProvider} that provides access to exactly one, previously-known {@link TableLocation}.
@@ -59,10 +61,12 @@ public final class SingleTableLocationProvider implements TableLocationProvider 
         return this;
     }
 
-    @NotNull
     @Override
-    public Collection<ImmutableTableLocationKey> getTableLocationKeys() {
-        return Collections.singleton(tableLocation.getKey());
+    public @NotNull Collection<TrackedTableLocationKey> getTableLocationKeys(Predicate<TableLocationKey> filter) {
+        // TODO: should TableLocation#getKey() be a TrackedTableLocationKey? This is getting complicated.
+        return filter.test(tableLocation.getKey())
+                ? Collections.singleton(tableLocation.getKey())
+                : List.of();
     }
 
     @Override

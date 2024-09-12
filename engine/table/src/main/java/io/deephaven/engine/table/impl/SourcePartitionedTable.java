@@ -213,9 +213,14 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
         }
 
         private void processPendingLocations(final boolean notifyListeners) {
-            final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate = subscriptionBuffer.processPending();
-            final RowSet removed = processRemovals(locationUpdate);
-            final RowSet added = processAdditions(locationUpdate);
+            final RowSet removed;
+            final RowSet added;
+
+            try (final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate =
+                    subscriptionBuffer.processPending()) {
+                removed = processRemovals(locationUpdate);
+                added = processAdditions(locationUpdate);
+            }
 
             resultRows.update(added, removed);
             if (notifyListeners) {

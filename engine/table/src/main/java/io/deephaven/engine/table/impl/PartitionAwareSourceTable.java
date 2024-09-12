@@ -7,6 +7,7 @@ import io.deephaven.api.Selectable;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.locations.TrackedTableLocationKey;
 import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -221,11 +222,12 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
     }
 
     @Override
-    protected final Collection<ImmutableTableLocationKey> filterLocationKeys(
-            @NotNull final Collection<ImmutableTableLocationKey> foundLocationKeys) {
+    protected final Collection<TrackedTableLocationKey> filterLocationKeys(
+            @NotNull final Collection<TrackedTableLocationKey> foundLocationKeys) {
         if (partitioningColumnFilters.length == 0) {
             return foundLocationKeys;
         }
+
         // TODO (https://github.com/deephaven/deephaven-core/issues/867): Refactor around a ticking partition table
         final List<String> partitionTableColumnNames = Stream.concat(
                 partitioningColumnDefinitions.keySet().stream(),
@@ -243,6 +245,10 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
         if (filteredColumnPartitionTable.size() == foundLocationKeys.size()) {
             return foundLocationKeys;
         }
+
+        // TODO: Not sure what to do here. Seems like there is a big disconnect between the location keys and the
+        // tracked location keys.
+
         final Iterable<ImmutableTableLocationKey> iterable =
                 () -> filteredColumnPartitionTable.columnIterator(LOCATION_KEY_COLUMN_NAME);
         return StreamSupport.stream(iterable.spliterator(), false).collect(Collectors.toList());

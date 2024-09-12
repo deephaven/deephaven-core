@@ -13,6 +13,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -141,13 +142,13 @@ public class CompositeTableDataService extends AbstractTableDataService {
         }
 
         @Override
-        @NotNull
-        public Collection<ImmutableTableLocationKey> getTableLocationKeys() {
-            final Set<ImmutableTableLocationKey> locationKeys = new KeyedObjectHashSet<>(KeyKeyDefinition.INSTANCE);
+        public @NotNull Collection<TrackedTableLocationKey> getTableLocationKeys(Predicate<TableLocationKey> filter) {
+            final Set<TrackedTableLocationKey> locationKeys = new KeyedObjectHashSet<>(KeyKeyDefinition.INSTANCE);
             try (final SafeCloseable ignored = CompositeTableDataServiceConsistencyMonitor.INSTANCE.start()) {
                 inputProviders.stream()
                         .map(TableLocationProvider::getTableLocationKeys)
                         .flatMap(Collection::stream)
+                        .filter(tlk -> filter.test(tlk.getKey()))
                         .filter(x -> !locationKeys.add(x))
                         .findFirst()
                         .ifPresent(duplicateLocationKey -> {
@@ -225,16 +226,16 @@ public class CompositeTableDataService extends AbstractTableDataService {
     // ------------------------------------------------------------------------------------------------------------------
 
     private static final class KeyKeyDefinition
-            extends KeyedObjectKey.Basic<ImmutableTableLocationKey, ImmutableTableLocationKey> {
+            extends KeyedObjectKey.Basic<ImmutableTableLocationKey, TrackedTableLocationKey> {
 
-        private static final KeyedObjectKey<ImmutableTableLocationKey, ImmutableTableLocationKey> INSTANCE =
+        private static final KeyedObjectKey<ImmutableTableLocationKey, TrackedTableLocationKey> INSTANCE =
                 new KeyKeyDefinition();
 
         private KeyKeyDefinition() {}
 
         @Override
-        public ImmutableTableLocationKey getKey(@NotNull final ImmutableTableLocationKey tableLocationKey) {
-            return tableLocationKey;
+        public ImmutableTableLocationKey getKey(@NotNull final TrackedTableLocationKey tableLocationKey) {
+            return tableLocationKey.getKey();
         }
     }
 }

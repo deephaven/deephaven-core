@@ -12,6 +12,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.WeakHashMap;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -124,8 +125,10 @@ public class FilteredTableDataService extends AbstractTableDataService {
         }
 
         @Override
-        public @NotNull Collection<ImmutableTableLocationKey> getTableLocationKeys() {
-            return inputProvider.getTableLocationKeys().stream().filter(locationKeyFilter::accept)
+        public @NotNull Collection<TrackedTableLocationKey> getTableLocationKeys(Predicate<TableLocationKey> filter) {
+            return inputProvider.getTableLocationKeys().stream()
+                    .filter(locationKeyFilter::accept)
+                    .filter(filter)
                     .collect(Collectors.toList());
         }
 
@@ -175,7 +178,7 @@ public class FilteredTableDataService extends AbstractTableDataService {
         }
 
         @Override
-        public void handleTableLocationKeyAdded(@NotNull final ImmutableTableLocationKey tableLocationKey) {
+        public void handleTableLocationKeyAdded(@NotNull final TrackedTableLocationKey tableLocationKey) {
             final TableLocationProvider.Listener outputListener = getWrapped();
             // We can't try to clean up null listeners here, the underlying implementation may not allow concurrent
             // unsubscribe operations.
@@ -185,7 +188,7 @@ public class FilteredTableDataService extends AbstractTableDataService {
         }
 
         @Override
-        public void handleTableLocationKeyRemoved(@NotNull final ImmutableTableLocationKey tableLocationKey) {
+        public void handleTableLocationKeyRemoved(@NotNull final TrackedTableLocationKey tableLocationKey) {
             final TableLocationProvider.Listener outputListener = getWrapped();
             if (outputListener != null && locationKeyFilter.accept(tableLocationKey)) {
                 outputListener.handleTableLocationKeyRemoved(tableLocationKey);
@@ -194,8 +197,8 @@ public class FilteredTableDataService extends AbstractTableDataService {
 
         @Override
         public void handleTableLocationKeysUpdate(
-                @NotNull Collection<ImmutableTableLocationKey> addedKeys,
-                @NotNull Collection<ImmutableTableLocationKey> removedKeys) {
+                @NotNull Collection<TrackedTableLocationKey> addedKeys,
+                @NotNull Collection<TrackedTableLocationKey> removedKeys) {
             final TableLocationProvider.Listener outputListener = getWrapped();
             if (outputListener != null) {
                 outputListener.handleTableLocationKeysUpdate(addedKeys, removedKeys);

@@ -3,11 +3,13 @@
 //
 package io.deephaven.engine.table.impl.locations;
 
+import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.util.type.NamedImplementation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
+import java.util.function.Predicate;
 
 /**
  * Discovery utility for {@link TableLocation}s for a given table.
@@ -41,23 +43,24 @@ public interface TableLocationProvider extends NamedImplementation {
         void endTransaction(@NotNull Object token);
 
         /**
-         * Notify the listener of a {@link TableLocationKey} encountered while initiating or maintaining the location
-         * subscription. This should occur at most once per location, but the order of delivery is <i>not</i>
+         * Notify the listener of a {@link TrackedTableLocationKey} encountered while initiating or maintaining the
+         * location subscription. This should occur at most once per location, but the order of delivery is <i>not</i>
          * guaranteed. This addition is not part of any transaction, and is equivalent to
          * {@code handleTableLocationKeyAdded(tableLocationKey, null);} by default.
          *
          * @param tableLocationKey The new table location key.
          */
-        void handleTableLocationKeyAdded(@NotNull ImmutableTableLocationKey tableLocationKey);
+        void handleTableLocationKeyAdded(@NotNull TrackedTableLocationKey tableLocationKey);
 
         /**
-         * Notify the listener of a {@link TableLocationKey} that has been removed. This removal is not part of any
-         * transaction, and is equivalent to {@code handleTableLocationKeyRemoved(tableLocationKey, null);} by default.
+         * Notify the listener of a {@link TrackedTableLocationKey} that has been removed. This removal is not part of
+         * any transaction, and is equivalent to {@code handleTableLocationKeyRemoved(tableLocationKey, null);} by
+         * default.
          *
          * @param tableLocationKey The table location key that was removed.
          */
         @SuppressWarnings("unused")
-        void handleTableLocationKeyRemoved(@NotNull ImmutableTableLocationKey tableLocationKey);
+        void handleTableLocationKeyRemoved(@NotNull TrackedTableLocationKey tableLocationKey);
 
         /**
          * <p>
@@ -70,8 +73,8 @@ public interface TableLocationProvider extends NamedImplementation {
          * @param removedKeys Collection of table location keys that were removed.
          */
         default void handleTableLocationKeysUpdate(
-                @NotNull Collection<ImmutableTableLocationKey> addedKeys,
-                @NotNull Collection<ImmutableTableLocationKey> removedKeys) {
+                @NotNull Collection<TrackedTableLocationKey> addedKeys,
+                @NotNull Collection<TrackedTableLocationKey> removedKeys) {
             removedKeys.forEach(this::handleTableLocationKeyRemoved);
             addedKeys.forEach(this::handleTableLocationKeyAdded);
         }
@@ -132,7 +135,26 @@ public interface TableLocationProvider extends NamedImplementation {
      * @return A collection of keys for locations available from this provider.
      */
     @NotNull
-    Collection<ImmutableTableLocationKey> getTableLocationKeys();
+    default Collection<TrackedTableLocationKey> getTableLocationKeys() {
+        return getTableLocationKeys(key -> true);
+    }
+
+    /**
+     * <p>
+     * Get the provider's currently known location keys which pass the supplied filter. The locations specified by the
+     * keys returned may have null size - that is, they may not "exist" for application purposes.
+     * {@link #getTableLocation(TableLocationKey)} is guaranteed to succeed for all results.
+     * </p>
+     *
+     * <p>
+     * This call also adds a management reference to the TLK from the provide {@link LivenessManager}
+     * </p>
+     *
+     * @param filter A filter to apply to the location keys.
+     * @return A collection of keys for locations available from this provider.
+     */
+    @NotNull
+    Collection<TrackedTableLocationKey> getTableLocationKeys(final Predicate<TableLocationKey> filter);
 
     /**
      * Check if this provider knows the supplied location key.

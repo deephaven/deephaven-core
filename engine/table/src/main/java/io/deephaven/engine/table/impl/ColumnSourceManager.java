@@ -3,13 +3,12 @@
 //
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.engine.liveness.LivenessReferent;
+import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
-import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.table.impl.locations.TableLocation;
+import io.deephaven.engine.table.impl.locations.TrackedTableLocationKey;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -19,7 +18,7 @@ import java.util.Map;
 /**
  * Manager for ColumnSources in a Table.
  */
-public interface ColumnSourceManager extends LivenessReferent {
+public interface ColumnSourceManager extends LivenessNode {
 
     /**
      * Get a map of name to {@link ColumnSource} for the column sources maintained by this manager.
@@ -116,5 +115,5 @@ public interface ColumnSourceManager extends LivenessReferent {
      * @return true if the location key was actually removed
      * @param tableLocationKey the location key being removed
      */
-    boolean removeLocationKey(@NotNull ImmutableTableLocationKey tableLocationKey);
+    boolean removeLocationKey(@NotNull TrackedTableLocationKey tableLocationKey);
 }

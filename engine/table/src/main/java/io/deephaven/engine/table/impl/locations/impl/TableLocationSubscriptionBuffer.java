@@ -4,9 +4,11 @@
 package io.deephaven.engine.table.impl.locations.impl;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
+import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
+import io.deephaven.engine.table.impl.locations.TrackedTableLocationKey;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocationProvider;
+import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -15,9 +17,10 @@ import java.util.*;
 /**
  * Intermediates between push-based subscription to a TableLocationProvider and polling on update source refresh.
  */
-public class TableLocationSubscriptionBuffer implements TableLocationProvider.Listener {
+public class TableLocationSubscriptionBuffer extends ReferenceCountedLivenessNode
+        implements TableLocationProvider.Listener {
 
-    private static final Set<ImmutableTableLocationKey> EMPTY_TABLE_LOCATION_KEYS = Collections.emptySet();
+    private static final Set<TrackedTableLocationKey> EMPTY_TABLE_LOCATION_KEYS = Collections.emptySet();
 
     private final TableLocationProvider tableLocationProvider;
 
@@ -26,31 +29,38 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
     private final Object updateLock = new Object();
 
     // These sets represent adds and removes from completed transactions.
-    private Set<ImmutableTableLocationKey> pendingLocationsAdded = EMPTY_TABLE_LOCATION_KEYS;
-    private Set<ImmutableTableLocationKey> pendingLocationsRemoved = EMPTY_TABLE_LOCATION_KEYS;
+    private Set<TrackedTableLocationKey> pendingLocationsAdded = EMPTY_TABLE_LOCATION_KEYS;
+    private Set<TrackedTableLocationKey> pendingLocationsRemoved = EMPTY_TABLE_LOCATION_KEYS;
 
     private TableDataException pendingException = null;
 
     public TableLocationSubscriptionBuffer(@NotNull final TableLocationProvider tableLocationProvider) {
+        super(false);
         this.tableLocationProvider = Require.neqNull(tableLocationProvider, "tableLocationProvider");
     }
 
-    public static final class LocationUpdate {
-        private final Collection<ImmutableTableLocationKey> pendingAddedLocationKeys;
-        private final Collection<ImmutableTableLocationKey> pendingRemovedLocations;
+    public final class LocationUpdate implements SafeCloseable {
+        private final Collection<TrackedTableLocationKey> pendingAddedLocationKeys;
+        private final Collection<TrackedTableLocationKey> pendingRemovedLocations;
 
-        public LocationUpdate(@NotNull final Collection<ImmutableTableLocationKey> pendingAddedLocationKeys,
-                @NotNull final Collection<ImmutableTableLocationKey> pendingRemovedLocations) {
+        public LocationUpdate(@NotNull final Collection<TrackedTableLocationKey> pendingAddedLocationKeys,
+                @NotNull final Collection<TrackedTableLocationKey> pendingRemovedLocations) {
             this.pendingAddedLocationKeys = pendingAddedLocationKeys;
             this.pendingRemovedLocations = pendingRemovedLocations;
         }
 
-        public Collection<ImmutableTableLocationKey> getPendingAddedLocationKeys() {
+        public Collection<TrackedTableLocationKey> getPendingAddedLocationKeys() {
             return pendingAddedLocationKeys;
         }
 
-        public Collection<ImmutableTableLocationKey> getPendingRemovedLocationKeys() {
+        public Collection<TrackedTableLocationKey> getPendingRemovedLocationKeys() {
             return pendingRemovedLocations;
+        }
+
+        @Override
+        public void close() {
+            pendingAddedLocationKeys.forEach(TableLocationSubscriptionBuffer.this::unmanage);
+            pendingRemovedLocations.forEach(TableLocationSubscriptionBuffer.this::unmanage);
         }
     }
 
@@ -75,8 +85,8 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
             }
             subscribed = true;
         }
-        final Collection<ImmutableTableLocationKey> resultLocationKeys;
-        final Collection<ImmutableTableLocationKey> resultLocationsRemoved;
+        final Collection<TrackedTableLocationKey> resultLocationKeys;
+        final Collection<TrackedTableLocationKey> resultLocationsRemoved;
         final TableDataException resultException;
         synchronized (updateLock) {
             resultLocationKeys = pendingLocationsAdded;
@@ -105,6 +115,8 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
             subscribed = false;
         }
         synchronized (updateLock) {
+            pendingLocationsAdded.forEach(this::unmanage);
+            pendingLocationsRemoved.forEach(this::unmanage);
             pendingLocationsAdded = EMPTY_TABLE_LOCATION_KEYS;
             pendingLocationsRemoved = EMPTY_TABLE_LOCATION_KEYS;
             pendingException = null;
@@ -126,7 +138,7 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
     }
 
     @Override
-    public void handleTableLocationKeyAdded(@NotNull final ImmutableTableLocationKey tableLocationKey) {
+    public void handleTableLocationKeyAdded(@NotNull final TrackedTableLocationKey tableLocationKey) {
         synchronized (updateLock) {
             // Need to verify that we don't have stacked adds (without intervening removes).
             if (pendingLocationsAdded.contains(tableLocationKey)) {
@@ -136,12 +148,13 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
             if (pendingLocationsAdded == EMPTY_TABLE_LOCATION_KEYS) {
                 pendingLocationsAdded = new HashSet<>();
             }
+            manage(tableLocationKey);
             pendingLocationsAdded.add(tableLocationKey);
         }
     }
 
     @Override
-    public void handleTableLocationKeyRemoved(@NotNull final ImmutableTableLocationKey tableLocationKey) {
+    public void handleTableLocationKeyRemoved(@NotNull final TrackedTableLocationKey tableLocationKey) {
         synchronized (updateLock) {
             // If we have a pending add, it is being cancelled by this remove.
             if (pendingLocationsAdded.remove(tableLocationKey)) {
@@ -155,17 +168,18 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
             if (pendingLocationsRemoved == EMPTY_TABLE_LOCATION_KEYS) {
                 pendingLocationsRemoved = new HashSet<>();
             }
+            manage(tableLocationKey);
             pendingLocationsRemoved.add(tableLocationKey);
         }
     }
 
     @Override
     public void handleTableLocationKeysUpdate(
-            @Nullable Collection<ImmutableTableLocationKey> addedKeys,
-            @Nullable Collection<ImmutableTableLocationKey> removedKeys) {
+            @Nullable Collection<TrackedTableLocationKey> addedKeys,
+            @Nullable Collection<TrackedTableLocationKey> removedKeys) {
         synchronized (updateLock) {
             if (removedKeys != null) {
-                for (final ImmutableTableLocationKey removedTableLocationKey : removedKeys) {
+                for (final TrackedTableLocationKey removedTableLocationKey : removedKeys) {
                     // If we have a pending add, it is being cancelled by this remove.
                     if (pendingLocationsAdded.remove(removedTableLocationKey)) {
                         continue;
@@ -178,11 +192,12 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
                     if (pendingLocationsRemoved == EMPTY_TABLE_LOCATION_KEYS) {
                         pendingLocationsRemoved = new HashSet<>();
                     }
+                    manage(removedTableLocationKey);
                     pendingLocationsRemoved.add(removedTableLocationKey);
                 }
             }
             if (addedKeys != null) {
-                for (final ImmutableTableLocationKey addedTableLocationKey : addedKeys) {
+                for (final TrackedTableLocationKey addedTableLocationKey : addedKeys) {
                     // Need to verify that we don't have stacked adds.
                     if (pendingLocationsAdded.contains(addedTableLocationKey)) {
                         throw new IllegalStateException("TableLocationKey " + addedTableLocationKey
@@ -191,6 +206,7 @@ public class TableLocationSubscriptionBuffer implements TableLocationProvider.Li
                     if (pendingLocationsAdded == EMPTY_TABLE_LOCATION_KEYS) {
                         pendingLocationsAdded = new HashSet<>();
                     }
+                    manage(addedTableLocationKey);
                     pendingLocationsAdded.add(addedTableLocationKey);
                 }
             }

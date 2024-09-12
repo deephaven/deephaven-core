@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.locations.impl;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.liveness.*;
 import io.deephaven.engine.table.BasicDataIndex;
 import io.deephaven.engine.table.impl.util.FieldUtils;
 import io.deephaven.engine.util.string.StringUtils;
@@ -12,7 +13,6 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.util.annotations.InternalUseOnly;
-import io.deephaven.util.referencecounting.ReferenceCounted;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
  */
 public abstract class AbstractTableLocation
         extends SubscriptionAggregator<TableLocation.Listener>
-        implements TableLocation {
+        implements TableLocation, DelegatingLivenessNode {
 
     private final ImmutableTableKey tableKey;
     private final ImmutableTableLocationKey tableLocationKey;
@@ -36,7 +36,7 @@ public abstract class AbstractTableLocation
     private final KeyedObjectHashMap<CharSequence, ColumnLocation> columnLocations =
             new KeyedObjectHashMap<>(StringUtils.charSequenceKey());
 
-    private final ReferenceCounted referenceCounted;
+    private final ReferenceCountedLivenessNode livenessNode;
 
     @SuppressWarnings("rawtypes")
     private static final AtomicReferenceFieldUpdater<AbstractTableLocation, KeyedObjectHashMap> CACHED_DATA_INDEXES_UPDATER =
@@ -62,14 +62,12 @@ public abstract class AbstractTableLocation
         this.tableKey = Require.neqNull(tableKey, "tableKey").makeImmutable();
         this.tableLocationKey = Require.neqNull(tableLocationKey, "tableLocationKey").makeImmutable();
 
-        referenceCounted = new ReferenceCounted() {
+        livenessNode = new ReferenceCountedLivenessNode(false) {
             @Override
-            protected void onReferenceCountAtZero() {
-                // Call the location's onReferenceCountAtZero method
-                AbstractTableLocation.this.onReferenceCountAtZero();
+            protected void destroy() {
+                AbstractTableLocation.this.destroy();
             }
         };
-
     }
 
     @Override
@@ -77,6 +75,10 @@ public abstract class AbstractTableLocation
         return toStringHelper();
     }
 
+    @Override
+    public LivenessNode asLivenessNode() {
+        return livenessNode;
+    }
 
     // ------------------------------------------------------------------------------------------------------------------
     // TableLocationState implementation
@@ -247,27 +249,9 @@ public abstract class AbstractTableLocation
     // ------------------------------------------------------------------------------------------------------------------
 
     /**
-     * Increment the reference count by one.
-     *
-     * @throws IllegalStateException If the reference count was not successfully incremented
+     * The reference count has reached zero or we are being GC'd, we can clear this location and release any resources.
      */
-    public final void incrementReferenceCount() {
-        referenceCounted.incrementReferenceCount();
-    }
-
-    /**
-     * Decrement the reference count by one, when the reference count reaches zero this location will be cleared.
-     *
-     * @throws IllegalStateException If the reference count was not successfully decremented
-     */
-    public void decrementReferenceCount() {
-        referenceCounted.decrementReferenceCount();
-    }
-
-    /**
-     * The reference count has reached zero, we can clear this location and release any resources.
-     */
-    private void onReferenceCountAtZero() {
+    private void destroy() {
         handleUpdate(null, System.currentTimeMillis());
         clearColumnLocations();
     }

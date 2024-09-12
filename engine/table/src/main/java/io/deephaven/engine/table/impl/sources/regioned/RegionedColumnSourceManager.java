@@ -5,16 +5,13 @@ package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.context.ExecutionContext;
-import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.indexer.DataIndexer;
-import io.deephaven.engine.table.impl.locations.ColumnLocation;
-import io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey;
-import io.deephaven.engine.table.impl.locations.TableDataException;
-import io.deephaven.engine.table.impl.locations.TableLocation;
+import io.deephaven.engine.table.impl.locations.*;
 import io.deephaven.engine.table.impl.locations.impl.AbstractTableLocation;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationUpdateSubscriptionBuffer;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
@@ -41,7 +38,7 @@ import static io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSour
 /**
  * Manage column sources made up of regions in their own row key address space.
  */
-public class RegionedColumnSourceManager extends LivenessArtifact implements ColumnSourceManager {
+public class RegionedColumnSourceManager extends ReferenceCountedLivenessNode implements ColumnSourceManager {
 
     private static final Logger log = LoggerFactory.getLogger(RegionedColumnSourceManager.class);
 
@@ -133,6 +130,11 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
     private List<IncludedTableLocationEntry> invalidatedLocations = new ArrayList<>();
 
     /**
+     * List of tracked location keys to release at the end of the cycle.
+     */
+    private List<AbstractTableLocation> releasedLocations = new ArrayList<>();
+
+    /**
      * Will invalidate the locations at the end of the cycle after all downstream updates are complete.
      */
     final UpdateCommitter<?> invalidateCommitter;
@@ -202,6 +204,8 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
                     synchronized (this) {
                         invalidatedLocations.forEach(IncludedTableLocationEntry::invalidate);
                         invalidatedLocations.clear();
+                        releasedLocations.forEach(this::unmanage);
+                        releasedLocations.clear();
                     }
                 });
     }
@@ -209,11 +213,7 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
     @Override
     public void destroy() {
         super.destroy();
-        includedTableLocations.keySet().forEach(location -> {
-            if (location instanceof AbstractTableLocation) {
-                ((AbstractTableLocation) location).decrementReferenceCount();
-            }
-        });
+        // TODO: do I need to explicitly release the managed locations or does it happen automatically?
     }
 
     @Override
@@ -246,7 +246,7 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
     }
 
     @Override
-    public synchronized boolean removeLocationKey(@NotNull final ImmutableTableLocationKey locationKey) {
+    public synchronized boolean removeLocationKey(final @NotNull TrackedTableLocationKey locationKey) {
         final IncludedTableLocationEntry includedLocation = includedTableLocations.remove(locationKey);
         final EmptyTableLocationEntry emptyLocation = emptyTableLocations.remove(locationKey);
 
@@ -254,9 +254,16 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
             if (log.isDebugEnabled()) {
                 log.debug().append("EMPTY_LOCATION_REMOVED:").append(locationKey.toString()).endl();
             }
+            if (emptyLocation.location instanceof AbstractTableLocation) {
+                releasedLocations.add((AbstractTableLocation) emptyLocation.location);
+                invalidateCommitter.maybeActivate();
+            }
         } else if (includedLocation != null) {
             orderedIncludedTableLocations.remove(includedLocation);
             removedTableLocations.add(includedLocation);
+            if (includedLocation.location instanceof AbstractTableLocation) {
+                releasedLocations.add((AbstractTableLocation) includedLocation.location);
+            }
             invalidateCommitter.maybeActivate();
             return true;
         }
@@ -411,9 +418,6 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
                 includedTableLocations.add(entry);
                 orderedIncludedTableLocations.add(entry);
                 entry.processInitial(addedRowSetBuilder, entryToInclude.initialRowSet);
-                if (entry.location instanceof AbstractTableLocation) {
-                    ((AbstractTableLocation) entry.location).incrementReferenceCount();
-                }
 
                 // We have a new location, add the row set to the table and mark the row as added.
                 // @formatter:off
@@ -673,9 +677,6 @@ public class RegionedColumnSourceManager extends LivenessArtifact implements Col
 
         private void invalidate() {
             columnLocationStates.forEach(cls -> cls.source.invalidateRegion(regionIndex));
-            if (location instanceof AbstractTableLocation) {
-                ((AbstractTableLocation) location).decrementReferenceCount();
-            }
         }
 
         @Override
