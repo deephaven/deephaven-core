@@ -13,6 +13,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -116,7 +117,7 @@ public class CompositeTableDataService extends AbstractTableDataService {
                     p.subscribe(listener);
                 } else {
                     p.refresh();
-                    p.getTableLocationKeys().forEach(listener::handleTableLocationKeyAdded);
+                    p.getTableLocationKeys(listener::handleTableLocationKeyAdded);
                 }
             });
         }
@@ -142,29 +143,30 @@ public class CompositeTableDataService extends AbstractTableDataService {
         }
 
         @Override
-        public @NotNull Collection<TrackedTableLocationKey> getTableLocationKeys(Predicate<TableLocationKey> filter) {
+        public void getTableLocationKeys(
+                final Consumer<TrackedTableLocationKey> consumer,
+                final Predicate<ImmutableTableLocationKey> filter) {
             final Set<TrackedTableLocationKey> locationKeys = new KeyedObjectHashSet<>(KeyKeyDefinition.INSTANCE);
             try (final SafeCloseable ignored = CompositeTableDataServiceConsistencyMonitor.INSTANCE.start()) {
-                inputProviders.stream()
-                        .map(TableLocationProvider::getTableLocationKeys)
-                        .flatMap(Collection::stream)
-                        .filter(tlk -> filter.test(tlk.getKey()))
-                        .filter(x -> !locationKeys.add(x))
-                        .findFirst()
-                        .ifPresent(duplicateLocationKey -> {
-                            final String overlappingProviders = inputProviders.stream()
-                                    .filter(inputProvider -> inputProvider.hasTableLocationKey(duplicateLocationKey))
-                                    .map(TableLocationProvider::getName)
-                                    .collect(Collectors.joining(","));
-                            throw new TableDataException(
-                                    "Data Routing Configuration error: TableDataService elements overlap at location " +
-                                            duplicateLocationKey +
-                                            " in providers " + overlappingProviders +
-                                            ". Full TableDataService configuration:\n" +
-                                            Formatter
-                                                    .formatTableDataService(CompositeTableDataService.this.toString()));
-                        });
-                return Collections.unmodifiableCollection(locationKeys);
+                // Add all the location keys from the providers to the set, throw an exception if there are duplicates
+                inputProviders.forEach(p -> p.getTableLocationKeys(tlk -> {
+                    if (filter.test(tlk.getKey()) && !locationKeys.add(tlk)) {
+                        final String overlappingProviders = inputProviders.stream()
+                                .filter(inputProvider -> inputProvider.hasTableLocationKey(tlk.getKey()))
+                                .map(TableLocationProvider::getName)
+                                .collect(Collectors.joining(","));
+                        throw new TableDataException(
+                                "Data Routing Configuration error: TableDataService elements overlap at location " +
+                                        tlk +
+                                        " in providers " + overlappingProviders +
+                                        ". Full TableDataService configuration:\n" +
+                                        Formatter
+                                                .formatTableDataService(CompositeTableDataService.this.toString()));
+
+                    }
+                }));
+                // Consume all the location keys
+                locationKeys.forEach(consumer);
             }
         }
 

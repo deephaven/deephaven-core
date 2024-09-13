@@ -20,6 +20,7 @@ import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.Collection;
 
 /**
@@ -146,7 +147,9 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                     updateSourceRegistrar.addSource(locationChangePoller = new LocationChangePoller(locationBuffer));
                 } else {
                     locationProvider.refresh();
-                    maybeAddLocations(locationProvider.getTableLocationKeys());
+                    final Collection<TrackedTableLocationKey> tableLocationKeys = new ArrayList<>();
+                    locationProvider.getTableLocationKeys(tableLocationKeys::add);
+                    maybeAddLocations(tableLocationKeys);
                 }
             });
             locationsInitialized = true;
@@ -161,8 +164,9 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                 .parallelStream()
                 .forEach(lk -> {
                     // Unconditionally manage all locations added to the column source manager
-                    columnSourceManager.manage(lk);
-                    columnSourceManager.addLocation(locationProvider.getTableLocation(lk));
+                    final TableLocation tableLocation = locationProvider.getTableLocation(lk.getKey());
+                    columnSourceManager.manage(tableLocation);
+                    columnSourceManager.addLocation(tableLocation);
                 });
     }
 
@@ -214,7 +218,8 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
 
         @Override
         protected void instrumentedRefresh() {
-            try(final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate = locationBuffer.processPending()) {
+            try (final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate =
+                    locationBuffer.processPending()) {
                 maybeRemoveLocations(locationUpdate.getPendingRemovedLocationKeys());
                 maybeAddLocations(locationUpdate.getPendingAddedLocationKeys());
             }

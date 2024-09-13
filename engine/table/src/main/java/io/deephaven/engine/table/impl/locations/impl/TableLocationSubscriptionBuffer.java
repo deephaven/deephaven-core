@@ -81,7 +81,9 @@ public class TableLocationSubscriptionBuffer extends ReferenceCountedLivenessNod
                 // NB: Providers that don't support subscriptions don't tick - this single call to run is
                 // sufficient.
                 tableLocationProvider.refresh();
-                handleTableLocationKeysUpdate(tableLocationProvider.getTableLocationKeys(), List.of());
+                final Collection<TrackedTableLocationKey> tableLocationKeys = new ArrayList<>();
+                tableLocationProvider.getTableLocationKeys(tableLocationKeys::add);
+                handleTableLocationKeysUpdate(tableLocationKeys, List.of());
             }
             subscribed = true;
         }

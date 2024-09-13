@@ -3,12 +3,12 @@
 //
 package io.deephaven.engine.table.impl.locations;
 
-import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.util.type.NamedImplementation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 /**
@@ -131,30 +131,17 @@ public interface TableLocationProvider extends NamedImplementation {
      * Get this provider's currently known location keys. The locations specified by the keys returned may have null
      * size - that is, they may not "exist" for application purposes. {@link #getTableLocation(TableLocationKey)} is
      * guaranteed to succeed for all results.
-     *
-     * @return A collection of keys for locations available from this provider.
      */
-    @NotNull
-    default Collection<TrackedTableLocationKey> getTableLocationKeys() {
-        return getTableLocationKeys(key -> true);
+    default void getTableLocationKeys(Consumer<TrackedTableLocationKey> consumer) {
+        getTableLocationKeys(consumer, key -> true);
     }
 
     /**
-     * <p>
-     * Get the provider's currently known location keys which pass the supplied filter. The locations specified by the
-     * keys returned may have null size - that is, they may not "exist" for application purposes.
-     * {@link #getTableLocation(TableLocationKey)} is guaranteed to succeed for all results.
-     * </p>
-     *
-     * <p>
-     * This call also adds a management reference to the TLK from the provide {@link LivenessManager}
-     * </p>
-     *
-     * @param filter A filter to apply to the location keys.
-     * @return A collection of keys for locations available from this provider.
+     * Get this provider's currently known location keys. The locations specified by the keys returned may have null
+     * size - that is, they may not "exist" for application purposes. {@link #getTableLocation(TableLocationKey)} is
+     * guaranteed to succeed for all results.
      */
-    @NotNull
-    Collection<TrackedTableLocationKey> getTableLocationKeys(final Predicate<TableLocationKey> filter);
+    void getTableLocationKeys(Consumer<TrackedTableLocationKey> consumer, Predicate<ImmutableTableLocationKey> filter);
 
     /**
      * Check if this provider knows the supplied location key.

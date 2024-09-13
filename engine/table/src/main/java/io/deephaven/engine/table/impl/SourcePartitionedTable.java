@@ -163,9 +163,12 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
                 processNewLocationsUpdateRoot = null;
                 removedLocationsComitter = null;
                 tableLocationProvider.refresh();
-                try (final RowSet added = sortAndAddLocations(tableLocationProvider.getTableLocationKeys().stream()
-                        .filter(locationKeyMatcher)
-                        .map(tableLocationProvider::getTableLocation))) {
+
+                final Collection<TableLocation> locations = new ArrayList<>();
+                tableLocationProvider.getTableLocationKeys(tlk -> {
+                    locations.add(tableLocationProvider.getTableLocation(tlk.getKey()));
+                }, locationKeyMatcher);
+                try (final RowSet added = sortAndAddLocations(locations.stream())) {
                     resultRows.insert(added);
                 }
             }
@@ -247,6 +250,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
              */
             // TODO (https://github.com/deephaven/deephaven-core/issues/867): Refactor around a ticking partition table
             locationUpdate.getPendingAddedLocationKeys().stream()
+                    .map(TrackedTableLocationKey::getKey)
                     .filter(locationKeyMatcher)
                     .map(tableLocationProvider::getTableLocation)
                     .map(PendingLocationState::new)
@@ -268,6 +272,7 @@ public class SourcePartitionedTable extends PartitionedTableImpl {
             final Set<ImmutableTableLocationKey> relevantRemovedLocations =
                     locationUpdate.getPendingRemovedLocationKeys()
                             .stream()
+                            .map(TrackedTableLocationKey::getKey)
                             .filter(locationKeyMatcher)
                             .collect(Collectors.toSet());
 

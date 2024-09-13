@@ -152,6 +152,11 @@ public class RegionedColumnSourceManager extends ReferenceCountedLivenessNode im
             @NotNull final ColumnToCodecMappings codecMappings,
             @NotNull final List<ColumnDefinition<?>> columnDefinitions) {
         super(false);
+        // TODO: this seems to be required since the transition to ReferenceCountedLivenessNode (from LivenessArtifact)
+        // if (Liveness.REFERENCE_TRACKING_DISABLED) {
+        // return;
+        // }
+        LivenessScopeStack.peek().manage(this);
 
         this.isRefreshing = isRefreshing;
         this.columnDefinitions = columnDefinitions;

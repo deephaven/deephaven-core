@@ -12,8 +12,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.WeakHashMap;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /**
  * {@link TableDataService} implementation with support to filter the provided {@link TableLocation}s.
@@ -125,11 +125,10 @@ public class FilteredTableDataService extends AbstractTableDataService {
         }
 
         @Override
-        public @NotNull Collection<TrackedTableLocationKey> getTableLocationKeys(Predicate<TableLocationKey> filter) {
-            return inputProvider.getTableLocationKeys().stream()
-                    .filter(locationKeyFilter::accept)
-                    .filter(filter)
-                    .collect(Collectors.toList());
+        public void getTableLocationKeys(
+                final Consumer<TrackedTableLocationKey> consumer,
+                final Predicate<ImmutableTableLocationKey> filter) {
+            inputProvider.getTableLocationKeys(consumer, filter);
         }
 
         @Override
@@ -182,7 +181,7 @@ public class FilteredTableDataService extends AbstractTableDataService {
             final TableLocationProvider.Listener outputListener = getWrapped();
             // We can't try to clean up null listeners here, the underlying implementation may not allow concurrent
             // unsubscribe operations.
-            if (outputListener != null && locationKeyFilter.accept(tableLocationKey)) {
+            if (outputListener != null && locationKeyFilter.accept(tableLocationKey.getKey())) {
                 outputListener.handleTableLocationKeyAdded(tableLocationKey);
             }
         }
@@ -190,7 +189,7 @@ public class FilteredTableDataService extends AbstractTableDataService {
         @Override
         public void handleTableLocationKeyRemoved(@NotNull final TrackedTableLocationKey tableLocationKey) {
             final TableLocationProvider.Listener outputListener = getWrapped();
-            if (outputListener != null && locationKeyFilter.accept(tableLocationKey)) {
+            if (outputListener != null && locationKeyFilter.accept(tableLocationKey.getKey())) {
                 outputListener.handleTableLocationKeyRemoved(tableLocationKey);
             }
         }

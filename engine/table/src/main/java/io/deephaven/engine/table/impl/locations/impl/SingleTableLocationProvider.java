@@ -7,9 +7,7 @@ import io.deephaven.engine.table.impl.locations.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 /**
@@ -19,6 +17,7 @@ public final class SingleTableLocationProvider implements TableLocationProvider 
 
     private static final String IMPLEMENTATION_NAME = SingleTableLocationProvider.class.getSimpleName();
 
+    private final TrackedTableLocationKey trackedTableLocationKey;
     private final TableLocation tableLocation;
 
     /**
@@ -26,6 +25,9 @@ public final class SingleTableLocationProvider implements TableLocationProvider 
      */
     public SingleTableLocationProvider(@NotNull final TableLocation tableLocation) {
         this.tableLocation = tableLocation;
+        trackedTableLocationKey = new TrackedTableLocationKey(tableLocation.getKey(), ttlk -> {
+            // no-op
+        });
     }
 
     @Override
@@ -62,11 +64,12 @@ public final class SingleTableLocationProvider implements TableLocationProvider 
     }
 
     @Override
-    public @NotNull Collection<TrackedTableLocationKey> getTableLocationKeys(Predicate<TableLocationKey> filter) {
-        // TODO: should TableLocation#getKey() be a TrackedTableLocationKey? This is getting complicated.
-        return filter.test(tableLocation.getKey())
-                ? Collections.singleton(tableLocation.getKey())
-                : List.of();
+    public void getTableLocationKeys(
+            final Consumer<TrackedTableLocationKey> consumer,
+            final Predicate<ImmutableTableLocationKey> filter) {
+        if (filter.test(trackedTableLocationKey.getKey())) {
+            consumer.accept(trackedTableLocationKey);
+        }
     }
 
     @Override

@@ -206,6 +206,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
     }
 
     private static final String LOCATION_KEY_COLUMN_NAME = "__PartitionAwareSourceTable_TableLocationKey__";
+    private static final String TRACKED_KEY_COLUMN_NAME = "__PartitionAwareSourceTable_TrackedTableLocationKey__";
 
     private static <T> ColumnSource<? super T> makePartitionSource(@NotNull final ColumnDefinition<T> columnDefinition,
             @NotNull final Collection<ImmutableTableLocationKey> locationKeys) {
@@ -228,17 +229,25 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
             return foundLocationKeys;
         }
 
+        final Collection<ImmutableTableLocationKey> immutableTableLocationKeys = foundLocationKeys.stream()
+                .map(TrackedTableLocationKey::getKey)
+                .collect(Collectors.toList());
+
         // TODO (https://github.com/deephaven/deephaven-core/issues/867): Refactor around a ticking partition table
         final List<String> partitionTableColumnNames = Stream.concat(
                 partitioningColumnDefinitions.keySet().stream(),
-                Stream.of(LOCATION_KEY_COLUMN_NAME)).collect(Collectors.toList());
+                Stream.of(LOCATION_KEY_COLUMN_NAME, TRACKED_KEY_COLUMN_NAME)).collect(Collectors.toList());
         final List<ColumnSource<?>> partitionTableColumnSources =
                 new ArrayList<>(partitioningColumnDefinitions.size() + 1);
         for (final ColumnDefinition<?> columnDefinition : partitioningColumnDefinitions.values()) {
-            partitionTableColumnSources.add(makePartitionSource(columnDefinition, foundLocationKeys));
+            partitionTableColumnSources.add(makePartitionSource(columnDefinition, immutableTableLocationKeys));
         }
-        partitionTableColumnSources.add(ArrayBackedColumnSource.getMemoryColumnSource(foundLocationKeys,
+        // Add the tracked and immutable keys to the table
+        partitionTableColumnSources.add(ArrayBackedColumnSource.getMemoryColumnSource(immutableTableLocationKeys,
                 ImmutableTableLocationKey.class, null));
+        partitionTableColumnSources.add(ArrayBackedColumnSource.getMemoryColumnSource(foundLocationKeys,
+                TrackedTableLocationKey.class, null));
+
         final Table filteredColumnPartitionTable = TableTools
                 .newTable(foundLocationKeys.size(), partitionTableColumnNames, partitionTableColumnSources)
                 .where(Filter.and(partitioningColumnFilters));
@@ -246,11 +255,9 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
             return foundLocationKeys;
         }
 
-        // TODO: Not sure what to do here. Seems like there is a big disconnect between the location keys and the
-        // tracked location keys.
-
-        final Iterable<ImmutableTableLocationKey> iterable =
-                () -> filteredColumnPartitionTable.columnIterator(LOCATION_KEY_COLUMN_NAME);
+        // Return the filtered tracked location keys
+        final Iterable<TrackedTableLocationKey> iterable =
+                () -> filteredColumnPartitionTable.columnIterator(TRACKED_KEY_COLUMN_NAME);
         return StreamSupport.stream(iterable.spliterator(), false).collect(Collectors.toList());
     }
 

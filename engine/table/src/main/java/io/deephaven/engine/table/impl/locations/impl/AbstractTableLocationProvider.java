@@ -4,8 +4,6 @@
 package io.deephaven.engine.table.impl.locations.impl;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.liveness.DelegatingLivenessNode;
-import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.locations.*;
@@ -16,8 +14,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /**
  * Partial {@link TableLocationProvider} implementation for standalone use or as part of a {@link TableDataService}.
@@ -30,7 +28,7 @@ import java.util.stream.Collectors;
  */
 public abstract class AbstractTableLocationProvider
         extends SubscriptionAggregator<TableLocationProvider.Listener>
-        implements TableLocationProvider, DelegatingLivenessNode {
+        implements TableLocationProvider {
 
     private static final Set<ImmutableTableLocationKey> EMPTY_TABLE_LOCATION_KEYS = Collections.emptySet();
 
@@ -146,11 +144,6 @@ public abstract class AbstractTableLocationProvider
         return tableKey;
     }
 
-    @Override
-    public LivenessNode asLivenessNode() {
-        return livenessNode;
-    }
-
     // ------------------------------------------------------------------------------------------------------------------
     // TableLocationProvider/SubscriptionAggregator implementation
     // ------------------------------------------------------------------------------------------------------------------
@@ -234,7 +227,7 @@ public abstract class AbstractTableLocationProvider
                 }
                 // Release the keys that were removed only after we have delivered the notifications and the
                 // subscribers have had a chance to process them
-                removedKeys.forEach(this::unmanage);
+                removedKeys.forEach(livenessNode::unmanage);
             }
         }
     }
@@ -322,7 +315,7 @@ public abstract class AbstractTableLocationProvider
             // Remove this from the live set and un-manage it.
             final TrackedTableLocationKey trackedKey = liveLocationKeys.get(locationKey);
             liveLocationKeys.remove(trackedKey);
-            unmanage(trackedKey);
+            livenessNode.unmanage(trackedKey);
             return;
         }
 
@@ -340,7 +333,7 @@ public abstract class AbstractTableLocationProvider
                         true)) {
                     onEmpty();
                 }
-                unmanage(trackedKey);
+                livenessNode.unmanage(trackedKey);
             }
         }
     }
@@ -361,7 +354,7 @@ public abstract class AbstractTableLocationProvider
         locationCreatedRecorder = true;
 
         final TrackedTableLocationKey trackedKey = toTrackedKey(locationKey);
-        manage(trackedKey);
+        livenessNode.manage(trackedKey);
 
         // Add this to the live set.
         liveLocationKeys.add(trackedKey);
@@ -413,14 +406,12 @@ public abstract class AbstractTableLocationProvider
     }
 
     @Override
-    @NotNull
-    public final Collection<TrackedTableLocationKey> getTableLocationKeys(
-            final Predicate<TableLocationKey> filter) {
+    public void getTableLocationKeys(
+            final Consumer<TrackedTableLocationKey> consumer,
+            final Predicate<ImmutableTableLocationKey> filter) {
         // Lock the live set and deliver a copy to the listener after filtering.
         synchronized (liveLocationKeys) {
-            return liveLocationKeys.stream()
-                    .filter(tk -> filter.test(tk.getKey()))
-                    .collect(Collectors.toList());
+            liveLocationKeys.stream().filter(ttlk -> filter.test(ttlk.getKey())).forEach(consumer);
         }
     }
 
