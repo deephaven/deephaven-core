@@ -50,6 +50,16 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                                         JsTreeTable.EVENT_UPDATED, 2001d);
                             }).then(event -> {
                                 assertEquals(10d, event.detail.getTreeSize());
+                                assertEquals(10, event.detail.getRows().length);
+
+
+                                // move the viewport and try again
+                                treeTable.setViewport(5, 50, treeTable.getColumns(), null);
+                                return treeTable.<TreeViewportData>nextEvent(
+                                        JsTreeTable.EVENT_UPDATED, 2002d);
+                            }).then(event -> {
+                                assertEquals(10d, event.detail.getTreeSize());
+                                assertEquals(5, event.detail.getRows().length);
 
                                 treeTable.close();
 
@@ -133,6 +143,15 @@ public class HierarchicalTableTestGwt extends AbstractAsyncGwtTestCase {
                                 assertEquals(green, data.getFormat(1, idCol));
                                 assertEquals(green, row2.getFormat(idCol));
                                 assertEquals(green, idCol.getFormat(row2));
+
+                                // Move the viewport and make sure we get the correct data
+                                treeTable.setViewport(5, 49, treeTable.getColumns(), null);
+                                return treeTable.<TreeViewportData>nextEvent(
+                                        JsTreeTable.EVENT_UPDATED, 2002d);
+                            }).then(event -> {
+                                assertEquals(10d, event.detail.getTreeSize());
+                                assertEquals(5, event.detail.getRows().length);
+
                                 return Promise.resolve(treeTable);
                             })
                             .then(event -> {
