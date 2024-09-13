@@ -66,11 +66,11 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
 
 1. Build the Deephaven C++ client (and dependencies) according to the instructions in the
    [Deephaven C++ client installation guide](https://github.com/deephaven/deephaven-core/blob/main/cpp-client/README.md).
-   Follow the instructions at least through step 6. At that point you would have both the Deephaven C++ client and any
-   C++ libraries it depends on, all installed in a particular directory of your choosing.
-   In what follows we assume that directory is `/path/to/dhcpp`.
+   Follow the instructions at least through "Build and Install Deephaven C++ client". After that, you will have both the
+   Deephaven C++ client and any C++ libraries it depends on installed in a particular directory of your choosing.
+   In what follows, we assume that directory is `/path/to/dhcpp`.
 
-2. Set environment variables from the C++ client installation required for building the R client:
+3. Set environment variables from the C++ client installation required for building the R client:
    ```bash
    source /path/to/dhcpp/env.sh
    ```
@@ -80,11 +80,18 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
    echo $DHCPP
    echo $LD_LIBRARY_PATH
    echo $NCPUS
-   echo $MAKE
+   echo $CMAKE_PREFIX_PATH
    ```
+
+   For faster compilation of the R client and its dependencies (particularly the Arrow R client),
+   use the following command:
+   ```bash
+    export MAKE="make -j$NCPUS"
+   ```
+   
    Refer to the instructions on the C++ client installation for more details on the `dhcpp` directory.
 
-3. The C++ client installation will have left you with a local clone of the full [Deephaven Core Git repository](https://github.com/deephaven/deephaven-core).
+4. The C++ client installation will have left you with a local clone of the full [Deephaven Core Git repository](https://github.com/deephaven/deephaven-core).
    Navigate to the `deephaven-core/R/rdeephaven` directory within that clone.
 
    If you prefer to have an isolated directory where the Deephaven R client source code will live, use git's sparse-checkout:
@@ -98,7 +105,7 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
    git pull origin main
    ```
 
-4. Start an R console inside the `rdeephaven` directory by running `R`. In that console, install the Deephaven R client dependencies:
+5. Start an R console inside the `rdeephaven` directory by running `R`. In that console, install the Deephaven R client dependencies:
    ```r
    install.packages(c('Rcpp', 'arrow', 'R6', 'dplyr', 'xml2', 'rmarkdown', 'knitr'))
    ```
@@ -108,7 +115,7 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
    ```
    This is needed over the typical `install.packages()` to ensure that the vignettes get built and installed.
 
-5. Now, run
+6. Now, run
    ```r
    library(rdeephaven)
    ```
@@ -116,7 +123,7 @@ Currently, the R client is only supported on Ubuntu 20.04 or 22.04 and must be b
    
    For an introduction to the package, run `vignette("rdeephaven")`.
 
-6. The `LD_LIBRARY_PATH` environment variable set in step 2 is necessary for loading the R client once it is installed.
+7. The `LD_LIBRARY_PATH` environment variable set in step 2 is necessary for loading the R client once it is installed.
    Therefore, you must set `LD_LIBRARY_PATH` manually at the start of each session by running the following command:
    ```bash
    source /path/to/dhcpp/env.sh
