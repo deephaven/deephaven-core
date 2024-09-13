@@ -139,6 +139,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
                 if (isRefreshing()) {
                     final TableLocationSubscriptionBuffer locationBuffer =
                             new TableLocationSubscriptionBuffer(locationProvider);
+                    manage(locationBuffer);
                     try (final TableLocationSubscriptionBuffer.LocationUpdate locationUpdate =
                             locationBuffer.processPending()) {
                         maybeRemoveLocations(locationUpdate.getPendingRemovedLocationKeys());

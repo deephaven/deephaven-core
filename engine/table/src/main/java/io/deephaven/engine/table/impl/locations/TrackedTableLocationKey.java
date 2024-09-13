@@ -36,6 +36,19 @@ public class TrackedTableLocationKey extends ReferenceCountedLivenessNode {
         return locationKey;
     }
 
+    @Override
+    public int hashCode() {
+        return locationKey.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof ImmutableTableLocationKey) {
+            return locationKey.equals(obj);
+        }
+        return (this == obj);
+    }
+
     /**
      * This {@link TrackedTableLocationKey} should manage the given {@link TableLocation} and store a reference to it.
      * 

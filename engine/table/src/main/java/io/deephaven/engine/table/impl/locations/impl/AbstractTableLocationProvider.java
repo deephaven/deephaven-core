@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.locations.impl;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.locations.*;
@@ -124,6 +125,7 @@ public abstract class AbstractTableLocationProvider
                 AbstractTableLocationProvider.this.destroy();
             }
         };
+        LivenessScopeStack.peek().manage(livenessNode);
     }
 
     /**
@@ -431,15 +433,14 @@ public abstract class AbstractTableLocationProvider
         // The intent is to create a TableLocation exactly once to replace the TableLocationKey placeholder that was
         // added in handleTableLocationKey.
         if (!(current instanceof TableLocation)) {
-            final TableLocationKey immutableKey = (TableLocationKey) current;
+            final TrackedTableLocationKey trackedKey = (TrackedTableLocationKey) current;
             // noinspection SynchronizationOnLocalVariableOrMethodParameter
-            synchronized (immutableKey) {
-                current = tableLocations.get(immutableKey);
-                if (immutableKey == current) {
+            synchronized (trackedKey) {
+                current = tableLocations.get(trackedKey);
+                if (trackedKey == current) {
                     // Make a new location, have the tracked key manage it, then replace the key with the
                     // new location in the map and return it. Note, this may contend for the lock on tableLocations
-                    final TrackedTableLocationKey trackedKey = (TrackedTableLocationKey) current;
-                    final TableLocation newLocation = makeTableLocation(immutableKey);
+                    final TableLocation newLocation = makeTableLocation(trackedKey.getKey());
                     trackedKey.manageTableLocation(newLocation);
                     tableLocations.add(current = newLocation);
                 }
@@ -521,6 +522,9 @@ public abstract class AbstractTableLocationProvider
     private static TableLocationKey toKey(@NotNull final Object keyOrLocation) {
         if (keyOrLocation instanceof TableLocation) {
             return ((TableLocation) keyOrLocation).getKey();
+        }
+        if (keyOrLocation instanceof TrackedTableLocationKey) {
+            return (((TrackedTableLocationKey) keyOrLocation).getKey());
         }
         if (keyOrLocation instanceof TableLocationKey) {
             return ((TableLocationKey) keyOrLocation);
