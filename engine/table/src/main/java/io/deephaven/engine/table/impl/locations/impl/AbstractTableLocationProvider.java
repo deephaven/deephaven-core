@@ -125,6 +125,7 @@ public abstract class AbstractTableLocationProvider
                 AbstractTableLocationProvider.this.destroy();
             }
         };
+        // TODO: understand why this seems to be needed
         LivenessScopeStack.peek().manage(livenessNode);
     }
 

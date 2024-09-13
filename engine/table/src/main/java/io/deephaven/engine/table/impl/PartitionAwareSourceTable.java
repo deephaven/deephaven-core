@@ -205,7 +205,6 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
                 reference, null, viewColumns, null);
     }
 
-    private static final String LOCATION_KEY_COLUMN_NAME = "__PartitionAwareSourceTable_TableLocationKey__";
     private static final String TRACKED_KEY_COLUMN_NAME = "__PartitionAwareSourceTable_TrackedTableLocationKey__";
 
     private static <T> ColumnSource<? super T> makePartitionSource(@NotNull final ColumnDefinition<T> columnDefinition,
@@ -236,15 +235,13 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
         // TODO (https://github.com/deephaven/deephaven-core/issues/867): Refactor around a ticking partition table
         final List<String> partitionTableColumnNames = Stream.concat(
                 partitioningColumnDefinitions.keySet().stream(),
-                Stream.of(LOCATION_KEY_COLUMN_NAME, TRACKED_KEY_COLUMN_NAME)).collect(Collectors.toList());
+                Stream.of(TRACKED_KEY_COLUMN_NAME)).collect(Collectors.toList());
         final List<ColumnSource<?>> partitionTableColumnSources =
                 new ArrayList<>(partitioningColumnDefinitions.size() + 1);
         for (final ColumnDefinition<?> columnDefinition : partitioningColumnDefinitions.values()) {
             partitionTableColumnSources.add(makePartitionSource(columnDefinition, immutableTableLocationKeys));
         }
-        // Add the tracked and immutable keys to the table
-        partitionTableColumnSources.add(ArrayBackedColumnSource.getMemoryColumnSource(immutableTableLocationKeys,
-                ImmutableTableLocationKey.class, null));
+        // Add the tracked keys to the table
         partitionTableColumnSources.add(ArrayBackedColumnSource.getMemoryColumnSource(foundLocationKeys,
                 TrackedTableLocationKey.class, null));
 
@@ -255,7 +252,7 @@ public class PartitionAwareSourceTable extends SourceTable<PartitionAwareSourceT
             return foundLocationKeys;
         }
 
-        // Return the filtered tracked location keys
+        // Return the filtered keys
         final Iterable<TrackedTableLocationKey> iterable =
                 () -> filteredColumnPartitionTable.columnIterator(TRACKED_KEY_COLUMN_NAME);
         return StreamSupport.stream(iterable.spliterator(), false).collect(Collectors.toList());

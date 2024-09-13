@@ -163,12 +163,7 @@ public abstract class SourceTable<IMPL_TYPE extends SourceTable<IMPL_TYPE>> exte
         }
         filterLocationKeys(locationKeys)
                 .parallelStream()
-                .forEach(lk -> {
-                    // Unconditionally manage all locations added to the column source manager
-                    final TableLocation tableLocation = locationProvider.getTableLocation(lk.getKey());
-                    columnSourceManager.manage(tableLocation);
-                    columnSourceManager.addLocation(tableLocation);
-                });
+                .forEach(lk -> columnSourceManager.addLocation(locationProvider.getTableLocation(lk.getKey())));
     }
 
     private TrackedTableLocationKey[] maybeRemoveLocations(

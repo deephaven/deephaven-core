@@ -26,7 +26,7 @@ public final class SingleTableLocationProvider implements TableLocationProvider 
     public SingleTableLocationProvider(@NotNull final TableLocation tableLocation) {
         this.tableLocation = tableLocation;
         trackedTableLocationKey = new TrackedTableLocationKey(tableLocation.getKey(), ttlk -> {
-            // no-op
+            // TODO: I don't think we need to do anything here, but need to think more about it
         });
     }
 

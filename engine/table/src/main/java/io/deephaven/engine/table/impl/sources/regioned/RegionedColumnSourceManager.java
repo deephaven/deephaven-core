@@ -230,6 +230,8 @@ public class RegionedColumnSourceManager extends ReferenceCountedLivenessNode im
             if (log.isDebugEnabled()) {
                 log.debug().append("LOCATION_ADDED:").append(tableLocation.toString()).endl();
             }
+            // Hold on to this table location.
+            manage(tableLocation);
             emptyTableLocations.add(new EmptyTableLocationEntry(tableLocation));
         } else {
             // Duplicate location - not allowed
