@@ -3,6 +3,7 @@
 //
 package io.deephaven.web.client.api.barrage;
 
+import elemental2.core.JsDate;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.chunk.WritableChunk;
@@ -23,10 +24,13 @@ import io.deephaven.extensions.barrage.chunk.ShortChunkReader;
 import io.deephaven.extensions.barrage.chunk.VarListChunkReader;
 import io.deephaven.extensions.barrage.util.StreamReaderOptions;
 import io.deephaven.util.BooleanUtils;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.web.client.api.BigDecimalWrapper;
 import io.deephaven.web.client.api.BigIntegerWrapper;
 import io.deephaven.web.client.api.DateWrapper;
+import io.deephaven.web.client.api.LocalDateWrapper;
+import io.deephaven.web.client.api.LocalTimeWrapper;
 import io.deephaven.web.client.api.LongWrapper;
 import org.apache.arrow.flatbuf.Date;
 import org.apache.arrow.flatbuf.DateUnit;
@@ -170,7 +174,23 @@ public class WebChunkReaderFactory implements ChunkReader.Factory {
                 typeInfo.arrowField().type(t);
                 switch (t.unit()) {
                     case DateUnit.MILLISECOND:
-                        return new LongChunkReader(options).transform(millis -> DateWrapper.of(millis * 1000 * 1000));
+                        return new LongChunkReader(options).transform(millis -> {
+                            if (millis == QueryConstants.NULL_LONG) {
+                                return null;
+                            }
+                            JsDate jsDate = new JsDate((double) (long) millis);
+                            return new LocalDateWrapper(jsDate.getUTCFullYear(), 1 + jsDate.getUTCMonth(),
+                                    jsDate.getUTCDate());
+                        });
+                    case DateUnit.DAY:
+                        return new IntChunkReader(options).transform(days -> {
+                            if (days == QueryConstants.NULL_INT) {
+                                return null;
+                            }
+                            JsDate jsDate = new JsDate(((double) (int) days) * 86400000);
+                            return new LocalDateWrapper(jsDate.getUTCFullYear(), 1 + jsDate.getUTCMonth(),
+                                    jsDate.getUTCDate());
+                        });
                     default:
                         throw new IllegalArgumentException("Unsupported Date unit: " + DateUnit.name(t.unit()));
                 }
@@ -179,11 +199,36 @@ public class WebChunkReaderFactory implements ChunkReader.Factory {
                 Time t = new Time();
                 typeInfo.arrowField().type(t);
                 switch (t.bitWidth()) {
-                    case TimeUnit.NANOSECOND: {
-                        return new LongChunkReader(options).transform(DateWrapper::of);
+                    case 32: {
+                        switch (t.unit()) {
+                            case TimeUnit.SECOND: {
+                                return new IntChunkReader(options)
+                                        .transform(LocalTimeWrapper.intCreator(1)::apply);
+                            }
+                            case TimeUnit.MILLISECOND: {
+                                return new IntChunkReader(options)
+                                        .transform(LocalTimeWrapper.intCreator(1_000)::apply);
+                            }
+                            default:
+                                throw new IllegalArgumentException("Unsupported Time unit: " + TimeUnit.name(t.unit()));
+                        }
+                    }
+                    case 64: {
+                        switch (t.unit()) {
+                            case TimeUnit.NANOSECOND: {
+                                return new LongChunkReader(options)
+                                        .transform(LocalTimeWrapper.longCreator(1_000_000_000)::apply);
+                            }
+                            case TimeUnit.MICROSECOND: {
+                                return new LongChunkReader(options)
+                                        .transform(LocalTimeWrapper.longCreator(1_000_000)::apply);
+                            }
+                            default:
+                                throw new IllegalArgumentException("Unsupported Time unit: " + TimeUnit.name(t.unit()));
+                        }
                     }
                     default:
-                        throw new IllegalArgumentException("Unsupported Time unit: " + TimeUnit.name(t.unit()));
+                        throw new IllegalArgumentException("Unsupported Time bitWidth: " + t.bitWidth());
                 }
             }
             case Type.Timestamp: {
