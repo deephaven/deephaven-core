@@ -179,7 +179,8 @@ public class WebChunkReaderFactory implements ChunkReader.Factory {
                                 return null;
                             }
                             JsDate jsDate = new JsDate((double) (long) millis);
-                            return new LocalDateWrapper(jsDate.getUTCFullYear(), 1 + jsDate.getUTCMonth(), jsDate.getUTCDate());
+                            return new LocalDateWrapper(jsDate.getUTCFullYear(), 1 + jsDate.getUTCMonth(),
+                                    jsDate.getUTCDate());
                         });
                     case DateUnit.DAY:
                         return new IntChunkReader(options).transform(days -> {
@@ -187,7 +188,8 @@ public class WebChunkReaderFactory implements ChunkReader.Factory {
                                 return null;
                             }
                             JsDate jsDate = new JsDate(((double) (int) days) * 86400000);
-                            return new LocalDateWrapper(jsDate.getUTCFullYear(), 1 + jsDate.getUTCMonth(), jsDate.getUTCDate());
+                            return new LocalDateWrapper(jsDate.getUTCFullYear(), 1 + jsDate.getUTCMonth(),
+                                    jsDate.getUTCDate());
                         });
                     default:
                         throw new IllegalArgumentException("Unsupported Date unit: " + DateUnit.name(t.unit()));

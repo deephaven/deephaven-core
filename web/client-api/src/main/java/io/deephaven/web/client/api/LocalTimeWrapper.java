@@ -41,7 +41,7 @@ public class LocalTimeWrapper {
             return new LocalTimeWrapper(hour, minute, second, nano);
         };
     }
-    
+
     public static LongFunction<LocalTimeWrapper> longCreator(int unitPerMicro) {
         int nanoPerUnit = 1_000_000_000 / unitPerMicro;
         return val -> {
